@@ -14,10 +14,14 @@ export function AuthButton() {
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
+      toast({
+        title: "Welcome!",
+        description: "You have successfully signed in.",
+      });
     } catch (error: any) {
       toast({
         title: "Authentication Error",
-        description: "Failed to sign in with Google. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     }
@@ -26,10 +30,14 @@ export function AuthButton() {
   const handleSignOut = async () => {
     try {
       await signOut();
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to sign out. Please try again.",
+        description: error.message,
         variant: "destructive",
       });
     }
