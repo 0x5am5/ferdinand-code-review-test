@@ -30,7 +30,7 @@ export async function signInWithGoogle() {
     });
     throw new Error(
       error.code === "auth/unauthorized-domain" 
-        ? "This domain is not authorized. Please check Firebase configuration."
+        ? `This domain (${window.location.hostname}) is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains`
         : error.message || "Failed to sign in with Google"
     );
   }
