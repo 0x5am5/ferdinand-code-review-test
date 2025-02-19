@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
+// Verify all required Firebase config variables exist
 if (!import.meta.env.VITE_FIREBASE_API_KEY || 
     !import.meta.env.VITE_FIREBASE_PROJECT_ID || 
     !import.meta.env.VITE_FIREBASE_APP_ID) {
@@ -15,6 +16,7 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
