@@ -4,9 +4,12 @@ import { apiRequest } from "./queryClient";
 
 export async function signInWithGoogle() {
   try {
-    // Add debugging information
     console.log("Starting Google sign-in process");
     console.log("Current origin:", window.location.origin);
+    console.log("Auth configuration:", {
+      currentUser: auth.currentUser,
+      providerData: auth.currentUser?.providerData,
+    });
 
     const result = await signInWithPopup(auth, googleProvider);
     console.log("Sign-in successful, getting token");
@@ -26,13 +29,30 @@ export async function signInWithGoogle() {
     console.error("Error details:", {
       code: error.code,
       message: error.message,
-      customData: error.customData
+      customData: error.customData,
+      stack: error.stack
     });
-    throw new Error(
-      error.code === "auth/unauthorized-domain" 
-        ? `This domain (${window.location.hostname}) is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains`
-        : error.message || "Failed to sign in with Google"
-    );
+
+    let errorMessage = "Failed to sign in with Google";
+
+    switch (error.code) {
+      case "auth/unauthorized-domain":
+        errorMessage = `This domain (${window.location.hostname}) is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains`;
+        break;
+      case "auth/operation-not-allowed":
+        errorMessage = "Google sign-in is not enabled. Please enable it in Firebase Console > Authentication > Sign-in method";
+        break;
+      case "auth/configuration-not-found":
+        errorMessage = "Firebase configuration is incorrect. Please check your Firebase project settings";
+        break;
+      case "auth/internal-error":
+        errorMessage = "Authentication service encountered an error. Please try again later";
+        break;
+      default:
+        errorMessage = error.message || "Failed to sign in with Google";
+    }
+
+    throw new Error(errorMessage);
   }
 }
 
