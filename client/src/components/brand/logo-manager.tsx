@@ -64,6 +64,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       return response.json();
     },
     onSuccess: () => {
+      // Update query key to match the one used in client details page
       queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "assets"] });
       toast({
         title: "Success",
