@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, User, insertClientSchema } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { AlertCircle, Plus } from "lucide-react";
+import { AlertCircle, Plus, Search, SortAsc, SortDesc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import {
@@ -28,12 +28,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function Dashboard() {
-  // For development, we'll assume admin role
   const isAdmin = true;
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
@@ -42,6 +49,20 @@ export default function Dashboard() {
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ["/api/clients/current"],
   });
+
+  // Filter and sort clients
+  const filteredAndSortedClients = [...clients]
+    .filter((client) =>
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a.name.localeCompare(b.name);
+      } else {
+        return b.name.localeCompare(a.name);
+      }
+    });
 
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
@@ -67,7 +88,7 @@ export default function Dashboard() {
         description: "Client created successfully",
       });
       form.reset();
-      setDialogOpen(false); // Close the dialog on success
+      setDialogOpen(false);
     },
     onError: (error: Error) => {
       toast({
@@ -95,6 +116,38 @@ export default function Dashboard() {
               <>
                 <div className="mb-8">
                   <h1 className="text-4xl font-bold mb-6">Brand Guidelines</h1>
+
+                  {/* Search and Sort Controls */}
+                  <div className="flex gap-4 mb-6">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search clients..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                          {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+                          Sort by Name
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => setSortOrder("asc")}>
+                          <SortAsc className="mr-2 h-4 w-4" />
+                          Sort A-Z
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setSortOrder("desc")}>
+                          <SortDesc className="mr-2 h-4 w-4" />
+                          Sort Z-A
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
                   <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                     {/* New Client Card */}
                     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -220,7 +273,7 @@ export default function Dashboard() {
                     </Dialog>
 
                     {/* Existing Client Cards */}
-                    {clients.map((client) => (
+                    {filteredAndSortedClients.map((client) => (
                       <Link key={client.id} href={`/clients/${client.id}`}>
                         <Card className="cursor-pointer hover:bg-accent transition-colors">
                           <CardHeader>
@@ -252,6 +305,29 @@ export default function Dashboard() {
                         </Card>
                       </Link>
                     ))}
+
+                    {filteredAndSortedClients.length === 0 && searchQuery && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>No Results</CardTitle>
+                          <CardDescription>No clients found matching "{searchQuery}"</CardDescription>
+                        </CardHeader>
+                      </Card>
+                    )}
+
+                    {filteredAndSortedClients.length === 0 && !searchQuery && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>No Clients</CardTitle>
+                          <CardDescription>Get started by creating your first client</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-muted-foreground">
+                            Click the "New Client" card to add your first client and start managing their brand assets.
+                          </p>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 </div>
               </>
