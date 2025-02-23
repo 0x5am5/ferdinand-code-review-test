@@ -40,9 +40,7 @@ export default function Dashboard() {
     queryKey: ["/api/clients/current"],
   });
 
-  // Temporary: Set admin view for testing
-  const isAdmin = true;
-
+  const isAdmin = user?.role === "admin";
   const { toast } = useToast();
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
@@ -76,7 +74,7 @@ export default function Dashboard() {
 
   if (!user) return null;
 
-  const isLoading = user.role === "admin" ? clientsLoading : clientLoading;
+  const isLoading = isAdmin ? clientsLoading : clientLoading;
 
   return (
     <div className="flex h-screen">

@@ -17,7 +17,22 @@ function ProtectedRoute({
   component: React.ComponentType;
   adminOnly?: boolean;
 }) {
-  // Temporarily bypass auth
+  const { data: user, isLoading } = useQuery<User>({
+    queryKey: ["/api/auth/me"],
+  });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Redirect to="/login" />;
+  }
+
+  if (adminOnly && user.role !== "admin") {
+    return <Redirect to="/dashboard" />;
+  }
+
   return <Component />;
 }
 
