@@ -44,9 +44,10 @@ function Router() {
     queryKey: ["/api/auth/me"],
   });
 
-  // Redirect from root to appropriate page based on auth status
+  // Redirect from root to appropriate page based on auth status and role
   if (location === "/") {
-    return <Redirect to={user ? "/dashboard" : "/login"} />;
+    if (!user) return <Redirect to="/login" />;
+    return <Redirect to={user.role === "admin" ? "/admin/instances" : "/dashboard"} />;
   }
 
   return (
