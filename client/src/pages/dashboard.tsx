@@ -274,7 +274,7 @@ export default function Dashboard() {
 
                     {/* Existing Client Cards */}
                     {filteredAndSortedClients.map((client) => (
-                      <Link key={client.id} href={`/clients/${client.id}`}>
+                      <Link key={client.id} href={`/client/${client.id}`}>
                         <Card className="cursor-pointer hover:bg-accent transition-colors">
                           <CardHeader>
                             {client.logo && (
