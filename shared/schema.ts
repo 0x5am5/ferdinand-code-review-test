@@ -24,11 +24,13 @@ export const LogoType = {
   FAVICON: "favicon",
 } as const;
 
-// Define valid font sources
-export const FontSource = {
-  GOOGLE: "google",
-  ADOBE: "adobe",
-  CUSTOM: "custom",
+// Define valid file formats
+export const FILE_FORMATS = {
+  PNG: "png",
+  SVG: "svg",
+  PDF: "pdf",
+  AI: "ai",
+  FIGMA: "figma",
 } as const;
 
 export const brandAssets = pgTable("brand_assets", {
@@ -39,10 +41,9 @@ export const brandAssets = pgTable("brand_assets", {
   }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  // For colors: { hex: string, labels: { rgb?: string, cmyk?: string, hsl?: string, pantone?: string } }
-  // For logos: { type: LogoType, formats: Array<{ format: string, url: string }> }
-  // For fonts: { source: FontSource, family: string, url?: string }
   data: json("data").notNull(),
+  fileData: text("file_data"),
+  mimeType: text("mime_type"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -67,17 +68,8 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
+    file: z.instanceof(Blob),
     data: z.union([
-      // Color asset
-      z.object({
-        hex: z.string(),
-        labels: z.object({
-          rgb: z.string().optional(),
-          cmyk: z.string().optional(),
-          hsl: z.string().optional(),
-          pantone: z.string().optional(),
-        }),
-      }),
       // Logo asset
       z.object({
         type: z.enum([
@@ -88,17 +80,24 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
           LogoType.APP_ICON,
           LogoType.FAVICON,
         ]),
-        formats: z.array(z.object({
-          format: z.string(),
-          url: z.string().url(),
-        })),
+        format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
+        fileName: z.string(),
+      }),
+      // Color asset
+      z.object({
+        hex: z.string(),
+        labels: z.object({
+          rgb: z.string().optional(),
+          cmyk: z.string().optional(),
+          pantone: z.string().optional(),
+        }),
       }),
       // Font asset
       z.object({
         source: z.enum([
-          FontSource.GOOGLE,
-          FontSource.ADOBE,
-          FontSource.CUSTOM,
+          "google",
+          "adobe",
+          "custom",
         ]),
         family: z.string(),
         url: z.string().url().optional(),
@@ -116,4 +115,3 @@ export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
 
 // Export constants
 export const LOGO_TYPES = Object.values(LogoType);
-export const FONT_SOURCES = Object.values(FontSource);

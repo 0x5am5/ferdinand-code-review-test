@@ -14,6 +14,7 @@ export interface IStorage {
   getClients(): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
   getBrandAssets(clientId: number): Promise<BrandAsset[]>;
+  getBrandAsset(id: number): Promise<BrandAsset | undefined>;
   createBrandAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
 }
 
@@ -52,6 +53,11 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(brandAssets)
       .where(eq(brandAssets.clientId, clientId));
+  }
+
+  async getBrandAsset(id: number): Promise<BrandAsset | undefined> {
+    const [asset] = await db.select().from(brandAssets).where(eq(brandAssets.id, id));
+    return asset;
   }
 
   async createBrandAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {

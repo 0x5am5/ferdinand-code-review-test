@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BrandAsset, LogoType } from "@shared/schema";
+import { BrandAsset, LogoType, FILE_FORMATS } from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 
 interface LogoManagerProps {
   clientId: number;
@@ -33,30 +32,35 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>(LogoType.MAIN);
   const [logoName, setLogoName] = useState("");
-  const [formats, setFormats] = useState<Array<{ format: string; url: string }>>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const addFormat = () => {
-    setFormats([...formats, { format: "", url: "" }]);
-  };
-
-  const updateFormat = (index: number, field: "format" | "url", value: string) => {
-    const newFormats = [...formats];
-    newFormats[index][field] = value;
-    setFormats(newFormats);
-  };
-
   const createLogo = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/clients/${clientId}/assets`, {
-        category: "logo",
-        name: logoName,
-        data: {
-          type: selectedType,
-          formats,
-        },
+      if (!selectedFile) {
+        throw new Error("No file selected");
+      }
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('name', logoName);
+      formData.append('category', 'logo');
+      formData.append('data', JSON.stringify({
+        type: selectedType,
+        format: selectedFile.name.split('.').pop()?.toLowerCase(),
+        fileName: selectedFile.name,
+      }));
+
+      const response = await fetch(`/api/clients/${clientId}/assets`, {
+        method: 'POST',
+        body: formData,
       });
+
+      if (!response.ok) {
+        throw new Error("Failed to upload logo");
+      }
+
       return response.json();
     },
     onSuccess: () => {
@@ -67,7 +71,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       });
       setDialogOpen(false);
       setLogoName("");
-      setFormats([]);
+      setSelectedFile(null);
     },
     onError: (error: Error) => {
       toast({
@@ -77,6 +81,23 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       });
     },
   });
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (!fileExtension || !Object.values(FILE_FORMATS).includes(fileExtension as any)) {
+      toast({
+        title: "Invalid file type",
+        description: `File must be one of: ${Object.values(FILE_FORMATS).join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedFile(file);
+  };
 
   // Group logos by type
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
@@ -99,7 +120,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             <DialogHeader>
               <DialogTitle>Add New Logo</DialogTitle>
               <DialogDescription>
-                Add a new logo to your brand system with multiple download formats.
+                Add a new logo to your brand system. Supported formats: PNG, SVG, PDF, AI, Figma
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -127,30 +148,21 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-4">
-                <Label>Formats</Label>
-                {formats.map((format, index) => (
-                  <div key={index} className="space-y-2">
-                    <Input
-                      placeholder="Format (e.g., PNG, SVG)"
-                      value={format.format}
-                      onChange={(e) => updateFormat(index, "format", e.target.value)}
-                    />
-                    <Input
-                      placeholder="URL"
-                      value={format.url}
-                      onChange={(e) => updateFormat(index, "url", e.target.value)}
-                    />
-                  </div>
-                ))}
-                <Button type="button" variant="outline" onClick={addFormat}>
-                  Add Format
-                </Button>
+              <div>
+                <Label>Upload Logo</Label>
+                <Input
+                  type="file"
+                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(',')}
+                  onChange={handleFileChange}
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Supported formats: {Object.values(FILE_FORMATS).join(', ')}
+                </p>
               </div>
               <Button
                 className="w-full"
                 onClick={() => createLogo.mutate()}
-                disabled={createLogo.isPending}
+                disabled={createLogo.isPending || !selectedFile || !logoName}
               >
                 {createLogo.isPending ? "Adding..." : "Add Logo"}
               </Button>
@@ -171,29 +183,22 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                   <div key={logo.id} className="space-y-4">
                     <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center p-4">
                       <img
-                        src={(logo.data as any).formats[0].url}
+                        src={`/api/assets/${logo.id}/file`}
                         alt={logo.name}
                         className="max-w-full max-h-full object-contain"
                       />
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(logo.data as any).formats.map((format: any, index: number) => (
-                        <Button
-                          key={index}
-                          variant="outline"
-                          size="sm"
-                          asChild
+                    <div>
+                      <h3 className="font-medium mb-2">{logo.name}</h3>
+                      <Button variant="secondary" size="sm" asChild className="w-full">
+                        <a
+                          href={`/api/assets/${logo.id}/file`}
+                          download={logo.name + '.' + (logo.data as any).format}
                         >
-                          <a
-                            href={format.url}
-                            download={`${logo.name}.${format.format}`}
-                            className="flex items-center"
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            {format.format}
-                          </a>
-                        </Button>
-                      ))}
+                          <Download className="mr-2 h-4 w-4" />
+                          Download {(logo.data as any).format.toUpperCase()}
+                        </a>
+                      </Button>
                     </div>
                   </div>
                 ))

@@ -2,14 +2,11 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { adminAuth } from "./firebase";
-import { insertUserSchema, insertClientSchema } from "@shared/schema";
+import { insertUserSchema, insertClientSchema, insertBrandAssetSchema } from "@shared/schema";
+import multer from "multer";
+import { z } from "zod";
 
-// Extend Express Request type to include session
-declare module "express-session" {
-  interface SessionData {
-    userId?: number;
-  }
-}
+const upload = multer();
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
@@ -102,6 +99,58 @@ export async function registerRoutes(app: Express) {
     const clientId = parseInt(req.params.id);
     const assets = await storage.getBrandAssets(clientId);
     res.json(assets);
+  });
+
+  // File upload endpoint for brand assets
+  app.post("/api/clients/:id/assets", upload.single('file'), async (req, res) => {
+    const clientId = parseInt(req.params.id);
+    if (isNaN(clientId)) {
+      return res.status(400).json({ message: "Invalid client ID" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    try {
+      // Convert file buffer to base64
+      const fileData = req.file.buffer.toString('base64');
+
+      // Validate the incoming data
+      const parsed = insertBrandAssetSchema.safeParse({
+        ...req.body,
+        clientId,
+        fileData,
+        mimeType: req.file.mimetype,
+      });
+
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid asset data" });
+      }
+
+      const asset = await storage.createBrandAsset(parsed.data);
+      res.json(asset);
+    } catch (error) {
+      console.error("Error creating brand asset:", error);
+      res.status(500).json({ message: "Error creating brand asset" });
+    }
+  });
+
+  // Endpoint to get brand asset file
+  app.get("/api/assets/:id/file", async (req, res) => {
+    const assetId = parseInt(req.params.id);
+    if (isNaN(assetId)) {
+      return res.status(400).json({ message: "Invalid asset ID" });
+    }
+
+    const asset = await storage.getBrandAsset(assetId);
+    if (!asset || !asset.fileData) {
+      return res.status(404).json({ message: "Asset not found" });
+    }
+
+    const buffer = Buffer.from(asset.fileData, 'base64');
+    res.setHeader('Content-Type', asset.mimeType);
+    res.send(buffer);
   });
 
   return httpServer;
