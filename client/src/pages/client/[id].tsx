@@ -1,10 +1,12 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery } from "@tanstack/react-query";
-import { Client } from "@shared/schema";
+import { Client, BrandAsset } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useParams } from "wouter";
+import { AssetCard } from "@/components/brand/asset-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -14,7 +16,11 @@ export default function ClientDetails() {
     queryKey: ["/api/clients", clientId],
   });
 
-  if (isLoadingClient) {
+  const { data: assets = [], isLoading: isLoadingAssets } = useQuery<BrandAsset[]>({
+    queryKey: ["/api/clients", clientId, "assets"],
+  });
+
+  if (isLoadingClient || isLoadingAssets) {
     return (
       <div className="flex h-screen">
         <Sidebar />
@@ -51,6 +57,11 @@ export default function ClientDetails() {
     );
   }
 
+  // Group assets by category
+  const logoAssets = assets.filter(asset => asset.category === 'logo');
+  const colorAssets = assets.filter(asset => asset.category === 'color');
+  const typographyAssets = assets.filter(asset => asset.category === 'typography');
+
   return (
     <div className="flex h-screen">
       <Sidebar />
@@ -64,51 +75,88 @@ export default function ClientDetails() {
           <h1 className="text-4xl font-bold">{client.name} Brand Guidelines</h1>
         </div>
 
-        <Card>
-          <CardHeader>
-            {client.logo && (
-              <div className="w-24 h-24 mb-4">
-                <img
-                  src={client.logo}
-                  alt={`${client.name} logo`}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            )}
-            <CardTitle className="text-3xl">{client.name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                {client.website && (
-                  <div>
-                    <h3 className="font-medium mb-1">Website</h3>
-                    <a
-                      href={client.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      {client.website}
-                    </a>
-                  </div>
-                )}
-                {client.phone && (
-                  <div>
-                    <h3 className="font-medium mb-1">Phone</h3>
-                    <p>{client.phone}</p>
-                  </div>
-                )}
-                {client.address && (
-                  <div>
-                    <h3 className="font-medium mb-1">Address</h3>
-                    <p>{client.address}</p>
-                  </div>
-                )}
-              </div>
+        <Tabs defaultValue="logos" className="space-y-6">
+          <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
+            <TabsTrigger 
+              value="logos" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
+              Logo System
+            </TabsTrigger>
+            <TabsTrigger 
+              value="colors" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
+              Colors
+            </TabsTrigger>
+            <TabsTrigger 
+              value="typography" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
+              Typography
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="logos" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {logoAssets.map(asset => (
+                <AssetCard key={asset.id} asset={asset} />
+              ))}
+              {logoAssets.length === 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>No Logos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      No logo assets have been added yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="colors" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {colorAssets.map(asset => (
+                <AssetCard key={asset.id} asset={asset} />
+              ))}
+              {colorAssets.length === 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>No Colors</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      No color assets have been added yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="typography" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {typographyAssets.map(asset => (
+                <AssetCard key={asset.id} asset={asset} />
+              ))}
+              {typographyAssets.length === 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>No Typography</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">
+                      No typography assets have been added yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

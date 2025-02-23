@@ -4,19 +4,14 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AuthButton } from "@/components/auth/auth-button";
 import { 
-  LayoutDashboard, Settings, Image, Palette, Type 
+  LayoutDashboard, Book, Settings
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-];
-
-const brandNavigation = [
-  { name: "Logos", href: "/client/:id/logos", icon: Image },
-  { name: "Colors", href: "/client/:id/colors", icon: Palette },
-  { name: "Typography", href: "/client/:id/typography", icon: Type },
+  { name: "Brand Guidelines", href: "/guidelines", icon: Book },
 ];
 
 const adminNavigation = [
@@ -28,9 +23,6 @@ export function Sidebar() {
   const { data: user } = useQuery<User>({ 
     queryKey: ["/api/auth/me"],
   });
-
-  // Extract client ID from location if we're in a client-specific route
-  const clientId = location.match(/\/client\/(\d+)/)?.[1];
 
   return (
     <div className="flex h-screen flex-col border-r bg-background">
@@ -57,30 +49,6 @@ export function Sidebar() {
               </Link>
             );
           })}
-
-          {clientId && (
-            <>
-              <div className="my-2 border-t" />
-              {brandNavigation.map((item) => {
-                const Icon = item.icon;
-                const href = item.href.replace(":id", clientId);
-                return (
-                  <Link key={href} href={href}>
-                    <Button
-                      variant={location === href ? "secondary" : "ghost"}
-                      className={cn(
-                        "w-full justify-start gap-2",
-                        location === href && "bg-secondary"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {item.name}
-                    </Button>
-                  </Link>
-                );
-              })}
-            </>
-          )}
 
           {user?.role === "admin" && (
             <>
