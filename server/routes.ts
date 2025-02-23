@@ -113,19 +113,31 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
+      // Parse the data field which was sent as a string
+      const data = JSON.parse(req.body.data);
+
       // Convert file buffer to base64
       const fileData = req.file.buffer.toString('base64');
 
-      // Validate the incoming data
-      const parsed = insertBrandAssetSchema.safeParse({
-        ...req.body,
+      // Construct the asset data
+      const assetData = {
         clientId,
+        category: req.body.category,
+        name: req.body.name,
+        data,
         fileData,
         mimeType: req.file.mimetype,
-      });
+      };
+
+      // Validate the asset data
+      const parsed = insertBrandAssetSchema.safeParse(assetData);
 
       if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid asset data" });
+        console.error("Validation error:", parsed.error);
+        return res.status(400).json({ 
+          message: "Invalid asset data",
+          errors: parsed.error.errors
+        });
       }
 
       const asset = await storage.createBrandAsset(parsed.data);

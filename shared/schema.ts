@@ -68,41 +68,20 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    file: z.instanceof(Blob),
-    data: z.union([
-      // Logo asset
-      z.object({
-        type: z.enum([
-          LogoType.MAIN,
-          LogoType.VERTICAL,
-          LogoType.HORIZONTAL,
-          LogoType.SQUARE,
-          LogoType.APP_ICON,
-          LogoType.FAVICON,
-        ]),
-        format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
-        fileName: z.string(),
-      }),
-      // Color asset
-      z.object({
-        hex: z.string(),
-        labels: z.object({
-          rgb: z.string().optional(),
-          cmyk: z.string().optional(),
-          pantone: z.string().optional(),
-        }),
-      }),
-      // Font asset
-      z.object({
-        source: z.enum([
-          "google",
-          "adobe",
-          "custom",
-        ]),
-        family: z.string(),
-        url: z.string().url().optional(),
-      }),
-    ]),
+    // We'll validate the file data separately since it comes from multer
+    category: z.literal("logo"),
+    data: z.object({
+      type: z.enum([
+        LogoType.MAIN,
+        LogoType.VERTICAL,
+        LogoType.HORIZONTAL,
+        LogoType.SQUARE,
+        LogoType.APP_ICON,
+        LogoType.FAVICON,
+      ]),
+      format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
+      fileName: z.string(),
+    }),
   });
 
 // Export types
