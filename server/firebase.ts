@@ -4,8 +4,12 @@ import { getAuth } from "firebase-admin/auth";
 if (!process.env.FIREBASE_PROJECT_ID || 
     !process.env.FIREBASE_PRIVATE_KEY || 
     !process.env.FIREBASE_CLIENT_EMAIL) {
-  throw new Error("Missing Firebase admin configuration");
+  console.error("Firebase configuration error: Missing required environment variables");
+  process.exit(1);
 }
+
+try {
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
 
 // Initialize Firebase Admin
 const app = initializeApp({

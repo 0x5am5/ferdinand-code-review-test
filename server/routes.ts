@@ -19,7 +19,13 @@ export async function registerRoutes(app: Express) {
     const { token, email, name } = req.body;
 
     try {
-      await adminAuth.verifyIdToken(token);
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+      const decodedToken = await adminAuth.verifyIdToken(token);
+      if (!decodedToken) {
+        return res.status(401).json({ message: "Invalid token" });
+      }
       const existingUser = await storage.getUserByEmail(email);
 
       if (existingUser) {
