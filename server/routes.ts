@@ -2,19 +2,10 @@ import type { Express } from "express";
 import { createServer } from "http";
 import { storage } from "./storage";
 import { adminAuth } from "./firebase";
-import { insertUserSchema, insertClientSchema, insertBrandAssetSchema } from "@shared/schema";
+import { insertUserSchema, insertClientSchema, insertBrandAssetSchema, FILE_FORMATS } from "@shared/schema";
 import multer from "multer";
-import { z } from "zod";
 
 const upload = multer();
-
-const FILE_FORMATS = {
-  JPEG: 'jpg',
-  JPG: 'jpg',
-  PNG: 'png',
-  GIF: 'gif',
-  SVG: 'svg'
-};
 
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
@@ -68,7 +59,7 @@ export async function registerRoutes(app: Express) {
     });
   });
 
-  // Client routes - temporarily bypass auth checks
+  // Client routes
   app.get("/api/clients", async (_req, res) => {
     const clients = await storage.getClients();
     res.json(clients);
@@ -99,12 +90,15 @@ export async function registerRoutes(app: Express) {
   });
 
   app.get("/api/clients/current", async (req, res) => {
-    // For development, return null to show the "No Client Assigned" view
     res.json(null);
   });
 
   app.get("/api/clients/:id/assets", async (req, res) => {
     const clientId = parseInt(req.params.id);
+    if (isNaN(clientId)) {
+      return res.status(400).json({ message: "Invalid client ID" });
+    }
+
     const assets = await storage.getBrandAssets(clientId);
     res.json(assets);
   });
@@ -121,60 +115,48 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
-      // Extract file information
-      const fileFormat = req.file.originalname.split('.').pop()?.toLowerCase();
+      // Get file format from extension
+      const format = req.file.originalname.split('.').pop()?.toLowerCase();
 
-      // Validate file format
-      if (!fileFormat || !Object.values(FILE_FORMATS).includes(fileFormat as any)) {
+      // Validate format
+      if (!format || !Object.values(FILE_FORMATS).includes(format as any)) {
         return res.status(400).json({ 
-          message: `Invalid file format. Supported formats: ${Object.values(FILE_FORMATS).join(', ')}` 
+          message: `Invalid file format. Supported formats: ${Object.values(FILE_FORMATS).join(', ')}`
         });
       }
 
-      // Convert file buffer to base64
-      const fileData = req.file.buffer.toString('base64');
-
-      // Construct the asset data
+      // Create asset data
       const assetData = {
         clientId,
-        category: "logo",
         name: req.body.name,
-        data: {
-          type: req.body.type,
-          format: fileFormat,
-          fileName: req.file.originalname
-        },
-        fileData,
+        category: "logo",
+        logoType: req.body.type,
+        format,
+        fileData: req.file.buffer.toString('base64'),
         mimeType: req.file.mimetype,
       };
 
-      // Log the request data (excluding the actual file data)
-      console.log('Creating brand asset:', {
-        ...assetData,
-        fileData: '[truncated]'
-      });
-
-      // Validate the asset data
+      // Validate the data
       const parsed = insertBrandAssetSchema.safeParse(assetData);
-
       if (!parsed.success) {
         console.error("Validation error:", parsed.error);
         return res.status(400).json({ 
           message: "Invalid asset data",
-          errors: parsed.error.errors
+          errors: parsed.error.errors 
         });
       }
 
+      // Save to database
       const asset = await storage.createBrandAsset(parsed.data);
-      console.log('Asset created:', { id: asset.id, name: asset.name });
       res.json(asset);
+
     } catch (error) {
       console.error("Error creating brand asset:", error);
       res.status(500).json({ message: "Error creating brand asset" });
     }
   });
 
-  // Endpoint to get brand asset file
+  // Serve asset files
   app.get("/api/assets/:id/file", async (req, res) => {
     const assetId = parseInt(req.params.id);
     if (isNaN(assetId)) {

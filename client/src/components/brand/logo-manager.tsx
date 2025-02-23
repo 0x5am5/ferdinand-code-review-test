@@ -59,16 +59,15 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       return await response.json();
     },
     onSuccess: () => {
-      // Force an immediate refetch of the assets
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/clients", clientId, "assets"],
-        refetchType: "all"
+        queryKey: ["/api/clients", clientId, "assets"]
       });
 
       toast({
         title: "Success",
         description: "Logo added successfully",
       });
+
       setDialogOpen(false);
       setLogoName("");
       setSelectedFile(null);
@@ -101,10 +100,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   // Group logos by type
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
-    acc[type] = logos.filter(logo => {
-      const data = logo.data as { type: string; format: string };
-      return data?.type === type;
-    });
+    acc[type] = logos.filter(logo => logo.logoType === type);
     return acc;
   }, {} as Record<string, BrandAsset[]>);
 
@@ -158,9 +154,6 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                   accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(',')}
                   onChange={handleFileChange}
                 />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Supported formats: {Object.values(FILE_FORMATS).join(', ')}
-                </p>
               </div>
               <Button
                 className="w-full"
@@ -189,24 +182,20 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                         src={`/api/assets/${logo.id}/file`}
                         alt={logo.name}
                         className="max-w-full max-h-full object-contain"
-                        onError={(e) => {
-                          console.error('Failed to load image:', logo.id);
-                          e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-                        }}
                       />
                     </div>
                     <div>
                       <h4 className="font-medium">{logo.name}</h4>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Format: {(logo.data as any)?.format?.toUpperCase()}
+                        Format: {logo.format?.toUpperCase()}
                       </p>
                       <Button variant="secondary" size="sm" asChild className="w-full">
                         <a
                           href={`/api/assets/${logo.id}/file`}
-                          download={`${logo.name}.${(logo.data as any)?.format}`}
+                          download={`${logo.name}.${logo.format}`}
                         >
                           <Download className="mr-2 h-4 w-4" />
-                          Download {(logo.data as any)?.format?.toUpperCase()}
+                          Download {logo.format?.toUpperCase()}
                         </a>
                       </Button>
                     </div>

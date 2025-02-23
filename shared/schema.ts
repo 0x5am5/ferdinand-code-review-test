@@ -16,20 +16,23 @@ export const LogoType = {
 export const FILE_FORMATS = {
   PNG: "png",
   SVG: "svg",
-  PDF: "pdf",
-  AI: "ai",
-  FIGMA: "figma",
+  JPG: "jpg",
+  JPEG: "jpeg"
 } as const;
 
 export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
+  name: text("name").notNull(),
   category: text("category", { 
     enum: ["logo", "color", "typography"] 
   }).notNull(),
-  name: text("name").notNull(),
-  description: text("description"),
-  data: json("data"),
+  logoType: text("logo_type", {
+    enum: Object.values(LogoType)
+  }),
+  format: text("format", {
+    enum: Object.values(FILE_FORMATS)
+  }),
   fileData: text("file_data"),
   mimeType: text("mime_type"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -56,25 +59,13 @@ export const users = pgTable("users", {
   clientId: integer("client_id").references(() => clients.id),
 });
 
-// Define schemas for validation
-export const insertClientSchema = createInsertSchema(clients).omit({ 
-  id: true, 
-  createdAt: true,
-  updatedAt: true 
-});
-
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
-
-// Schema for brand assets with specific validation for logos
+// Schema for logos with required fields for validation
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
     category: z.literal("logo"),
-    data: z.object({
-      type: z.enum(Object.values(LogoType) as [string, ...string[]]),
-      format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
-      fileName: z.string(),
-    }),
+    logoType: z.enum(Object.values(LogoType) as [string, ...string[]]),
+    format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
     fileData: z.string(),
     mimeType: z.string(),
   });
@@ -86,6 +77,14 @@ export type BrandAsset = typeof brandAssets.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
+
+export const insertClientSchema = createInsertSchema(clients).omit({ 
+  id: true, 
+  createdAt: true,
+  updatedAt: true 
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 
 // Export constants
 export const LOGO_TYPES = Object.values(LogoType);
