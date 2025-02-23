@@ -40,7 +40,7 @@ export const brandAssets = pgTable("brand_assets", {
   name: text("name").notNull(),
   description: text("description"),
   // For colors: { hex: string, labels: { rgb?: string, cmyk?: string, hsl?: string, pantone?: string } }
-  // For logos: { type: LogoType, url: string }
+  // For logos: { type: LogoType, formats: Array<{ format: string, url: string }> }
   // For fonts: { source: FontSource, family: string, url?: string }
   data: json("data").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -88,7 +88,10 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
           LogoType.APP_ICON,
           LogoType.FAVICON,
         ]),
-        url: z.string().url(),
+        formats: z.array(z.object({
+          format: z.string(),
+          url: z.string().url(),
+        })),
       }),
       // Font asset
       z.object({
