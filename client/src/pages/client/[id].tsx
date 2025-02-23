@@ -15,10 +15,13 @@ export default function ClientDetails() {
 
   const { data: client, isLoading: isLoadingClient } = useQuery<Client>({
     queryKey: ["/api/clients", clientId],
+    refetchOnWindowFocus: true,
   });
 
   const { data: assets = [], isLoading: isLoadingAssets } = useQuery<BrandAsset[]>({
     queryKey: ["/api/clients", clientId, "assets"],
+    refetchOnWindowFocus: true,
+    refetchInterval: 5000, // Refetch every 5 seconds to ensure we have the latest data
   });
 
   if (isLoadingClient || isLoadingAssets) {
