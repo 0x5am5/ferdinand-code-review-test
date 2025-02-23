@@ -34,13 +34,14 @@ export default function Dashboard() {
 
   const { data: clients, isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
-    enabled: !!user && user.role === "admin",
   });
 
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ["/api/clients/current"],
-    enabled: !!user && user.role !== "admin",
   });
+
+  // Temporary: Set admin view for testing
+  const isAdmin = true;
 
   const { toast } = useToast();
   const form = useForm({
