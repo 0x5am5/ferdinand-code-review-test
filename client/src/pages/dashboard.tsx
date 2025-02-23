@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,24 +33,12 @@ export default function Dashboard() {
   const isAdmin = true;
   const { toast } = useToast();
 
-  // Mock user data for development
-  const mockUser = {
-    id: 1,
-    name: "Admin User",
-    email: "admin@example.com",
-    role: "admin",
-  };
-
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
-    // Temporarily bypass API call
-    initialData: [],
   });
 
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ["/api/clients/current"],
-    // Temporarily bypass API call
-    initialData: null,
   });
 
   const form = useForm({
@@ -66,9 +55,8 @@ export default function Dashboard() {
 
   const createClient = useMutation({
     mutationFn: async (data: any) => {
-      // For development, just log the data
-      console.log("Creating client:", data);
-      return data;
+      const response = await apiRequest("POST", "/api/clients", data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
@@ -77,6 +65,13 @@ export default function Dashboard() {
         description: "Client created successfully",
       });
       form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 
@@ -87,7 +82,9 @@ export default function Dashboard() {
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
         {isLoading ? (
-          <div>Loading...</div>
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         ) : (
           <>
             {/* Admin View */}
@@ -105,6 +102,9 @@ export default function Dashboard() {
                     <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
                         <DialogTitle>Create New Client</DialogTitle>
+                        <DialogDescription>
+                          Add a new client to manage their brand assets and guidelines.
+                        </DialogDescription>
                       </DialogHeader>
                       <Form {...form}>
                         <form
@@ -200,7 +200,11 @@ export default function Dashboard() {
                             className="w-full"
                             disabled={createClient.isPending}
                           >
-                            Create Client
+                            {createClient.isPending ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            ) : (
+                              "Create Client"
+                            )}
                           </Button>
                         </form>
                       </Form>
@@ -209,40 +213,127 @@ export default function Dashboard() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {/* Example client card for development */}
-                  <Card className="cursor-pointer hover:bg-accent transition-colors">
-                    <CardHeader>
-                      <CardTitle>Example Client</CardTitle>
-                      <CardDescription>A sample client for development</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 text-sm text-muted-foreground">
-                        <p>Website: https://example.com</p>
-                        <p>Phone: (555) 123-4567</p>
-                        <p>Created: {new Date().toLocaleDateString()}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {clients.map((client) => (
+                    <Link key={client.id} href={`/clients/${client.id}`}>
+                      <Card className="cursor-pointer hover:bg-accent transition-colors">
+                        <CardHeader>
+                          {client.logo && (
+                            <div className="w-16 h-16 mb-4">
+                              <img
+                                src={client.logo}
+                                alt={`${client.name} logo`}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          )}
+                          <CardTitle>{client.name}</CardTitle>
+                          <CardDescription>{client.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2 text-sm text-muted-foreground">
+                            {client.website && (
+                              <p>Website: {client.website}</p>
+                            )}
+                            {client.phone && (
+                              <p>Phone: {client.phone}</p>
+                            )}
+                            <p>
+                              Created: {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                  {clients.length === 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>No Clients</CardTitle>
+                        <CardDescription>Get started by creating your first client</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground">
+                          Click the "New Client" button above to add your first client and start managing their brand assets.
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               </>
             )}
 
-            {/* Regular User View */}
-            {!isAdmin && (
+            {/* Client View */}
+            {!isAdmin && client && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Example Client Dashboard</CardTitle>
-                  <CardDescription>Welcome to your brand dashboard</CardDescription>
+                  {client.logo && (
+                    <div className="w-24 h-24 mb-4">
+                      <img
+                        src={client.logo}
+                        alt={`${client.name} logo`}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  <CardTitle className="text-3xl">{client.name}</CardTitle>
+                  <CardDescription>{client.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <p>Website: https://example.com</p>
-                      <p>Phone: (555) 123-4567</p>
-                      <p>Address: 123 Main St, Example City</p>
+                  <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {client.website && (
+                        <div>
+                          <h3 className="font-medium mb-1">Website</h3>
+                          <a 
+                            href={client.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {client.website}
+                          </a>
+                        </div>
+                      )}
+                      {client.phone && (
+                        <div>
+                          <h3 className="font-medium mb-1">Phone</h3>
+                          <p>{client.phone}</p>
+                        </div>
+                      )}
+                      {client.address && (
+                        <div>
+                          <h3 className="font-medium mb-1">Address</h3>
+                          <p>{client.address}</p>
+                        </div>
+                      )}
                     </div>
-                    <Button>View Brand Guidelines</Button>
+
+                    <div>
+                      <h2 className="text-2xl font-bold mb-4">Brand Assets</h2>
+                      <Link href={`/clients/${client.id}/assets`}>
+                        <Button size="lg">
+                          View Brand Guidelines
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!isAdmin && !client && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-yellow-500" />
+                    <CardTitle>No Client Assigned</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    You currently don't have access to any client dashboards. 
+                    Please contact your administrator to get assigned to a client.
+                  </p>
                 </CardContent>
               </Card>
             )}
