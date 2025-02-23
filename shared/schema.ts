@@ -56,7 +56,7 @@ export const users = pgTable("users", {
   clientId: integer("client_id").references(() => clients.id),
 });
 
-// Create Zod schemas for type validation
+// Define schemas for validation
 export const insertClientSchema = createInsertSchema(clients).omit({ 
   id: true, 
   createdAt: true,
@@ -65,16 +65,18 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 
+// Schema for brand assets with specific validation for logos
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
+    category: z.literal("logo"),
     data: z.object({
       type: z.enum(Object.values(LogoType) as [string, ...string[]]),
       format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
       fileName: z.string(),
-    }).optional(),
-    fileData: z.string().optional(),
-    mimeType: z.string().optional(),
+    }),
+    fileData: z.string(),
+    mimeType: z.string(),
   });
 
 // Export types
@@ -87,3 +89,4 @@ export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
 
 // Export constants
 export const LOGO_TYPES = Object.values(LogoType);
+export const FILE_FORMAT_LIST = Object.values(FILE_FORMATS);

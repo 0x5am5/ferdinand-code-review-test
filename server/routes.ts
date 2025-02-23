@@ -8,6 +8,14 @@ import { z } from "zod";
 
 const upload = multer();
 
+const FILE_FORMATS = {
+  JPEG: 'jpg',
+  JPG: 'jpg',
+  PNG: 'png',
+  GIF: 'gif',
+  SVG: 'svg'
+};
+
 export async function registerRoutes(app: Express) {
   const httpServer = createServer(app);
 
@@ -113,16 +121,24 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
+      // Extract file information
+      const fileFormat = req.file.originalname.split('.').pop()?.toLowerCase();
+
+      // Validate file format
+      if (!fileFormat || !Object.values(FILE_FORMATS).includes(fileFormat as any)) {
+        return res.status(400).json({ 
+          message: `Invalid file format. Supported formats: ${Object.values(FILE_FORMATS).join(', ')}` 
+        });
+      }
+
       // Convert file buffer to base64
       const fileData = req.file.buffer.toString('base64');
-      const fileFormat = req.file.originalname.split('.').pop()?.toLowerCase();
 
       // Construct the asset data
       const assetData = {
         clientId,
         category: "logo",
         name: req.body.name,
-        description: req.body.description,
         data: {
           type: req.body.type,
           format: fileFormat,
@@ -132,6 +148,7 @@ export async function registerRoutes(app: Express) {
         mimeType: req.file.mimetype,
       };
 
+      // Log the request data (excluding the actual file data)
       console.log('Creating brand asset:', {
         ...assetData,
         fileData: '[truncated]'
