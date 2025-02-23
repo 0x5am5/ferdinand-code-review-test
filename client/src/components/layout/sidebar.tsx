@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AuthButton } from "@/components/auth/auth-button";
 import { 
-  LayoutDashboard, Users, Book, Settings
+  LayoutDashboard, Book, Settings
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
@@ -15,7 +15,6 @@ const navigation = [
 ];
 
 const adminNavigation = [
-  { name: "Client Instances", href: "/admin/instances", icon: Users },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
