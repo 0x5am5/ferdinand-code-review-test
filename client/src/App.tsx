@@ -17,25 +17,7 @@ function ProtectedRoute({
   component: React.ComponentType;
   adminOnly?: boolean;
 }) {
-  const [, setLocation] = useLocation();
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
-  });
-
-  if (isLoading) {
-    return null;
-  }
-
-  if (!user) {
-    setLocation("/login");
-    return null;
-  }
-
-  if (adminOnly && user.role !== "admin") {
-    setLocation("/dashboard");
-    return null;
-  }
-
+  // Temporarily bypass auth
   return <Component />;
 }
 
@@ -45,9 +27,8 @@ function Router() {
     queryKey: ["/api/auth/me"],
   });
 
-  // Redirect from root to appropriate page based on auth status and role
+  // Always redirect to dashboard
   if (location === "/") {
-    if (!user) return <Redirect to="/login" />;
     return <Redirect to="/dashboard" />;
   }
 
