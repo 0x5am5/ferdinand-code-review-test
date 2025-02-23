@@ -14,7 +14,7 @@ const navigation = [
 ];
 
 const brandNavigation = [
-  { name: "Logos", href: "/client/:id", icon: Image },
+  { name: "Logos", href: "/client/:id/logos", icon: Image },
   { name: "Colors", href: "/client/:id/colors", icon: Palette },
   { name: "Typography", href: "/client/:id/typography", icon: Type },
 ];
