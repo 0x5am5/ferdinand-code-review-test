@@ -27,11 +27,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export default function Dashboard() {
   // For development, we'll assume admin role
   const isAdmin = true;
   const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
@@ -65,6 +67,7 @@ export default function Dashboard() {
         description: "Client created successfully",
       });
       form.reset();
+      setDialogOpen(false); // Close the dialog on success
     },
     onError: (error: Error) => {
       toast({
@@ -90,174 +93,166 @@ export default function Dashboard() {
             {/* Admin View */}
             {isAdmin && (
               <>
-                <div className="flex justify-between items-center mb-8">
-                  <h1 className="text-4xl font-bold">Brand Guidelines</h1>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        New Client
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Create New Client</DialogTitle>
-                        <DialogDescription>
-                          Add a new client to manage their brand assets and guidelines.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <Form {...form}>
-                        <form
-                          onSubmit={form.handleSubmit((data) => createClient.mutate(data))}
-                          className="space-y-4"
-                        >
-                          <FormField
-                            control={form.control}
-                            name="name"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Name</FormLabel>
-                                <FormControl>
-                                  <Input {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="description"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Description</FormLabel>
-                                <FormControl>
-                                  <Textarea {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="website"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Website</FormLabel>
-                                <FormControl>
-                                  <Input {...field} type="url" placeholder="https://example.com" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="address"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Address</FormLabel>
-                                <FormControl>
-                                  <Textarea {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="phone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Phone</FormLabel>
-                                <FormControl>
-                                  <Input {...field} type="tel" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="logo"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Logo URL</FormLabel>
-                                <FormControl>
-                                  <Input {...field} type="url" placeholder="https://example.com/logo.png" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={createClient.isPending}
+                <div className="mb-8">
+                  <h1 className="text-4xl font-bold mb-6">Brand Guidelines</h1>
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {/* New Client Card */}
+                    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Card className="cursor-pointer hover:bg-accent transition-colors border-dashed">
+                          <CardHeader className="flex items-center justify-center h-full text-center">
+                            <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
+                            <CardTitle>New Client</CardTitle>
+                            <CardDescription>Add a new client to manage</CardDescription>
+                          </CardHeader>
+                        </Card>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Create New Client</DialogTitle>
+                          <DialogDescription>
+                            Add a new client to manage their brand assets and guidelines.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <Form {...form}>
+                          <form
+                            onSubmit={form.handleSubmit((data) => createClient.mutate(data))}
+                            className="space-y-4"
                           >
-                            {createClient.isPending ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            ) : (
-                              "Create Client"
-                            )}
-                          </Button>
-                        </form>
-                      </Form>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+                            <FormField
+                              control={form.control}
+                              name="name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Name</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {clients.map((client) => (
-                    <Link key={client.id} href={`/clients/${client.id}`}>
-                      <Card className="cursor-pointer hover:bg-accent transition-colors">
-                        <CardHeader>
-                          {client.logo && (
-                            <div className="w-16 h-16 mb-4">
-                              <img
-                                src={client.logo}
-                                alt={`${client.name} logo`}
-                                className="w-full h-full object-contain"
-                              />
+                            <FormField
+                              control={form.control}
+                              name="description"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Description</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="website"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Website</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="url" placeholder="https://example.com" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="address"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Address</FormLabel>
+                                  <FormControl>
+                                    <Textarea {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="phone"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Phone</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="tel" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="logo"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Logo URL</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="url" placeholder="https://example.com/logo.png" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <Button
+                              type="submit"
+                              className="w-full"
+                              disabled={createClient.isPending}
+                            >
+                              {createClient.isPending ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                "Create Client"
+                              )}
+                            </Button>
+                          </form>
+                        </Form>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Existing Client Cards */}
+                    {clients.map((client) => (
+                      <Link key={client.id} href={`/clients/${client.id}`}>
+                        <Card className="cursor-pointer hover:bg-accent transition-colors">
+                          <CardHeader>
+                            {client.logo && (
+                              <div className="w-16 h-16 mb-4">
+                                <img
+                                  src={client.logo}
+                                  alt={`${client.name} logo`}
+                                  className="w-full h-full object-contain"
+                                />
+                              </div>
+                            )}
+                            <CardTitle>{client.name}</CardTitle>
+                            <CardDescription>{client.description}</CardDescription>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2 text-sm text-muted-foreground">
+                              {client.website && (
+                                <p>Website: {client.website}</p>
+                              )}
+                              {client.phone && (
+                                <p>Phone: {client.phone}</p>
+                              )}
+                              <p>
+                                Created: {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
+                              </p>
                             </div>
-                          )}
-                          <CardTitle>{client.name}</CardTitle>
-                          <CardDescription>{client.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 text-sm text-muted-foreground">
-                            {client.website && (
-                              <p>Website: {client.website}</p>
-                            )}
-                            {client.phone && (
-                              <p>Phone: {client.phone}</p>
-                            )}
-                            <p>
-                              Created: {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
-                  {clients.length === 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>No Clients</CardTitle>
-                        <CardDescription>Get started by creating your first client</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-muted-foreground">
-                          Click the "New Client" button above to add your first client and start managing their brand assets.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
@@ -284,9 +279,9 @@ export default function Dashboard() {
                       {client.website && (
                         <div>
                           <h3 className="font-medium mb-1">Website</h3>
-                          <a 
-                            href={client.website} 
-                            target="_blank" 
+                          <a
+                            href={client.website}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary hover:underline"
                           >
@@ -331,7 +326,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    You currently don't have access to any client dashboards. 
+                    You currently don't have access to any client dashboards.
                     Please contact your administrator to get assigned to a client.
                   </p>
                 </CardContent>
