@@ -52,6 +52,12 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         fileName: selectedFile.name,
       }));
 
+      console.log('Uploading logo:', {
+        name: logoName,
+        type: selectedType,
+        fileName: selectedFile.name
+      });
+
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: 'POST',
         body: formData,
@@ -62,9 +68,12 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         throw new Error(error.message || "Failed to upload logo");
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('Upload response:', data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Mutation succeeded:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "assets"] });
       toast({
         title: "Success",
@@ -75,6 +84,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       setSelectedFile(null);
     },
     onError: (error: Error) => {
+      console.error('Mutation error:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -105,6 +115,8 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     acc[type] = logos.filter(logo => (logo.data as any).type === type);
     return acc;
   }, {} as Record<string, BrandAsset[]>);
+
+  console.log('Grouped logos:', logosByType);
 
   return (
     <div className="space-y-8">
@@ -187,6 +199,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                         src={`/api/assets/${logo.id}/file`}
                         alt={logo.name}
                         className="max-w-full max-h-full object-contain"
+                        onError={(e) => {
+                          console.error('Image load error:', e);
+                          e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+                        }}
                       />
                     </div>
                     <div>

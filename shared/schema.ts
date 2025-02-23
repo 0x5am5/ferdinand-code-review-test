@@ -2,18 +2,6 @@ import { pgTable, text, serial, integer, json, timestamp } from "drizzle-orm/pg-
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const clients = pgTable("clients", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  website: text("website"),
-  address: text("address"),
-  phone: text("phone"),
-  logo: text("logo_url"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // Define valid logo types
 export const LogoType = {
   MAIN: "main",
@@ -37,13 +25,25 @@ export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
   category: text("category", { 
-    enum: ["logo", "color", "typography", "pattern", "icon", "illustration"] 
+    enum: ["logo", "color", "typography"] 
   }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
   data: json("data").notNull(),
   fileData: text("file_data"),
   mimeType: text("mime_type"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const clients = pgTable("clients", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  website: text("website"),
+  address: text("address"),
+  phone: text("phone"),
+  logo: text("logo_url"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -68,7 +68,6 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    // We'll validate the file data separately since it comes from multer
     category: z.literal("logo"),
     data: z.object({
       type: z.enum([

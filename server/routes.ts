@@ -124,10 +124,16 @@ export async function registerRoutes(app: Express) {
         clientId,
         category: req.body.category,
         name: req.body.name,
+        description: req.body.description,
         data,
         fileData,
         mimeType: req.file.mimetype,
       };
+
+      console.log('Creating brand asset:', {
+        ...assetData,
+        fileData: 'truncated'  // Don't log the actual file data
+      });
 
       // Validate the asset data
       const parsed = insertBrandAssetSchema.safeParse(assetData);
@@ -141,6 +147,7 @@ export async function registerRoutes(app: Express) {
       }
 
       const asset = await storage.createBrandAsset(parsed.data);
+      console.log('Asset created:', { id: asset.id, name: asset.name });
       res.json(asset);
     } catch (error) {
       console.error("Error creating brand asset:", error);
@@ -155,14 +162,19 @@ export async function registerRoutes(app: Express) {
       return res.status(400).json({ message: "Invalid asset ID" });
     }
 
-    const asset = await storage.getBrandAsset(assetId);
-    if (!asset || !asset.fileData) {
-      return res.status(404).json({ message: "Asset not found" });
-    }
+    try {
+      const asset = await storage.getBrandAsset(assetId);
+      if (!asset || !asset.fileData) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
 
-    const buffer = Buffer.from(asset.fileData, 'base64');
-    res.setHeader('Content-Type', asset.mimeType);
-    res.send(buffer);
+      const buffer = Buffer.from(asset.fileData, 'base64');
+      res.setHeader('Content-Type', asset.mimeType);
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error serving asset file:", error);
+      res.status(500).json({ message: "Error serving asset file" });
+    }
   });
 
   return httpServer;
