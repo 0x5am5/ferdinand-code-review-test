@@ -9,18 +9,25 @@ import { Link } from "wouter";
 export default function Dashboard() {
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/auth/me"],
+    onSuccess: (data) => {
+      console.log("User data:", data);
+      console.log("User role:", data?.role);
+    },
   });
 
   // For admin users, fetch all clients
   const { data: clients, isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
-    enabled: !!user && user.role === "admin", // Make sure user exists before checking role
+    enabled: !!user && user.role === "admin",
+    onSuccess: (data) => {
+      console.log("Clients data:", data);
+    },
   });
 
   // For regular users, fetch their assigned client
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ["/api/clients/current"],
-    enabled: !!user && user.role !== "admin", // Make sure user exists before checking role
+    enabled: !!user && user.role !== "admin",
   });
 
   if (userLoading) {
@@ -30,6 +37,9 @@ export default function Dashboard() {
   if (!user) return null;
 
   const isAdmin = user.role === "admin";
+  console.log("Is admin:", isAdmin);
+  console.log("Clients loaded:", clients);
+
   const isLoading = isAdmin ? clientsLoading : clientLoading;
 
   return (
