@@ -14,9 +14,9 @@ const navigation = [
 ];
 
 const brandNavigation = [
-  { name: "Logos", href: "/clients/:id/logos", icon: Image },
-  { name: "Colors", href: "/clients/:id/colors", icon: Palette },
-  { name: "Typography", href: "/clients/:id/typography", icon: Type },
+  { name: "Logos", href: "/client/:id", icon: Image },
+  { name: "Colors", href: "/client/:id/colors", icon: Palette },
+  { name: "Typography", href: "/client/:id/typography", icon: Type },
 ];
 
 const adminNavigation = [
@@ -30,7 +30,7 @@ export function Sidebar() {
   });
 
   // Extract client ID from location if we're in a client-specific route
-  const clientId = location.match(/\/clients\/(\d+)/)?.[1];
+  const clientId = location.match(/\/client\/(\d+)/)?.[1];
 
   return (
     <div className="flex h-screen flex-col border-r bg-background">

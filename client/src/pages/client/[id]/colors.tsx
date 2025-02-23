@@ -1,6 +1,6 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery } from "@tanstack/react-query";
-import { Client, BrandAsset } from "@shared/schema";
+import { BrandAsset } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useParams } from "wouter";
 import { AssetCard } from "@/components/brand/asset-card";
