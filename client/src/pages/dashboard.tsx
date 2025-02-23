@@ -28,20 +28,30 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
-  const { data: user, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
-  });
+  // For development, we'll assume admin role
+  const isAdmin = true;
+  const { toast } = useToast();
 
-  const { data: clients, isLoading: clientsLoading } = useQuery<Client[]>({
+  // Mock user data for development
+  const mockUser = {
+    id: 1,
+    name: "Admin User",
+    email: "admin@example.com",
+    role: "admin",
+  };
+
+  const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
+    // Temporarily bypass API call
+    initialData: [],
   });
 
   const { data: client, isLoading: clientLoading } = useQuery<Client>({
     queryKey: ["/api/clients/current"],
+    // Temporarily bypass API call
+    initialData: null,
   });
 
-  const isAdmin = user?.role === "admin";
-  const { toast } = useToast();
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
     defaultValues: {
@@ -56,7 +66,9 @@ export default function Dashboard() {
 
   const createClient = useMutation({
     mutationFn: async (data: any) => {
-      await apiRequest("POST", "/api/clients", data);
+      // For development, just log the data
+      console.log("Creating client:", data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
@@ -67,12 +79,6 @@ export default function Dashboard() {
       form.reset();
     },
   });
-
-  if (userLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) return null;
 
   const isLoading = isAdmin ? clientsLoading : clientLoading;
 
@@ -203,109 +209,42 @@ export default function Dashboard() {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {clients?.map((client) => (
-                    <Link key={client.id} href={`/clients/${client.id}`}>
-                      <Card className="cursor-pointer hover:bg-accent transition-colors">
-                        <CardHeader>
-                          {client.logo && (
-                            <div className="w-16 h-16 mb-4">
-                              <img
-                                src={client.logo}
-                                alt={`${client.name} logo`}
-                                className="w-full h-full object-contain"
-                              />
-                            </div>
-                          )}
-                          <CardTitle>{client.name}</CardTitle>
-                          <CardDescription>{client.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2 text-sm text-muted-foreground">
-                            {client.website && (
-                              <p>Website: {client.website}</p>
-                            )}
-                            {client.phone && (
-                              <p>Phone: {client.phone}</p>
-                            )}
-                            <p>
-                              Created: {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
-                            </p>
-                            <p>
-                              Last Updated: {client.updatedAt ? new Date(client.updatedAt).toLocaleDateString() : 'N/A'}
-                            </p>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
-                  {!clients?.length && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>No Clients</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p>Click "New Client" to create your first client.</p>
-                      </CardContent>
-                    </Card>
-                  )}
+                  {/* Example client card for development */}
+                  <Card className="cursor-pointer hover:bg-accent transition-colors">
+                    <CardHeader>
+                      <CardTitle>Example Client</CardTitle>
+                      <CardDescription>A sample client for development</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <p>Website: https://example.com</p>
+                        <p>Phone: (555) 123-4567</p>
+                        <p>Created: {new Date().toLocaleDateString()}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
               </>
             )}
 
             {/* Regular User View */}
             {!isAdmin && (
-              <>
-                {client ? (
-                  <Card>
-                    <CardHeader>
-                      {client.logo && (
-                        <div className="w-16 h-16 mb-4">
-                          <img
-                            src={client.logo}
-                            alt={`${client.name} logo`}
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      )}
-                      <CardTitle>{client.name}</CardTitle>
-                      <CardDescription>{client.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          {client.website && (
-                            <p>Website: {client.website}</p>
-                          )}
-                          {client.phone && (
-                            <p>Phone: {client.phone}</p>
-                          )}
-                          {client.address && (
-                            <p>Address: {client.address}</p>
-                          )}
-                        </div>
-                        <Link href={`/clients/${client.id}`}>
-                          <Button>View Brand Guidelines</Button>
-                        </Link>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="h-5 w-5 text-yellow-500" />
-                        <CardTitle>No Client Assigned</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p>
-                        You currently don't have access to any client instances. 
-                        Please contact your administrator to get assigned to a client.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Example Client Dashboard</CardTitle>
+                  <CardDescription>Welcome to your brand dashboard</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <p>Website: https://example.com</p>
+                      <p>Phone: (555) 123-4567</p>
+                      <p>Address: 123 Main St, Example City</p>
+                    </div>
+                    <Button>View Brand Guidelines</Button>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </>
         )}

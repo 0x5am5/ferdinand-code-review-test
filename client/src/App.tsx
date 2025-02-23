@@ -17,32 +17,14 @@ function ProtectedRoute({
   component: React.ComponentType;
   adminOnly?: boolean;
 }) {
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
-  });
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <Redirect to="/login" />;
-  }
-
-  if (adminOnly && user.role !== "admin") {
-    return <Redirect to="/dashboard" />;
-  }
-
+  // Temporarily return the component directly for development
   return <Component />;
 }
 
 function Router() {
   const [location] = useLocation();
-  const { data: user } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
-  });
 
-  // Always redirect to dashboard
+  // Always redirect to dashboard from root
   if (location === "/") {
     return <Redirect to="/dashboard" />;
   }
