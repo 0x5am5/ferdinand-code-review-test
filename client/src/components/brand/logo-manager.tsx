@@ -58,13 +58,13 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload logo");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to upload logo");
       }
 
       return response.json();
     },
     onSuccess: () => {
-      // Update query key to match the one used in client details page
       queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "assets"] });
       toast({
         title: "Success",
@@ -194,7 +194,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                       <Button variant="secondary" size="sm" asChild className="w-full">
                         <a
                           href={`/api/assets/${logo.id}/file`}
-                          download={logo.name + '.' + (logo.data as any).format}
+                          download={`${logo.name}.${(logo.data as any).format}`}
                         >
                           <Download className="mr-2 h-4 w-4" />
                           Download {(logo.data as any).format.toUpperCase()}
