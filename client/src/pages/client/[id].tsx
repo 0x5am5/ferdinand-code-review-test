@@ -6,6 +6,7 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useParams } from "wouter";
 import { AssetCard } from "@/components/brand/asset-card";
+import { LogoManager } from "@/components/brand/logo-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ClientDetails() {
@@ -97,24 +98,8 @@ export default function ClientDetails() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="logos" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {logoAssets.map(asset => (
-                <AssetCard key={asset.id} asset={asset} />
-              ))}
-              {logoAssets.length === 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>No Logos</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">
-                      No logo assets have been added yet.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+          <TabsContent value="logos">
+            <LogoManager clientId={clientId} logos={logoAssets} />
           </TabsContent>
 
           <TabsContent value="colors" className="space-y-6">
