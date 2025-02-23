@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Download } from "lucide-react";
 import {
   Dialog,
@@ -45,12 +44,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('name', logoName);
-      formData.append('category', 'logo');
-      formData.append('data', JSON.stringify({
-        type: selectedType,
-        format: selectedFile.name.split('.').pop()?.toLowerCase(),
-        fileName: selectedFile.name,
-      }));
+      formData.append('type', selectedType);
 
       console.log('Uploading logo:', {
         name: logoName,
@@ -112,7 +106,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   // Group logos by type
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
-    acc[type] = logos.filter(logo => (logo.data as any).type === type);
+    acc[type] = logos.filter(logo => {
+      const data = logo.data as { type: string; format: string };
+      return data.type === type;
+    });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
 
@@ -133,7 +130,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             <DialogHeader>
               <DialogTitle>Add New Logo</DialogTitle>
               <DialogDescription>
-                Add a new logo to your brand system. Supported formats: PNG, SVG, PDF, AI, Figma
+                Add a new logo to your brand system. Supported formats: {Object.values(FILE_FORMATS).join(', ')}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -185,14 +182,14 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {Object.entries(logosByType).map(([type, logos]) => (
-          <Card key={type}>
-            <CardHeader>
-              <CardTitle>{type.charAt(0).toUpperCase() + type.slice(1)} Logo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {logos.length > 0 ? (
-                logos.map((logo) => (
+        {Object.entries(logosByType).map(([type, typeLogos]) => (
+          <div key={type} className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-4">
+              {type.charAt(0).toUpperCase() + type.slice(1)} Logo
+            </h3>
+            {typeLogos.length > 0 ? (
+              <div className="space-y-4">
+                {typeLogos.map((logo) => (
                   <div key={logo.id} className="space-y-4">
                     <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center p-4">
                       <img
@@ -206,24 +203,27 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                       />
                     </div>
                     <div>
-                      <h3 className="font-medium mb-2">{logo.name}</h3>
+                      <h4 className="font-medium">{logo.name}</h4>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Format: {(logo.data as any).format?.toUpperCase()}
+                      </p>
                       <Button variant="secondary" size="sm" asChild className="w-full">
                         <a
                           href={`/api/assets/${logo.id}/file`}
                           download={`${logo.name}.${(logo.data as any).format}`}
                         >
                           <Download className="mr-2 h-4 w-4" />
-                          Download {(logo.data as any).format.toUpperCase()}
+                          Download
                         </a>
                       </Button>
                     </div>
                   </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground">No {type} logo added yet</p>
-              )}
-            </CardContent>
-          </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground">No {type} logo added yet</p>
+            )}
+          </div>
         ))}
       </div>
     </div>

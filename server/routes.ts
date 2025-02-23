@@ -113,26 +113,28 @@ export async function registerRoutes(app: Express) {
     }
 
     try {
-      // Parse the data field which was sent as a string
-      const data = JSON.parse(req.body.data);
-
       // Convert file buffer to base64
       const fileData = req.file.buffer.toString('base64');
+      const fileFormat = req.file.originalname.split('.').pop()?.toLowerCase();
 
       // Construct the asset data
       const assetData = {
         clientId,
-        category: req.body.category,
+        category: "logo",
         name: req.body.name,
         description: req.body.description,
-        data,
+        data: {
+          type: req.body.type,
+          format: fileFormat,
+          fileName: req.file.originalname
+        },
         fileData,
         mimeType: req.file.mimetype,
       };
 
       console.log('Creating brand asset:', {
         ...assetData,
-        fileData: 'truncated'  // Don't log the actual file data
+        fileData: '[truncated]'
       });
 
       // Validate the asset data
@@ -169,7 +171,7 @@ export async function registerRoutes(app: Express) {
       }
 
       const buffer = Buffer.from(asset.fileData, 'base64');
-      res.setHeader('Content-Type', asset.mimeType);
+      res.setHeader('Content-Type', asset.mimeType || 'application/octet-stream');
       res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);

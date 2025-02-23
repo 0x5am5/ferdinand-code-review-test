@@ -29,7 +29,7 @@ export const brandAssets = pgTable("brand_assets", {
   }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  data: json("data").notNull(),
+  data: json("data"),
   fileData: text("file_data"),
   mimeType: text("mime_type"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -57,30 +57,24 @@ export const users = pgTable("users", {
 });
 
 // Create Zod schemas for type validation
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertClientSchema = createInsertSchema(clients).omit({ 
   id: true, 
   createdAt: true,
   updatedAt: true 
 });
 
-// Extended schema for brand assets with specific validation
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    category: z.literal("logo"),
     data: z.object({
-      type: z.enum([
-        LogoType.MAIN,
-        LogoType.VERTICAL,
-        LogoType.HORIZONTAL,
-        LogoType.SQUARE,
-        LogoType.APP_ICON,
-        LogoType.FAVICON,
-      ]),
+      type: z.enum(Object.values(LogoType) as [string, ...string[]]),
       format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
       fileName: z.string(),
-    }),
+    }).optional(),
+    fileData: z.string().optional(),
+    mimeType: z.string().optional(),
   });
 
 // Export types
