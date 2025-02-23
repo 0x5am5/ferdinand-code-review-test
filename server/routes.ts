@@ -85,6 +85,9 @@ export async function registerRoutes(app: Express) {
     }
 
     const clientId = parseInt(req.params.id);
+    if (isNaN(clientId)) {
+      return res.status(400).json({ message: "Invalid client ID" });
+    }
     const client = await storage.getClient(clientId);
 
     if (!client) {
