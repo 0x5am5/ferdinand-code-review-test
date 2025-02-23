@@ -1,7 +1,10 @@
 import { 
   type User, type Client, type BrandAsset,
-  type InsertUser, type InsertClient, type InsertBrandAsset 
+  type InsertUser, type InsertClient, type InsertBrandAsset,
+  users, clients, brandAssets
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -14,71 +17,50 @@ export interface IStorage {
   createBrandAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private clients: Map<number, Client>;
-  private brandAssets: Map<number, BrandAsset>;
-  private currentUserId: number;
-  private currentClientId: number;
-  private currentAssetId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.clients = new Map();
-    this.brandAssets = new Map();
-    this.currentUserId = 1;
-    this.currentClientId = 1;
-    this.currentAssetId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.email === email
-    );
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getClient(id: number): Promise<Client | undefined> {
-    return this.clients.get(id);
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client;
   }
 
   async getClients(): Promise<Client[]> {
-    return Array.from(this.clients.values());
+    return await db.select().from(clients);
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
-    const id = this.currentClientId++;
-    const client: Client = { 
-      ...insertClient, 
-      id, 
-      createdAt: new Date().toISOString()
-    };
-    this.clients.set(id, client);
+    const [client] = await db.insert(clients).values(insertClient).returning();
     return client;
   }
 
   async getBrandAssets(clientId: number): Promise<BrandAsset[]> {
-    return Array.from(this.brandAssets.values()).filter(
-      (asset) => asset.clientId === clientId
-    );
+    return await db
+      .select()
+      .from(brandAssets)
+      .where(eq(brandAssets.clientId, clientId));
   }
 
   async createBrandAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {
-    const id = this.currentAssetId++;
-    const asset: BrandAsset = { ...insertAsset, id };
-    this.brandAssets.set(id, asset);
+    const [asset] = await db
+      .insert(brandAssets)
+      .values(insertAsset)
+      .returning();
     return asset;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Instances from "@/pages/admin/instances";
+import ClientDetails from "@/pages/client/[id]";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 
@@ -47,7 +48,7 @@ function Router() {
   // Redirect from root to appropriate page based on auth status and role
   if (location === "/") {
     if (!user) return <Redirect to="/login" />;
-    return <Redirect to={user.role === "admin" ? "/admin/instances" : "/dashboard"} />;
+    return <Redirect to="/dashboard" />;
   }
 
   return (
@@ -58,6 +59,9 @@ function Router() {
       </Route>
       <Route path="/admin/instances">
         <ProtectedRoute component={Instances} adminOnly />
+      </Route>
+      <Route path="/clients/:id">
+        <ProtectedRoute component={ClientDetails} />
       </Route>
       <Route>
         <NotFound />

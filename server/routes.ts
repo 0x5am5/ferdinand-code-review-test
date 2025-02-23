@@ -74,6 +74,31 @@ export async function registerRoutes(app: Express) {
     res.json(clients);
   });
 
+  app.get("/api/clients/:id", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const clientId = parseInt(req.params.id);
+    const client = await storage.getClient(clientId);
+
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    // Only allow access if user is admin or assigned to this client
+    if (user.role !== "admin" && user.clientId !== clientId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    res.json(client);
+  });
+
   app.post("/api/clients", async (req, res) => {
     if (!req.session.userId) {
       return res.status(401).json({ message: "Not authenticated" });
@@ -113,6 +138,27 @@ export async function registerRoutes(app: Express) {
     }
 
     res.json(client);
+  });
+
+  app.get("/api/clients/:id/assets", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    const clientId = parseInt(req.params.id);
+
+    // Only allow access if user is admin or assigned to this client
+    if (user.role !== "admin" && user.clientId !== clientId) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const assets = await storage.getBrandAssets(clientId);
+    res.json(assets);
   });
 
   return httpServer;
