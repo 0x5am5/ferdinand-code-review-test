@@ -76,8 +76,7 @@ export default function Dashboard() {
 
   if (!user) return null;
 
-  const isAdmin = user.role === "admin";
-  const isLoading = isAdmin ? clientsLoading : clientLoading;
+  const isLoading = user.role === "admin" ? clientsLoading : clientLoading;
 
   return (
     <div className="flex h-screen">
