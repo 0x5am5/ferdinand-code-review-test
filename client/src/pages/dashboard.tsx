@@ -51,7 +51,7 @@ export default function Dashboard() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm text-muted-foreground">
-                      Created {new Date(client.createdAt).toLocaleDateString()}
+                      Created {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
                     </p>
                   </CardContent>
                 </Card>
