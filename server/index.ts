@@ -72,8 +72,23 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  const PORT = 5000;
-  server.listen(PORT, "0.0.0.0", () => {
-    log(`serving on port ${PORT}`);
-  });
+  const ports = [5000, 5001, 5002, 5003];
+  const tryPort = (index = 0) => {
+    if (index >= ports.length) {
+      throw new Error("No available ports");
+    }
+    const PORT = ports[index];
+    server.listen(PORT, "0.0.0.0")
+      .on("error", (err: any) => {
+        if (err.code === "EADDRINUSE") {
+          tryPort(index + 1);
+        } else {
+          throw err;
+        }
+      })
+      .on("listening", () => {
+        log(`serving on port ${PORT}`);
+      });
+  };
+  tryPort();
 })();
