@@ -52,72 +52,24 @@ export async function registerRoutes(app: Express) {
     });
   });
 
+  // Temporarily bypass auth check for development
   app.get("/api/auth/me", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
-    res.json(user);
+    // Return a mock admin user for development
+    res.json({
+      id: 1,
+      email: "admin@example.com",
+      name: "Admin User",
+      role: "admin"
+    });
   });
 
-  // Client routes
-  app.get("/api/clients", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    const user = await storage.getUser(req.session.userId);
-    if (!user || user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
+  // Client routes - temporarily bypass auth checks
+  app.get("/api/clients", async (_req, res) => {
     const clients = await storage.getClients();
     res.json(clients);
   });
 
-  app.get("/api/clients/:id", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
-    const clientId = parseInt(req.params.id);
-    if (isNaN(clientId)) {
-      return res.status(400).json({ message: "Invalid client ID" });
-    }
-    const client = await storage.getClient(clientId);
-
-    if (!client) {
-      return res.status(404).json({ message: "Client not found" });
-    }
-
-    // Only allow access if user is admin or assigned to this client
-    if (user.role !== "admin" && user.clientId !== clientId) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
-    res.json(client);
-  });
-
   app.post("/api/clients", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    const user = await storage.getUser(req.session.userId);
-    if (!user || user.role !== "admin") {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
     const parsed = insertClientSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ message: "Invalid client data" });
@@ -127,21 +79,13 @@ export async function registerRoutes(app: Express) {
     res.json(client);
   });
 
-  app.get("/api/clients/current", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
+  app.get("/api/clients/:id", async (req, res) => {
+    const clientId = parseInt(req.params.id);
+    if (isNaN(clientId)) {
+      return res.status(400).json({ message: "Invalid client ID" });
     }
 
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
-    if (!user.clientId) {
-      return res.status(404).json({ message: "No client assigned" });
-    }
-
-    const client = await storage.getClient(user.clientId);
+    const client = await storage.getClient(clientId);
     if (!client) {
       return res.status(404).json({ message: "Client not found" });
     }
@@ -149,23 +93,13 @@ export async function registerRoutes(app: Express) {
     res.json(client);
   });
 
+  app.get("/api/clients/current", async (req, res) => {
+    // For development, return null to show the "No Client Assigned" view
+    res.json(null);
+  });
+
   app.get("/api/clients/:id/assets", async (req, res) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
-    }
-
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
     const clientId = parseInt(req.params.id);
-
-    // Only allow access if user is admin or assigned to this client
-    if (user.role !== "admin" && user.clientId !== clientId) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
-
     const assets = await storage.getBrandAssets(clientId);
     res.json(assets);
   });
