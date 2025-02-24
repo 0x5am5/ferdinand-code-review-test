@@ -1,6 +1,4 @@
 import type { Express } from "express";
-import { storage } from "./storage";
-import { insertClientSchema } from "@shared/schema";
 
 export function registerRoutes(app: Express) {
   // Basic test route
@@ -9,10 +7,10 @@ export function registerRoutes(app: Express) {
   });
 
   // Auth routes - simplified for testing
-  app.get("/api/auth/me", async (req, res) => {
+  app.get("/api/auth/me", async (_req, res) => {
     res.json({
       id: 1,
-      email: "admin@example.com",
+      email: "admin@example.com", 
       name: "Admin User",
       role: "admin"
     });

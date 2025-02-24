@@ -11,15 +11,39 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Create HTTP server first
-const server = createServer(app);
+let server: ReturnType<typeof createServer> | null = null;
 
-// Register API routes
-registerRoutes(app);
+// Cleanup handler
+function cleanup() {
+  if (server) {
+    server.close(() => {
+      console.log('Server shut down complete');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+}
 
-// Initialize server
+// Handle cleanup for various signals
+process.on('SIGTERM', cleanup);
+process.on('SIGINT', cleanup);
+process.on('SIGUSR2', cleanup); // Handle nodemon restart
+
 async function startServer() {
   try {
+    // Close existing server if any
+    if (server) {
+      await new Promise<void>((resolve) => server!.close(() => resolve()));
+      server = null;
+    }
+
+    // Create new server instance
+    server = createServer(app);
+
+    // Register routes
+    registerRoutes(app);
+
     // Setup middleware based on environment
     if (process.env.NODE_ENV !== "production") {
       await setupVite(app, server);
@@ -27,22 +51,39 @@ async function startServer() {
       serveStatic(app);
     }
 
-    return new Promise((resolve, reject) => {
-      server.listen(5000, "0.0.0.0")
-        .once('listening', () => {
+    // Start server with proper error handling
+    await new Promise<void>((resolve, reject) => {
+      try {
+        server!.listen(5000, "0.0.0.0", () => {
           console.log("Server started on port 5000");
-          log(`Server listening at http://0.0.0.0:5000`); //Added log statement from original
-          resolve(null);
-        })
-        .once('error', (err: any) => {
-          console.error("Server startup error:", err);
-          reject(err);
-        }); //Improved error handling
+          log(`Server listening at http://0.0.0.0:5000`);
+          resolve();
+        });
+
+        server!.on('error', (error: NodeJS.ErrnoException) => {
+          if (error.code === 'EADDRINUSE') {
+            console.error('Port 5000 is already in use. Please free up the port and try again.');
+            process.exit(1);
+          } else {
+            reject(error);
+          }
+        });
+      } catch (err) {
+        reject(err);
+      }
     });
+
   } catch (err) {
     console.error("Server startup error:", err);
     process.exit(1);
   }
 }
 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  cleanup();
+});
+
+// Start the server
 startServer();
