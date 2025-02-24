@@ -47,7 +47,18 @@ export default function Dashboard() {
   // Temporary: Set admin view for testing
   const isAdmin = true;
 
-  const filteredAndSortedClients = clients;
+  const filteredAndSortedClients = [...clients]
+    .filter((client) =>
+      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      client.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a.name.localeCompare(b.name);
+      } else {
+        return b.name.localeCompare(a.name);
+      }
+    });
 
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
