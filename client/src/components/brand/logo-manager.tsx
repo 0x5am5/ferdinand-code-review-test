@@ -12,13 +12,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandAsset, LogoType, FILE_FORMATS } from "@shared/schema";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -27,9 +20,14 @@ interface LogoManagerProps {
   logos: BrandAsset[];
 }
 
-export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<string>(LogoType.MAIN);
+interface UploadDialogProps {
+  type: string;
+  clientId: number;
+  onSuccess: () => void;
+}
+
+function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [logoName, setLogoName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
@@ -44,7 +42,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('name', logoName);
-      formData.append('type', selectedType);
+      formData.append('type', type);
 
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: 'POST',
@@ -62,15 +60,14 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       queryClient.invalidateQueries({ 
         queryKey: ["/api/clients", clientId, "assets"]
       });
-
       toast({
         title: "Success",
         description: "Logo added successfully",
       });
-
-      setDialogOpen(false);
+      setIsOpen(false);
       setLogoName("");
       setSelectedFile(null);
+      onSuccess();
     },
     onError: (error: Error) => {
       toast({
@@ -98,24 +95,15 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     setSelectedFile(file);
   };
 
-  // Group logos by type
-  const logosByType = Object.values(LogoType).reduce((acc, type) => {
-    acc[type] = logos.filter(logo => {
-      const data = logo.data as { type: string; format: string };
-      return data?.type === type;
-    });
-    return acc;
-  }, {} as Record<string, BrandAsset[]>);
-
-  const UploadDialog = ({ type }: { type: string }) => (
-    <Dialog>
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="w-full">
           <Upload className="mr-2 h-4 w-4" />
           Upload {type} Logo
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Upload {type} Logo</DialogTitle>
           <DialogDescription>
@@ -130,6 +118,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
               value={logoName}
               onChange={(e) => setLogoName(e.target.value)}
               placeholder={`e.g., ${type} Logo`}
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
           <div>
@@ -138,12 +127,13 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
               type="file"
               accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(',')}
               onChange={handleFileChange}
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
           <Button
             className="w-full"
-            onClick={() => {
-              setSelectedType(type);
+            onClick={(e) => {
+              e.stopPropagation();
               createLogo.mutate();
             }}
             disabled={createLogo.isPending || !selectedFile || !logoName}
@@ -154,6 +144,17 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       </DialogContent>
     </Dialog>
   );
+}
+
+export function LogoManager({ clientId, logos }: LogoManagerProps) {
+  // Group logos by type
+  const logosByType = Object.values(LogoType).reduce((acc, type) => {
+    acc[type] = logos.filter(logo => {
+      const data = logo.data as { type: string; format: string };
+      return data?.type === type;
+    });
+    return acc;
+  }, {} as Record<string, BrandAsset[]>);
 
   return (
     <div className="space-y-8">
@@ -168,7 +169,13 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
               <h3 className="text-xl font-semibold">
                 {type.charAt(0).toUpperCase() + type.slice(1)} Logo
               </h3>
-              <UploadDialog type={type} />
+              <UploadDialog 
+                type={type} 
+                clientId={clientId} 
+                onSuccess={() => {
+                  // Additional success handling if needed
+                }}
+              />
             </div>
 
             {typeLogos.length > 0 ? (
