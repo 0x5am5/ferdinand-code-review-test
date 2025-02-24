@@ -118,7 +118,7 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
           Upload {type} Logo
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Upload {type} Logo</DialogTitle>
           <DialogDescription>
@@ -133,7 +133,6 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
               value={logoName}
               onChange={(e) => setLogoName(e.target.value)}
               placeholder={`e.g., ${type} Logo`}
-              onClick={(e) => e.stopPropagation()}
             />
           </div>
           <div>
@@ -142,15 +141,11 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
               type="file"
               accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(',')}
               onChange={handleFileChange}
-              onClick={(e) => e.stopPropagation()}
             />
           </div>
           <Button
             className="w-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              createLogo.mutate();
-            }}
+            onClick={() => createLogo.mutate()}
             disabled={createLogo.isPending || !selectedFile || !logoName}
           >
             {createLogo.isPending ? "Uploading..." : "Upload Logo"}
