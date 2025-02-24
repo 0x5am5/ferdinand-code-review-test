@@ -74,17 +74,27 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
+      // Parse the file extension from the original filename
+      const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
+
       const asset = await storage.createAsset({
         clientId,
         name,
         category: 'logo',
         data: {
           type,
-          format: file.originalname.split('.').pop(),
+          format: fileExtension || 'png', // Fallback to png if extension can't be determined
           fileName: file.originalname,
         },
         fileData: file.buffer.toString('base64'),
         mimeType: file.mimetype,
+      });
+
+      console.log('Created asset:', {
+        id: asset.id,
+        name: asset.name,
+        type,
+        format: fileExtension,
       });
 
       res.status(201).json(asset);
