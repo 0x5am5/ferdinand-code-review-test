@@ -65,7 +65,6 @@ export default function Dashboard() {
 
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const form = useForm({
