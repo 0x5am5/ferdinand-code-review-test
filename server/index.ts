@@ -2,7 +2,7 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
-import { createConnection } from "net";
+import { Server } from "net";
 
 const app = express();
 app.use(express.json());
@@ -10,26 +10,21 @@ app.use(express.json());
 const findAvailablePort = (startPort: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const testPort = (port: number) => {
-      const tester = createConnection({ port: port });
+      const server = new Server();
 
-      tester.once('error', (err: any) => {
+      server.once('error', (err: any) => {
         if (err.code === 'EADDRINUSE') {
-          testPort(port + 1);
+          server.close(() => testPort(port + 1));
         } else {
           reject(err);
         }
       });
 
-      tester.once('connect', () => {
-        tester.end();
-        testPort(port + 1);
+      server.once('listening', () => {
+        server.close(() => resolve(port));
       });
 
-      tester.once('listening', () => {
-        tester.close(() => resolve(port));
-      });
-
-      tester.listen(port);
+      server.listen(port);
     };
 
     testPort(startPort);
