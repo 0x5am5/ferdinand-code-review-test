@@ -36,12 +36,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Dashboard() {
-  const isAdmin = true;
-  const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
@@ -50,19 +44,15 @@ export default function Dashboard() {
     queryKey: ["/api/clients/current"],
   });
 
-  // Filter and sort clients
-  const filteredAndSortedClients = [...clients]
-    .filter((client) =>
-      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortOrder === "asc") {
-        return a.name.localeCompare(b.name);
-      } else {
-        return b.name.localeCompare(a.name);
-      }
-    });
+  // Temporary: Set admin view for testing
+  const isAdmin = true;
+
+  const filteredAndSortedClients = clients;
+
+  const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
