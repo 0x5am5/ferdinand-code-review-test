@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -107,91 +107,88 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     return acc;
   }, {} as Record<string, BrandAsset[]>);
 
+  const UploadDialog = ({ type }: { type: string }) => (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="w-full">
+          <Upload className="mr-2 h-4 w-4" />
+          Upload {type} Logo
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Upload {type} Logo</DialogTitle>
+          <DialogDescription>
+            Add a new {type.toLowerCase()} logo to your brand system. Supported formats: {Object.values(FILE_FORMATS).join(', ')}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="name">Logo Name</Label>
+            <Input
+              id="name"
+              value={logoName}
+              onChange={(e) => setLogoName(e.target.value)}
+              placeholder={`e.g., ${type} Logo`}
+            />
+          </div>
+          <div>
+            <Label>Upload Logo</Label>
+            <Input
+              type="file"
+              accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(',')}
+              onChange={handleFileChange}
+            />
+          </div>
+          <Button
+            className="w-full"
+            onClick={() => {
+              setSelectedType(type);
+              createLogo.mutate();
+            }}
+            disabled={createLogo.isPending || !selectedFile || !logoName}
+          >
+            {createLogo.isPending ? "Uploading..." : "Upload Logo"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Logo System</h2>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Logo
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Logo</DialogTitle>
-              <DialogDescription>
-                Add a new logo to your brand system. Supported formats: {Object.values(FILE_FORMATS).join(', ')}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Logo Name</Label>
-                <Input
-                  id="name"
-                  value={logoName}
-                  onChange={(e) => setLogoName(e.target.value)}
-                  placeholder="e.g., Primary Logo"
-                />
-              </div>
-              <div>
-                <Label>Logo Type</Label>
-                <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.values(LogoType).map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Upload Logo</Label>
-                <Input
-                  type="file"
-                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(',')}
-                  onChange={handleFileChange}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={() => createLogo.mutate()}
-                disabled={createLogo.isPending || !selectedFile || !logoName}
-              >
-                {createLogo.isPending ? "Adding..." : "Add Logo"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="space-y-6">
         {Object.entries(logosByType).map(([type, typeLogos]) => (
-          <div key={type} className="border rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">
-              {type.charAt(0).toUpperCase() + type.slice(1)} Logo
-            </h3>
+          <div key={type} className="border rounded-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">
+                {type.charAt(0).toUpperCase() + type.slice(1)} Logo
+              </h3>
+              <UploadDialog type={type} />
+            </div>
+
             {typeLogos.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {typeLogos.map((logo) => (
-                  <div key={logo.id} className="space-y-4">
-                    <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center p-4">
+                  <div key={logo.id} className="border rounded-lg p-4">
+                    <div className="aspect-video rounded-lg border bg-muted flex items-center justify-center p-4 mb-4">
                       <img
                         src={`/api/assets/${logo.id}/file`}
                         alt={logo.name}
                         className="max-w-full max-h-full object-contain"
                       />
                     </div>
-                    <div>
-                      <h4 className="font-medium">{logo.name}</h4>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Format: {(logo.data as any)?.format?.toUpperCase()}
-                      </p>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium">{logo.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Format: {(logo.data as any)?.format?.toUpperCase()}
+                        </p>
+                      </div>
                       <Button variant="secondary" size="sm" asChild className="w-full">
                         <a
                           href={`/api/assets/${logo.id}/file`}
@@ -206,7 +203,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground">No {type} logo added yet</p>
+              <p className="text-muted-foreground">No {type.toLowerCase()} logo uploaded yet</p>
             )}
           </div>
         ))}
