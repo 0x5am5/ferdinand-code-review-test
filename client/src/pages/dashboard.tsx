@@ -54,7 +54,8 @@ export default function Dashboard() {
       client.description?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortOrder === "asc") {
+      const order = sortOrder || "asc";
+      if (order === "asc") {
         return a.name.localeCompare(b.name);
       } else {
         return b.name.localeCompare(a.name);
