@@ -25,7 +25,7 @@ app.use(
   })
 );
 
-// Request logging middleware with detailed error reporting
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -54,55 +54,74 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+// Global error handler
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('Error:', err);
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ message });
+});
+
+// Singleton HTTP server instance
+let server: ReturnType<typeof registerRoutes> | null = null;
+
+async function startServer() {
   try {
     console.log("Starting server initialization...");
-    const server = await registerRoutes(app);
-    console.log("Routes registered successfully");
 
-    // Error handling middleware
-    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-      console.error('Error:', err);
-      const status = err.status || err.statusCode || 500;
-      const message = err.message || "Internal Server Error";
-      res.status(status).json({ message });
-    });
-
-    // Always use port 5000 for Replit
-    const PORT = 5000;
-
-    // Check if port is in use
-    const isPortAvailable = await new Promise((resolve) => {
-      const testServer = require('http').createServer();
-      testServer.once('error', () => resolve(false));
-      testServer.once('listening', () => {
-        testServer.close();
-        resolve(true);
-      });
-      testServer.listen(PORT, '0.0.0.0');
-    });
-
-    if (!isPortAvailable) {
-      console.error(`Port ${PORT} is already in use. Attempting to kill existing process...`);
-      // Force kill any existing process on port 5000
-      await new Promise((resolve) => {
-        require('child_process').exec(`fuser -k ${PORT}/tcp`, () => resolve(null));
-      });
-      // Wait a moment for the port to be released
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    // Close existing server if any
+    if (server) {
+      await new Promise((resolve) => server?.close(resolve));
+      server = null;
     }
 
-    // Start the server
-    server.listen(PORT, "0.0.0.0", () => {
-      console.log(`Server started successfully on port ${PORT}`);
-      log(`Server ready and listening on port ${PORT}`);
-    }).on("error", (err: any) => {
-      console.error("Failed to start server:", err);
-      process.exit(1);
+    // Register routes and create HTTP server
+    server = await registerRoutes(app);
+    console.log("Routes registered successfully");
+
+    // Setup middleware based on environment
+    if (process.env.NODE_ENV !== "production") {
+      await setupVite(app, server);
+      console.log("Vite middleware setup complete");
+    } else {
+      serveStatic(app);
+      console.log("Static file serving setup complete");
+    }
+
+    // Start listening on port 5000
+    await new Promise<void>((resolve, reject) => {
+      server?.listen(5000, "0.0.0.0", () => {
+        console.log("Server started successfully on port 5000");
+        log("Server ready and listening on port 5000");
+        resolve();
+      }).on("error", (err) => {
+        console.error("Failed to start server:", err);
+        reject(err);
+      });
     });
 
   } catch (err) {
     console.error("Fatal error during server startup:", err);
     process.exit(1);
   }
-})();
+}
+
+// Handle cleanup
+process.on('SIGTERM', () => {
+  if (server) {
+    server.close(() => process.exit(0));
+  } else {
+    process.exit(0);
+  }
+});
+
+process.on('SIGINT', () => {
+  if (server) {
+    server.close(() => process.exit(0));
+  } else {
+    process.exit(0);
+  }
+});
+
+// Start the server
+startServer();
