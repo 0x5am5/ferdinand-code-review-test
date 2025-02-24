@@ -147,23 +147,11 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  console.log('Received logos:', logos); // Debug log
-
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
-      console.log('Checking logo:', logo); // Debug log
-
-      // Handle potential missing or malformed data
-      if (!logo.data) {
-        console.log('Logo missing data:', logo.id);
-        return false;
-      }
-
       try {
-        const data = logo.data as { type: string; format: string };
-        const matches = data?.type === type;
-        console.log(`Logo ${logo.id} type check:`, { type, data, matches });
-        return matches;
+        const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+        return data && data.type === type;
       } catch (error) {
         console.error('Error processing logo data:', error);
         return false;
@@ -171,8 +159,6 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
-
-  console.log('Grouped logos:', logosByType); // Debug log
 
   return (
     <div className="space-y-8">
@@ -211,16 +197,16 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                       <div>
                         <h4 className="font-medium">{logo.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          Format: {(logo.data as any)?.format?.toUpperCase()}
+                          Format: {(typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data?.format)?.toUpperCase()}
                         </p>
                       </div>
                       <Button variant="secondary" size="sm" asChild className="w-full">
                         <a
                           href={`/api/assets/${logo.id}/file`}
-                          download={`${logo.name}.${(logo.data as any)?.format}`}
+                          download={`${logo.name}.${typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data?.format}`}
                         >
                           <Download className="mr-2 h-4 w-4" />
-                          Download {(logo.data as any)?.format?.toUpperCase()}
+                          Download {(typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data?.format)?.toUpperCase()}
                         </a>
                       </Button>
                     </div>
