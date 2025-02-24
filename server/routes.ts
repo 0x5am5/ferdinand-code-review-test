@@ -8,6 +8,7 @@ import multer from "multer";
 const upload = multer();
 
 export async function registerRoutes(app: Express) {
+  // Create HTTP server instance
   const httpServer = createServer(app);
 
   // Auth routes

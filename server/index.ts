@@ -3,6 +3,7 @@ import session from "express-session";
 import memorystore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { Server } from "http";
 
 const app = express();
 app.use(express.json());
@@ -63,23 +64,17 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Singleton HTTP server instance
-let server: ReturnType<typeof registerRoutes> | null = null;
+let server: Server | null = null;
 
 async function startServer() {
   try {
     console.log("Starting server initialization...");
 
-    // Close existing server if any
-    if (server) {
-      await new Promise((resolve) => server?.close(resolve));
-      server = null;
-    }
-
     // Register routes and create HTTP server
     server = await registerRoutes(app);
     console.log("Routes registered successfully");
 
-    // Setup middleware based on environment
+    // Setup Vite middleware for development
     if (process.env.NODE_ENV !== "production") {
       await setupVite(app, server);
       console.log("Vite middleware setup complete");
@@ -89,15 +84,9 @@ async function startServer() {
     }
 
     // Start listening on port 5000
-    await new Promise<void>((resolve, reject) => {
-      server?.listen(5000, "0.0.0.0", () => {
-        console.log("Server started successfully on port 5000");
-        log("Server ready and listening on port 5000");
-        resolve();
-      }).on("error", (err) => {
-        console.error("Failed to start server:", err);
-        reject(err);
-      });
+    server.listen(5000, "0.0.0.0", () => {
+      console.log("Server started successfully on port 5000");
+      log("Server ready and listening on port 5000");
     });
 
   } catch (err) {
