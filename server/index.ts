@@ -2,14 +2,39 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
+import { createConnection } from "net";
 
 const app = express();
 app.use(express.json());
 
-// Basic health check endpoint
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+const findAvailablePort = (startPort: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const testPort = (port: number) => {
+      const tester = createConnection({ port: port });
+
+      tester.once('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          testPort(port + 1);
+        } else {
+          reject(err);
+        }
+      });
+
+      tester.once('connect', () => {
+        tester.end();
+        testPort(port + 1);
+      });
+
+      tester.once('listening', () => {
+        tester.close(() => resolve(port));
+      });
+
+      tester.listen(port);
+    };
+
+    testPort(startPort);
+  });
+};
 
 let server: ReturnType<typeof createServer> | null = null;
 
@@ -51,22 +76,20 @@ async function startServer() {
       serveStatic(app);
     }
 
+    // Find an available port starting from 5000
+    const port = await findAvailablePort(5000);
+
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       try {
-        server!.listen(5000, "0.0.0.0", () => {
-          console.log("Server started on port 5000");
-          log(`Server listening at http://0.0.0.0:5000`);
+        server!.listen(port, "0.0.0.0", () => {
+          console.log(`Server started on port ${port}`);
+          log(`Server listening at http://0.0.0.0:${port}`);
           resolve();
         });
 
         server!.on('error', (error: NodeJS.ErrnoException) => {
-          if (error.code === 'EADDRINUSE') {
-            console.error('Port 5000 is already in use. Please free up the port and try again.');
-            process.exit(1);
-          } else {
-            reject(error);
-          }
+          reject(error);
         });
       } catch (err) {
         reject(err);
