@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import memorystore from "memorystore";
 import { registerRoutes } from "./routes";
-import { log } from "./vite";
+import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
@@ -70,6 +70,29 @@ app.use((req, res, next) => {
 
     // Always use port 5000 for Replit
     const PORT = 5000;
+
+    // Check if port is in use
+    const isPortAvailable = await new Promise((resolve) => {
+      const testServer = require('http').createServer();
+      testServer.once('error', () => resolve(false));
+      testServer.once('listening', () => {
+        testServer.close();
+        resolve(true);
+      });
+      testServer.listen(PORT, '0.0.0.0');
+    });
+
+    if (!isPortAvailable) {
+      console.error(`Port ${PORT} is already in use. Attempting to kill existing process...`);
+      // Force kill any existing process on port 5000
+      await new Promise((resolve) => {
+        require('child_process').exec(`fuser -k ${PORT}/tcp`, () => resolve(null));
+      });
+      // Wait a moment for the port to be released
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Start the server
     server.listen(PORT, "0.0.0.0", () => {
       console.log(`Server started successfully on port ${PORT}`);
       log(`Server ready and listening on port ${PORT}`);
