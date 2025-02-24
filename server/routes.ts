@@ -109,14 +109,23 @@ export function registerRoutes(app: Express) {
     try {
       const assetId = parseInt(req.params.assetId);
       const asset = await storage.getAsset(assetId);
-      console.log('Fetching asset:', assetId, asset); // Debug log
 
       if (!asset || !asset.fileData) {
+        console.error('Asset not found or missing file data:', assetId);
         return res.status(404).json({ message: "Asset not found" });
       }
 
+      console.log('Serving asset:', {
+        id: asset.id,
+        name: asset.name,
+        mimeType: asset.mimeType,
+        hasFileData: !!asset.fileData
+      });
+
+      const buffer = Buffer.from(asset.fileData, 'base64');
       res.setHeader('Content-Type', asset.mimeType || 'application/octet-stream');
-      res.send(Buffer.from(asset.fileData, 'base64'));
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);
       res.status(500).json({ message: "Error serving asset file" });
