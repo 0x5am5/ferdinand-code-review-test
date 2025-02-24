@@ -29,7 +29,12 @@ interface UploadDialogProps {
 function parseBrandAssetData(logo: BrandAsset) {
   try {
     if (!logo.data) return null;
-    return typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+    const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+    if (!data.type || !data.format) {
+      console.warn('Invalid logo data format:', data);
+      return null;
+    }
+    return data;
   } catch (error) {
     console.error('Error parsing logo data:', error, logo);
     return null;
@@ -196,6 +201,8 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
               <div className="space-y-6">
                 {typeLogos.map((logo) => {
                   const parsedData = parseBrandAssetData(logo);
+                  if (!parsedData) return null;
+
                   return (
                     <div key={logo.id} className="border rounded-lg p-4">
                       <div className="aspect-video rounded-lg border bg-muted flex items-center justify-center p-4 mb-4">
@@ -209,16 +216,16 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                         <div>
                           <h4 className="font-medium">{logo.name}</h4>
                           <p className="text-sm text-muted-foreground">
-                            Format: {parsedData?.format?.toUpperCase()}
+                            Format: {parsedData.format?.toUpperCase()}
                           </p>
                         </div>
                         <Button variant="secondary" size="sm" asChild className="w-full">
                           <a
                             href={`/api/assets/${logo.id}/file`}
-                            download={`${logo.name}.${parsedData?.format}`}
+                            download={`${logo.name}.${parsedData.format}`}
                           >
                             <Download className="mr-2 h-4 w-4" />
-                            Download {parsedData?.format?.toUpperCase()}
+                            Download {parsedData.format?.toUpperCase()}
                           </a>
                         </Button>
                       </div>

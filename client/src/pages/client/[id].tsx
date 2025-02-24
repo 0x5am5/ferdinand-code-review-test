@@ -15,14 +15,14 @@ export default function ClientDetails() {
 
   const { data: client, isLoading: isLoadingClient } = useQuery<Client>({
     queryKey: ["/api/clients", clientId],
-    refetchOnWindowFocus: true,
   });
 
   const { data: assets = [], isLoading: isLoadingAssets } = useQuery<BrandAsset[]>({
     queryKey: ["/api/clients", clientId, "assets"],
-    refetchOnWindowFocus: true,
-    refetchInterval: 5000, // Refetch every 5 seconds to ensure we have the latest data
+    enabled: !!clientId,
   });
+
+  console.log('Fetched all assets:', assets); // Debug log
 
   if (isLoadingClient || isLoadingAssets) {
     return (
@@ -61,10 +61,15 @@ export default function ClientDetails() {
     );
   }
 
-  // Group assets by category
-  const logoAssets = assets.filter(asset => asset.category === 'logo');
-  const colorAssets = assets.filter(asset => asset.category === 'color');
-  const typographyAssets = assets.filter(asset => asset.category === 'typography');
+  // Filter assets by category
+  const logoAssets = assets.filter(asset => {
+    console.log('Checking asset:', asset); // Debug individual assets
+    return asset.category === 'logo';
+  });
+  const colorAssets = assets.filter(asset => asset.category === 'color') || [];
+  const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
+
+  console.log('Filtered logo assets:', logoAssets); // Debug filtered logos
 
   return (
     <div className="flex h-screen">
@@ -105,12 +110,13 @@ export default function ClientDetails() {
             <LogoManager clientId={clientId} logos={logoAssets} />
           </TabsContent>
 
-          <TabsContent value="colors" className="space-y-6">
+          <TabsContent value="colors">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {colorAssets.map(asset => (
-                <AssetCard key={asset.id} asset={asset} />
-              ))}
-              {colorAssets.length === 0 && (
+              {colorAssets.length > 0 ? (
+                colorAssets.map(asset => (
+                  <AssetCard key={asset.id} asset={asset} />
+                ))
+              ) : (
                 <Card>
                   <CardHeader>
                     <CardTitle>No Colors</CardTitle>
@@ -125,12 +131,13 @@ export default function ClientDetails() {
             </div>
           </TabsContent>
 
-          <TabsContent value="typography" className="space-y-6">
+          <TabsContent value="typography">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {typographyAssets.map(asset => (
-                <AssetCard key={asset.id} asset={asset} />
-              ))}
-              {typographyAssets.length === 0 && (
+              {typographyAssets.length > 0 ? (
+                typographyAssets.map(asset => (
+                  <AssetCard key={asset.id} asset={asset} />
+                ))
+              ) : (
                 <Card>
                   <CardHeader>
                     <CardTitle>No Typography</CardTitle>
