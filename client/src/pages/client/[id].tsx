@@ -22,8 +22,6 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  console.log('Fetched all assets:', assets); // Debug log
-
   if (isLoadingClient || isLoadingAssets) {
     return (
       <div className="flex h-screen">
@@ -61,22 +59,17 @@ export default function ClientDetails() {
     );
   }
 
-  // Filter assets by category and debug the filtering process
+  // Log assets for debugging
+  console.log('Fetched assets:', assets);
+
   const logoAssets = assets.filter(asset => {
-    const isLogo = asset.category === 'logo';
-    console.log('Asset:', {
-      id: asset.id,
-      category: asset.category,
-      isLogo,
-      data: asset.data
-    });
-    return isLogo;
+    console.log('Checking asset:', asset);
+    return asset.category === 'logo';
   });
+  const colorAssets = assets.filter(asset => asset.category === 'color');
+  const typographyAssets = assets.filter(asset => asset.category === 'typography');
 
-  const colorAssets = assets.filter(asset => asset.category === 'color') || [];
-  const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
-
-  console.log('Filtered logo assets:', logoAssets); // Debug filtered logos
+  console.log('Filtered logo assets:', logoAssets);
 
   return (
     <div className="flex h-screen">
@@ -113,7 +106,7 @@ export default function ClientDetails() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="logos">
+          <TabsContent value="logos" className="mt-6">
             <LogoManager clientId={clientId} logos={logoAssets} />
           </TabsContent>
 

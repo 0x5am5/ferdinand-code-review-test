@@ -27,13 +27,7 @@ interface UploadDialogProps {
 }
 
 function LogoDisplay({ logo }: { logo: BrandAsset }) {
-  const { data, fileData, mimeType, name } = logo;
-  const logoData = typeof data === 'string' ? JSON.parse(data) : data;
-
-  if (!logoData || !fileData) {
-    console.error('Invalid logo data:', { logo, logoData });
-    return null;
-  }
+  console.log('LogoDisplay received:', logo);
 
   const imageUrl = `/api/assets/${logo.id}/file`;
 
@@ -42,7 +36,7 @@ function LogoDisplay({ logo }: { logo: BrandAsset }) {
       <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center p-4 mb-4 overflow-hidden">
         <img
           src={imageUrl}
-          alt={name}
+          alt={logo.name}
           className="max-w-full max-h-full object-contain"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
@@ -52,22 +46,26 @@ function LogoDisplay({ logo }: { logo: BrandAsset }) {
       </div>
       <div className="space-y-4">
         <div>
-          <h4 className="font-medium">{name}</h4>
-          <p className="text-sm text-muted-foreground">
-            Type: {logoData.type}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Format: {logoData.format?.toUpperCase()}
-          </p>
+          <h4 className="font-medium">{logo.name}</h4>
+          {logo.data && (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Type: {typeof logo.data === 'string' ? JSON.parse(logo.data).type : logo.data.type}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Format: {(typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data.format)?.toUpperCase()}
+              </p>
+            </>
+          )}
         </div>
         <Button variant="secondary" size="sm" asChild className="w-full">
           <a
             href={imageUrl}
-            download={`${name}.${logoData.format}`}
+            download={`${logo.name}.${typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data.format}`}
             className="flex items-center justify-center"
           >
             <Download className="mr-2 h-4 w-4" />
-            Download {logoData.format?.toUpperCase()}
+            Download
           </a>
         </Button>
       </div>
@@ -196,7 +194,9 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
       const logoData = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
-      return logoData?.type === type;
+      const isMatch = logoData?.type === type;
+      console.log(`Checking logo ${logo.id} for type ${type}:`, { logoData, isMatch });
+      return isMatch;
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
