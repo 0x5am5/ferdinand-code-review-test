@@ -49,15 +49,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getClientAssets(clientId: number): Promise<BrandAsset[]> {
-    return await db
+    const assets = await db
       .select()
       .from(brandAssets)
       .where(eq(brandAssets.clientId, clientId));
+
+    return assets.map(asset => ({
+      ...asset,
+      data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
+    }));
   }
 
   async getAsset(id: number): Promise<BrandAsset | undefined> {
-    const [asset] = await db.select().from(brandAssets).where(eq(brandAssets.id, id));
-    return asset;
+    const [asset] = await db
+      .select()
+      .from(brandAssets)
+      .where(eq(brandAssets.id, id));
+
+    if (!asset) return undefined;
+
+    return {
+      ...asset,
+      data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
+    };
   }
 
   async createAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {
@@ -65,7 +79,11 @@ export class DatabaseStorage implements IStorage {
       .insert(brandAssets)
       .values(insertAsset)
       .returning();
-    return asset;
+
+    return {
+      ...asset,
+      data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
+    };
   }
 }
 

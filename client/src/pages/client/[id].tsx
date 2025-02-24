@@ -61,11 +61,18 @@ export default function ClientDetails() {
     );
   }
 
-  // Filter assets by category
+  // Filter assets by category and debug the filtering process
   const logoAssets = assets.filter(asset => {
-    console.log('Checking asset:', asset); // Debug individual assets
-    return asset.category === 'logo';
+    const isLogo = asset.category === 'logo';
+    console.log('Asset:', {
+      id: asset.id,
+      category: asset.category,
+      isLogo,
+      data: asset.data
+    });
+    return isLogo;
   });
+
   const colorAssets = assets.filter(asset => asset.category === 'color') || [];
   const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
 

@@ -27,7 +27,11 @@ export const brandAssets = pgTable("brand_assets", {
   category: text("category", { 
     enum: ["logo", "color", "typography"] 
   }).notNull(),
-  data: json("data"),
+  data: json("data").$type<{
+    type: string;
+    format: string;
+    fileName: string;
+  }>(),
   fileData: text("file_data"),
   mimeType: text("mime_type"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -68,14 +72,6 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
     mimeType: z.string(),
   });
 
-// Export types
-export type User = typeof users.$inferSelect;
-export type Client = typeof clients.$inferSelect;
-export type BrandAsset = typeof brandAssets.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertClient = z.infer<typeof insertClientSchema>;
-export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
-
 export const insertClientSchema = createInsertSchema(clients).omit({ 
   id: true, 
   createdAt: true,
@@ -83,6 +79,14 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+
+// Export types
+export type User = typeof users.$inferSelect;
+export type Client = typeof clients.$inferSelect;
+export type BrandAsset = typeof brandAssets.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertClient = z.infer<typeof insertClientSchema>;
+export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
 
 // Export constants
 export const LOGO_TYPES = Object.values(LogoType);

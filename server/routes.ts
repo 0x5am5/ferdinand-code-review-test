@@ -50,7 +50,7 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Asset routes
+  // Client assets endpoint
   app.get("/api/clients/:clientId/assets", async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
@@ -125,6 +125,9 @@ export function registerRoutes(app: Express) {
       const buffer = Buffer.from(asset.fileData, 'base64');
       res.setHeader('Content-Type', asset.mimeType || 'application/octet-stream');
       res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Content-Disposition', `inline; filename="${asset.name}"`);
       res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);
