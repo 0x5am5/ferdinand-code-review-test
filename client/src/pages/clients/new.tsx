@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function NewClientPage() {
   const [_, setLocation] = useLocation();
@@ -35,20 +35,8 @@ export default function NewClientPage() {
 
   const createClient = useMutation({
     mutationFn: async (data: InsertClient) => {
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create client");
-      }
-
-      return response.json();
+      const res = await apiRequest("POST", "/api/clients", data);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
@@ -56,7 +44,7 @@ export default function NewClientPage() {
         title: "Success",
         description: "Client created successfully",
       });
-      setLocation("/");
+      setLocation("/dashboard");
     },
     onError: (error: Error) => {
       toast({
@@ -174,7 +162,7 @@ export default function NewClientPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setLocation("/")}
+                onClick={() => setLocation("/dashboard")}
               >
                 Cancel
               </Button>

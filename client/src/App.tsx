@@ -7,6 +7,7 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Instances from "@/pages/admin/instances";
 import ClientDetails from "@/pages/client/[id]";
+import NewClientPage from "@/pages/clients/new";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 
@@ -37,6 +38,9 @@ function Router() {
       </Route>
       <Route path="/admin/instances">
         <ProtectedRoute component={Instances} adminOnly />
+      </Route>
+      <Route path="/clients/new">
+        <ProtectedRoute component={NewClientPage} />
       </Route>
       <Route path="/clients/:id">
         <ProtectedRoute component={ClientDetails} />
