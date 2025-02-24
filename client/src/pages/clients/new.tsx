@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,9 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
 export default function NewClientPage() {
-  const [_, navigate] = useNavigate();
+  const [_, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   const form = useForm<InsertClient>({
     resolver: zodResolver(insertClientSchema),
     defaultValues: {
@@ -56,7 +56,7 @@ export default function NewClientPage() {
         title: "Success",
         description: "Client created successfully",
       });
-      navigate("/");
+      setLocation("/");
     },
     onError: (error: Error) => {
       toast({
@@ -75,7 +75,7 @@ export default function NewClientPage() {
     <div className="container mx-auto p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-4xl font-bold mb-8">New Client</h1>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
@@ -102,6 +102,7 @@ export default function NewClientPage() {
                     <Textarea 
                       placeholder="Enter client description"
                       {...field}
+                      value={field.value || ''} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -116,7 +117,11 @@ export default function NewClientPage() {
                 <FormItem>
                   <FormLabel>Website</FormLabel>
                   <FormControl>
-                    <Input placeholder="https://example.com" {...field} />
+                    <Input 
+                      placeholder="https://example.com" 
+                      {...field} 
+                      value={field.value || ''} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -130,7 +135,11 @@ export default function NewClientPage() {
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter client address" {...field} />
+                    <Input 
+                      placeholder="Enter client address" 
+                      {...field} 
+                      value={field.value || ''} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -144,7 +153,11 @@ export default function NewClientPage() {
                 <FormItem>
                   <FormLabel>Phone</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter phone number" {...field} />
+                    <Input 
+                      placeholder="Enter phone number" 
+                      {...field} 
+                      value={field.value || ''} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -161,7 +174,7 @@ export default function NewClientPage() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate("/")}
+                onClick={() => setLocation("/")}
               >
                 Cancel
               </Button>
