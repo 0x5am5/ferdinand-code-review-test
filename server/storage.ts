@@ -13,9 +13,9 @@ export interface IStorage {
   getClient(id: number): Promise<Client | undefined>;
   getClients(): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
-  getBrandAssets(clientId: number): Promise<BrandAsset[]>;
-  getBrandAsset(id: number): Promise<BrandAsset | undefined>;
-  createBrandAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
+  getClientAssets(clientId: number): Promise<BrandAsset[]>;
+  getAsset(id: number): Promise<BrandAsset | undefined>;
+  createAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -48,19 +48,19 @@ export class DatabaseStorage implements IStorage {
     return client;
   }
 
-  async getBrandAssets(clientId: number): Promise<BrandAsset[]> {
+  async getClientAssets(clientId: number): Promise<BrandAsset[]> {
     return await db
       .select()
       .from(brandAssets)
       .where(eq(brandAssets.clientId, clientId));
   }
 
-  async getBrandAsset(id: number): Promise<BrandAsset | undefined> {
+  async getAsset(id: number): Promise<BrandAsset | undefined> {
     const [asset] = await db.select().from(brandAssets).where(eq(brandAssets.id, id));
     return asset;
   }
 
-  async createBrandAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {
+  async createAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {
     const [asset] = await db
       .insert(brandAssets)
       .values(insertAsset)
