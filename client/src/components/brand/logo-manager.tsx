@@ -147,14 +147,32 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  // Group logos by type
+  console.log('Received logos:', logos); // Debug log
+
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
-      const data = logo.data as { type: string; format: string };
-      return data?.type === type;
+      console.log('Checking logo:', logo); // Debug log
+
+      // Handle potential missing or malformed data
+      if (!logo.data) {
+        console.log('Logo missing data:', logo.id);
+        return false;
+      }
+
+      try {
+        const data = logo.data as { type: string; format: string };
+        const matches = data?.type === type;
+        console.log(`Logo ${logo.id} type check:`, { type, data, matches });
+        return matches;
+      } catch (error) {
+        console.error('Error processing logo data:', error);
+        return false;
+      }
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
+
+  console.log('Grouped logos:', logosByType); // Debug log
 
   return (
     <div className="space-y-8">

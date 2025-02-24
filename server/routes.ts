@@ -55,6 +55,7 @@ export function registerRoutes(app: Express) {
     try {
       const clientId = parseInt(req.params.clientId);
       const assets = await storage.getClientAssets(clientId);
+      console.log('Fetched assets:', assets); // Debug log
       res.json(assets);
     } catch (error) {
       console.error("Error fetching client assets:", error);
@@ -98,6 +99,7 @@ export function registerRoutes(app: Express) {
     try {
       const assetId = parseInt(req.params.assetId);
       const asset = await storage.getAsset(assetId);
+      console.log('Fetching asset:', assetId, asset); // Debug log
 
       if (!asset || !asset.fileData) {
         return res.status(404).json({ message: "Asset not found" });
