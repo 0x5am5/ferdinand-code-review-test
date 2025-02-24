@@ -36,6 +36,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Dashboard() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  
   const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
