@@ -27,12 +27,7 @@ export const brandAssets = pgTable("brand_assets", {
   category: text("category", { 
     enum: ["logo", "color", "typography"] 
   }).notNull(),
-  logoType: text("logo_type", {
-    enum: Object.values(LogoType)
-  }),
-  format: text("format", {
-    enum: Object.values(FILE_FORMATS)
-  }),
+  data: json("data"),
   fileData: text("file_data"),
   mimeType: text("mime_type"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -64,8 +59,11 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
     category: z.literal("logo"),
-    logoType: z.enum(Object.values(LogoType) as [string, ...string[]]),
-    format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
+    data: z.object({
+      type: z.enum(Object.values(LogoType) as [string, ...string[]]),
+      format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
+      fileName: z.string(),
+    }),
     fileData: z.string(),
     mimeType: z.string(),
   });

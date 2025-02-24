@@ -100,7 +100,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   // Group logos by type
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
-    acc[type] = logos.filter(logo => logo.logoType === type);
+    acc[type] = logos.filter(logo => {
+      const data = logo.data as { type: string; format: string };
+      return data?.type === type;
+    });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
 
@@ -187,15 +190,15 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                     <div>
                       <h4 className="font-medium">{logo.name}</h4>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Format: {logo.format?.toUpperCase()}
+                        Format: {(logo.data as any)?.format?.toUpperCase()}
                       </p>
                       <Button variant="secondary" size="sm" asChild className="w-full">
                         <a
                           href={`/api/assets/${logo.id}/file`}
-                          download={`${logo.name}.${logo.format}`}
+                          download={`${logo.name}.${(logo.data as any)?.format}`}
                         >
                           <Download className="mr-2 h-4 w-4" />
-                          Download {logo.format?.toUpperCase()}
+                          Download {(logo.data as any)?.format?.toUpperCase()}
                         </a>
                       </Button>
                     </div>

@@ -48,9 +48,7 @@ export async function registerRoutes(app: Express) {
     });
   });
 
-  // Temporarily bypass auth check for development
   app.get("/api/auth/me", async (req, res) => {
-    // Return a mock admin user for development
     res.json({
       id: 1,
       email: "admin@example.com",
@@ -130,8 +128,11 @@ export async function registerRoutes(app: Express) {
         clientId,
         name: req.body.name,
         category: "logo",
-        logoType: req.body.type,
-        format,
+        data: {
+          type: req.body.type,
+          format: format,
+          fileName: req.file.originalname
+        },
         fileData: req.file.buffer.toString('base64'),
         mimeType: req.file.mimetype,
       };

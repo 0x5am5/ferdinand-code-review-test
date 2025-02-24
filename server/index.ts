@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import memorystore from "memorystore";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { log } from "./vite";
 
 const app = express();
 app.use(express.json());
@@ -25,6 +25,7 @@ app.use(
   })
 );
 
+// Request logging middleware with detailed error reporting
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -43,11 +44,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
       }
-
       log(logLine);
     }
   });
@@ -56,39 +55,31 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  try {
+    console.log("Starting server initialization...");
+    const server = await registerRoutes(app);
+    console.log("Routes registered successfully");
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    // Error handling middleware
+    app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+      console.error('Error:', err);
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
+      res.status(status).json({ message });
+    });
 
-    res.status(status).json({ message });
-    throw err;
-  });
+    // Always use port 5000 for Replit
+    const PORT = 5000;
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server started successfully on port ${PORT}`);
+      log(`Server ready and listening on port ${PORT}`);
+    }).on("error", (err: any) => {
+      console.error("Failed to start server:", err);
+      process.exit(1);
+    });
 
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
+  } catch (err) {
+    console.error("Fatal error during server startup:", err);
+    process.exit(1);
   }
-
-  const ports = [5000, 5001, 5002, 5003];
-  const tryPort = (index = 0) => {
-    if (index >= ports.length) {
-      throw new Error("No available ports");
-    }
-    const PORT = ports[index];
-    server.listen(PORT, "0.0.0.0")
-      .on("error", (err: any) => {
-        if (err.code === "EADDRINUSE") {
-          tryPort(index + 1);
-        } else {
-          throw err;
-        }
-      })
-      .on("listening", () => {
-        log(`serving on port ${PORT}`);
-      });
-  };
-  tryPort();
 })();
