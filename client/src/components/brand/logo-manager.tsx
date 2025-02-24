@@ -26,6 +26,16 @@ interface UploadDialogProps {
   onSuccess: () => void;
 }
 
+function parseBrandAssetData(logo: BrandAsset) {
+  try {
+    if (!logo.data) return null;
+    return typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+  } catch (error) {
+    console.error('Error parsing logo data:', error, logo);
+    return null;
+  }
+}
+
 function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [logoName, setLogoName] = useState("");
@@ -147,18 +157,18 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
+  console.log('Initial logos:', logos);
+
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
-      try {
-        const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
-        return data && data.type === type;
-      } catch (error) {
-        console.error('Error processing logo data:', error);
-        return false;
-      }
+      const parsedData = parseBrandAssetData(logo);
+      console.log(`Processing logo ${logo.id}:`, { type, parsedData });
+      return parsedData?.type === type;
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
+
+  console.log('Grouped logos:', logosByType);
 
   return (
     <div className="space-y-8">
@@ -184,34 +194,37 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
             {typeLogos.length > 0 ? (
               <div className="space-y-6">
-                {typeLogos.map((logo) => (
-                  <div key={logo.id} className="border rounded-lg p-4">
-                    <div className="aspect-video rounded-lg border bg-muted flex items-center justify-center p-4 mb-4">
-                      <img
-                        src={`/api/assets/${logo.id}/file`}
-                        alt={logo.name}
-                        className="max-w-full max-h-full object-contain"
-                      />
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className="font-medium">{logo.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Format: {(typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data?.format)?.toUpperCase()}
-                        </p>
+                {typeLogos.map((logo) => {
+                  const parsedData = parseBrandAssetData(logo);
+                  return (
+                    <div key={logo.id} className="border rounded-lg p-4">
+                      <div className="aspect-video rounded-lg border bg-muted flex items-center justify-center p-4 mb-4">
+                        <img
+                          src={`/api/assets/${logo.id}/file`}
+                          alt={logo.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
                       </div>
-                      <Button variant="secondary" size="sm" asChild className="w-full">
-                        <a
-                          href={`/api/assets/${logo.id}/file`}
-                          download={`${logo.name}.${typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data?.format}`}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Download {(typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data?.format)?.toUpperCase()}
-                        </a>
-                      </Button>
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className="font-medium">{logo.name}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Format: {parsedData?.format?.toUpperCase()}
+                          </p>
+                        </div>
+                        <Button variant="secondary" size="sm" asChild className="w-full">
+                          <a
+                            href={`/api/assets/${logo.id}/file`}
+                            download={`${logo.name}.${parsedData?.format}`}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            Download {parsedData?.format?.toUpperCase()}
+                          </a>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-muted-foreground">No {type.toLowerCase()} logo uploaded yet</p>
