@@ -8,13 +8,19 @@ app.use(express.json());
 
 let server: ReturnType<typeof createServer> | null = null;
 
-// Cleanup handler
+// Cleanup handler with improved logging
 function cleanup() {
   if (server) {
     server.close(() => {
       console.log('Server shut down complete');
       process.exit(0);
     });
+
+    // Force close after 5 seconds
+    setTimeout(() => {
+      console.log('Forcing server shutdown after timeout');
+      process.exit(1);
+    }, 5000);
   } else {
     process.exit(0);
   }
@@ -29,8 +35,8 @@ async function startServer() {
   try {
     // Close existing server if any
     if (server) {
+      console.log('Closing existing server instance');
       await new Promise<void>((resolve) => server!.close(() => resolve()));
-      server = null;
     }
 
     // Create new server instance
@@ -46,32 +52,54 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Start server on port 5000 as specified in .replit
-    const PORT = 5000;
+    const PORT = process.env.PORT || 5000;
     const HOST = "0.0.0.0";
 
-    // Start server with proper error handling
-    await new Promise<void>((resolve, reject) => {
+    // Start server with proper error handling and retry logic
+    let retries = 0;
+    const maxRetries = 3;
+    const startPort = Number(PORT);
+
+    while (retries < maxRetries) {
       try {
-        server!.listen(PORT, HOST, () => {
-          console.log(`Server started on port ${PORT}`);
-          log(`Server listening at http://${HOST}:${PORT}`);
-          resolve();
+        await new Promise<void>((resolve, reject) => {
+          const currentPort = startPort + retries;
+
+          const handleError = (error: NodeJS.ErrnoException) => {
+            if (error.code === 'EADDRINUSE') {
+              console.log(`Port ${currentPort} is in use, trying next port`);
+              server!.close();
+              retries++;
+              if (retries < maxRetries) {
+                return; // Continue to next retry
+              }
+            }
+            reject(error);
+          };
+
+          server!.once('error', handleError);
+
+          server!.listen(currentPort, HOST, () => {
+            server!.removeListener('error', handleError);
+            console.log(`Server started successfully on port ${currentPort}`);
+            log(`Server listening at http://${HOST}:${currentPort}`);
+            resolve();
+          });
         });
 
-        server!.on('error', (error: NodeJS.ErrnoException) => {
-          if (error.code === 'EADDRINUSE') {
-            console.error(`Port ${PORT} is already in use. Please ensure no other service is running on this port.`);
-          }
-          reject(error);
-        });
+        // If we get here, server started successfully
+        break;
       } catch (err) {
-        reject(err);
+        if (retries >= maxRetries - 1) {
+          throw err; // Rethrow if we're out of retries
+        }
+        // Otherwise continue to next retry
+        retries++;
       }
-    });
+    }
 
   } catch (err) {
-    console.error("Server startup error:", err);
+    console.error("Fatal server startup error:", err);
     process.exit(1);
   }
 }
@@ -83,4 +111,7 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Start the server
-startServer();
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
