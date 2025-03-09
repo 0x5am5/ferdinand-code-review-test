@@ -62,10 +62,7 @@ export default function ClientDetails() {
   }
 
   // Filter assets by category
-  const logoAssets = assets.filter(asset => {
-    console.log('Checking asset:', asset); // Debug individual assets
-    return asset.category === 'logo';
-  });
+  const logoAssets = assets.filter(asset => asset.category === 'logo');
   const colorAssets = assets.filter(asset => asset.category === 'color') || [];
   const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
 
@@ -75,13 +72,18 @@ export default function ClientDetails() {
     <div className="flex h-screen">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard">
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-4xl font-bold">{client.name} Brand Guidelines</h1>
+        <div className="flex flex-col gap-2 mb-8">
+          <div className="flex items-center gap-4">
+            <Link href="/dashboard">
+              <Button variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-4xl font-bold">{client.name}</h1>
+              <p className="text-muted-foreground text-lg">Brand Guidelines</p>
+            </div>
+          </div>
         </div>
 
         <Tabs defaultValue="logos" className="space-y-6">
