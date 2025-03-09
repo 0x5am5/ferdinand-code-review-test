@@ -201,6 +201,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append('weights', JSON.stringify(weights));
     formData.append('styles', JSON.stringify(styles));
 
+    // Add source data structure
+    formData.append('sourceData', JSON.stringify({
+      files: [] // This will be populated by the server with the uploaded files
+    }));
+
     // Append each file with a consistent field name
     data.files.forEach((file) => {
       formData.append('fontFiles', file);

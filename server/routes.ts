@@ -53,39 +53,16 @@ export function registerRoutes(app: Express) {
       const clientId = parseInt(req.params.clientId);
       const { category } = req.body;
 
-      if (category === 'color') {
-        // Handle color asset
-        const parsed = insertColorAssetSchema.safeParse({
-          ...req.body,
-          clientId,
-        });
-
-        if (!parsed.success) {
-          return res.status(400).json({
-            message: "Invalid color data",
-            errors: parsed.error.errors
-          });
-        }
-
-        const asset = await storage.createAsset(parsed.data);
-        return res.status(201).json(asset);
-      }
-
       if (category === 'font') {
         // Handle font asset
-        const { name, source, weights, styles, sourceData } = req.body;
+        const { name, source, weights, styles } = req.body;
         const parsedWeights = JSON.parse(weights);
         const parsedStyles = JSON.parse(styles);
-        let parsedSourceData = {};
-
-        try {
-          parsedSourceData = JSON.parse(sourceData);
-        } catch (e) {
-          // If sourceData is not JSON, use it as is
-          parsedSourceData = sourceData;
-        }
-
         const files = req.files as Express.Multer.File[];
+
+        if (!files || files.length === 0) {
+          return res.status(400).json({ message: "No font files uploaded" });
+        }
 
         // Create the font asset data
         const fontData = {
@@ -96,26 +73,41 @@ export function registerRoutes(app: Express) {
             source,
             weights: parsedWeights,
             styles: parsedStyles,
-            sourceData: parsedSourceData
+            sourceData: {
+              files: files.map(file => ({
+                fileName: file.originalname,
+                fileData: file.buffer.toString('base64'),
+                format: file.originalname.split('.').pop()?.toLowerCase(),
+                weight: '400', // Default weight
+                style: 'normal' // Default style
+              }))
+            }
           }
         };
-
-        // If we have files, add them to the source data
-        if (files && files.length > 0) {
-          fontData.data.sourceData.files = files.map(file => ({
-            fileName: file.originalname,
-            fileData: file.buffer.toString('base64'),
-            format: file.originalname.split('.').pop()?.toLowerCase(),
-            weight: '400', // Default weight
-            style: 'normal' // Default style
-          }));
-        }
 
         const parsed = insertFontAssetSchema.safeParse(fontData);
 
         if (!parsed.success) {
           return res.status(400).json({
             message: "Invalid font data",
+            errors: parsed.error.errors
+          });
+        }
+
+        const asset = await storage.createAsset(parsed.data);
+        return res.status(201).json(asset);
+      }
+
+      if (category === 'color') {
+        // Handle color asset
+        const parsed = insertColorAssetSchema.safeParse({
+          ...req.body,
+          clientId,
+        });
+
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid color data",
             errors: parsed.error.errors
           });
         }
