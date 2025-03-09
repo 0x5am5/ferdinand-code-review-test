@@ -188,37 +188,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   });
 
   const createFont = useMutation({
-    mutationFn: async (data: FontFormData & { files?: File[] }) => {
-      const formData = new FormData();
-      formData.append('name', data.name);
-      formData.append('category', 'typography');
-      formData.append('source', data.source);
-
-      // Add source-specific data
-      if (data.source === 'adobe') {
-        if (!data.projectId?.trim()) {
-          throw new Error("Adobe Fonts Project ID is required");
-        }
-        formData.append('projectId', data.projectId);
-      } else if (data.source === 'google') {
-        if (!data.projectUrl?.trim()) {
-          throw new Error("Google Fonts URL is required");
-        }
-        formData.append('projectUrl', data.projectUrl);
-      } else if (data.source === 'custom') {
-        if (!data.files?.length) {
-          throw new Error("Please select at least one font file");
-        }
-        data.files.forEach(file => formData.append('files', file));
-      }
-
-      if (data.previewText) {
-        formData.append('previewText', data.previewText);
-      }
-
+    mutationFn: async (data: FontFormData & { formData: FormData }) => {
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: 'POST',
-        body: formData,
+        body: data.formData,
       });
 
       if (!response.ok) {
@@ -376,7 +349,25 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   return;
                 }
 
-                createFont.mutate({ ...data, files: uploadedFiles });
+                // Only include files for custom fonts
+                const formData = new FormData();
+                formData.append('name', data.name);
+                formData.append('category', 'typography');
+                formData.append('source', data.source);
+
+                if (source === 'adobe') {
+                  formData.append('projectId', data.projectId!);
+                } else if (source === 'google') {
+                  formData.append('projectUrl', data.projectUrl!);
+                } else if (source === 'custom') {
+                  uploadedFiles.forEach(file => formData.append('files', file));
+                }
+
+                if (data.previewText) {
+                  formData.append('previewText', data.previewText);
+                }
+
+                createFont.mutate({ formData });
               })}
               className="space-y-4"
             >
@@ -390,7 +381,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
-                        // Reset form errors when changing source
+                        // Reset form errors and uploaded files when changing source
                         form.clearErrors();
                         setUploadedFiles([]);
                       }}
@@ -433,6 +424,9 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       <FormControl>
                         <Input {...field} placeholder="Enter your Adobe Fonts project ID" />
                       </FormControl>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        You can find this in your Adobe Fonts project settings
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -449,6 +443,9 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       <FormControl>
                         <Input {...field} placeholder="https://fonts.google.com/specimen/..." />
                       </FormControl>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Copy the URL from the font's page on fonts.google.com
+                      </p>
                       <FormMessage />
                     </FormItem>
                   )}

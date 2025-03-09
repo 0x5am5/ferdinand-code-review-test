@@ -131,34 +131,39 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
         format: z.enum(Object.values(FontFormat) as [string, ...string[]]),
         weight: z.number(),
         style: z.string(),
-        fileData: z.string(), // base64 encoded font data
-      })).optional(), // Make files optional for Adobe/Google fonts
-      projectId: z.string().optional(), // For Adobe Fonts
-      projectUrl: z.string().optional(), // For Adobe/Google Fonts
+        fileData: z.string(),
+      })).optional(),
+      projectId: z.string().optional(),
+      projectUrl: z.string().optional(),
       previewText: z.string().optional(),
       characters: z.string().optional(),
     }).superRefine((data, ctx) => {
-      // Custom validation based on source
-      if (data.source === FontSource.ADOBE && !data.projectId?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Adobe Fonts Project ID is required",
-          path: ["projectId"],
-        });
+      if (data.source === FontSource.ADOBE) {
+        if (!data.projectId?.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Adobe Fonts Project ID is required",
+            path: ["projectId"],
+          });
+        }
       }
-      if (data.source === FontSource.GOOGLE && !data.projectUrl?.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Google Fonts URL is required",
-          path: ["projectUrl"],
-        });
+      if (data.source === FontSource.GOOGLE) {
+        if (!data.projectUrl?.trim()) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Google Fonts URL is required",
+            path: ["projectUrl"],
+          });
+        }
       }
-      if (data.source === FontSource.CUSTOM && (!data.files || data.files.length === 0)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "At least one font file is required for custom fonts",
-          path: ["files"],
-        });
+      if (data.source === FontSource.CUSTOM) {
+        if (!data.files || data.files.length === 0) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "At least one font file is required for custom fonts",
+            path: ["files"],
+          });
+        }
       }
     }),
   });

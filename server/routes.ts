@@ -86,7 +86,7 @@ export function registerRoutes(app: Express) {
       const { category, source } = req.body;
 
       if (category === 'typography') {
-        // Initialize font data with common fields
+        // Base font data structure
         const fontData = {
           clientId,
           name: req.body.name,
@@ -97,8 +97,6 @@ export function registerRoutes(app: Express) {
             weights: [400],
             styles: ['normal'],
             formats: [FontFormat.WOFF2],
-            projectId: req.body.projectId,
-            projectUrl: req.body.projectUrl,
             previewText: req.body.previewText,
           },
         };
@@ -108,10 +106,14 @@ export function registerRoutes(app: Express) {
           if (!req.body.projectId?.trim()) {
             return res.status(400).json({ 
               message: "Adobe Fonts Error",
-              details: "Project ID is required for Adobe Fonts integration"
+              details: "Please provide your Adobe Fonts project ID"
             });
           }
-          fontData.data.projectUrl = `https://fonts.adobe.com/fonts/${req.body.projectId}`;
+          fontData.data = {
+            ...fontData.data,
+            projectId: req.body.projectId,
+            projectUrl: `https://fonts.adobe.com/fonts/${req.body.projectId}`,
+          };
         } 
         else if (source === FontSource.GOOGLE) {
           if (!req.body.projectUrl?.trim()) {
@@ -125,6 +127,10 @@ export function registerRoutes(app: Express) {
             if (!url.hostname.includes('fonts.google.com')) {
               throw new Error('Invalid Google Fonts URL');
             }
+            fontData.data = {
+              ...fontData.data,
+              projectUrl: req.body.projectUrl,
+            };
           } catch (error) {
             return res.status(400).json({ 
               message: "Google Fonts Error",
@@ -136,7 +142,7 @@ export function registerRoutes(app: Express) {
           if (!req.files?.length) {
             return res.status(400).json({ 
               message: "Font Upload Error",
-              details: "Please select at least one font file to upload (supported formats: TTF, OTF, WOFF, or WOFF2)"
+              details: "Please select at least one font file to upload"
             });
           }
 
@@ -146,7 +152,6 @@ export function registerRoutes(app: Express) {
           try {
             for (const file of fontFiles) {
               const fileExt = file.originalname.split('.').pop()?.toLowerCase();
-
               if (!['ttf', 'otf', 'woff', 'woff2'].includes(fileExt || '')) {
                 return res.status(400).json({ 
                   message: "Invalid Font Format",
@@ -154,11 +159,10 @@ export function registerRoutes(app: Express) {
                 });
               }
 
-              // Extract metadata and convert font
               const metadata = await extractFontMetadata(file.buffer, fileExt || '');
               const convertedFormats = await convertFont(file.buffer, fileExt || '');
 
-              // Update font data with metadata
+              // Update font metadata
               fontData.data.family = metadata.family;
               if (!fontData.data.weights.includes(metadata.weight)) {
                 fontData.data.weights.push(metadata.weight);
@@ -211,7 +215,6 @@ export function registerRoutes(app: Express) {
           });
         }
       }
-
       // Handle other asset types (color, logo, etc.)
       else if (category === 'color') {
         const parsed = insertColorAssetSchema.safeParse({
