@@ -1,4 +1,4 @@
-import { Plus, Edit2, Trash2, Download, X, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Edit2, Trash2, Download, X, ChevronUp, ChevronDown, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -62,6 +62,9 @@ const availableWeights = [
 const availableStyles = [
   "normal", "italic"
 ];
+
+const allWeights = ["100", "200", "300", "400", "500", "600", "700", "800", "900"];
+
 
 function FontCard({ font, onEdit, onDelete }: {
   font: FontData;
@@ -179,39 +182,56 @@ function AddFontCard({ onClick }: { onClick: () => void }) {
   );
 }
 
-function WeightStyleSelector({ 
+function WeightStyleSelector({
   selectedWeights,
   selectedStyles,
   onWeightChange,
-  onStyleChange
+  onStyleChange,
+  availableWeights = ["400"], // Default to regular weight if none specified
+  onUnavailableWeightClick
 }: {
   selectedWeights: string[];
   selectedStyles: string[];
   onWeightChange: (weights: string[]) => void;
   onStyleChange: (styles: string[]) => void;
+  availableWeights?: string[];
+  onUnavailableWeightClick?: (weight: string) => void;
 }) {
   return (
     <div className="space-y-4">
       <div>
         <Label>Font Weights</Label>
+        <p className="text-sm text-muted-foreground mb-2">
+          Select available weights or upload additional font files for more options
+        </p>
         <div className="grid grid-cols-3 gap-2 mt-2">
-          {availableWeights.map(weight => (
-            <Button
-              key={weight}
-              type="button"
-              variant={selectedWeights.includes(weight) ? "default" : "outline"}
-              onClick={() => {
-                if (selectedWeights.includes(weight)) {
-                  onWeightChange(selectedWeights.filter(w => w !== weight));
-                } else {
-                  onWeightChange([...selectedWeights, weight].sort());
-                }
-              }}
-              className="h-auto py-2"
-            >
-              {weight}
-            </Button>
-          ))}
+          {allWeights.map(weight => {
+            const isAvailable = availableWeights.includes(weight);
+            const isSelected = selectedWeights.includes(weight);
+
+            return (
+              <Button
+                key={weight}
+                type="button"
+                variant={isSelected ? "default" : "outline"}
+                onClick={() => {
+                  if (!isAvailable) {
+                    onUnavailableWeightClick?.(weight);
+                    return;
+                  }
+                  if (isSelected) {
+                    onWeightChange(selectedWeights.filter(w => w !== weight));
+                  } else {
+                    onWeightChange([...selectedWeights, weight].sort());
+                  }
+                }}
+                className={`h-auto py-2 ${!isAvailable ? 'opacity-50' : ''}`}
+              >
+                {weight}
+                {!isAvailable && <Lock className="h-3 w-3 ml-1" />}
+              </Button>
+            );
+          })}
         </div>
       </div>
 
@@ -457,6 +477,14 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     .map(parseFontAsset)
     .filter((font): font is FontData => font !== null);
 
+  const handleUnavailableWeightClick = (weight: string) => {
+    toast({
+      title: "Weight not available",
+      description: `The ${weight} weight is not available for this font. Upload the font file with this weight to enable it.`,
+      variant: "default",
+    });
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -539,6 +567,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     selectedStyles={selectedStyles}
                     onWeightChange={setSelectedWeights}
                     onStyleChange={setSelectedStyles}
+                    availableWeights={["400"]} // For new fonts, only allow 400 initially
+                    onUnavailableWeightClick={handleUnavailableWeightClick}
                   />
 
                   <DialogFooter>
@@ -553,11 +583,9 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               </Form>
             </TabsContent>
 
-            {/* Similar updates for Adobe and Google font forms */}
             <TabsContent value="adobe" className="space-y-4">
               <Form {...adobeForm}>
                 <form onSubmit={adobeForm.handleSubmit(handleAdobeFont)} className="space-y-4">
-                  {/* Similar form fields as file upload */}
                   <FormField
                     control={adobeForm.control}
                     name="name"
@@ -591,6 +619,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     selectedStyles={selectedStyles}
                     onWeightChange={setSelectedWeights}
                     onStyleChange={setSelectedStyles}
+                    availableWeights={["400"]}
+                    onUnavailableWeightClick={handleUnavailableWeightClick}
                   />
 
                   <DialogFooter>
@@ -641,6 +671,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     selectedStyles={selectedStyles}
                     onWeightChange={setSelectedWeights}
                     onStyleChange={setSelectedStyles}
+                    availableWeights={["400"]}
+                    onUnavailableWeightClick={handleUnavailableWeightClick}
                   />
 
                   <DialogFooter>
@@ -682,6 +714,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               selectedStyles={selectedStyles}
               onWeightChange={setSelectedWeights}
               onStyleChange={setSelectedStyles}
+              availableWeights={editingFont?.weights || ["400"]}
+              onUnavailableWeightClick={handleUnavailableWeightClick}
             />
 
             <DialogFooter>
