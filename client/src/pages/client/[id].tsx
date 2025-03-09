@@ -12,6 +12,7 @@ import { FontManager } from "@/components/brand/font-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { UserPersona } from "@shared/schema"; // Assuming UserPersona is the type for personas
+import { InspirationBoard } from "@/components/brand/inspiration-board";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -112,6 +113,12 @@ export default function ClientDetails() {
             >
               User Personas
             </TabsTrigger>
+            <TabsTrigger 
+              value="inspiration" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
+              Inspiration
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="logos">
@@ -128,6 +135,10 @@ export default function ClientDetails() {
 
           <TabsContent value="personas">
             <PersonaManager clientId={clientId} personas={personas} />
+          </TabsContent>
+
+          <TabsContent value="inspiration">
+            <InspirationBoard clientId={clientId} />
           </TabsContent>
         </Tabs>
       </main>
