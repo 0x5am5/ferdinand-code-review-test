@@ -20,6 +20,13 @@ export const FILE_FORMATS = {
   JPEG: "jpeg"
 } as const;
 
+// Define color categories
+export const ColorCategory = {
+  BRAND: "brand",
+  NEUTRAL: "neutral",
+  INTERACTIVE: "interactive"
+} as const;
+
 export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
@@ -54,6 +61,32 @@ export const users = pgTable("users", {
   clientId: integer("client_id").references(() => clients.id),
 });
 
+// Schema for colors with required fields for validation
+export const insertColorAssetSchema = createInsertSchema(brandAssets)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    category: z.literal("color"),
+    data: z.object({
+      type: z.enum(["solid", "gradient"]),
+      category: z.enum(Object.values(ColorCategory) as [string, ...string[]]),
+      colors: z.array(z.object({
+        hex: z.string(),
+        rgb: z.string().optional(),
+        hsl: z.string().optional(),
+        cmyk: z.string().optional(),
+        pantone: z.string().optional(),
+      })).min(1),
+      tints: z.array(z.object({
+        percentage: z.number(),
+        hex: z.string(),
+      })).optional(),
+      shades: z.array(z.object({
+        percentage: z.number(),
+        hex: z.string(),
+      })).optional(),
+    }),
+  });
+
 // Schema for logos with required fields for validation
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
@@ -75,6 +108,7 @@ export type BrandAsset = typeof brandAssets.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
+export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
 
 export const insertClientSchema = createInsertSchema(clients).omit({ 
   id: true, 
@@ -87,3 +121,4 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 // Export constants
 export const LOGO_TYPES = Object.values(LogoType);
 export const FILE_FORMAT_LIST = Object.values(FILE_FORMATS);
+export const COLOR_CATEGORIES = Object.values(ColorCategory);
