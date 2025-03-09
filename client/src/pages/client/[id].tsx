@@ -13,14 +13,18 @@ export default function ClientDetails() {
   const { id } = useParams();
   const clientId = parseInt(id);
 
+  // Update query to use the correct endpoint
   const { data: client, isLoading: isLoadingClient } = useQuery<Client>({
-    queryKey: ["/api/clients", clientId],
+    queryKey: [`/api/clients/${clientId}`],
   });
 
   const { data: assets = [], isLoading: isLoadingAssets } = useQuery<BrandAsset[]>({
-    queryKey: ["/api/clients", clientId, "assets"],
+    queryKey: [`/api/clients/${clientId}/assets`],
     enabled: !!clientId,
   });
+
+  console.log('Client Data:', client); // Debug log
+  console.log('Assets Data:', assets); // Debug log
 
   if (isLoadingClient || isLoadingAssets) {
     return (
@@ -59,7 +63,7 @@ export default function ClientDetails() {
     );
   }
 
-  // Filter assets by category and ensure correct typing
+  // Filter assets by category
   const logoAssets = assets.filter(asset => asset.category === 'logo');
   const colorAssets = assets.filter(asset => asset.category === 'color') || [];
   const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
