@@ -18,7 +18,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -44,7 +43,7 @@ export default function Dashboard() {
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const { toast } = useToast();
 
-  const { data: clients = [], isLoading: clientsLoading } = useQuery<Client[]>({
+  const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
@@ -132,15 +131,8 @@ export default function Dashboard() {
     <div className="flex h-screen">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="mb-8">
           <h1 className="text-4xl font-bold">Client Instances</h1>
-
-          <Link href="/clients/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Instance
-            </Button>
-          </Link>
         </div>
 
         {/* Search and Sort Controls */}
@@ -234,6 +226,16 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Add New Client Card */}
+          <Link href="/clients/new">
+            <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
+              <CardHeader className="h-full flex flex-col items-center justify-center text-center">
+                <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
+                <CardTitle className="text-muted-foreground">Add New Instance</CardTitle>
+              </CardHeader>
+            </Card>
+          </Link>
 
           {filteredAndSortedClients.length === 0 && searchQuery && (
             <Card>

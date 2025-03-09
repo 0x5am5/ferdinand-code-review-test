@@ -54,6 +54,26 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.delete("/api/clients/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+
+      const client = await storage.getClient(id);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+
+      await storage.deleteClient(id);
+      res.status(200).json({ message: "Client deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      res.status(500).json({ message: "Error deleting client" });
+    }
+  });
+
   // Asset routes
   app.get("/api/clients/:clientId/assets", validateClientId, async (req, res) => {
     try {
