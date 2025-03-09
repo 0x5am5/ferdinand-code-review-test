@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { UserPersona, PersonaEventAttribute, PERSONA_EVENT_ATTRIBUTES } from "@shared/schema";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +21,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import React from "react";
 
 // Form schema for persona creation/editing
 const personaFormSchema = z.object({
@@ -207,9 +208,104 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
     },
   });
 
+  const deletePersona = useMutation({
+    mutationFn: async (personaId: number) => {
+      const response = await fetch(`/api/clients/${clientId}/personas/${personaId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete persona");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/personas`] });
+      toast({
+        title: "Success",
+        description: "Persona deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePersona = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: PersonaFormData }) => {
+      const response = await fetch(`/api/clients/${clientId}/personas/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...data,
+          eventAttributes: data.eventAttributes,
+          motivations: data.motivations.split(',').map(m => m.trim()),
+          coreNeeds: data.coreNeeds.split(',').map(n => n.trim()),
+          painPoints: data.painPoints.split(',').map(p => p.trim()),
+          metrics: {
+            averageSpend: data.metrics.averageSpend,
+            eventAttendance: data.metrics.eventAttendance ? Number(data.metrics.eventAttendance) : undefined,
+            engagementRate: data.metrics.engagementRate ? Number(data.metrics.engagementRate) : undefined,
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update persona");
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/personas`] });
+      toast({
+        title: "Success",
+        description: "Persona updated successfully",
+      });
+      setEditingPersona(null);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: PersonaFormData) => {
-    addPersona.mutate(data);
+    if (editingPersona) {
+      updatePersona.mutate({ id: editingPersona.id, data });
+    } else {
+      addPersona.mutate(data);
+    }
   };
+
+  // Set form values when editing
+  useEffect(() => {
+    if (editingPersona) {
+      form.reset({
+        name: editingPersona.name,
+        role: editingPersona.role || "",
+        ageRange: editingPersona.ageRange || "",
+        eventAttributes: editingPersona.eventAttributes as string[],
+        motivations: editingPersona.motivations?.join(", ") || "",
+        coreNeeds: editingPersona.coreNeeds?.join(", ") || "",
+        painPoints: editingPersona.painPoints?.join(", ") || "",
+        metrics: {
+          averageSpend: editingPersona.metrics?.averageSpend || "",
+          eventAttendance: editingPersona.metrics?.eventAttendance,
+          engagementRate: editingPersona.metrics?.engagementRate,
+        },
+      });
+    }
+  }, [editingPersona, form]);
 
   return (
     <div className="space-y-8">
@@ -224,25 +320,31 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
               key={persona.id}
               persona={persona}
               onEdit={() => setEditingPersona(persona)}
-              onDelete={() => {/* TODO: Implement delete */}}
+              onDelete={() => deletePersona.mutate(persona.id)}
             />
           ))}
         </AnimatePresence>
         <AddPersonaCard onClick={() => setIsAddingPersona(true)} />
       </div>
 
-      <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
+      <Dialog open={isAddingPersona || !!editingPersona} onOpenChange={(open) => {
+        if (!open) {
+          setIsAddingPersona(false);
+          setEditingPersona(null);
+          form.reset();
+        }
+      }}>
         <DialogContent className="max-w-[600px] max-h-[90vh] flex flex-col gap-0 p-0">
           <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle>Add New Persona</DialogTitle>
+            <DialogTitle>{editingPersona ? 'Edit Persona' : 'Add New Persona'}</DialogTitle>
             <DialogDescription>
-              Create a new user persona profile with detailed attributes
+              {editingPersona ? 'Update the persona profile details' : 'Create a new user persona profile with detailed attributes'}
             </DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1">
-              <ScrollArea className="flex-1" style={{ height: 'calc(90vh - 180px)' }}>
+              <ScrollArea className="flex-1" style={{ height: 'calc(90vh - 180px)', overflowY: 'auto' }}>
                 <div className="px-6 py-4 space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -400,12 +502,20 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setIsAddingPersona(false)}
+                  onClick={() => {
+                    setIsAddingPersona(false);
+                    setEditingPersona(null);
+                    form.reset();
+                  }}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={addPersona.isPending}>
-                  {addPersona.isPending ? "Adding..." : "Add Persona"}
+                <Button type="submit" disabled={addPersona.isPending || updatePersona.isPending}>
+                  {addPersona.isPending || updatePersona.isPending
+                    ? "Saving..."
+                    : editingPersona
+                    ? "Update Persona"
+                    : "Add Persona"}
                 </Button>
               </div>
             </form>
