@@ -46,27 +46,27 @@ interface ColorData {
   cmyk?: string;
   pantone?: string;
   name: string;
-  category: keyof typeof ColorCategory;
+  category: typeof ColorCategory[keyof typeof ColorCategory];
 }
 
 // Default colors from the inspiration image
 const DEFAULT_COLORS = {
-  [ColorCategory.BRAND]: [
+  brand: [
     { hex: '#FF983B', name: 'Neon Carrot' },
     { hex: '#AA3A39', name: 'Medium Carmine' },
     { hex: '#FE4E4E', name: 'Sunset Orange' },
   ],
-  [ColorCategory.NEUTRAL]: Array.from({ length: 11 }, (_, i) => ({
+  neutral: Array.from({ length: 11 }, (_, i) => ({
     hex: `#${Math.floor((i * 255) / 10).toString(16).padStart(2, '0').repeat(3)}`,
     name: `Gray ${i * 10}`,
   })),
-  [ColorCategory.INTERACTIVE]: [
+  interactive: [
     { hex: '#EE5397', name: 'Brilliant Rose' },
     { hex: '#634490', name: 'Affair' },
     { hex: '#3466A5', name: 'Azure' },
     { hex: '#00C4D4', name: "Robin's Egg Blue" },
   ],
-} as const;
+};
 
 function generateTintsAndShades(hex: string) {
   // Convert hex to RGB
@@ -189,7 +189,7 @@ function ColorChip({ color, onEdit, onDelete }: {
   );
 }
 
-function ColorSection({ title, colors, onAddColor }: {
+function ColorSection({ title, colors = [], onAddColor }: {
   title: string;
   colors: ColorData[];
   onAddColor: () => void;
@@ -218,7 +218,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingColor, setIsAddingColor] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<keyof typeof ColorCategory>("BRAND");
+  const [selectedCategory, setSelectedCategory] = useState<'brand' | 'neutral' | 'interactive'>('brand');
   const [colorType, setColorType] = useState<"solid" | "gradient">("solid");
 
   const createColor = useMutation({
@@ -260,39 +260,45 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
     },
   });
 
-  const deleteColor = useMutation({
-    mutationFn: async (colorId: number) => {
-      const response = await fetch(`/api/clients/${clientId}/assets/${colorId}`, {
-        method: 'DELETE',
-      });
+  // Parse the color assets into ColorData format
+  const parseColorAsset = (asset: BrandAsset): ColorData | null => {
+    try {
+      const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+      if (!data?.colors?.[0]) return null;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete color");
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`]
-      });
-      toast({
-        title: "Success",
-        description: "Color deleted successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+      return {
+        hex: data.colors[0].hex,
+        rgb: data.colors[0].rgb,
+        hsl: data.colors[0].hsl,
+        cmyk: data.colors[0].cmyk,
+        pantone: data.colors[0].pantone,
+        name: asset.name,
+        category: data.category,
+      };
+    } catch (error) {
+      console.error('Error parsing color asset:', error);
+      return null;
+    }
+  };
+
+  // Filter and transform color assets
+  const transformedColors = colors
+    .filter(asset => asset.category === 'color')
+    .map(parseColorAsset)
+    .filter((color): color is ColorData => color !== null);
 
   // If no colors are provided, use the default colors
-  const brandColors = colors.length ? colors.filter(c => c.category === ColorCategory.BRAND) : DEFAULT_COLORS.BRAND;
-  const neutralColors = colors.length ? colors.filter(c => c.category === ColorCategory.NEUTRAL) : DEFAULT_COLORS.NEUTRAL;
-  const interactiveColors = colors.length ? colors.filter(c => c.category === ColorCategory.INTERACTIVE) : DEFAULT_COLORS.INTERACTIVE;
+  const brandColors = transformedColors.length 
+    ? transformedColors.filter(c => c.category === 'brand')
+    : DEFAULT_COLORS.brand.map(c => ({ ...c, category: 'brand' }));
+
+  const neutralColors = transformedColors.length
+    ? transformedColors.filter(c => c.category === 'neutral')
+    : DEFAULT_COLORS.neutral.map(c => ({ ...c, category: 'neutral' }));
+
+  const interactiveColors = transformedColors.length
+    ? transformedColors.filter(c => c.category === 'interactive')
+    : DEFAULT_COLORS.interactive.map(c => ({ ...c, category: 'interactive' }));
 
   return (
     <div className="space-y-8">
@@ -305,7 +311,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
           title="Brand Colors"
           colors={brandColors}
           onAddColor={() => {
-            setSelectedCategory("BRAND");
+            setSelectedCategory('brand');
             setIsAddingColor(true);
           }}
         />
@@ -314,7 +320,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
           title="Neutral Colors"
           colors={neutralColors}
           onAddColor={() => {
-            setSelectedCategory("NEUTRAL");
+            setSelectedCategory('neutral');
             setIsAddingColor(true);
           }}
         />
@@ -323,7 +329,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
           title="Interactive Colors"
           colors={interactiveColors}
           onAddColor={() => {
-            setSelectedCategory("INTERACTIVE");
+            setSelectedCategory('interactive');
             setIsAddingColor(true);
           }}
         />
@@ -378,9 +384,9 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <Button variant="default" onClick={() => setIsAddingColor(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsAddingColor(false)}>Cancel</Button>
             <Button type="submit" onClick={() => {
-              //Handle submit here,  using createColor mutation
+              // TODO: Handle submit using createColor mutation
             }}>Add Color</Button>
           </div>
         </DialogContent>
