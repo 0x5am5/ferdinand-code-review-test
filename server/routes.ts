@@ -6,6 +6,7 @@ import {
   insertInspirationSectionSchema, 
   insertInspirationImageSchema 
 } from "@shared/schema";
+import { updateClientOrderSchema } from "@shared/schema"; // Import the schema
 
 const upload = multer();
 
@@ -73,6 +74,26 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error deleting client" });
     }
   });
+
+  // Add new route for updating client order
+  app.patch("/api/clients/order", async (req, res) => {
+    try {
+      const { clientOrders } = updateClientOrderSchema.parse(req.body);
+
+      // Update each client's display order
+      await Promise.all(
+        clientOrders.map(({ id, displayOrder }) =>
+          storage.updateClient(id, { displayOrder })
+        )
+      );
+
+      res.json({ message: "Client order updated successfully" });
+    } catch (error) {
+      console.error("Error updating client order:", error);
+      res.status(500).json({ message: "Error updating client order" });
+    }
+  });
+
 
   // Asset routes
   app.get("/api/clients/:clientId/assets", validateClientId, async (req, res) => {
@@ -470,6 +491,7 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Original client creation endpoint
   app.post("/api/clients", async (req, res) => {
     try {
       const parsed = insertClientSchema.safeParse(req.body);

@@ -85,6 +85,7 @@ export const clients = pgTable("clients", {
   address: text("address"),
   phone: text("phone"),
   logo: text("logo_url"),
+  displayOrder: integer("display_order"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -255,3 +256,13 @@ export const FONT_SOURCES = Object.values(FontSource);
 export const FONT_WEIGHTS = Object.values(FontWeight);
 export const FONT_STYLES = Object.values(FontStyle);
 export const PERSONA_EVENT_ATTRIBUTES = Object.values(PersonaEventAttribute);
+
+// Add a new schema for order updates
+export const updateClientOrderSchema = z.object({
+  clientOrders: z.array(z.object({
+    id: z.number(),
+    displayOrder: z.number()
+  }))
+});
+
+export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;

@@ -46,6 +46,15 @@ export default function Dashboard() {
 
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
+    select: (data) => {
+      // Sort by displayOrder if available, fallback to id
+      return [...data].sort((a, b) => {
+        if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+          return a.displayOrder - b.displayOrder;
+        }
+        return a.id - b.id;
+      });
+    }
   });
 
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
@@ -107,6 +116,34 @@ export default function Dashboard() {
     },
   });
 
+  // Update client order mutation
+  const updateClientOrder = useMutation({
+    mutationFn: async (clientOrders: { id: number; displayOrder: number }[]) => {
+      const response = await apiRequest("PATCH", "/api/clients/order", { clientOrders });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update client order");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "Success",
+        description: "Client order updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      // Reset to the original order on error
+      setOrderedClients(clients);
+    },
+  });
+
   // Handle drag end
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
@@ -116,7 +153,14 @@ export default function Dashboard() {
     items.splice(result.destination.index, 0, reorderedItem);
 
     setOrderedClients(items);
-    // Here you would typically update the order in the backend
+
+    // Update the order in the backend
+    const clientOrders = items.map((client, index) => ({
+      id: client.id,
+      displayOrder: index
+    }));
+
+    updateClientOrder.mutate(clientOrders);
   };
 
   // Reset form when editing client changes
