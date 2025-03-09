@@ -195,8 +195,15 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append('category', 'font');
     formData.append('source', FontSource.FILE);
 
-    data.files.forEach((file, index) => {
-      formData.append(`font_${index}`, file);
+    // Convert weights and styles to arrays and append
+    const weights = ['400']; // Default weight
+    const styles = ['normal']; // Default style
+    formData.append('weights', JSON.stringify(weights));
+    formData.append('styles', JSON.stringify(styles));
+
+    // Append each file with a consistent field name
+    data.files.forEach((file) => {
+      formData.append('fontFiles', file);
     });
 
     addFont.mutate(formData);
@@ -207,7 +214,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append('name', data.name);
     formData.append('category', 'font');
     formData.append('source', FontSource.ADOBE);
-    formData.append('projectId', data.projectId);
+    formData.append('weights', JSON.stringify(['400']));
+    formData.append('styles', JSON.stringify(['normal']));
+    formData.append('sourceData', JSON.stringify({
+      projectId: data.projectId
+    }));
 
     addFont.mutate(formData);
   };
@@ -217,7 +228,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append('name', data.name);
     formData.append('category', 'font');
     formData.append('source', FontSource.GOOGLE);
-    formData.append('url', data.url);
+    formData.append('weights', JSON.stringify(['400']));
+    formData.append('styles', JSON.stringify(['normal']));
+    formData.append('sourceData', JSON.stringify({
+      url: data.url
+    }));
 
     addFont.mutate(formData);
   };

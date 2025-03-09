@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "./storage";
-import { insertClientSchema, insertColorAssetSchema } from "@shared/schema";
+import { insertClientSchema, insertColorAssetSchema, insertFontAssetSchema } from "@shared/schema";
 import multer from "multer";
 
 const upload = multer();
@@ -35,24 +35,6 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/clients", async (req, res) => {
-    try {
-      const parsed = insertClientSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Invalid client data",
-          errors: parsed.error.errors
-        });
-      }
-
-      const client = await storage.createClient(parsed.data);
-      res.status(201).json(client);
-    } catch (error) {
-      console.error("Error creating client:", error);
-      res.status(500).json({ message: "Error creating client" });
-    }
-  });
-
   // Asset routes
   app.get("/api/clients/:clientId/assets", async (req, res) => {
     try {
@@ -65,8 +47,8 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Handle both file uploads and color assets
-  app.post("/api/clients/:clientId/assets", upload.single('file'), async (req, res) => {
+  // Handle both file uploads and other assets
+  app.post("/api/clients/:clientId/assets", upload.array('fontFiles'), async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
       const { category } = req.body;
@@ -89,7 +71,60 @@ export function registerRoutes(app: Express) {
         return res.status(201).json(asset);
       }
 
-      // Handle file upload for other asset types
+      if (category === 'font') {
+        // Handle font asset
+        const { name, source, weights, styles, sourceData } = req.body;
+        const parsedWeights = JSON.parse(weights);
+        const parsedStyles = JSON.parse(styles);
+        let parsedSourceData = {};
+
+        try {
+          parsedSourceData = JSON.parse(sourceData);
+        } catch (e) {
+          // If sourceData is not JSON, use it as is
+          parsedSourceData = sourceData;
+        }
+
+        const files = req.files as Express.Multer.File[];
+
+        // Create the font asset data
+        const fontData = {
+          clientId,
+          name,
+          category: 'font',
+          data: {
+            source,
+            weights: parsedWeights,
+            styles: parsedStyles,
+            sourceData: parsedSourceData
+          }
+        };
+
+        // If we have files, add them to the source data
+        if (files && files.length > 0) {
+          fontData.data.sourceData.files = files.map(file => ({
+            fileName: file.originalname,
+            fileData: file.buffer.toString('base64'),
+            format: file.originalname.split('.').pop()?.toLowerCase(),
+            weight: '400', // Default weight
+            style: 'normal' // Default style
+          }));
+        }
+
+        const parsed = insertFontAssetSchema.safeParse(fontData);
+
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid font data",
+            errors: parsed.error.errors
+          });
+        }
+
+        const asset = await storage.createAsset(parsed.data);
+        return res.status(201).json(asset);
+      }
+
+      // Handle logo asset
       const { name, type } = req.body;
       const file = req.file;
 
