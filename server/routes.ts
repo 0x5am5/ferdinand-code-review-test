@@ -1,8 +1,7 @@
 import type { Express } from "express";
 import { storage } from "./storage";
-import { insertClientSchema, insertColorAssetSchema, insertFontAssetSchema, FontSource, FontFormat } from "@shared/schema";
+import { insertClientSchema, insertColorAssetSchema } from "@shared/schema";
 import multer from "multer";
-import { convertFont, extractFontMetadata } from "./utils/font-converter";
 
 const upload = multer();
 
@@ -25,12 +24,7 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/clients/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid client ID format" });
-      }
-
-      const client = await storage.getClient(id);
+      const client = await storage.getClient(parseInt(req.params.id));
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
@@ -63,10 +57,6 @@ export function registerRoutes(app: Express) {
   app.get("/api/clients/:clientId/assets", async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
-      if (isNaN(clientId)) {
-        return res.status(400).json({ message: "Invalid client ID format" });
-      }
-
       const assets = await storage.getClientAssets(clientId);
       res.json(assets);
     } catch (error) {
@@ -75,153 +65,14 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Handle font, color, and other asset uploads
-  app.post("/api/clients/:clientId/assets", upload.array('files'), async (req, res) => {
+  // Handle both file uploads and color assets
+  app.post("/api/clients/:clientId/assets", upload.single('file'), async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
-      if (isNaN(clientId)) {
-        return res.status(400).json({ message: "Invalid client ID format" });
-      }
+      const { category } = req.body;
 
-      const { category, source } = req.body;
-
-      if (category === 'typography') {
-        // Build font asset data
-        const fontData = {
-          clientId,
-          name: req.body.name,
-          category: 'typography' as const,
-          data: {
-            source,
-            family: req.body.name, // Will be overridden for custom fonts
-            weights: [],
-            styles: [],
-            formats: [],
-            files: [],
-            projectId: req.body.projectId,
-            projectUrl: req.body.projectUrl,
-            previewText: req.body.previewText,
-          }
-        };
-
-        // Handle different font sources
-        if (source === FontSource.ADOBE) {
-          if (!req.body.projectId?.trim()) {
-            return res.status(400).json({ 
-              message: "Adobe Fonts Error",
-              details: "Project ID is required. Please enter a valid Adobe Fonts project ID."
-            });
-          }
-          fontData.data.projectUrl = `https://fonts.adobe.com/fonts/${req.body.projectId}`;
-          fontData.data.weights = [400]; // Default weight
-          fontData.data.styles = ['normal'];
-          fontData.data.formats = [FontFormat.WOFF2];
-          fontData.data.files = []; // Adobe fonts don't need local files
-        } 
-        else if (source === FontSource.GOOGLE) {
-          if (!req.body.projectUrl?.trim()) {
-            return res.status(400).json({ 
-              message: "Google Fonts Error",
-              details: "Please provide a valid Google Fonts URL (e.g., https://fonts.google.com/specimen/...)"
-            });
-          }
-          try {
-            const url = new URL(req.body.projectUrl);
-            if (!url.hostname.includes('fonts.google.com')) {
-              throw new Error('Invalid Google Fonts URL');
-            }
-          } catch (error) {
-            return res.status(400).json({ 
-              message: "Google Fonts Error",
-              details: "The provided URL is not a valid Google Fonts URL. Please make sure to copy the URL from fonts.google.com"
-            });
-          }
-          fontData.data.weights = [400]; // Default weight
-          fontData.data.styles = ['normal'];
-          fontData.data.formats = [FontFormat.WOFF2];
-          fontData.data.files = []; // Google fonts don't need local files
-        }
-        else if (source === FontSource.CUSTOM) {
-          if (!req.files?.length) {
-            return res.status(400).json({ 
-              message: "Font Upload Error",
-              details: "Please select at least one font file to upload. Supported formats: TTF, OTF, WOFF, or WOFF2"
-            });
-          }
-
-          const fontFiles = req.files as Express.Multer.File[];
-
-          for (const file of fontFiles) {
-            const fileExt = file.originalname.split('.').pop()?.toLowerCase();
-            if (!['ttf', 'otf', 'woff', 'woff2'].includes(fileExt || '')) {
-              return res.status(400).json({ 
-                message: "Invalid Font Format",
-                details: `File "${file.originalname}" is not supported. Please upload only TTF, OTF, WOFF, or WOFF2 files.`
-              });
-            }
-
-            // Extract metadata and convert font
-            try {
-              const metadata = await extractFontMetadata(file.buffer, fileExt || '');
-              const convertedFormats = await convertFont(file.buffer, fileExt || '');
-
-              // Update font data
-              fontData.data.family = metadata.family;
-              if (!fontData.data.weights.includes(metadata.weight)) {
-                fontData.data.weights.push(metadata.weight);
-              }
-              if (!fontData.data.styles.includes(metadata.style)) {
-                fontData.data.styles.push(metadata.style);
-              }
-              fontData.data.characters = metadata.characters;
-
-              // Add converted files
-              Object.entries(convertedFormats).forEach(([format, fileData]) => {
-                const formatKey = format as keyof typeof FontFormat;
-                if (!fontData.data.formats.includes(FontFormat[formatKey])) {
-                  fontData.data.formats.push(FontFormat[formatKey]);
-                }
-                fontData.data.files.push({
-                  format: FontFormat[formatKey],
-                  weight: metadata.weight,
-                  style: metadata.style,
-                  fileData,
-                });
-              });
-            } catch (error) {
-              console.error('Font processing error:', error);
-              return res.status(400).json({ 
-                message: "Font Processing Error",
-                details: `Failed to process "${file.originalname}". The file might be corrupted or in an unsupported format.`
-              });
-            }
-          }
-        }
-
-        // Validate the complete font data
-        const parsed = insertFontAssetSchema.safeParse(fontData);
-        if (!parsed.success) {
-          return res.status(400).json({
-            message: "Invalid Font Data",
-            details: parsed.error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
-          });
-        }
-
-        // Create the font asset
-        try {
-          const asset = await storage.createAsset(parsed.data);
-          return res.status(201).json(asset);
-        } catch (error) {
-          console.error('Database error:', error);
-          return res.status(500).json({
-            message: "Database Error",
-            details: "Failed to save the font. Please try again later."
-          });
-        }
-      }
-
-      // Handle other asset types...
-      else if (category === 'color') {
+      if (category === 'color') {
+        // Handle color asset
         const parsed = insertColorAssetSchema.safeParse({
           ...req.body,
           clientId,
@@ -237,14 +88,34 @@ export function registerRoutes(app: Express) {
         const asset = await storage.createAsset(parsed.data);
         return res.status(201).json(asset);
       }
-      // Handle other asset types (logo, etc.)
-      return res.status(400).json({ message: "Invalid asset category" });
+
+      // Handle file upload for other asset types
+      const { name, type } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
+
+      const asset = await storage.createAsset({
+        clientId,
+        name,
+        category: 'logo',
+        data: {
+          type,
+          format: fileExtension || 'png',
+          fileName: file.originalname,
+        },
+        fileData: file.buffer.toString('base64'),
+        mimeType: file.mimetype,
+      });
+
+      res.status(201).json(asset);
     } catch (error) {
       console.error("Error creating asset:", error);
-      return res.status(500).json({ 
-        message: "Server Error",
-        details: error instanceof Error ? error.message : "An unexpected error occurred"
-      });
+      res.status(500).json({ message: "Error creating asset" });
     }
   });
 
@@ -253,10 +124,6 @@ export function registerRoutes(app: Express) {
     try {
       const clientId = parseInt(req.params.clientId);
       const assetId = parseInt(req.params.assetId);
-
-      if (isNaN(clientId) || isNaN(assetId)) {
-        return res.status(400).json({ message: "Invalid ID format" });
-      }
 
       const asset = await storage.getAsset(assetId);
 
@@ -268,24 +135,14 @@ export function registerRoutes(app: Express) {
         return res.status(403).json({ message: "Not authorized to update this asset" });
       }
 
-      let parsed;
-      if (asset.category === 'color') {
-        parsed = insertColorAssetSchema.safeParse({
-          ...req.body,
-          clientId,
-        });
-      } else if (asset.category === 'typography') {
-        parsed = insertFontAssetSchema.safeParse({
-          ...req.body,
-          clientId,
-        });
-      } else {
-        return res.status(400).json({ message: "Invalid asset category" });
-      }
+      const parsed = insertColorAssetSchema.safeParse({
+        ...req.body,
+        clientId,
+      });
 
       if (!parsed.success) {
         return res.status(400).json({
-          message: "Invalid data",
+          message: "Invalid color data",
           errors: parsed.error.errors
         });
       }
@@ -303,10 +160,6 @@ export function registerRoutes(app: Express) {
     try {
       const clientId = parseInt(req.params.clientId);
       const assetId = parseInt(req.params.assetId);
-
-      if (isNaN(clientId) || isNaN(assetId)) {
-        return res.status(400).json({ message: "Invalid ID format" });
-      }
 
       const asset = await storage.getAsset(assetId);
 
@@ -330,10 +183,6 @@ export function registerRoutes(app: Express) {
   app.get("/api/assets/:assetId/file", async (req, res) => {
     try {
       const assetId = parseInt(req.params.assetId);
-      if (isNaN(assetId)) {
-        return res.status(400).json({ message: "Invalid asset ID format" });
-      }
-
       const asset = await storage.getAsset(assetId);
 
       if (!asset || !asset.fileData) {
