@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Client, BrandAsset } from "@shared/schema";
 import { Link, useParams } from "wouter";
@@ -7,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, ArrowLeft } from "lucide-react";
-import { AssetCard } from "@/components/brand/asset-card";
+import AssetCard from "@/components/brand/asset-card";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -22,8 +23,12 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  // Debug: Log raw assets from query
-  console.log('ClientDetails: Raw assets from query:', assets);
+  // Update document title when client data is loaded
+  useEffect(() => {
+    if (client) {
+      document.title = `${client.name} - Brand Assets`;
+    }
+  }, [client]);
 
   if (isLoadingClient || isLoadingAssets) {
     return (
@@ -64,20 +69,9 @@ export default function ClientDetails() {
 
   // Filter and validate logo assets
   const logoAssets = assets.filter(asset => {
-    if (asset.category !== 'logo') {
-      console.log('Skipping non-logo asset:', asset.category);
-      return false;
-    }
-
+    if (asset.category !== 'logo') return false;
     try {
       const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-      console.log('Processing logo asset:', {
-        id: asset.id,
-        name: asset.name,
-        category: asset.category,
-        data,
-        hasFileData: !!asset.fileData
-      });
       return true;
     } catch (error) {
       console.error('Invalid logo data:', error, asset);
@@ -98,16 +92,19 @@ export default function ClientDetails() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-bold">{client.name}</h1>
+          <div>
+            <h1 className="text-4xl font-bold">{client.name}</h1>
+            <p className="text-sm text-muted-foreground">Brand Assets</p>
+          </div>
         </div>
 
         <Tabs defaultValue="logos" className="space-y-6">
           <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
             <TabsTrigger value="logos" className="data-[state=active]:bg-background rounded-none h-full px-6">
-              Asset Library
+              Brand Assets
             </TabsTrigger>
             <TabsTrigger value="colors" className="data-[state=active]:bg-background rounded-none h-full px-6">
-              Colors
+              Color Palette
             </TabsTrigger>
             <TabsTrigger value="typography" className="data-[state=active]:bg-background rounded-none h-full px-6">
               Typography
@@ -127,11 +124,11 @@ export default function ClientDetails() {
               ) : (
                 <Card>
                   <CardHeader>
-                    <CardTitle>No Colors</CardTitle>
+                    <CardTitle>No Colors Added</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      No color assets have been added yet.
+                      The color palette has not been defined yet.
                     </p>
                   </CardContent>
                 </Card>
@@ -152,7 +149,7 @@ export default function ClientDetails() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      No typography assets have been added yet.
+                      Typography settings have not been configured yet.
                     </p>
                   </CardContent>
                 </Card>

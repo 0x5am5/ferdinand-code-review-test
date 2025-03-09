@@ -227,7 +227,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Logo System</h2>
+        <h2 className="text-2xl font-bold">Brand Assets</h2>
       </div>
 
       <div className="space-y-8">
@@ -235,13 +235,13 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
           <div key={type} className="border rounded-lg p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-semibold">
-                {type.charAt(0).toUpperCase() + type.slice(1)} Logo
+                {type.charAt(0).toUpperCase() + type.slice(1)} Asset
               </h3>
               <UploadDialog 
                 type={type} 
                 clientId={clientId} 
                 onSuccess={() => {
-                  console.log('Logo upload succeeded');
+                  console.log('Asset upload succeeded');
                 }}
               />
             </div>
@@ -254,7 +254,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
               </div>
             ) : (
               <p className="text-muted-foreground text-center py-8">
-                No {type.toLowerCase()} logo uploaded yet
+                No {type.toLowerCase()} asset uploaded yet
               </p>
             )}
           </div>
