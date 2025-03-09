@@ -201,14 +201,24 @@ export function registerRoutes(app: Express) {
         return res.status(403).json({ message: "Not authorized to update this asset" });
       }
 
-      const parsed = insertColorAssetSchema.safeParse({
-        ...req.body,
-        clientId,
-      });
+      let parsed;
+      if (req.body.category === 'font') {
+        parsed = insertFontAssetSchema.safeParse({
+          ...req.body,
+          clientId,
+        });
+      } else if (req.body.category === 'color') {
+        parsed = insertColorAssetSchema.safeParse({
+          ...req.body,
+          clientId,
+        });
+      } else {
+        return res.status(400).json({ message: "Invalid asset category" });
+      }
 
       if (!parsed.success) {
         return res.status(400).json({
-          message: "Invalid color data",
+          message: `Invalid ${req.body.category} data`,
           errors: parsed.error.errors
         });
       }
