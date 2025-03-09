@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useParams } from "wouter";
 import { AssetCard } from "@/components/brand/asset-card";
 import { LogoManager } from "@/components/brand/logo-manager";
+import { ColorManager } from "@/components/brand/color-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ClientDetails() {
@@ -22,9 +23,6 @@ export default function ClientDetails() {
     queryKey: [`/api/clients/${clientId}/assets`],
     enabled: !!clientId,
   });
-
-  console.log('Client Data:', client); // Debug log
-  console.log('Assets Data:', assets); // Debug log
 
   if (isLoadingClient || isLoadingAssets) {
     return (
@@ -108,24 +106,7 @@ export default function ClientDetails() {
           </TabsContent>
 
           <TabsContent value="colors">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {colorAssets.length > 0 ? (
-                colorAssets.map(asset => (
-                  <AssetCard key={asset.id} asset={asset} />
-                ))
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>No Colors</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">
-                      No color assets have been added yet.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            <ColorManager clientId={clientId} colors={colorAssets} />
           </TabsContent>
 
           <TabsContent value="typography">
