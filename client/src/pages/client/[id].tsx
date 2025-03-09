@@ -22,7 +22,7 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  // Debug: Log raw assets data
+  // Debug: Log raw assets from query
   console.log('ClientDetails: Raw assets from query:', assets);
 
   if (isLoadingClient || isLoadingAssets) {
@@ -62,7 +62,7 @@ export default function ClientDetails() {
     );
   }
 
-  // Filter and validate logo assets with detailed logging
+  // Filter and validate logo assets
   const logoAssets = assets.filter(asset => {
     if (asset.category !== 'logo') {
       console.log('Skipping non-logo asset:', asset.category);
@@ -70,33 +70,20 @@ export default function ClientDetails() {
     }
 
     try {
-      // Parse data if it's a string
       const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-
-      // Log the parsed data for debugging
       console.log('Processing logo asset:', {
         id: asset.id,
         name: asset.name,
+        category: asset.category,
         data,
-        fileData: !!asset.fileData,
-        mimeType: asset.mimeType
+        hasFileData: !!asset.fileData
       });
-
-      // Ensure we have valid data
-      if (!data || !data.type || !data.format) {
-        console.warn('Invalid logo data structure:', data);
-        return false;
-      }
-
       return true;
     } catch (error) {
-      console.error('Error processing logo asset:', error, asset);
+      console.error('Invalid logo data:', error, asset);
       return false;
     }
   });
-
-  // Debug: Log filtered logo assets
-  console.log('ClientDetails: Filtered logo assets:', logoAssets);
 
   const colorAssets = assets.filter(asset => asset.category === 'color');
   const typographyAssets = assets.filter(asset => asset.category === 'typography');
@@ -111,13 +98,13 @@ export default function ClientDetails() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-4xl font-bold">{client.name} Brand Guidelines</h1>
+          <h1 className="text-4xl font-bold">{client.name}</h1>
         </div>
 
         <Tabs defaultValue="logos" className="space-y-6">
           <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
             <TabsTrigger value="logos" className="data-[state=active]:bg-background rounded-none h-full px-6">
-              Logo System
+              Asset Library
             </TabsTrigger>
             <TabsTrigger value="colors" className="data-[state=active]:bg-background rounded-none h-full px-6">
               Colors
