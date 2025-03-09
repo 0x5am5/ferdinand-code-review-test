@@ -438,16 +438,20 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     setSelectedStyles(font.styles);
   };
 
+  // Update the handleUpdateFont function
   const handleUpdateFont = async () => {
     if (!editingFont) return;
 
     const updateData = {
       name: editingFont.name,
       category: 'font',
-      weights: selectedWeights,
-      styles: selectedStyles,
       source: editingFont.source,
-      sourceData: editingFont.sourceData,
+      data: {
+        source: editingFont.source,
+        weights: selectedWeights,
+        styles: selectedStyles,
+        sourceData: editingFont.sourceData
+      }
     };
 
     await editFont.mutateAsync({ id: editingFont.id!, data: updateData });
