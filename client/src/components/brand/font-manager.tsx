@@ -30,8 +30,7 @@ const fontFormSchema = z.object({
   }
   return true;
 }, {
-  message: "Required field missing",
-  path: ['projectId'],
+  message: "Required field missing for selected font source",
 });
 
 type FontFormData = z.infer<typeof fontFormSchema>;
