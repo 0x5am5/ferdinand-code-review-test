@@ -16,6 +16,7 @@ export interface IStorage {
   getClientAssets(clientId: number): Promise<BrandAsset[]>;
   getAsset(id: number): Promise<BrandAsset | undefined>;
   createAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
+  updateAsset(id: number, asset: InsertBrandAsset): Promise<BrandAsset>;
   deleteAsset(id: number): Promise<void>;
 }
 
@@ -65,6 +66,15 @@ export class DatabaseStorage implements IStorage {
     const [asset] = await db
       .insert(brandAssets)
       .values(insertAsset)
+      .returning();
+    return asset;
+  }
+
+  async updateAsset(id: number, updateAsset: InsertBrandAsset): Promise<BrandAsset> {
+    const [asset] = await db
+      .update(brandAssets)
+      .set(updateAsset)
+      .where(eq(brandAssets.id, id))
       .returning();
     return asset;
   }

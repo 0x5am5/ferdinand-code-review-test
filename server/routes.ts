@@ -119,6 +119,42 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Update asset endpoint
+  app.patch("/api/clients/:clientId/assets/:assetId", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const assetId = parseInt(req.params.assetId);
+
+      const asset = await storage.getAsset(assetId);
+
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
+      if (asset.clientId !== clientId) {
+        return res.status(403).json({ message: "Not authorized to update this asset" });
+      }
+
+      const parsed = insertColorAssetSchema.safeParse({
+        ...req.body,
+        clientId,
+      });
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid color data",
+          errors: parsed.error.errors
+        });
+      }
+
+      const updatedAsset = await storage.updateAsset(assetId, parsed.data);
+      res.json(updatedAsset);
+    } catch (error) {
+      console.error("Error updating asset:", error);
+      res.status(500).json({ message: "Error updating asset" });
+    }
+  });
+
   // Delete asset endpoint
   app.delete("/api/clients/:clientId/assets/:assetId", async (req, res) => {
     try {

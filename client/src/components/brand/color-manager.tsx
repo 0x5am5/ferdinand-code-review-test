@@ -1,4 +1,4 @@
-import { Plus, Edit2, Trash2, Download, Upload } from "lucide-react";
+import { Plus, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
@@ -30,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BrandAsset, ColorCategory } from "@shared/schema";
+import { BrandAsset } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -51,7 +50,7 @@ interface ColorData {
   cmyk?: string;
   pantone?: string;
   name: string;
-  category: typeof ColorCategory[keyof typeof ColorCategory];
+  category: 'brand' | 'neutral' | 'interactive';
 }
 
 // Form validation schema
@@ -65,25 +64,6 @@ const colorFormSchema = z.object({
 });
 
 type ColorFormData = z.infer<typeof colorFormSchema>;
-
-// Default colors from the inspiration image
-const DEFAULT_COLORS = {
-  brand: [
-    { hex: '#FF983B', name: 'Neon Carrot' },
-    { hex: '#AA3A39', name: 'Medium Carmine' },
-    { hex: '#FE4E4E', name: 'Sunset Orange' },
-  ],
-  neutral: Array.from({ length: 11 }, (_, i) => ({
-    hex: `#${Math.floor((i * 255) / 10).toString(16).padStart(2, '0').repeat(3)}`,
-    name: `Gray ${i * 10}`,
-  })),
-  interactive: [
-    { hex: '#EE5397', name: 'Brilliant Rose' },
-    { hex: '#634490', name: 'Affair' },
-    { hex: '#3466A5', name: 'Azure' },
-    { hex: '#00C4D4', name: "Robin's Egg Blue" },
-  ],
-};
 
 function generateTintsAndShades(hex: string) {
   // Convert hex to RGB
@@ -120,7 +100,6 @@ function ColorChip({ color, onEdit, onDelete }: {
   return (
     <div className="min-w-[200px] border rounded-lg p-4 bg-white">
       <div className="space-y-4">
-        {/* Main color display */}
         <div>
           <div
             className="h-16 rounded-md mb-2"
@@ -168,7 +147,6 @@ function ColorChip({ color, onEdit, onDelete }: {
           </div>
         </div>
 
-        {/* Additional color information */}
         <div className="space-y-1 text-sm">
           {color.rgb && <p>RGB: {color.rgb}</p>}
           {color.hsl && <p>HSL: {color.hsl}</p>}
@@ -176,7 +154,6 @@ function ColorChip({ color, onEdit, onDelete }: {
           {color.pantone && <p>Pantone: {color.pantone}</p>}
         </div>
 
-        {/* Tints and Shades */}
         <div className="space-y-2">
           <p className="text-sm font-medium">Tints</p>
           <div className="grid grid-cols-3 gap-1">
@@ -206,11 +183,12 @@ function ColorChip({ color, onEdit, onDelete }: {
   );
 }
 
-function ColorSection({ title, colors = [], onAddColor, deleteColor }: {
+function ColorSection({ title, colors = [], onAddColor, deleteColor, onEditColor }: {
   title: string;
   colors: ColorData[];
   onAddColor: () => void;
   deleteColor: (colorId: number) => void;
+  onEditColor: (color: ColorData) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -220,24 +198,30 @@ function ColorSection({ title, colors = [], onAddColor, deleteColor }: {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
-      <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-        <div className="flex w-max space-x-4 p-4">
-          {colors.map((color) => (
-            <ColorChip
-              key={`${color.hex}-${color.id || Math.random()}`}
-              color={color}
-              onEdit={() => {/* Edit will be implemented in next iteration */}}
-              onDelete={() => color.id && deleteColor(color.id)}
-            />
-          ))}
+      {colors.length > 0 ? (
+        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+          <div className="flex w-max space-x-4 p-4">
+            {colors.map((color) => (
+              <ColorChip
+                key={`${color.hex}-${color.id || Math.random()}`}
+                color={color}
+                onEdit={() => onEditColor(color)}
+                onDelete={() => color.id && deleteColor(color.id)}
+              />
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      ) : (
+        <div className="rounded-lg border bg-card text-card-foreground p-8 text-center">
+          <p className="text-muted-foreground">No colors added yet</p>
         </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      )}
     </div>
   );
 }
 
-export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
+export function ColorManager({ clientId, colors }: ColorManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingColor, setIsAddingColor] = useState(false);
@@ -255,39 +239,41 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
 
   const createColor = useMutation({
     mutationFn: async (data: ColorFormData) => {
-      const response = await fetch(`/api/clients/${clientId}/assets`, {
-        method: 'POST',
+      const payload = {
+        name: data.name,
+        category: 'color',
+        clientId,
+        data: {
+          type: data.type,
+          category: selectedCategory,
+          colors: [{
+            hex: data.hex,
+            rgb: data.rgb,
+            cmyk: data.cmyk,
+            pantone: data.pantone,
+          }],
+          tints: generateTintsAndShades(data.hex).tints.map((hex, i) => ({
+            percentage: [60, 40, 20][i],
+            hex,
+          })),
+          shades: generateTintsAndShades(data.hex).shades.map((hex, i) => ({
+            percentage: [20, 40, 60][i],
+            hex,
+          })),
+        },
+      };
+
+      const response = await fetch(`/api/clients/${clientId}/assets${editingColor?.id ? `/${editingColor.id}` : ''}`, {
+        method: editingColor ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: data.name,
-          category: 'color',
-          clientId,
-          data: {
-            type: data.type,
-            category: selectedCategory,
-            colors: [{
-              hex: data.hex,
-              rgb: data.rgb,
-              cmyk: data.cmyk,
-              pantone: data.pantone,
-            }],
-            tints: generateTintsAndShades(data.hex).tints.map((hex, i) => ({
-              percentage: [60, 40, 20][i],
-              hex,
-            })),
-            shades: generateTintsAndShades(data.hex).shades.map((hex, i) => ({
-              percentage: [20, 40, 60][i],
-              hex,
-            })),
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to create color");
+        throw new Error(error.message || "Failed to save color");
       }
 
       return await response.json();
@@ -298,9 +284,10 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
       });
       toast({
         title: "Success",
-        description: "Color added successfully",
+        description: editingColor ? "Color updated successfully" : "Color added successfully",
       });
       setIsAddingColor(false);
+      setEditingColor(null);
       form.reset();
     },
     onError: (error: Error) => {
@@ -345,10 +332,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
   const parseColorAsset = (asset: BrandAsset): ColorData | null => {
     try {
       const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-      if (!data?.colors?.[0]) {
-        console.warn('Invalid color data structure:', data);
-        return null;
-      }
+      if (!data?.colors?.[0]) return null;
 
       return {
         id: asset.id,
@@ -361,7 +345,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
         category: data.category,
       };
     } catch (error) {
-      console.error('Error parsing color asset:', error, asset);
+      console.error('Error parsing color asset:', error);
       return null;
     }
   };
@@ -372,21 +356,22 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
     .map(parseColorAsset)
     .filter((color): color is ColorData => color !== null);
 
-  // If no colors are provided, use the default colors
-  const brandColors = transformedColors.length
-    ? transformedColors.filter(c => c.category === 'brand')
-    : DEFAULT_COLORS.brand.map(c => ({ ...c, category: 'brand' }));
+  const brandColors = transformedColors.filter(c => c.category === 'brand');
+  const neutralColors = transformedColors.filter(c => c.category === 'neutral');
+  const interactiveColors = transformedColors.filter(c => c.category === 'interactive');
 
-  const neutralColors = transformedColors.length
-    ? transformedColors.filter(c => c.category === 'neutral')
-    : DEFAULT_COLORS.neutral.map(c => ({ ...c, category: 'neutral' }));
-
-  const interactiveColors = transformedColors.length
-    ? transformedColors.filter(c => c.category === 'interactive')
-    : DEFAULT_COLORS.interactive.map(c => ({ ...c, category: 'interactive' }));
-
-  const onSubmit = (data: ColorFormData) => {
-    createColor.mutate(data);
+  const handleEditColor = (color: ColorData) => {
+    setEditingColor(color);
+    setSelectedCategory(color.category);
+    form.reset({
+      name: color.name,
+      hex: color.hex,
+      rgb: color.rgb,
+      cmyk: color.cmyk,
+      pantone: color.pantone,
+      type: 'solid', // Default to solid as we don't support gradients yet
+    });
+    setIsAddingColor(true);
   };
 
   // Auto-generate name from hex color
@@ -408,9 +393,12 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
           colors={brandColors}
           onAddColor={() => {
             setSelectedCategory('brand');
+            setEditingColor(null);
+            form.reset();
             setIsAddingColor(true);
           }}
           deleteColor={deleteColor.mutate}
+          onEditColor={handleEditColor}
         />
 
         <ColorSection
@@ -418,9 +406,12 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
           colors={neutralColors}
           onAddColor={() => {
             setSelectedCategory('neutral');
+            setEditingColor(null);
+            form.reset();
             setIsAddingColor(true);
           }}
           deleteColor={deleteColor.mutate}
+          onEditColor={handleEditColor}
         />
 
         <ColorSection
@@ -428,19 +419,23 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
           colors={interactiveColors}
           onAddColor={() => {
             setSelectedCategory('interactive');
+            setEditingColor(null);
+            form.reset();
             setIsAddingColor(true);
           }}
           deleteColor={deleteColor.mutate}
+          onEditColor={handleEditColor}
         />
       </div>
 
       <Dialog open={isAddingColor} onOpenChange={setIsAddingColor}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Add New Color</DialogTitle>
+            <DialogTitle>{editingColor ? 'Edit Color' : 'Add New Color'}</DialogTitle>
             <DialogDescription>
-              Add a new color to your brand system. You can specify various
-              color formats and create gradients.
+              {editingColor 
+                ? 'Edit the color details below.'
+                : 'Add a new color to your brand system. You can specify various color formats and create gradients.'}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -551,6 +546,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
                   variant="outline"
                   onClick={() => {
                     setIsAddingColor(false);
+                    setEditingColor(null);
                     form.reset();
                   }}
                 >
@@ -560,7 +556,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
                   type="submit"
                   disabled={createColor.isPending}
                 >
-                  {createColor.isPending ? "Adding..." : "Add Color"}
+                  {createColor.isPending ? "Saving..." : editingColor ? "Save Changes" : "Add Color"}
                 </Button>
               </div>
             </form>
