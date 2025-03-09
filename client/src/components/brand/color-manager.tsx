@@ -263,6 +263,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
         body: JSON.stringify({
           name: data.name,
           category: 'color',
+          clientId,
           data: {
             type: data.type,
             category: selectedCategory,
@@ -371,8 +372,6 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
     .map(parseColorAsset)
     .filter((color): color is ColorData => color !== null);
 
-  console.log('Transformed colors:', transformedColors);
-
   // If no colors are provided, use the default colors
   const brandColors = transformedColors.length
     ? transformedColors.filter(c => c.category === 'brand')
@@ -445,7 +444,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit((data) => createColor.mutate(data))} className="space-y-4">
               <FormField
                 control={form.control}
                 name="type"

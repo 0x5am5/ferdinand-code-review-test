@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "./storage";
-import { insertClientSchema } from "@shared/schema";
+import { insertClientSchema, insertColorAssetSchema } from "@shared/schema";
 import multer from "multer";
 
 const upload = multer();
@@ -65,9 +65,31 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  // Handle both file uploads and color assets
   app.post("/api/clients/:clientId/assets", upload.single('file'), async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
+      const { category } = req.body;
+
+      if (category === 'color') {
+        // Handle color asset
+        const parsed = insertColorAssetSchema.safeParse({
+          ...req.body,
+          clientId,
+        });
+
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid color data",
+            errors: parsed.error.errors
+          });
+        }
+
+        const asset = await storage.createAsset(parsed.data);
+        return res.status(201).json(asset);
+      }
+
+      // Handle file upload for other asset types
       const { name, type } = req.body;
       const file = req.file;
 
@@ -92,8 +114,8 @@ export function registerRoutes(app: Express) {
 
       res.status(201).json(asset);
     } catch (error) {
-      console.error("Error uploading asset:", error);
-      res.status(500).json({ message: "Error uploading asset" });
+      console.error("Error creating asset:", error);
+      res.status(500).json({ message: "Error creating asset" });
     }
   });
 
