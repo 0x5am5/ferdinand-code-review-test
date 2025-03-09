@@ -116,28 +116,44 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
     mimeType: z.string(),
   });
 
-// Add font-specific schema
+// Update font-specific schema to handle all font sources correctly
 export const insertFontAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
     category: z.literal("typography"),
     data: z.object({
       source: z.enum(Object.values(FontSource) as [string, ...string[]]),
-      projectId: z.string().optional(), // For Adobe Fonts
-      projectUrl: z.string().optional(), // For Adobe/Google Fonts
       family: z.string(),
-      weights: z.array(z.number()),
-      styles: z.array(z.string()),
-      formats: z.array(z.enum(Object.values(FontFormat) as [string, ...string[]])),
+      weights: z.array(z.number()).min(1),
+      styles: z.array(z.string()).min(1),
+      formats: z.array(z.enum(Object.values(FontFormat) as [string, ...string[]])).min(1),
       files: z.array(z.object({
         format: z.enum(Object.values(FontFormat) as [string, ...string[]]),
         weight: z.number(),
         style: z.string(),
         url: z.string().optional(), // For Google Fonts
         fileData: z.string().optional(), // For custom uploads (base64)
-      })),
+      })).optional(),
+      projectId: z.string().optional(), // For Adobe Fonts
+      projectUrl: z.string().optional(), // For Adobe/Google Fonts
       previewText: z.string().optional(),
       characters: z.string().optional(),
+    }).refine((data) => {
+      // Adobe Fonts requires projectId
+      if (data.source === FontSource.ADOBE) {
+        return !!data.projectId;
+      }
+      // Google Fonts requires projectUrl
+      if (data.source === FontSource.GOOGLE) {
+        return !!data.projectUrl;
+      }
+      // Custom fonts require files array
+      if (data.source === FontSource.CUSTOM) {
+        return Array.isArray(data.files) && data.files.length > 0;
+      }
+      return true;
+    }, {
+      message: "Missing required fields for the selected font source",
     }),
   });
 

@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "./storage";
-import { insertClientSchema, insertColorAssetSchema, insertFontAssetSchema } from "@shared/schema";
+import { insertClientSchema, insertColorAssetSchema, insertFontAssetSchema, FontSource, FontFormat } from "@shared/schema";
 import multer from "multer";
 import { convertFont, extractFontMetadata } from "./utils/font-converter";
 
@@ -83,10 +83,145 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid client ID format" });
       }
 
-      const { category } = req.body;
+      const { category, source } = req.body;
 
-      if (category === 'color') {
-        // Handle color asset
+      if (category === 'typography') {
+        // Build font asset data
+        const fontData = {
+          clientId,
+          name: req.body.name,
+          category: 'typography' as const,
+          data: {
+            source,
+            family: req.body.name, // Will be overridden for custom fonts
+            weights: [],
+            styles: [],
+            formats: [],
+            files: [],
+            projectId: req.body.projectId,
+            projectUrl: req.body.projectUrl,
+            previewText: req.body.previewText,
+          }
+        };
+
+        // Handle different font sources
+        if (source === FontSource.ADOBE) {
+          if (!req.body.projectId?.trim()) {
+            return res.status(400).json({ 
+              message: "Adobe Fonts Error",
+              details: "Project ID is required. Please enter a valid Adobe Fonts project ID."
+            });
+          }
+          fontData.data.projectUrl = `https://fonts.adobe.com/fonts/${req.body.projectId}`;
+          fontData.data.weights = [400]; // Default weight
+          fontData.data.styles = ['normal'];
+          fontData.data.formats = [FontFormat.WOFF2];
+          fontData.data.files = []; // Adobe fonts don't need local files
+        } 
+        else if (source === FontSource.GOOGLE) {
+          if (!req.body.projectUrl?.trim()) {
+            return res.status(400).json({ 
+              message: "Google Fonts Error",
+              details: "Please provide a valid Google Fonts URL (e.g., https://fonts.google.com/specimen/...)"
+            });
+          }
+          try {
+            const url = new URL(req.body.projectUrl);
+            if (!url.hostname.includes('fonts.google.com')) {
+              throw new Error('Invalid Google Fonts URL');
+            }
+          } catch (error) {
+            return res.status(400).json({ 
+              message: "Google Fonts Error",
+              details: "The provided URL is not a valid Google Fonts URL. Please make sure to copy the URL from fonts.google.com"
+            });
+          }
+          fontData.data.weights = [400]; // Default weight
+          fontData.data.styles = ['normal'];
+          fontData.data.formats = [FontFormat.WOFF2];
+          fontData.data.files = []; // Google fonts don't need local files
+        }
+        else if (source === FontSource.CUSTOM) {
+          if (!req.files?.length) {
+            return res.status(400).json({ 
+              message: "Font Upload Error",
+              details: "Please select at least one font file to upload. Supported formats: TTF, OTF, WOFF, or WOFF2"
+            });
+          }
+
+          const fontFiles = req.files as Express.Multer.File[];
+
+          for (const file of fontFiles) {
+            const fileExt = file.originalname.split('.').pop()?.toLowerCase();
+            if (!['ttf', 'otf', 'woff', 'woff2'].includes(fileExt || '')) {
+              return res.status(400).json({ 
+                message: "Invalid Font Format",
+                details: `File "${file.originalname}" is not supported. Please upload only TTF, OTF, WOFF, or WOFF2 files.`
+              });
+            }
+
+            // Extract metadata and convert font
+            try {
+              const metadata = await extractFontMetadata(file.buffer, fileExt || '');
+              const convertedFormats = await convertFont(file.buffer, fileExt || '');
+
+              // Update font data
+              fontData.data.family = metadata.family;
+              if (!fontData.data.weights.includes(metadata.weight)) {
+                fontData.data.weights.push(metadata.weight);
+              }
+              if (!fontData.data.styles.includes(metadata.style)) {
+                fontData.data.styles.push(metadata.style);
+              }
+              fontData.data.characters = metadata.characters;
+
+              // Add converted files
+              Object.entries(convertedFormats).forEach(([format, fileData]) => {
+                const formatKey = format as keyof typeof FontFormat;
+                if (!fontData.data.formats.includes(FontFormat[formatKey])) {
+                  fontData.data.formats.push(FontFormat[formatKey]);
+                }
+                fontData.data.files.push({
+                  format: FontFormat[formatKey],
+                  weight: metadata.weight,
+                  style: metadata.style,
+                  fileData,
+                });
+              });
+            } catch (error) {
+              console.error('Font processing error:', error);
+              return res.status(400).json({ 
+                message: "Font Processing Error",
+                details: `Failed to process "${file.originalname}". The file might be corrupted or in an unsupported format.`
+              });
+            }
+          }
+        }
+
+        // Validate the complete font data
+        const parsed = insertFontAssetSchema.safeParse(fontData);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid Font Data",
+            details: parsed.error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+          });
+        }
+
+        // Create the font asset
+        try {
+          const asset = await storage.createAsset(parsed.data);
+          return res.status(201).json(asset);
+        } catch (error) {
+          console.error('Database error:', error);
+          return res.status(500).json({
+            message: "Database Error",
+            details: "Failed to save the font. Please try again later."
+          });
+        }
+      }
+
+      // Handle other asset types...
+      else if (category === 'color') {
         const parsed = insertColorAssetSchema.safeParse({
           ...req.body,
           clientId,
@@ -102,87 +237,14 @@ export function registerRoutes(app: Express) {
         const asset = await storage.createAsset(parsed.data);
         return res.status(201).json(asset);
       }
-
-      if (category === 'typography') {
-        const parsed = insertFontAssetSchema.safeParse({
-          ...req.body,
-          clientId,
-        });
-
-        if (!parsed.success) {
-          return res.status(400).json({
-            message: "Invalid font data",
-            errors: parsed.error.errors
-          });
-        }
-
-        // Handle font file upload and conversion
-        if (req.files && Array.isArray(req.files)) {
-          const fontFiles = req.files as Express.Multer.File[];
-          const convertedFonts: Record<string, string>[] = [];
-
-          for (const file of fontFiles) {
-            // Extract metadata from the font file
-            const metadata = await extractFontMetadata(file.buffer, file.originalname.split('.').pop() || '');
-
-            // Convert font to all supported formats
-            const convertedFormats = await convertFont(file.buffer, file.originalname.split('.').pop() || '');
-
-            convertedFonts.push({
-              ...convertedFormats,
-              originalFormat: file.originalname.split('.').pop() || '',
-              metadata,
-            });
-          }
-
-          // Update the font data with converted files
-          const fontData = {
-            ...parsed.data,
-            data: {
-              ...parsed.data.data,
-              files: convertedFonts.map(font => ({
-                ...font.metadata,
-                fileData: font,
-              })),
-            },
-          };
-
-          const asset = await storage.createAsset(fontData);
-          return res.status(201).json(asset);
-        }
-
-        // Handle Google Fonts or Adobe Fonts integration without file upload
-        const asset = await storage.createAsset(parsed.data);
-        return res.status(201).json(asset);
-      }
-
-      // Handle logo and other file uploads
-      const { name, type } = req.body;
-      const file = req.files?.[0];
-
-      if (!file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
-
-      const asset = await storage.createAsset({
-        clientId,
-        name,
-        category: 'logo',
-        data: {
-          type,
-          format: fileExtension || 'png',
-          fileName: file.originalname,
-        },
-        fileData: file.buffer.toString('base64'),
-        mimeType: file.mimetype,
-      });
-
-      res.status(201).json(asset);
+      // Handle other asset types (logo, etc.)
+      return res.status(400).json({ message: "Invalid asset category" });
     } catch (error) {
       console.error("Error creating asset:", error);
-      res.status(500).json({ message: "Error creating asset" });
+      return res.status(500).json({ 
+        message: "Server Error",
+        details: error instanceof Error ? error.message : "An unexpected error occurred"
+      });
     }
   });
 

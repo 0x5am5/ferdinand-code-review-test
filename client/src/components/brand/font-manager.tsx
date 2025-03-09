@@ -22,18 +22,16 @@ const fontFormSchema = z.object({
   projectUrl: z.string().optional(),
   previewText: z.string().optional(),
 }).refine((data) => {
-  // Only require projectId for Adobe Fonts
   if (data.source === 'adobe') {
-    return !!data.projectId && data.projectId.trim().length > 0;
+    return !!data.projectId?.trim();
   }
-  // Only require projectUrl for Google Fonts
   if (data.source === 'google') {
-    return !!data.projectUrl && data.projectUrl.trim().length > 0;
+    return !!data.projectUrl?.trim();
   }
   return true;
 }, {
   message: "Required field missing",
-  path: ['projectId'], // This will be overridden in the form error handling
+  path: ['projectId'],
 });
 
 type FontFormData = z.infer<typeof fontFormSchema>;
@@ -199,12 +197,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
       // Add source-specific data
       if (data.source === 'adobe') {
-        if (!data.projectId) {
+        if (!data.projectId?.trim()) {
           throw new Error("Adobe Fonts Project ID is required");
         }
         formData.append('projectId', data.projectId);
       } else if (data.source === 'google') {
-        if (!data.projectUrl) {
+        if (!data.projectUrl?.trim()) {
           throw new Error("Google Fonts URL is required");
         }
         formData.append('projectUrl', data.projectUrl);
@@ -212,9 +210,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         if (!data.files?.length) {
           throw new Error("Please select at least one font file");
         }
-        data.files.forEach((file) => {
-          formData.append('files', file);
-        });
+        data.files.forEach(file => formData.append('files', file));
       }
 
       if (data.previewText) {
@@ -228,7 +224,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to upload font");
+        throw new Error(error.details || error.message || "Failed to upload font");
       }
 
       return await response.json();
@@ -351,7 +347,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form 
+            <form
               onSubmit={form.handleSubmit((data) => {
                 const source = form.getValues('source');
 
@@ -382,7 +378,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                 }
 
                 createFont.mutate({ ...data, files: uploadedFiles });
-              })} 
+              })}
               className="space-y-4"
             >
               <FormField
