@@ -7,6 +7,8 @@ import connectPg from "connect-pg-simple";
 import { db } from "./db";
 
 const app = express();
+
+// Important: JSON middleware must come before session middleware
 app.use(express.json());
 
 // Set up PostgreSQL session store
@@ -31,6 +33,12 @@ app.use(
     }
   })
 );
+
+// Add error handling middleware
+app.use((err: any, req: any, res: any, next: any) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something broke!', error: err.message });
+});
 
 // Basic health check endpoint
 app.get('/api/health', (_req, res) => {

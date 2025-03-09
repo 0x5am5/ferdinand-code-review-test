@@ -7,7 +7,7 @@ import {
   insertInspirationSectionSchema, 
   insertInspirationImageSchema 
 } from "@shared/schema";
-import { updateClientOrderSchema } from "@shared/schema"; // Import the schema
+import { updateClientOrderSchema } from "@shared/schema";
 
 const upload = multer();
 
@@ -32,28 +32,54 @@ export function registerRoutes(app: Express) {
     try {
       const { idToken } = req.body;
 
+      if (!idToken) {
+        return res.status(400).json({ message: "No ID token provided" });
+      }
+
       // Verify the Firebase ID token
       const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+
+      if (!decodedToken.email) {
+        return res.status(400).json({ message: "No email found in token" });
+      }
 
       // Check if user exists
       let user = await storage.getUserByEmail(decodedToken.email);
 
       if (!user) {
         // Create new user with guest role by default
-        user = await storage.createUser({
-          email: decodedToken.email,
-          name: decodedToken.name || decodedToken.email.split('@')[0],
-          role: UserRole.GUEST,
-        });
+        try {
+          user = await storage.createUser({
+            email: decodedToken.email,
+            name: decodedToken.name || decodedToken.email.split('@')[0],
+            role: UserRole.GUEST,
+          });
+        } catch (error) {
+          console.error("Error creating user:", error);
+          return res.status(500).json({ message: "Failed to create user" });
+        }
+      }
+
+      if (!req.session) {
+        return res.status(500).json({ message: "Session not initialized" });
       }
 
       // Set user in session
       req.session.userId = user.id;
+      await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) reject(err);
+          else resolve(undefined);
+        });
+      });
 
-      res.json(user);
+      return res.json(user);
     } catch (error) {
       console.error("Auth error:", error);
-      res.status(401).json({ message: "Authentication failed" });
+      return res.status(401).json({ 
+        message: "Authentication failed",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
@@ -63,12 +89,10 @@ export function registerRoutes(app: Express) {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -94,7 +118,6 @@ export function registerRoutes(app: Express) {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
-
       const client = await storage.getClient(id);
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
@@ -112,12 +135,10 @@ export function registerRoutes(app: Express) {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
-
       const client = await storage.getClient(id);
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
-
       await storage.deleteClient(id);
       res.status(200).json({ message: "Client deleted successfully" });
     } catch (error) {
@@ -130,14 +151,12 @@ export function registerRoutes(app: Express) {
   app.patch("/api/clients/order", async (req, res) => {
     try {
       const { clientOrders } = updateClientOrderSchema.parse(req.body);
-
       // Update each client's display order
       await Promise.all(
         clientOrders.map(({ id, displayOrder }) =>
           storage.updateClient(id, { displayOrder })
         )
       );
-
       res.json({ message: "Client order updated successfully" });
     } catch (error) {
       console.error("Error updating client order:", error);
