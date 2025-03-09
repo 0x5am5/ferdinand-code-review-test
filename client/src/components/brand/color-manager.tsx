@@ -1,4 +1,4 @@
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
@@ -33,6 +33,10 @@ import {
 import { BrandAsset, ColorCategory } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 interface ColorManagerProps {
   clientId: number;
@@ -40,6 +44,7 @@ interface ColorManagerProps {
 }
 
 interface ColorData {
+  id?: number;
   hex: string;
   rgb?: string;
   hsl?: string;
@@ -48,6 +53,18 @@ interface ColorData {
   name: string;
   category: typeof ColorCategory[keyof typeof ColorCategory];
 }
+
+// Form validation schema
+const colorFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  hex: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid hex color code"),
+  rgb: z.string().optional(),
+  cmyk: z.string().optional(),
+  pantone: z.string().optional(),
+  type: z.enum(["solid", "gradient"]),
+});
+
+type ColorFormData = z.infer<typeof colorFormSchema>;
 
 // Default colors from the inspiration image
 const DEFAULT_COLORS = {
@@ -189,10 +206,11 @@ function ColorChip({ color, onEdit, onDelete }: {
   );
 }
 
-function ColorSection({ title, colors = [], onAddColor }: {
+function ColorSection({ title, colors = [], onAddColor, deleteColor }: {
   title: string;
   colors: ColorData[];
   onAddColor: () => void;
+  deleteColor: (colorId: number) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -204,8 +222,13 @@ function ColorSection({ title, colors = [], onAddColor }: {
       </div>
       <ScrollArea className="w-full whitespace-nowrap rounded-md border">
         <div className="flex w-max space-x-4 p-4">
-          {colors.map((color, index) => (
-            <ColorChip key={`${color.hex}-${index}`} color={color} />
+          {colors.map((color) => (
+            <ColorChip
+              key={`${color.hex}-${color.id || Math.random()}`}
+              color={color}
+              onEdit={() => {/* Edit will be implemented in next iteration */}}
+              onDelete={() => color.id && deleteColor(color.id)}
+            />
           ))}
         </div>
         <ScrollBar orientation="horizontal" />
@@ -219,10 +242,19 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
   const queryClient = useQueryClient();
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'brand' | 'neutral' | 'interactive'>('brand');
-  const [colorType, setColorType] = useState<"solid" | "gradient">("solid");
+  const [editingColor, setEditingColor] = useState<ColorData | null>(null);
+
+  const form = useForm<ColorFormData>({
+    resolver: zodResolver(colorFormSchema),
+    defaultValues: {
+      name: '',
+      hex: '#000000',
+      type: 'solid',
+    },
+  });
 
   const createColor = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: ColorFormData) => {
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: 'POST',
         headers: {
@@ -230,7 +262,17 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
         },
         body: JSON.stringify({
           category: 'color',
-          ...data,
+          name: data.name,
+          data: {
+            type: data.type,
+            category: selectedCategory,
+            colors: [{
+              hex: data.hex,
+              rgb: data.rgb,
+              cmyk: data.cmyk,
+              pantone: data.pantone,
+            }],
+          },
         }),
       });
 
@@ -250,6 +292,36 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
         description: "Color added successfully",
       });
       setIsAddingColor(false);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteColor = useMutation({
+    mutationFn: async (colorId: number) => {
+      const response = await fetch(`/api/clients/${clientId}/assets/${colorId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete color");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`]
+      });
+      toast({
+        title: "Success",
+        description: "Color deleted successfully",
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -264,9 +336,13 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
   const parseColorAsset = (asset: BrandAsset): ColorData | null => {
     try {
       const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-      if (!data?.colors?.[0]) return null;
+      if (!data?.colors?.[0]) {
+        console.warn('Invalid color data structure:', data);
+        return null;
+      }
 
       return {
+        id: asset.id,
         hex: data.colors[0].hex,
         rgb: data.colors[0].rgb,
         hsl: data.colors[0].hsl,
@@ -276,7 +352,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
         category: data.category,
       };
     } catch (error) {
-      console.error('Error parsing color asset:', error);
+      console.error('Error parsing color asset:', error, asset);
       return null;
     }
   };
@@ -287,8 +363,10 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
     .map(parseColorAsset)
     .filter((color): color is ColorData => color !== null);
 
+  console.log('Transformed colors:', transformedColors);
+
   // If no colors are provided, use the default colors
-  const brandColors = transformedColors.length 
+  const brandColors = transformedColors.length
     ? transformedColors.filter(c => c.category === 'brand')
     : DEFAULT_COLORS.brand.map(c => ({ ...c, category: 'brand' }));
 
@@ -299,6 +377,24 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
   const interactiveColors = transformedColors.length
     ? transformedColors.filter(c => c.category === 'interactive')
     : DEFAULT_COLORS.interactive.map(c => ({ ...c, category: 'interactive' }));
+
+  const onSubmit = (data: ColorFormData) => {
+    createColor.mutate({
+      name: data.name,
+      hex: data.hex,
+      rgb: data.rgb,
+      cmyk: data.cmyk,
+      pantone: data.pantone,
+      type: data.type
+    });
+  };
+
+  // Auto-generate name from hex color
+  const handleHexChange = (hex: string) => {
+    if (!form.getValues('name') && hex.match(/^#[0-9A-F]{6}$/i)) {
+      form.setValue('name', `Color ${hex.toUpperCase()}`);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -314,6 +410,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
             setSelectedCategory('brand');
             setIsAddingColor(true);
           }}
+          deleteColor={deleteColor.mutate}
         />
 
         <ColorSection
@@ -323,6 +420,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
             setSelectedCategory('neutral');
             setIsAddingColor(true);
           }}
+          deleteColor={deleteColor.mutate}
         />
 
         <ColorSection
@@ -332,6 +430,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
             setSelectedCategory('interactive');
             setIsAddingColor(true);
           }}
+          deleteColor={deleteColor.mutate}
         />
       </div>
 
@@ -344,51 +443,128 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
               color formats and create gradients.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="type">Color Type</Label>
-              <Select
-                value={colorType}
-                onValueChange={(value: "solid" | "gradient") =>
-                  setColorType(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="solid">Solid Color</SelectItem>
-                  <SelectItem value="gradient">Gradient</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="name">Color Name</Label>
-              <Input id="name" placeholder="e.g., Primary Blue" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="hex">Hex Code</Label>
-              <Input id="hex" placeholder="#000000" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="rgb">RGB (Optional)</Label>
-              <Input id="rgb" placeholder="rgb(0, 0, 0)" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="cmyk">CMYK (Optional)</Label>
-              <Input id="cmyk" placeholder="cmyk(0, 0, 0, 100)" />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="pantone">Pantone (Optional)</Label>
-              <Input id="pantone" placeholder="e.g., PMS 000" />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsAddingColor(false)}>Cancel</Button>
-            <Button type="submit" onClick={() => {
-              // TODO: Handle submit using createColor mutation
-            }}>Add Color</Button>
-          </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color Type</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solid">Solid Color</SelectItem>
+                        <SelectItem value="gradient">Gradient</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="hex"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hex Code</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="#000000"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          handleHexChange(e.target.value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., Primary Blue" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="rgb"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>RGB (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="rgb(0, 0, 0)" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cmyk"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CMYK (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="cmyk(0, 0, 0, 100)" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="pantone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pantone (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., PMS 000" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingColor(false);
+                    form.reset();
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createColor.isPending}
+                >
+                  {createColor.isPending ? "Adding..." : "Add Color"}
+                </Button>
+              </div>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
