@@ -27,12 +27,39 @@ export const ColorCategory = {
   INTERACTIVE: "interactive"
 } as const;
 
+// Define font source types
+export const FontSource = {
+  FILE: "file",
+  ADOBE: "adobe",
+  GOOGLE: "google",
+} as const;
+
+// Define font weights
+export const FontWeight = {
+  THIN: "100",
+  EXTRA_LIGHT: "200",
+  LIGHT: "300",
+  REGULAR: "400",
+  MEDIUM: "500",
+  SEMI_BOLD: "600",
+  BOLD: "700",
+  EXTRA_BOLD: "800",
+  BLACK: "900",
+} as const;
+
+// Define font styles
+export const FontStyle = {
+  NORMAL: "normal",
+  ITALIC: "italic",
+  OBLIQUE: "oblique",
+} as const;
+
 export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
   name: text("name").notNull(),
-  category: text("category", { 
-    enum: ["logo", "color", "typography"] 
+  category: text("category", {
+    enum: ["logo", "color", "typography", "font"]
   }).notNull(),
   data: json("data"),
   fileData: text("file_data"),
@@ -101,6 +128,29 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
     mimeType: z.string(),
   });
 
+// Schema for fonts with required fields for validation
+export const insertFontAssetSchema = createInsertSchema(brandAssets)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    category: z.literal("font"),
+    data: z.object({
+      source: z.enum(Object.values(FontSource) as [string, ...string[]]),
+      weights: z.array(z.enum(Object.values(FontWeight) as [string, ...string[]])),
+      styles: z.array(z.enum(Object.values(FontStyle) as [string, ...string[]]),),
+      sourceData: z.object({
+        projectId: z.string().optional(),
+        url: z.string().url().optional(),
+        files: z.array(z.object({
+          weight: z.enum(Object.values(FontWeight) as [string, ...string[]]),
+          style: z.enum(Object.values(FontStyle) as [string, ...string[]]),
+          format: z.enum(["woff", "woff2", "otf", "ttf", "eot"]),
+          fileName: z.string(),
+          fileData: z.string(),
+        })).optional(),
+      }),
+    }),
+  });
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -109,11 +159,12 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
 export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
+export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
 
-export const insertClientSchema = createInsertSchema(clients).omit({ 
-  id: true, 
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
   createdAt: true,
-  updatedAt: true 
+  updatedAt: true
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
@@ -122,3 +173,6 @@ export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const LOGO_TYPES = Object.values(LogoType);
 export const FILE_FORMAT_LIST = Object.values(FILE_FORMATS);
 export const COLOR_CATEGORIES = Object.values(ColorCategory);
+export const FONT_SOURCES = Object.values(FontSource);
+export const FONT_WEIGHTS = Object.values(FontWeight);
+export const FONT_STYLES = Object.values(FontStyle);
