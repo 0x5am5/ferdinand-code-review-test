@@ -6,7 +6,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -93,7 +92,7 @@ function PersonaCard({ persona, onEdit, onDelete }: {
       <div className="mt-6 space-y-4">
         <div>
           <Label className="text-xs text-muted-foreground">EVENT ATTENDANCE ATTRIBUTES</Label>
-          <p className="text-sm">{persona.eventAttributes.join(", ")}</p>
+          <p className="text-sm">{(persona.eventAttributes as string[]).join(", ")}</p>
         </div>
 
         <div>
@@ -174,11 +173,17 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
           motivations: data.motivations.split(',').map(m => m.trim()),
           coreNeeds: data.coreNeeds.split(',').map(n => n.trim()),
           painPoints: data.painPoints.split(',').map(p => p.trim()),
+          metrics: {
+            ...data.metrics,
+            eventAttendance: data.metrics.eventAttendance ? Number(data.metrics.eventAttendance) : undefined,
+            engagementRate: data.metrics.engagementRate ? Number(data.metrics.engagementRate) : undefined,
+          }
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to add persona");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to add persona");
       }
 
       return await response.json();
@@ -236,8 +241,8 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1">
-              <ScrollArea className="flex-1 px-6">
-                <div className="py-4 space-y-6">
+              <ScrollArea className="flex-1" style={{ height: 'calc(90vh - 180px)' }}>
+                <div className="px-6 py-4 space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
