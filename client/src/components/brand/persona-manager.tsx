@@ -225,8 +225,8 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
       </div>
 
       <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-h-[90vh] p-0 gap-0">
+          <DialogHeader className="p-6 pb-4">
             <DialogTitle>Add New Persona</DialogTitle>
             <DialogDescription>
               Create a new user persona profile with detailed attributes
@@ -234,9 +234,9 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1">
-              <div className="flex-1 overflow-y-auto pr-6">
-                <div className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto px-6">
+                <div className="space-y-6 pb-6">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -389,14 +389,14 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
                 </div>
               </div>
 
-              <DialogFooter className="mt-6">
+              <div className="flex items-center justify-end gap-4 p-6 border-t">
                 <Button type="button" variant="outline" onClick={() => setIsAddingPersona(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" disabled={addPersona.isPending}>
                   {addPersona.isPending ? "Adding..." : "Add Persona"}
                 </Button>
-              </DialogFooter>
+              </div>
             </form>
           </Form>
         </DialogContent>
