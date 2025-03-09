@@ -1,4 +1,4 @@
-import { Plus, Edit2, Trash2, Download } from "lucide-react";
+import { Plus, Edit2, Trash2, Download, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,26 +25,43 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest } from "@/lib/queryClient";
 
 // Form schemas for different font sources
 const fileUploadSchema = z.object({
   files: z.array(z.instanceof(File)).min(1, "At least one font file is required"),
   name: z.string().min(1, "Font name is required"),
+  weights: z.array(z.string()).min(1, "At least one weight is required"),
+  styles: z.array(z.string()).min(1, "At least one style is required"),
 });
 
 const adobeFontSchema = z.object({
   projectId: z.string().min(1, "Project ID is required"),
   name: z.string().min(1, "Font name is required"),
+  weights: z.array(z.string()).min(1, "At least one weight is required"),
+  styles: z.array(z.string()).min(1, "At least one style is required"),
 });
 
 const googleFontSchema = z.object({
   url: z.string().url("Invalid Google Fonts URL"),
   name: z.string().min(1, "Font name is required"),
+  weights: z.array(z.string()).min(1, "At least one weight is required"),
+  styles: z.array(z.string()).min(1, "At least one style is required"),
 });
 
 type FileUploadForm = z.infer<typeof fileUploadSchema>;
 type AdobeFontForm = z.infer<typeof adobeFontSchema>;
 type GoogleFontForm = z.infer<typeof googleFontSchema>;
+
+// Available font weights and styles
+const availableWeights = [
+  "100", "200", "300", "400", "500", "600", "700", "800", "900"
+];
+
+const availableStyles = [
+  "normal", "italic"
+];
 
 function FontCard({ font, onEdit, onDelete }: {
   font: FontData;
@@ -52,6 +69,7 @@ function FontCard({ font, onEdit, onDelete }: {
   onDelete?: () => void;
 }) {
   const previewText = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   return (
     <motion.div
@@ -71,7 +89,7 @@ function FontCard({ font, onEdit, onDelete }: {
         <Button variant="ghost" size="icon" onClick={onEdit}>
           <Edit2 className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onDelete}>
+        <Button variant="ghost" size="icon" onClick={() => setShowConfirmDelete(true)}>
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
@@ -108,6 +126,32 @@ function FontCard({ font, onEdit, onDelete }: {
           </div>
         ))}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showConfirmDelete} onOpenChange={setShowConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Font</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {font.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmDelete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onDelete?.();
+                setShowConfirmDelete(false);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
@@ -135,37 +179,117 @@ function AddFontCard({ onClick }: { onClick: () => void }) {
   );
 }
 
+function WeightStyleSelector({ 
+  selectedWeights,
+  selectedStyles,
+  onWeightChange,
+  onStyleChange
+}: {
+  selectedWeights: string[];
+  selectedStyles: string[];
+  onWeightChange: (weights: string[]) => void;
+  onStyleChange: (styles: string[]) => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Font Weights</Label>
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {availableWeights.map(weight => (
+            <Button
+              key={weight}
+              type="button"
+              variant={selectedWeights.includes(weight) ? "default" : "outline"}
+              onClick={() => {
+                if (selectedWeights.includes(weight)) {
+                  onWeightChange(selectedWeights.filter(w => w !== weight));
+                } else {
+                  onWeightChange([...selectedWeights, weight].sort());
+                }
+              }}
+              className="h-auto py-2"
+            >
+              {weight}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <Label>Font Styles</Label>
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          {availableStyles.map(style => (
+            <Button
+              key={style}
+              type="button"
+              variant={selectedStyles.includes(style) ? "default" : "outline"}
+              onClick={() => {
+                if (selectedStyles.includes(style)) {
+                  onStyleChange(selectedStyles.filter(s => s !== style));
+                } else {
+                  onStyleChange([...selectedStyles, style]);
+                }
+              }}
+              className="h-auto py-2"
+            >
+              {style}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingFont, setIsAddingFont] = useState(false);
   const [activeTab, setActiveTab] = useState<"file" | "adobe" | "google">("file");
+  const [editingFont, setEditingFont] = useState<FontData | null>(null);
+  const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
 
   // Forms for different font sources
   const fileForm = useForm<FileUploadForm>({
     resolver: zodResolver(fileUploadSchema),
+    defaultValues: {
+      name: "",
+      files: [],
+      weights: ["400"],
+      styles: ["normal"],
+    }
   });
 
   const adobeForm = useForm<AdobeFontForm>({
     resolver: zodResolver(adobeFontSchema),
+    defaultValues: {
+      name: "",
+      projectId: "",
+      weights: ["400"],
+      styles: ["normal"],
+    }
   });
 
   const googleForm = useForm<GoogleFontForm>({
     resolver: zodResolver(googleFontSchema),
+    defaultValues: {
+      name: "",
+      url: "",
+      weights: ["400"],
+      styles: ["normal"],
+    }
   });
 
+  // Add font mutation
   const addFont = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await fetch(`/api/clients/${clientId}/assets`, {
-        method: 'POST',
-        body: data,
-      });
-
+      const response = await apiRequest("POST", `/api/clients/${clientId}/assets`, data);
       if (!response.ok) {
-        throw new Error("Failed to add font");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to add font");
       }
-
-      return await response.json();
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -189,24 +313,70 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     },
   });
 
+  // Delete font mutation
+  const deleteFont = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/clients/${clientId}/assets/${id}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete font");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`]
+      });
+      toast({
+        title: "Success",
+        description: "Font deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Edit font mutation
+  const editFont = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+      const response = await apiRequest("PATCH", `/api/clients/${clientId}/assets/${id}`, data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update font");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`]
+      });
+      toast({
+        title: "Success",
+        description: "Font updated successfully",
+      });
+      setEditingFont(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleFileUpload = (data: FileUploadForm) => {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('category', 'font');
     formData.append('source', FontSource.FILE);
+    formData.append('weights', JSON.stringify(selectedWeights));
+    formData.append('styles', JSON.stringify(selectedStyles));
 
-    // Convert weights and styles to arrays and append
-    const weights = ['400']; // Default weight
-    const styles = ['normal']; // Default style
-    formData.append('weights', JSON.stringify(weights));
-    formData.append('styles', JSON.stringify(styles));
-
-    // Add source data structure
-    formData.append('sourceData', JSON.stringify({
-      files: [] // This will be populated by the server with the uploaded files
-    }));
-
-    // Append each file with a consistent field name
     data.files.forEach((file) => {
       formData.append('fontFiles', file);
     });
@@ -219,8 +389,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append('name', data.name);
     formData.append('category', 'font');
     formData.append('source', FontSource.ADOBE);
-    formData.append('weights', JSON.stringify(['400']));
-    formData.append('styles', JSON.stringify(['normal']));
+    formData.append('weights', JSON.stringify(selectedWeights));
+    formData.append('styles', JSON.stringify(selectedStyles));
     formData.append('sourceData', JSON.stringify({
       projectId: data.projectId
     }));
@@ -233,13 +403,34 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append('name', data.name);
     formData.append('category', 'font');
     formData.append('source', FontSource.GOOGLE);
-    formData.append('weights', JSON.stringify(['400']));
-    formData.append('styles', JSON.stringify(['normal']));
+    formData.append('weights', JSON.stringify(selectedWeights));
+    formData.append('styles', JSON.stringify(selectedStyles));
     formData.append('sourceData', JSON.stringify({
       url: data.url
     }));
 
     addFont.mutate(formData);
+  };
+
+  const handleEditFont = (font: FontData) => {
+    setEditingFont(font);
+    setSelectedWeights(font.weights);
+    setSelectedStyles(font.styles);
+  };
+
+  const handleUpdateFont = async () => {
+    if (!editingFont) return;
+
+    const updateData = {
+      name: editingFont.name,
+      category: 'font',
+      weights: selectedWeights,
+      styles: selectedStyles,
+      source: editingFont.source,
+      sourceData: editingFont.sourceData,
+    };
+
+    await editFont.mutateAsync({ id: editingFont.id!, data: updateData });
   };
 
   const parseFontAsset = (asset: BrandAsset): FontData | null => {
@@ -251,8 +442,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         id: asset.id,
         name: asset.name,
         source: data.source,
-        weights: data.weights,
-        styles: data.styles,
+        weights: data.weights || ["400"],
+        styles: data.styles || ["normal"],
         sourceData: data.sourceData,
       };
     } catch (error) {
@@ -278,14 +469,15 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
             <FontCard
               key={font.id}
               font={font}
-              onEdit={() => {/* TODO: Implement edit */}}
-              onDelete={() => {/* TODO: Implement delete */}}
+              onEdit={() => handleEditFont(font)}
+              onDelete={() => font.id && deleteFont.mutate(font.id)}
             />
           ))}
         </AnimatePresence>
         <AddFontCard onClick={() => setIsAddingFont(true)} />
       </div>
 
+      {/* Add Font Dialog */}
       <Dialog open={isAddingFont} onOpenChange={setIsAddingFont}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -342,6 +534,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     )}
                   />
 
+                  <WeightStyleSelector
+                    selectedWeights={selectedWeights}
+                    selectedStyles={selectedStyles}
+                    onWeightChange={setSelectedWeights}
+                    onStyleChange={setSelectedStyles}
+                  />
+
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
                       Cancel
@@ -354,9 +553,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               </Form>
             </TabsContent>
 
+            {/* Similar updates for Adobe and Google font forms */}
             <TabsContent value="adobe" className="space-y-4">
               <Form {...adobeForm}>
                 <form onSubmit={adobeForm.handleSubmit(handleAdobeFont)} className="space-y-4">
+                  {/* Similar form fields as file upload */}
                   <FormField
                     control={adobeForm.control}
                     name="name"
@@ -383,6 +584,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                         <FormMessage />
                       </FormItem>
                     )}
+                  />
+
+                  <WeightStyleSelector
+                    selectedWeights={selectedWeights}
+                    selectedStyles={selectedStyles}
+                    onWeightChange={setSelectedWeights}
+                    onStyleChange={setSelectedStyles}
                   />
 
                   <DialogFooter>
@@ -428,6 +636,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     )}
                   />
 
+                  <WeightStyleSelector
+                    selectedWeights={selectedWeights}
+                    selectedStyles={selectedStyles}
+                    onWeightChange={setSelectedWeights}
+                    onStyleChange={setSelectedStyles}
+                  />
+
                   <DialogFooter>
                     <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
                       Cancel
@@ -440,6 +655,47 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               </Form>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Font Dialog */}
+      <Dialog open={!!editingFont} onOpenChange={(open) => !open && setEditingFont(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Font</DialogTitle>
+            <DialogDescription>
+              Update font properties
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label>Font Name</Label>
+              <Input
+                value={editingFont?.name || ''}
+                onChange={(e) => setEditingFont(prev => prev ? { ...prev, name: e.target.value } : null)}
+              />
+            </div>
+
+            <WeightStyleSelector
+              selectedWeights={selectedWeights}
+              selectedStyles={selectedStyles}
+              onWeightChange={setSelectedWeights}
+              onStyleChange={setSelectedStyles}
+            />
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingFont(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleUpdateFont}
+                disabled={editFont.isPending}
+              >
+                {editFont.isPending ? "Updating..." : "Update Font"}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
