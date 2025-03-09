@@ -54,6 +54,15 @@ export const FontStyle = {
   OBLIQUE: "oblique",
 } as const;
 
+// Define user persona related constants
+export const PersonaEventAttribute = {
+  FREQUENT: "frequent",
+  EARLY_PLANNER: "early_planner",
+  REGIONAL: "regional",
+  NATIONAL: "national",
+  TRENDING: "trending"
+} as const;
+
 export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
@@ -86,6 +95,23 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   role: text("role", { enum: ["admin", "client", "guest"] }).notNull(),
   clientId: integer("client_id").references(() => clients.id),
+});
+
+export const userPersonas = pgTable("user_personas", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  name: text("name").notNull(),
+  role: text("role"),
+  imageUrl: text("image_url"),
+  ageRange: text("age_range"),
+  demographics: json("demographics"),
+  eventAttributes: json("event_attributes"),
+  motivations: text("motivations").array(),
+  coreNeeds: text("core_needs").array(),
+  painPoints: text("pain_points").array(),
+  metrics: json("metrics"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Schema for colors with required fields for validation
@@ -151,6 +177,23 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
     }),
   });
 
+// Schema for user personas with required fields for validation
+export const insertUserPersonaSchema = createInsertSchema(userPersonas)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    demographics: z.object({
+      location: z.string().optional(),
+      occupation: z.string().optional(),
+      interests: z.array(z.string()).optional(),
+    }).optional(),
+    eventAttributes: z.array(z.enum(Object.values(PersonaEventAttribute) as [string, ...string[]])),
+    metrics: z.object({
+      eventAttendance: z.number().optional(),
+      engagementRate: z.number().optional(),
+      averageSpend: z.string().optional(),
+    }).optional(),
+  });
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -160,6 +203,8 @@ export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
 export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
 export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
+export type UserPersona = typeof userPersonas.$inferSelect;
+export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
 
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
@@ -176,3 +221,4 @@ export const COLOR_CATEGORIES = Object.values(ColorCategory);
 export const FONT_SOURCES = Object.values(FontSource);
 export const FONT_WEIGHTS = Object.values(FontWeight);
 export const FONT_STYLES = Object.values(FontStyle);
+export const PERSONA_EVENT_ATTRIBUTES = Object.values(PersonaEventAttribute);

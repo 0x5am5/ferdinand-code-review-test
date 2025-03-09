@@ -10,6 +10,8 @@ import { LogoManager } from "@/components/brand/logo-manager";
 import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PersonaManager } from "@/components/brand/persona-manager";
+import { UserPersona } from "@shared/schema"; // Assuming UserPersona is the type for personas
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -24,7 +26,12 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  if (isLoadingClient || isLoadingAssets) {
+  const { data: personas = [], isLoading: isLoadingPersonas } = useQuery<UserPersona[]>({
+    queryKey: [`/api/clients/${clientId}/personas`],
+    enabled: !!clientId,
+  });
+
+  if (isLoadingClient || isLoadingAssets || isLoadingPersonas) {
     return (
       <div className="flex h-screen">
         <Sidebar />
@@ -99,6 +106,12 @@ export default function ClientDetails() {
             >
               Typography
             </TabsTrigger>
+            <TabsTrigger 
+              value="personas" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
+              User Personas
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="logos">
@@ -111,6 +124,10 @@ export default function ClientDetails() {
 
           <TabsContent value="typography">
             <FontManager clientId={clientId} fonts={fontAssets} />
+          </TabsContent>
+
+          <TabsContent value="personas">
+            <PersonaManager clientId={clientId} personas={personas} />
           </TabsContent>
         </Tabs>
       </main>
