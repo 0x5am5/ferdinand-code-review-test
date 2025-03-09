@@ -2,34 +2,9 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
-import { Server } from "net";
 
 const app = express();
 app.use(express.json());
-
-const findAvailablePort = (startPort: number): Promise<number> => {
-  return new Promise((resolve, reject) => {
-    const testPort = (port: number) => {
-      const server = new Server();
-
-      server.once('error', (err: any) => {
-        if (err.code === 'EADDRINUSE') {
-          server.close(() => testPort(port + 1));
-        } else {
-          reject(err);
-        }
-      });
-
-      server.once('listening', () => {
-        server.close(() => resolve(port));
-      });
-
-      server.listen(port);
-    };
-
-    testPort(startPort);
-  });
-};
 
 let server: ReturnType<typeof createServer> | null = null;
 
@@ -71,19 +46,23 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Find an available port starting from 5000
-    const port = await findAvailablePort(5000);
+    // Start server on port 5000 as specified in .replit
+    const PORT = 5000;
+    const HOST = "0.0.0.0";
 
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       try {
-        server!.listen(port, "0.0.0.0", () => {
-          console.log(`Server started on port ${port}`);
-          log(`Server listening at http://0.0.0.0:${port}`);
+        server!.listen(PORT, HOST, () => {
+          console.log(`Server started on port ${PORT}`);
+          log(`Server listening at http://${HOST}:${PORT}`);
           resolve();
         });
 
         server!.on('error', (error: NodeJS.ErrnoException) => {
+          if (error.code === 'EADDRINUSE') {
+            console.error(`Port ${PORT} is already in use. Please ensure no other service is running on this port.`);
+          }
           reject(error);
         });
       } catch (err) {
