@@ -22,8 +22,8 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  // Debug logging for assets
-  console.log('Raw assets from query:', assets);
+  // Debug: Log raw assets data
+  console.log('ClientDetails: Raw assets from query:', assets);
 
   if (isLoadingClient || isLoadingAssets) {
     return (
@@ -62,26 +62,41 @@ export default function ClientDetails() {
     );
   }
 
-  // Filter and validate logo assets
+  // Filter and validate logo assets with detailed logging
   const logoAssets = assets.filter(asset => {
-    if (asset.category !== 'logo') return false;
+    if (asset.category !== 'logo') {
+      console.log('Skipping non-logo asset:', asset.category);
+      return false;
+    }
+
     try {
+      // Parse data if it's a string
       const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-      console.log('Logo asset data:', {
+
+      // Log the parsed data for debugging
+      console.log('Processing logo asset:', {
         id: asset.id,
         name: asset.name,
-        category: asset.category,
         data,
-        hasFileData: !!asset.fileData
+        fileData: !!asset.fileData,
+        mimeType: asset.mimeType
       });
+
+      // Ensure we have valid data
+      if (!data || !data.type || !data.format) {
+        console.warn('Invalid logo data structure:', data);
+        return false;
+      }
+
       return true;
     } catch (error) {
-      console.error('Invalid logo data:', error, asset);
+      console.error('Error processing logo asset:', error, asset);
       return false;
     }
   });
 
-  console.log('Filtered logo assets:', logoAssets);
+  // Debug: Log filtered logo assets
+  console.log('ClientDetails: Filtered logo assets:', logoAssets);
 
   const colorAssets = assets.filter(asset => asset.category === 'color');
   const typographyAssets = assets.filter(asset => asset.category === 'typography');

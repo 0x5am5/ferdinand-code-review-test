@@ -1,7 +1,7 @@
 import { 
   type User, type Client, type BrandAsset,
   type InsertUser, type InsertClient, type InsertBrandAsset,
-  users, clients, brandAssets
+  users, clients, brandAssets, LogoType
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -54,11 +54,43 @@ export class DatabaseStorage implements IStorage {
       .from(brandAssets)
       .where(eq(brandAssets.clientId, clientId));
 
-    return assets.map(asset => ({
-      ...asset,
-      // Parse JSON data if it's a string
-      data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
-    }));
+    return assets.map(asset => {
+      if (asset.category === 'logo') {
+        try {
+          const parsedData = typeof asset.data === 'string' 
+            ? JSON.parse(asset.data) 
+            : asset.data;
+
+          // Validate logo data
+          if (!parsedData || typeof parsedData !== 'object') {
+            console.error('Invalid logo data structure:', { id: asset.id, data: parsedData });
+            return null;
+          }
+
+          // Ensure all required fields exist
+          if (!parsedData.type || !parsedData.format || !parsedData.fileName) {
+            console.error('Missing required logo fields:', { id: asset.id, data: parsedData });
+            return null;
+          }
+
+          // Validate logo type
+          if (!Object.values(LogoType).includes(parsedData.type)) {
+            console.error('Invalid logo type:', { id: asset.id, type: parsedData.type });
+            return null;
+          }
+
+          // Return asset with parsed data
+          return {
+            ...asset,
+            data: parsedData
+          };
+        } catch (error) {
+          console.error('Error processing logo asset:', { id: asset.id, error });
+          return null;
+        }
+      }
+      return asset;
+    }).filter(Boolean) as BrandAsset[];
   }
 
   async getAsset(id: number): Promise<BrandAsset | undefined> {
@@ -69,32 +101,72 @@ export class DatabaseStorage implements IStorage {
 
     if (!asset) return undefined;
 
-    return {
-      ...asset,
-      // Parse JSON data if it's a string
-      data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
-    };
+    if (asset.category === 'logo') {
+      try {
+        const parsedData = typeof asset.data === 'string' 
+          ? JSON.parse(asset.data) 
+          : asset.data;
+
+        if (!parsedData || !parsedData.type || !parsedData.format) {
+          console.error('Invalid logo data structure:', { id: asset.id, data: parsedData });
+          return undefined;
+        }
+
+        return {
+          ...asset,
+          data: parsedData
+        };
+      } catch (error) {
+        console.error('Error processing logo asset:', { id: asset.id, error });
+        return undefined;
+      }
+    }
+
+    return asset;
   }
 
   async createAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {
-    // Ensure data is stored as a JSON string
-    const assetToInsert = {
-      ...insertAsset,
-      data: typeof insertAsset.data === 'string' 
-        ? insertAsset.data 
-        : JSON.stringify(insertAsset.data)
-    };
+    if (insertAsset.category === 'logo') {
+      // Parse and validate logo data
+      const logoData = typeof insertAsset.data === 'string' 
+        ? JSON.parse(insertAsset.data)
+        : insertAsset.data;
 
+      // Validate required fields
+      if (!logoData || !logoData.type || !logoData.format || !logoData.fileName) {
+        throw new Error('Invalid logo data structure: missing required fields');
+      }
+
+      // Validate logo type
+      if (!Object.values(LogoType).includes(logoData.type)) {
+        throw new Error(`Invalid logo type: ${logoData.type}`);
+      }
+
+      // Create a new asset with stringified data
+      const assetToInsert = {
+        ...insertAsset,
+        data: JSON.stringify(logoData)
+      };
+
+      const [asset] = await db
+        .insert(brandAssets)
+        .values(assetToInsert)
+        .returning();
+
+      // Return asset with parsed data
+      return {
+        ...asset,
+        data: logoData
+      };
+    }
+
+    // For non-logo assets
     const [asset] = await db
       .insert(brandAssets)
-      .values(assetToInsert)
+      .values(insertAsset)
       .returning();
 
-    return {
-      ...asset,
-      // Parse JSON data for the returned asset
-      data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
-    };
+    return asset;
   }
 }
 

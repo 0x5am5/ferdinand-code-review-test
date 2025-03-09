@@ -30,19 +30,12 @@ function LogoDisplay({ logo }: { logo: BrandAsset }) {
   const [error, setError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Parse data safely
-  let parsedData;
-  try {
-    parsedData = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
-    if (!parsedData || !parsedData.type || !parsedData.format) {
-      console.error('Invalid logo data structure:', parsedData);
-      return null;
-    }
-  } catch (err) {
-    console.error('Error parsing logo data:', err);
+  if (!logo.data || typeof logo.data !== 'object') {
+    console.error('Invalid logo data:', logo);
     return null;
   }
 
+  const { type, format } = logo.data;
   const imageUrl = `/api/assets/${logo.id}/file`;
 
   return (
@@ -76,10 +69,10 @@ function LogoDisplay({ logo }: { logo: BrandAsset }) {
         <div>
           <h4 className="font-medium">{logo.name}</h4>
           <p className="text-sm text-muted-foreground">
-            Type: {parsedData.type}
+            Type: {type}
           </p>
           <p className="text-sm text-muted-foreground">
-            Format: {parsedData.format.toUpperCase()}
+            Format: {format.toUpperCase()}
           </p>
         </div>
         <Button 
@@ -91,7 +84,7 @@ function LogoDisplay({ logo }: { logo: BrandAsset }) {
         >
           <a
             href={imageUrl}
-            download={`${logo.name}.${parsedData.format}`}
+            download={`${logo.name}.${format}`}
             className="flex items-center justify-center"
           >
             <Download className="mr-2 h-4 w-4" />
@@ -219,25 +212,14 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  // Group logos by type with strict type checking
+  // Group logos by type
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
-      try {
-        const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
-        const isMatch = data?.type === type;
-
-        console.log(`Processing logo ${logo.id} for type ${type}:`, { 
-          name: logo.name,
-          category: logo.category,
-          logoType: data?.type,
-          matches: isMatch
-        });
-
-        return isMatch;
-      } catch (err) {
-        console.error(`Error processing logo ${logo.id}:`, err);
+      if (!logo.data || typeof logo.data !== 'object') {
+        console.error('Invalid logo data structure:', logo);
         return false;
       }
+      return logo.data.type === type;
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
