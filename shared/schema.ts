@@ -116,7 +116,7 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
     mimeType: z.string(),
   });
 
-// Update font-specific schema
+// Update font-specific schema to handle all font sources correctly
 export const insertFontAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -124,47 +124,36 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
     data: z.object({
       source: z.enum(Object.values(FontSource) as [string, ...string[]]),
       family: z.string(),
-      weights: z.array(z.number()).default([400]),
-      styles: z.array(z.string()).default(['normal']),
-      formats: z.array(z.enum(Object.values(FontFormat) as [string, ...string[]])).default([FontFormat.WOFF2]),
+      weights: z.array(z.number()).min(1),
+      styles: z.array(z.string()).min(1),
+      formats: z.array(z.enum(Object.values(FontFormat) as [string, ...string[]])).min(1),
       files: z.array(z.object({
         format: z.enum(Object.values(FontFormat) as [string, ...string[]]),
         weight: z.number(),
         style: z.string(),
-        fileData: z.string(),
+        url: z.string().optional(), // For Google Fonts
+        fileData: z.string().optional(), // For custom uploads (base64)
       })).optional(),
-      projectId: z.string().optional(),
-      projectUrl: z.string().optional(),
+      projectId: z.string().optional(), // For Adobe Fonts
+      projectUrl: z.string().optional(), // For Adobe/Google Fonts
       previewText: z.string().optional(),
       characters: z.string().optional(),
-    }).superRefine((data, ctx) => {
+    }).refine((data) => {
+      // Adobe Fonts requires projectId
       if (data.source === FontSource.ADOBE) {
-        if (!data.projectId?.trim()) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Adobe Fonts Project ID is required",
-            path: ["projectId"],
-          });
-        }
+        return !!data.projectId;
       }
+      // Google Fonts requires projectUrl
       if (data.source === FontSource.GOOGLE) {
-        if (!data.projectUrl?.trim()) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Google Fonts URL is required",
-            path: ["projectUrl"],
-          });
-        }
+        return !!data.projectUrl;
       }
+      // Custom fonts require files array
       if (data.source === FontSource.CUSTOM) {
-        if (!data.files || data.files.length === 0) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "At least one font file is required for custom fonts",
-            path: ["files"],
-          });
-        }
+        return Array.isArray(data.files) && data.files.length > 0;
       }
+      return true;
+    }, {
+      message: "Missing required fields for the selected font source",
     }),
   });
 

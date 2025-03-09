@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Check, Copy, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,31 +11,27 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BrandAsset, FontSource } from "@shared/schema";
+import { BrandAsset, FontSource, FontFormat } from "@shared/schema";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
-// Form validation schema with source-specific requirements
+// Form validation schema
 const fontFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   source: z.enum(["adobe", "google", "custom"] as const),
   projectId: z.string().optional(),
   projectUrl: z.string().optional(),
   previewText: z.string().optional(),
-}).superRefine((data, ctx) => {
-  if (data.source === 'adobe' && !data.projectId?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Adobe Fonts Project ID is required",
-      path: ["projectId"],
-    });
+}).refine((data) => {
+  if (data.source === 'adobe') {
+    return !!data.projectId?.trim();
   }
-  if (data.source === 'google' && !data.projectUrl?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Google Fonts URL is required",
-      path: ["projectUrl"],
-    });
+  if (data.source === 'google') {
+    return !!data.projectUrl?.trim();
   }
+  return true;
+}, {
+  message: "Required field missing",
+  path: ['projectId'],
 });
 
 type FontFormData = z.infer<typeof fontFormSchema>;
@@ -193,33 +189,28 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   });
 
   const createFont = useMutation({
-    mutationFn: async (data: FontFormData) => {
+    mutationFn: async (data: FontFormData & { files?: File[] }) => {
       const formData = new FormData();
       formData.append('name', data.name);
       formData.append('category', 'typography');
       formData.append('source', data.source);
 
-      switch (data.source) {
-        case 'adobe':
-          if (!data.projectId?.trim()) {
-            throw new Error("Adobe Fonts Project ID is required");
-          }
-          formData.append('projectId', data.projectId);
-          break;
-
-        case 'google':
-          if (!data.projectUrl?.trim()) {
-            throw new Error("Google Fonts URL is required");
-          }
-          formData.append('projectUrl', data.projectUrl);
-          break;
-
-        case 'custom':
-          if (!uploadedFiles || uploadedFiles.length === 0) {
-            throw new Error("Please select at least one font file");
-          }
-          uploadedFiles.forEach(file => formData.append('files', file));
-          break;
+      // Add source-specific data
+      if (data.source === 'adobe') {
+        if (!data.projectId?.trim()) {
+          throw new Error("Adobe Fonts Project ID is required");
+        }
+        formData.append('projectId', data.projectId);
+      } else if (data.source === 'google') {
+        if (!data.projectUrl?.trim()) {
+          throw new Error("Google Fonts URL is required");
+        }
+        formData.append('projectUrl', data.projectUrl);
+      } else if (data.source === 'custom') {
+        if (!data.files?.length) {
+          throw new Error("Please select at least one font file");
+        }
+        data.files.forEach(file => formData.append('files', file));
       }
 
       if (data.previewText) {
@@ -233,14 +224,19 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.details || error.message || "Failed to create font");
+        throw new Error(error.details || error.message || "Failed to upload font");
       }
 
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/assets`] });
-      toast({ title: "Success", description: "Font added successfully" });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`]
+      });
+      toast({
+        title: "Success",
+        description: "Font added successfully",
+      });
       setIsAddingFont(false);
       setUploadedFiles([]);
       form.reset();
@@ -352,7 +348,37 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
           </DialogHeader>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit((data) => createFont.mutate(data))}
+              onSubmit={form.handleSubmit((data) => {
+                const source = form.getValues('source');
+
+                // Validate based on source
+                if (source === 'adobe' && !data.projectId?.trim()) {
+                  form.setError('projectId', {
+                    type: 'manual',
+                    message: 'Adobe Fonts Project ID is required'
+                  });
+                  return;
+                }
+
+                if (source === 'google' && !data.projectUrl?.trim()) {
+                  form.setError('projectUrl', {
+                    type: 'manual',
+                    message: 'Google Fonts URL is required'
+                  });
+                  return;
+                }
+
+                if (source === 'custom' && !uploadedFiles.length) {
+                  toast({
+                    title: "Error",
+                    description: "Please select at least one font file",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                createFont.mutate({ ...data, files: uploadedFiles });
+              })}
               className="space-y-4"
             >
               <FormField
@@ -365,7 +391,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
-                        // Reset form errors and uploaded files when changing source
+                        // Reset form errors when changing source
                         form.clearErrors();
                         setUploadedFiles([]);
                       }}
@@ -408,9 +434,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       <FormControl>
                         <Input {...field} placeholder="Enter your Adobe Fonts project ID" />
                       </FormControl>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        You can find this in your Adobe Fonts project settings.
-                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -427,9 +450,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       <FormControl>
                         <Input {...field} placeholder="https://fonts.google.com/specimen/..." />
                       </FormControl>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Copy the URL from the font's page on fonts.google.com
-                      </p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -471,7 +491,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       }}
                     />
                     <p className="text-sm text-muted-foreground mt-2">
-                      Supported formats: TTF, OTF, WOFF, WOFF2
+                      Supported formats: TTF, OTF, WOFF, WOFF2. Files will be automatically converted to all supported formats.
                     </p>
                     {uploadedFiles.length > 0 && (
                       <div className="mt-2">
@@ -540,9 +560,9 @@ interface FontData {
   source: typeof FontSource[keyof typeof FontSource];
   weights: number[];
   styles: string[];
-  formats: Array<string>;
+  formats: typeof FontFormat[keyof typeof FontFormat][];
   files: Array<{
-    format: string;
+    format: typeof FontFormat[keyof typeof FontFormat];
     weight: number;
     style: string;
     url?: string;
