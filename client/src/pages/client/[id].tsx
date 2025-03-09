@@ -8,6 +8,7 @@ import { Link, useParams } from "wouter";
 import { AssetCard } from "@/components/brand/asset-card";
 import { LogoManager } from "@/components/brand/logo-manager";
 import { ColorManager } from "@/components/brand/color-manager";
+import { FontManager } from "@/components/brand/font-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ClientDetails() {
@@ -63,8 +64,8 @@ export default function ClientDetails() {
 
   // Filter assets by category
   const logoAssets = assets.filter(asset => asset.category === 'logo');
-  const colorAssets = assets.filter(asset => asset.category === 'color') || [];
-  const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
+  const colorAssets = assets.filter(asset => asset.category === 'color');
+  const typographyAssets = assets.filter(asset => asset.category === 'typography');
 
   return (
     <div className="flex h-screen">
@@ -110,24 +111,7 @@ export default function ClientDetails() {
           </TabsContent>
 
           <TabsContent value="typography">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {typographyAssets.length > 0 ? (
-                typographyAssets.map(asset => (
-                  <AssetCard key={asset.id} asset={asset} />
-                ))
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>No Typography</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">
-                      No typography assets have been added yet.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            <FontManager clientId={clientId} fonts={typographyAssets} />
           </TabsContent>
         </Tabs>
       </main>
