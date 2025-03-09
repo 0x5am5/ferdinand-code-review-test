@@ -27,41 +27,71 @@ interface UploadDialogProps {
 }
 
 function LogoDisplay({ logo }: { logo: BrandAsset }) {
-  console.log('LogoDisplay received:', logo);
+  const [error, setError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Parse data safely
+  let parsedData;
+  try {
+    parsedData = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+    if (!parsedData || !parsedData.type || !parsedData.format) {
+      console.error('Invalid logo data structure:', parsedData);
+      return null;
+    }
+  } catch (err) {
+    console.error('Error parsing logo data:', err);
+    return null;
+  }
 
   const imageUrl = `/api/assets/${logo.id}/file`;
 
   return (
-    <div className="relative border rounded-lg p-4 bg-white">
-      <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center p-4 mb-4 overflow-hidden">
-        <img
-          src={imageUrl}
-          alt={logo.name}
-          className="max-w-full max-h-full object-contain"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            console.error('Image load error:', { src: target.src, error: e });
-          }}
-        />
+    <div className="border rounded-lg p-4 bg-white">
+      <div className="aspect-square rounded-lg border bg-muted flex items-center justify-center p-4 mb-4 relative">
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+            <svg className="animate-spin h-6 w-6 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+        )}
+        {error ? (
+          <div className="text-sm text-muted-foreground">Failed to load image</div>
+        ) : (
+          <img
+            src={imageUrl}
+            alt={logo.name}
+            className="max-w-full max-h-full object-contain"
+            onLoad={() => setIsLoading(false)}
+            onError={(e) => {
+              console.error('Failed to load logo:', imageUrl);
+              setError(true);
+              setIsLoading(false);
+            }}
+          />
+        )}
       </div>
       <div className="space-y-4">
         <div>
           <h4 className="font-medium">{logo.name}</h4>
-          {logo.data && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Type: {typeof logo.data === 'string' ? JSON.parse(logo.data).type : logo.data.type}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Format: {(typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data.format)?.toUpperCase()}
-              </p>
-            </>
-          )}
+          <p className="text-sm text-muted-foreground">
+            Type: {parsedData.type}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Format: {parsedData.format.toUpperCase()}
+          </p>
         </div>
-        <Button variant="secondary" size="sm" asChild className="w-full">
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          asChild 
+          className="w-full"
+          disabled={error}
+        >
           <a
             href={imageUrl}
-            download={`${logo.name}.${typeof logo.data === 'string' ? JSON.parse(logo.data).format : logo.data.format}`}
+            download={`${logo.name}.${parsedData.format}`}
             className="flex items-center justify-center"
           >
             <Download className="mr-2 h-4 w-4" />
@@ -189,14 +219,22 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  console.log('LogoManager received logos:', logos);
-
+  // Group logos by type with strict type comparison and detailed logging
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
-      const logoData = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
-      const isMatch = logoData?.type === type;
-      console.log(`Checking logo ${logo.id} for type ${type}:`, { logoData, isMatch });
-      return isMatch;
+      try {
+        const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+        console.log(`Processing logo ${logo.id} for type ${type}:`, { 
+          name: logo.name,
+          category: logo.category,
+          logoType: data?.type,
+          matches: data?.type === type
+        });
+        return data?.type === type;
+      } catch (err) {
+        console.error(`Error processing logo ${logo.id}:`, err);
+        return false;
+      }
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);

@@ -1,13 +1,13 @@
-import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery } from "@tanstack/react-query";
 import { Client, BrandAsset } from "@shared/schema";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Link, useParams } from "wouter";
-import { AssetCard } from "@/components/brand/asset-card";
+import { Sidebar } from "@/components/layout/sidebar";
 import { LogoManager } from "@/components/brand/logo-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, ArrowLeft } from "lucide-react";
+import { AssetCard } from "@/components/brand/asset-card";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -59,17 +59,19 @@ export default function ClientDetails() {
     );
   }
 
-  // Log assets for debugging
-  console.log('Fetched assets:', assets);
-
+  // Simple filtering of assets by category
   const logoAssets = assets.filter(asset => {
-    console.log('Checking asset:', asset);
-    return asset.category === 'logo';
+    console.log('Processing asset:', {
+      id: asset.id,
+      name: asset.name,
+      category: asset.category,
+      hasData: !!asset.data
+    });
+    return asset.category === 'logo' && asset.data;
   });
+
   const colorAssets = assets.filter(asset => asset.category === 'color');
   const typographyAssets = assets.filter(asset => asset.category === 'typography');
-
-  console.log('Filtered logo assets:', logoAssets);
 
   return (
     <div className="flex h-screen">
@@ -86,22 +88,13 @@ export default function ClientDetails() {
 
         <Tabs defaultValue="logos" className="space-y-6">
           <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
-            <TabsTrigger 
-              value="logos" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
+            <TabsTrigger value="logos" className="data-[state=active]:bg-background rounded-none h-full px-6">
               Logo System
             </TabsTrigger>
-            <TabsTrigger 
-              value="colors" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
+            <TabsTrigger value="colors" className="data-[state=active]:bg-background rounded-none h-full px-6">
               Colors
             </TabsTrigger>
-            <TabsTrigger 
-              value="typography" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
+            <TabsTrigger value="typography" className="data-[state=active]:bg-background rounded-none h-full px-6">
               Typography
             </TabsTrigger>
           </TabsList>

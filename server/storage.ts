@@ -56,6 +56,7 @@ export class DatabaseStorage implements IStorage {
 
     return assets.map(asset => ({
       ...asset,
+      // Parse JSON data if it's a string
       data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
     }));
   }
@@ -70,18 +71,28 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...asset,
+      // Parse JSON data if it's a string
       data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
     };
   }
 
   async createAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {
+    // Ensure data is stored as a JSON string
+    const assetToInsert = {
+      ...insertAsset,
+      data: typeof insertAsset.data === 'string' 
+        ? insertAsset.data 
+        : JSON.stringify(insertAsset.data)
+    };
+
     const [asset] = await db
       .insert(brandAssets)
-      .values(insertAsset)
+      .values(assetToInsert)
       .returning();
 
     return {
       ...asset,
+      // Parse JSON data for the returned asset
       data: typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data
     };
   }

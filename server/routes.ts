@@ -21,6 +21,104 @@ export function registerRoutes(app: Express) {
     });
   });
 
+  // Client assets endpoint with enhanced logging
+  app.get("/api/clients/:clientId/assets", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const assets = await storage.getClientAssets(clientId);
+
+      // Validate logo data
+      const validatedAssets = assets.map(asset => {
+        if (asset.category === 'logo') {
+          try {
+            const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+            console.log('Logo asset data:', {
+              id: asset.id,
+              name: asset.name,
+              type: data.type,
+              format: data.format,
+              fileData: !!asset.fileData
+            });
+          } catch (error) {
+            console.error('Invalid logo data for asset:', asset.id, error);
+          }
+        }
+        return asset;
+      });
+
+      res.json(validatedAssets);
+    } catch (error) {
+      console.error("Error fetching client assets:", error);
+      res.status(500).json({ message: "Error fetching client assets" });
+    }
+  });
+
+  // Handle file uploads with enhanced validation
+  app.post("/api/clients/:clientId/assets", upload.single('file'), async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const { name, type } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Parse the file extension from the original filename
+      const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
+
+      const assetData = {
+        type,
+        format: fileExtension || 'png',
+        fileName: file.originalname,
+      };
+
+      const asset = await storage.createAsset({
+        clientId,
+        name,
+        category: 'logo',
+        data: assetData,
+        fileData: file.buffer.toString('base64'),
+        mimeType: file.mimetype,
+      });
+
+      console.log('Created logo asset:', {
+        id: asset.id,
+        name: asset.name,
+        type: assetData.type,
+        format: assetData.format,
+        hasFileData: !!asset.fileData
+      });
+
+      res.status(201).json(asset);
+    } catch (error) {
+      console.error("Error uploading asset:", error);
+      res.status(500).json({ message: "Error uploading asset" });
+    }
+  });
+
+  // Serve asset files with enhanced error handling
+  app.get("/api/assets/:assetId/file", async (req, res) => {
+    try {
+      const assetId = parseInt(req.params.assetId);
+      const asset = await storage.getAsset(assetId);
+
+      if (!asset || !asset.fileData) {
+        console.error('Asset not found or missing file data:', assetId);
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
+      const buffer = Buffer.from(asset.fileData, 'base64');
+      res.setHeader('Content-Type', asset.mimeType || 'application/octet-stream');
+      res.setHeader('Content-Length', buffer.length);
+      res.setHeader('Cache-Control', 'public, max-age=31536000');
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error serving asset file:", error);
+      res.status(500).json({ message: "Error serving asset file" });
+    }
+  });
+
   // Client routes
   app.get("/api/clients", async (_req, res) => {
     try {
@@ -47,91 +145,6 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error creating client:", error);
       res.status(500).json({ message: "Error creating client" });
-    }
-  });
-
-  // Client assets endpoint
-  app.get("/api/clients/:clientId/assets", async (req, res) => {
-    try {
-      const clientId = parseInt(req.params.clientId);
-      const assets = await storage.getClientAssets(clientId);
-      console.log('Fetched assets:', assets); // Debug log
-      res.json(assets);
-    } catch (error) {
-      console.error("Error fetching client assets:", error);
-      res.status(500).json({ message: "Error fetching client assets" });
-    }
-  });
-
-  // Handle file uploads with multer
-  app.post("/api/clients/:clientId/assets", upload.single('file'), async (req, res) => {
-    try {
-      const clientId = parseInt(req.params.clientId);
-      const { name, type } = req.body;
-      const file = req.file;
-
-      if (!file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-
-      // Parse the file extension from the original filename
-      const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
-
-      const asset = await storage.createAsset({
-        clientId,
-        name,
-        category: 'logo',
-        data: {
-          type,
-          format: fileExtension || 'png', // Fallback to png if extension can't be determined
-          fileName: file.originalname,
-        },
-        fileData: file.buffer.toString('base64'),
-        mimeType: file.mimetype,
-      });
-
-      console.log('Created asset:', {
-        id: asset.id,
-        name: asset.name,
-        type,
-        format: fileExtension,
-      });
-
-      res.status(201).json(asset);
-    } catch (error) {
-      console.error("Error uploading asset:", error);
-      res.status(500).json({ message: "Error uploading asset" });
-    }
-  });
-
-  // Serve asset files
-  app.get("/api/assets/:assetId/file", async (req, res) => {
-    try {
-      const assetId = parseInt(req.params.assetId);
-      const asset = await storage.getAsset(assetId);
-
-      if (!asset || !asset.fileData) {
-        console.error('Asset not found or missing file data:', assetId);
-        return res.status(404).json({ message: "Asset not found" });
-      }
-
-      console.log('Serving asset:', {
-        id: asset.id,
-        name: asset.name,
-        mimeType: asset.mimeType,
-        hasFileData: !!asset.fileData
-      });
-
-      const buffer = Buffer.from(asset.fileData, 'base64');
-      res.setHeader('Content-Type', asset.mimeType || 'application/octet-stream');
-      res.setHeader('Content-Length', buffer.length);
-      res.setHeader('Cache-Control', 'public, max-age=31536000');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Content-Disposition', `inline; filename="${asset.name}"`);
-      res.send(buffer);
-    } catch (error) {
-      console.error("Error serving asset file:", error);
-      res.status(500).json({ message: "Error serving asset file" });
     }
   });
 }
