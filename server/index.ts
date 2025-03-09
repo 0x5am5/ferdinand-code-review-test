@@ -2,43 +2,9 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { db } from "./db";
 
 const app = express();
-
-// Important: JSON middleware must come before session middleware
 app.use(express.json());
-
-// Set up PostgreSQL session store
-const PostgresStore = connectPg(session);
-
-// Configure session middleware
-app.use(
-  session({
-    store: new PostgresStore({
-      createTableIfMissing: true,
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-      },
-    }),
-    secret: process.env.SESSION_SECRET || 'dev_secret_key',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
-  })
-);
-
-// Add error handling middleware
-app.use((err: any, req: any, res: any, next: any) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something broke!', error: err.message });
-});
 
 // Basic health check endpoint
 app.get('/api/health', (_req, res) => {
@@ -88,15 +54,15 @@ async function startServer() {
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       try {
-        server!.listen(5000, "0.0.0.0", () => {
-          console.log("Server started on port 5000");
-          log(`Server listening at http://0.0.0.0:5000`);
+        server!.listen(5100, "0.0.0.0", () => {
+          console.log("Server started on port 5100");
+          log(`Server listening at http://0.0.0.0:5100`);
           resolve();
         });
 
         server!.on('error', (error: NodeJS.ErrnoException) => {
           if (error.code === 'EADDRINUSE') {
-            console.error('Port 5000 is already in use. Please free up the port and try again.');
+            console.error('Port 5100 is already in use. Please free up the port and try again.');
             process.exit(1);
           } else {
             reject(error);
