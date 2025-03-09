@@ -1,4 +1,4 @@
-import { Plus, Edit2, Trash2, Check, Copy } from "lucide-react";
+import { Plus, Edit2, Trash2, Check, Copy, RotateCcw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
@@ -141,8 +141,8 @@ function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
       onClick={handleClick}
     >
       <div
-        className="rounded transition-all duration-200 group-hover:ring-2 ring-primary/20"
-        style={{ backgroundColor: hex, height: onClick ? '4rem' : '1.5rem' }}
+        className="rounded-md transition-all duration-200 group-hover:ring-2 ring-primary/20"
+        style={{ backgroundColor: hex, height: onClick ? '8rem' : '1.5rem' }}
       />
       <AnimatePresence>
         {copied ? (
@@ -150,7 +150,7 @@ function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded"
+            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md"
           >
             <Check className="h-4 w-4 text-white" />
           </motion.div>
@@ -158,7 +158,7 @@ function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded transition-colors"
+            className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded-md transition-colors"
           >
             <Copy className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
           </motion.div>
@@ -175,12 +175,24 @@ function ColorChip({ color, onEdit, onDelete }: {
 }) {
   const { tints, shades } = generateTintsAndShades(color.hex);
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState({
+    name: color.name,
+    hex: color.hex,
+  });
 
   const handleCopy = (value: string) => {
+    navigator.clipboard.writeText(value);
     toast({
       title: "Copied!",
       description: `${value} has been copied to your clipboard.`,
     });
+  };
+
+  const handleQuickEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onEdit?.();
+    setIsEditing(false);
   };
 
   return (
@@ -189,65 +201,126 @@ function ColorChip({ color, onEdit, onDelete }: {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      className="min-w-[200px] border rounded-lg p-4 bg-white"
+      className="relative min-w-[280px] border rounded-lg bg-white overflow-hidden group"
     >
-      <div className="space-y-4">
-        <div>
-          <ColorBlock
-            hex={color.hex}
-            onClick={() => handleCopy(color.hex)}
-          />
-          <div className="flex items-center justify-between mt-2">
-            <div>
-              <h4 className="font-medium">{color.name}</h4>
-              <p className="text-sm text-muted-foreground">{color.hex}</p>
-            </div>
-            <div className="flex gap-2">
-              {onEdit && (
-                <Button variant="ghost" size="sm" onClick={onEdit}>
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-              )}
-              {onDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Color</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this color? This action
-                        cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={onDelete}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Quick edit hover menu */}
+      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 bg-white/90 hover:bg-white"
+          onClick={() => setIsEditing(true)}
+        >
+          <Edit2 className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 bg-white/90 hover:bg-white"
+          onClick={() => handleCopy(color.hex)}
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 bg-white/90 hover:bg-white"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Color</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this color? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
 
-        <div className="space-y-1 text-sm">
-          {color.rgb && <p>RGB: {color.rgb}</p>}
-          {color.hsl && <p>HSL: {color.hsl}</p>}
-          {color.cmyk && <p>CMYK: {color.cmyk}</p>}
-          {color.pantone && <p>Pantone: {color.pantone}</p>}
+      {/* Color content */}
+      <div className="p-4">
+        {isEditing ? (
+          <form onSubmit={handleQuickEdit} className="space-y-2">
+            <Input
+              value={editValue.name}
+              onChange={(e) => setEditValue(prev => ({ ...prev, name: e.target.value }))}
+              className="font-medium"
+              autoFocus
+            />
+            <Input
+              value={editValue.hex}
+              onChange={(e) => setEditValue(prev => ({ ...prev, hex: e.target.value }))}
+              pattern="^#[0-9A-Fa-f]{6}$"
+              className="font-mono"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditing(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm">
+                Save
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <h4 className="font-medium mb-1">{color.name}</h4>
+            <ColorBlock
+              hex={color.hex}
+              onClick={() => handleCopy(color.hex)}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Color metadata */}
+      <div className="border-t p-4 space-y-4 bg-gray-50">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div>
+            <Label className="text-xs text-muted-foreground">HEX</Label>
+            <p className="font-mono">{color.hex}</p>
+          </div>
+          {color.rgb && (
+            <div>
+              <Label className="text-xs text-muted-foreground">RGB</Label>
+              <p className="font-mono">{color.rgb}</p>
+            </div>
+          )}
+          {color.cmyk && (
+            <div>
+              <Label className="text-xs text-muted-foreground">CMYK</Label>
+              <p className="font-mono">{color.cmyk}</p>
+            </div>
+          )}
+          {color.pantone && (
+            <div>
+              <Label className="text-xs text-muted-foreground">Pantone</Label>
+              <p className="font-mono">{color.pantone}</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-medium">Tints</p>
+          <Label className="text-xs text-muted-foreground">Tints</Label>
           <div className="grid grid-cols-3 gap-1">
             {tints.map((tint, index) => (
               <ColorBlock
@@ -257,7 +330,7 @@ function ColorChip({ color, onEdit, onDelete }: {
               />
             ))}
           </div>
-          <p className="text-sm font-medium">Shades</p>
+          <Label className="text-xs text-muted-foreground">Shades</Label>
           <div className="grid grid-cols-3 gap-1">
             {shades.map((shade, index) => (
               <ColorBlock
