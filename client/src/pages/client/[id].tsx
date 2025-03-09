@@ -22,8 +22,6 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  console.log('Assets query response:', { clientId, assets }); // Debug log
-
   if (isLoadingClient || isLoadingAssets) {
     return (
       <div className="flex h-screen">
@@ -61,7 +59,7 @@ export default function ClientDetails() {
     );
   }
 
-  // Filter assets by category
+  // Filter assets by category and ensure correct typing
   const logoAssets = assets.filter(asset => asset.category === 'logo');
   const colorAssets = assets.filter(asset => asset.category === 'color') || [];
   const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
@@ -77,7 +75,10 @@ export default function ClientDetails() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <h1 className="text-4xl font-bold">{client.name}</h1>
+            <div>
+              <h1 className="text-4xl font-bold">{client.name}</h1>
+              <p className="text-muted-foreground text-lg">Brand Guidelines</p>
+            </div>
           </div>
         </div>
 
