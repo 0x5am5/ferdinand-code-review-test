@@ -2,10 +2,24 @@ import type { Express } from "express";
 import { storage } from "./storage";
 import { insertClientSchema, insertColorAssetSchema, insertFontAssetSchema, insertUserPersonaSchema } from "@shared/schema";
 import multer from "multer";
+import { 
+  insertInspirationSectionSchema, 
+  insertInspirationImageSchema 
+} from "@shared/schema";
 
 const upload = multer();
 
 export function registerRoutes(app: Express) {
+  // Middleware to validate client ID
+  const validateClientId = (req: any, res: any, next: any) => {
+    const clientId = parseInt(req.params.clientId);
+    if (isNaN(clientId)) {
+      return res.status(400).json({ message: "Invalid client ID" });
+    }
+    req.clientId = clientId;
+    next();
+  };
+
   // Basic test route
   app.get("/api/test", (_req, res) => {
     res.json({ message: "API is working" });
@@ -24,7 +38,12 @@ export function registerRoutes(app: Express) {
 
   app.get("/api/clients/:id", async (req, res) => {
     try {
-      const client = await storage.getClient(parseInt(req.params.id));
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+
+      const client = await storage.getClient(id);
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
@@ -36,9 +55,9 @@ export function registerRoutes(app: Express) {
   });
 
   // Asset routes
-  app.get("/api/clients/:clientId/assets", async (req, res) => {
+  app.get("/api/clients/:clientId/assets", validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const assets = await storage.getClientAssets(clientId);
       res.json(assets);
     } catch (error) {
@@ -48,9 +67,9 @@ export function registerRoutes(app: Express) {
   });
 
   // Handle both file uploads and other assets
-  app.post("/api/clients/:clientId/assets", upload.array('fontFiles'), async (req, res) => {
+  app.post("/api/clients/:clientId/assets", upload.array('fontFiles'), validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const { category } = req.body;
 
       if (category === 'font') {
@@ -147,9 +166,9 @@ export function registerRoutes(app: Express) {
   });
 
   // Update asset endpoint
-  app.patch("/api/clients/:clientId/assets/:assetId", async (req, res) => {
+  app.patch("/api/clients/:clientId/assets/:assetId", validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const assetId = parseInt(req.params.assetId);
 
       const asset = await storage.getAsset(assetId);
@@ -183,9 +202,9 @@ export function registerRoutes(app: Express) {
   });
 
   // Delete asset endpoint
-  app.delete("/api/clients/:clientId/assets/:assetId", async (req, res) => {
+  app.delete("/api/clients/:clientId/assets/:assetId", validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const assetId = parseInt(req.params.assetId);
 
       const asset = await storage.getAsset(assetId);
@@ -207,9 +226,9 @@ export function registerRoutes(app: Express) {
   });
 
   // User Persona routes
-  app.get("/api/clients/:clientId/personas", async (req, res) => {
+  app.get("/api/clients/:clientId/personas", validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const personas = await storage.getClientPersonas(clientId);
       res.json(personas);
     } catch (error) {
@@ -218,9 +237,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/clients/:clientId/personas", async (req, res) => {
+  app.post("/api/clients/:clientId/personas", validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const personaData = {
         ...req.body,
         clientId,
@@ -243,9 +262,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/clients/:clientId/personas/:personaId", async (req, res) => {
+  app.patch("/api/clients/:clientId/personas/:personaId", validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const personaId = parseInt(req.params.personaId);
 
       const persona = await storage.getPersona(personaId);
@@ -278,9 +297,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/clients/:clientId/personas/:personaId", async (req, res) => {
+  app.delete("/api/clients/:clientId/personas/:personaId", validateClientId, async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = req.clientId;
       const personaId = parseInt(req.params.personaId);
 
       const persona = await storage.getPersona(personaId);
@@ -317,6 +336,106 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error serving asset file:", error);
       res.status(500).json({ message: "Error serving asset file" });
+    }
+  });
+
+  // Inspiration board routes
+  app.get("/api/clients/:clientId/inspiration/sections", validateClientId, async (req, res) => {
+    try {
+      const clientId = req.clientId;
+      const sections = await storage.getClientInspirationSections(clientId);
+      const sectionsWithImages = await Promise.all(
+        sections.map(async (section) => ({
+          ...section,
+          images: await storage.getSectionImages(section.id),
+        }))
+      );
+      res.json(sectionsWithImages);
+    } catch (error) {
+      console.error("Error fetching inspiration sections:", error);
+      res.status(500).json({ message: "Error fetching inspiration sections" });
+    }
+  });
+
+  app.post("/api/clients/:clientId/inspiration/sections", validateClientId, async (req, res) => {
+    try {
+      const clientId = req.clientId;
+      const sectionData = {
+        ...req.body,
+        clientId,
+      };
+
+      const parsed = insertInspirationSectionSchema.safeParse(sectionData);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid section data",
+          errors: parsed.error.errors,
+        });
+      }
+
+      const section = await storage.createInspirationSection(parsed.data);
+      res.status(201).json(section);
+    } catch (error) {
+      console.error("Error creating inspiration section:", error);
+      res.status(500).json({ message: "Error creating inspiration section" });
+    }
+  });
+
+  app.patch("/api/clients/:clientId/inspiration/sections/:sectionId", validateClientId, async (req, res) => {
+    try {
+      const clientId = req.clientId;
+      const sectionId = parseInt(req.params.sectionId);
+      const sectionData = {
+        ...req.body,
+        clientId,
+      };
+
+      const parsed = insertInspirationSectionSchema.safeParse(sectionData);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid section data",
+          errors: parsed.error.errors,
+        });
+      }
+
+      const section = await storage.updateInspirationSection(sectionId, parsed.data);
+      res.json(section);
+    } catch (error) {
+      console.error("Error updating inspiration section:", error);
+      res.status(500).json({ message: "Error updating inspiration section" });
+    }
+  });
+
+  app.post("/api/clients/:clientId/inspiration/sections/:sectionId/images", upload.single('image'), validateClientId, async (req, res) => {
+    try {
+      const sectionId = parseInt(req.params.sectionId);
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ message: "No image file uploaded" });
+      }
+
+      const imageData = {
+        sectionId,
+        url: `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+        fileData: file.buffer.toString('base64'),
+        mimeType: file.mimetype,
+        order: req.body.order || 0,
+      };
+
+      const parsed = insertInspirationImageSchema.safeParse(imageData);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid image data",
+          errors: parsed.error.errors,
+        });
+      }
+
+      const image = await storage.createInspirationImage(parsed.data);
+      res.status(201).json(image);
+    } catch (error) {
+      console.error("Error uploading inspiration image:", error);
+      res.status(500).json({ message: "Error uploading inspiration image" });
     }
   });
 }

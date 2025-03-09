@@ -1,6 +1,6 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery } from "@tanstack/react-query";
-import { Client, BrandAsset } from "@shared/schema";
+import { Client, BrandAsset, UserPersona } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,15 @@ import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonaManager } from "@/components/brand/persona-manager";
-import { UserPersona } from "@shared/schema"; // Assuming UserPersona is the type for personas
 import { InspirationBoard } from "@/components/brand/inspiration-board";
 
 export default function ClientDetails() {
   const { id } = useParams();
-  const clientId = parseInt(id);
+  const clientId = id ? parseInt(id) : null;
 
   const { data: client, isLoading: isLoadingClient } = useQuery<Client>({
     queryKey: [`/api/clients/${clientId}`],
+    enabled: !!clientId,
   });
 
   const { data: assets = [], isLoading: isLoadingAssets } = useQuery<BrandAsset[]>({
@@ -31,6 +31,32 @@ export default function ClientDetails() {
     queryKey: [`/api/clients/${clientId}/personas`],
     enabled: !!clientId,
   });
+
+  if (!clientId || isNaN(clientId)) {
+    return (
+      <div className="flex h-screen">
+        <Sidebar />
+        <main className="flex-1 p-8">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-500" />
+                <CardTitle>Invalid Client ID</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Link href="/dashboard">
+                <Button variant="outline">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   if (isLoadingClient || isLoadingAssets || isLoadingPersonas) {
     return (

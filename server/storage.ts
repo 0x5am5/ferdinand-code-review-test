@@ -1,10 +1,12 @@
 import { 
   type User, type Client, type BrandAsset, type UserPersona,
   type InsertUser, type InsertClient, type InsertBrandAsset, type InsertUserPersona,
-  users, clients, brandAssets, userPersonas
+  type InspirationSection, type InspirationImage,
+  type InsertInspirationSection, type InsertInspirationImage,
+  users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -24,6 +26,14 @@ export interface IStorage {
   createPersona(persona: InsertUserPersona): Promise<UserPersona>;
   updatePersona(id: number, persona: InsertUserPersona): Promise<UserPersona>;
   deletePersona(id: number): Promise<void>;
+  // Add inspiration board methods
+  getClientInspirationSections(clientId: number): Promise<InspirationSection[]>;
+  getSectionImages(sectionId: number): Promise<InspirationImage[]>;
+  createInspirationSection(section: InsertInspirationSection): Promise<InspirationSection>;
+  updateInspirationSection(id: number, section: InsertInspirationSection): Promise<InspirationSection>;
+  deleteInspirationSection(id: number): Promise<void>;
+  createInspirationImage(image: InsertInspirationImage): Promise<InspirationImage>;
+  deleteInspirationImage(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -124,6 +134,55 @@ export class DatabaseStorage implements IStorage {
 
   async deletePersona(id: number): Promise<void> {
     await db.delete(userPersonas).where(eq(userPersonas.id, id));
+  }
+  // Implement inspiration board methods
+  async getClientInspirationSections(clientId: number): Promise<InspirationSection[]> {
+    return await db
+      .select()
+      .from(inspirationSections)
+      .where(eq(inspirationSections.clientId, clientId))
+      .orderBy(asc(inspirationSections.order));
+  }
+
+  async getSectionImages(sectionId: number): Promise<InspirationImage[]> {
+    return await db
+      .select()
+      .from(inspirationImages)
+      .where(eq(inspirationImages.sectionId, sectionId))
+      .orderBy(asc(inspirationImages.order));
+  }
+
+  async createInspirationSection(section: InsertInspirationSection): Promise<InspirationSection> {
+    const [newSection] = await db
+      .insert(inspirationSections)
+      .values(section)
+      .returning();
+    return newSection;
+  }
+
+  async updateInspirationSection(id: number, section: InsertInspirationSection): Promise<InspirationSection> {
+    const [updatedSection] = await db
+      .update(inspirationSections)
+      .set(section)
+      .where(eq(inspirationSections.id, id))
+      .returning();
+    return updatedSection;
+  }
+
+  async deleteInspirationSection(id: number): Promise<void> {
+    await db.delete(inspirationSections).where(eq(inspirationSections.id, id));
+  }
+
+  async createInspirationImage(image: InsertInspirationImage): Promise<InspirationImage> {
+    const [newImage] = await db
+      .insert(inspirationImages)
+      .values(image)
+      .returning();
+    return newImage;
+  }
+
+  async deleteInspirationImage(id: number): Promise<void> {
+    await db.delete(inspirationImages).where(eq(inspirationImages.id, id));
   }
 }
 

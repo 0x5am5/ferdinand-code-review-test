@@ -194,6 +194,33 @@ export const insertUserPersonaSchema = createInsertSchema(userPersonas)
     }).optional(),
   });
 
+export const inspirationSections = pgTable("inspiration_sections", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  label: text("label").notNull(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const inspirationImages = pgTable("inspiration_images", {
+  id: serial("id").primaryKey(),
+  sectionId: integer("section_id").notNull().references(() => inspirationSections.id),
+  url: text("url").notNull(),
+  fileData: text("file_data").notNull(),
+  mimeType: text("mime_type").notNull(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Schema for inspiration board
+export const insertInspirationSectionSchema = createInsertSchema(inspirationSections)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertInspirationImageSchema = createInsertSchema(inspirationImages)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -213,6 +240,12 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+
+// Add new type exports
+export type InspirationSection = typeof inspirationSections.$inferSelect;
+export type InsertInspirationSection = z.infer<typeof insertInspirationSectionSchema>;
+export type InspirationImage = typeof inspirationImages.$inferSelect;
+export type InsertInspirationImage = z.infer<typeof insertInspirationImageSchema>;
 
 // Export constants
 export const LOGO_TYPES = Object.values(LogoType);
