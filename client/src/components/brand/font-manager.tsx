@@ -1,4 +1,4 @@
-import { Plus, Download, Trash2, Edit2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -252,19 +252,25 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         <h2 className="text-2xl font-bold">Typography System</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {transformedFonts.map((font) => (
-            <FontCard
-              key={font.id}
-              font={font}
-              onEdit={() => {/* TODO: Implement edit */}}
-              onDelete={() => {/* TODO: Implement delete */}}
-            />
-          ))}
-        </AnimatePresence>
-        <AddFontCard onClick={() => setIsAddingFont(true)} />
-      </div>
+      {transformedFonts.length === 0 ? (
+        <div className="rounded-lg border bg-card text-card-foreground p-8 text-center">
+          <p className="text-muted-foreground">No typography assets have been added yet.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AnimatePresence>
+            {transformedFonts.map((font) => (
+              <FontCard
+                key={font.id}
+                font={font}
+                onEdit={() => {/* TODO: Implement edit */}}
+                onDelete={() => {/* TODO: Implement delete */}}
+              />
+            ))}
+          </AnimatePresence>
+          <AddFontCard onClick={() => setIsAddingFont(true)} />
+        </div>
+      )}
 
       <Dialog open={isAddingFont} onOpenChange={setIsAddingFont}>
         <DialogContent className="sm:max-w-[500px]">
