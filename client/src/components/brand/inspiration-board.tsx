@@ -8,14 +8,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
+interface Image {
+  id: number;
+  url: string;
+  fileData: string;
+  mimeType: string;
+  order: number;
+}
+
 interface Section {
   id: number;
   label: string;
   order: number;
-  images: Array<{
-    id: number;
-    url: string;
-  }>;
+  images: Image[];
 }
 
 interface DropzoneProps {
@@ -133,7 +138,8 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to upload image");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to upload image");
       }
 
       return await response.json();
@@ -143,6 +149,13 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       toast({
         title: "Success",
         description: "Image uploaded successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
