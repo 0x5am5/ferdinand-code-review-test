@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Upload } from "lucide-react";
+import { Plus, Download, Upload, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,17 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandAsset, LogoType, FILE_FORMATS } from "@shared/schema";
@@ -76,7 +87,7 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/clients", clientId, "assets"]
+        queryKey: [`/api/clients/${clientId}/assets`]
       });
       toast({
         title: "Success",
@@ -165,18 +176,45 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  console.log('LogoManager: Initial logos:', logos);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const deleteLogo = useMutation({
+    mutationFn: async (logoId: number) => {
+      const response = await fetch(`/api/clients/${clientId}/assets/${logoId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete logo");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: [`/api/clients/${clientId}/assets`]
+      });
+      toast({
+        title: "Success",
+        description: "Logo deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
       const parsedData = parseBrandAssetData(logo);
-      console.log(`LogoManager: Processing logo ${logo.id}:`, { type, parsedData, logo });
       return parsedData?.type === type;
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
-
-  console.log('LogoManager: Grouped logos:', logosByType);
 
   return (
     <div className="space-y-8">
@@ -187,10 +225,11 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       <div className="space-y-6">
         {Object.entries(logosByType).map(([type, typeLogos]) => (
           <div key={type} className="border rounded-lg p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col gap-4">
               <h3 className="text-xl font-semibold">
                 {type.charAt(0).toUpperCase() + type.slice(1)} Logo
               </h3>
+
               <UploadDialog 
                 type={type} 
                 clientId={clientId} 
@@ -198,54 +237,79 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                   console.log('Logo upload success for type:', type);
                 }}
               />
-            </div>
 
-            {typeLogos.length > 0 ? (
-              <div className="space-y-6">
-                {typeLogos.map((logo) => {
-                  const parsedData = parseBrandAssetData(logo);
-                  if (!parsedData) return null;
+              {typeLogos.length > 0 ? (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {typeLogos.map((logo) => {
+                    const parsedData = parseBrandAssetData(logo);
+                    if (!parsedData) return null;
 
-                  const imageUrl = `/api/assets/${logo.id}/file`;
-                  console.log('LogoManager: Rendering logo:', { id: logo.id, url: imageUrl });
+                    const imageUrl = `/api/assets/${logo.id}/file`;
 
-                  return (
-                    <div key={logo.id} className="border rounded-lg p-4">
-                      <div className="aspect-video rounded-lg border bg-muted flex items-center justify-center p-4 mb-4">
-                        <img
-                          src={imageUrl}
-                          alt={logo.name}
-                          className="max-w-full max-h-full object-contain"
-                          onError={(e) => {
-                            console.error('Error loading image:', imageUrl);
-                            e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <h4 className="font-medium">{logo.name}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Format: {parsedData.format?.toUpperCase()}
-                          </p>
+                    return (
+                      <div key={logo.id} className="border rounded-lg p-4">
+                        <div className="aspect-video rounded-lg border bg-muted flex items-center justify-center p-4 mb-4">
+                          <img
+                            src={imageUrl}
+                            alt={logo.name}
+                            className="max-w-full max-h-full object-contain"
+                            onError={(e) => {
+                              console.error('Error loading image:', imageUrl);
+                              e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
+                            }}
+                          />
                         </div>
-                        <Button variant="secondary" size="sm" asChild className="w-full">
-                          <a
-                            href={imageUrl}
-                            download={`${logo.name}.${parsedData.format}`}
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            Download {parsedData.format?.toUpperCase()}
-                          </a>
-                        </Button>
+                        <div className="space-y-4">
+                          <div>
+                            <h4 className="font-medium">{logo.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Format: {parsedData.format?.toUpperCase()}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="secondary" size="sm" asChild className="flex-1">
+                              <a
+                                href={imageUrl}
+                                download={`${logo.name}.${parsedData.format}`}
+                              >
+                                <Download className="mr-2 h-4 w-4" />
+                                Download
+                              </a>
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Logo</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this logo? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteLogo.mutate(logo.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-muted-foreground">No {type.toLowerCase()} logo uploaded yet</p>
-            )}
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No {type.toLowerCase()} logo uploaded yet</p>
+              )}
+            </div>
           </div>
         ))}
       </div>

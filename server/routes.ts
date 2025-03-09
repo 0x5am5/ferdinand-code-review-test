@@ -11,16 +11,6 @@ export function registerRoutes(app: Express) {
     res.json({ message: "API is working" });
   });
 
-  // Auth routes - simplified for testing
-  app.get("/api/auth/me", async (_req, res) => {
-    res.json({
-      id: 1,
-      email: "admin@example.com",
-      name: "Admin User",
-      role: "admin"
-    });
-  });
-
   // Client routes
   app.get("/api/clients", async (_req, res) => {
     try {
@@ -85,7 +75,6 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      // Parse the file extension from the original filename
       const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
 
       const asset = await storage.createAsset({
@@ -105,6 +94,30 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error uploading asset:", error);
       res.status(500).json({ message: "Error uploading asset" });
+    }
+  });
+
+  // Delete asset endpoint
+  app.delete("/api/clients/:clientId/assets/:assetId", async (req, res) => {
+    try {
+      const clientId = parseInt(req.params.clientId);
+      const assetId = parseInt(req.params.assetId);
+
+      const asset = await storage.getAsset(assetId);
+
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
+      if (asset.clientId !== clientId) {
+        return res.status(403).json({ message: "Not authorized to delete this asset" });
+      }
+
+      await storage.deleteAsset(assetId);
+      res.status(200).json({ message: "Asset deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting asset:", error);
+      res.status(500).json({ message: "Error deleting asset" });
     }
   });
 

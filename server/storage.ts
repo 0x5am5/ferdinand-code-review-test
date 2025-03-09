@@ -16,6 +16,7 @@ export interface IStorage {
   getClientAssets(clientId: number): Promise<BrandAsset[]>;
   getAsset(id: number): Promise<BrandAsset | undefined>;
   createAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
+  deleteAsset(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -66,6 +67,10 @@ export class DatabaseStorage implements IStorage {
       .values(insertAsset)
       .returning();
     return asset;
+  }
+
+  async deleteAsset(id: number): Promise<void> {
+    await db.delete(brandAssets).where(eq(brandAssets.id, id));
   }
 }
 
