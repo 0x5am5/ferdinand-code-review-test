@@ -203,13 +203,20 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                   const parsedData = parseBrandAssetData(logo);
                   if (!parsedData) return null;
 
+                  const imageUrl = `/api/assets/${logo.id}/file`;
+                  console.log('Rendering logo:', { id: logo.id, url: imageUrl });
+
                   return (
                     <div key={logo.id} className="border rounded-lg p-4">
                       <div className="aspect-video rounded-lg border bg-muted flex items-center justify-center p-4 mb-4">
                         <img
-                          src={`/api/assets/${logo.id}/file`}
+                          src={imageUrl}
                           alt={logo.name}
                           className="max-w-full max-h-full object-contain"
+                          onError={(e) => {
+                            console.error('Error loading image:', imageUrl);
+                            e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
+                          }}
                         />
                       </div>
                       <div className="space-y-4">
@@ -221,7 +228,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                         </div>
                         <Button variant="secondary" size="sm" asChild className="w-full">
                           <a
-                            href={`/api/assets/${logo.id}/file`}
+                            href={imageUrl}
                             download={`${logo.name}.${parsedData.format}`}
                           >
                             <Download className="mr-2 h-4 w-4" />

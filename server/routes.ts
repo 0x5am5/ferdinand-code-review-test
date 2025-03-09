@@ -32,6 +32,19 @@ export function registerRoutes(app: Express) {
     }
   });
 
+  app.get("/api/clients/:id", async (req, res) => {
+    try {
+      const client = await storage.getClient(parseInt(req.params.id));
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      res.json(client);
+    } catch (error) {
+      console.error("Error fetching client:", error);
+      res.status(500).json({ message: "Error fetching client" });
+    }
+  });
+
   app.post("/api/clients", async (req, res) => {
     try {
       const parsed = insertClientSchema.safeParse(req.body);
@@ -55,7 +68,6 @@ export function registerRoutes(app: Express) {
     try {
       const clientId = parseInt(req.params.clientId);
       const assets = await storage.getClientAssets(clientId);
-      console.log('Fetched assets:', assets); // Debug log
       res.json(assets);
     } catch (error) {
       console.error("Error fetching client assets:", error);
@@ -63,7 +75,6 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  // Handle file uploads with multer
   app.post("/api/clients/:clientId/assets", upload.single('file'), async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
@@ -83,18 +94,11 @@ export function registerRoutes(app: Express) {
         category: 'logo',
         data: {
           type,
-          format: fileExtension || 'png', // Fallback to png if extension can't be determined
+          format: fileExtension || 'png',
           fileName: file.originalname,
         },
         fileData: file.buffer.toString('base64'),
         mimeType: file.mimetype,
-      });
-
-      console.log('Created asset:', {
-        id: asset.id,
-        name: asset.name,
-        type,
-        format: fileExtension,
       });
 
       res.status(201).json(asset);
@@ -109,14 +113,14 @@ export function registerRoutes(app: Express) {
     try {
       const assetId = parseInt(req.params.assetId);
       const asset = await storage.getAsset(assetId);
-      console.log('Fetching asset:', assetId, asset); // Debug log
 
       if (!asset || !asset.fileData) {
         return res.status(404).json({ message: "Asset not found" });
       }
 
       res.setHeader('Content-Type', asset.mimeType || 'application/octet-stream');
-      res.send(Buffer.from(asset.fileData, 'base64'));
+      const buffer = Buffer.from(asset.fileData, 'base64');
+      res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);
       res.status(500).json({ message: "Error serving asset file" });

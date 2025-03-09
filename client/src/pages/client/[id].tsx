@@ -22,7 +22,7 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  console.log('Fetched all assets:', assets); // Debug log
+  console.log('Assets query response:', { clientId, assets }); // Debug log
 
   if (isLoadingClient || isLoadingAssets) {
     return (
@@ -66,8 +66,6 @@ export default function ClientDetails() {
   const colorAssets = assets.filter(asset => asset.category === 'color') || [];
   const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
 
-  console.log('Filtered logo assets:', logoAssets); // Debug filtered logos
-
   return (
     <div className="flex h-screen">
       <Sidebar />
@@ -79,10 +77,7 @@ export default function ClientDetails() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
-            <div>
-              <h1 className="text-4xl font-bold">{client.name}</h1>
-              <p className="text-muted-foreground text-lg">Brand Guidelines</p>
-            </div>
+            <h1 className="text-4xl font-bold">{client.name}</h1>
           </div>
         </div>
 
