@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { storage } from "./storage";
-import { insertClientSchema, insertColorAssetSchema, insertFontAssetSchema, insertUserPersonaSchema } from "@shared/schema";
+import { auth as firebaseAuth } from "./firebase";
+import { insertClientSchema, insertUserSchema, UserRole } from "@shared/schema";
 import multer from "multer";
 import { 
   insertInspirationSectionSchema, 
@@ -25,6 +26,56 @@ export function registerRoutes(app: Express) {
   app.get("/api/test", (_req, res) => {
     res.json({ message: "API is working" });
   });
+
+  // Google Auth endpoint
+  app.post("/api/auth/google", async (req, res) => {
+    try {
+      const { idToken } = req.body;
+
+      // Verify the Firebase ID token
+      const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+
+      // Check if user exists
+      let user = await storage.getUserByEmail(decodedToken.email);
+
+      if (!user) {
+        // Create new user with guest role by default
+        user = await storage.createUser({
+          email: decodedToken.email,
+          name: decodedToken.name || decodedToken.email.split('@')[0],
+          role: UserRole.GUEST,
+        });
+      }
+
+      // Set user in session
+      req.session.userId = user.id;
+
+      res.json(user);
+    } catch (error) {
+      console.error("Auth error:", error);
+      res.status(401).json({ message: "Authentication failed" });
+    }
+  });
+
+  // Get current user
+  app.get("/api/user", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Error fetching user" });
+    }
+  });
+
 
   // Client routes
   app.get("/api/clients", async (_req, res) => {

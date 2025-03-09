@@ -1,4 +1,3 @@
-
 import { initializeApp, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 
@@ -20,4 +19,4 @@ const app = initializeApp({
   }),
 });
 
-export const adminAuth = getAuth(app);
+export const auth = getAuth(app);

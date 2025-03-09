@@ -8,9 +8,6 @@ if (!import.meta.env.VITE_FIREBASE_API_KEY ||
   throw new Error("Missing Firebase configuration");
 }
 
-// Log the current domain for debugging
-console.log("Current domain:", window.location.hostname);
-
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
@@ -20,13 +17,20 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+// Initialize Firebase
+export const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
+
+// Configure additional scopes for Google provider
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
+
+// Log the current domain for debugging
+console.log("Current domain:", window.location.hostname);
+
 console.log("Firebase config (without sensitive data):", {
   authDomain: firebaseConfig.authDomain,
   projectId: firebaseConfig.projectId,
   storageBucket: firebaseConfig.storageBucket,
 });
-
-// Initialize Firebase
-export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();

@@ -36,6 +36,10 @@ export interface IStorage {
   deleteInspirationSection(id: number): Promise<void>;
   createInspirationImage(image: InsertInspirationImage): Promise<InspirationImage>;
   deleteInspirationImage(id: number): Promise<void>;
+  createUserWithRole(user: InsertUser & {role:string}):Promise<User>;
+  updateUserRole(id:number, role:string):Promise<User>;
+  getUserClients(userId:number):Promise<Client[]>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -197,6 +201,17 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInspirationImage(id: number): Promise<void> {
     await db.delete(inspirationImages).where(eq(inspirationImages.id, id));
+  }
+  async createUserWithRole(user: InsertUser & {role:string}):Promise<User>{
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+  async updateUserRole(id:number, role:string):Promise<User>{
+    const [updatedUser] = await db.update(users).set({role}).where(eq(users.id,id)).returning();
+    return updatedUser;
+  }
+  async getUserClients(userId:number):Promise<Client[]>{
+    return await db.select().from(clients).where(eq(clients.userId,userId));
   }
 }
 

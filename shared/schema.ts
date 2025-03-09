@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, json, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from 'drizzle-orm';
 
 // Define valid logo types
 export const LogoType = {
@@ -63,6 +64,14 @@ export const PersonaEventAttribute = {
   TRENDING: "trending"
 } as const;
 
+// Define valid user roles
+export const UserRole = {
+  SUPER_ADMIN: "super_admin",
+  ADMIN: "admin",
+  STANDARD: "standard",
+  GUEST: "guest"
+} as const;
+
 export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
@@ -90,13 +99,45 @@ export const clients = pgTable("clients", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Update users table with roles and client access
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  role: text("role", { enum: ["admin", "client", "guest"] }).notNull(),
-  clientId: integer("client_id").references(() => clients.id),
+  role: text("role", {
+    enum: Object.values(UserRole)
+  }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Create a junction table for user-client relationships
+export const userClients = pgTable("user_clients", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Add relations
+export const usersRelations = relations(users, ({ many }) => ({
+  userClients: many(userClients),
+}));
+
+export const clientsRelations = relations(clients, ({ many }) => ({
+  userClients: many(userClients),
+}));
+
+export const userClientsRelations = relations(userClients, ({ one }) => ({
+  user: one(users, {
+    fields: [userClients.userId],
+    references: [users.id],
+  }),
+  client: one(clients, {
+    fields: [userClients.clientId],
+    references: [clients.id],
+  }),
+}));
 
 export const userPersonas = pgTable("user_personas", {
   id: serial("id").primaryKey(),
@@ -222,6 +263,16 @@ export const insertInspirationSectionSchema = createInsertSchema(inspirationSect
 export const insertInspirationImageSchema = createInsertSchema(inspirationImages)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
+// Create schemas for validation
+export const insertUserSchema = createInsertSchema(users)
+  .extend({
+    clientIds: z.array(z.number()).optional(),
+  })
+  .omit({ id: true });
+
+export const insertUserClientSchema = createInsertSchema(userClients)
+  .omit({ id: true, createdAt: true });
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -233,14 +284,14 @@ export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
 export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
 export type UserPersona = typeof userPersonas.$inferSelect;
 export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
+export type UserClient = typeof userClients.$inferSelect;
+export type InsertUserClient = z.infer<typeof insertUserClientSchema>;
 
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
   updatedAt: true
 });
-
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 
 // Add new type exports
 export type InspirationSection = typeof inspirationSections.$inferSelect;
@@ -256,6 +307,7 @@ export const FONT_SOURCES = Object.values(FontSource);
 export const FONT_WEIGHTS = Object.values(FontWeight);
 export const FONT_STYLES = Object.values(FontStyle);
 export const PERSONA_EVENT_ATTRIBUTES = Object.values(PersonaEventAttribute);
+export const USER_ROLES = Object.values(UserRole);
 
 // Add a new schema for order updates
 export const updateClientOrderSchema = z.object({
