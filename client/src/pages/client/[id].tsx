@@ -1,14 +1,13 @@
-import { useEffect } from "react";
+import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery } from "@tanstack/react-query";
 import { Client, BrandAsset } from "@shared/schema";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Link, useParams } from "wouter";
-import { Sidebar } from "@/components/layout/sidebar";
+import { AssetCard } from "@/components/brand/asset-card";
 import { LogoManager } from "@/components/brand/logo-manager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, ArrowLeft } from "lucide-react";
-import AssetCard from "@/components/brand/asset-card";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -23,12 +22,7 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
-  // Update document title when client data is loaded
-  useEffect(() => {
-    if (client) {
-      document.title = `${client.name} - Brand Assets`;
-    }
-  }, [client]);
+  console.log('Fetched all assets:', assets); // Debug log
 
   if (isLoadingClient || isLoadingAssets) {
     return (
@@ -67,20 +61,15 @@ export default function ClientDetails() {
     );
   }
 
-  // Filter and validate logo assets
+  // Filter assets by category
   const logoAssets = assets.filter(asset => {
-    if (asset.category !== 'logo') return false;
-    try {
-      const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-      return true;
-    } catch (error) {
-      console.error('Invalid logo data:', error, asset);
-      return false;
-    }
+    console.log('Checking asset:', asset); // Debug individual assets
+    return asset.category === 'logo';
   });
+  const colorAssets = assets.filter(asset => asset.category === 'color') || [];
+  const typographyAssets = assets.filter(asset => asset.category === 'typography') || [];
 
-  const colorAssets = assets.filter(asset => asset.category === 'color');
-  const typographyAssets = assets.filter(asset => asset.category === 'typography');
+  console.log('Filtered logo assets:', logoAssets); // Debug filtered logos
 
   return (
     <div className="flex h-screen">
@@ -92,26 +81,32 @@ export default function ClientDetails() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div>
-            <h1 className="text-4xl font-bold">{client.name}</h1>
-            <p className="text-sm text-muted-foreground">Brand Assets</p>
-          </div>
+          <h1 className="text-4xl font-bold">{client.name} Brand Guidelines</h1>
         </div>
 
         <Tabs defaultValue="logos" className="space-y-6">
           <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
-            <TabsTrigger value="logos" className="data-[state=active]:bg-background rounded-none h-full px-6">
-              Brand Assets
+            <TabsTrigger 
+              value="logos" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
+              Logo System
             </TabsTrigger>
-            <TabsTrigger value="colors" className="data-[state=active]:bg-background rounded-none h-full px-6">
-              Color Palette
+            <TabsTrigger 
+              value="colors" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
+              Colors
             </TabsTrigger>
-            <TabsTrigger value="typography" className="data-[state=active]:bg-background rounded-none h-full px-6">
+            <TabsTrigger 
+              value="typography" 
+              className="data-[state=active]:bg-background rounded-none h-full px-6"
+            >
               Typography
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="logos" className="mt-6">
+          <TabsContent value="logos">
             <LogoManager clientId={clientId} logos={logoAssets} />
           </TabsContent>
 
@@ -124,11 +119,11 @@ export default function ClientDetails() {
               ) : (
                 <Card>
                   <CardHeader>
-                    <CardTitle>No Colors Added</CardTitle>
+                    <CardTitle>No Colors</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      The color palette has not been defined yet.
+                      No color assets have been added yet.
                     </p>
                   </CardContent>
                 </Card>
@@ -149,7 +144,7 @@ export default function ClientDetails() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">
-                      Typography settings have not been configured yet.
+                      No typography assets have been added yet.
                     </p>
                   </CardContent>
                 </Card>

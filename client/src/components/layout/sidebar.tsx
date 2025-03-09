@@ -11,7 +11,7 @@ import { User } from "@shared/schema";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Brand Assets", href: "/guidelines", icon: Book },
+  { name: "Brand Guidelines", href: "/guidelines", icon: Book },
 ];
 
 const adminNavigation = [
