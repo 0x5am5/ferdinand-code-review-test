@@ -44,9 +44,31 @@ interface FontData {
 const fontFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   source: z.enum(["adobe", "google", "custom"] as const),
-  projectId: z.string().optional(),
+  projectId: z.string().optional()
+    .refine(val => {
+      // Project ID is required only for Adobe Fonts
+      return val !== undefined && val.length > 0;
+    }, { 
+      message: "Adobe Fonts Project ID is required",
+      path: ["projectId"]
+    }),
   projectUrl: z.string().url().optional(),
   previewText: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.source === 'adobe' && (!data.projectId || data.projectId.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Project ID is required for Adobe Fonts",
+      path: ["projectId"],
+    });
+  }
+  if (data.source === 'google' && (!data.projectUrl || data.projectUrl.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Google Fonts URL is required",
+      path: ["projectUrl"],
+    });
+  }
 });
 
 type FontFormData = z.infer<typeof fontFormSchema>;
