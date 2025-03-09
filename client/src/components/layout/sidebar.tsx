@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AuthButton } from "@/components/auth/auth-button";
 import { 
-  LayoutDashboard, Book, Settings
+  LayoutDashboard, Settings
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Brand Guidelines", href: "/guidelines", icon: Book },
 ];
 
 const adminNavigation = [
