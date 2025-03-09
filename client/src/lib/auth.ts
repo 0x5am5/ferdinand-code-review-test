@@ -6,44 +6,27 @@ import { useToast } from "@/hooks/use-toast";
 
 export async function signInWithGoogle() {
   try {
+    // Sign in with Google popup
     console.log("Starting Google sign-in process");
-    console.log("Current origin:", window.location.origin);
-    console.log("Auth configuration:", {
-      currentUser: auth.currentUser,
-      providerData: auth.currentUser?.providerData,
-    });
+    const userCredential = await signInWithPopup(auth, googleProvider);
 
-    const result = await signInWithPopup(auth, googleProvider);
-    console.log("Sign-in successful, getting token");
+    console.log("Google sign-in successful, getting ID token");
+    // Get the ID token
+    const idToken = await userCredential.user.getIdToken();
 
-    const idToken = await result.user.getIdToken();
-    console.log("Got token, sending to backend");
+    console.log("Sending token to backend");
+    // Send the token to our backend
+    await apiRequest("POST", "/api/auth/google", { idToken });
 
-    const response = await apiRequest("POST", "/api/auth/login", {
-      token: idToken,
-      email: result.user.email,
-      name: result.user.displayName,
-    });
-
-    const userData = await response.json();
-
-    // Update the user data in React Query cache
-    queryClient.setQueryData(["/api/auth/me"], userData);
-
-    // Redirect to dashboard
-    window.location.href = "/dashboard";
-
-    console.log("Backend authentication complete");
+    console.log("Authentication completed successfully");
+    // Refresh the user data
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
   } catch (error: any) {
     console.error("Google sign-in error:", error);
-    console.error("Error details:", {
-      code: error.code,
-      message: error.message,
-      customData: error.customData,
-      stack: error.stack
-    });
+    console.error("Error code:", error.code);
+    console.error("Error message:", error.message);
 
-    let errorMessage = "Failed to sign in with Google";
+    let errorMessage = "";
 
     switch (error.code) {
       case "auth/unauthorized-domain":

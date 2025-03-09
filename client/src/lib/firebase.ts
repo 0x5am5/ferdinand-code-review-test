@@ -28,9 +28,23 @@ googleProvider.addScope('email');
 
 // Log the current domain for debugging
 console.log("Current domain:", window.location.hostname);
+console.log("Full domain with protocol:", window.location.origin);
 
+// Log Firebase config for debugging
 console.log("Firebase config (without sensitive data):", {
   authDomain: firebaseConfig.authDomain,
   projectId: firebaseConfig.projectId,
   storageBucket: firebaseConfig.storageBucket,
 });
+
+// Add persistent logging for debugging
+const persistLog = (message: string) => {
+  const logElement = document.createElement('div');
+  logElement.textContent = message;
+  logElement.style.display = 'none';
+  document.body.appendChild(logElement);
+  console.log(message);
+};
+
+persistLog(`Auth domain: ${firebaseConfig.authDomain}`);
+persistLog(`Current domain: ${window.location.hostname}`);
