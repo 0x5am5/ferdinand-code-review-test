@@ -18,6 +18,35 @@ interface Section {
   }>;
 }
 
+interface DropzoneProps {
+  onDrop: (files: File[]) => void;
+}
+
+// Separate Dropzone component to manage its own hooks
+function ImageDropzone({ onDrop }: DropzoneProps) {
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': []
+    }
+  });
+
+  return (
+    <div
+      className="border-2 border-dashed rounded-lg aspect-square flex items-center justify-center cursor-pointer transition-colors hover:border-primary"
+      {...getRootProps()}
+    >
+      <input {...getInputProps()} />
+      <div className="text-center p-4">
+        <Plus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">
+          Drop images here or click to select
+        </p>
+      </div>
+    </div>
+  );
+}
+
 interface InspirationBoardProps {
   clientId: number;
 }
@@ -118,7 +147,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     },
   });
 
-  const onDrop = useCallback((files: File[], sectionId: number) => {
+  const handleDrop = useCallback((files: File[], sectionId: number) => {
     const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
     if (imageFiles.length === 0) {
@@ -134,16 +163,6 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       uploadImage.mutate({ sectionId, file });
     });
   }, [uploadImage, toast]);
-
-  // Memoize the dropzone configuration
-  const getDropzoneProps = useCallback((sectionId: number) => {
-    return useDropzone({
-      onDrop: (files) => onDrop(files, sectionId),
-      accept: {
-        'image/*': []
-      }
-    });
-  }, [onDrop]);
 
   return (
     <div className="space-y-8">
@@ -161,91 +180,76 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       ) : (
         <div className="grid gap-8">
           <AnimatePresence>
-            {sections.map((section) => {
-              const { getRootProps, getInputProps } = getDropzoneProps(section.id);
-              return (
-                <motion.div
-                  key={section.id}
-                  layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="space-y-4"
-                >
-                  <div className="flex items-center gap-2">
-                    {editingLabel === section.id ? (
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const input = e.currentTarget.elements.namedItem('label') as HTMLInputElement;
-                          updateSection.mutate({ id: section.id, newLabel: input.value });
-                        }}
-                        className="flex-1"
-                      >
-                        <Input
-                          name="label"
-                          defaultValue={section.label}
-                          autoFocus
-                          onBlur={(e) => updateSection.mutate({ id: section.id, newLabel: e.target.value })}
-                        />
-                      </form>
-                    ) : (
-                      <>
-                        <Label className="text-lg font-medium">{section.label}</Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingLabel(section.id)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {section.images.map((image) => (
-                      <motion.div
-                        key={image.id}
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="relative group aspect-square"
-                      >
-                        <img
-                          src={image.url}
-                          alt=""
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => {/* TODO: Implement delete */}}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </motion.div>
-                    ))}
-
-                    {/* Dropzone */}
-                    <div
-                      className="border-2 border-dashed rounded-lg aspect-square flex items-center justify-center cursor-pointer transition-colors hover:border-primary"
-                      {...getRootProps()}
+            {sections.map((section) => (
+              <motion.div
+                key={section.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center gap-2">
+                  {editingLabel === section.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const input = e.currentTarget.elements.namedItem('label') as HTMLInputElement;
+                        updateSection.mutate({ id: section.id, newLabel: input.value });
+                      }}
+                      className="flex-1"
                     >
-                      <input {...getInputProps()} />
-                      <div className="text-center p-4">
-                        <Plus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Drop images here or click to select
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                      <Input
+                        name="label"
+                        defaultValue={section.label}
+                        autoFocus
+                        onBlur={(e) => updateSection.mutate({ id: section.id, newLabel: e.target.value })}
+                      />
+                    </form>
+                  ) : (
+                    <>
+                      <Label className="text-lg font-medium">{section.label}</Label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingLabel(section.id)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {section.images.map((image) => (
+                    <motion.div
+                      key={image.id}
+                      layout
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="relative group aspect-square"
+                    >
+                      <img
+                        src={image.url}
+                        alt=""
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => {/* TODO: Implement delete */}}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  ))}
+
+                  <ImageDropzone onDrop={(files) => handleDrop(files, section.id)} />
+                </div>
+              </motion.div>
+            ))}
           </AnimatePresence>
 
           {/* Add Section Button */}
