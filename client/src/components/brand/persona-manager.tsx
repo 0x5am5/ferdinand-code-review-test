@@ -11,16 +11,34 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { UserPersona } from "@shared/schema";
+import { UserPersona, PersonaEventAttribute, PERSONA_EVENT_ATTRIBUTES } from "@shared/schema";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 
-interface PersonaManagerProps {
-  clientId: number;
-  personas: UserPersona[];
-}
+// Form schema for persona creation/editing
+const personaFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  role: z.string().min(1, "Role is required"),
+  ageRange: z.string().min(1, "Age range is required"),
+  eventAttributes: z.array(z.string()).min(1, "At least one event attribute is required"),
+  motivations: z.string().min(1, "Motivations are required"),
+  coreNeeds: z.string().min(1, "Core needs are required"),
+  painPoints: z.string().min(1, "Pain points are required"),
+  metrics: z.object({
+    averageSpend: z.string().optional(),
+    eventAttendance: z.number().optional(),
+    engagementRate: z.number().optional(),
+  }),
+});
+
+type PersonaFormData = z.infer<typeof personaFormSchema>;
 
 function PersonaCard({ persona, onEdit, onDelete }: {
   persona: UserPersona;
@@ -55,7 +73,7 @@ function PersonaCard({ persona, onEdit, onDelete }: {
         <div className="flex-1">
           <h3 className="text-xl font-semibold">{persona.name}</h3>
           <p className="text-sm text-muted-foreground">{persona.role}</p>
-          
+
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
               <Label className="text-xs text-muted-foreground">ABOUT</Label>
@@ -76,7 +94,7 @@ function PersonaCard({ persona, onEdit, onDelete }: {
           <Label className="text-xs text-muted-foreground">EVENT ATTENDANCE ATTRIBUTES</Label>
           <p className="text-sm">{persona.eventAttributes.join(", ")}</p>
         </div>
-        
+
         <div>
           <Label className="text-xs text-muted-foreground">MOTIVATIONS</Label>
           <p className="text-sm">{persona.motivations.join(", ")}</p>
@@ -119,13 +137,72 @@ function AddPersonaCard({ onClick }: { onClick: () => void }) {
   );
 }
 
-export function PersonaManager({ clientId, personas }: PersonaManagerProps) {
+export function PersonaManager({ clientId, personas }: { clientId: number; personas: UserPersona[] }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingPersona, setIsAddingPersona] = useState(false);
   const [editingPersona, setEditingPersona] = useState<UserPersona | null>(null);
 
-  // TODO: Implement mutations for CRUD operations
+  const form = useForm<PersonaFormData>({
+    resolver: zodResolver(personaFormSchema),
+    defaultValues: {
+      name: "",
+      role: "",
+      ageRange: "",
+      eventAttributes: [],
+      motivations: "",
+      coreNeeds: "",
+      painPoints: "",
+      metrics: {
+        averageSpend: "",
+        eventAttendance: undefined,
+        engagementRate: undefined,
+      },
+    },
+  });
+
+  const addPersona = useMutation({
+    mutationFn: async (data: PersonaFormData) => {
+      const response = await fetch(`/api/clients/${clientId}/personas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...data,
+          motivations: data.motivations.split(',').map(m => m.trim()),
+          coreNeeds: data.coreNeeds.split(',').map(n => n.trim()),
+          painPoints: data.painPoints.split(',').map(p => p.trim()),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add persona");
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/personas`] });
+      toast({
+        title: "Success",
+        description: "Persona added successfully",
+      });
+      setIsAddingPersona(false);
+      form.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: PersonaFormData) => {
+    addPersona.mutate(data);
+  };
 
   return (
     <div className="space-y-8">
@@ -147,7 +224,179 @@ export function PersonaManager({ clientId, personas }: PersonaManagerProps) {
         <AddPersonaCard onClick={() => setIsAddingPersona(true)} />
       </div>
 
-      {/* TODO: Add Dialog for creating/editing personas */}
+      <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Persona</DialogTitle>
+            <DialogDescription>
+              Create a new user persona profile with detailed attributes
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Event Enthusiast Emily" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="e.g., Marketing Manager" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="ageRange"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Age Range</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., 25-34" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="eventAttributes"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Event Attendance Attributes</FormLabel>
+                    <div className="grid grid-cols-2 gap-2">
+                      {PERSONA_EVENT_ATTRIBUTES.map((attribute) => (
+                        <FormField
+                          key={attribute}
+                          control={form.control}
+                          name="eventAttributes"
+                          render={({ field }) => (
+                            <FormItem className="flex items-center space-x-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(attribute)}
+                                  onCheckedChange={(checked) => {
+                                    const current = field.value || [];
+                                    const next = checked
+                                      ? [...current, attribute]
+                                      : current.filter((value) => value !== attribute);
+                                    field.onChange(next);
+                                  }}
+                                />
+                              </FormControl>
+                              <Label className="text-sm font-normal">
+                                {attribute.split('_').map(word => 
+                                  word.charAt(0).toUpperCase() + word.slice(1)
+                                ).join(' ')}
+                              </Label>
+                            </FormItem>
+                          )}
+                        />
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="motivations"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Motivations</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Enter motivations, separated by commas"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="coreNeeds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Core Needs</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Enter core needs, separated by commas"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="painPoints"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pain Points</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Enter pain points, separated by commas"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="metrics.averageSpend"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Average Spend</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="e.g., $500-750 per month" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsAddingPersona(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={addPersona.isPending}>
+                  {addPersona.isPending ? "Adding..." : "Add Persona"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
