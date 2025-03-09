@@ -459,4 +459,23 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error uploading inspiration image" });
     }
   });
+
+  app.post("/api/clients", async (req, res) => {
+    try {
+      const parsed = insertClientSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid client data",
+          errors: parsed.error.errors
+        });
+      }
+
+      const client = await storage.createClient(parsed.data);
+      res.status(201).json(client);
+    } catch (error) {
+      console.error("Error creating client:", error);
+      res.status(500).json({ message: "Error creating client" });
+    }
+  });
 }

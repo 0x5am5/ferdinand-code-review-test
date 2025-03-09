@@ -35,8 +35,12 @@ export default function NewClientPage() {
 
   const createClient = useMutation({
     mutationFn: async (data: InsertClient) => {
-      const res = await apiRequest("POST", "/api/clients", data);
-      return res.json();
+      const response = await apiRequest("POST", "/api/clients", data);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create client");
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
