@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "./storage";
-import { insertClientSchema } from "@shared/schema";
+import { insertClientSchema, LogoType } from "@shared/schema";
 import multer from "multer";
 
 const upload = multer();
@@ -27,26 +27,38 @@ export function registerRoutes(app: Express) {
       const clientId = parseInt(req.params.clientId);
       const assets = await storage.getClientAssets(clientId);
 
-      // Validate logo data
-      const validatedAssets = assets.map(asset => {
+      // Validate and parse logo data
+      const processedAssets = assets.map(asset => {
         if (asset.category === 'logo') {
           try {
             const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-            console.log('Logo asset data:', {
+            console.log('Processing logo asset:', {
               id: asset.id,
               name: asset.name,
               type: data.type,
               format: data.format,
-              fileData: !!asset.fileData
+              hasFileData: !!asset.fileData
             });
+
+            // Validate logo type
+            if (!Object.values(LogoType).includes(data.type)) {
+              console.error('Invalid logo type:', data.type);
+              return null;
+            }
+
+            return {
+              ...asset,
+              data: typeof data === 'string' ? JSON.parse(data) : data
+            };
           } catch (error) {
             console.error('Invalid logo data for asset:', asset.id, error);
+            return null;
           }
         }
         return asset;
-      });
+      }).filter(Boolean);
 
-      res.json(validatedAssets);
+      res.json(processedAssets);
     } catch (error) {
       console.error("Error fetching client assets:", error);
       res.status(500).json({ message: "Error fetching client assets" });
@@ -62,6 +74,11 @@ export function registerRoutes(app: Express) {
 
       if (!file) {
         return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Validate logo type
+      if (!Object.values(LogoType).includes(type)) {
+        return res.status(400).json({ message: "Invalid logo type" });
       }
 
       // Parse the file extension from the original filename

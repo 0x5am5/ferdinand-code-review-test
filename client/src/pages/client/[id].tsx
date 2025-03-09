@@ -22,6 +22,9 @@ export default function ClientDetails() {
     enabled: !!clientId,
   });
 
+  // Debug logging for assets
+  console.log('Raw assets from query:', assets);
+
   if (isLoadingClient || isLoadingAssets) {
     return (
       <div className="flex h-screen">
@@ -59,16 +62,26 @@ export default function ClientDetails() {
     );
   }
 
-  // Simple filtering of assets by category
+  // Filter and validate logo assets
   const logoAssets = assets.filter(asset => {
-    console.log('Processing asset:', {
-      id: asset.id,
-      name: asset.name,
-      category: asset.category,
-      hasData: !!asset.data
-    });
-    return asset.category === 'logo' && asset.data;
+    if (asset.category !== 'logo') return false;
+    try {
+      const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+      console.log('Logo asset data:', {
+        id: asset.id,
+        name: asset.name,
+        category: asset.category,
+        data,
+        hasFileData: !!asset.fileData
+      });
+      return true;
+    } catch (error) {
+      console.error('Invalid logo data:', error, asset);
+      return false;
+    }
   });
+
+  console.log('Filtered logo assets:', logoAssets);
 
   const colorAssets = assets.filter(asset => asset.category === 'color');
   const typographyAssets = assets.filter(asset => asset.category === 'typography');

@@ -219,18 +219,21 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  // Group logos by type with strict type comparison and detailed logging
+  // Group logos by type with strict type checking
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
       try {
         const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+        const isMatch = data?.type === type;
+
         console.log(`Processing logo ${logo.id} for type ${type}:`, { 
           name: logo.name,
           category: logo.category,
           logoType: data?.type,
-          matches: data?.type === type
+          matches: isMatch
         });
-        return data?.type === type;
+
+        return isMatch;
       } catch (err) {
         console.error(`Error processing logo ${logo.id}:`, err);
         return false;
