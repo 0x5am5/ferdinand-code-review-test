@@ -29,23 +29,31 @@ interface DropzoneProps {
 
 // Separate Dropzone component to manage its own hooks
 function ImageDropzone({ onDrop }: DropzoneProps) {
-  const { getRootProps, getInputProps } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
       'image/*': []
-    }
+    },
+    maxSize: 5 * 1024 * 1024 // 5MB max size
   });
 
   return (
     <div
-      className="border-2 border-dashed rounded-lg aspect-square flex items-center justify-center cursor-pointer transition-colors hover:border-primary"
+      className={`
+        border-2 border-dashed rounded-lg aspect-square
+        flex items-center justify-center cursor-pointer
+        transition-colors
+        ${isDragActive ? 'border-primary bg-primary/10' : 'hover:border-primary'}
+      `}
       {...getRootProps()}
     >
       <input {...getInputProps()} />
       <div className="text-center p-4">
         <Plus className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          Drop images here or click to select
+          {isDragActive
+            ? "Drop the image here..."
+            : "Drop image here or click to select"}
         </p>
       </div>
     </div>
@@ -64,6 +72,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   // Fetch sections
   const { data: sections = [] } = useQuery<Section[]>({
     queryKey: [`/api/clients/${clientId}/inspiration/sections`],
+    enabled: !!clientId,
   });
 
   // Create section mutation
@@ -81,7 +90,8 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create section");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to create section");
       }
 
       return await response.json();
@@ -91,6 +101,13 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       toast({
         title: "Success",
         description: "Section created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -110,7 +127,8 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update section");
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update section");
       }
 
       return await response.json();
@@ -123,6 +141,13 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       });
       setEditingLabel(null);
     },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // Upload image mutation
@@ -130,7 +155,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     mutationFn: async ({ sectionId, file }: { sectionId: number; file: File }) => {
       const formData = new FormData();
       formData.append('image', file);
-      formData.append('order', '0');
+      formData.append('order', '0'); // Default order for now
 
       const response = await fetch(`/api/clients/${clientId}/inspiration/sections/${sectionId}/images`, {
         method: 'POST',
@@ -173,6 +198,14 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     }
 
     imageFiles.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
       uploadImage.mutate({ sectionId, file });
     });
   }, [uploadImage, toast]);

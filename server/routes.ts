@@ -415,12 +415,13 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ message: "No image file uploaded" });
       }
 
+      const base64Data = file.buffer.toString('base64');
       const imageData = {
         sectionId,
-        url: `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
-        fileData: file.buffer.toString('base64'),
+        url: `data:${file.mimetype};base64,${base64Data}`,
+        fileData: base64Data,
         mimeType: file.mimetype,
-        order: req.body.order || 0,
+        order: parseInt(req.body.order) || 0,
       };
 
       const parsed = insertInspirationImageSchema.safeParse(imageData);
