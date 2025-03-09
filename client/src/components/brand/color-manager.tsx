@@ -261,8 +261,8 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          category: 'color',
           name: data.name,
+          category: 'color',
           data: {
             type: data.type,
             category: selectedCategory,
@@ -272,6 +272,14 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
               cmyk: data.cmyk,
               pantone: data.pantone,
             }],
+            tints: generateTintsAndShades(data.hex).tints.map((hex, i) => ({
+              percentage: [60, 40, 20][i],
+              hex,
+            })),
+            shades: generateTintsAndShades(data.hex).shades.map((hex, i) => ({
+              percentage: [20, 40, 60][i],
+              hex,
+            })),
           },
         }),
       });
@@ -379,14 +387,7 @@ export function ColorManager({ clientId, colors = [] }: ColorManagerProps) {
     : DEFAULT_COLORS.interactive.map(c => ({ ...c, category: 'interactive' }));
 
   const onSubmit = (data: ColorFormData) => {
-    createColor.mutate({
-      name: data.name,
-      hex: data.hex,
-      rgb: data.rgb,
-      cmyk: data.cmyk,
-      pantone: data.pantone,
-      type: data.type
-    });
+    createColor.mutate(data);
   };
 
   // Auto-generate name from hex color
