@@ -225,7 +225,7 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
       </div>
 
       <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Add New Persona</DialogTitle>
             <DialogDescription>
@@ -234,158 +234,162 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Event Enthusiast Emily" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1">
+              <div className="flex-1 overflow-y-auto pr-6">
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Event Enthusiast Emily" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="e.g., Marketing Manager" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                    <FormField
+                      control={form.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Role</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Marketing Manager" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="ageRange"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Age Range</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., 25-34" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="eventAttributes"
+                    render={() => (
+                      <FormItem>
+                        <FormLabel>Event Attendance Attributes</FormLabel>
+                        <div className="grid grid-cols-2 gap-2">
+                          {PERSONA_EVENT_ATTRIBUTES.map((attribute) => (
+                            <FormField
+                              key={attribute}
+                              control={form.control}
+                              name="eventAttributes"
+                              render={({ field }) => (
+                                <FormItem className="flex items-center space-x-2">
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(attribute)}
+                                      onCheckedChange={(checked) => {
+                                        const current = field.value || [];
+                                        const next = checked
+                                          ? [...current, attribute]
+                                          : current.filter((value) => value !== attribute);
+                                        field.onChange(next);
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <Label className="text-sm font-normal">
+                                    {attribute.split('_').map(word =>
+                                      word.charAt(0).toUpperCase() + word.slice(1)
+                                    ).join(' ')}
+                                  </Label>
+                                </FormItem>
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="motivations"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Motivations</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Enter motivations, separated by commas"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="coreNeeds"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Core Needs</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Enter core needs, separated by commas"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="painPoints"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pain Points</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Enter pain points, separated by commas"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="metrics.averageSpend"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Average Spend</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., $500-750 per month" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
-              <FormField
-                control={form.control}
-                name="ageRange"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Age Range</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., 25-34" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="eventAttributes"
-                render={() => (
-                  <FormItem>
-                    <FormLabel>Event Attendance Attributes</FormLabel>
-                    <div className="grid grid-cols-2 gap-2">
-                      {PERSONA_EVENT_ATTRIBUTES.map((attribute) => (
-                        <FormField
-                          key={attribute}
-                          control={form.control}
-                          name="eventAttributes"
-                          render={({ field }) => (
-                            <FormItem className="flex items-center space-x-2">
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(attribute)}
-                                  onCheckedChange={(checked) => {
-                                    const current = field.value || [];
-                                    const next = checked
-                                      ? [...current, attribute]
-                                      : current.filter((value) => value !== attribute);
-                                    field.onChange(next);
-                                  }}
-                                />
-                              </FormControl>
-                              <Label className="text-sm font-normal">
-                                {attribute.split('_').map(word => 
-                                  word.charAt(0).toUpperCase() + word.slice(1)
-                                ).join(' ')}
-                              </Label>
-                            </FormItem>
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="motivations"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Motivations</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Enter motivations, separated by commas"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="coreNeeds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Core Needs</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Enter core needs, separated by commas"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="painPoints"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pain Points</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        placeholder="Enter pain points, separated by commas"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="metrics.averageSpend"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Average Spend</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., $500-750 per month" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
+              <DialogFooter className="mt-6">
                 <Button type="button" variant="outline" onClick={() => setIsAddingPersona(false)}>
                   Cancel
                 </Button>
