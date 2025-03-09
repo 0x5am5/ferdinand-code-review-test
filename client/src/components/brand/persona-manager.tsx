@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Form schema for persona creation/editing
 const personaFormSchema = z.object({
@@ -225,8 +226,8 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
       </div>
 
       <Dialog open={isAddingPersona} onOpenChange={setIsAddingPersona}>
-        <DialogContent className="max-h-[90vh] p-0 gap-0">
-          <DialogHeader className="p-6 pb-4">
+        <DialogContent className="max-w-[600px] max-h-[90vh] flex flex-col gap-0 p-0">
+          <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle>Add New Persona</DialogTitle>
             <DialogDescription>
               Create a new user persona profile with detailed attributes
@@ -234,9 +235,9 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
           </DialogHeader>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto px-6">
-                <div className="space-y-6 pb-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1">
+              <ScrollArea className="flex-1 px-6">
+                <div className="py-4 space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -387,10 +388,14 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
                     )}
                   />
                 </div>
-              </div>
+              </ScrollArea>
 
-              <div className="flex items-center justify-end gap-4 p-6 border-t">
-                <Button type="button" variant="outline" onClick={() => setIsAddingPersona(false)}>
+              <div className="px-6 py-4 border-t flex justify-end gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddingPersona(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={addPersona.isPending}>
