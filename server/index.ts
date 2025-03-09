@@ -2,9 +2,35 @@ import express from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
 
 const app = express();
 app.use(express.json());
+
+// Set up PostgreSQL session store
+const PostgresStore = connectPg(session);
+
+// Configure session middleware
+app.use(
+  session({
+    store: new PostgresStore({
+      createTableIfMissing: true,
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+      },
+    }),
+    secret: process.env.SESSION_SECRET || 'dev_secret_key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  })
+);
 
 // Basic health check endpoint
 app.get('/api/health', (_req, res) => {
