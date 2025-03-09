@@ -8,6 +8,24 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-roc antialiased bg-background text-foreground font-light;
+  }
+
+  h1 {
+    @apply font-ivy text-4xl lg:text-5xl font-normal mb-6;
+  }
+
+  h2 {
+    @apply font-roc text-3xl lg:text-4xl font-bold mb-4;
+    font-stretch: wider;
+  }
+
+  h3 {
+    @apply font-roc text-2xl lg:text-3xl font-medium mb-3;
+    font-stretch: extra-expanded;
+  }
+
+  p {
+    @apply font-roc text-base leading-relaxed mb-4 font-light;
   }
 }

@@ -5,6 +5,10 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        'ivy': ['ivypresto-display', 'serif'],
+        'roc': ['roc-grotesk', 'sans-serif'],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
@@ -62,22 +66,38 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      keyframes: {
-        "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
+      typography: {
+        DEFAULT: {
+          css: {
+            h1: {
+              fontFamily: 'ivypresto-display',
+              fontWeight: '400',
+            },
+            h2: {
+              fontFamily: 'roc-grotesk',
+              fontWeight: '700',
+              fontStretch: 'wider',
+            },
+            h3: {
+              fontFamily: 'roc-grotesk',
+              fontWeight: '500',
+              fontStretch: 'extra-expanded',
+            },
+            p: {
+              fontFamily: 'roc-grotesk',
+              fontWeight: '300',
+            },
           },
         },
+      },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
