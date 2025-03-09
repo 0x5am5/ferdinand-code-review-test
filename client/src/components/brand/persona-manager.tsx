@@ -97,17 +97,17 @@ function PersonaCard({ persona, onEdit, onDelete }: {
 
         <div>
           <Label className="text-xs text-muted-foreground">MOTIVATIONS</Label>
-          <p className="text-sm">{persona.motivations.join(", ")}</p>
+          <p className="text-sm">{persona.motivations?.join(", ")}</p>
         </div>
 
         <div>
           <Label className="text-xs text-muted-foreground">CORE NEEDS</Label>
-          <p className="text-sm">{persona.coreNeeds.join(", ")}</p>
+          <p className="text-sm">{persona.coreNeeds?.join(", ")}</p>
         </div>
 
         <div>
           <Label className="text-xs text-muted-foreground">PAIN POINTS</Label>
-          <p className="text-sm">{persona.painPoints.join(", ")}</p>
+          <p className="text-sm">{persona.painPoints?.join(", ")}</p>
         </div>
       </div>
     </motion.div>
@@ -170,11 +170,12 @@ export function PersonaManager({ clientId, personas }: { clientId: number; perso
         },
         body: JSON.stringify({
           ...data,
+          eventAttributes: data.eventAttributes,
           motivations: data.motivations.split(',').map(m => m.trim()),
           coreNeeds: data.coreNeeds.split(',').map(n => n.trim()),
           painPoints: data.painPoints.split(',').map(p => p.trim()),
           metrics: {
-            ...data.metrics,
+            averageSpend: data.metrics.averageSpend,
             eventAttendance: data.metrics.eventAttendance ? Number(data.metrics.eventAttendance) : undefined,
             engagementRate: data.metrics.engagementRate ? Number(data.metrics.engagementRate) : undefined,
           }
