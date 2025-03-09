@@ -1,7 +1,8 @@
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
@@ -53,7 +54,6 @@ interface ColorData {
   category: 'brand' | 'neutral' | 'interactive';
 }
 
-// Form validation schema
 const colorFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   hex: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid hex color code"),
@@ -66,12 +66,10 @@ const colorFormSchema = z.object({
 type ColorFormData = z.infer<typeof colorFormSchema>;
 
 function generateTintsAndShades(hex: string) {
-  // Convert hex to RGB
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
 
-  // Generate tints (lighter versions)
   const tints = [60, 40, 20].map(percent => {
     const tintR = r + ((255 - r) * percent) / 100;
     const tintG = g + ((255 - g) * percent) / 100;
@@ -79,7 +77,6 @@ function generateTintsAndShades(hex: string) {
     return `#${Math.round(tintR).toString(16).padStart(2, '0')}${Math.round(tintG).toString(16).padStart(2, '0')}${Math.round(tintB).toString(16).padStart(2, '0')}`;
   });
 
-  // Generate shades (darker versions)
   const shades = [20, 40, 60].map(percent => {
     const shadeR = r * (1 - percent / 100);
     const shadeG = g * (1 - percent / 100);
@@ -90,22 +87,75 @@ function generateTintsAndShades(hex: string) {
   return { tints, shades };
 }
 
+function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleClick = async () => {
+    try {
+      await navigator.clipboard.writeText(hex);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      onClick?.();
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <div
+      className="relative cursor-pointer group"
+      onClick={handleClick}
+    >
+      <div
+        className="rounded transition-all duration-200 group-hover:ring-2 ring-primary/20"
+        style={{ backgroundColor: hex, height: onClick ? '4rem' : '1.5rem' }}
+      />
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded"
+          >
+            <Check className="h-4 w-4 text-white" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function ColorChip({ color, onEdit, onDelete }: {
   color: ColorData;
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
   const { tints, shades } = generateTintsAndShades(color.hex);
+  const { toast } = useToast();
+
+  const handleCopy = (value: string) => {
+    toast({
+      title: "Copied!",
+      description: `${value} has been copied to your clipboard.`,
+    });
+  };
 
   return (
-    <div className="min-w-[200px] border rounded-lg p-4 bg-white">
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      className="min-w-[200px] border rounded-lg p-4 bg-white"
+    >
       <div className="space-y-4">
         <div>
-          <div
-            className="h-16 rounded-md mb-2"
-            style={{ backgroundColor: color.hex }}
+          <ColorBlock
+            hex={color.hex}
+            onClick={() => handleCopy(color.hex)}
           />
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mt-2">
             <div>
               <h4 className="font-medium">{color.name}</h4>
               <p className="text-sm text-muted-foreground">{color.hex}</p>
@@ -158,28 +208,26 @@ function ColorChip({ color, onEdit, onDelete }: {
           <p className="text-sm font-medium">Tints</p>
           <div className="grid grid-cols-3 gap-1">
             {tints.map((tint, index) => (
-              <div
+              <ColorBlock
                 key={`tint-${index}`}
-                className="h-6 rounded"
-                style={{ backgroundColor: tint }}
-                title={tint}
+                hex={tint}
+                onClick={() => handleCopy(tint)}
               />
             ))}
           </div>
           <p className="text-sm font-medium">Shades</p>
           <div className="grid grid-cols-3 gap-1">
             {shades.map((shade, index) => (
-              <div
+              <ColorBlock
                 key={`shade-${index}`}
-                className="h-6 rounded"
-                style={{ backgroundColor: shade }}
-                title={shade}
+                hex={shade}
+                onClick={() => handleCopy(shade)}
               />
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -201,14 +249,16 @@ function ColorSection({ title, colors = [], onAddColor, deleteColor, onEditColor
       {colors.length > 0 ? (
         <ScrollArea className="w-full whitespace-nowrap rounded-md border">
           <div className="flex w-max space-x-4 p-4">
-            {colors.map((color) => (
-              <ColorChip
-                key={`${color.hex}-${color.id || Math.random()}`}
-                color={color}
-                onEdit={() => onEditColor(color)}
-                onDelete={() => color.id && deleteColor(color.id)}
-              />
-            ))}
+            <AnimatePresence>
+              {colors.map((color) => (
+                <ColorChip
+                  key={`${color.hex}-${color.id || Math.random()}`}
+                  color={color}
+                  onEdit={() => onEditColor(color)}
+                  onDelete={() => color.id && deleteColor(color.id)}
+                />
+              ))}
+            </AnimatePresence>
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
@@ -328,7 +378,6 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
     },
   });
 
-  // Parse the color assets into ColorData format
   const parseColorAsset = (asset: BrandAsset): ColorData | null => {
     try {
       const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
@@ -350,7 +399,6 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
     }
   };
 
-  // Filter and transform color assets
   const transformedColors = colors
     .filter(asset => asset.category === 'color')
     .map(parseColorAsset)
@@ -369,12 +417,11 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
       rgb: color.rgb,
       cmyk: color.cmyk,
       pantone: color.pantone,
-      type: 'solid', // Default to solid as we don't support gradients yet
+      type: 'solid', 
     });
     setIsAddingColor(true);
   };
 
-  // Auto-generate name from hex color
   const handleHexChange = (hex: string) => {
     if (!form.getValues('name') && hex.match(/^#[0-9A-F]{6}$/i)) {
       form.setValue('name', `Color ${hex.toUpperCase()}`);
@@ -433,7 +480,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
           <DialogHeader>
             <DialogTitle>{editingColor ? 'Edit Color' : 'Add New Color'}</DialogTitle>
             <DialogDescription>
-              {editingColor 
+              {editingColor
                 ? 'Edit the color details below.'
                 : 'Add a new color to your brand system. You can specify various color formats and create gradients.'}
             </DialogDescription>
