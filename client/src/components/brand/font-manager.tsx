@@ -127,7 +127,7 @@ function FontCard({ font, onEdit, onDelete }: {
         </div>
 
         <div className="border-t border-b bg-gray-50 p-4">
-          <div 
+          <div
             className="text-2xl leading-relaxed"
             style={{ fontFamily: font.family }}
           >
@@ -177,16 +177,15 @@ function FontCard({ font, onEdit, onDelete }: {
 
 function AddFontCard({ onClick }: { onClick: () => void }) {
   return (
-    <Button
-      variant="outline"
-      className="h-[400px] border-dashed"
+    <div
+      className="min-h-[200px] border-2 border-dashed rounded-lg hover:bg-accent/50 transition-colors cursor-pointer flex items-center justify-center"
       onClick={onClick}
     >
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2 text-muted-foreground">
         <Plus className="h-8 w-8" />
         <span>Add New Font</span>
       </div>
-    </Button>
+    </div>
   );
 }
 
@@ -308,6 +307,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     }
   };
 
+  // Parse and transform font assets
   const transformedFonts = fonts
     .filter(asset => asset.category === 'typography')
     .map(parseFontAsset)
@@ -319,23 +319,26 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         <h2 className="text-2xl font-bold">Typography System</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {transformedFonts.map((font) => (
-          <FontCard
-            key={font.id}
-            font={font}
-            onEdit={() => {
-              // TODO: Implement edit
-              toast({
-                title: "Coming soon",
-                description: "Font editing functionality will be available soon.",
-              });
-            }}
-            onDelete={() => deleteFont.mutate(font.id)}
-          />
-        ))}
+      {transformedFonts.length === 0 ? (
         <AddFontCard onClick={() => setIsAddingFont(true)} />
-      </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {transformedFonts.map((font) => (
+            <FontCard
+              key={font.id}
+              font={font}
+              onEdit={() => {
+                toast({
+                  title: "Coming soon",
+                  description: "Font editing functionality will be available soon.",
+                });
+              }}
+              onDelete={() => font.id && deleteFont.mutate(font.id)}
+            />
+          ))}
+          <AddFontCard onClick={() => setIsAddingFont(true)} />
+        </div>
+      )}
 
       <Dialog open={isAddingFont} onOpenChange={setIsAddingFont}>
         <DialogContent className="sm:max-w-[425px]">
