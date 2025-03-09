@@ -39,7 +39,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">("custom");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const { toast } = useToast();
@@ -132,6 +132,8 @@ export default function Dashboard() {
         title: "Success",
         description: "Client order updated successfully",
       });
+      // Ensure we stay in custom sort mode after reordering
+      setSortOrder("custom");
     },
     onError: (error: Error) => {
       toast({
@@ -184,6 +186,10 @@ export default function Dashboard() {
       client.description?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .sort((a, b) => {
+      if (sortOrder === "custom") {
+        // Use the current order for custom sorting
+        return 0;
+      }
       if (sortOrder === "asc") {
         return a.name.localeCompare(b.name);
       }
@@ -212,11 +218,29 @@ export default function Dashboard() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
-                {sortOrder === "asc" ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
-                Sort by Name
+                {sortOrder === "custom" ? (
+                  <>
+                    <GripVertical className="h-4 w-4 mr-2" />
+                    Custom Order
+                  </>
+                ) : sortOrder === "asc" ? (
+                  <>
+                    <SortAsc className="h-4 w-4 mr-2" />
+                    Sort A-Z
+                  </>
+                ) : (
+                  <>
+                    <SortDesc className="h-4 w-4 mr-2" />
+                    Sort Z-A
+                  </>
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setSortOrder("custom")}>
+                <GripVertical className="mr-2 h-4 w-4" />
+                Custom Order
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setSortOrder("asc")}>
                 <SortAsc className="mr-2 h-4 w-4" />
                 Sort A-Z
