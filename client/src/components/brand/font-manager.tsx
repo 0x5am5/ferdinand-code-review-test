@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Tabs,
@@ -19,30 +20,31 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { Label } from "@/components/ui/label";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-interface FontManagerProps {
-  clientId: number;
-  fonts: BrandAsset[];
-}
+// Form schemas for different font sources
+const fileUploadSchema = z.object({
+  files: z.array(z.instanceof(File)).min(1, "At least one font file is required"),
+  name: z.string().min(1, "Font name is required"),
+});
 
-interface FontData {
-  id?: number;
-  name: string;
-  source: typeof FontSource[keyof typeof FontSource];
-  weights: string[];
-  styles: string[];
-  sourceData: {
-    projectId?: string;
-    url?: string;
-    files?: {
-      weight: string;
-      style: string;
-      format: string;
-      fileName: string;
-      fileData: string;
-    }[];
-  };
-}
+const adobeFontSchema = z.object({
+  projectId: z.string().min(1, "Project ID is required"),
+  name: z.string().min(1, "Font name is required"),
+});
+
+const googleFontSchema = z.object({
+  url: z.string().url("Invalid Google Fonts URL"),
+  name: z.string().min(1, "Font name is required"),
+});
+
+type FileUploadForm = z.infer<typeof fileUploadSchema>;
+type AdobeFontForm = z.infer<typeof adobeFontSchema>;
+type GoogleFontForm = z.infer<typeof googleFontSchema>;
 
 function FontCard({ font, onEdit, onDelete }: {
   font: FontData;
@@ -50,7 +52,7 @@ function FontCard({ font, onEdit, onDelete }: {
   onDelete?: () => void;
 }) {
   const previewText = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
-  
+
   return (
     <motion.div
       layout
@@ -137,13 +139,26 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingFont, setIsAddingFont] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<keyof typeof FontSource>("FILE");
+  const [activeTab, setActiveTab] = useState<"file" | "adobe" | "google">("file");
+
+  // Forms for different font sources
+  const fileForm = useForm<FileUploadForm>({
+    resolver: zodResolver(fileUploadSchema),
+  });
+
+  const adobeForm = useForm<AdobeFontForm>({
+    resolver: zodResolver(adobeFontSchema),
+  });
+
+  const googleForm = useForm<GoogleFontForm>({
+    resolver: zodResolver(googleFontSchema),
+  });
 
   const addFont = useMutation({
-    mutationFn: async (formData: FormData) => {
+    mutationFn: async (data: FormData) => {
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: 'POST',
-        body: formData,
+        body: data,
       });
 
       if (!response.ok) {
@@ -161,6 +176,9 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         description: "Font added successfully",
       });
       setIsAddingFont(false);
+      fileForm.reset();
+      adobeForm.reset();
+      googleForm.reset();
     },
     onError: (error: Error) => {
       toast({
@@ -170,6 +188,39 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       });
     },
   });
+
+  const handleFileUpload = (data: FileUploadForm) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('category', 'font');
+    formData.append('source', FontSource.FILE);
+
+    data.files.forEach((file, index) => {
+      formData.append(`font_${index}`, file);
+    });
+
+    addFont.mutate(formData);
+  };
+
+  const handleAdobeFont = (data: AdobeFontForm) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('category', 'font');
+    formData.append('source', FontSource.ADOBE);
+    formData.append('projectId', data.projectId);
+
+    addFont.mutate(formData);
+  };
+
+  const handleGoogleFont = (data: GoogleFontForm) => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('category', 'font');
+    formData.append('source', FontSource.GOOGLE);
+    formData.append('url', data.url);
+
+    addFont.mutate(formData);
+  };
 
   const parseFontAsset = (asset: BrandAsset): FontData | null => {
     try {
@@ -194,6 +245,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     .filter(asset => asset.category === 'font')
     .map(parseFontAsset)
     .filter((font): font is FontData => font !== null);
+
 
   return (
     <div className="space-y-8">
@@ -224,50 +276,177 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs defaultValue="file" className="mt-4">
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="mt-4">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="file">Upload Files</TabsTrigger>
               <TabsTrigger value="adobe">Adobe Fonts</TabsTrigger>
               <TabsTrigger value="google">Google Fonts</TabsTrigger>
             </TabsList>
+
             <TabsContent value="file" className="space-y-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Label>Font Files</Label>
-                <Input
-                  type="file"
-                  accept=".woff,.woff2,.otf,.ttf,.eot"
-                  multiple
-                  onChange={(e) => {
-                    // TODO: Handle file upload
-                  }}
-                />
-                <p className="text-sm text-muted-foreground">
-                  Supported formats: WOFF, WOFF2, OTF, TTF, EOT
-                </p>
-              </div>
+              <Form {...fileForm}>
+                <form onSubmit={fileForm.handleSubmit(handleFileUpload)} className="space-y-4">
+                  <FormField
+                    control={fileForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Font Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Helvetica Neue" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={fileForm.control}
+                    name="files"
+                    render={({ field: { onChange, value, ...field } }) => (
+                      <FormItem>
+                        <FormLabel>Font Files</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="file"
+                            accept=".woff,.woff2,.otf,.ttf,.eot"
+                            multiple
+                            onChange={(e) => onChange(Array.from(e.target.files || []))}
+                            {...field}
+                          />
+                        </FormControl>
+                        <p className="text-sm text-muted-foreground">
+                          Supported formats: WOFF, WOFF2, OTF, TTF, EOT
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={addFont.isPending}>
+                      {addFont.isPending ? "Adding..." : "Add Font"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </TabsContent>
+
             <TabsContent value="adobe" className="space-y-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Label>Adobe Fonts Project ID</Label>
-                <Input placeholder="Enter your Adobe Fonts project ID" />
-              </div>
+              <Form {...adobeForm}>
+                <form onSubmit={adobeForm.handleSubmit(handleAdobeFont)} className="space-y-4">
+                  <FormField
+                    control={adobeForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Font Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Adobe Clean" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={adobeForm.control}
+                    name="projectId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Adobe Fonts Project ID</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Enter your Adobe Fonts project ID" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={addFont.isPending}>
+                      {addFont.isPending ? "Adding..." : "Add Font"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </TabsContent>
+
             <TabsContent value="google" className="space-y-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Label>Google Fonts URL</Label>
-                <Input placeholder="Enter Google Fonts URL" />
-              </div>
+              <Form {...googleForm}>
+                <form onSubmit={googleForm.handleSubmit(handleGoogleFont)} className="space-y-4">
+                  <FormField
+                    control={googleForm.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Font Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Roboto" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={googleForm.control}
+                    name="url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Google Fonts URL</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="https://fonts.googleapis.com/css2?family=..." />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={addFont.isPending}>
+                      {addFont.isPending ? "Adding..." : "Add Font"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </TabsContent>
           </Tabs>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddingFont(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Add Font</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
   );
+}
+
+interface FontManagerProps {
+  clientId: number;
+  fonts: BrandAsset[];
+}
+
+interface FontData {
+  id?: number;
+  name: string;
+  source: typeof FontSource[keyof typeof FontSource];
+  weights: string[];
+  styles: string[];
+  sourceData: {
+    projectId?: string;
+    url?: string;
+    files?: {
+      weight: string;
+      style: string;
+      format: string;
+      fileName: string;
+      fileData: string;
+    }[];
+  };
 }
