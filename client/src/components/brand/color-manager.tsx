@@ -38,32 +38,66 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-interface ColorManagerProps {
-  clientId: number;
-  colors: BrandAsset[];
+// Color conversion utilities
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return null;
+
+  const r = parseInt(result[1], 16);
+  const g = parseInt(result[2], 16);
+  const b = parseInt(result[3], 16);
+
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
-interface ColorData {
-  id?: number;
-  hex: string;
-  rgb?: string;
-  hsl?: string;
-  cmyk?: string;
-  pantone?: string;
-  name: string;
-  category: 'brand' | 'neutral' | 'interactive';
+function hexToHsl(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return null;
+
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
 }
 
-const colorFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  hex: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid hex color code"),
-  rgb: z.string().optional(),
-  cmyk: z.string().optional(),
-  pantone: z.string().optional(),
-  type: z.enum(["solid", "gradient"]),
-});
+function hexToCmyk(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return null;
 
-type ColorFormData = z.infer<typeof colorFormSchema>;
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+
+  let k = 1 - Math.max(r, g, b);
+  let c = (1 - r - k) / (1 - k);
+  let m = (1 - g - k) / (1 - k);
+  let y = (1 - b - k) / (1 - k);
+
+  if (k === 1) {
+    c = m = y = 0;
+  }
+
+  return `cmyk(${Math.round(c * 100)}, ${Math.round(m * 100)}, ${Math.round(y * 100)}, ${Math.round(k * 100)})`;
+}
 
 function generateTintsAndShades(hex: string) {
   const r = parseInt(hex.slice(1, 3), 16);
@@ -431,8 +465,23 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
   };
 
   const handleHexChange = (hex: string) => {
-    if (!form.getValues('name') && hex.match(/^#[0-9A-F]{6}$/i)) {
-      form.setValue('name', `Color ${hex.toUpperCase()}`);
+    if (hex.match(/^#[0-9A-F]{6}$/i)) {
+      // Auto-generate name if not set
+      if (!form.getValues('name')) {
+        form.setValue('name', `Color ${hex.toUpperCase()}`);
+      }
+
+      // Auto-calculate other color formats
+      const rgb = hexToRgb(hex);
+      const hsl = hexToHsl(hex);
+      const cmyk = hexToCmyk(hex);
+
+      if (rgb) form.setValue('rgb', rgb);
+      if (hsl) form.setValue('hsl', hsl); // Added HSL update
+      if (cmyk) form.setValue('cmyk', cmyk);
+      if (!form.getValues('pantone')) {
+        form.setValue('pantone', ''); // Clear pantone as it can't be auto-calculated
+      }
     }
   };
 
@@ -621,3 +670,30 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
     </div>
   );
 }
+
+interface ColorManagerProps {
+  clientId: number;
+  colors: BrandAsset[];
+}
+
+interface ColorData {
+  id?: number;
+  hex: string;
+  rgb?: string;
+  hsl?: string;
+  cmyk?: string;
+  pantone?: string;
+  name: string;
+  category: 'brand' | 'neutral' | 'interactive';
+}
+
+const colorFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  hex: z.string().regex(/^#[0-9A-F]{6}$/i, "Invalid hex color code"),
+  rgb: z.string().optional(),
+  cmyk: z.string().optional(),
+  pantone: z.string().optional(),
+  type: z.enum(["solid", "gradient"]),
+});
+
+type ColorFormData = z.infer<typeof colorFormSchema>;
