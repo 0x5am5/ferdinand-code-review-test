@@ -1,4 +1,4 @@
-import { Plus, Edit2, Trash2, Check } from "lucide-react";
+import { Plus, Edit2, Trash2, Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
@@ -111,7 +111,7 @@ function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
         style={{ backgroundColor: hex, height: onClick ? '4rem' : '1.5rem' }}
       />
       <AnimatePresence>
-        {copied && (
+        {copied ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -119,6 +119,14 @@ function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
             className="absolute inset-0 flex items-center justify-center bg-black/50 rounded"
           >
             <Check className="h-4 w-4 text-white" />
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded transition-colors"
+          >
+            <Copy className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -417,7 +425,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
       rgb: color.rgb,
       cmyk: color.cmyk,
       pantone: color.pantone,
-      type: 'solid', 
+      type: 'solid',
     });
     setIsAddingColor(true);
   };
