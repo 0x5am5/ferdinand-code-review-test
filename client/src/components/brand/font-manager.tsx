@@ -77,7 +77,7 @@ function FontCard({ font, onEdit, onDelete }: {
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      className="p-6 border rounded-lg bg-white group"
+      className="p-6 border rounded-lg bg-white relative group"
     >
       {/* Quick action menu */}
       <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
