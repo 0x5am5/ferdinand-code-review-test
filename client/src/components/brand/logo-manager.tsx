@@ -28,7 +28,10 @@ interface UploadDialogProps {
 
 function parseBrandAssetData(logo: BrandAsset) {
   try {
-    if (!logo.data) return null;
+    if (!logo.data) {
+      console.warn('Logo data is missing:', logo);
+      return null;
+    }
     const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
     if (!data.type || !data.format) {
       console.warn('Invalid logo data format:', data);
@@ -162,18 +165,18 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  console.log('Initial logos:', logos);
+  console.log('LogoManager: Initial logos:', logos);
 
   const logosByType = Object.values(LogoType).reduce((acc, type) => {
     acc[type] = logos.filter(logo => {
       const parsedData = parseBrandAssetData(logo);
-      console.log(`Processing logo ${logo.id}:`, { type, parsedData });
+      console.log(`LogoManager: Processing logo ${logo.id}:`, { type, parsedData, logo });
       return parsedData?.type === type;
     });
     return acc;
   }, {} as Record<string, BrandAsset[]>);
 
-  console.log('Grouped logos:', logosByType);
+  console.log('LogoManager: Grouped logos:', logosByType);
 
   return (
     <div className="space-y-8">
@@ -192,7 +195,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                 type={type} 
                 clientId={clientId} 
                 onSuccess={() => {
-                  // Additional success handling if needed
+                  console.log('Logo upload success for type:', type);
                 }}
               />
             </div>
@@ -204,7 +207,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
                   if (!parsedData) return null;
 
                   const imageUrl = `/api/assets/${logo.id}/file`;
-                  console.log('Rendering logo:', { id: logo.id, url: imageUrl });
+                  console.log('LogoManager: Rendering logo:', { id: logo.id, url: imageUrl });
 
                   return (
                     <div key={logo.id} className="border rounded-lg p-4">
