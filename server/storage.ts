@@ -15,7 +15,8 @@ export interface IStorage {
   getClient(id: number): Promise<Client | undefined>;
   getClients(): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
-  deleteClient(id: number): Promise<void>;  // Added this line
+  updateClient(id: number, data: Partial<InsertClient>): Promise<Client>;
+  deleteClient(id: number): Promise<void>;
   getClientAssets(clientId: number): Promise<BrandAsset[]>;
   getAsset(id: number): Promise<BrandAsset | undefined>;
   createAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
@@ -67,6 +68,14 @@ export class DatabaseStorage implements IStorage {
     return client;
   }
 
+  async updateClient(id: number, data: Partial<InsertClient>): Promise<Client> {
+    const [client] = await db
+      .update(clients)
+      .set(data)
+      .where(eq(clients.id, id))
+      .returning();
+    return client;
+  }
   async deleteClient(id: number): Promise<void> {
     await db.delete(clients).where(eq(clients.id, id));
   }
