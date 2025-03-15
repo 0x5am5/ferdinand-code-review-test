@@ -7,6 +7,7 @@ import connectPg from "connect-pg-simple";
 import { db } from "./db";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { EventEmitter } from "events";
 
 const execAsync = promisify(exec);
 const app = express();
@@ -49,6 +50,9 @@ app.get('/api/health', (_req, res) => {
 });
 
 let server: ReturnType<typeof createServer> | null = null;
+
+// Increase the maximum number of listeners to prevent warnings
+EventEmitter.defaultMaxListeners = 20;
 
 // Cleanup handler with proper error handling
 async function cleanup() {
