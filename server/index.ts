@@ -101,7 +101,7 @@ async function startServer() {
     // Start server with proper error handling
     await new Promise<void>((resolve, reject) => {
       try {
-        const port = process.env.PORT || 5100;
+        const port = process.env.PORT || 5000;
         server!.on('error', async (error: NodeJS.ErrnoException) => {
           if (error.code === 'EADDRINUSE') {
             console.error(`Port ${port} is already in use. Trying to free it up...`);
