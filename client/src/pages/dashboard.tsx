@@ -1,8 +1,8 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Plus, Search, SortAsc, SortDesc, MoreVertical, Edit2, Trash, GripVertical } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Search, SortAsc, SortDesc, MoreVertical, Edit2, Trash, GripVertical, Eye, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
@@ -271,12 +271,17 @@ export default function Dashboard() {
                       >
                         <Card className="group">
                           <CardHeader className="relative">
+                            <div className="absolute inset-0 w-full h-full"> {/* Added featured image container */}
+                              <div className="w-full h-full bg-primary" style={{ backgroundColor: '#3b82f6' }}> {/* Placeholder for dynamically generated image */}
+                                {/*  Insert dynamic image generation logic here */}
+                              </div>
+                            </div>
                             <div className="absolute right-6 top-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <GripVertical className="h-4 w-4 cursor-grab" />
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-4 w-4" />
+                                    <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
@@ -296,9 +301,9 @@ export default function Dashboard() {
                             </div>
 
                             <Link href={`/clients/${client.id}`}>
-                              <div className="cursor-pointer">
+                              <div className="cursor-pointer p-4"> {/* Added padding */}
                                 {client.logo && (
-                                  <div className="w-16 h-16 mb-4">
+                                  <div className="absolute bottom-4 left-4 w-16 h-16"> {/* Changed position of logo */}
                                     <img
                                       src={client.logo}
                                       alt={`${client.name} logo`}
@@ -306,24 +311,20 @@ export default function Dashboard() {
                                     />
                                   </div>
                                 )}
-                                <CardTitle>{client.name}</CardTitle>
-                                <CardDescription>{client.description}</CardDescription>
+                                <CardTitle className="absolute bottom-4 left-24">{client.name}</CardTitle> {/* Adjusted position of title */}
+                                {/* Removed CardDescription -  it overlaps with the buttons */}
                               </div>
                             </Link>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                              {client.website && (
-                                <p>Website: {client.website}</p>
-                              )}
-                              {client.phone && (
-                                <p>Phone: {client.phone}</p>
-                              )}
-                              <p>
-                                Created: {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
-                              </p>
+                            <div className="absolute bottom-4 right-4 flex gap-2"> {/* Added button container */}
+                              <Button variant="ghost" size="icon">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon">
+                                <Share className="h-4 w-4" />
+                              </Button>
                             </div>
-                          </CardContent>
+                          </CardHeader>
+                          {/* Removed CardContent -  unnecessary with the new layout */}
                         </Card>
                       </div>
                     )}
