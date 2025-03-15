@@ -4,13 +4,26 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AuthButton } from "@/components/auth/auth-button";
 import { 
-  LayoutDashboard, Settings
+  LayoutDashboard, Settings, ChevronLeft, ChevronRight,
+  Users, Palette, BookOpen, Briefcase
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { User } from "@shared/schema";
+import { User, UserRole } from "@shared/schema";
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Clients", href: "/clients", icon: Briefcase },
+  { name: "Brand Guidelines", href: "/guidelines", icon: BookOpen },
+  { name: "Users", href: "/users", icon: Users },
+  { name: "Design System", href: "/design", icon: Palette },
 ];
 
 const adminNavigation = [
@@ -19,53 +32,91 @@ const adminNavigation = [
 
 export function Sidebar() {
   const [location] = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { data: user } = useQuery<User>({ 
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/user"],
   });
 
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+
   return (
-    <div className="flex h-screen flex-col border-r bg-background">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold">Brand Manager</h1>
+    <div 
+      className={cn(
+        "flex h-screen flex-col border-r bg-sidebar transition-all duration-200",
+        isCollapsed ? "w-16" : "w-64"
+      )}
+    >
+      <div className="relative flex items-center p-4 h-16 border-b">
+        {!isCollapsed && (
+          <h1 className="text-xl font-bold">Brandify</h1>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute -right-4 top-6 bg-background border shadow-sm"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
       </div>
 
-      <ScrollArea className="flex-1 px-4">
-        <nav className="flex flex-col gap-2">
+      {isSuperAdmin && !isCollapsed && (
+        <div className="bg-primary-light px-4 py-2 border-b">
+          <p className="text-sm font-medium text-primary mb-2">Super Admin</p>
+          <Select defaultValue={user?.role}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Switch role" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.values(UserRole).map((role) => (
+                <SelectItem key={role} value={role}>
+                  {role.replace('_', ' ')}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      <ScrollArea className="flex-1 px-2 py-2">
+        <nav className="flex flex-col gap-1">
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
               <Link key={item.href} href={item.href}>
-                <Button
-                  variant={location === item.href ? "secondary" : "ghost"}
+                <a
                   className={cn(
-                    "w-full justify-start gap-2",
-                    location === item.href && "bg-secondary"
+                    "sidebar-link",
+                    location === item.href && "active"
                   )}
                 >
-                  <Icon className="h-4 w-4" />
-                  {item.name}
-                </Button>
+                  <Icon className="h-5 w-5" />
+                  {!isCollapsed && <span>{item.name}</span>}
+                </a>
               </Link>
             );
           })}
 
-          {user?.role === "admin" && (
+          {user?.role === UserRole.SUPER_ADMIN && (
             <>
               <div className="my-2 border-t" />
               {adminNavigation.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link key={item.href} href={item.href}>
-                    <Button
-                      variant={location === item.href ? "secondary" : "ghost"}
+                    <a
                       className={cn(
-                        "w-full justify-start gap-2",
-                        location === item.href && "bg-secondary"
+                        "sidebar-link",
+                        location === item.href && "active"
                       )}
                     >
-                      <Icon className="h-4 w-4" />
-                      {item.name}
-                    </Button>
+                      <Icon className="h-5 w-5" />
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </a>
                   </Link>
                 );
               })}
@@ -75,7 +126,7 @@ export function Sidebar() {
       </ScrollArea>
 
       <div className="p-4 border-t">
-        <AuthButton />
+        <AuthButton collapsed={isCollapsed} />
       </div>
     </div>
   );

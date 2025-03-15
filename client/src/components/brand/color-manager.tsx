@@ -546,11 +546,9 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
 
       // Auto-calculate other color formats
       const rgb = hexToRgb(hex);
-      const hsl = hexToHsl(hex);
       const cmyk = hexToCmyk(hex);
 
       if (rgb) form.setValue('rgb', rgb);
-      if (hsl) form.setValue('hsl', hsl); // Added HSL update
       if (cmyk) form.setValue('cmyk', cmyk);
       if (!form.getValues('pantone')) {
         form.setValue('pantone', ''); // Clear pantone as it can't be auto-calculated

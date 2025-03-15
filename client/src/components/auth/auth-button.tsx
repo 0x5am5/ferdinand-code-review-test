@@ -5,7 +5,11 @@ import { User } from "@shared/schema";
 import { LogIn, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-export function AuthButton() {
+interface AuthButtonProps {
+  collapsed?: boolean;
+}
+
+export function AuthButton({ collapsed = false }: AuthButtonProps) {
   const { data: user } = useQuery<User>({ 
     queryKey: ["/api/auth/me"],
   });
@@ -43,19 +47,26 @@ export function AuthButton() {
     }
   };
 
+  const buttonProps = collapsed ? {
+    size: "icon" as const,
+    className: "w-full"
+  } : {
+    className: "w-full justify-start gap-2"
+  };
+
   if (!user) {
     return (
-      <Button onClick={handleSignIn} variant="outline">
-        <LogIn className="mr-2 h-4 w-4" />
-        Sign in with Google
+      <Button onClick={handleSignIn} variant="outline" {...buttonProps}>
+        <LogIn className="h-4 w-4" />
+        {!collapsed && "Sign in with Google"}
       </Button>
     );
   }
 
   return (
-    <Button onClick={handleSignOut} variant="outline">
-      <LogOut className="mr-2 h-4 w-4" />
-      Sign out
+    <Button onClick={handleSignOut} variant="outline" {...buttonProps}>
+      <LogOut className="h-4 w-4" />
+      {!collapsed && "Sign out"}
     </Button>
   );
 }

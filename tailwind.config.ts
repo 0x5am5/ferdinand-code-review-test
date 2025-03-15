@@ -9,10 +9,10 @@ export default {
         'ivy': ['ivypresto-display', 'serif'],
         'roc': ['roc-grotesk', 'sans-serif'],
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+      fontSize: {
+        'heading-1': ['2.5rem', { lineHeight: '1.2', fontWeight: '400' }],
+        'heading-2': ['2rem', { lineHeight: '1.2', fontWeight: '700' }],
+        'heading-3': ['1.5rem', { lineHeight: '1.2', fontWeight: '500' }],
       },
       colors: {
         background: "hsl(var(--background))",
@@ -28,6 +28,7 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          light: "hsl(var(--primary-light))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -45,50 +46,21 @@ export default {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        chart: {
-          "1": "hsl(var(--chart-1))",
-          "2": "hsl(var(--chart-2))",
-          "3": "hsl(var(--chart-3))",
-          "4": "hsl(var(--chart-4))",
-          "5": "hsl(var(--chart-5))",
-        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
+          hover: "hsl(var(--sidebar-hover))",
+          active: "hsl(var(--sidebar-active))",
           border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
         },
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
       },
-      typography: {
-        DEFAULT: {
-          css: {
-            h1: {
-              fontFamily: 'ivypresto-display',
-              fontWeight: '400',
-            },
-            h2: {
-              fontFamily: 'roc-grotesk',
-              fontWeight: '700',
-              fontStretch: 'wider',
-            },
-            h3: {
-              fontFamily: 'roc-grotesk',
-              fontWeight: '500',
-              fontStretch: 'extra-expanded',
-            },
-            p: {
-              fontFamily: 'roc-grotesk',
-              fontWeight: '300',
-            },
-          },
-        },
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
       keyframes: {
         "accordion-down": {
@@ -99,10 +71,20 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "sidebar-expand": {
+          from: { width: "4rem" },
+          to: { width: "16rem" },
+        },
+        "sidebar-collapse": {
+          from: { width: "16rem" },
+          to: { width: "4rem" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "sidebar-expand": "sidebar-expand 0.2s ease-out",
+        "sidebar-collapse": "sidebar-collapse 0.2s ease-out",
       },
     },
   },
