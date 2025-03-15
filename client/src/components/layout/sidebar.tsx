@@ -23,7 +23,7 @@ const navigation = [
   { name: "Clients", href: "/clients", icon: Briefcase },
   { name: "Brand Guidelines", href: "/guidelines", icon: BookOpen },
   { name: "Users", href: "/users", icon: Users },
-  { name: "Design System", href: "/design", icon: Palette },
+  { name: "Design Builder", href: "/design-builder", icon: Palette },
 ];
 
 const adminNavigation = [
