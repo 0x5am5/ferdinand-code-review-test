@@ -105,7 +105,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   role: text("role", {
-    enum: Object.values(UserRole)
+    enum: ["super_admin", "admin", "standard", "guest"]
   }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
