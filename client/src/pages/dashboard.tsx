@@ -2,7 +2,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, SortAsc, SortDesc, MoreVertical, Edit2, Trash, GripVertical, Eye, Share } from "lucide-react";
+import { Plus, Search, SortAsc, SortDesc, MoreVertical, Edit2, Trash, GripVertical, Eye, Share, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
