@@ -28,7 +28,6 @@ function ProtectedRoute({
 function Router() {
   const [location] = useLocation();
 
-  // Always redirect to dashboard from root
   if (location === "/") {
     return <Redirect to="/dashboard" />;
   }
@@ -36,33 +35,15 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
-      <Route path="/dashboard">
-        <ProtectedRoute component={Dashboard} />
-      </Route>
-      <Route path="/guidelines">
-        <ProtectedRoute component={Guidelines} />
-      </Route>
-      <Route path="/users">
-        <ProtectedRoute component={Users} />
-      </Route>
-      <Route path="/design">
-        <ProtectedRoute component={DesignEditor} />
-      </Route>
-      <Route path="/design-builder">
-        <ProtectedRoute component={DesignBuilder} />
-      </Route>
-      <Route path="/admin/instances">
-        <ProtectedRoute component={Instances} adminOnly />
-      </Route>
-      <Route path="/clients/new">
-        <ProtectedRoute component={NewClientPage} />
-      </Route>
-      <Route path="/clients/:id">
-        <ProtectedRoute component={ClientDetails} />
-      </Route>
-      <Route>
-        <NotFound />
-      </Route>
+      <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
+      <Route path="/guidelines" component={() => <ProtectedRoute component={Guidelines} />} />
+      <Route path="/users" component={() => <ProtectedRoute component={Users} />} />
+      <Route path="/design" component={() => <ProtectedRoute component={DesignEditor} />} />
+      <Route path="/design-builder" component={() => <ProtectedRoute component={DesignBuilder} />} />
+      <Route path="/admin/instances" component={() => <ProtectedRoute component={Instances} adminOnly />} />
+      <Route path="/clients/new" component={() => <ProtectedRoute component={NewClientPage} />} />
+      <Route path="/clients/:id" component={() => <ProtectedRoute component={ClientDetails} />} />
+      <Route component={NotFound} />
     </Switch>
   );
 }
