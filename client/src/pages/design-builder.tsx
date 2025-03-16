@@ -6,7 +6,10 @@ export default function DesignBuilder() {
     <div className="flex h-screen">
       <Sidebar />
       <main className="flex-1 p-8">
-        <h1 className="text-2xl font-bold">Design Builder</h1>
+        <h1 className="text-2xl font-bold mb-6">Design Builder</h1>
+        <div className="grid gap-6">
+          {/* Design builder content will go here */}
+        </div>
       </main>
     </div>
   );
