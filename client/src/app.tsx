@@ -1,30 +1,78 @@
-import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+
+import { Switch, Route, useLocation, Redirect } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import NotFound from "@/pages/not-found";
+import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
+import Instances from "@/pages/admin/instances";
+import ClientDetails from "@/pages/client/[id]";
+import NewClientPage from "@/pages/clients/new";
 import Guidelines from "@/pages/guidelines";
-import Clients from "@/pages/clients";
-import NewClient from "@/pages/clients/new";
 import Users from "@/pages/users";
 import DesignEditor from "@/pages/design-editor";
 import DesignBuilder from "@/pages/design-builder";
-import Settings from "@/pages/settings"; // Assuming this component exists
 
+function ProtectedRoute({ 
+  component: Component,
+  adminOnly = false,
+}: { 
+  component: React.ComponentType;
+  adminOnly?: boolean;
+}) {
+  // Temporarily return the component directly for development
+  return <Component />;
+}
+
+function Router() {
+  const [location] = useLocation();
+
+  // Always redirect to dashboard from root
+  if (location === "/") {
+    return <Redirect to="/dashboard" />;
+  }
+
+  return (
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/dashboard">
+        <ProtectedRoute component={Dashboard} />
+      </Route>
+      <Route path="/guidelines">
+        <ProtectedRoute component={Guidelines} />
+      </Route>
+      <Route path="/users">
+        <ProtectedRoute component={Users} />
+      </Route>
+      <Route path="/design">
+        <ProtectedRoute component={DesignEditor} />
+      </Route>
+      <Route path="/design-builder">
+        <ProtectedRoute component={DesignBuilder} />
+      </Route>
+      <Route path="/admin/instances">
+        <ProtectedRoute component={Instances} adminOnly />
+      </Route>
+      <Route path="/clients/new">
+        <ProtectedRoute component={NewClientPage} />
+      </Route>
+      <Route path="/clients/:id">
+        <ProtectedRoute component={ClientDetails} />
+      </Route>
+      <Route>
+        <NotFound />
+      </Route>
+    </Switch>
+  );
+}
 
 function App() {
   return (
-    <Router>
-      <Switch>
-        <Route path="/dashboard" component={Dashboard} />
-        <Route path="/guidelines" component={Guidelines} />
-        <Route path="/clients" component={Clients} />
-        <Route path="/clients/new" component={NewClient} />
-        <Route path="/users" component={Users} />
-        <Route path="/design" component={DesignEditor} />
-        <Route path="/design-builder" component={DesignBuilder} />
-        <Route path="/settings" component={Settings} />
-        {/* Add other routes here as needed */}
-      </Switch>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router />
+      <Toaster />
+    </QueryClientProvider>
   );
 }
 
