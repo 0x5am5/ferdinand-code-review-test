@@ -107,8 +107,8 @@ export const users = pgTable("users", {
   role: text("role", {
     enum: ["super_admin", "admin", "standard", "guest"]
   }).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Create a junction table for user-client relationships
