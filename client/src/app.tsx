@@ -12,7 +12,7 @@ import NewClientPage from "@/pages/clients/new";
 import Guidelines from "@/pages/guidelines";
 import Users from "@/pages/users";
 import DesignEditor from "@/pages/design-editor";
-import DesignBuilder from "./pages/design-builder";
+import DesignBuilder from "@/pages/design-builder";
 
 function ProtectedRoute({ 
   component: Component,
