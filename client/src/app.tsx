@@ -39,7 +39,7 @@ function Router() {
       <Route path="/guidelines" component={() => <ProtectedRoute component={Guidelines} />} />
       <Route path="/users" component={() => <ProtectedRoute component={Users} />} />
       <Route path="/design" component={() => <ProtectedRoute component={DesignEditor} />} />
-      <Route path="/design-builder" component={() => <ProtectedRoute component={DesignBuilder} />} />
+      <Route path={"/design-builder"} component={() => <ProtectedRoute component={DesignBuilder} />} />
       <Route path="/admin/instances" component={() => <ProtectedRoute component={Instances} adminOnly />} />
       <Route path="/clients/new" component={() => <ProtectedRoute component={NewClientPage} />} />
       <Route path="/clients/:id" component={() => <ProtectedRoute component={ClientDetails} />} />
