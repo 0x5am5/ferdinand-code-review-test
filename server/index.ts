@@ -54,7 +54,7 @@ let server: ReturnType<typeof createServer> | null = null;
 // Increase the maximum number of listeners to prevent warnings
 EventEmitter.defaultMaxListeners = 20;
 
-// Cleanup handler with proper error handling
+// Enhanced cleanup handler with retry mechanism
 async function cleanup() {
   if (server) {
     try {
@@ -69,7 +69,15 @@ async function cleanup() {
       console.error('Error during server shutdown:', err);
     }
   }
-  process.exit(0);
+
+  // Force kill any process on port 5000
+  try {
+    await execAsync('npx kill-port 5000');
+    // Add a small delay to ensure port is freed
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  } catch (err) {
+    console.error('Error killing port:', err);
+  }
 }
 
 // Handle cleanup for various signals
@@ -79,11 +87,8 @@ process.on('SIGUSR2', cleanup); // Handle nodemon restart
 
 async function startServer() {
   try {
-    // Close existing server if any
-    if (server) {
-      await new Promise<void>((resolve) => server!.close(() => resolve()));
-      server = null;
-    }
+    // Ensure port is free before starting
+    await cleanup();
 
     // Create new server instance
     server = createServer(app);
@@ -98,39 +103,39 @@ async function startServer() {
       serveStatic(app);
     }
 
-    // Start server with proper error handling
-    await new Promise<void>((resolve, reject) => {
+    // Start server with proper error handling and retry mechanism
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
       try {
-        const port = process.env.PORT || 5000;
-        server!.on('error', async (error: NodeJS.ErrnoException) => {
-          if (error.code === 'EADDRINUSE') {
-            console.error(`Port ${port} is already in use. Trying to free it up...`);
-            try {
-              await execAsync(`npx kill-port ${port}`);
-              server!.listen(port, () => {
-                console.log(`Server started on port ${port}`);
-                log(`Server listening at http://0.0.0.0:${port}`);
-                resolve();
-              });
-            } catch (err) {
-              console.error('Failed to free up port:', err);
+        const port = 5000; // Hard code to port 5000 as required
+        await new Promise<void>((resolve, reject) => {
+          server!.listen(port, '0.0.0.0', () => {
+            console.log(`Server started on port ${port}`);
+            log(`Server listening at http://0.0.0.0:${port}`);
+            resolve();
+          });
+
+          server!.on('error', (error: NodeJS.ErrnoException) => {
+            if (error.code === 'EADDRINUSE') {
+              reject(new Error(`Port ${port} is in use`));
+            } else {
               reject(error);
             }
-          } else {
-            reject(error);
-          }
+          });
         });
-
-        server!.listen(port, () => {
-          console.log(`Server started on port ${port}`);
-          log(`Server listening at http://0.0.0.0:${port}`);
-          resolve();
-        });
-      } catch (err) {
-        reject(err);
+        break; // If successful, exit the retry loop
+      } catch (error) {
+        retryCount++;
+        if (retryCount === maxRetries) {
+          throw new Error(`Failed to start server after ${maxRetries} attempts`);
+        }
+        console.log(`Retry attempt ${retryCount}/${maxRetries}`);
+        await cleanup(); // Ensure cleanup before retry
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait before retry
       }
-    });
-
+    }
   } catch (err) {
     console.error("Server startup error:", err);
     process.exit(1);
