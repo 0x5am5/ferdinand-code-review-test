@@ -55,11 +55,11 @@ EventEmitter.defaultMaxListeners = 20;
 // Simple cleanup function
 async function cleanup() {
   try {
-    const port = 5000;
+    const port = 3000;
     console.log(`Ensuring port ${port} is free...`);
 
-    // Kill any existing process on port 5000
-    await execAsync('npx kill-port 5000');
+    // Kill any existing process on port 3000
+    await execAsync('npx kill-port 3000');
 
     // Add a small delay to ensure port is freed
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -80,7 +80,7 @@ async function startServer() {
     // Register API routes
     registerRoutes(app);
 
-    const port = 5000;
+    const port = 3000; // Changed port to 3000
 
     if (process.env.NODE_ENV !== "production") {
       // For development, create server first then setup Vite
