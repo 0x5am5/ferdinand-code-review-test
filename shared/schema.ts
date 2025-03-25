@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, json, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, json, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from 'drizzle-orm';
@@ -85,6 +85,7 @@ export const clients = pgTable("clients", {
   address: text("address"),
   phone: text("phone"),
   logo: text("logo_url"),
+  primaryColor: text("primary_color"),
   displayOrder: integer("display_order"),
   userId: integer("user_id").references(() => users.id),
   // Feature toggles
@@ -156,6 +157,21 @@ export const inspirationImages = pgTable("inspiration_images", {
   order: integer("order").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const invitations = pgTable("invitations", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  role: text("role", {
+    enum: ["super_admin", "admin", "standard", "guest"]
+  }).notNull(),
+  token: text("token").notNull().unique(),
+  createdById: integer("created_by_id").references(() => users.id),
+  clientIds: integer("client_ids").array(),
+  used: boolean("used").default(false),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Relations
@@ -277,6 +293,12 @@ export const insertInspirationSectionSchema = createInsertSchema(inspirationSect
 export const insertInspirationImageSchema = createInsertSchema(inspirationImages)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
+export const insertInvitationSchema = createInsertSchema(invitations)
+  .omit({ id: true, createdAt: true, token: true, expiresAt: true })
+  .extend({
+    clientIds: z.array(z.number()).optional()
+  });
+
 export const updateClientOrderSchema = z.object({
   clientOrders: z.array(z.object({
     id: z.number(),
@@ -292,6 +314,7 @@ export type UserPersona = typeof userPersonas.$inferSelect;
 export type UserClient = typeof userClients.$inferSelect;
 export type InspirationSection = typeof inspirationSections.$inferSelect;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
+export type Invitation = typeof invitations.$inferSelect;
 
 // Insert Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -303,6 +326,7 @@ export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
 export type InsertUserClient = z.infer<typeof insertUserClientSchema>;
 export type InsertInspirationSection = z.infer<typeof insertInspirationSectionSchema>;
 export type InsertInspirationImage = z.infer<typeof insertInspirationImageSchema>;
+export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 
 // Other Types
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;

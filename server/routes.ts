@@ -1,5 +1,6 @@
 import type { Express, Request } from "express";
 import { storage } from "./storage";
+import { db } from "./db";
 import { auth as firebaseAuth } from "./firebase";
 import { 
   insertClientSchema, 
@@ -7,7 +8,12 @@ import {
   UserRole,
   insertFontAssetSchema,
   insertColorAssetSchema,
-  insertUserPersonaSchema
+  insertUserPersonaSchema,
+  userClients,
+  insertUserClientSchema,
+  insertInvitationSchema,
+  users,
+  invitations
 } from "@shared/schema";
 import multer from "multer";
 import { 
@@ -15,6 +21,7 @@ import {
   insertInspirationImageSchema 
 } from "@shared/schema";
 import { updateClientOrderSchema } from "@shared/schema";
+import { eq, sql } from "drizzle-orm";
 
 // Add session augmentation for TypeScript
 declare module 'express-session' {
@@ -116,6 +123,26 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Error fetching user" });
+    }
+  });
+
+  // Update current user's role
+  app.patch("/api/users/role", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { role } = req.body;
+      if (!role || !Object.values(UserRole).includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const updatedUser = await storage.updateUserRole(req.session.userId, role);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Error updating user role" });
     }
   });
 
@@ -512,6 +539,304 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error serving asset file:", error);
       res.status(500).json({ message: "Error serving asset file" });
+    }
+  });
+
+  // User Management Routes
+  // Get all users
+  app.get("/api/users", async (req, res) => {
+    try {
+      const allUsers = await db.select().from(users);
+      res.json(allUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Error fetching users" });
+    }
+  });
+
+  // Create a new user (with invite)
+  app.post("/api/users", async (req, res) => {
+    try {
+      const parsed = insertUserSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid user data",
+          errors: parsed.error.errors
+        });
+      }
+      
+      // Create user with specified role or default to standard
+      const user = await storage.createUserWithRole({
+        ...parsed.data,
+        role: req.body.role || UserRole.STANDARD
+      });
+      
+      // If clientIds provided, create user-client relationships
+      if (req.body.clientIds && Array.isArray(req.body.clientIds)) {
+        await Promise.all(
+          req.body.clientIds.map((clientId: number) => 
+            db.insert(userClients).values({
+              userId: user.id,
+              clientId: clientId
+            })
+          )
+        );
+      }
+      
+      // Here you would normally trigger an email invitation
+      // using an email service provider
+      
+      res.status(201).json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Error creating user" });
+    }
+  });
+
+  // Update user role
+  app.patch("/api/users/:id/role", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const { role } = req.body;
+      if (!role || !Object.values(UserRole).includes(role)) {
+        return res.status(400).json({ message: "Invalid role" });
+      }
+      
+      const updatedUser = await storage.updateUserRole(id, role);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ message: "Error updating user role" });
+    }
+  });
+
+  // Get clients for a user
+  app.get("/api/users/:id/clients", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      const clients = await storage.getUserClients(id);
+      res.json(clients);
+    } catch (error) {
+      console.error("Error fetching user clients:", error);
+      res.status(500).json({ message: "Error fetching user clients" });
+    }
+  });
+
+  // Create user-client relationship
+  app.post("/api/user-clients", async (req, res) => {
+    try {
+      let { userId, clientId } = req.body;
+      
+      // If userId is not provided, use the current user's ID
+      if (!userId && req.session.userId) {
+        userId = req.session.userId;
+      } else if (!userId) {
+        return res.status(401).json({ message: "User ID is required or user must be authenticated" });
+      }
+      
+      const parsed = insertUserClientSchema.safeParse({
+        userId,
+        clientId
+      });
+      
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid user-client data",
+          errors: parsed.error.errors
+        });
+      }
+      
+      const [userClient] = await db.insert(userClients)
+        .values(parsed.data)
+        .returning();
+      
+      res.status(201).json(userClient);
+    } catch (error) {
+      console.error("Error creating user-client relationship:", error);
+      res.status(500).json({ message: "Error creating user-client relationship" });
+    }
+  });
+
+  // Delete user-client relationship
+  app.delete("/api/user-clients/:userId/:clientId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const clientId = parseInt(req.params.clientId);
+      
+      if (isNaN(userId) || isNaN(clientId)) {
+        return res.status(400).json({ message: "Invalid user or client ID" });
+      }
+      
+      // Delete the user-client relationship
+      await db.delete(userClients)
+        .where(eq(userClients.userId, userId))
+        .execute();
+        
+      // Verify relationship was removed
+      const verifyDeletion = await db.select().from(userClients)
+        .where(
+          eq(userClients.userId, userId) && 
+          eq(userClients.clientId, clientId)
+        );
+        
+      if (verifyDeletion.length > 0) {
+        throw new Error("Failed to delete user-client relationship");
+      }
+      
+      res.status(200).json({ message: "User-client relationship deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user-client relationship:", error);
+      res.status(500).json({ message: "Error deleting user-client relationship" });
+    }
+  });
+
+  // Invitation routes
+  // Create a new invitation
+  app.post("/api/invitations", async (req, res) => {
+    try {
+      const parsed = insertInvitationSchema.safeParse(req.body);
+      
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid invitation data",
+          errors: parsed.error.errors
+        });
+      }
+      
+      const invitation = await storage.createInvitation(parsed.data);
+      
+      // If clientIds provided, also store this information for later use
+      if (req.body.clientIds && Array.isArray(req.body.clientIds)) {
+        // We don't need to do anything here since createInvitation already handles this
+        // The clientIds will be used when the user accepts the invitation
+      }
+      
+      // Return the invitation with the token (this will be used to create the invitation link)
+      res.status(201).json({
+        ...invitation,
+        inviteLink: `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`
+      });
+    } catch (error) {
+      console.error("Error creating invitation:", error);
+      res.status(500).json({ message: "Error creating invitation" });
+    }
+  });
+  
+  // Get invitation by token (used when a user clicks on an invitation link)
+  app.get("/api/invitations/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const invitation = await storage.getInvitation(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if invitation is expired
+      if (new Date(invitation.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Invitation has expired" });
+      }
+      
+      // Check if invitation has already been used
+      if (invitation.used) {
+        return res.status(400).json({ message: "Invitation has already been used" });
+      }
+      
+      // Return the invitation data (but not the token)
+      res.json({
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        clientIds: invitation.clientIds,
+        expiresAt: invitation.expiresAt
+      });
+    } catch (error) {
+      console.error("Error fetching invitation:", error);
+      res.status(500).json({ message: "Error fetching invitation" });
+    }
+  });
+  
+  // Get client data for invitation
+  app.get("/api/invitations/:token/client", async (req, res) => {
+    try {
+      const { token } = req.params;
+      const invitation = await storage.getInvitation(token);
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // Check if invitation is expired
+      if (new Date(invitation.expiresAt) < new Date()) {
+        return res.status(400).json({ message: "Invitation has expired" });
+      }
+      
+      // If no clientIds, return empty response
+      if (!invitation.clientIds || invitation.clientIds.length === 0) {
+        return res.json({ clientData: null });
+      }
+      
+      // Get the first client (for branding purposes)
+      const clientId = invitation.clientIds[0];
+      const client = await storage.getClient(clientId);
+      
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      // Fetch logo asset if available
+      let logoUrl = null;
+      const assets = await storage.getClientAssets(clientId);
+      const logoAsset = assets.find(asset => 
+        asset.category === 'logo' && 
+        asset.data && 
+        typeof asset.data === 'object' && 
+        'type' in asset.data && 
+        asset.data.type === 'primary'
+      );
+      
+      if (logoAsset) {
+        logoUrl = `/api/assets/${logoAsset.id}/file`;
+      }
+      
+      // Return client data with logo URL
+      res.json({
+        clientData: {
+          name: client.name,
+          logoUrl,
+          // Use a default color if primaryColor is not available
+          primaryColor: client.primaryColor || "#0f172a"
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching client for invitation:", error);
+      res.status(500).json({ message: "Error fetching client for invitation" });
+    }
+  });
+  
+  // Mark invitation as used (called after user registration is complete)
+  app.post("/api/invitations/:id/use", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid invitation ID" });
+      }
+      
+      const invitation = await storage.markInvitationAsUsed(id);
+      res.json({ message: "Invitation marked as used", invitation });
+    } catch (error) {
+      console.error("Error updating invitation:", error);
+      res.status(500).json({ message: "Error updating invitation" });
     }
   });
 

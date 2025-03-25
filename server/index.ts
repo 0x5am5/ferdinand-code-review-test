@@ -56,19 +56,26 @@ EventEmitter.defaultMaxListeners = 20;
 // Simple cleanup function
 async function cleanup() {
   try {
-    const port = 3000;
-    console.log(`Cleaning up port ${port}...`);
+    // Try to clean up both potential ports
+    const ports = [3000, 3001];
+    
+    for (const port of ports) {
+      console.log(`Cleaning up port ${port}...`);
+      
+      try {
+        // Kill any existing process on the port
+        await execAsync(`npx kill-port ${port}`);
+        console.log(`Port ${port} is now available`);
+      } catch (err) {
+        // Ignore errors as the port might not be in use
+        console.log(`No cleanup needed for port ${port}`);
+      }
+    }
 
-    // Kill any existing process on port 3000
-    await execAsync(`npx kill-port ${port}`);
-
-    // Add a small delay to ensure port is freed
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    console.log(`Port ${port} is now available`);
+    // Add a small delay to ensure ports are freed
+    await new Promise(resolve => setTimeout(resolve, 3000));
   } catch (err) {
-    // Ignore errors as the port might not be in use
-    console.log('No cleanup needed');
+    console.log('Error during cleanup:', err);
   }
 }
 
@@ -88,7 +95,10 @@ async function startServer(retries = 3) {
       // Register API routes
       registerRoutes(app);
 
-      const port = 3000;
+      // Try different ports if one is busy
+      const ports = [3000, 3001, 3002];
+      let serverStarted = false;
+      let usedPort: number | null = null;
 
       if (process.env.NODE_ENV !== "production") {
         // For development, create server first then setup Vite
@@ -102,24 +112,47 @@ async function startServer(retries = 3) {
         server = createServer(app);
       }
 
-      // Start listening on the port
-      await new Promise<void>((resolve, reject) => {
-        server!.listen(port, '0.0.0.0', () => {
-          console.log(`Server started successfully on port ${port}`);
-          log(`Server listening at http://0.0.0.0:${port}`);
-          resolve();
-        });
+      // Try each port in sequence
+      for (const port of ports) {
+        if (serverStarted) break;
+        
+        try {
+          // Start listening on the port
+          await new Promise<void>((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+              reject(new Error(`Timeout when trying to bind to port ${port}`));
+            }, 5000);
+            
+            server!.listen(port, '0.0.0.0', () => {
+              clearTimeout(timeoutId);
+              console.log(`Server started successfully on port ${port}`);
+              log(`Server listening at http://0.0.0.0:${port}`);
+              serverStarted = true;
+              usedPort = port;
+              resolve();
+            });
 
-        server!.on('error', (error: NodeJS.ErrnoException) => {
-          if (error.code === 'EADDRINUSE') {
-            console.error(`Port ${port} is still in use, retrying...`);
-            reject(new Error(`Port ${port} is in use`));
-          } else {
-            console.error('Server error:', error);
-            reject(error);
-          }
-        });
-      });
+            server!.on('error', (error: NodeJS.ErrnoException) => {
+              clearTimeout(timeoutId);
+              if (error.code === 'EADDRINUSE') {
+                console.error(`Port ${port} is already in use, trying next port...`);
+                reject(new Error(`Port ${port} is in use`));
+              } else {
+                console.error('Server error:', error);
+                reject(error);
+              }
+            });
+          });
+        } catch (err) {
+          console.log(`Failed to use port ${port}, trying next...`);
+          // Continue to the next port
+        }
+      }
+      
+      // If no port worked, throw an error
+      if (!serverStarted) {
+        throw new Error(`Could not start server on any of the ports: ${ports.join(', ')}`);
+      }
 
       // If we get here, the server started successfully
       return;

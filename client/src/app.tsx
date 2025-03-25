@@ -4,11 +4,12 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
+import SignupPage from "@/pages/signup";
 import Dashboard from "@/pages/dashboard";
 import Instances from "@/pages/admin/instances";
 import ClientDetails from "@/pages/client/[id]";
 import NewClientPage from "@/pages/clients/new";
-import Guidelines from "@/pages/guidelines";
+// Guidelines page has been removed or not implemented yet
 import Users from "@/pages/users";
 import DesignEditor from "@/pages/design-editor";
 import DesignBuilder from "@/pages/design-builder";
@@ -34,8 +35,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/signup" component={SignupPage} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
-      <Route path="/guidelines" component={() => <ProtectedRoute component={Guidelines} />} />
       <Route path="/users" component={() => <ProtectedRoute component={Users} />} />
       <Route path="/design" component={() => <ProtectedRoute component={DesignEditor} />} />
       <Route path="/design-builder">

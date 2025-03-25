@@ -1,14 +1,15 @@
 import { 
   type User, type Client, type BrandAsset, type UserPersona,
   type InsertUser, type InsertClient, type InsertBrandAsset, type InsertUserPersona,
-  type InspirationSection, type InspirationImage,
-  type InsertInspirationSection, type InsertInspirationImage,
+  type InspirationSection, type InspirationImage, type Invitation,
+  type InsertInspirationSection, type InsertInspirationImage, type InsertInvitation,
   type InsertFontAsset, type InsertColorAsset,
-  users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages,
+  users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations,
   UserRole
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc } from "drizzle-orm";
+import * as crypto from "crypto";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -38,10 +39,14 @@ export interface IStorage {
   deleteInspirationSection(id: number): Promise<void>;
   createInspirationImage(image: InsertInspirationImage): Promise<InspirationImage>;
   deleteInspirationImage(id: number): Promise<void>;
-  createUserWithRole(user: InsertUser & {role:string}):Promise<User>;
-  updateUserRole(id:number, role:string):Promise<User>;
-  getUserClients(userId:number):Promise<Client[]>;
-
+  // User management methods
+  createUserWithRole(user: InsertUser & {role:string}): Promise<User>;
+  updateUserRole(id: number, role: string): Promise<User>;
+  getUserClients(userId: number): Promise<Client[]>;
+  // Invitation methods
+  createInvitation(invitation: InsertInvitation): Promise<Invitation>;
+  getInvitation(token: string): Promise<Invitation | undefined>;
+  markInvitationAsUsed(id: number): Promise<Invitation>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -240,6 +245,48 @@ export class DatabaseStorage implements IStorage {
   }
   async getUserClients(userId:number):Promise<Client[]>{
     return await db.select().from(clients).where(eq(clients.userId,userId));
+  }
+  
+  // Implement invitation methods
+  async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
+    // Generate a random token (UUID)
+    const token = crypto.randomUUID();
+    
+    // Set expiration to 7 days from now
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    
+    // Create invitation with token and expiration
+    const [newInvitation] = await db
+      .insert(invitations)
+      .values({
+        ...invitation,
+        token,
+        expiresAt,
+        used: false
+      })
+      .returning();
+    
+    return newInvitation;
+  }
+  
+  async getInvitation(token: string): Promise<Invitation | undefined> {
+    const [invitation] = await db
+      .select()
+      .from(invitations)
+      .where(eq(invitations.token, token));
+    
+    return invitation;
+  }
+  
+  async markInvitationAsUsed(id: number): Promise<Invitation> {
+    const [updatedInvitation] = await db
+      .update(invitations)
+      .set({ used: true })
+      .where(eq(invitations.id, id))
+      .returning();
+    
+    return updatedInvitation;
   }
 }
 
