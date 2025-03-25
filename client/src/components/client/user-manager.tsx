@@ -62,26 +62,36 @@ export function UserManager({ clientId }: UserManagerProps) {
   // Create invitation mutation
   const createInvitation = useMutation({
     mutationFn: async ({ email, role }: { email: string; role: string }) => {
+      // The API expects a name field and lowercase role values
       const response = await apiRequest("POST", '/api/invitations', {
         email,
-        role,
+        name: email.split('@')[0], // Generate a default name from the email 
+        role: role.toLowerCase(), // Make sure role is lowercase to match the enum in schema
         clientIds: [clientId]
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Invitation sent",
-        description: `Invitation has been sent to ${inviteEmail}`
+        description: `Invitation has been created for ${inviteEmail}. In development, emails are saved to the 'generated-emails' directory.`,
+        duration: 5000
       });
-      setInviteDialogOpen(false);
-      setInviteEmail("");
+      // Only close the dialog after a delay to give the user time to see the success message
+      setTimeout(() => {
+        setInviteDialogOpen(false);
+        setInviteEmail("");
+      }, 1500);
+
+      // Refresh the user list after inviting a new user
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'users'] });
     },
     onError: (error: Error) => {
       toast({
         title: "Failed to send invitation",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000
       });
     }
   });

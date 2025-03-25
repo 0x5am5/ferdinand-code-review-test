@@ -67,11 +67,13 @@ export class EmailService {
       // Write the email to a file
       await util.promisify(fs.writeFile)(filepath, htmlContent);
       
-      // Log email info
-      console.log(`📧 Email sent (simulated)`);
-      console.log(`To: ${options.to}`);
-      console.log(`Subject: ${options.subject}`);
-      console.log(`Saved to: ${filepath}`);
+      // Log email info with clearer, more visible messaging
+      console.log(`\n📧 =============================================`);
+      console.log(`📧 EMAIL SENT (SIMULATED - DEVELOPMENT ONLY)`);
+      console.log(`📧 To: ${options.to}`);
+      console.log(`📧 Subject: ${options.subject}`);
+      console.log(`📧 Saved to: ${filepath}`);
+      console.log(`📧 =============================================\n`);
       
       return true;
     } catch (error) {
