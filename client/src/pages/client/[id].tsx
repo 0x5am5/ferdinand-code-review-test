@@ -113,60 +113,118 @@ export default function ClientDetails() {
           <h1 className="text-4xl font-bold">{client.name}</h1>
         </div>
 
-        <Tabs defaultValue="logos" className="space-y-6">
-          <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
-            <TabsTrigger 
-              value="logos" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
-              Logo System
-            </TabsTrigger>
-            <TabsTrigger 
-              value="colors" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
-              Colors
-            </TabsTrigger>
-            <TabsTrigger 
-              value="typography" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
-              Typography
-            </TabsTrigger>
-            <TabsTrigger 
-              value="personas" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
-              User Personas
-            </TabsTrigger>
-            <TabsTrigger 
-              value="inspiration" 
-              className="data-[state=active]:bg-background rounded-none h-full px-6"
-            >
-              Inspiration
-            </TabsTrigger>
-          </TabsList>
+        {/* Get default tab based on available features */}
+        {(() => {
+          // Read feature toggles from client data
+          const featureToggles = client.featureToggles || {
+            logoSystem: true,
+            colorSystem: true,
+            typeSystem: true,
+            userPersonas: true,
+            inspiration: true
+          };
+          
+          // Determine which tab should be default (first enabled one)
+          let defaultTab = "logos";
+          if (!featureToggles.logoSystem) {
+            if (featureToggles.colorSystem) defaultTab = "colors";
+            else if (featureToggles.typeSystem) defaultTab = "typography";
+            else if (featureToggles.userPersonas) defaultTab = "personas";
+            else if (featureToggles.inspiration) defaultTab = "inspiration";
+          }
+          
+          const anyFeatureEnabled = Object.values(featureToggles).some(value => value === true);
+          
+          if (!anyFeatureEnabled) {
+            return (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>All Features Disabled</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p>All features are currently disabled for this client. Enable features in the client settings.</p>
+                </CardContent>
+              </Card>
+            );
+          }
+          
+          return (
+            <Tabs defaultValue={defaultTab} className="space-y-6">
+              <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
+                {featureToggles.logoSystem && (
+                  <TabsTrigger 
+                    value="logos" 
+                    className="data-[state=active]:bg-background rounded-none h-full px-6"
+                  >
+                    Logo System
+                  </TabsTrigger>
+                )}
+                {featureToggles.colorSystem && (
+                  <TabsTrigger 
+                    value="colors" 
+                    className="data-[state=active]:bg-background rounded-none h-full px-6"
+                  >
+                    Colors
+                  </TabsTrigger>
+                )}
+                {featureToggles.typeSystem && (
+                  <TabsTrigger 
+                    value="typography" 
+                    className="data-[state=active]:bg-background rounded-none h-full px-6"
+                  >
+                    Typography
+                  </TabsTrigger>
+                )}
+                {featureToggles.userPersonas && (
+                  <TabsTrigger 
+                    value="personas" 
+                    className="data-[state=active]:bg-background rounded-none h-full px-6"
+                  >
+                    User Personas
+                  </TabsTrigger>
+                )}
+                {featureToggles.inspiration && (
+                  <TabsTrigger 
+                    value="inspiration" 
+                    className="data-[state=active]:bg-background rounded-none h-full px-6"
+                  >
+                    Inspiration
+                  </TabsTrigger>
+                )}
+              </TabsList>
 
-          <TabsContent value="logos">
-            <LogoManager clientId={clientId} logos={logoAssets} />
-          </TabsContent>
+              {featureToggles.logoSystem && (
+                <TabsContent value="logos">
+                  <LogoManager clientId={clientId} logos={logoAssets} />
+                </TabsContent>
+              )}
 
-          <TabsContent value="colors">
-            <ColorManager clientId={clientId} colors={colorAssets} />
-          </TabsContent>
+              {featureToggles.colorSystem && (
+                <TabsContent value="colors">
+                  <ColorManager clientId={clientId} colors={colorAssets} />
+                </TabsContent>
+              )}
 
-          <TabsContent value="typography">
-            <FontManager clientId={clientId} fonts={fontAssets} />
-          </TabsContent>
+              {featureToggles.typeSystem && (
+                <TabsContent value="typography">
+                  <FontManager clientId={clientId} fonts={fontAssets} />
+                </TabsContent>
+              )}
 
-          <TabsContent value="personas">
-            <PersonaManager clientId={clientId} personas={personas} />
-          </TabsContent>
+              {featureToggles.userPersonas && (
+                <TabsContent value="personas">
+                  <PersonaManager clientId={clientId} personas={personas} />
+                </TabsContent>
+              )}
 
-          <TabsContent value="inspiration">
-            <InspirationBoard clientId={clientId} />
-          </TabsContent>
-        </Tabs>
+              {featureToggles.inspiration && (
+                <TabsContent value="inspiration">
+                  <InspirationBoard clientId={clientId} />
+                </TabsContent>
+              )}
+            </Tabs>
+          );
+        })()}
       </main>
     </div>
   );

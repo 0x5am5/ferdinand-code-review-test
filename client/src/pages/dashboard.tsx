@@ -1,10 +1,37 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Plus, Search, SortAsc, SortDesc, MoreVertical, Edit2, Trash, GripVertical, 
-  Eye, Share, MoreHorizontal, User, Users, Mail, UserPlus, Package, Palette, Type
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Plus,
+  Search,
+  SortAsc,
+  SortDesc,
+  MoreVertical,
+  Edit2,
+  Trash,
+  GripVertical,
+  Eye,
+  Share,
+  MoreHorizontal,
+  User,
+  Users,
+  Mail,
+  UserPlus,
+  Package,
+  Palette,
+  Type,
+  Globe,
+  MapPin,
+  Phone,
+  Clock,
+  UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -46,20 +73,22 @@ import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">("custom");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
+    "custom",
+  );
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const [activeTab, setActiveTab] = useState("client-info");
-  
+
   // Feature toggles (all default to on)
   const [featureToggles, setFeatureToggles] = useState({
     logoSystem: true,
     colorSystem: true,
     typeSystem: true,
     userPersonas: true,
-    inspiration: true
+    inspiration: true,
   });
-  
+
   const { toast } = useToast();
 
   const { data: clients = [] } = useQuery<Client[]>({
@@ -67,13 +96,17 @@ export default function Dashboard() {
     select: (data) => {
       // Sort by displayOrder if available, fallback to id
       return [...data].sort((a, b) => {
-        if (a.displayOrder !== null && a.displayOrder !== undefined && 
-            b.displayOrder !== null && b.displayOrder !== undefined) {
+        if (
+          a.displayOrder !== null &&
+          a.displayOrder !== undefined &&
+          b.displayOrder !== null &&
+          b.displayOrder !== undefined
+        ) {
           return Number(a.displayOrder) - Number(b.displayOrder);
         }
         return a.id - b.id;
       });
-    }
+    },
   });
 
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
@@ -140,8 +173,12 @@ export default function Dashboard() {
 
   // Update client order mutation
   const updateClientOrder = useMutation({
-    mutationFn: async (clientOrders: { id: number; displayOrder: number }[]) => {
-      const response = await apiRequest("PATCH", "/api/clients/order", { clientOrders });
+    mutationFn: async (
+      clientOrders: { id: number; displayOrder: number }[],
+    ) => {
+      const response = await apiRequest("PATCH", "/api/clients/order", {
+        clientOrders,
+      });
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to update client order");
@@ -174,7 +211,7 @@ export default function Dashboard() {
 
     const items = Array.from(orderedClients);
     const [reorderedItem] = items.splice(result.source.index, 1);
-    
+
     // Insert the item at its new position
     items.splice(result.destination.index, 0, reorderedItem);
 
@@ -184,7 +221,7 @@ export default function Dashboard() {
     // Update the order in the backend
     const clientOrders = items.map((client, index) => ({
       id: client.id,
-      displayOrder: index
+      displayOrder: index,
     }));
 
     updateClientOrder.mutate(clientOrders);
@@ -200,18 +237,20 @@ export default function Dashboard() {
         address: editingClient.address || "",
         phone: editingClient.phone || "",
       });
-      
+
       // Initialize feature toggles from client data
-      if (editingClient.featureToggles && 
-          typeof editingClient.featureToggles === 'object' && 
-          'logoSystem' in editingClient.featureToggles) {
+      if (
+        editingClient.featureToggles &&
+        typeof editingClient.featureToggles === "object"
+      ) {
         // Make sure we have all expected properties
+        const featureTogglesObj = editingClient.featureToggles as any;
         const toggles = {
-          logoSystem: editingClient.featureToggles.logoSystem ?? true,
-          colorSystem: editingClient.featureToggles.colorSystem ?? true,
-          typeSystem: editingClient.featureToggles.typeSystem ?? true,
-          userPersonas: editingClient.featureToggles.userPersonas ?? true,
-          inspiration: editingClient.featureToggles.inspiration ?? true
+          logoSystem: Boolean(featureTogglesObj.logoSystem ?? true),
+          colorSystem: Boolean(featureTogglesObj.colorSystem ?? true),
+          typeSystem: Boolean(featureTogglesObj.typeSystem ?? true),
+          userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
+          inspiration: Boolean(featureTogglesObj.inspiration ?? true),
         };
         setFeatureToggles(toggles);
       } else {
@@ -221,7 +260,7 @@ export default function Dashboard() {
           colorSystem: true,
           typeSystem: true,
           userPersonas: true,
-          inspiration: true
+          inspiration: true,
         });
       }
     } else {
@@ -232,22 +271,23 @@ export default function Dashboard() {
         address: "",
         phone: "",
       });
-      
+
       // Reset feature toggles to default
       setFeatureToggles({
         logoSystem: true,
         colorSystem: true,
         typeSystem: true,
         userPersonas: true,
-        inspiration: true
+        inspiration: true,
       });
     }
   }, [editingClient, form]);
 
   const filteredAndSortedClients = orderedClients
-    .filter((client) =>
-      client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    .filter(
+      (client) =>
+        client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
     )
     .sort((a, b) => {
       if (sortOrder === "custom") {
@@ -318,7 +358,7 @@ export default function Dashboard() {
         </div>
 
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable 
+          <Droppable
             droppableId="clients"
             direction="horizontal"
             ignoreContainerClipping={true}
@@ -330,7 +370,11 @@ export default function Dashboard() {
                 className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
               >
                 {filteredAndSortedClients.map((client, index) => (
-                  <Draggable key={client.id} draggableId={client.id.toString()} index={index}>
+                  <Draggable
+                    key={client.id}
+                    draggableId={client.id.toString()}
+                    index={index}
+                  >
                     {(provided) => (
                       <div
                         ref={provided.innerRef}
@@ -338,82 +382,144 @@ export default function Dashboard() {
                         {...provided.dragHandleProps}
                       >
                         <Card className="group">
-                          <CardHeader className="relative">
+                          <CardHeader className="pb-2 relative">
                             <div className="cursor-move">
                               <GripVertical className="h-4 w-4 text-muted-foreground" />
                             </div>
-                            <Link href={`/clients/${client.id}`} className="block w-full h-full p-4 relative">
-                              {client.logo && (
-                                <div className="bottom-4 left-4 w-16 h-16">
-                                  <img
-                                    src={client.logo}
-                                    alt={`${client.name} logo`}
-                                    className="w-full h-full object-contain"
-                                  />
+                            <Link
+                              href={`/clients/${client.id}`}
+                              className="block w-full p-4 relative"
+                            >
+                              <div className="flex items-start flex-direction--column">
+                                {client.logo && (
+                                  <div className="w-16 h-16 mr-4 flex-shrink-0">
+                                    <img
+                                      src={client.logo}
+                                      alt={`${client.name} logo`}
+                                      className="w-full h-full object-contain"
+                                    />
+                                  </div>
+                                )}
+                                <div className="">
+                                  <CardTitle className="mb-2">
+                                    {client.name}
+                                  </CardTitle>
+
+                                  {/* Client metadata */}
+                                  <div className="space-y-1 text-sm text-muted-foreground">
+                                    {client.website && (
+                                      <div className="flex items-top gap-2">
+                                        <Globe className="h-3.5 w-3.5" />
+                                        <span className="truncate">
+                                          {client.website}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {client.address && (
+                                      <div className="flex items-center gap-2">
+                                        <MapPin className="h-3.5 w-3.5" />
+                                        <span className="truncate">
+                                          {client.address}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {client.phone && (
+                                      <div className="flex items-center gap-2">
+                                        <Phone className="h-3.5 w-3.5" />
+                                        <span>{client.phone}</span>
+                                      </div>
+                                    )}
+
+                                    {client.updatedAt && (
+                                      <div className="flex items-top gap-2">
+                                        <Clock className="h-3.5 w-3.5" />
+                                        <span>
+                                          Last updated:{" "}
+                                          {new Date(
+                                            client.updatedAt,
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    )}
+
+                                    {client.lastEditedBy && (
+                                      <div className="flex items-top gap-2">
+                                        <UserCircle className="h-3.5 w-3.5" />
+                                        <span>Edited by: Admin</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                              )}
-                              <CardTitle className="bottom-4 left-24">{client.name}</CardTitle>
-                              <div className="bottom-4 right-4 flex gap-2 z-10">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    window.open(`/preview/${client.id}`, '_blank');
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const url = `${window.location.origin}/clients/${client.id}`;
-                                    navigator.clipboard.writeText(url);
-                                    toast({
-                                      title: "Link copied",
-                                      description: "Client URL has been copied to clipboard",
-                                      duration: 2000,
-                                    });
-                                  }}
-                                >
-                                  <Share className="h-4 w-4" />
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={(e) => {
+
+                                <div className="flex gap-2 z-10">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      setEditingClient(client);
-                                    }}>
-                                      <Edit2 className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setDeletingClient(client);
-                                      }}
-                                      className="text-red-600"
-                                    >
-                                      <Trash className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
+                                      window.open(
+                                        `/preview/${client.id}`,
+                                        "_blank",
+                                      );
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      const url = `${window.location.origin}/clients/${client.id}`;
+                                      navigator.clipboard.writeText(url);
+                                      toast({
+                                        title: "Link copied",
+                                        description:
+                                          "Client URL has been copied to clipboard",
+                                        duration: 2000,
+                                      });
+                                    }}
+                                  >
+                                    <Share className="h-4 w-4" />
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setEditingClient(client);
+                                        }}
+                                      >
+                                        <Edit2 className="mr-2 h-4 w-4" />
+                                        Edit
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setDeletingClient(client);
+                                        }}
+                                        className="text-red-600"
+                                      >
+                                        <Trash className="mr-2 h-4 w-4" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
                               </div>
                             </Link>
                           </CardHeader>
-                          {/* Removed CardContent -  unnecessary with the new layout */}
                         </Card>
                       </div>
                     )}
@@ -426,7 +532,9 @@ export default function Dashboard() {
                   <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
                     <CardHeader className="h-full flex flex-col items-center justify-center text-center">
                       <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
-                      <CardTitle className="text-muted-foreground">Add New Client</CardTitle>
+                      <CardTitle className="text-muted-foreground">
+                        Add New Client
+                      </CardTitle>
                     </CardHeader>
                   </Card>
                 </Link>
@@ -439,19 +547,29 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle>No Results</CardTitle>
-              <CardDescription>No clients found matching "{searchQuery}"</CardDescription>
+              <CardDescription>
+                No clients found matching "{searchQuery}"
+              </CardDescription>
             </CardHeader>
           </Card>
         )}
 
         {/* Edit Client Dialog with Tabs */}
-        <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>
+        <Dialog
+          open={!!editingClient}
+          onOpenChange={(open) => !open && setEditingClient(null)}
+        >
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Edit Client</DialogTitle>
             </DialogHeader>
 
-            <Tabs defaultValue="client-info" value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              defaultValue="client-info"
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid grid-cols-3 mb-6">
                 <TabsTrigger value="client-info">
                   <User className="h-4 w-4 mr-2" />
@@ -469,7 +587,19 @@ export default function Dashboard() {
 
               <Form {...form}>
                 <form
-                  onSubmit={form.handleSubmit((data) => editingClient && updateClient.mutate({ id: editingClient.id, data }))}
+                  onSubmit={form.handleSubmit((data) => {
+                    if (editingClient) {
+                      // Merge feature toggles into the form data
+                      const dataWithToggles = {
+                        ...data,
+                        featureToggles,
+                      };
+                      updateClient.mutate({
+                        id: editingClient.id,
+                        data: dataWithToggles,
+                      });
+                    }
+                  })}
                   className="space-y-4"
                 >
                   {/* Client Information Tab */}
@@ -509,10 +639,10 @@ export default function Dashboard() {
                         <FormItem>
                           <FormLabel>Website</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="https://example.com" 
-                              {...field} 
-                              value={field.value || ''} 
+                            <Input
+                              placeholder="https://example.com"
+                              {...field}
+                              value={field.value || ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -528,10 +658,10 @@ export default function Dashboard() {
                           <FormItem>
                             <FormLabel>Address</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Enter client address" 
-                                {...field} 
-                                value={field.value || ''} 
+                              <Input
+                                placeholder="Enter client address"
+                                {...field}
+                                value={field.value || ""}
                               />
                             </FormControl>
                             <FormMessage />
@@ -546,10 +676,10 @@ export default function Dashboard() {
                           <FormItem>
                             <FormLabel>Phone</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Enter phone number" 
-                                {...field} 
-                                value={field.value || ''} 
+                              <Input
+                                placeholder="Enter phone number"
+                                {...field}
+                                value={field.value || ""}
                               />
                             </FormControl>
                             <FormMessage />
@@ -564,10 +694,11 @@ export default function Dashboard() {
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Brand Features</h3>
                       <p className="text-sm text-muted-foreground">
-                        Enable or disable features for this client. When a feature is disabled, 
-                        it will be hidden from the client view but all data will remain in the database.
+                        Enable or disable features for this client. When a
+                        feature is disabled, it will be hidden from the client
+                        view but all data will remain in the database.
                       </p>
-                      
+
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="space-y-0.5">
@@ -579,10 +710,13 @@ export default function Dashboard() {
                               Logo variations, usage guidelines, and downloads
                             </div>
                           </div>
-                          <Switch 
+                          <Switch
                             checked={featureToggles.logoSystem}
-                            onCheckedChange={(checked) => 
-                              setFeatureToggles(prev => ({ ...prev, logoSystem: checked }))
+                            onCheckedChange={(checked) =>
+                              setFeatureToggles((prev) => ({
+                                ...prev,
+                                logoSystem: checked,
+                              }))
                             }
                           />
                         </div>
@@ -594,13 +728,17 @@ export default function Dashboard() {
                               <div className="font-medium">Color System</div>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              Brand colors, palettes, and accessibility information
+                              Brand colors, palettes, and accessibility
+                              information
                             </div>
                           </div>
-                          <Switch 
+                          <Switch
                             checked={featureToggles.colorSystem}
-                            onCheckedChange={(checked) => 
-                              setFeatureToggles(prev => ({ ...prev, colorSystem: checked }))
+                            onCheckedChange={(checked) =>
+                              setFeatureToggles((prev) => ({
+                                ...prev,
+                                colorSystem: checked,
+                              }))
                             }
                           />
                         </div>
@@ -615,10 +753,13 @@ export default function Dashboard() {
                               Typography, fonts, and text styling guidelines
                             </div>
                           </div>
-                          <Switch 
+                          <Switch
                             checked={featureToggles.typeSystem}
-                            onCheckedChange={(checked) => 
-                              setFeatureToggles(prev => ({ ...prev, typeSystem: checked }))
+                            onCheckedChange={(checked) =>
+                              setFeatureToggles((prev) => ({
+                                ...prev,
+                                typeSystem: checked,
+                              }))
                             }
                           />
                         </div>
@@ -633,10 +774,13 @@ export default function Dashboard() {
                               Customer personas and target audience profiles
                             </div>
                           </div>
-                          <Switch 
+                          <Switch
                             checked={featureToggles.userPersonas}
-                            onCheckedChange={(checked) => 
-                              setFeatureToggles(prev => ({ ...prev, userPersonas: checked }))
+                            onCheckedChange={(checked) =>
+                              setFeatureToggles((prev) => ({
+                                ...prev,
+                                userPersonas: checked,
+                              }))
                             }
                           />
                         </div>
@@ -651,10 +795,13 @@ export default function Dashboard() {
                               Brand inspiration boards and mood collections
                             </div>
                           </div>
-                          <Switch 
+                          <Switch
                             checked={featureToggles.inspiration}
-                            onCheckedChange={(checked) => 
-                              setFeatureToggles(prev => ({ ...prev, inspiration: checked }))
+                            onCheckedChange={(checked) =>
+                              setFeatureToggles((prev) => ({
+                                ...prev,
+                                inspiration: checked,
+                              }))
                             }
                           />
                         </div>
@@ -669,7 +816,7 @@ export default function Dashboard() {
                       <p className="text-sm text-muted-foreground">
                         Manage users who have access to this client.
                       </p>
-                      
+
                       <div className="space-y-4">
                         <div className="rounded-md border">
                           <div className="p-4">
@@ -684,7 +831,9 @@ export default function Dashboard() {
                                 </Avatar>
                                 <div>
                                   <div className="font-medium">Jane Doe</div>
-                                  <div className="text-sm text-muted-foreground">jane@example.com</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    jane@example.com
+                                  </div>
                                 </div>
                               </div>
                               <Badge>Admin</Badge>
@@ -696,7 +845,9 @@ export default function Dashboard() {
                                 </Avatar>
                                 <div>
                                   <div className="font-medium">John Smith</div>
-                                  <div className="text-sm text-muted-foreground">john@example.com</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    john@example.com
+                                  </div>
                                 </div>
                               </div>
                               <Badge variant="outline">Standard</Badge>
@@ -714,10 +865,7 @@ export default function Dashboard() {
 
                   <DialogFooter>
                     {activeTab === "client-info" && (
-                      <Button
-                        type="submit"
-                        disabled={updateClient.isPending}
-                      >
+                      <Button type="submit" disabled={updateClient.isPending}>
                         Save Changes
                       </Button>
                     )}
@@ -729,7 +877,7 @@ export default function Dashboard() {
                             // Save feature toggles to the database
                             updateClient.mutate({
                               id: editingClient.id,
-                              data: { featureToggles }
+                              data: { featureToggles },
                             });
                           }
                         }}
@@ -746,25 +894,28 @@ export default function Dashboard() {
         </Dialog>
 
         {/* Delete Confirmation Dialog */}
-        <Dialog open={!!deletingClient} onOpenChange={(open) => !open && setDeletingClient(null)}>
+        <Dialog
+          open={!!deletingClient}
+          onOpenChange={(open) => !open && setDeletingClient(null)}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Delete Client</DialogTitle>
               <DialogDescription>
-                Are you sure you want to delete {deletingClient?.name}? This action cannot be undone.
+                Are you sure you want to delete {deletingClient?.name}? This
+                action cannot be undone.
               </DialogDescription>
             </DialogHeader>
 
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setDeletingClient(null)}
-              >
+              <Button variant="outline" onClick={() => setDeletingClient(null)}>
                 Cancel
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => deletingClient && deleteClient.mutate(deletingClient.id)}
+                onClick={() =>
+                  deletingClient && deleteClient.mutate(deletingClient.id)
+                }
                 disabled={deleteClient.isPending}
               >
                 Delete

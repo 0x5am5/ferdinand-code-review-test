@@ -59,8 +59,7 @@
 
 @layer components {
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-2 rounded-md transition-colors
-           text-sidebar-foreground hover:bg-sidebar-hover;
+    @apply flex items-center gap-3 px-4 py-2 rounded-md transition-colors text-sidebar-foreground hover:bg-sidebar-hover;
   }
 
   .sidebar-link.active {
@@ -68,7 +67,10 @@
   }
 
   .card {
-    @apply bg-card rounded-lg border p-6 shadow-sm transition-shadow
-           hover:shadow-md;
+    @apply bg-card rounded-lg border p-6 shadow-sm transition-shadow hover:shadow-md;
   }
+}
+
+.flex-direction--column {
+  flex-direction: column;
 }
