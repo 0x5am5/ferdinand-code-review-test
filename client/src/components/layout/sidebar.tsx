@@ -86,16 +86,16 @@ export function Sidebar() {
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.href} href={item.href}>
-                <a
-                  className={cn(
-                    "sidebar-link",
-                    location === item.href && "active"
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  {!isCollapsed && <span>{item.name}</span>}
-                </a>
+              <Link 
+                key={item.href} 
+                href={item.href}
+                className={cn(
+                  "sidebar-link",
+                  location === item.href && "active"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {!isCollapsed && <span>{item.name}</span>}
               </Link>
             );
           })}
@@ -106,16 +106,16 @@ export function Sidebar() {
               {adminNavigation.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <Link key={item.href} href={item.href}>
-                    <a
-                      className={cn(
-                        "sidebar-link",
-                        location === item.href && "active"
-                      )}
-                    >
-                      <Icon className="h-5 w-5" />
-                      {!isCollapsed && <span>{item.name}</span>}
-                    </a>
+                  <Link 
+                    key={item.href} 
+                    href={item.href}
+                    className={cn(
+                      "sidebar-link",
+                      location === item.href && "active"
+                    )}
+                  >
+                    <Icon className="h-5 w-5" />
+                    {!isCollapsed && <span>{item.name}</span>}
                   </Link>
                 );
               })}

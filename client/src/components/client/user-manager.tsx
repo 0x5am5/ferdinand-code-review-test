@@ -296,8 +296,18 @@ export function UserManager({ clientId }: UserManagerProps) {
         </CardContent>
       </Card>
       
-      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-        <DialogContent>
+      <Dialog 
+        open={inviteDialogOpen} 
+        onOpenChange={(open) => {
+          // When closing the dialog, we want to reset the state
+          if (!open) {
+            setInviteEmail("");
+            setInviteRole(UserRole.STANDARD);
+          }
+          setInviteDialogOpen(open);
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Invite New User</DialogTitle>
             <DialogDescription>
@@ -324,17 +334,33 @@ export function UserManager({ clientId }: UserManagerProps) {
                     className={`cursor-pointer ${inviteRole === role ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
                     onClick={() => setInviteRole(role)}
                   >
-                    {role}
+                    {role.replace('_', ' ')}
                   </Badge>
                 ))}
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleInvite} disabled={createInvitation.isPending}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setInviteDialogOpen(false);
+                setInviteEmail("");
+                setInviteRole(UserRole.STANDARD);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleInvite();
+              }} 
+              disabled={createInvitation.isPending || !inviteEmail}
+            >
               {createInvitation.isPending ? (
-                <>Sending invitation...</>
+                "Sending invitation..."
               ) : (
                 <>
                   <Mail className="mr-2 h-4 w-4" />
