@@ -261,10 +261,42 @@ export default function UsersPage() {
   // Invite new user
   const inviteUser = useMutation({
     mutationFn: async (data: InviteUserForm) => {
-      return await apiRequest("POST", "/api/users", data);
+      try {
+        const response = await apiRequest("POST", "/api/users", data);
+        return response;
+      } catch (err) {
+        // Check if this is a JSON response with error details
+        if (err instanceof Error && 'response' in err) {
+          const response = (err as any).response;
+          
+          if (response?.data) {
+            // Handle specific error codes
+            if (response.data.code === 'EMAIL_EXISTS') {
+              throw new Error("A user with this email already exists.");
+            } else if (response.data.code === 'INVITATION_EXISTS') {
+              // Store the invitation ID for potential resend
+              const invitationId = response.data.invitationId;
+              
+              // Make this a special error object with the invitation ID
+              const customError = new Error("An invitation for this email already exists. Would you like to resend it?");
+              (customError as any).invitationId = invitationId;
+              throw customError;
+            }
+            
+            // If there's a message but no specific code we recognize
+            if (response.data.message) {
+              throw new Error(response.data.message);
+            }
+          }
+        }
+        
+        // If we couldn't parse it as a special error, rethrow the original
+        throw err;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
       toast({
         title: "Success",
         description: "User invited successfully",
@@ -273,11 +305,39 @@ export default function UsersPage() {
       inviteForm.reset();
     },
     onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Check if this is our special error with an invitation ID
+      if ('invitationId' in error) {
+        // Show a special toast with an action to resend
+        toast({
+          title: "Duplicate Invitation",
+          description: (
+            <div className="flex flex-col gap-2">
+              <p>{error.message}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  // Call resend mutation with the stored invitation ID
+                  resendInvitation.mutate((error as any).invitationId);
+                  // Close the dialog since we're handling this invitation already
+                  setIsInviteDialogOpen(false);
+                }}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Resend Invitation
+              </Button>
+            </div>
+          ),
+          duration: 10000,
+        });
+      } else {
+        // Regular error
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
@@ -661,24 +721,26 @@ export default function UsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => {
-                                setCurrentUserId(user.id);
-                                setClientAssignDialogOpen(true);
+                                // Look up the pending invitation for this user by email
+                                const pendingInvite = pendingInvitations.find(
+                                  invite => invite.email === user.email && !invite.used
+                                );
+                                
+                                if (pendingInvite) {
+                                  resendInvitation.mutate(pendingInvite.id);
+                                } else {
+                                  toast({
+                                    title: "No pending invitation",
+                                    description: "This user doesn't have a pending invitation to resend.",
+                                    variant: "destructive"
+                                  });
+                                }
                               }}
                             >
-                              <Briefcase className="mr-2 h-4 w-4" />
-                              <span>Manage Client Access</span>
-                            </DropdownMenuItem>
-                            
-                            <DropdownMenuItem asChild>
-                              <a 
-                                href={`mailto:${user.email}`}
-                                className="flex cursor-pointer items-center px-2 py-1.5 text-sm"
-                              >
-                                <Mail className="mr-2 h-4 w-4" />
-                                <span>Send Email</span>
-                              </a>
+                              <RefreshCw className="mr-2 h-4 w-4" />
+                              <span>Resend Invite</span>
                             </DropdownMenuItem>
                             
                             <DropdownMenuSeparator />

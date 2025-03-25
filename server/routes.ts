@@ -15,7 +15,8 @@ import {
   insertUserClientSchema,
   insertInvitationSchema,
   users,
-  invitations
+  invitations,
+  clients
 } from "@shared/schema";
 import multer from "multer";
 import { 
@@ -23,7 +24,7 @@ import {
   insertInspirationImageSchema 
 } from "@shared/schema";
 import { updateClientOrderSchema } from "@shared/schema";
-import { eq, sql, inArray } from "drizzle-orm";
+import { eq, sql, inArray, and } from "drizzle-orm";
 
 // Add session augmentation for TypeScript
 declare module 'express-session' {
@@ -559,40 +560,93 @@ export function registerRoutes(app: Express) {
   // Create a new user (with invite)
   app.post("/api/users", async (req, res) => {
     try {
-      const parsed = insertUserSchema.safeParse(req.body);
+      // For user invitation, we'll use the invitations system which already has email handling
+      // and proper error validation
       
-      if (!parsed.success) {
+      // Create an invitation with the provided user data
+      const invitationData = {
+        email: req.body.email,
+        name: req.body.name || req.body.email.split('@')[0], // Use part of email as name if not provided
+        role: req.body.role || UserRole.STANDARD,
+        clientIds: req.body.clientIds || undefined
+      };
+      
+      // Check if a user with this email already exists
+      const existingUser = await storage.getUserByEmail(invitationData.email);
+      if (existingUser) {
         return res.status(400).json({
-          message: "Invalid user data",
-          errors: parsed.error.errors
+          message: "A user with this email already exists",
+          code: "EMAIL_EXISTS"
         });
       }
       
-      // Create user with specified role or default to standard
-      const user = await storage.createUserWithRole({
-        ...parsed.data,
-        role: req.body.role || UserRole.STANDARD
+      // Check if an invitation with this email already exists
+      const existingInvitations = await db.query.invitations.findMany({
+        where: eq(schema.invitations.email, invitationData.email)
       });
       
-      // If clientIds provided, create user-client relationships
-      if (req.body.clientIds && Array.isArray(req.body.clientIds)) {
-        await Promise.all(
-          req.body.clientIds.map((clientId: number) => 
-            db.insert(userClients).values({
-              userId: user.id,
-              clientId: clientId
-            })
-          )
-        );
+      // Only consider unused invitations as duplicates
+      const pendingInvitation = existingInvitations.find(inv => !inv.used);
+      if (pendingInvitation) {
+        return res.status(400).json({
+          message: "An invitation for this email already exists",
+          code: "INVITATION_EXISTS",
+          invitationId: pendingInvitation.id
+        });
       }
       
-      // Here you would normally trigger an email invitation
-      // using an email service provider
+      // Create the invitation
+      const invitation = await storage.createInvitation(invitationData);
       
-      res.status(201).json(user);
+      // Calculate the invitation link
+      const inviteLink = `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`;
+      
+      // Get client information if a clientId is provided
+      let clientName = "our platform";
+      let logoUrl = undefined;
+      
+      if (invitationData.clientIds && invitationData.clientIds.length > 0) {
+        try {
+          const client = await storage.getClient(invitationData.clientIds[0]);
+          if (client) {
+            clientName = client.name;
+            logoUrl = client.logo || undefined;
+          }
+        } catch (err) {
+          console.error("Error fetching client data for invitation email:", err);
+          // Continue with default values if client fetch fails
+        }
+      }
+      
+      // Send invitation email
+      try {
+        await emailService.sendInvitationEmail({
+          to: invitationData.email,
+          inviteLink,
+          clientName, 
+          role: invitationData.role,
+          expiration: "7 days",
+          logoUrl
+        });
+        
+        console.log(`Invitation email sent to ${invitationData.email}`);
+      } catch (emailError) {
+        console.error("Failed to send invitation email:", emailError);
+        // We don't want to fail the entire invitation process if just the email fails
+      }
+      
+      // Return success with the invitation data
+      res.status(201).json({
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        clientIds: invitation.clientIds,
+        inviteLink,
+        message: "User invited successfully"
+      });
     } catch (error) {
-      console.error("Error creating user:", error);
-      res.status(500).json({ message: "Error creating user" });
+      console.error("Error inviting user:", error);
+      res.status(500).json({ message: "Error inviting user" });
     }
   });
 
@@ -720,16 +774,20 @@ export function registerRoutes(app: Express) {
       // Delete the user-client relationship
       await db.delete(userClients)
         .where(
-          eq(userClients.userId, userId) && 
-          eq(userClients.clientId, clientId)
+          and(
+            eq(userClients.userId, userId),
+            eq(userClients.clientId, clientId)
+          )
         )
         .execute();
         
       // Verify relationship was removed
       const verifyDeletion = await db.select().from(userClients)
         .where(
-          eq(userClients.userId, userId) && 
-          eq(userClients.clientId, clientId)
+          and(
+            eq(userClients.userId, userId),
+            eq(userClients.clientId, clientId)
+          )
         );
         
       if (verifyDeletion.length > 0) {
@@ -845,6 +903,30 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({
           message: "Invalid invitation data",
           errors: parsed.error.errors
+        });
+      }
+      
+      // Check if a user with this email already exists
+      const existingUser = await storage.getUserByEmail(parsed.data.email);
+      if (existingUser) {
+        return res.status(400).json({
+          message: "A user with this email already exists",
+          code: "EMAIL_EXISTS"
+        });
+      }
+      
+      // Check if an invitation with this email already exists
+      const existingInvitations = await db.query.invitations.findMany({
+        where: eq(schema.invitations.email, parsed.data.email)
+      });
+      
+      // Only consider unused invitations as duplicates
+      const pendingInvitation = existingInvitations.find(inv => !inv.used);
+      if (pendingInvitation) {
+        return res.status(400).json({
+          message: "An invitation with this email already exists",
+          code: "INVITATION_EXISTS",
+          invitationId: pendingInvitation.id
         });
       }
       
