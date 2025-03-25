@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, UserRole, Client, USER_ROLES } from "@shared/schema";
+import { cn } from "@/lib/utils";
 import {
   Popover,
   PopoverContent,
@@ -85,7 +86,9 @@ import {
   UserCheck,
   Shield,
   Settings,
-  Loader2
+  Loader2,
+  ChevronDown,
+  Check
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -385,12 +388,28 @@ export default function UsersPage() {
     mutationFn: async ({ userId, clientId }: { userId: number; clientId: number }) => {
       return await apiRequest("POST", `/api/user-clients`, { userId, clientId });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "Success",
-        description: "Client assigned successfully",
-      });
+      
+      // Find the client and update local state immediately
+      const client = clients.find(c => c.id === variables.clientId);
+      if (client) {
+        // Create a copy of the current state
+        const updatedAssignments = { ...userClientAssignments };
+        
+        // Initialize the array if it doesn't exist
+        if (!updatedAssignments[variables.userId]) {
+          updatedAssignments[variables.userId] = [];
+        }
+        
+        // Add the client if it's not already in the array
+        if (!updatedAssignments[variables.userId].some(c => c.id === client.id)) {
+          updatedAssignments[variables.userId] = [...updatedAssignments[variables.userId], client];
+          
+          // Update the query data directly in the cache
+          queryClient.setQueryData(["/api/users/client-assignments"], updatedAssignments);
+        }
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -406,12 +425,20 @@ export default function UsersPage() {
     mutationFn: async ({ userId, clientId }: { userId: number; clientId: number }) => {
       return await apiRequest("DELETE", `/api/user-clients/${userId}/${clientId}`);
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "Success",
-        description: "Client removed successfully",
-      });
+      
+      // Update local state immediately
+      const updatedAssignments = { ...userClientAssignments };
+      
+      if (updatedAssignments[variables.userId]) {
+        // Remove the client from the array
+        updatedAssignments[variables.userId] = updatedAssignments[variables.userId]
+          .filter(c => c.id !== variables.clientId);
+        
+        // Update the query data directly in the cache
+        queryClient.setQueryData(["/api/users/client-assignments"], updatedAssignments);
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -722,10 +749,76 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-2">
-                          {/* Client chips with delete buttons */}
-                          <div className="flex flex-wrap gap-1.5 mb-2">
-                            {userClientAssignments[user.id]?.length > 0 ? (
-                              userClientAssignments[user.id]?.map(client => (
+                          {/* Client assignments with improved UI */}
+                          <div>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal h-8",
+                                    !userClientAssignments[user.id]?.length && "text-muted-foreground"
+                                  )}
+                                >
+                                  <Building2 className="h-4 w-4 mr-2 opacity-70" />
+                                  {userClientAssignments[user.id]?.length 
+                                    ? `${userClientAssignments[user.id].length} client${userClientAssignments[user.id].length === 1 ? '' : 's'} assigned` 
+                                    : "Assign clients"}
+                                  <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search clients..." className="border-none focus:ring-0" autoFocus />
+                                  <CommandList>
+                                    <CommandEmpty>No clients found</CommandEmpty>
+                                    {userClientAssignments[user.id]?.length > 0 && (
+                                      <CommandGroup heading="Assigned clients">
+                                        {userClientAssignments[user.id]?.map(client => (
+                                          <CommandItem
+                                            key={client.id}
+                                            onSelect={() => {
+                                              removeClient.mutate({ userId: user.id, clientId: client.id });
+                                            }}
+                                            className="bg-secondary/5 text-primary"
+                                          >
+                                            <Check className="h-4 w-4 mr-2 text-primary" />
+                                            <span>{client.name}</span>
+                                            <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    )}
+                                    
+                                    <CommandGroup heading="Available clients">
+                                      {clients
+                                        .filter(client => 
+                                          !userClientAssignments[user.id]?.some(c => c.id === client.id)
+                                        )
+                                        .map(client => (
+                                          <CommandItem
+                                            key={client.id}
+                                            onSelect={() => {
+                                              assignClient.mutate({ userId: user.id, clientId: client.id });
+                                            }}
+                                            className="cursor-pointer"
+                                          >
+                                            <Building2 className="mr-2 h-4 w-4 opacity-50" />
+                                            <span>{client.name}</span>
+                                          </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          
+                          {/* Client chips for quick visual reference */}
+                          {userClientAssignments[user.id]?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {userClientAssignments[user.id]?.map(client => (
                                 <Badge 
                                   key={client.id} 
                                   variant="outline" 
@@ -743,53 +836,9 @@ export default function UsersPage() {
                                     <X className="h-2.5 w-2.5" />
                                   </Button>
                                 </Badge>
-                              ))
-                            ) : (
-                              <span className="text-xs text-muted-foreground italic">No clients assigned</span>
-                            )}
-                          </div>
-                          
-                          {/* Client search and assignment */}
-                          <div className="relative">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="h-7 gap-1 text-xs border-dashed border-muted-foreground/50 hover:border-primary/50 transition-colors"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                  <span>Assign client</span>
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80 p-0" align="start">
-                                <Command>
-                                  <CommandInput placeholder="Search clients..." className="border-none focus:ring-0" />
-                                  <CommandList>
-                                    <CommandEmpty>No clients found</CommandEmpty>
-                                    <CommandGroup heading="Available clients">
-                                      {clients
-                                        .filter(client => 
-                                          !userClientAssignments[user.id]?.some(c => c.id === client.id)
-                                        )
-                                        .map(client => (
-                                          <CommandItem
-                                            key={client.id}
-                                            onSelect={() => {
-                                              assignClient.mutate({ userId: user.id, clientId: client.id });
-                                            }}
-                                            className="cursor-pointer"
-                                          >
-                                            <Building2 className="mr-2 h-4 w-4" />
-                                            <span>{client.name}</span>
-                                          </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
