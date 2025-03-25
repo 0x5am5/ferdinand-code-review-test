@@ -49,8 +49,9 @@ export default function Dashboard() {
     select: (data) => {
       // Sort by displayOrder if available, fallback to id
       return [...data].sort((a, b) => {
-        if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
-          return a.displayOrder - b.displayOrder;
+        if (a.displayOrder !== null && a.displayOrder !== undefined && 
+            b.displayOrder !== null && b.displayOrder !== undefined) {
+          return Number(a.displayOrder) - Number(b.displayOrder);
         }
         return a.id - b.id;
       });
@@ -146,14 +147,17 @@ export default function Dashboard() {
     },
   });
 
-  // Handle drag end
+  // Handle drag end with improved animation and interaction
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
     const items = Array.from(orderedClients);
     const [reorderedItem] = items.splice(result.source.index, 1);
+    
+    // Insert the item at its new position
     items.splice(result.destination.index, 0, reorderedItem);
 
+    // Apply the new order with a smooth transition
     setOrderedClients(items);
 
     // Update the order in the backend
@@ -254,7 +258,11 @@ export default function Dashboard() {
         </div>
 
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="clients">
+          <Droppable 
+            droppableId="clients"
+            direction="horizontal"
+            ignoreContainerClipping={true}
+          >
             {(provided) => (
               <div
                 {...provided.droppableProps}
@@ -271,37 +279,8 @@ export default function Dashboard() {
                       >
                         <Card className="group">
                           <CardHeader className="relative">
-                            <div className="absolute inset-0 w-full h-full"> {/* Added featured image container */}
-                              <div className="w-full h-full bg-primary" style={{ backgroundColor: '#3b82f6' }}> {/* Placeholder for dynamically generated image */}
-                                {/*  Insert dynamic image generation logic here */}
-                              </div>
-                            </div>
-                            <div className="absolute right-6 top-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <GripVertical className="h-4 w-4 cursor-grab" />
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem onClick={() => setEditingClient(client)}>
-                                    <Edit2 className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => setDeletingClient(client)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-
                             <Link href={`/clients/${client.id}`} className="block w-full h-full p-4 relative">
-                              <div className="absolute top-4 left-1/2 -translate-x-1/2 cursor-move">
+                              <div className="cursor-move absolute top-4 left-1/2 -translate-x-1/2">
                                 <GripVertical className="h-4 w-4 text-muted-foreground" />
                               </div>
                               {client.logo && (
@@ -343,6 +322,34 @@ export default function Dashboard() {
                                 >
                                   <Share className="h-4 w-4" />
                                 </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setEditingClient(client);
+                                    }}>
+                                      <Edit2 className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setDeletingClient(client);
+                                      }}
+                                      className="text-red-600"
+                                    >
+                                      <Trash className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </Link>
                           </CardHeader>
