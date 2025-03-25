@@ -6,7 +6,8 @@ import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Instances from "@/pages/admin/instances";
-import ClientDetails from "@/pages/client/[id]";
+import ClientDetails from "@/pages/clients/[id]";
+import Clients from "@/pages/clients";
 import NewClientPage from "@/pages/clients/new";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
@@ -38,6 +39,9 @@ function Router() {
       </Route>
       <Route path="/admin/instances">
         <ProtectedRoute component={Instances} adminOnly />
+      </Route>
+      <Route path="/clients">
+        <ProtectedRoute component={Clients} />
       </Route>
       <Route path="/clients/new">
         <ProtectedRoute component={NewClientPage} />

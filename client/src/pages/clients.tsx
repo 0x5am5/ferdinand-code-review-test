@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Link } from "wouter";
-import { Share, Edit2, Eye, Trash, LayoutGrid, Table } from "lucide-react";
+import { Share, Edit2, Eye, Trash, LayoutGrid, Table, Plus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +36,7 @@ export default function Clients() {
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="flex items-center justify-between mb-8">
-          <h1>Clients</h1>
+          <h1 className="text-4xl font-bold">Clients</h1>
           <div className="flex items-center gap-4">
             <Input
               placeholder="Search clients..."
@@ -55,6 +55,12 @@ export default function Clients() {
                 <LayoutGrid className="h-4 w-4" />
               )}
             </Button>
+            <Link href="/clients/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Client
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -73,7 +79,7 @@ export default function Clients() {
                       size="icon"
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          `${window.location.origin}/client/${client.id}`
+                          `${window.location.origin}/clients/${client.id}`
                         );
                         toast({
                           description: "Client link copied to clipboard",
@@ -105,7 +111,7 @@ export default function Clients() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <Link href={`/client/${client.id}`}>
+                        <Link href={`/clients/${client.id}`}>
                           <DropdownMenuItem>
                             <Eye className="mr-2 h-4 w-4" />
                             View
@@ -154,7 +160,7 @@ export default function Clients() {
                           size="icon"
                           onClick={() => {
                             navigator.clipboard.writeText(
-                              `${window.location.origin}/client/${client.id}`
+                              `${window.location.origin}/clients/${client.id}`
                             );
                             toast({
                               description: "Client link copied to clipboard",
@@ -164,7 +170,7 @@ export default function Clients() {
                         >
                           <Share className="h-4 w-4" />
                         </Button>
-                        <Link href={`/client/${client.id}`}>
+                        <Link href={`/clients/${client.id}`}>
                           <Button variant="ghost" size="icon">
                             <Eye className="h-4 w-4" />
                           </Button>
