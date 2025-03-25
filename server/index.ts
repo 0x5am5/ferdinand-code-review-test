@@ -54,8 +54,8 @@ app.get('/api/health', (_req, res) => {
 EventEmitter.defaultMaxListeners = 20;
 
 // Primary and fallback ports
-const PRIMARY_PORT = 3000;
-const FALLBACK_PORTS = [3001, 3002];
+const PRIMARY_PORT = 5000;
+const FALLBACK_PORTS = [5001, 3000, 3001];
 const ALL_PORTS = [PRIMARY_PORT, ...FALLBACK_PORTS];
 
 // Enhanced cleanup function
