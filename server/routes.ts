@@ -1,7 +1,14 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { storage } from "./storage";
 import { auth as firebaseAuth } from "./firebase";
-import { insertClientSchema, insertUserSchema, UserRole } from "@shared/schema";
+import { 
+  insertClientSchema, 
+  insertUserSchema, 
+  UserRole,
+  insertFontAssetSchema,
+  insertColorAssetSchema,
+  insertUserPersonaSchema
+} from "@shared/schema";
 import multer from "multer";
 import { 
   insertInspirationSectionSchema, 
@@ -9,11 +16,23 @@ import {
 } from "@shared/schema";
 import { updateClientOrderSchema } from "@shared/schema";
 
+// Add session augmentation for TypeScript
+declare module 'express-session' {
+  interface SessionData {
+    userId: number;
+  }
+}
+
+// Add request augmentation for clientId parameter
+interface RequestWithClientId extends Request {
+  clientId?: number;
+}
+
 const upload = multer();
 
 export function registerRoutes(app: Express) {
   // Middleware to validate client ID
-  const validateClientId = (req: any, res: any, next: any) => {
+  const validateClientId = (req: RequestWithClientId, res: any, next: any) => {
     const clientId = parseInt(req.params.clientId);
     if (isNaN(clientId)) {
       return res.status(400).json({ message: "Invalid client ID" });
@@ -166,9 +185,9 @@ export function registerRoutes(app: Express) {
 
 
   // Asset routes
-  app.get("/api/clients/:clientId/assets", validateClientId, async (req, res) => {
+  app.get("/api/clients/:clientId/assets", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const assets = await storage.getClientAssets(clientId);
       res.json(assets);
     } catch (error) {
@@ -178,13 +197,13 @@ export function registerRoutes(app: Express) {
   });
 
   // Handle both file uploads and other assets
-  app.post("/api/clients/:clientId/assets", upload.array('fontFiles'), validateClientId, async (req, res) => {
+  app.post("/api/clients/:clientId/assets", upload.array('fontFiles'), validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const { category } = req.body;
 
+      // Font asset creation
       if (category === 'font') {
-        // Handle font asset
         const { name, source, weights, styles } = req.body;
         const parsedWeights = JSON.parse(weights);
         const parsedStyles = JSON.parse(styles);
@@ -195,10 +214,12 @@ export function registerRoutes(app: Express) {
         }
 
         // Create the font asset data
-        const fontData = {
+        const fontAsset = {
           clientId,
           name,
-          category: 'font',
+          category: 'font' as const,
+          fileData: files[0].buffer.toString('base64'),
+          mimeType: files[0].mimetype,
           data: {
             source,
             weights: parsedWeights,
@@ -207,15 +228,15 @@ export function registerRoutes(app: Express) {
               files: files.map(file => ({
                 fileName: file.originalname,
                 fileData: file.buffer.toString('base64'),
-                format: file.originalname.split('.').pop()?.toLowerCase(),
-                weight: '400', // Default weight
-                style: 'normal' // Default style
+                format: file.originalname.split('.').pop()?.toLowerCase() as "woff" | "woff2" | "otf" | "ttf" | "eot",
+                weight: '400',
+                style: 'normal'
               }))
             }
           }
         };
 
-        const parsed = insertFontAssetSchema.safeParse(fontData);
+        const parsed = insertFontAssetSchema.safeParse(fontAsset);
 
         if (!parsed.success) {
           return res.status(400).json({
@@ -230,10 +251,13 @@ export function registerRoutes(app: Express) {
 
       if (category === 'color') {
         // Handle color asset
-        const parsed = insertColorAssetSchema.safeParse({
+        const colorAsset = {
           ...req.body,
           clientId,
-        });
+          category: 'color' as const,
+        };
+
+        const parsed = insertColorAssetSchema.safeParse(colorAsset);
 
         if (!parsed.success) {
           return res.status(400).json({
@@ -246,9 +270,10 @@ export function registerRoutes(app: Express) {
         return res.status(201).json(asset);
       }
 
-      // Handle logo asset
+      // Default to logo asset
       const { name, type } = req.body;
-      const file = req.file;
+      const files = req.files as Express.Multer.File[];
+      const file = files[0];
 
       if (!file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -256,10 +281,10 @@ export function registerRoutes(app: Express) {
 
       const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
 
-      const asset = await storage.createAsset({
+      const logoAsset = {
         clientId,
         name,
-        category: 'logo',
+        category: 'logo' as const,
         data: {
           type,
           format: fileExtension || 'png',
@@ -267,8 +292,9 @@ export function registerRoutes(app: Express) {
         },
         fileData: file.buffer.toString('base64'),
         mimeType: file.mimetype,
-      });
+      };
 
+      const asset = await storage.createAsset(logoAsset);
       res.status(201).json(asset);
     } catch (error) {
       console.error("Error creating asset:", error);
@@ -277,9 +303,9 @@ export function registerRoutes(app: Express) {
   });
 
   // Update asset endpoint
-  app.patch("/api/clients/:clientId/assets/:assetId", validateClientId, async (req, res) => {
+  app.patch("/api/clients/:clientId/assets/:assetId", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const assetId = parseInt(req.params.assetId);
 
       const asset = await storage.getAsset(assetId);
@@ -323,9 +349,9 @@ export function registerRoutes(app: Express) {
   });
 
   // Delete asset endpoint
-  app.delete("/api/clients/:clientId/assets/:assetId", validateClientId, async (req, res) => {
+  app.delete("/api/clients/:clientId/assets/:assetId", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const assetId = parseInt(req.params.assetId);
 
       const asset = await storage.getAsset(assetId);
@@ -347,9 +373,9 @@ export function registerRoutes(app: Express) {
   });
 
   // User Persona routes
-  app.get("/api/clients/:clientId/personas", validateClientId, async (req, res) => {
+  app.get("/api/clients/:clientId/personas", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const personas = await storage.getClientPersonas(clientId);
       res.json(personas);
     } catch (error) {
@@ -358,9 +384,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/clients/:clientId/personas", validateClientId, async (req, res) => {
+  app.post("/api/clients/:clientId/personas", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const personaData = {
         ...req.body,
         clientId,
@@ -383,9 +409,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/clients/:clientId/personas/:personaId", validateClientId, async (req, res) => {
+  app.patch("/api/clients/:clientId/personas/:personaId", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const personaId = parseInt(req.params.personaId);
 
       const persona = await storage.getPersona(personaId);
@@ -418,9 +444,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/clients/:clientId/personas/:personaId", validateClientId, async (req, res) => {
+  app.delete("/api/clients/:clientId/personas/:personaId", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const personaId = parseInt(req.params.personaId);
 
       const persona = await storage.getPersona(personaId);
@@ -461,9 +487,9 @@ export function registerRoutes(app: Express) {
   });
 
   // Inspiration board routes
-  app.get("/api/clients/:clientId/inspiration/sections", validateClientId, async (req, res) => {
+  app.get("/api/clients/:clientId/inspiration/sections", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const sections = await storage.getClientInspirationSections(clientId);
       const sectionsWithImages = await Promise.all(
         sections.map(async (section) => ({
@@ -478,9 +504,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/clients/:clientId/inspiration/sections", validateClientId, async (req, res) => {
+  app.post("/api/clients/:clientId/inspiration/sections", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const sectionData = {
         ...req.body,
         clientId,
@@ -502,9 +528,9 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.patch("/api/clients/:clientId/inspiration/sections/:sectionId", validateClientId, async (req, res) => {
+  app.patch("/api/clients/:clientId/inspiration/sections/:sectionId", validateClientId, async (req: RequestWithClientId, res) => {
     try {
-      const clientId = req.clientId;
+      const clientId = req.clientId!;
       const sectionId = parseInt(req.params.sectionId);
       const sectionData = {
         ...req.body,
@@ -527,7 +553,7 @@ export function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/clients/:clientId/inspiration/sections/:sectionId/images", upload.single('image'), validateClientId, async (req, res) => {
+  app.post("/api/clients/:clientId/inspiration/sections/:sectionId/images", upload.single('image'), validateClientId, async (req: RequestWithClientId, res) => {
     try {
       const sectionId = parseInt(req.params.sectionId);
       const file = req.file;

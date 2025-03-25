@@ -86,6 +86,7 @@ export const brandAssets = pgTable("brand_assets", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Add userId to clients table
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -95,6 +96,7 @@ export const clients = pgTable("clients", {
   phone: text("phone"),
   logo: text("logo_url"),
   displayOrder: integer("display_order"),
+  userId: integer("user_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -277,16 +279,8 @@ export const insertUserClientSchema = createInsertSchema(userClients)
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type BrandAsset = typeof brandAssets.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type InsertClient = z.infer<typeof insertClientSchema>;
-export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
-export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
-export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
 export type UserPersona = typeof userPersonas.$inferSelect;
-export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
 export type UserClient = typeof userClients.$inferSelect;
-export type InsertUserClient = z.infer<typeof insertUserClientSchema>;
-
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
   createdAt: true,
@@ -295,11 +289,9 @@ export const insertClientSchema = createInsertSchema(clients).omit({
 
 // Add new type exports
 export type InspirationSection = typeof inspirationSections.$inferSelect;
-export type InsertInspirationSection = z.infer<typeof insertInspirationSectionSchema>;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
-export type InsertInspirationImage = z.infer<typeof insertInspirationImageSchema>;
 
-// Export constants
+
 export const LOGO_TYPES = Object.values(LogoType);
 export const FILE_FORMAT_LIST = Object.values(FILE_FORMATS);
 export const COLOR_CATEGORIES = Object.values(ColorCategory);
@@ -318,3 +310,45 @@ export const updateClientOrderSchema = z.object({
 });
 
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
+
+
+// Export only once, consolidated in a single location
+export type {
+  User,
+  Client,
+  BrandAsset,
+  InsertUser,
+  InsertClient,
+  InsertBrandAsset,
+  InsertColorAsset,
+  InsertFontAsset,
+  UserPersona,
+  InsertUserPersona,
+  UserClient,
+  InsertUserClient,
+  InspirationSection,
+  InsertInspirationSection,
+  InspirationImage,
+  InsertInspirationImage,
+  UpdateClientOrder,
+};
+
+// Export all constants
+export {
+  LogoType,
+  FILE_FORMATS,
+  ColorCategory,
+  FontSource,
+  FontWeight,
+  FontStyle,
+  PersonaEventAttribute,
+  UserRole,
+  LOGO_TYPES,
+  FILE_FORMAT_LIST,
+  COLOR_CATEGORIES,
+  FONT_SOURCES,
+  FONT_WEIGHTS,
+  FONT_STYLES,
+  PERSONA_EVENT_ATTRIBUTES,
+  USER_ROLES,
+};

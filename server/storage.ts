@@ -19,8 +19,8 @@ export interface IStorage {
   deleteClient(id: number): Promise<void>;
   getClientAssets(clientId: number): Promise<BrandAsset[]>;
   getAsset(id: number): Promise<BrandAsset | undefined>;
-  createAsset(asset: InsertBrandAsset): Promise<BrandAsset>;
-  updateAsset(id: number, asset: InsertBrandAsset): Promise<BrandAsset>;
+  createAsset(asset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset>;
+  updateAsset(id: number, asset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset>;
   deleteAsset(id: number): Promise<void>;
   // Add persona operations
   getClientPersonas(clientId: number): Promise<UserPersona[]>;
@@ -96,7 +96,7 @@ export class DatabaseStorage implements IStorage {
     return asset;
   }
 
-  async createAsset(insertAsset: InsertBrandAsset): Promise<BrandAsset> {
+  async createAsset(insertAsset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset> {
     const [asset] = await db
       .insert(brandAssets)
       .values(insertAsset)
@@ -104,7 +104,7 @@ export class DatabaseStorage implements IStorage {
     return asset;
   }
 
-  async updateAsset(id: number, updateAsset: InsertBrandAsset): Promise<BrandAsset> {
+  async updateAsset(id: number, updateAsset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset> {
     const [asset] = await db
       .update(brandAssets)
       .set(updateAsset)
@@ -206,8 +206,12 @@ export class DatabaseStorage implements IStorage {
     const [newUser] = await db.insert(users).values(user).returning();
     return newUser;
   }
-  async updateUserRole(id:number, role:string):Promise<User>{
-    const [updatedUser] = await db.update(users).set({role}).where(eq(users.id,id)).returning();
+  async updateUserRole(id: number, role: string): Promise<User> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ role })
+      .where(eq(users.id, id))
+      .returning();
     return updatedUser;
   }
   async getUserClients(userId:number):Promise<Client[]>{
