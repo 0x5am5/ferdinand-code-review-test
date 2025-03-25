@@ -36,7 +36,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import Image from 'next/image';
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,7 +153,7 @@ export default function Dashboard() {
 
     const items = Array.from(orderedClients);
     const [reorderedItem] = items.splice(result.source.index, 1);
-
+    
     // Insert the item at its new position
     items.splice(result.destination.index, 0, reorderedItem);
 
@@ -279,84 +278,78 @@ export default function Dashboard() {
                         {...provided.dragHandleProps}
                       >
                         <Card className="group">
-                          <CardHeader>
-                            <Link href={`/clients/${client.id}`} className="block w-full h-full p-4">
-                              <div className="cursor-move flex justify-center mb-4">
+                          <CardHeader className="relative">
+                            <Link href={`/clients/${client.id}`} className="block w-full h-full p-4 relative">
+                              <div className="cursor-move absolute top-4 left-1/2 -translate-x-1/2">
                                 <GripVertical className="h-4 w-4 text-muted-foreground" />
                               </div>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  {client.logo && (
-                                    <div>
-                                      <Image
-                                        src={client.logo}
-                                        alt={`${client.name} logo`}
-                                        width={60}
-                                        height={60}
-                                        className="rounded-md"
-                                      />
-                                    </div>
-                                  )}
-                                  <CardTitle>{client.name}</CardTitle>
+                              {client.logo && (
+                                <div className="absolute bottom-4 left-4 w-16 h-16">
+                                  <img
+                                    src={client.logo}
+                                    alt={`${client.name} logo`}
+                                    className="w-full h-full object-contain"
+                                  />
                                 </div>
-                                <div className="flex gap-2">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    onClick={(e) => {
+                              )}
+                              <CardTitle className="absolute bottom-4 left-24">{client.name}</CardTitle>
+                              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.open(`/preview/${client.id}`, '_blank');
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const url = `${window.location.origin}/clients/${client.id}`;
+                                    navigator.clipboard.writeText(url);
+                                    toast({
+                                      title: "Link copied",
+                                      description: "Client URL has been copied to clipboard",
+                                      duration: 2000,
+                                    });
+                                  }}
+                                >
+                                  <Share className="h-4 w-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      window.open(`/preview/${client.id}`, '_blank');
-                                    }}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const url = `${window.location.origin}/clients/${client.id}`;
-                                      navigator.clipboard.writeText(url);
-                                      toast({
-                                        title: "Link copied",
-                                        description: "Client URL has been copied to clipboard",
-                                        duration: 2000,
-                                      });
-                                    }}
-                                  >
-                                    <Share className="h-4 w-4" />
-                                  </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                      <DropdownMenuItem onClick={(e) => {
+                                      setEditingClient(client);
+                                    }}>
+                                      <Edit2 className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        setEditingClient(client);
-                                      }}>
-                                        <Edit2 className="mr-2 h-4 w-4" />
-                                        Edit
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setDeletingClient(client);
-                                        }}
-                                        className="text-red-600"
-                                      >
-                                        <Trash className="mr-2 h-4 w-4" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
+                                        setDeletingClient(client);
+                                      }}
+                                      className="text-red-600"
+                                    >
+                                      <Trash className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </Link>
                           </CardHeader>
