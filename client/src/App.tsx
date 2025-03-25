@@ -7,20 +7,12 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Instances from "@/pages/admin/instances";
 import ClientDetails from "@/pages/client/[id]";
+import Clients from "@/pages/clients";
 import NewClientPage from "@/pages/clients/new";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
+import { ProtectedRoute } from "./components/auth/protected-route";
 
-function ProtectedRoute({ 
-  component: Component,
-  adminOnly = false,
-}: { 
-  component: React.ComponentType;
-  adminOnly?: boolean;
-}) {
-  // Temporarily return the component directly for development
-  return <Component />;
-}
 
 function Router() {
   const [location] = useLocation();
@@ -44,6 +36,9 @@ function Router() {
       </Route>
       <Route path="/clients/:id">
         <ProtectedRoute component={ClientDetails} />
+      </Route>
+      <Route path="/clients">
+        <ProtectedRoute component={Clients} />
       </Route>
       <Route>
         <NotFound />
