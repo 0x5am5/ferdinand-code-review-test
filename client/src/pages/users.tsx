@@ -722,26 +722,31 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-2">
-                          {/* Existing client badges with delete buttons */}
-                          <div className="flex flex-wrap gap-1 mb-1">
-                            {userClientAssignments[user.id]?.map(client => (
-                              <Badge 
-                                key={client.id} 
-                                variant="outline" 
-                                className="flex items-center gap-1 bg-secondary/20"
-                              >
-                                {client.name}
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-4 w-4 p-0 ml-1 hover:bg-red-100 hover:text-red-500 rounded-full" 
-                                  onClick={() => removeClient.mutate({ userId: user.id, clientId: client.id })}
+                          {/* Client chips with delete buttons */}
+                          <div className="flex flex-wrap gap-1.5 mb-2">
+                            {userClientAssignments[user.id]?.length > 0 ? (
+                              userClientAssignments[user.id]?.map(client => (
+                                <Badge 
+                                  key={client.id} 
+                                  variant="outline" 
+                                  className="flex items-center gap-1 bg-secondary/10 pl-1.5 pr-0.5 py-0.5 rounded-md border border-secondary/30 hover:border-secondary/50 transition-colors group"
                                 >
-                                  <span className="sr-only">Remove</span>
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </Badge>
-                            ))}
+                                  <Building2 className="h-3 w-3 mr-1 text-muted-foreground" />
+                                  <span className="text-xs font-medium">{client.name}</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-4 w-4 p-0 ml-1 opacity-60 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 rounded-full transition-all" 
+                                    onClick={() => removeClient.mutate({ userId: user.id, clientId: client.id })}
+                                  >
+                                    <span className="sr-only">Remove</span>
+                                    <X className="h-2.5 w-2.5" />
+                                  </Button>
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-xs text-muted-foreground italic">No clients assigned</span>
+                            )}
                           </div>
                           
                           {/* Client search and assignment */}
@@ -751,7 +756,7 @@ export default function UsersPage() {
                                 <Button 
                                   variant="outline" 
                                   size="sm" 
-                                  className="h-8 gap-1 text-xs border-dashed border-muted-foreground/50"
+                                  className="h-7 gap-1 text-xs border-dashed border-muted-foreground/50 hover:border-primary/50 transition-colors"
                                 >
                                   <Plus className="h-3 w-3" />
                                   <span>Assign client</span>
@@ -759,7 +764,7 @@ export default function UsersPage() {
                               </PopoverTrigger>
                               <PopoverContent className="w-80 p-0" align="start">
                                 <Command>
-                                  <CommandInput placeholder="Search clients..." />
+                                  <CommandInput placeholder="Search clients..." className="border-none focus:ring-0" />
                                   <CommandList>
                                     <CommandEmpty>No clients found</CommandEmpty>
                                     <CommandGroup heading="Available clients">
@@ -773,6 +778,7 @@ export default function UsersPage() {
                                             onSelect={() => {
                                               assignClient.mutate({ userId: user.id, clientId: client.id });
                                             }}
+                                            className="cursor-pointer"
                                           >
                                             <Building2 className="mr-2 h-4 w-4" />
                                             <span>{client.name}</span>

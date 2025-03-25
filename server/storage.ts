@@ -3,12 +3,12 @@ import {
   type InsertUser, type InsertClient, type InsertBrandAsset, type InsertUserPersona,
   type InspirationSection, type InspirationImage, type Invitation,
   type InsertInspirationSection, type InsertInspirationImage, type InsertInvitation,
-  type InsertFontAsset, type InsertColorAsset,
-  users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations,
+  type InsertFontAsset, type InsertColorAsset, type UserClient,
+  users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations, userClients,
   UserRole
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import * as crypto from "crypto";
 
 export interface IStorage {
@@ -244,7 +244,23 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   async getUserClients(userId:number):Promise<Client[]>{
-    return await db.select().from(clients).where(eq(clients.userId,userId));
+    const userClientRecords = await db
+      .select()
+      .from(userClients)
+      .where(eq(userClients.userId, userId));
+    
+    if (userClientRecords.length === 0) {
+      return [];
+    }
+    
+    // Get all client IDs from the user-client relationships
+    const clientIds = userClientRecords.map(record => record.clientId);
+    
+    // Fetch the client records
+    return await db
+      .select()
+      .from(clients)
+      .where(inArray(clients.id, clientIds));
   }
   
   // Implement invitation methods
