@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,12 +151,32 @@ export function UserManager({ clientId }: UserManagerProps) {
     updateUserRole.mutate({ userId, role: newRole });
   };
   
-  // Filter users based on search query
-  const filteredUsers = searchQuery 
-    ? users.filter((user) => 
-        (user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
+  // Debounced search implementation
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Enhanced search with fuzzy matching
+  const filteredUsers = debouncedSearchQuery 
+    ? users.filter((user) => {
+        const nameMatch = user.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        const emailMatch = user.email.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        const roleMatch = user.role.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        
+        // Also match parts of names (first/last name)
+        const nameParts = user.name?.toLowerCase().split(' ') || [];
+        const namePartsMatch = nameParts.some(part => 
+          part.startsWith(debouncedSearchQuery.toLowerCase())
+        );
+        
+        return nameMatch || emailMatch || roleMatch || namePartsMatch;
+      })
     : users;
   
   return (
@@ -332,6 +352,7 @@ export function UserManager({ clientId }: UserManagerProps) {
 function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) => void }) {
   const [isChangingRole, setIsChangingRole] = useState(false);
   const [confirmingRole, setConfirmingRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Define role-specific properties
   const getRoleProperties = (roleName: string) => {
@@ -339,27 +360,32 @@ function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) 
       case UserRole.SUPER_ADMIN:
         return {
           color: 'bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-300',
-          description: 'Full access to all features and settings'
+          description: 'Full access to all features and settings',
+          icon: '👑'
         };
       case UserRole.ADMIN:
         return {
           color: 'bg-red-100 text-red-800 hover:bg-red-200 border-red-300',
-          description: 'Can manage users and all client data'
+          description: 'Can manage users and all client data',
+          icon: '⚙️'
         };
       case UserRole.STANDARD:
         return {
           color: 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300',
-          description: 'Can view and edit client data'
+          description: 'Can view and edit client data',
+          icon: '✏️'
         };
       case UserRole.GUEST:
         return {
           color: 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300', 
-          description: 'View-only access to client data'
+          description: 'View-only access to client data',
+          icon: '👁️'
         };
       default:
         return {
           color: 'bg-secondary text-secondary-foreground',
-          description: 'Custom role'
+          description: 'Custom role',
+          icon: '🔹'
         };
     }
   };
@@ -373,11 +399,19 @@ function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) 
     }
   };
   
-  const confirmRoleChange = () => {
+  const confirmRoleChange = async () => {
     if (confirmingRole) {
-      onChange(confirmingRole);
-      setConfirmingRole(null);
-      setIsChangingRole(false);
+      setIsLoading(true);
+      try {
+        await onChange(confirmingRole);
+        // Success is handled by the parent component's onSuccess
+      } catch (error) {
+        // Error is handled by the parent component's onError
+      } finally {
+        setIsLoading(false);
+        setConfirmingRole(null);
+        setIsChangingRole(false);
+      }
     }
   };
   
@@ -395,7 +429,7 @@ function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) 
         </div>
         <div className="grid grid-cols-2 gap-2">
           {Object.values(UserRole).map(r => {
-            const { color, description } = getRoleProperties(r);
+            const { color, description, icon } = getRoleProperties(r);
             const isSelected = confirmingRole === r;
             const isCurrentRole = role === r;
             
@@ -409,7 +443,10 @@ function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) 
                 `}
                 onClick={() => handleRoleSelect(r)}
               >
-                <div className="font-medium text-sm">{r}</div>
+                <div className="font-medium text-sm flex items-center">
+                  <span className="mr-1">{icon}</span>
+                  {r.replace('_', ' ')}
+                </div>
                 <div className="text-xs text-muted-foreground mt-1">{description}</div>
               </div>
             );
@@ -423,6 +460,7 @@ function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) 
               variant="outline" 
               size="sm"
               onClick={cancelRoleChange}
+              disabled={isLoading}
             >
               Cancel
             </Button>
@@ -430,8 +468,19 @@ function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) 
               type="button" 
               size="sm"
               onClick={confirmRoleChange}
+              disabled={isLoading}
             >
-              Confirm
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Updating...
+                </span>
+              ) : (
+                "Confirm"
+              )}
             </Button>
           </div>
         )}
@@ -440,13 +489,14 @@ function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) 
   }
   
   // Default badge view
-  const { color } = getRoleProperties(role);
+  const { color, icon } = getRoleProperties(role);
   return (
     <Badge
-      className={`cursor-pointer border ${color}`}
+      className={`cursor-pointer border ${color} flex items-center gap-1 hover:scale-105 transition-transform`}
       onClick={() => setIsChangingRole(true)}
     >
-      {role}
+      <span>{icon}</span>
+      <span>{role.replace('_', ' ')}</span>
     </Badge>
   );
 }

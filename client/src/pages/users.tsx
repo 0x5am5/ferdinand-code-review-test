@@ -15,6 +15,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -36,6 +37,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -45,19 +47,41 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, MoreHorizontal, UserPlus, Mail } from "lucide-react";
+import { 
+  Plus, 
+  Search, 
+  MoreHorizontal, 
+  UserPlus, 
+  Mail, 
+  Filter, 
+  X, 
+  RefreshCw, 
+  Users, 
+  Building2, 
+  Briefcase,
+  UserCheck,
+  Shield,
+  Settings
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 // Create form schemas
 const inviteUserSchema = z.object({
@@ -258,12 +282,38 @@ export default function UsersPage() {
     },
   });
 
-  // Filter users based on search query
-  const filteredUsers = users.filter(
-    (user) => 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Debounced search implementation
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  // Enhanced search with fuzzy matching
+  const filteredUsers = debouncedSearchQuery 
+    ? users.filter((user) => {
+        const nameMatch = user.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        const emailMatch = user.email.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        const roleMatch = user.role.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        
+        // Also match parts of names (first/last name)
+        const nameParts = user.name?.toLowerCase().split(' ') || [];
+        const namePartsMatch = nameParts.some(part => 
+          part.startsWith(debouncedSearchQuery.toLowerCase())
+        );
+        
+        // Also match client names if assigned to user
+        const clientMatch = userClientAssignments[user.id]?.some(client => 
+          client.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+        );
+        
+        return nameMatch || emailMatch || roleMatch || namePartsMatch || clientMatch;
+      })
+    : users;
 
   return (
     <div className="flex h-screen">
@@ -277,18 +327,65 @@ export default function UsersPage() {
           </Button>
         </div>
 
-        {/* Search */}
+        {/* Enhanced Search Bar */}
         <div className="flex gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search users..."
+              placeholder="Search by name, email, role or client..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 pr-10 transition-all focus:ring-2 ring-primary/20 w-full"
             />
+            {searchQuery && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 rounded-full opacity-70 hover:opacity-100"
+                onClick={() => setSearchQuery("")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
           </div>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/users"] })}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh user data</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
+        
+        {/* Search results info */}
+        {debouncedSearchQuery && (
+          <div className="flex items-center mb-4 text-sm">
+            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>
+              Found <strong>{filteredUsers.length}</strong> {filteredUsers.length === 1 ? 'user' : 'users'} 
+              {filteredUsers.length > 0 ? ' matching ' : ' matching search term '}
+              <Badge variant="outline" className="mx-1 font-mono">{debouncedSearchQuery}</Badge>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 px-2 text-xs ml-2"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear filter
+              </Button>
+            </span>
+          </div>
+        )}
 
         {/* Users Table */}
         <Card>
@@ -310,91 +407,162 @@ export default function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-4">
-                        <Avatar>
-                          <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Select
-                        defaultValue={user.role}
-                        onValueChange={(value) => {
-                          updateUserRole.mutate({ id: user.id, role: value as (typeof UserRole)[keyof typeof UserRole] });
-                        }}
-                      >
-                        <SelectTrigger className="h-8 w-[130px]">
-                          <SelectValue>
-                            <Badge variant={getRoleBadgeVariant(user.role)}>
-                              {user.role.replace("_", " ")}
-                            </Badge>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {USER_ROLES.map((role) => (
-                            <SelectItem key={role} value={role}>
-                              <Badge variant={getRoleBadgeVariant(role)}>
-                                {role.replace("_", " ")}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {userClientAssignments[user.id]?.map(client => (
-                          <Badge 
-                            key={client.id} 
-                            variant="outline" 
-                            className="flex items-center gap-1"
-                          >
-                            {client.name}
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="h-4 w-4 p-0 ml-1" 
-                              onClick={() => removeClient.mutate({ userId: user.id, clientId: client.id })}
-                            >
-                              <span className="sr-only">Remove</span>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                            </Button>
-                          </Badge>
-                        ))}
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => {
-                            setCurrentUserId(user.id);
-                            setClientAssignDialogOpen(true);
+                {isLoadingUsers || isLoadingAssignments ? (
+                  Array.from({ length: 3 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="flex items-center space-x-4">
+                          <div className="h-8 w-8 rounded-full bg-muted animate-pulse"></div>
+                          <div className="h-4 w-32 bg-muted animate-pulse"></div>
+                        </div>
+                      </TableCell>
+                      <TableCell><div className="h-4 w-48 bg-muted animate-pulse"></div></TableCell>
+                      <TableCell><div className="h-8 w-24 bg-muted animate-pulse"></div></TableCell>
+                      <TableCell><div className="h-6 w-32 bg-muted animate-pulse"></div></TableCell>
+                      <TableCell className="text-right"><div className="h-8 w-8 bg-muted animate-pulse ml-auto"></div></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-4">
+                          <Avatar>
+                            <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{user.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Select
+                          defaultValue={user.role}
+                          onValueChange={(value) => {
+                            updateUserRole.mutate({ id: user.id, role: value as (typeof UserRole)[keyof typeof UserRole] });
                           }}
                         >
-                          <Plus className="h-3 w-3" />
-                        </Button>
+                          <SelectTrigger className="h-8 w-[130px]">
+                            <SelectValue>
+                              <Badge variant={getRoleBadgeVariant(user.role)}>
+                                {user.role.replace("_", " ")}
+                              </Badge>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {USER_ROLES.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                <Badge variant={getRoleBadgeVariant(role)}>
+                                  {role.replace("_", " ")}
+                                </Badge>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {userClientAssignments[user.id]?.map(client => (
+                            <Badge 
+                              key={client.id} 
+                              variant="outline" 
+                              className="flex items-center gap-1"
+                            >
+                              {client.name}
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-4 w-4 p-0 ml-1" 
+                                onClick={() => removeClient.mutate({ userId: user.id, clientId: client.id })}
+                              >
+                                <span className="sr-only">Remove</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                              </Button>
+                            </Badge>
+                          ))}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => {
+                              setCurrentUserId(user.id);
+                              setClientAssignDialogOpen(true);
+                            }}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setCurrentUserId(user.id);
+                                setClientAssignDialogOpen(true);
+                              }}
+                            >
+                              <Briefcase className="mr-2 h-4 w-4" />
+                              <span>Manage Client Access</span>
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuItem asChild>
+                              <a 
+                                href={`mailto:${user.email}`}
+                                className="flex cursor-pointer items-center px-2 py-1.5 text-sm"
+                              >
+                                <Mail className="mr-2 h-4 w-4" />
+                                <span>Send Email</span>
+                              </a>
+                            </DropdownMenuItem>
+                            
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuItem
+                              className={user.role === UserRole.SUPER_ADMIN ? "text-red-500" : ""}
+                            >
+                              {user.role === UserRole.SUPER_ADMIN ? (
+                                <Shield className="mr-2 h-4 w-4" />
+                              ) : user.role === UserRole.ADMIN ? (
+                                <UserCheck className="mr-2 h-4 w-4" />
+                              ) : (
+                                <Users className="mr-2 h-4 w-4" />
+                              )}
+                              <span>Current Role: {user.role.replace("_", " ")}</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="rounded-full bg-muted p-3">
+                          <Users className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium">No users found</p>
+                          <p className="text-sm text-muted-foreground">
+                            {debouncedSearchQuery ? 'Try a different search term or clear the filter.' : 'Get started by inviting your first user.'}
+                          </p>
+                        </div>
+                        {debouncedSearchQuery ? (
+                          <Button variant="outline" onClick={() => setSearchQuery("")}>Clear filter</Button>
+                        ) : (
+                          <Button onClick={() => setIsInviteDialogOpen(true)}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Invite User
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Mail className="mr-2 h-4 w-4" />
-                            Send Email
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>
