@@ -182,6 +182,35 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error updating client order" });
     }
   });
+  
+  // Update client information
+  app.patch("/api/clients/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+      
+      const client = await storage.getClient(id);
+      if (!client) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
+      // If user is updating the client, record who made the change
+      const userId = req.session.userId;
+      if (userId) {
+        req.body.lastEditedBy = userId;
+        req.body.updatedAt = new Date();
+      }
+      
+      // Update the client
+      const updatedClient = await storage.updateClient(id, req.body);
+      res.json(updatedClient);
+    } catch (error) {
+      console.error("Error updating client:", error);
+      res.status(500).json({ message: "Error updating client" });
+    }
+  });
 
 
   // Asset routes

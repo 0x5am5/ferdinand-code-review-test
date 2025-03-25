@@ -2,7 +2,10 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, SortAsc, SortDesc, MoreVertical, Edit2, Trash, GripVertical, Eye, Share, MoreHorizontal } from "lucide-react";
+import { 
+  Plus, Search, SortAsc, SortDesc, MoreVertical, Edit2, Trash, GripVertical, 
+  Eye, Share, MoreHorizontal, User, Users, Mail, UserPlus, Package, Palette, Type
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
@@ -36,12 +39,27 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">("custom");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
+  const [activeTab, setActiveTab] = useState("client-info");
+  
+  // Feature toggles (all default to on)
+  const [featureToggles, setFeatureToggles] = useState({
+    logoSystem: true,
+    colorSystem: true,
+    typeSystem: true,
+    userPersonas: true,
+    inspiration: true
+  });
+  
   const { toast } = useToast();
 
   const { data: clients = [] } = useQuery<Client[]>({
@@ -69,6 +87,9 @@ export default function Dashboard() {
     defaultValues: {
       name: "",
       description: "",
+      website: "",
+      address: "",
+      phone: "",
     },
   });
 
@@ -175,11 +196,50 @@ export default function Dashboard() {
       form.reset({
         name: editingClient.name,
         description: editingClient.description || "",
+        website: editingClient.website || "",
+        address: editingClient.address || "",
+        phone: editingClient.phone || "",
       });
+      
+      // Initialize feature toggles from client data
+      if (editingClient.featureToggles && 
+          typeof editingClient.featureToggles === 'object' && 
+          'logoSystem' in editingClient.featureToggles) {
+        // Make sure we have all expected properties
+        const toggles = {
+          logoSystem: editingClient.featureToggles.logoSystem ?? true,
+          colorSystem: editingClient.featureToggles.colorSystem ?? true,
+          typeSystem: editingClient.featureToggles.typeSystem ?? true,
+          userPersonas: editingClient.featureToggles.userPersonas ?? true,
+          inspiration: editingClient.featureToggles.inspiration ?? true
+        };
+        setFeatureToggles(toggles);
+      } else {
+        // Default all toggles to true if not set
+        setFeatureToggles({
+          logoSystem: true,
+          colorSystem: true,
+          typeSystem: true,
+          userPersonas: true,
+          inspiration: true
+        });
+      }
     } else {
       form.reset({
         name: "",
         description: "",
+        website: "",
+        address: "",
+        phone: "",
+      });
+      
+      // Reset feature toggles to default
+      setFeatureToggles({
+        logoSystem: true,
+        colorSystem: true,
+        typeSystem: true,
+        userPersonas: true,
+        inspiration: true
       });
     }
   }, [editingClient, form]);
@@ -279,12 +339,12 @@ export default function Dashboard() {
                       >
                         <Card className="group">
                           <CardHeader className="relative">
+                            <div className="cursor-move">
+                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            </div>
                             <Link href={`/clients/${client.id}`} className="block w-full h-full p-4 relative">
-                              <div className="cursor-move absolute top-4 left-1/2 -translate-x-1/2">
-                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              </div>
                               {client.logo && (
-                                <div className="absolute bottom-4 left-4 w-16 h-16">
+                                <div className="bottom-4 left-4 w-16 h-16">
                                   <img
                                     src={client.logo}
                                     alt={`${client.name} logo`}
@@ -292,8 +352,8 @@ export default function Dashboard() {
                                   />
                                 </div>
                               )}
-                              <CardTitle className="absolute bottom-4 left-24">{client.name}</CardTitle>
-                              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                              <CardTitle className="bottom-4 left-24">{client.name}</CardTitle>
+                              <div className="bottom-4 right-4 flex gap-2 z-10">
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
@@ -366,7 +426,7 @@ export default function Dashboard() {
                   <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
                     <CardHeader className="h-full flex flex-col items-center justify-center text-center">
                       <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
-                      <CardTitle className="text-muted-foreground">Add New Instance</CardTitle>
+                      <CardTitle className="text-muted-foreground">Add New Client</CardTitle>
                     </CardHeader>
                   </Card>
                 </Link>
@@ -384,56 +444,304 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Edit Client Dialog */}
+        {/* Edit Client Dialog with Tabs */}
         <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>
-          <DialogContent>
+          <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Edit Client</DialogTitle>
             </DialogHeader>
 
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit((data) => editingClient && updateClient.mutate({ id: editingClient.id, data }))}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <Tabs defaultValue="client-info" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid grid-cols-3 mb-6">
+                <TabsTrigger value="client-info">
+                  <User className="h-4 w-4 mr-2" />
+                  Client Information
+                </TabsTrigger>
+                <TabsTrigger value="features">
+                  <Package className="h-4 w-4 mr-2" />
+                  Features
+                </TabsTrigger>
+                <TabsTrigger value="users">
+                  <Users className="h-4 w-4 mr-2" />
+                  Users
+                </TabsTrigger>
+              </TabsList>
 
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <Form {...form}>
+                <form
+                  onSubmit={form.handleSubmit((data) => editingClient && updateClient.mutate({ id: editingClient.id, data }))}
+                  className="space-y-4"
+                >
+                  {/* Client Information Tab */}
+                  <TabsContent value="client-info" className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <DialogFooter>
-                  <Button
-                    type="submit"
-                    disabled={updateClient.isPending}
-                  >
-                    Save Changes
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="website"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="https://example.com" 
+                              {...field} 
+                              value={field.value || ''} 
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Address</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Enter client address" 
+                                {...field} 
+                                value={field.value || ''} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Enter phone number" 
+                                {...field} 
+                                value={field.value || ''} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  {/* Features Tab */}
+                  <TabsContent value="features" className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">Brand Features</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Enable or disable features for this client. When a feature is disabled, 
+                        it will be hidden from the client view but all data will remain in the database.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center">
+                              <Package className="h-4 w-4 mr-2" />
+                              <div className="font-medium">Logo System</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Logo variations, usage guidelines, and downloads
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={featureToggles.logoSystem}
+                            onCheckedChange={(checked) => 
+                              setFeatureToggles(prev => ({ ...prev, logoSystem: checked }))
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center">
+                              <Palette className="h-4 w-4 mr-2" />
+                              <div className="font-medium">Color System</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Brand colors, palettes, and accessibility information
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={featureToggles.colorSystem}
+                            onCheckedChange={(checked) => 
+                              setFeatureToggles(prev => ({ ...prev, colorSystem: checked }))
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center">
+                              <Type className="h-4 w-4 mr-2" />
+                              <div className="font-medium">Type System</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Typography, fonts, and text styling guidelines
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={featureToggles.typeSystem}
+                            onCheckedChange={(checked) => 
+                              setFeatureToggles(prev => ({ ...prev, typeSystem: checked }))
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center">
+                              <User className="h-4 w-4 mr-2" />
+                              <div className="font-medium">User Personas</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Customer personas and target audience profiles
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={featureToggles.userPersonas}
+                            onCheckedChange={(checked) => 
+                              setFeatureToggles(prev => ({ ...prev, userPersonas: checked }))
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <div className="flex items-center">
+                              <Eye className="h-4 w-4 mr-2" />
+                              <div className="font-medium">Inspiration</div>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              Brand inspiration boards and mood collections
+                            </div>
+                          </div>
+                          <Switch 
+                            checked={featureToggles.inspiration}
+                            onCheckedChange={(checked) => 
+                              setFeatureToggles(prev => ({ ...prev, inspiration: checked }))
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Users Tab */}
+                  <TabsContent value="users" className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium">User Management</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Manage users who have access to this client.
+                      </p>
+                      
+                      <div className="space-y-4">
+                        <div className="rounded-md border">
+                          <div className="p-4">
+                            <div className="font-medium">Current Users</div>
+                          </div>
+                          <div className="divide-y">
+                            {/* Example users - would be populated from API */}
+                            <div className="flex items-center justify-between p-4">
+                              <div className="flex items-center space-x-4">
+                                <Avatar>
+                                  <AvatarFallback>JD</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium">Jane Doe</div>
+                                  <div className="text-sm text-muted-foreground">jane@example.com</div>
+                                </div>
+                              </div>
+                              <Badge>Admin</Badge>
+                            </div>
+                            <div className="flex items-center justify-between p-4">
+                              <div className="flex items-center space-x-4">
+                                <Avatar>
+                                  <AvatarFallback>JS</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="font-medium">John Smith</div>
+                                  <div className="text-sm text-muted-foreground">john@example.com</div>
+                                </div>
+                              </div>
+                              <Badge variant="outline">Standard</Badge>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Button className="w-full" variant="outline">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Invite New User
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <DialogFooter>
+                    {activeTab === "client-info" && (
+                      <Button
+                        type="submit"
+                        disabled={updateClient.isPending}
+                      >
+                        Save Changes
+                      </Button>
+                    )}
+                    {activeTab === "features" && (
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          if (editingClient) {
+                            // Save feature toggles to the database
+                            updateClient.mutate({
+                              id: editingClient.id,
+                              data: { featureToggles }
+                            });
+                          }
+                        }}
+                        disabled={updateClient.isPending}
+                      >
+                        Save Features
+                      </Button>
+                    )}
+                  </DialogFooter>
+                </form>
+              </Form>
+            </Tabs>
           </DialogContent>
         </Dialog>
 

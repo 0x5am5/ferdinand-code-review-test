@@ -3,7 +3,9 @@ import {
   type InsertUser, type InsertClient, type InsertBrandAsset, type InsertUserPersona,
   type InspirationSection, type InspirationImage,
   type InsertInspirationSection, type InsertInspirationImage,
-  users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages
+  type InsertFontAsset, type InsertColorAsset,
+  users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages,
+  UserRole
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc } from "drizzle-orm";
@@ -202,14 +204,36 @@ export class DatabaseStorage implements IStorage {
   async deleteInspirationImage(id: number): Promise<void> {
     await db.delete(inspirationImages).where(eq(inspirationImages.id, id));
   }
-  async createUserWithRole(user: InsertUser & {role:string}):Promise<User>{
-    const [newUser] = await db.insert(users).values(user).returning();
+  async createUserWithRole(user: Omit<InsertUser, 'role'> & {role: string}):Promise<User>{
+    // Ensure role is one of the valid enum values from the database schema
+    if (!["super_admin", "admin", "standard", "guest"].includes(user.role)) {
+      throw new Error(`Invalid role: ${user.role}`);
+    }
+    
+    // Use type assertion to tell TypeScript this is a valid role
+    const validRole = user.role as "super_admin" | "admin" | "standard" | "guest";
+    
+    // Create a new user object with the validated role
+    const userToInsert = {
+      ...user,
+      role: validRole
+    };
+    
+    const [newUser] = await db.insert(users).values(userToInsert).returning();
     return newUser;
   }
   async updateUserRole(id: number, role: string): Promise<User> {
+    // Ensure role is one of the valid enum values from the database schema
+    if (!["super_admin", "admin", "standard", "guest"].includes(role)) {
+      throw new Error(`Invalid role: ${role}`);
+    }
+    
+    // Use type assertion to tell TypeScript this is a valid role
+    const validRole = role as "super_admin" | "admin" | "standard" | "guest";
+    
     const [updatedUser] = await db
       .update(users)
-      .set({ role })
+      .set({ role: validRole })
       .where(eq(users.id, id))
       .returning();
     return updatedUser;

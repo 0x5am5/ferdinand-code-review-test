@@ -7,6 +7,7 @@ import connectPg from "connect-pg-simple";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { EventEmitter } from "events";
+import { runMigrations } from "./migrations";
 
 const execAsync = promisify(exec);
 const app = express();
@@ -79,6 +80,10 @@ async function startServer(retries = 3) {
 
       // First ensure the port is free
       await cleanup();
+      
+      // Run database migrations
+      console.log('Running database migrations...');
+      await runMigrations();
 
       // Register API routes
       registerRoutes(app);

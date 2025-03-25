@@ -87,6 +87,15 @@ export const clients = pgTable("clients", {
   logo: text("logo_url"),
   displayOrder: integer("display_order"),
   userId: integer("user_id").references(() => users.id),
+  // Feature toggles
+  featureToggles: json("feature_toggles").default({
+    logoSystem: true,
+    colorSystem: true, 
+    typeSystem: true,
+    userPersonas: true,
+    inspiration: true
+  }),
+  lastEditedBy: integer("last_edited_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
