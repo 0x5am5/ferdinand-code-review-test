@@ -300,29 +300,48 @@ export default function Dashboard() {
                               </DropdownMenu>
                             </div>
 
-                            <Link href={`/clients/${client.id}`}>
-                              <div className="cursor-pointer p-4"> {/* Added padding */}
-                                {client.logo && (
-                                  <div className="absolute bottom-4 left-4 w-16 h-16"> {/* Changed position of logo */}
-                                    <img
-                                      src={client.logo}
-                                      alt={`${client.name} logo`}
-                                      className="w-full h-full object-contain"
-                                    />
-                                  </div>
-                                )}
-                                <CardTitle className="absolute bottom-4 left-24">{client.name}</CardTitle> {/* Adjusted position of title */}
-                                {/* Removed CardDescription -  it overlaps with the buttons */}
+                            <Link href={`/clients/${client.id}`} className="block w-full h-full p-4 relative">
+                              <div className="absolute top-4 left-1/2 -translate-x-1/2 cursor-move">
+                                <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                              {client.logo && (
+                                <div className="absolute bottom-4 left-4 w-16 h-16">
+                                  <img
+                                    src={client.logo}
+                                    alt={`${client.name} logo`}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                              )}
+                              <CardTitle className="absolute bottom-4 left-24">{client.name}</CardTitle>
+                              <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    window.open(`/preview/${client.id}`, '_blank');
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    // Share functionality
+                                    navigator.clipboard.writeText(window.location.origin + `/clients/${client.id}`);
+                                    toast({
+                                      title: "Link copied",
+                                      description: "Client URL has been copied to clipboard",
+                                    });
+                                  }}
+                                >
+                                  <Share className="h-4 w-4" />
+                                </Button>
                               </div>
                             </Link>
-                            <div className="absolute bottom-4 right-4 flex gap-2"> {/* Added button container */}
-                              <Button variant="ghost" size="icon">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon">
-                                <Share className="h-4 w-4" />
-                              </Button>
-                            </div>
                           </CardHeader>
                           {/* Removed CardContent -  unnecessary with the new layout */}
                         </Card>
