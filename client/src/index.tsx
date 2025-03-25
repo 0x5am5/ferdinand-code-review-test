@@ -1,8 +1,8 @@
 
 import { Route, Switch } from "wouter";
+import { Sidebar } from "@/components/layout/sidebar";
 import Dashboard from "./pages/dashboard";
 import Clients from "./pages/clients";
-import { Sidebar } from "@/components/layout/sidebar";
 import "./index.css";
 
 export default function App() {
@@ -11,6 +11,7 @@ export default function App() {
       <Sidebar />
       <div className="flex-1">
         <Switch>
+          <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/clients" component={Clients} />
         </Switch>
