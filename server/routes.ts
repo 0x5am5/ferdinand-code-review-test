@@ -670,6 +670,42 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error updating user role" });
     }
   });
+  
+  // Send password reset email to user
+  app.post("/api/users/:id/reset-password", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID" });
+      }
+      
+      // Get the user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Generate a reset token (this should be stored in the database in a real implementation)
+      // Here we're using a simple time-based token for demo purposes
+      const resetToken = Buffer.from(`${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`).toString('base64');
+      
+      // In a real implementation, you would store this token in the database with an expiration
+      // For now, we'll just create the reset link
+      const resetLink = `${process.env.APP_URL || `http://${req.headers.host}`}/reset-password?token=${resetToken}`;
+      
+      // Send the password reset email
+      await emailService.sendPasswordResetEmail({
+        to: user.email,
+        resetLink,
+        clientName: "Brand Guidelines Platform"
+      });
+      
+      res.json({ success: true, message: "Password reset email sent" });
+    } catch (error) {
+      console.error("Error sending password reset:", error);
+      res.status(500).json({ message: "Failed to send password reset email" });
+    }
+  });
 
   // Get clients for a user
   app.get("/api/users/:id/clients", async (req, res) => {

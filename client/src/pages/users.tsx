@@ -2,6 +2,19 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, UserRole, Client, USER_ROLES } from "@shared/schema";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Table,
   TableBody,
   TableCell,
@@ -201,15 +214,41 @@ export default function UsersPage() {
       });
     }
   });
+  
+  // Reset password mutation
+  const resetPassword = useMutation({
+    mutationFn: async (userId: number) => {
+      const response = await fetch(`/api/users/${userId}/reset-password`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to send password reset");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password reset email sent",
+        description: "A password reset link has been sent to the user's email."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send password reset",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
 
   // Get all clients for assignment
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
   
-  // State for client assignment dialog
-  const [clientAssignDialogOpen, setClientAssignDialogOpen] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  // State for tracking user mutations
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Fetch client assignments for all users
   const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } = useQuery<Record<number, Client[]>>({
@@ -682,35 +721,69 @@ export default function UsersPage() {
                         </Select>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {userClientAssignments[user.id]?.map(client => (
-                            <Badge 
-                              key={client.id} 
-                              variant="outline" 
-                              className="flex items-center gap-1"
-                            >
-                              {client.name}
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-4 w-4 p-0 ml-1" 
-                                onClick={() => removeClient.mutate({ userId: user.id, clientId: client.id })}
+                        <div className="space-y-2">
+                          {/* Existing client badges with delete buttons */}
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {userClientAssignments[user.id]?.map(client => (
+                              <Badge 
+                                key={client.id} 
+                                variant="outline" 
+                                className="flex items-center gap-1 bg-secondary/20"
                               >
-                                <span className="sr-only">Remove</span>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                              </Button>
-                            </Badge>
-                          ))}
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => {
-                              setCurrentUserId(user.id);
-                              setClientAssignDialogOpen(true);
-                            }}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
+                                {client.name}
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-4 w-4 p-0 ml-1 hover:bg-red-100 hover:text-red-500 rounded-full" 
+                                  onClick={() => removeClient.mutate({ userId: user.id, clientId: client.id })}
+                                >
+                                  <span className="sr-only">Remove</span>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </Badge>
+                            ))}
+                          </div>
+                          
+                          {/* Client search and assignment */}
+                          <div className="relative">
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 gap-1 text-xs border-dashed border-muted-foreground/50"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                  <span>Assign client</span>
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search clients..." />
+                                  <CommandList>
+                                    <CommandEmpty>No clients found</CommandEmpty>
+                                    <CommandGroup heading="Available clients">
+                                      {clients
+                                        .filter(client => 
+                                          !userClientAssignments[user.id]?.some(c => c.id === client.id)
+                                        )
+                                        .map(client => (
+                                          <CommandItem
+                                            key={client.id}
+                                            onSelect={() => {
+                                              assignClient.mutate({ userId: user.id, clientId: client.id });
+                                            }}
+                                          >
+                                            <Building2 className="mr-2 h-4 w-4" />
+                                            <span>{client.name}</span>
+                                          </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -721,27 +794,34 @@ export default function UsersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuItem
-                              onClick={() => {
-                                // Look up the pending invitation for this user by email
-                                const pendingInvite = pendingInvitations.find(
-                                  invite => invite.email === user.email && !invite.used
-                                );
-                                
-                                if (pendingInvite) {
-                                  resendInvitation.mutate(pendingInvite.id);
-                                } else {
-                                  toast({
-                                    title: "No pending invitation",
-                                    description: "This user doesn't have a pending invitation to resend.",
-                                    variant: "destructive"
-                                  });
-                                }
-                              }}
-                            >
-                              <RefreshCw className="mr-2 h-4 w-4" />
-                              <span>Resend Invite</span>
-                            </DropdownMenuItem>
+                            {/* Check if user has a pending invitation */}
+                            {pendingInvitations.some(invite => invite.email === user.email && !invite.used) ? (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  // Look up the pending invitation for this user by email
+                                  const pendingInvite = pendingInvitations.find(
+                                    invite => invite.email === user.email && !invite.used
+                                  );
+                                  
+                                  if (pendingInvite) {
+                                    resendInvitation.mutate(pendingInvite.id);
+                                  }
+                                }}
+                              >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                <span>Resend Invite</span>
+                              </DropdownMenuItem>
+                            ) : (
+                              /* For active users, show Reset Password option */
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  resetPassword.mutate(user.id);
+                                }}
+                              >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                <span>Reset Password</span>
+                              </DropdownMenuItem>
+                            )}
                             
                             <DropdownMenuSeparator />
                             
@@ -913,60 +993,7 @@ export default function UsersPage() {
           </DialogContent>
         </Dialog>
         
-        {/* Client Assignment Dialog */}
-        <Dialog open={clientAssignDialogOpen} onOpenChange={setClientAssignDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign Clients</DialogTitle>
-              <DialogDescription>
-                Select clients to assign to this user.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div className="max-h-80 overflow-y-auto space-y-2">
-                {clients.filter(client => 
-                  // Filter out clients already assigned to the user
-                  !userClientAssignments[currentUserId || 0]?.some(c => c.id === client.id)
-                ).map(client => (
-                  <div key={client.id} className="flex items-center justify-between p-2 border rounded-md">
-                    <div>
-                      <p className="font-medium">{client.name}</p>
-                      <p className="text-sm text-muted-foreground">{client.description}</p>
-                    </div>
-                    <Button 
-                      size="sm"
-                      onClick={() => {
-                        if (currentUserId) {
-                          assignClient.mutate({ 
-                            userId: currentUserId, 
-                            clientId: client.id 
-                          });
-                        }
-                      }}
-                      disabled={assignClient.isPending}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Assign
-                    </Button>
-                  </div>
-                ))}
-                
-                {clients.filter(client => 
-                  !userClientAssignments[currentUserId || 0]?.some(c => c.id === client.id)
-                ).length === 0 && (
-                  <div className="text-center p-4 text-muted-foreground">
-                    All clients have been assigned to this user.
-                  </div>
-                )}
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setClientAssignDialogOpen(false)}>Done</Button>
-              </DialogFooter>
-            </div>
-          </DialogContent>
-        </Dialog>
+
       </main>
     </div>
   );
