@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from 'drizzle-orm';
 
-// Define valid logo types
+// Constants for asset types
 export const LogoType = {
   MAIN: "main",
   VERTICAL: "vertical",
@@ -13,7 +13,6 @@ export const LogoType = {
   FAVICON: "favicon",
 } as const;
 
-// Define valid file formats
 export const FILE_FORMATS = {
   PNG: "png",
   SVG: "svg",
@@ -21,21 +20,18 @@ export const FILE_FORMATS = {
   JPEG: "jpeg"
 } as const;
 
-// Define color categories
 export const ColorCategory = {
   BRAND: "brand",
   NEUTRAL: "neutral",
   INTERACTIVE: "interactive"
 } as const;
 
-// Define font source types
 export const FontSource = {
   FILE: "file",
   ADOBE: "adobe",
   GOOGLE: "google",
 } as const;
 
-// Define font weights
 export const FontWeight = {
   THIN: "100",
   EXTRA_LIGHT: "200",
@@ -48,14 +44,12 @@ export const FontWeight = {
   BLACK: "900",
 } as const;
 
-// Define font styles
 export const FontStyle = {
   NORMAL: "normal",
   ITALIC: "italic",
   OBLIQUE: "oblique",
 } as const;
 
-// Define user persona related constants
 export const PersonaEventAttribute = {
   FREQUENT: "frequent",
   EARLY_PLANNER: "early_planner",
@@ -64,7 +58,6 @@ export const PersonaEventAttribute = {
   TRENDING: "trending"
 } as const;
 
-// Define valid user roles
 export const UserRole = {
   SUPER_ADMIN: "super_admin",
   ADMIN: "admin",
@@ -72,6 +65,7 @@ export const UserRole = {
   GUEST: "guest"
 } as const;
 
+// Database tables
 export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id").notNull().references(() => clients.id),
@@ -86,7 +80,6 @@ export const brandAssets = pgTable("brand_assets", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Add userId to clients table
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -101,7 +94,6 @@ export const clients = pgTable("clients", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Update users table with roles and client access
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -113,7 +105,6 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Create a junction table for user-client relationships
 export const userClients = pgTable("user_clients", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
@@ -121,7 +112,44 @@ export const userClients = pgTable("user_clients", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Add relations
+export const userPersonas = pgTable("user_personas", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  name: text("name").notNull(),
+  role: text("role"),
+  imageUrl: text("image_url"),
+  ageRange: text("age_range"),
+  demographics: json("demographics"),
+  eventAttributes: json("event_attributes"),
+  motivations: text("motivations").array(),
+  coreNeeds: text("core_needs").array(),
+  painPoints: text("pain_points").array(),
+  metrics: json("metrics"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const inspirationSections = pgTable("inspiration_sections", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  label: text("label").notNull(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const inspirationImages = pgTable("inspiration_images", {
+  id: serial("id").primaryKey(),
+  sectionId: integer("section_id").notNull().references(() => inspirationSections.id),
+  url: text("url").notNull(),
+  fileData: text("file_data").notNull(),
+  mimeType: text("mime_type").notNull(),
+  order: integer("order").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Relations
 export const usersRelations = relations(users, ({ many }) => ({
   userClients: many(userClients),
 }));
@@ -141,24 +169,7 @@ export const userClientsRelations = relations(userClients, ({ one }) => ({
   }),
 }));
 
-export const userPersonas = pgTable("user_personas", {
-  id: serial("id").primaryKey(),
-  clientId: integer("client_id").notNull().references(() => clients.id),
-  name: text("name").notNull(),
-  role: text("role"),
-  imageUrl: text("image_url"),
-  ageRange: text("age_range"),
-  demographics: json("demographics"),
-  eventAttributes: json("event_attributes"),
-  motivations: text("motivations").array(),
-  coreNeeds: text("core_needs").array(),
-  painPoints: text("pain_points").array(),
-  metrics: json("metrics"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Schema for colors with required fields for validation
+// Schemas
 export const insertColorAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -184,7 +195,6 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
     }),
   });
 
-// Schema for logos with required fields for validation
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -198,7 +208,6 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
     mimeType: z.string(),
   });
 
-// Schema for fonts with required fields for validation
 export const insertFontAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -221,7 +230,6 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
     }),
   });
 
-// Schema for user personas with required fields for validation
 export const insertUserPersonaSchema = createInsertSchema(userPersonas)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -238,34 +246,12 @@ export const insertUserPersonaSchema = createInsertSchema(userPersonas)
     }).optional(),
   });
 
-export const inspirationSections = pgTable("inspiration_sections", {
-  id: serial("id").primaryKey(),
-  clientId: integer("client_id").notNull().references(() => clients.id),
-  label: text("label").notNull(),
-  order: integer("order").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const inspirationImages = pgTable("inspiration_images", {
-  id: serial("id").primaryKey(),
-  sectionId: integer("section_id").notNull().references(() => inspirationSections.id),
-  url: text("url").notNull(),
-  fileData: text("file_data").notNull(),
-  mimeType: text("mime_type").notNull(),
-  order: integer("order").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-// Schema for inspiration board
 export const insertInspirationSectionSchema = createInsertSchema(inspirationSections)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertInspirationImageSchema = createInsertSchema(inspirationImages)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
-// Create schemas for validation
 export const insertUserSchema = createInsertSchema(users)
   .extend({
     clientIds: z.array(z.number()).optional(),
@@ -275,23 +261,42 @@ export const insertUserSchema = createInsertSchema(users)
 export const insertUserClientSchema = createInsertSchema(userClients)
   .omit({ id: true, createdAt: true });
 
-// Export types
+export const insertClientSchema = createInsertSchema(clients)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true
+  });
+
+export const updateClientOrderSchema = z.object({
+  clientOrders: z.array(z.object({
+    id: z.number(),
+    displayOrder: z.number()
+  }))
+});
+
+// Type exports
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type BrandAsset = typeof brandAssets.$inferSelect;
 export type UserPersona = typeof userPersonas.$inferSelect;
 export type UserClient = typeof userClients.$inferSelect;
-export const insertClientSchema = createInsertSchema(clients).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
-});
-
-// Add new type exports
 export type InspirationSection = typeof inspirationSections.$inferSelect;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
+export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
 
+// Insert type exports
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertClient = z.infer<typeof insertClientSchema>;
+export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
+export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
+export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
+export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
+export type InsertUserClient = z.infer<typeof insertUserClientSchema>;
+export type InsertInspirationSection = z.infer<typeof insertInspirationSectionSchema>;
+export type InsertInspirationImage = z.infer<typeof insertInspirationImageSchema>;
 
+// Derived constants
 export const LOGO_TYPES = Object.values(LogoType);
 export const FILE_FORMAT_LIST = Object.values(FILE_FORMATS);
 export const COLOR_CATEGORIES = Object.values(ColorCategory);
@@ -300,55 +305,3 @@ export const FONT_WEIGHTS = Object.values(FontWeight);
 export const FONT_STYLES = Object.values(FontStyle);
 export const PERSONA_EVENT_ATTRIBUTES = Object.values(PersonaEventAttribute);
 export const USER_ROLES = Object.values(UserRole);
-
-// Add a new schema for order updates
-export const updateClientOrderSchema = z.object({
-  clientOrders: z.array(z.object({
-    id: z.number(),
-    displayOrder: z.number()
-  }))
-});
-
-export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
-
-
-// Export only once, consolidated in a single location
-export type {
-  User,
-  Client,
-  BrandAsset,
-  InsertUser,
-  InsertClient,
-  InsertBrandAsset,
-  InsertColorAsset,
-  InsertFontAsset,
-  UserPersona,
-  InsertUserPersona,
-  UserClient,
-  InsertUserClient,
-  InspirationSection,
-  InsertInspirationSection,
-  InspirationImage,
-  InsertInspirationImage,
-  UpdateClientOrder,
-};
-
-// Export all constants
-export {
-  LogoType,
-  FILE_FORMATS,
-  ColorCategory,
-  FontSource,
-  FontWeight,
-  FontStyle,
-  PersonaEventAttribute,
-  UserRole,
-  LOGO_TYPES,
-  FILE_FORMAT_LIST,
-  COLOR_CATEGORIES,
-  FONT_SOURCES,
-  FONT_WEIGHTS,
-  FONT_STYLES,
-  PERSONA_EVENT_ATTRIBUTES,
-  USER_ROLES,
-};
