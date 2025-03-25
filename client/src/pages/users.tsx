@@ -71,7 +71,8 @@ import {
   Briefcase,
   UserCheck,
   Shield,
-  Settings
+  Settings,
+  Loader2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -124,6 +125,21 @@ const getInitials = (name: string) => {
     .toUpperCase();
 };
 
+// Define interface for pending invitations
+interface PendingInvitation {
+  id: number;
+  email: string;
+  role: string;
+  clientIds: number[] | null;
+  expiresAt: string;
+  used: boolean;
+  clientData?: {
+    name: string;
+    logoUrl?: string;
+    primaryColor?: string;
+  };
+}
+
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
@@ -140,6 +156,50 @@ export default function UsersPage() {
       }
       return response.json();
     },
+  });
+  
+  // Get pending invitations
+  const { data: pendingInvitations = [], isLoading: isLoadingInvitations } = useQuery<PendingInvitation[]>({
+    queryKey: ["/api/invitations"],
+    queryFn: async () => {
+      const response = await fetch("/api/invitations");
+      if (!response.ok) {
+        if (response.status === 403) {
+          // User doesn't have permission, return empty array
+          return [];
+        }
+        throw new Error("Failed to fetch pending invitations");
+      }
+      return response.json();
+    },
+  });
+  
+  // Resend invitation mutation
+  const resendInvitation = useMutation({
+    mutationFn: async (invitationId: number) => {
+      const response = await fetch(`/api/invitations/${invitationId}/resend`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to resend invitation");
+      }
+      return response.json();
+    },
+    onSuccess: (_, invitationId) => {
+      toast({
+        title: "Invitation resent",
+        description: "The invitation email has been resent successfully."
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to resend invitation",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
   });
 
   // Get all clients for assignment
@@ -385,6 +445,108 @@ export default function UsersPage() {
               </Button>
             </span>
           </div>
+        )}
+
+        {/* Pending Invitations */}
+        {pendingInvitations.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Pending Invitations</CardTitle>
+              <CardDescription>
+                Users who have been invited but haven't accepted yet
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Assigned To</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingInvitations ? (
+                    Array.from({ length: 2 }).map((_, index) => (
+                      <TableRow key={index}>
+                        <TableCell><div className="h-4 w-48 bg-muted animate-pulse"></div></TableCell>
+                        <TableCell><div className="h-8 w-24 bg-muted animate-pulse"></div></TableCell>
+                        <TableCell><div className="h-6 w-32 bg-muted animate-pulse"></div></TableCell>
+                        <TableCell><div className="h-4 w-24 bg-muted animate-pulse"></div></TableCell>
+                        <TableCell className="text-right"><div className="h-8 w-8 bg-muted animate-pulse ml-auto"></div></TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    pendingInvitations.map((invitation) => {
+                      // Format expiration date
+                      const expiresAt = new Date(invitation.expiresAt);
+                      const now = new Date();
+                      const isExpired = expiresAt < now;
+                      const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24));
+                      
+                      return (
+                        <TableRow key={invitation.id}>
+                          <TableCell>{invitation.email}</TableCell>
+                          <TableCell>
+                            <Badge variant={getRoleBadgeVariant(invitation.role)}>
+                              {invitation.role.replace("_", " ")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {invitation.clientData ? (
+                              <div className="flex items-center space-x-2">
+                                {invitation.clientData.logoUrl ? (
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarImage src={invitation.clientData.logoUrl} alt={invitation.clientData.name} />
+                                    <AvatarFallback style={{
+                                      backgroundColor: invitation.clientData.primaryColor || '#e2e8f0'
+                                    }}>
+                                      {getInitials(invitation.clientData.name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                ) : (
+                                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs">
+                                    {getInitials(invitation.clientData.name)}
+                                  </div>
+                                )}
+                                <span>{invitation.clientData.name}</span>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">Platform Access</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {isExpired ? (
+                              <Badge variant="destructive">Expired</Badge>
+                            ) : (
+                              <span className="text-sm">{daysLeft} {daysLeft === 1 ? 'day' : 'days'} left</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => resendInvitation.mutate(invitation.id)}
+                              disabled={resendInvitation.isPending}
+                            >
+                              {resendInvitation.isPending ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                              )}
+                              Resend
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         )}
 
         {/* Users Table */}

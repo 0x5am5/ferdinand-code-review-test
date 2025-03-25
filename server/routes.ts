@@ -2,6 +2,7 @@ import type { Express, Request } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { auth as firebaseAuth } from "./firebase";
+import { emailService } from "./email-service";
 import * as schema from "@shared/schema";
 import { 
   insertClientSchema, 
@@ -644,6 +645,23 @@ export function registerRoutes(app: Express) {
         return res.status(401).json({ message: "User ID is required or user must be authenticated" });
       }
       
+      // Check if this relationship already exists to prevent duplicates
+      const existingRelationship = await db.select()
+        .from(userClients)
+        .where(
+          and(
+            eq(userClients.userId, userId),
+            eq(userClients.clientId, clientId)
+          )
+        );
+      
+      if (existingRelationship.length > 0) {
+        return res.status(409).json({ 
+          message: "This user is already associated with this client",
+          userClient: existingRelationship[0]
+        });
+      }
+      
       const parsed = insertUserClientSchema.safeParse({
         userId,
         clientId
@@ -656,6 +674,24 @@ export function registerRoutes(app: Express) {
         });
       }
       
+      // Verify user exists
+      const userExists = await db.select()
+        .from(users)
+        .where(eq(users.id, userId));
+        
+      if (userExists.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify client exists
+      const clientExists = await db.select()
+        .from(clients)
+        .where(eq(clients.id, clientId));
+        
+      if (clientExists.length === 0) {
+        return res.status(404).json({ message: "Client not found" });
+      }
+      
       const [userClient] = await db.insert(userClients)
         .values(parsed.data)
         .returning();
@@ -663,7 +699,11 @@ export function registerRoutes(app: Express) {
       res.status(201).json(userClient);
     } catch (error) {
       console.error("Error creating user-client relationship:", error);
-      res.status(500).json({ message: "Error creating user-client relationship" });
+      // Return more detailed error message for debugging
+      res.status(500).json({ 
+        message: "Error creating user-client relationship", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -735,6 +775,67 @@ export function registerRoutes(app: Express) {
   });
 
   // Invitation routes
+  // Get all pending invitations
+  app.get("/api/invitations", async (req, res) => {
+    try {
+      // Make sure the user is authenticated
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      // Get the user to check their role
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      
+      // Only allow admins and super admins to view all invitations
+      if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+      
+      // Get all pending invitations
+      const pendingInvitations = await db.query.invitations.findMany({
+        where: eq(schema.invitations.used, false)
+      });
+      
+      // Enhance invitations with client data
+      const enhancedInvitations = await Promise.all(
+        pendingInvitations.map(async (invitation) => {
+          let clientData = undefined;
+          
+          if (invitation.clientIds && invitation.clientIds.length > 0) {
+            try {
+              const client = await storage.getClient(invitation.clientIds[0]);
+              if (client) {
+                clientData = {
+                  name: client.name,
+                  logoUrl: client.logo || undefined,
+                  primaryColor: client.primaryColor || undefined
+                };
+              }
+            } catch (err) {
+              console.error("Error fetching client data for invitation:", err);
+            }
+          }
+          
+          // Exclude token from response
+          const { token, ...safeInvitation } = invitation;
+          
+          return {
+            ...safeInvitation,
+            clientData
+          };
+        })
+      );
+      
+      res.json(enhancedInvitations);
+    } catch (error) {
+      console.error("Error fetching invitations:", error);
+      res.status(500).json({ message: "Error fetching invitations" });
+    }
+  });
+  
   // Create a new invitation
   app.post("/api/invitations", async (req, res) => {
     try {
@@ -749,16 +850,47 @@ export function registerRoutes(app: Express) {
       
       const invitation = await storage.createInvitation(parsed.data);
       
-      // If clientIds provided, also store this information for later use
-      if (req.body.clientIds && Array.isArray(req.body.clientIds)) {
-        // We don't need to do anything here since createInvitation already handles this
-        // The clientIds will be used when the user accepts the invitation
+      // Calculate the invitation link
+      const inviteLink = `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`;
+      
+      // Get client information if a clientId is provided
+      let clientName = "our platform";
+      let logoUrl = undefined;
+      
+      if (req.body.clientIds && Array.isArray(req.body.clientIds) && req.body.clientIds.length > 0) {
+        try {
+          const client = await storage.getClient(req.body.clientIds[0]);
+          if (client) {
+            clientName = client.name;
+            logoUrl = client.logo || undefined;
+          }
+        } catch (err) {
+          console.error("Error fetching client data for invitation email:", err);
+          // Continue with default values if client fetch fails
+        }
+      }
+      
+      // Send invitation email
+      try {
+        await emailService.sendInvitationEmail({
+          to: parsed.data.email,
+          inviteLink,
+          clientName,
+          role: parsed.data.role,
+          expiration: "7 days",
+          logoUrl
+        });
+        
+        console.log(`Invitation email sent to ${parsed.data.email}`);
+      } catch (emailError) {
+        console.error("Failed to send invitation email:", emailError);
+        // We don't want to fail the entire invitation process if just the email fails
       }
       
       // Return the invitation with the token (this will be used to create the invitation link)
       res.status(201).json({
         ...invitation,
-        inviteLink: `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`
+        inviteLink
       });
     } catch (error) {
       console.error("Error creating invitation:", error);
@@ -872,6 +1004,77 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error updating invitation:", error);
       res.status(500).json({ message: "Error updating invitation" });
+    }
+  });
+  
+  // Resend invitation email
+  app.post("/api/invitations/:id/resend", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid invitation ID" });
+      }
+      
+      // Get the invitation from database
+      const invitation = await db.query.invitations.findFirst({
+        where: eq(schema.invitations.id, id)
+      });
+      
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+      
+      // If invitation is already used, return error
+      if (invitation.used) {
+        return res.status(400).json({ message: "Invitation has already been used" });
+      }
+      
+      // Calculate the invitation link
+      const inviteLink = `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`;
+      
+      // Get client information if a clientId is provided
+      let clientName = "our platform";
+      let logoUrl = undefined;
+      
+      if (invitation.clientIds && invitation.clientIds.length > 0) {
+        try {
+          const client = await storage.getClient(invitation.clientIds[0]);
+          if (client) {
+            clientName = client.name;
+            logoUrl = client.logo || undefined;
+          }
+        } catch (err) {
+          console.error("Error fetching client data for invitation email:", err);
+          // Continue with default values if client fetch fails
+        }
+      }
+      
+      // Send the invitation email
+      try {
+        await emailService.resendInvitationEmail({
+          to: invitation.email,
+          inviteLink,
+          clientName,
+          role: invitation.role,
+          expiration: "7 days",
+          logoUrl
+        });
+        
+        console.log(`Invitation email resent to ${invitation.email}`);
+        
+        // Return success
+        res.json({ 
+          message: "Invitation email resent successfully",
+          inviteLink
+        });
+      } catch (emailError) {
+        console.error("Failed to resend invitation email:", emailError);
+        res.status(500).json({ message: "Failed to resend invitation email" });
+      }
+    } catch (error) {
+      console.error("Error resending invitation:", error);
+      res.status(500).json({ message: "Error resending invitation" });
     }
   });
 
