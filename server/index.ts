@@ -56,65 +56,79 @@ EventEmitter.defaultMaxListeners = 20;
 async function cleanup() {
   try {
     const port = 3000;
-    console.log(`Ensuring port ${port} is free...`);
+    console.log(`Cleaning up port ${port}...`);
 
     // Kill any existing process on port 3000
-    await execAsync('npx kill-port 3000');
+    await execAsync(`npx kill-port ${port}`);
 
     // Add a small delay to ensure port is freed
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     console.log(`Port ${port} is now available`);
   } catch (err) {
     // Ignore errors as the port might not be in use
+    console.log('No cleanup needed');
   }
 }
 
-async function startServer() {
-  try {
-    console.log('Starting server initialization...');
+// Attempt to start the server multiple times
+async function startServer(retries = 3) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Starting server (attempt ${attempt}/${retries})...`);
 
-    // First ensure the port is free
-    await cleanup();
+      // First ensure the port is free
+      await cleanup();
 
-    // Register API routes
-    registerRoutes(app);
+      // Register API routes
+      registerRoutes(app);
 
-    const port = 3000; // Changed port to 3000
+      const port = 3000;
 
-    if (process.env.NODE_ENV !== "production") {
-      // For development, create server first then setup Vite
-      server = createServer(app);
-      console.log('Setting up Vite...');
-      await setupVite(app, server);
-    } else {
-      // For production, setup static serving then create server
-      console.log('Setting up static serving...');
-      serveStatic(app);
-      server = createServer(app);
-    }
-
-    // Start listening on the port
-    console.log(`Starting server on port ${port}...`);
-
-    server.listen(port, '0.0.0.0', () => {
-      console.log(`Server started successfully on port ${port}`);
-      log(`Server listening at http://0.0.0.0:${port}`);
-    });
-
-    server.on('error', (error: NodeJS.ErrnoException) => {
-      if (error.code === 'EADDRINUSE') {
-        console.error(`Port ${port} is still in use, cannot start server`);
-        process.exit(1);
+      if (process.env.NODE_ENV !== "production") {
+        // For development, create server first then setup Vite
+        server = createServer(app);
+        console.log('Setting up Vite...');
+        await setupVite(app, server);
       } else {
-        console.error('Server error:', error);
-        process.exit(1);
+        // For production, setup static serving then create server
+        console.log('Setting up static serving...');
+        serveStatic(app);
+        server = createServer(app);
       }
-    });
 
-  } catch (err) {
-    console.error("Server startup error:", err);
-    process.exit(1);
+      // Start listening on the port
+      await new Promise<void>((resolve, reject) => {
+        server!.listen(port, '0.0.0.0', () => {
+          console.log(`Server started successfully on port ${port}`);
+          log(`Server listening at http://0.0.0.0:${port}`);
+          resolve();
+        });
+
+        server!.on('error', (error: NodeJS.ErrnoException) => {
+          if (error.code === 'EADDRINUSE') {
+            console.error(`Port ${port} is still in use, retrying...`);
+            reject(new Error(`Port ${port} is in use`));
+          } else {
+            console.error('Server error:', error);
+            reject(error);
+          }
+        });
+      });
+
+      // If we get here, the server started successfully
+      return;
+
+    } catch (err) {
+      console.error(`Attempt ${attempt} failed:`, err);
+
+      if (attempt === retries) {
+        throw new Error(`Failed to start server after ${retries} attempts`);
+      }
+
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
   }
 }
 
@@ -131,4 +145,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Start the server
 console.log('Initiating server startup...');
-startServer();
+startServer().catch((error) => {
+  console.error('Fatal server error:', error);
+  process.exit(1);
+});

@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from 'drizzle-orm';
 
-// Constants for asset types
+// Constants
 export const LogoType = {
   MAIN: "main",
   VERTICAL: "vertical",
@@ -65,17 +65,14 @@ export const UserRole = {
   GUEST: "guest"
 } as const;
 
-// Database tables
-export const brandAssets = pgTable("brand_assets", {
+// Database Tables
+export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").notNull().references(() => clients.id),
+  email: text("email").notNull().unique(),
   name: text("name").notNull(),
-  category: text("category", {
-    enum: ["logo", "color", "typography", "font"]
+  role: text("role", {
+    enum: ["super_admin", "admin", "standard", "guest"]
   }).notNull(),
-  data: json("data"),
-  fileData: text("file_data"),
-  mimeType: text("mime_type"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -94,22 +91,25 @@ export const clients = pgTable("clients", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  email: text("email").notNull().unique(),
-  name: text("name").notNull(),
-  role: text("role", {
-    enum: ["super_admin", "admin", "standard", "guest"]
-  }).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
 export const userClients = pgTable("user_clients", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
   clientId: integer("client_id").notNull().references(() => clients.id),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const brandAssets = pgTable("brand_assets", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  name: text("name").notNull(),
+  category: text("category", {
+    enum: ["logo", "color", "typography", "font"]
+  }).notNull(),
+  data: json("data"),
+  fileData: text("file_data"),
+  mimeType: text("mime_type"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const userPersonas = pgTable("user_personas", {
@@ -169,7 +169,36 @@ export const userClientsRelations = relations(userClients, ({ one }) => ({
   }),
 }));
 
-// Schemas
+// Insert Schemas
+export const insertUserSchema = createInsertSchema(users)
+  .extend({
+    clientIds: z.array(z.number()).optional(),
+  })
+  .omit({ id: true });
+
+export const insertClientSchema = createInsertSchema(clients)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true
+  });
+
+export const insertUserClientSchema = createInsertSchema(userClients)
+  .omit({ id: true, createdAt: true });
+
+export const insertBrandAssetSchema = createInsertSchema(brandAssets)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    category: z.literal("logo"),
+    data: z.object({
+      type: z.enum(Object.values(LogoType) as [string, ...string[]]),
+      format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
+      fileName: z.string(),
+    }),
+    fileData: z.string(),
+    mimeType: z.string(),
+  });
+
 export const insertColorAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -195,19 +224,6 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
     }),
   });
 
-export const insertBrandAssetSchema = createInsertSchema(brandAssets)
-  .omit({ id: true, createdAt: true, updatedAt: true })
-  .extend({
-    category: z.literal("logo"),
-    data: z.object({
-      type: z.enum(Object.values(LogoType) as [string, ...string[]]),
-      format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
-      fileName: z.string(),
-    }),
-    fileData: z.string(),
-    mimeType: z.string(),
-  });
-
 export const insertFontAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -215,7 +231,7 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
     data: z.object({
       source: z.enum(Object.values(FontSource) as [string, ...string[]]),
       weights: z.array(z.enum(Object.values(FontWeight) as [string, ...string[]])),
-      styles: z.array(z.enum(Object.values(FontStyle) as [string, ...string[]]),),
+      styles: z.array(z.enum(Object.values(FontStyle) as [string, ...string[]])),
       sourceData: z.object({
         projectId: z.string().optional(),
         url: z.string().url().optional(),
@@ -252,22 +268,6 @@ export const insertInspirationSectionSchema = createInsertSchema(inspirationSect
 export const insertInspirationImageSchema = createInsertSchema(inspirationImages)
   .omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertUserSchema = createInsertSchema(users)
-  .extend({
-    clientIds: z.array(z.number()).optional(),
-  })
-  .omit({ id: true });
-
-export const insertUserClientSchema = createInsertSchema(userClients)
-  .omit({ id: true, createdAt: true });
-
-export const insertClientSchema = createInsertSchema(clients)
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true
-  });
-
 export const updateClientOrderSchema = z.object({
   clientOrders: z.array(z.object({
     id: z.number(),
@@ -275,7 +275,7 @@ export const updateClientOrderSchema = z.object({
   }))
 });
 
-// Type exports
+// Base Types
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type BrandAsset = typeof brandAssets.$inferSelect;
@@ -283,20 +283,22 @@ export type UserPersona = typeof userPersonas.$inferSelect;
 export type UserClient = typeof userClients.$inferSelect;
 export type InspirationSection = typeof inspirationSections.$inferSelect;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
-export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
 
-// Insert type exports
+// Insert Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
-export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
 export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
+export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
 export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
 export type InsertUserClient = z.infer<typeof insertUserClientSchema>;
 export type InsertInspirationSection = z.infer<typeof insertInspirationSectionSchema>;
 export type InsertInspirationImage = z.infer<typeof insertInspirationImageSchema>;
 
-// Derived constants
+// Other Types
+export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
+
+// Constants from enums
 export const LOGO_TYPES = Object.values(LogoType);
 export const FILE_FORMAT_LIST = Object.values(FILE_FORMATS);
 export const COLOR_CATEGORIES = Object.values(ColorCategory);
