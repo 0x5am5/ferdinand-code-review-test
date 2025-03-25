@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/layout/sidebar";
+import { UserManager } from "@/components/client/user-manager";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
 import {
@@ -811,56 +812,9 @@ export default function Dashboard() {
 
                   {/* Users Tab */}
                   <TabsContent value="users" className="space-y-6">
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">User Management</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Manage users who have access to this client.
-                      </p>
-
-                      <div className="space-y-4">
-                        <div className="rounded-md border">
-                          <div className="p-4">
-                            <div className="font-medium">Current Users</div>
-                          </div>
-                          <div className="divide-y">
-                            {/* Example users - would be populated from API */}
-                            <div className="flex items-center justify-between p-4">
-                              <div className="flex items-center space-x-4">
-                                <Avatar>
-                                  <AvatarFallback>JD</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <div className="font-medium">Jane Doe</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    jane@example.com
-                                  </div>
-                                </div>
-                              </div>
-                              <Badge>Admin</Badge>
-                            </div>
-                            <div className="flex items-center justify-between p-4">
-                              <div className="flex items-center space-x-4">
-                                <Avatar>
-                                  <AvatarFallback>JS</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <div className="font-medium">John Smith</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    john@example.com
-                                  </div>
-                                </div>
-                              </div>
-                              <Badge variant="outline">Standard</Badge>
-                            </div>
-                          </div>
-                        </div>
-
-                        <Button className="w-full" variant="outline">
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Invite New User
-                        </Button>
-                      </div>
-                    </div>
+                    {editingClient && (
+                      <UserManager clientId={editingClient.id} />
+                    )}
                   </TabsContent>
 
                   <DialogFooter>

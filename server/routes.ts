@@ -2,6 +2,7 @@ import type { Express, Request } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
 import { auth as firebaseAuth } from "./firebase";
+import * as schema from "@shared/schema";
 import { 
   insertClientSchema, 
   insertUserSchema, 
@@ -21,7 +22,7 @@ import {
   insertInspirationImageSchema 
 } from "@shared/schema";
 import { updateClientOrderSchema } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 
 // Add session augmentation for TypeScript
 declare module 'express-session' {
@@ -678,7 +679,10 @@ export function registerRoutes(app: Express) {
       
       // Delete the user-client relationship
       await db.delete(userClients)
-        .where(eq(userClients.userId, userId))
+        .where(
+          eq(userClients.userId, userId) && 
+          eq(userClients.clientId, clientId)
+        )
         .execute();
         
       // Verify relationship was removed
@@ -696,6 +700,37 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error deleting user-client relationship:", error);
       res.status(500).json({ message: "Error deleting user-client relationship" });
+    }
+  });
+  
+  // Get users for a specific client
+  app.get("/api/clients/:clientId/users", validateClientId, async (req: RequestWithClientId, res) => {
+    try {
+      const clientId = req.clientId!;
+      
+      // Query all users who have this client assigned
+      const userClientRows = await db
+        .select()
+        .from(userClients)
+        .where(eq(userClients.clientId, clientId));
+      
+      if (userClientRows.length === 0) {
+        return res.json([]);
+      }
+      
+      // Get user IDs from the relationships
+      const userIds = userClientRows.map(row => row.userId);
+      
+      // Fetch the actual user details
+      const userList = await db
+        .select()
+        .from(users)
+        .where(inArray(users.id, userIds));
+      
+      res.json(userList);
+    } catch (error) {
+      console.error("Error fetching client users:", error);
+      res.status(500).json({ message: "Failed to fetch client users" });
     }
   });
 

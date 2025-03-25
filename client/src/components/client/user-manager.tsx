@@ -1,0 +1,452 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { User, UserRole } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { toast } from "@/hooks/use-toast";
+import { 
+  AlertCircle,
+  PlusIcon, 
+  SearchIcon, 
+  UserPlusIcon, 
+  XCircle, 
+  Mail
+} from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
+
+interface UserManagerProps {
+  clientId: number;
+}
+
+export function UserManager({ clientId }: UserManagerProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<string>(UserRole.STANDARD);
+  
+  // Fetch users for this client
+  const { data: users = [], isLoading } = useQuery<User[]>({
+    queryKey: ['/api/clients', clientId, 'users'],
+    queryFn: async () => {
+      const response = await fetch(`/api/clients/${clientId}/users`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      return response.json();
+    },
+    enabled: !!clientId
+  });
+  
+  // Create invitation mutation
+  const createInvitation = useMutation({
+    mutationFn: async ({ email, role }: { email: string; role: string }) => {
+      const response = await apiRequest("POST", '/api/invitations', {
+        email,
+        role,
+        clientIds: [clientId]
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Invitation sent",
+        description: `Invitation has been sent to ${inviteEmail}`
+      });
+      setInviteDialogOpen(false);
+      setInviteEmail("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to send invitation",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Remove user from client mutation
+  const removeUserFromClient = useMutation({
+    mutationFn: async (userId: number) => {
+      return apiRequest("DELETE", `/api/user-clients/${userId}/${clientId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "User removed",
+        description: "User has been removed from this client"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to remove user",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Update user role mutation
+  const updateUserRole = useMutation({
+    mutationFn: async ({ userId, role }: { userId: number; role: string }) => {
+      return apiRequest("PATCH", `/api/users/${userId}/role`, { role });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Role updated",
+        description: "User role has been updated successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/clients', clientId, 'users'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update role",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  const handleInvite = () => {
+    if (!inviteEmail) {
+      toast({
+        title: "Email required",
+        description: "Please enter an email address for the invitation",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    createInvitation.mutate({ email: inviteEmail, role: inviteRole });
+  };
+  
+  const handleRemoveUser = (userId: number) => {
+    if (confirm("Are you sure you want to remove this user from the client?")) {
+      removeUserFromClient.mutate(userId);
+    }
+  };
+  
+  const handleRoleChange = (userId: number, newRole: string) => {
+    updateUserRole.mutate({ userId, role: newRole });
+  };
+  
+  // Filter users based on search query
+  const filteredUsers = searchQuery 
+    ? users.filter((user) => 
+        (user.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : users;
+  
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+        <div className="relative w-full max-w-sm">
+          <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search users..."
+            className="pl-8 w-full"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button onClick={() => setInviteDialogOpen(true)}>
+          <UserPlusIcon className="mr-2 h-4 w-4" />
+          Invite User
+        </Button>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Users ({users ? users.length : 0})</span>
+            {filteredUsers.length > 0 && searchQuery && (
+              <Badge variant="outline" className="ml-2 flex items-center gap-1">
+                <span>Filter: {searchQuery}</span>
+                <XCircle 
+                  className="h-3.5 w-3.5 cursor-pointer" 
+                  onClick={() => setSearchQuery("")}
+                />
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[160px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+              {searchQuery ? (
+                <>
+                  <SearchIcon className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium">No users match your search</h3>
+                  <p className="text-muted-foreground mt-2 mb-4">Try a different search term or clear the filter</p>
+                  <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+                    Clear Search
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <UserPlusIcon className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                  <h3 className="text-lg font-medium">No users assigned to this client yet</h3>
+                  <p className="text-muted-foreground mt-2 mb-4">
+                    Invite team members to collaborate on this client
+                  </p>
+                  <Button size="sm" onClick={() => setInviteDialogOpen(true)}>
+                    Invite Users
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredUsers.map((user: User) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                          {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="font-medium">{user.name}</div>
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Mail className="mr-1 h-3 w-3" />
+                            {user.email}
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <RoleBadge role={user.role} onChange={(newRole) => handleRoleChange(user.id, newRole)} />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveUser(user.id)}
+                      >
+                        Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      
+      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite New User</DialogTitle>
+            <DialogDescription>
+              Send an invitation email to add a new user to this client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email" 
+                placeholder="user@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <div className="flex flex-wrap gap-2">
+                {Object.values(UserRole).map(role => (
+                  <Badge
+                    key={role}
+                    className={`cursor-pointer ${inviteRole === role ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
+                    onClick={() => setInviteRole(role)}
+                  >
+                    {role}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleInvite} disabled={createInvitation.isPending}>
+              {createInvitation.isPending ? (
+                <>Sending invitation...</>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send Invitation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function RoleBadge({ role, onChange }: { role: string; onChange: (role: string) => void }) {
+  const [isChangingRole, setIsChangingRole] = useState(false);
+  const [confirmingRole, setConfirmingRole] = useState<string | null>(null);
+  
+  // Define role-specific properties
+  const getRoleProperties = (roleName: string) => {
+    switch(roleName) {
+      case UserRole.SUPER_ADMIN:
+        return {
+          color: 'bg-purple-100 text-purple-800 hover:bg-purple-200 border-purple-300',
+          description: 'Full access to all features and settings'
+        };
+      case UserRole.ADMIN:
+        return {
+          color: 'bg-red-100 text-red-800 hover:bg-red-200 border-red-300',
+          description: 'Can manage users and all client data'
+        };
+      case UserRole.STANDARD:
+        return {
+          color: 'bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-300',
+          description: 'Can view and edit client data'
+        };
+      case UserRole.GUEST:
+        return {
+          color: 'bg-gray-100 text-gray-800 hover:bg-gray-200 border-gray-300', 
+          description: 'View-only access to client data'
+        };
+      default:
+        return {
+          color: 'bg-secondary text-secondary-foreground',
+          description: 'Custom role'
+        };
+    }
+  };
+  
+  const handleRoleSelect = (newRole: string) => {
+    if (newRole !== role) {
+      setConfirmingRole(newRole);
+    } else {
+      // If clicking the current role, just close the selector
+      setIsChangingRole(false);
+    }
+  };
+  
+  const confirmRoleChange = () => {
+    if (confirmingRole) {
+      onChange(confirmingRole);
+      setConfirmingRole(null);
+      setIsChangingRole(false);
+    }
+  };
+  
+  const cancelRoleChange = () => {
+    setConfirmingRole(null);
+    setIsChangingRole(false);
+  };
+  
+  // Role selection view
+  if (isChangingRole) {
+    return (
+      <div className="space-y-3 py-1">
+        <div className="text-xs text-muted-foreground mb-1 flex items-center">
+          <span>Select a role:</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.values(UserRole).map(r => {
+            const { color, description } = getRoleProperties(r);
+            const isSelected = confirmingRole === r;
+            const isCurrentRole = role === r;
+            
+            return (
+              <div 
+                key={r}
+                className={`
+                  border rounded-md p-2 transition-all cursor-pointer
+                  ${isSelected ? `${color} border-2` : 'border bg-background hover:bg-muted'}
+                  ${isCurrentRole && !isSelected ? 'border-primary border-dashed' : ''}
+                `}
+                onClick={() => handleRoleSelect(r)}
+              >
+                <div className="font-medium text-sm">{r}</div>
+                <div className="text-xs text-muted-foreground mt-1">{description}</div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {confirmingRole && (
+          <div className="flex justify-end space-x-2 pt-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm"
+              onClick={cancelRoleChange}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              size="sm"
+              onClick={confirmRoleChange}
+            >
+              Confirm
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // Default badge view
+  const { color } = getRoleProperties(role);
+  return (
+    <Badge
+      className={`cursor-pointer border ${color}`}
+      onClick={() => setIsChangingRole(true)}
+    >
+      {role}
+    </Badge>
+  );
+}
