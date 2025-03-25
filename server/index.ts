@@ -53,39 +53,46 @@ app.get('/api/health', (_req, res) => {
 // Increase the maximum number of listeners to prevent warnings
 EventEmitter.defaultMaxListeners = 20;
 
-// Simple cleanup function
+// Primary and fallback ports
+const PRIMARY_PORT = 3000;
+const FALLBACK_PORTS = [3001, 3002];
+const ALL_PORTS = [PRIMARY_PORT, ...FALLBACK_PORTS];
+
+// Enhanced cleanup function
 async function cleanup() {
   try {
-    // Try to clean up both potential ports
-    const ports = [3000, 3001];
+    console.log('Starting port cleanup process...');
     
-    for (const port of ports) {
+    // Kill any processes on our target ports
+    for (const port of ALL_PORTS) {
       console.log(`Cleaning up port ${port}...`);
       
       try {
         // Kill any existing process on the port
         await execAsync(`npx kill-port ${port}`);
-        console.log(`Port ${port} is now available`);
+        console.log(`✓ Port ${port} is now available`);
       } catch (err) {
         // Ignore errors as the port might not be in use
-        console.log(`No cleanup needed for port ${port}`);
+        console.log(`✓ Port ${port} already available`);
       }
     }
 
-    // Add a small delay to ensure ports are freed
+    // Add a small delay to ensure ports are completely freed
+    console.log('Waiting for ports to be fully released...');
     await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log('Port cleanup completed successfully');
   } catch (err) {
-    console.log('Error during cleanup:', err);
+    console.error('Error during cleanup:', err);
   }
 }
 
-// Attempt to start the server multiple times
+// Improved server startup function
 async function startServer(retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Starting server (attempt ${attempt}/${retries})...`);
 
-      // First ensure the port is free
+      // First ensure the ports are free
       await cleanup();
       
       // Run database migrations
@@ -95,25 +102,31 @@ async function startServer(retries = 3) {
       // Register API routes
       registerRoutes(app);
 
-      // Try different ports if one is busy
-      const ports = [3000, 3001, 3002];
-      let serverStarted = false;
-      let usedPort: number | null = null;
-
+      // Create the HTTP server
       if (process.env.NODE_ENV !== "production") {
         // For development, create server first then setup Vite
         server = createServer(app);
-        console.log('Setting up Vite...');
+        console.log('Setting up Vite development server...');
         await setupVite(app, server);
       } else {
         // For production, setup static serving then create server
-        console.log('Setting up static serving...');
+        console.log('Setting up static file serving for production...');
         serveStatic(app);
         server = createServer(app);
       }
 
+      // Try to start with the primary port first, then fallbacks
+      let serverStarted = false;
+      let usedPort: number | null = null;
+      
+      // Starting with the primary port
+      console.log(`Attempting to start server on primary port ${PRIMARY_PORT}`);
+      
+      // Try primary port first, then fallbacks
+      const portsToTry = [PRIMARY_PORT, ...FALLBACK_PORTS];
+      
       // Try each port in sequence
-      for (const port of ports) {
+      for (const port of portsToTry) {
         if (serverStarted) break;
         
         try {
@@ -125,7 +138,7 @@ async function startServer(retries = 3) {
             
             server!.listen(port, '0.0.0.0', () => {
               clearTimeout(timeoutId);
-              console.log(`Server started successfully on port ${port}`);
+              console.log(`✓ Server started successfully on port ${port}`);
               log(`Server listening at http://0.0.0.0:${port}`);
               serverStarted = true;
               usedPort = port;
@@ -151,7 +164,7 @@ async function startServer(retries = 3) {
       
       // If no port worked, throw an error
       if (!serverStarted) {
-        throw new Error(`Could not start server on any of the ports: ${ports.join(', ')}`);
+        throw new Error(`Could not start server on any of the ports: ${portsToTry.join(', ')}`);
       }
 
       // If we get here, the server started successfully
