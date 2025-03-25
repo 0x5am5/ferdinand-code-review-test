@@ -153,7 +153,7 @@ export default function Dashboard() {
 
     const items = Array.from(orderedClients);
     const [reorderedItem] = items.splice(result.source.index, 1);
-    
+
     // Insert the item at its new position
     items.splice(result.destination.index, 0, reorderedItem);
 
@@ -280,7 +280,7 @@ export default function Dashboard() {
                         <Card className="group">
                           <CardHeader className="relative">
                             <Link href={`/clients/${client.id}`} className="block w-full h-full p-4 relative">
-                              <div className="cursor-move absolute top-4 left-1/2 -translate-x-1/2">
+                              <div className="cursor-move flex justify-center mt-4">
                                 <GripVertical className="h-4 w-4 text-muted-foreground" />
                               </div>
                               {client.logo && (
