@@ -320,6 +320,7 @@ export default function Dashboard() {
                                   size="icon" 
                                   onClick={(e) => {
                                     e.preventDefault();
+                                    e.stopPropagation();
                                     window.open(`/preview/${client.id}`, '_blank');
                                   }}
                                 >
@@ -330,11 +331,13 @@ export default function Dashboard() {
                                   size="icon"
                                   onClick={(e) => {
                                     e.preventDefault();
-                                    // Share functionality
-                                    navigator.clipboard.writeText(window.location.origin + `/clients/${client.id}`);
+                                    e.stopPropagation();
+                                    const url = `${window.location.origin}/clients/${client.id}`;
+                                    navigator.clipboard.writeText(url);
                                     toast({
                                       title: "Link copied",
                                       description: "Client URL has been copied to clipboard",
+                                      duration: 2000,
                                     });
                                   }}
                                 >
