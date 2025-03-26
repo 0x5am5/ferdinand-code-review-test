@@ -12,6 +12,7 @@ import NewClientPage from "@/pages/clients/new";
 import UsersPage from "@/pages/users";
 import SignupPage from "@/pages/signup";
 import ResetPassword from "@/pages/reset-password";
+import DesignBuilder from "@/pages/design-builder";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 
@@ -60,6 +61,9 @@ function Router() {
       </Route>
       <Route path="/reset-password">
         <ResetPassword />
+      </Route>
+      <Route path="/design-builder">
+        <ProtectedRoute component={DesignBuilder} adminOnly />
       </Route>
       <Route>
         <NotFound />

@@ -26,6 +26,7 @@ import {
 } from "@shared/schema";
 import { updateClientOrderSchema } from "@shared/schema";
 import { eq, sql, inArray, and } from "drizzle-orm";
+import * as fs from "fs";
 
 // Add session augmentation for TypeScript
 declare module 'express-session' {
@@ -40,6 +41,36 @@ interface RequestWithClientId extends Request {
 }
 
 const upload = multer();
+
+// Design system type
+interface DesignSystem {
+  theme: {
+    variant: 'professional' | 'tint' | 'vibrant';
+    primary: string;
+    appearance: 'light' | 'dark' | 'system';
+    radius: number;
+    animation: string;
+  };
+  typography: {
+    primary: string;
+    heading: string;
+  };
+  colors: {
+    primary: string;
+    background: string;
+    foreground: string;
+    muted: string;
+    'muted-foreground': string;
+    card: string;
+    'card-foreground': string;
+    accent: string;
+    'accent-foreground': string;
+    destructive: string;
+    'destructive-foreground': string;
+    border: string;
+    ring: string;
+  };
+}
 
 export function registerRoutes(app: Express) {
   // Middleware to validate client ID
@@ -1419,6 +1450,113 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error creating client:", error);
       res.status(500).json({ message: "Error creating client" });
+    }
+  });
+
+  // Design System routes
+  // Read the current theme.json file
+  app.get("/api/design-system", async (req, res) => {
+    try {
+      // Check if user has admin rights
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Not authorized to access design system" });
+      }
+
+      // Read the theme.json file from the project root
+      const themeData = fs.readFileSync('./theme.json', 'utf8');
+      const parsedTheme = JSON.parse(themeData);
+
+      // Construct design system object from theme.json and defaults
+      const designSystem: DesignSystem = {
+        theme: {
+          variant: parsedTheme.variant || 'professional',
+          primary: parsedTheme.primary || 'hsl(205, 100%, 50%)',
+          appearance: parsedTheme.appearance || 'light',
+          radius: parsedTheme.radius || 0.5,
+          animation: parsedTheme.animation || 'smooth',
+        },
+        typography: {
+          primary: parsedTheme.font?.primary || 'roc-grotesk',
+          heading: parsedTheme.font?.heading || 'ivypresto-display',
+        },
+        colors: {
+          primary: parsedTheme.primary || 'hsl(205, 100%, 50%)',
+          background: '#ffffff',
+          foreground: '#000000',
+          muted: '#f1f5f9',
+          'muted-foreground': '#64748b',
+          card: '#ffffff',
+          'card-foreground': '#000000',
+          accent: '#f1f5f9',
+          'accent-foreground': '#0f172a',
+          destructive: '#ef4444',
+          'destructive-foreground': '#ffffff',
+          border: '#e2e8f0',
+          ring: parsedTheme.primary || 'hsl(205, 100%, 50%)',
+        }
+      };
+
+      res.json(designSystem);
+    } catch (error) {
+      console.error("Error fetching design system:", error);
+      res.status(500).json({ message: "Error fetching design system" });
+    }
+  });
+
+  // Update design system
+  app.patch("/api/design-system", async (req, res) => {
+    try {
+      // Check if user has admin rights
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user || user.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Not authorized to update design system" });
+      }
+
+      const { theme, typography } = req.body;
+
+      if (!theme) {
+        return res.status(400).json({ message: "Invalid design system data" });
+      }
+
+      // Read existing theme.json to preserve any values not being updated
+      let existingTheme: any = {};
+      try {
+        const themeData = fs.readFileSync('./theme.json', 'utf8');
+        existingTheme = JSON.parse(themeData);
+      } catch (error) {
+        console.error("Error reading existing theme.json:", error);
+      }
+
+      // Update the theme.json file
+      const themeData = {
+        ...existingTheme,
+        variant: theme.variant || 'professional',
+        primary: theme.primary || 'hsl(205, 100%, 50%)',
+        appearance: theme.appearance || 'light',
+        radius: theme.radius || 0.5,
+        animation: theme.animation || 'smooth',
+        font: {
+          primary: typography?.primary || (existingTheme.font ? existingTheme.font.primary : 'roc-grotesk'),
+          heading: typography?.heading || (existingTheme.font ? existingTheme.font.heading : 'ivypresto-display'),
+        }
+      };
+
+      fs.writeFileSync('./theme.json', JSON.stringify(themeData, null, 2));
+
+      // Return the updated design system
+      res.json(req.body);
+    } catch (error) {
+      console.error("Error updating design system:", error);
+      res.status(500).json({ message: "Error updating design system" });
     }
   });
 }

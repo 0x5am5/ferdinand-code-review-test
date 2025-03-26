@@ -74,3 +74,9 @@
 .flex-direction--column {
   flex-direction: column;
 }
+
+.app-name--h1 {
+  font-style: italic;
+  font-size: 40px;
+  margin: 20px 0;
+} 

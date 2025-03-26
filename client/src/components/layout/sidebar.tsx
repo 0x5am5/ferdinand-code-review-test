@@ -47,7 +47,7 @@ export function Sidebar() {
     >
       <div className="relative flex items-center p-4 h-16 border-b">
         {!isCollapsed && (
-          <h1 className="text-xl font-bold">Brandify</h1>
+          <h1 className="app-name--h1">Ferdinand</h1>
         )}
         <Button
           variant="ghost"

@@ -224,7 +224,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
       <div className="space-y-6">
         {Object.entries(logosByType).map(([type, typeLogos]) => (
-          <div key={type} className="border rounded-lg p-6">
+          <div key={type}>
             <div className="flex flex-col gap-4">
               <h3 className="text-xl font-semibold">
                 {type.charAt(0).toUpperCase() + type.slice(1)} Logo
