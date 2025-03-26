@@ -7,5 +7,20 @@
   "font": {
     "primary": "roc-grotesk",
     "heading": "ivypresto-display"
+  },
+  "colors": {
+    "primary": "hsl(205, 100%, 50%)",
+    "background": "#ffffff",
+    "foreground": "#000000",
+    "muted": "#f1f5f9",
+    "muted-foreground": "#64748b",
+    "card": "#ffffff",
+    "card-foreground": "#000000",
+    "accent": "#f1f5f9",
+    "accent-foreground": "#0f172a",
+    "destructive": "#ef4444",
+    "destructive-foreground": "#ffffff",
+    "border": "#e2e8f0",
+    "ring": "hsl(205, 100%, 50%)"
   }
 }

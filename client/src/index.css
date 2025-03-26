@@ -25,6 +25,9 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 205 100% 50%;
     --radius: 0.5rem;
+    --transition: 0.2s ease;
+    --font-sans: 'roc-grotesk';
+    --font-heading: 'ivypresto-display';
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-hover: 210 40% 96.1%;

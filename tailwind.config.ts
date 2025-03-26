@@ -6,8 +6,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'ivy': ['ivypresto-display', 'serif'],
-        'roc': ['roc-grotesk', 'sans-serif'],
+        'ivy': ['var(--font-heading)', 'serif'],
+        'roc': ['var(--font-sans)', 'sans-serif'],
       },
       fontSize: {
         'heading-1': ['2.5rem', { lineHeight: '1.2', fontWeight: '400' }],
@@ -81,10 +81,17 @@ export default {
         },
       },
       animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "sidebar-expand": "sidebar-expand 0.2s ease-out",
-        "sidebar-collapse": "sidebar-collapse 0.2s ease-out",
+        "accordion-down": "accordion-down var(--transition)",
+        "accordion-up": "accordion-up var(--transition)",
+        "sidebar-expand": "sidebar-expand var(--transition)",
+        "sidebar-collapse": "sidebar-collapse var(--transition)",
+      },
+      transitionProperty: {
+        'all': 'all var(--transition)',
+        'colors': 'color, background-color, border-color, text-decoration-color, fill, stroke var(--transition)',
+        'opacity': 'opacity var(--transition)',
+        'shadow': 'box-shadow var(--transition)',
+        'transform': 'transform var(--transition)',
       },
     },
   },

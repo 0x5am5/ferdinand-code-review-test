@@ -10,116 +10,20 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { TypographyCard } from "@/components/brand/typography-card";
 import { ColorCard } from "@/components/brand/color-card";
-
-interface DesignSystem {
-  theme: {
-    variant: 'professional' | 'tint' | 'vibrant';
-    primary: string;
-    appearance: 'light' | 'dark' | 'system';
-    radius: number;
-    animation: 'none' | 'minimal' | 'smooth' | 'bounce';
-  };
-  typography: {
-    primary: string;
-    heading: string;
-  };
-  colors: {
-    primary: string;
-    background: string;
-    foreground: string;
-    muted: string;
-    'muted-foreground': string;
-    card: string;
-    'card-foreground': string;
-    accent: string;
-    'accent-foreground': string;
-    destructive: string;
-    'destructive-foreground': string;
-    border: string;
-    ring: string;
-  };
-}
+import { useTheme, DesignSystem } from "../contexts/ThemeContext";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoIcon, CheckIcon, XIcon } from "lucide-react";
 
 export default function DesignBuilder() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("theme");
+  const { designSystem, updateDesignSystem, isLoading } = useTheme();
   
-  // Get current theme from theme.json
-  const { data: designSystem, isLoading } = useQuery<DesignSystem>({
-    queryKey: ["/api/design-system"],
-    queryFn: async () => {
-      // If endpoint doesn't exist yet, use default values from theme.json
-      try {
-        const response = await fetch("/api/design-system");
-        if (!response.ok) throw new Error("Failed to fetch design system");
-        return response.json();
-      } catch (error) {
-        // Fallback to default values
-        return {
-          theme: {
-            variant: 'professional',
-            primary: 'hsl(205, 100%, 50%)',
-            appearance: 'light',
-            radius: 0.5,
-            animation: 'smooth'
-          },
-          typography: {
-            primary: 'roc-grotesk',
-            heading: 'ivypresto-display'
-          },
-          colors: {
-            primary: 'hsl(205, 100%, 50%)',
-            background: '#ffffff',
-            foreground: '#000000',
-            muted: '#f1f5f9',
-            'muted-foreground': '#64748b',
-            card: '#ffffff',
-            'card-foreground': '#000000',
-            accent: '#f1f5f9',
-            'accent-foreground': '#0f172a',
-            destructive: '#ef4444',
-            'destructive-foreground': '#ffffff',
-            border: '#e2e8f0',
-            ring: 'hsl(205, 100%, 50%)'
-          }
-        };
-      }
-    }
-  });
-
-  // Update design system
-  const updateDesignSystem = useMutation({
-    mutationFn: async (newData: Partial<DesignSystem>) => {
-      // If endpoint doesn't exist yet, this would fail, but we'll add it
-      const response = await fetch("/api/design-system", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newData),
-      });
-      if (!response.ok) throw new Error("Failed to update design system");
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Changes saved",
-        description: "Your design system changes have been applied"
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Couldn't save changes",
-        description: "The API endpoint for design system may not exist yet",
-        variant: "destructive"
-      });
-    }
-  });
-
   const handleThemeChange = (key: string, value: any) => {
-    if (!designSystem) return;
-    
     const newDesignSystem = { 
       ...designSystem,
       theme: {
@@ -128,12 +32,14 @@ export default function DesignBuilder() {
       }
     };
     
-    updateDesignSystem.mutate(newDesignSystem);
+    updateDesignSystem(newDesignSystem);
+    toast({
+      title: "Theme updated",
+      description: `Updated ${key} to ${value}`
+    });
   };
   
   const handleColorChange = (key: string, value: string) => {
-    if (!designSystem) return;
-    
     const newDesignSystem = { 
       ...designSystem,
       colors: {
@@ -142,12 +48,14 @@ export default function DesignBuilder() {
       }
     };
     
-    updateDesignSystem.mutate(newDesignSystem);
+    updateDesignSystem(newDesignSystem);
+    toast({
+      title: "Color updated",
+      description: `Updated ${key} color`
+    });
   };
   
   const handleTypographyChange = (key: string, value: string) => {
-    if (!designSystem) return;
-    
     const newDesignSystem = { 
       ...designSystem,
       typography: {
@@ -156,12 +64,19 @@ export default function DesignBuilder() {
       }
     };
     
-    updateDesignSystem.mutate(newDesignSystem);
+    updateDesignSystem(newDesignSystem);
+    toast({
+      title: "Typography updated",
+      description: `Updated ${key} font`
+    });
   };
 
   const handleSaveChanges = () => {
-    if (!designSystem) return;
-    updateDesignSystem.mutate(designSystem);
+    updateDesignSystem(designSystem);
+    toast({
+      title: "Design system saved",
+      description: "All your design system changes have been applied"
+    });
   };
 
   if (isLoading) {
@@ -190,8 +105,8 @@ export default function DesignBuilder() {
                 Control the overall design system of your application
               </p>
             </div>
-            <Button onClick={handleSaveChanges} disabled={updateDesignSystem.isPending}>
-              {updateDesignSystem.isPending ? "Saving..." : "Save Changes"}
+            <Button onClick={handleSaveChanges}>
+              Save Changes
             </Button>
           </div>
 
@@ -295,6 +210,85 @@ export default function DesignBuilder() {
                       <p className="text-sm text-muted-foreground mt-1">
                         Controls the animation style throughout the application
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium mb-4">Component Preview</h3>
+                    <div className="border rounded-lg p-6 bg-card">
+                      <div className="grid gap-8">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-4">
+                            <h4 className="font-medium">Buttons</h4>
+                            <div className="flex flex-wrap gap-2">
+                              <Button variant="default">Default</Button>
+                              <Button variant="secondary">Secondary</Button>
+                              <Button variant="outline">Outline</Button>
+                              <Button variant="ghost">Ghost</Button>
+                              <Button variant="destructive">Destructive</Button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <h4 className="font-medium">Badges</h4>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge>Default</Badge>
+                              <Badge variant="secondary">Secondary</Badge>
+                              <Badge variant="outline">Outline</Badge>
+                              <Badge variant="destructive">Destructive</Badge>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-4">
+                            <h4 className="font-medium">Form Controls</h4>
+                            <div className="space-y-2">
+                              <div className="grid grid-cols-2 items-center gap-4">
+                                <Label htmlFor="example-input">Input Field</Label>
+                                <Input id="example-input" placeholder="Enter text..." />
+                              </div>
+                              <div className="grid grid-cols-2 items-center gap-4">
+                                <Label htmlFor="example-switch">Switch</Label>
+                                <Switch id="example-switch" />
+                              </div>
+                              <div className="grid grid-cols-2 items-center gap-4">
+                                <Label htmlFor="example-select">Select</Label>
+                                <Select defaultValue="option1">
+                                  <SelectTrigger id="example-select">
+                                    <SelectValue placeholder="Select option" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="option1">Option 1</SelectItem>
+                                    <SelectItem value="option2">Option 2</SelectItem>
+                                    <SelectItem value="option3">Option 3</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            <h4 className="font-medium">Alerts</h4>
+                            <div className="space-y-2">
+                              <Alert>
+                                <InfoIcon className="h-4 w-4 mr-2" />
+                                <AlertTitle>Information</AlertTitle>
+                                <AlertDescription>
+                                  This is a neutral information alert.
+                                </AlertDescription>
+                              </Alert>
+                              <Alert variant="destructive">
+                                <XIcon className="h-4 w-4 mr-2" />
+                                <AlertTitle>Error</AlertTitle>
+                                <AlertDescription>
+                                  This is a destructive error alert.
+                                </AlertDescription>
+                              </Alert>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
