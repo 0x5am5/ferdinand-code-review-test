@@ -47,6 +47,8 @@ export interface IStorage {
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   getInvitation(token: string): Promise<Invitation | undefined>;
   markInvitationAsUsed(id: number): Promise<Invitation>;
+  // Password management
+  updateUserPassword(id: number, password: string): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -303,6 +305,30 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     return updatedInvitation;
+  }
+  
+  async updateUserPassword(id: number, password: string): Promise<User> {
+    console.log(`[PASSWORD RESET] Updating password for user ID: ${id}`);
+    
+    // In a real application, we would hash the password before storing
+    // For this demo, we'll just update it directly
+    const updateData: Record<string, any> = {
+      password: password,
+    };
+    
+    // Also update the last login time
+    if (users.lastLogin) {
+      updateData.lastLogin = new Date();
+    }
+    
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, id))
+      .returning();
+    
+    console.log(`[PASSWORD RESET] Password updated successfully for user ID: ${id}`);
+    return updatedUser;
   }
 }
 

@@ -75,23 +75,37 @@ export class EmailService {
 
       // If SendGrid is available, send the email via the API
       if (this.useSendGrid) {
-        const msg = {
-          to: options.to,
-          from: process.env.SENDGRID_FROM_EMAIL || 'noreply@brandguidelines.com', // Set a fallback sender email
-          subject: options.subject,
-          text: options.text,
-          html: htmlContent,
-        };
-        
-        await sgMail.send(msg);
-        
-        console.log(`\n📧 =============================================`);
-        console.log(`📧 EMAIL SENT VIA SENDGRID`);
-        console.log(`📧 To: ${options.to}`);
-        console.log(`📧 Subject: ${options.subject}`);
-        console.log(`📧 =============================================\n`);
-        
-        return true;
+        try {
+          const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@brandguidelines.com';
+          console.log(`[EMAIL] Using sender email: ${fromEmail}`);
+
+          const msg = {
+            to: options.to,
+            from: fromEmail, // Set a fallback sender email
+            subject: options.subject,
+            text: options.text,
+            html: htmlContent,
+          };
+          
+          console.log(`[EMAIL] Sending via SendGrid to: ${options.to}, from: ${fromEmail}`);
+          const [response] = await sgMail.send(msg);
+          
+          console.log(`[EMAIL] SendGrid response status code: ${response?.statusCode}`);
+          console.log(`\n📧 =============================================`);
+          console.log(`📧 EMAIL SENT VIA SENDGRID`);
+          console.log(`📧 To: ${options.to}`);
+          console.log(`📧 Subject: ${options.subject}`);
+          console.log(`📧 =============================================\n`);
+          
+          return true;
+        } catch (error) {
+          const sendGridError = error as any;
+          console.error('[EMAIL] SendGrid error:', sendGridError);
+          if (sendGridError.response) {
+            console.error('[EMAIL] SendGrid API error response:', sendGridError.response.body);
+          }
+          throw sendGridError; // Re-throw to be caught by the outer try/catch
+        }
       } else {
         // Fallback: Write the email to a file
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -301,6 +315,9 @@ export class EmailService {
     expiration?: string;
     logoUrl?: string;
   }): Promise<boolean> {
+    console.log(`[PASSWORD RESET] sendPasswordResetEmail called for ${to}`);
+    console.log(`[PASSWORD RESET] Reset link: ${resetLink}`);
+    
     const subject = `Reset your password for ${clientName}`;
     
     // Create text version
@@ -360,12 +377,22 @@ export class EmailService {
       </html>
     `;
     
-    return this.sendEmail({
-      to,
-      subject,
-      text,
-      html
-    });
+    console.log('[PASSWORD RESET] Sending password reset email with subject:', subject);
+    
+    try {
+      const result = await this.sendEmail({
+        to,
+        subject,
+        text,
+        html
+      });
+      
+      console.log(`[PASSWORD RESET] Email sending result: ${result ? 'Success' : 'Failure'}`);
+      return result;
+    } catch (error) {
+      console.error('[PASSWORD RESET] Error sending password reset email:', error);
+      return false;
+    }
   }
 }
 

@@ -11,6 +11,7 @@ import Clients from "@/pages/clients";
 import NewClientPage from "@/pages/clients/new";
 import UsersPage from "@/pages/users";
 import SignupPage from "@/pages/signup";
+import ResetPassword from "@/pages/reset-password";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 
@@ -56,6 +57,9 @@ function Router() {
       </Route>
       <Route path="/signup">
         <SignupPage />
+      </Route>
+      <Route path="/reset-password">
+        <ResetPassword />
       </Route>
       <Route>
         <NotFound />

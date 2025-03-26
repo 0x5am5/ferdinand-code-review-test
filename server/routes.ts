@@ -674,36 +674,118 @@ export function registerRoutes(app: Express) {
   // Send password reset email to user
   app.post("/api/users/:id/reset-password", async (req, res) => {
     try {
+      console.log(`[PASSWORD RESET] Request received for user ID: ${req.params.id}`);
+      
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) {
+        console.log(`[PASSWORD RESET] Invalid user ID: ${req.params.id}`);
         return res.status(400).json({ message: "Invalid user ID" });
       }
       
       // Get the user
       const user = await storage.getUser(userId);
       if (!user) {
+        console.log(`[PASSWORD RESET] User not found for ID: ${userId}`);
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Generate a reset token (this should be stored in the database in a real implementation)
-      // Here we're using a simple time-based token for demo purposes
-      const resetToken = Buffer.from(`${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`).toString('base64');
+      console.log(`[PASSWORD RESET] Found user: ${user.email} (ID: ${user.id})`);
       
-      // In a real implementation, you would store this token in the database with an expiration
-      // For now, we'll just create the reset link
-      const resetLink = `${process.env.APP_URL || `http://${req.headers.host}`}/reset-password?token=${resetToken}`;
+      // Generate a reset token that includes the user ID and expiration time
+      const expirationTime = Date.now() + 24 * 60 * 60 * 1000; // 24 hours from now
+      const tokenData = {
+        userId: user.id,
+        email: user.email,
+        exp: expirationTime
+      };
+      
+      // We'll encode this as a base64 string - in a real app you'd use a JWT or store in the database
+      const resetToken = Buffer.from(JSON.stringify(tokenData)).toString('base64');
+      
+      // Create the reset link
+      const baseUrl = process.env.APP_URL || `http://${req.headers.host}`;
+      const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
+      console.log(`[PASSWORD RESET] Generated reset link: ${resetLink}`);
       
       // Send the password reset email
-      await emailService.sendPasswordResetEmail({
+      console.log(`[PASSWORD RESET] Attempting to send email to: ${user.email}`);
+      const emailSent = await emailService.sendPasswordResetEmail({
         to: user.email,
         resetLink,
         clientName: "Brand Guidelines Platform"
       });
       
+      console.log(`[PASSWORD RESET] Email sent successfully: ${emailSent}`);
+      
       res.json({ success: true, message: "Password reset email sent" });
     } catch (error) {
       console.error("Error sending password reset:", error);
       res.status(500).json({ message: "Failed to send password reset email" });
+    }
+  });
+  
+  // Handle password reset form submission
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      console.log("[PASSWORD RESET] Processing password reset request");
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and new password are required" });
+      }
+      
+      // Validate password
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
+      }
+      
+      try {
+        // Decode the token
+        const tokenData = JSON.parse(Buffer.from(token, 'base64').toString());
+        console.log("[PASSWORD RESET] Token data:", tokenData);
+        
+        // Validate token expiration
+        if (!tokenData.exp || tokenData.exp < Date.now()) {
+          console.log("[PASSWORD RESET] Token expired:", tokenData.exp, "<", Date.now());
+          return res.status(400).json({ message: "Reset token has expired" });
+        }
+        
+        // Get the user from the token
+        const user = await storage.getUser(tokenData.userId);
+        if (!user) {
+          console.log("[PASSWORD RESET] User not found:", tokenData.userId);
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Verify the email matches
+        if (user.email !== tokenData.email) {
+          console.log("[PASSWORD RESET] Email mismatch:", user.email, "!==", tokenData.email);
+          return res.status(400).json({ message: "Invalid reset token" });
+        }
+        
+        console.log(`[PASSWORD RESET] Resetting password for user ${user.id} (${user.email})`);
+        
+        // In a real app, you would hash the password here before storing it
+        // Now, actually update the user's password in the database
+        await storage.updateUserPassword(user.id, password);
+        
+        console.log("[PASSWORD RESET] Password reset successfully for", user.email);
+        
+        // Send confirmation email
+        await emailService.sendEmail({
+          to: user.email,
+          subject: "Your password has been reset",
+          text: `Your password for Brand Guidelines Platform has been reset successfully. If you did not make this change, please contact support immediately.`
+        });
+        
+        res.json({ success: true });
+      } catch (tokenError) {
+        console.error("[PASSWORD RESET] Token parsing error:", tokenError);
+        return res.status(400).json({ message: "Invalid reset token format" });
+      }
+    } catch (error) {
+      console.error("[PASSWORD RESET] Error processing reset:", error);
+      res.status(500).json({ message: "An error occurred while resetting your password" });
     }
   });
 
