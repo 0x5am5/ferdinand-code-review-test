@@ -14,6 +14,7 @@ import * as crypto from "crypto";
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   getClient(id: number): Promise<Client | undefined>;
   getClients(): Promise<Client[]>;
@@ -60,6 +61,10 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
+  }
+  
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {

@@ -8,6 +8,7 @@ import {
   insertClientSchema, 
   insertUserSchema, 
   UserRole,
+  User,
   insertFontAssetSchema,
   insertColorAssetSchema,
   insertUserPersonaSchema,
@@ -802,6 +803,28 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error fetching user clients:", error);
       res.status(500).json({ message: "Error fetching user clients" });
+    }
+  });
+  
+  // Get all client assignments for all users
+  app.get("/api/users/client-assignments", async (req, res) => {
+    try {
+      // Get all users
+      const userList = await storage.getUsers();
+      
+      // Create a map to store user assignments
+      const assignments: Record<number, any[]> = {};
+      
+      // Get clients for each user
+      await Promise.all(userList.map(async (user) => {
+        const userClients = await storage.getUserClients(user.id);
+        assignments[user.id] = userClients;
+      }));
+      
+      res.json(assignments);
+    } catch (error) {
+      console.error("Error fetching client assignments:", error);
+      res.status(500).json({ message: "Error fetching client assignments" });
     }
   });
 

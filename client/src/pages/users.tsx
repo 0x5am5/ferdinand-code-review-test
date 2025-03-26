@@ -257,24 +257,16 @@ export default function UsersPage() {
   const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } = useQuery<Record<number, Client[]>>({
     queryKey: ["/api/users/client-assignments"],
     queryFn: async () => {
-      // Create a map of user IDs to their assigned clients
-      const assignments: Record<number, Client[]> = {};
-      
-      // For each user, fetch their clients
-      await Promise.all(users.map(async (user) => {
-        try {
-          const response = await fetch(`/api/users/${user.id}/clients`);
-          if (response.ok) {
-            const clients = await response.json();
-            assignments[user.id] = clients;
-          }
-        } catch (error) {
-          console.error(`Failed to fetch clients for user ${user.id}`, error);
-          assignments[user.id] = [];
+      try {
+        const response = await fetch(`/api/users/client-assignments`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch client assignments");
         }
-      }));
-      
-      return assignments;
+        return await response.json();
+      } catch (error) {
+        console.error("Failed to fetch client assignments:", error);
+        return {};
+      }
     },
     enabled: users.length > 0,
   });
