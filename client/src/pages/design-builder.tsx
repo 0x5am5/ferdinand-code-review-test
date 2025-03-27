@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,68 @@ import { InfoIcon, CheckIcon, XIcon, ChevronRightIcon } from "lucide-react";
 export default function DesignBuilder() {
   const { toast } = useToast();
   const { designSystem: appliedDesignSystem, draftDesignSystem, updateDesignSystem, updateDraftDesignSystem, applyDraftChanges, isLoading } = useTheme();
+  
+  // Ref to track if typography settings have been loaded
+  const typographySettingsLoaded = useRef(false);
+  
+  // Load typography settings from the server or from localStorage on initial render
+  useEffect(() => {
+    if (isLoading || typographySettingsLoaded.current) return;
+
+    const loadTypographySettings = async () => {
+      try {
+        // First try to load from the server
+        const response = await fetch('/api/design-system');
+        if (response.ok) {
+          const data = await response.json();
+          // If there's typography_extended data in the theme
+          if (data.typography_extended) {
+            // Store it in localStorage for our local state
+            localStorage.setItem('typographySettings', JSON.stringify(data.typography_extended));
+            
+            // Apply each setting to the document
+            Object.entries(data.typography_extended).forEach(([key, rawValue]) => {
+              const value = rawValue as string | number;
+              applyTypographySetting(key, value);
+              
+              // Update the displayed value in the UI
+              if (key === 'headingScale') {
+                const element = document.getElementById('heading-scale-value');
+                if (element) element.textContent = String(value);
+              } else if (key === 'bodyTextSize') {
+                const element = document.getElementById('body-size-value');
+                if (element) element.textContent = String(value);
+              } else if (key === 'lineHeight') {
+                const element = document.getElementById('line-height-value');
+                if (element) element.textContent = String(value);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading typography settings from server:', error);
+        
+        // Fall back to localStorage if available
+        const savedSettings = localStorage.getItem('typographySettings');
+        if (savedSettings) {
+          try {
+            const settings = JSON.parse(savedSettings);
+            // Apply each setting
+            Object.entries(settings).forEach(([key, rawValue]) => {
+              const value = rawValue as string | number;
+              applyTypographySetting(key, value);
+            });
+          } catch (e) {
+            console.error('Error parsing typography settings from localStorage:', e);
+          }
+        }
+      }
+      
+      typographySettingsLoaded.current = true;
+    };
+    
+    loadTypographySettings();
+  }, [isLoading]);
   
   // Use the draft for display purposes
   const designSystem = draftDesignSystem || appliedDesignSystem;
@@ -42,21 +104,99 @@ export default function DesignBuilder() {
     });
   };
   
-  const handleTypographyChange = (key: string, value: string) => {
-    updateDraftDesignSystem({ 
-      typography: {
-        ...designSystem.typography,
-        [key]: value
-      }
-    });
+  // Updated to handle typography changes, including properties not directly in the typography object
+  const handleTypographyChange = (key: string, value: string | number) => {
+    // First, handle the basic typography settings (font family)
+    if (key === 'primary' || key === 'heading') {
+      updateDraftDesignSystem({ 
+        typography: {
+          ...designSystem.typography,
+          [key]: value
+        }
+      });
+    } 
+    // For extended typography settings that are not directly in the typography object
+    else {
+      // Store the updated typography settings in a separate object in localStorage
+      let typographySettings = localStorage.getItem('typographySettings');
+      let settings = typographySettings ? JSON.parse(typographySettings) : {};
+      
+      // Update the specific setting
+      settings[key] = value;
+      
+      // Save to localStorage
+      localStorage.setItem('typographySettings', JSON.stringify(settings));
+      
+      // Apply the setting to the document for immediate visual feedback
+      applyTypographySetting(key, value);
+    }
+  };
+  
+  // Function to apply typography settings to the document
+  const applyTypographySetting = (key: string, value: string | number) => {
+    const root = document.documentElement;
+    
+    switch(key) {
+      case 'headingScale':
+        // Scale all heading sizes
+        const baseHeadingSize = 2.5; // Base size for h1 in rem
+        root.style.setProperty('--heading-1-size', `${baseHeadingSize * Number(value)}rem`);
+        root.style.setProperty('--heading-2-size', `${(baseHeadingSize * 0.8) * Number(value)}rem`);
+        root.style.setProperty('--heading-3-size', `${(baseHeadingSize * 0.6) * Number(value)}rem`);
+        break;
+      case 'bodyTextSize':
+        // Base size for body text
+        root.style.setProperty('--body-size', `${Number(value)}rem`);
+        break;
+      case 'lineHeight':
+        // Line height for all text
+        root.style.setProperty('--line-height', String(value));
+        break;
+      case 'headingWeight':
+        // Font weight for headings
+        root.style.setProperty('--heading-weight', String(value));
+        break;
+      case 'bodyWeight':
+        // Font weight for body text
+        root.style.setProperty('--body-weight', String(value));
+        break;
+    }
   };
 
   const handleSaveChanges = async () => {
+    // First, apply draft changes to the main design system
     await applyDraftChanges();
-    toast({
-      title: "Design system saved",
-      description: "All your design system changes have been applied"
-    });
+    
+    // Save typography extended settings to database
+    try {
+      const typographySettings = localStorage.getItem('typographySettings');
+      if (typographySettings) {
+        const settings = JSON.parse(typographySettings);
+        
+        // Save the typography settings to the server
+        const response = await fetch('/api/design-system/typography', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save typography settings');
+        }
+      }
+      
+      toast({
+        title: "Design system saved",
+        description: "All your design system changes have been applied"
+      });
+    } catch (error) {
+      console.error('Error saving typography settings:', error);
+      toast({
+        title: "Partial save completed",
+        description: "Main design settings saved, but typography details could not be saved",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading || !designSystem) {
@@ -249,7 +389,7 @@ export default function DesignBuilder() {
                     <h3 className="text-lg font-medium">HTML Element Styling</h3>
                     <div className="space-y-4 border rounded-md p-4">
                       <div>
-                        <Label htmlFor="heading-size-scale">Heading Size Scale</Label>
+                        <Label htmlFor="heading-size-scale">Heading Size Scale: <span id="heading-scale-value">1</span></Label>
                         <Slider 
                           id="heading-size-scale"
                           defaultValue={[1]} 
@@ -257,7 +397,10 @@ export default function DesignBuilder() {
                           max={1.5} 
                           step={0.05}
                           className="max-w-xs mt-2"
-                          // This would be connected to actual styling in a complete implementation
+                          onValueChange={(value) => {
+                            handleTypographyChange('headingScale', value[0]);
+                            document.getElementById('heading-scale-value')!.textContent = value[0].toString();
+                          }}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Controls the overall size of all headings
@@ -265,7 +408,7 @@ export default function DesignBuilder() {
                       </div>
 
                       <div>
-                        <Label htmlFor="body-text-size">Body Text Size</Label>
+                        <Label htmlFor="body-text-size">Body Text Size: <span id="body-size-value">1</span>rem</Label>
                         <Slider 
                           id="body-text-size"
                           defaultValue={[1]} 
@@ -273,7 +416,10 @@ export default function DesignBuilder() {
                           max={1.2} 
                           step={0.05}
                           className="max-w-xs mt-2"
-                          // This would be connected to actual styling in a complete implementation
+                          onValueChange={(value) => {
+                            handleTypographyChange('bodyTextSize', value[0]);
+                            document.getElementById('body-size-value')!.textContent = value[0].toString();
+                          }}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Controls the base size of paragraph text
@@ -281,7 +427,7 @@ export default function DesignBuilder() {
                       </div>
 
                       <div>
-                        <Label htmlFor="line-height">Line Height</Label>
+                        <Label htmlFor="line-height">Line Height: <span id="line-height-value">1.5</span></Label>
                         <Slider 
                           id="line-height"
                           defaultValue={[1.5]} 
@@ -289,7 +435,10 @@ export default function DesignBuilder() {
                           max={2} 
                           step={0.1}
                           className="max-w-xs mt-2"
-                          // This would be connected to actual styling in a complete implementation
+                          onValueChange={(value) => {
+                            handleTypographyChange('lineHeight', value[0]);
+                            document.getElementById('line-height-value')!.textContent = value[0].toString();
+                          }}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Controls spacing between lines of text
@@ -299,7 +448,10 @@ export default function DesignBuilder() {
                       <div className="grid grid-cols-2 gap-4 mt-4">
                         <div>
                           <Label htmlFor="heading-weight">Heading Weight</Label>
-                          <Select defaultValue="700">
+                          <Select 
+                            defaultValue="700"
+                            onValueChange={(value) => handleTypographyChange('headingWeight', value)}
+                          >
                             <SelectTrigger id="heading-weight" className="mt-2">
                               <SelectValue placeholder="Select weight" />
                             </SelectTrigger>
@@ -315,7 +467,10 @@ export default function DesignBuilder() {
 
                         <div>
                           <Label htmlFor="body-weight">Body Weight</Label>
-                          <Select defaultValue="400">
+                          <Select 
+                            defaultValue="400"
+                            onValueChange={(value) => handleTypographyChange('bodyWeight', value)}
+                          >
                             <SelectTrigger id="body-weight" className="mt-2">
                               <SelectValue placeholder="Select weight" />
                             </SelectTrigger>

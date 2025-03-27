@@ -1482,7 +1482,8 @@ export function registerRoutes(app: Express) {
       };
 
       // Construct design system object from theme.json and defaults
-      const designSystem: DesignSystem = {
+      // Create the design system response object
+      const designSystem = {
         theme: {
           variant: parsedTheme.variant || 'professional',
           primary: parsedTheme.primary || 'hsl(205, 100%, 50%)',
@@ -1494,8 +1495,10 @@ export function registerRoutes(app: Express) {
           primary: parsedTheme.font?.primary || 'roc-grotesk',
           heading: parsedTheme.font?.heading || 'ivypresto-display',
         },
-        colors: parsedTheme.colors || defaultColors
-      };
+        colors: parsedTheme.colors || defaultColors,
+        // Include any extended typography settings from theme.json
+        typography_extended: parsedTheme.typography_extended || {}
+      } as DesignSystem & { typography_extended?: Record<string, string | number> };
 
       res.json(designSystem);
     } catch (error) {
@@ -1549,6 +1552,51 @@ export function registerRoutes(app: Express) {
     } catch (error) {
       console.error("Error updating design system:", error);
       res.status(500).json({ message: "Error updating design system" });
+    }
+  });
+  
+  // Extended typography settings route
+  app.patch("/api/design-system/typography", async (req, res) => {
+    try {
+      // For development, we're temporarily removing authentication
+      // In production, we'd want to check if user has admin rights
+      
+      const typographySettings = req.body;
+      
+      if (!typographySettings || Object.keys(typographySettings).length === 0) {
+        return res.status(400).json({ message: "No typography settings provided" });
+      }
+      
+      // Read existing theme.json to get current settings
+      let existingTheme: any = {};
+      try {
+        const themeData = fs.readFileSync('./theme.json', 'utf8');
+        existingTheme = JSON.parse(themeData);
+      } catch (error) {
+        console.error("Error reading existing theme.json:", error);
+        return res.status(500).json({ message: "Error reading theme configuration" });
+      }
+      
+      // Add or update the typography_extended property in theme.json
+      const updatedTheme = {
+        ...existingTheme,
+        typography_extended: {
+          ...(existingTheme.typography_extended || {}),
+          ...typographySettings
+        }
+      };
+      
+      // Write updated theme back to theme.json
+      fs.writeFileSync('./theme.json', JSON.stringify(updatedTheme, null, 2));
+      
+      // Return success response
+      res.json({ 
+        message: "Typography settings updated successfully", 
+        settings: updatedTheme.typography_extended 
+      });
+    } catch (error) {
+      console.error("Error updating typography settings:", error);
+      res.status(500).json({ message: "Error updating typography settings" });
     }
   });
 }

@@ -160,7 +160,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     Object.entries(activeSystem.colors).forEach(([key, value]) => {
       // Convert hex colors to HSL for better compatibility with shadcn-ui
       if (isHexColor(value)) {
+        // If the color is in hex format, convert it to HSL
         root.style.setProperty(`--${key}`, hexToHSL(value));
+      } else if (value.startsWith('hsl(')) {
+        // If it's already in HSL format, extract the values without nesting
+        // Extract the HSL values (h, s, l) from "hsl(205, 100%, 50%)" format
+        const hslMatch = value.match(/hsl\(([^)]+)\)/);
+        if (hslMatch && hslMatch[1]) {
+          root.style.setProperty(`--${key}`, hslMatch[1]);
+        } else {
+          root.style.setProperty(`--${key}`, value);
+        }
       } else {
         root.style.setProperty(`--${key}`, value);
       }
@@ -169,7 +179,16 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     // Make sure primary color is set properly
     if (activeSystem.theme.primary) {
       if (isHexColor(activeSystem.theme.primary)) {
+        // If primary is in hex format, convert it to HSL
         root.style.setProperty('--primary', hexToHSL(activeSystem.theme.primary));
+      } else if (activeSystem.theme.primary.startsWith('hsl(')) {
+        // If it's already in HSL format, extract the values without nesting
+        const hslMatch = activeSystem.theme.primary.match(/hsl\(([^)]+)\)/);
+        if (hslMatch && hslMatch[1]) {
+          root.style.setProperty('--primary', hslMatch[1]);
+        } else {
+          root.style.setProperty('--primary', activeSystem.theme.primary);
+        }
       } else {
         root.style.setProperty('--primary', activeSystem.theme.primary);
       }

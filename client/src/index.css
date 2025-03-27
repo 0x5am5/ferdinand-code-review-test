@@ -34,6 +34,15 @@
     --sidebar-hover: 210 40% 96.1%;
     --sidebar-active: 205 100% 95%;
     --sidebar-border: 214.3 31.8% 91.4%;
+    
+    /* Typography Customization Variables - added for design builder */
+    --heading-1-size: 2.5rem;
+    --heading-2-size: 2rem;
+    --heading-3-size: 1.5rem;
+    --body-size: 1rem;
+    --line-height: 1.5;
+    --heading-weight: 700;
+    --body-weight: 400;
   }
 
   * {
@@ -45,19 +54,31 @@
   }
 
   h1 {
-    @apply font-ivy text-heading-1 mb-6;
+    @apply font-ivy mb-6;
+    font-size: var(--heading-1-size);
+    font-weight: var(--heading-weight);
+    line-height: var(--line-height);
   }
 
   h2 {
-    @apply font-roc text-heading-2 mb-4;
+    @apply font-roc mb-4;
+    font-size: var(--heading-2-size);
+    font-weight: var(--heading-weight);
+    line-height: var(--line-height);
   }
 
   h3 {
-    @apply font-roc text-heading-3 mb-3;
+    @apply font-roc mb-3;
+    font-size: var(--heading-3-size);
+    font-weight: var(--heading-weight);
+    line-height: var(--line-height);
   }
 
   p {
-    @apply font-roc text-base leading-relaxed mb-4 font-light;
+    @apply font-roc mb-4;
+    font-size: var(--body-size);
+    font-weight: var(--body-weight);
+    line-height: var(--line-height);
   }
 }
 
