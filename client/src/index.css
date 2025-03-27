@@ -5,19 +5,18 @@
 @layer base {
   :root {
     --background: 255, 255, 255;
-    --on-background: 0, 0, 0;
-    --surface: 255, 255, 255;
-    --on-surface: 0, 0, 0;
-    --primary: 98, 0, 238;
-    --primary-variant: 55, 0, 179;
-    --on-primary: 255, 255, 255;
-    --secondary: 3, 218, 198;
-    --secondary-variant: 1, 135, 134;
-    --on-secondary: 0, 0, 0;
-    --error: 176, 0, 32;
-    --on-error: 255, 255, 255;
-    --muted: 241, 245, 249;
-    --muted-foreground: 100, 116, 139;
+    --foreground: 10, 18, 25;
+    --card: 255, 255, 255;
+    --card-foreground: 10, 18, 25;
+    --popover: 255, 255, 255;
+    --popover-foreground: 10, 18, 25;
+    --primary: 0, 122, 255;
+    --primary-foreground: 250, 251, 252;
+    --primary-light: 242, 248, 255;
+    --secondary: 245, 247, 250;
+    --secondary-foreground: 222.2, 47.4%, 11.2%;
+    --muted: 210, 40%, 96.1%;
+    --muted-foreground: 215.4, 16.3%, 46.9%;
     --accent: 210, 40%, 96.1%;
     --accent-foreground: 222.2, 47.4%, 11.2%;
     --destructive: 0, 84.2%, 60.2%;

@@ -1,7 +1,6 @@
-
 {
   "variant": "professional",
-  "primary": "#6200EE",
+  "primary": "hsl(205, 100%, 50%)",
   "appearance": "light",
   "radius": 0.5,
   "animation": "smooth",
@@ -10,18 +9,9 @@
     "heading": "ivypresto-display"
   },
   "colors": {
-    "primary": "#6200EE",
-    "primary-variant": "#3700B3",
-    "secondary": "#03DAC6",
-    "secondary-variant": "#018786",
-    "background": "#FFFFFF",
-    "surface": "#FFFFFF",
-    "error": "#B00020",
-    "on-primary": "#FFFFFF",
-    "on-secondary": "#000000",
-    "on-background": "#000000",
-    "on-surface": "#000000",
-    "on-error": "#FFFFFF",
+    "primary": "#ff0000",
+    "background": "#ffffff",
+    "foreground": "#000000",
     "muted": "#f1f5f9",
     "muted-foreground": "#64748b",
     "card": "#ffffff",
@@ -31,6 +21,6 @@
     "destructive": "#ef4444",
     "destructive-foreground": "#ffffff",
     "border": "#e2e8f0",
-    "ring": "#6200EE"
+    "ring": "hsl(205, 100%, 50%)"
   }
 }
