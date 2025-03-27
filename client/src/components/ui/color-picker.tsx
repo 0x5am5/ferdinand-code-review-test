@@ -89,10 +89,17 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
   }, [value, hexValue]);
   
   const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newHex = e.target.value;
+    let newHex = e.target.value;
+    
+    // Add # if user started typing without it
+    if (newHex.length > 0 && !newHex.startsWith('#')) {
+      newHex = '#' + newHex;
+    }
+    
+    // Always update the input field so user can type
     setHexValue(newHex);
     
-    // Only update RGB and call onChange if it's a valid hex
+    // Update RGB and call onChange if it's a valid hex
     if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
       const { r, g, b } = hexToRgb(newHex.replace(/^#/, ''));
       setRed(r);

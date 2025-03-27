@@ -19,61 +19,40 @@ import { InfoIcon, CheckIcon, XIcon, ChevronRightIcon } from "lucide-react";
 
 export default function DesignBuilder() {
   const { toast } = useToast();
-  const { designSystem: appliedDesignSystem, updateDesignSystem, isLoading } = useTheme();
-  
-  // Create a draft design system that doesn't apply until saved
-  const [draftDesignSystem, setDraftDesignSystem] = useState<DesignSystem | null>(null);
-  
-  // Initialize the draft design system when the applied design system loads
-  useEffect(() => {
-    if (appliedDesignSystem && !draftDesignSystem) {
-      setDraftDesignSystem({ ...appliedDesignSystem });
-    }
-  }, [appliedDesignSystem, draftDesignSystem]);
+  const { designSystem: appliedDesignSystem, draftDesignSystem, updateDesignSystem, updateDraftDesignSystem, applyDraftChanges, isLoading } = useTheme();
   
   // Use the draft for display purposes
   const designSystem = draftDesignSystem || appliedDesignSystem;
   
   const handleThemeChange = (key: string, value: any) => {
-    if (!draftDesignSystem) return;
-    
-    setDraftDesignSystem({ 
-      ...draftDesignSystem,
+    updateDraftDesignSystem({ 
       theme: {
-        ...draftDesignSystem.theme,
+        ...designSystem.theme,
         [key]: value
       }
     });
   };
   
   const handleColorChange = (key: string, value: string) => {
-    if (!draftDesignSystem) return;
-    
-    setDraftDesignSystem({ 
-      ...draftDesignSystem,
+    updateDraftDesignSystem({ 
       colors: {
-        ...draftDesignSystem.colors,
+        ...designSystem.colors,
         [key]: value
       }
     });
   };
   
   const handleTypographyChange = (key: string, value: string) => {
-    if (!draftDesignSystem) return;
-    
-    setDraftDesignSystem({ 
-      ...draftDesignSystem,
+    updateDraftDesignSystem({ 
       typography: {
-        ...draftDesignSystem.typography,
+        ...designSystem.typography,
         [key]: value
       }
     });
   };
 
-  const handleSaveChanges = () => {
-    if (!draftDesignSystem) return;
-    
-    updateDesignSystem(draftDesignSystem);
+  const handleSaveChanges = async () => {
+    await applyDraftChanges();
     toast({
       title: "Design system saved",
       description: "All your design system changes have been applied"
@@ -215,50 +194,144 @@ export default function DesignBuilder() {
               <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Typography Settings</h2>
                 <div className="space-y-6">
-                  <div>
-                    <Label htmlFor="primary-font">Primary Font</Label>
-                    <Input 
-                      id="primary-font"
-                      value={designSystem?.typography.primary} 
-                      onChange={(e) => handleTypographyChange('primary', e.target.value)}
-                      className="max-w-xs mt-1"
-                    />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Main font used for body text
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="heading-font">Heading Font</Label>
-                    <Input 
-                      id="heading-font"
-                      value={designSystem?.typography.heading} 
-                      onChange={(e) => handleTypographyChange('heading', e.target.value)}
-                      className="max-w-xs mt-1"
-                    />
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Font used for headings
-                    </p>
+                  {/* Font Selection */}
+                  <div className="space-y-6 border-b pb-6">
+                    <h3 className="text-lg font-medium">Font Families</h3>
+                    <div>
+                      <Label htmlFor="primary-font">Primary Font</Label>
+                      <Input 
+                        id="primary-font"
+                        value={designSystem?.typography.primary} 
+                        onChange={(e) => handleTypographyChange('primary', e.target.value)}
+                        className="max-w-xs mt-1"
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Main font used for body text
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="heading-font">Heading Font</Label>
+                      <Input 
+                        id="heading-font"
+                        value={designSystem?.typography.heading} 
+                        onChange={(e) => handleTypographyChange('heading', e.target.value)}
+                        className="max-w-xs mt-1"
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Font used for headings
+                      </p>
+                    </div>
+
+                    <div className="mt-4">
+                      <h3 className="font-medium mb-2">Typography Preview</h3>
+                      <div className="grid gap-4">
+                        <TypographyCard 
+                          name="Primary Font"
+                          family={designSystem?.typography.primary || "System UI"}
+                          weights={["400", "700"]}
+                          specimen="The quick brown fox jumps over the lazy dog."
+                          url=""
+                        />
+                        <TypographyCard 
+                          name="Heading Font"
+                          family={designSystem?.typography.heading || "System UI"}
+                          weights={["400", "700"]}
+                          specimen="The quick brown fox jumps over the lazy dog."
+                          url=""
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="mt-4">
-                    <h3 className="font-medium mb-2">Typography Preview</h3>
-                    <div className="grid gap-4">
-                      <TypographyCard 
-                        name="Primary Font"
-                        family={designSystem?.typography.primary || "System UI"}
-                        weights={["400", "700"]}
-                        specimen="The quick brown fox jumps over the lazy dog."
-                        url=""
-                      />
-                      <TypographyCard 
-                        name="Heading Font"
-                        family={designSystem?.typography.heading || "System UI"}
-                        weights={["400", "700"]}
-                        specimen="The quick brown fox jumps over the lazy dog."
-                        url=""
-                      />
+                  {/* HTML Element Styling */}
+                  <div className="space-y-6">
+                    <h3 className="text-lg font-medium">HTML Element Styling</h3>
+                    <div className="space-y-4 border rounded-md p-4">
+                      <div>
+                        <Label htmlFor="heading-size-scale">Heading Size Scale</Label>
+                        <Slider 
+                          id="heading-size-scale"
+                          defaultValue={[1]} 
+                          min={0.8} 
+                          max={1.5} 
+                          step={0.05}
+                          className="max-w-xs mt-2"
+                          // This would be connected to actual styling in a complete implementation
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Controls the overall size of all headings
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="body-text-size">Body Text Size</Label>
+                        <Slider 
+                          id="body-text-size"
+                          defaultValue={[1]} 
+                          min={0.8} 
+                          max={1.2} 
+                          step={0.05}
+                          className="max-w-xs mt-2"
+                          // This would be connected to actual styling in a complete implementation
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Controls the base size of paragraph text
+                        </p>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="line-height">Line Height</Label>
+                        <Slider 
+                          id="line-height"
+                          defaultValue={[1.5]} 
+                          min={1} 
+                          max={2} 
+                          step={0.1}
+                          className="max-w-xs mt-2"
+                          // This would be connected to actual styling in a complete implementation
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Controls spacing between lines of text
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <div>
+                          <Label htmlFor="heading-weight">Heading Weight</Label>
+                          <Select defaultValue="700">
+                            <SelectTrigger id="heading-weight" className="mt-2">
+                              <SelectValue placeholder="Select weight" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="400">Regular (400)</SelectItem>
+                              <SelectItem value="500">Medium (500)</SelectItem>
+                              <SelectItem value="600">Semibold (600)</SelectItem>
+                              <SelectItem value="700">Bold (700)</SelectItem>
+                              <SelectItem value="800">Extrabold (800)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="body-weight">Body Weight</Label>
+                          <Select defaultValue="400">
+                            <SelectTrigger id="body-weight" className="mt-2">
+                              <SelectValue placeholder="Select weight" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="300">Light (300)</SelectItem>
+                              <SelectItem value="400">Regular (400)</SelectItem>
+                              <SelectItem value="500">Medium (500)</SelectItem>
+                              <SelectItem value="600">Semibold (600)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                     </div>
+                    <p className="text-sm text-muted-foreground italic">
+                      Note: These settings will update the global styles for all HTML elements across the application.
+                    </p>
                   </div>
                 </div>
               </Card>
@@ -281,18 +354,6 @@ export default function DesignBuilder() {
                       ))}
                     </div>
                   </div>
-
-                  <div>
-                    <h3 className="font-medium mb-3">Color Preview</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <ColorCard name="Primary" hex={designSystem?.colors.primary || "#0000ff"} />
-                      <ColorCard name="Background" hex={designSystem?.colors.background || "#ffffff"} />
-                      <ColorCard name="Foreground" hex={designSystem?.colors.foreground || "#000000"} />
-                      <ColorCard name="Muted" hex={designSystem?.colors.muted || "#f1f5f9"} />
-                      <ColorCard name="Accent" hex={designSystem?.colors.accent || "#f1f5f9"} />
-                      <ColorCard name="Destructive" hex={designSystem?.colors.destructive || "#ef4444"} />
-                    </div>
-                  </div>
                 </div>
               </Card>
             </div>
@@ -302,6 +363,18 @@ export default function DesignBuilder() {
               <Card className="p-6 h-full">
                 <h2 className="text-xl font-semibold mb-6">Component Preview</h2>
                 <div className="space-y-10">
+                  {/* Color Preview Section - Moved from left column */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium border-b pb-2">Color System Preview</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <ColorCard name="Primary" hex={designSystem?.colors.primary || "#0000ff"} />
+                      <ColorCard name="Background" hex={designSystem?.colors.background || "#ffffff"} />
+                      <ColorCard name="Foreground" hex={designSystem?.colors.foreground || "#000000"} />
+                      <ColorCard name="Muted" hex={designSystem?.colors.muted || "#f1f5f9"} />
+                      <ColorCard name="Accent" hex={designSystem?.colors.accent || "#f1f5f9"} />
+                      <ColorCard name="Destructive" hex={designSystem?.colors.destructive || "#ef4444"} />
+                    </div>
+                  </div>
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium border-b pb-2">Buttons</h3>
                     <div className="grid gap-4">

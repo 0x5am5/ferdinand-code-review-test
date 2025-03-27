@@ -10,6 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
+    /* Primary variables are set by the ThemeContext.tsx file */
     --primary: 205 100% 50%;
     --primary-foreground: 210 40% 98%;
     --primary-light: 205 100% 95%;

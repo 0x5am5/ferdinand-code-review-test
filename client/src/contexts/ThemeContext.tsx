@@ -62,18 +62,25 @@ const defaultTheme: DesignSystem = {
 
 type ThemeContextType = {
   designSystem: DesignSystem;
+  draftDesignSystem: DesignSystem | null;
   updateDesignSystem: (newTheme: Partial<DesignSystem>) => void;
+  updateDraftDesignSystem: (newTheme: Partial<DesignSystem>) => void;
+  applyDraftChanges: () => void;
   isLoading: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   designSystem: defaultTheme,
+  draftDesignSystem: null,
   updateDesignSystem: () => {},
+  updateDraftDesignSystem: () => {},
+  applyDraftChanges: () => {},
   isLoading: true
 });
 
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [designSystem, setDesignSystem] = useState<DesignSystem>(defaultTheme);
+  const [draftDesignSystem, setDraftDesignSystem] = useState<DesignSystem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load theme settings from the API
@@ -84,9 +91,12 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         if (!response.ok) throw new Error('Failed to fetch theme settings');
         const data = await response.json();
         setDesignSystem(data);
+        // Initialize draft with the same data
+        setDraftDesignSystem(data);
       } catch (error) {
         console.error('Error loading theme settings:', error);
         // Keep using default theme if we can't load from API
+        setDraftDesignSystem(defaultTheme);
       } finally {
         setIsLoading(false);
       }
@@ -139,13 +149,15 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (isLoading) return;
     
+    // Use draft system for preview if available, otherwise use the main design system
+    const activeSystem = draftDesignSystem || designSystem;
     const root = document.documentElement;
     
     // Apply border radius
-    root.style.setProperty('--radius', `${designSystem.theme.radius}rem`);
+    root.style.setProperty('--radius', `${activeSystem.theme.radius}rem`);
     
     // Apply colors
-    Object.entries(designSystem.colors).forEach(([key, value]) => {
+    Object.entries(activeSystem.colors).forEach(([key, value]) => {
       // Convert hex colors to HSL for better compatibility with shadcn-ui
       if (isHexColor(value)) {
         root.style.setProperty(`--${key}`, hexToHSL(value));
@@ -155,17 +167,17 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     });
     
     // Make sure primary color is set properly
-    if (designSystem.theme.primary) {
-      if (isHexColor(designSystem.theme.primary)) {
-        root.style.setProperty('--primary', hexToHSL(designSystem.theme.primary));
+    if (activeSystem.theme.primary) {
+      if (isHexColor(activeSystem.theme.primary)) {
+        root.style.setProperty('--primary', hexToHSL(activeSystem.theme.primary));
       } else {
-        root.style.setProperty('--primary', designSystem.theme.primary);
+        root.style.setProperty('--primary', activeSystem.theme.primary);
       }
     }
     
     // Apply animation settings
     let animationSpeed = '0s';
-    switch (designSystem.theme.animation) {
+    switch (activeSystem.theme.animation) {
       case 'none':
         animationSpeed = '0s';
         break;
@@ -182,27 +194,32 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     root.style.setProperty('--transition', animationSpeed);
     
     // Apply typography
-    if (designSystem.typography.primary) {
-      root.style.setProperty('--font-sans', designSystem.typography.primary);
+    if (activeSystem.typography.primary) {
+      root.style.setProperty('--font-sans', activeSystem.typography.primary);
     }
-    if (designSystem.typography.heading) {
-      root.style.setProperty('--font-heading', designSystem.typography.heading);
+    if (activeSystem.typography.heading) {
+      root.style.setProperty('--font-heading', activeSystem.typography.heading);
     }
     
     // Apply appearance (light/dark mode)
-    if (designSystem.theme.appearance === 'dark') {
+    if (activeSystem.theme.appearance === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
     
-    console.log('Theme applied:', designSystem);
-  }, [designSystem, isLoading]);
+    console.log('Theme applied:', activeSystem);
+  }, [designSystem, draftDesignSystem, isLoading]);
 
-  // Function to update theme settings
+  // Function to update theme settings (and persist to API)
   const updateDesignSystem = async (newTheme: Partial<DesignSystem>) => {
     // Update local state immediately for responsive UI
     setDesignSystem(prev => ({ ...prev, ...newTheme }));
+    
+    // Also update draft state to stay in sync
+    if (draftDesignSystem) {
+      setDraftDesignSystem({ ...draftDesignSystem, ...newTheme } as DesignSystem);
+    }
     
     // Send update to the API
     try {
@@ -219,8 +236,30 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Function to update draft design system (for live preview)
+  const updateDraftDesignSystem = (newTheme: Partial<DesignSystem>) => {
+    if (draftDesignSystem) {
+      setDraftDesignSystem({ ...draftDesignSystem, ...newTheme } as DesignSystem);
+    }
+  };
+
+  // Function to apply draft changes to the actual design system
+  const applyDraftChanges = async () => {
+    if (draftDesignSystem) {
+      // Apply draft changes to the main design system
+      await updateDesignSystem(draftDesignSystem);
+    }
+  };
+
   return (
-    <ThemeContext.Provider value={{ designSystem, updateDesignSystem, isLoading }}>
+    <ThemeContext.Provider value={{ 
+      designSystem, 
+      draftDesignSystem, 
+      updateDesignSystem, 
+      updateDraftDesignSystem,
+      applyDraftChanges,
+      isLoading 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
