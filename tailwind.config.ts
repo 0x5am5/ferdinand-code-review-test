@@ -15,20 +15,20 @@ export default {
         'heading-3': ['1.5rem', { lineHeight: '1.2', fontWeight: '500' }],
       },
       colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        background: "rgb(var(--background))",
+        foreground: "rgb(var(--foreground))",
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "rgb(var(--card))",
+          foreground: "rgb(var(--card-foreground))",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "rgb(var(--popover))",
+          foreground: "rgb(var(--popover-foreground))",
         },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-          light: "hsl(var(--primary-light))",
+          DEFAULT: "rgb(var(--primary))",
+          foreground: "rgb(var(--primary-foreground))",
+          light: "rgb(var(--primary-light))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
