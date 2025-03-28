@@ -93,6 +93,9 @@ export default {
         'shadow': 'box-shadow var(--transition)',
         'transform': 'transform var(--transition)',
       },
+      opacity: {
+        '90': '0.9',
+      },
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
