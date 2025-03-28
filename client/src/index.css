@@ -33,7 +33,7 @@
     --sidebar-hover: 210 40% 96.1%;
     --sidebar-active: 205 100% 95%;
     --sidebar-border: 214.3 31.8% 91.4%;
-
+    
     /* Typography Customization Variables - added for design builder */
     --heading-1-size: 2.5rem;
     --heading-2-size: 2rem;
@@ -93,17 +93,9 @@
   .card {
     @apply bg-card rounded-lg border p-6 shadow-sm transition-shadow hover:shadow-md;
   }
-
+  
   .bg-primary {
     background-color: hsl(var(--primary));
-  }
-
-  .bg-primary/90 {
-    background-color: hsl(var(--primary), 0.9);
-  }
-
-  .hover\:bg-primary/90:hover {
-    background-color: hsl(var(--primary), 0.9);
   }
 }
 
