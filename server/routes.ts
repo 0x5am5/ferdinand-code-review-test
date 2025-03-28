@@ -1586,14 +1586,19 @@ export function registerRoutes(app: Express) {
         }
       };
       
-      // Write updated theme back to theme.json
-      fs.writeFileSync('./theme.json', JSON.stringify(updatedTheme, null, 2));
-      
-      // Return success response
-      res.json({ 
-        message: "Typography settings updated successfully", 
-        settings: updatedTheme.typography_extended 
-      });
+      try {
+        // Write updated theme back to theme.json
+        fs.writeFileSync('./theme.json', JSON.stringify(updatedTheme, null, 2));
+        
+        // Return success response
+        res.json({ 
+          message: "Typography settings updated successfully", 
+          settings: updatedTheme.typography_extended 
+        });
+      } catch (error) {
+        console.error("Error writing typography settings to theme.json:", error);
+        throw new Error("Failed to write typography settings");
+      }
     } catch (error) {
       console.error("Error updating typography settings:", error);
       res.status(500).json({ message: "Error updating typography settings" });
