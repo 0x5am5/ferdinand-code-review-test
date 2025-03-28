@@ -97,6 +97,10 @@
   .bg-primary {
     background-color: hsl(var(--primary));
   }
+
+  .bg-primary\/90 {
+    background-color: hsl(var(--primary) / 0.9);
+  }
 }
 
 .flex-direction--column {
