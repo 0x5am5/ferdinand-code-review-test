@@ -13,7 +13,6 @@ import UsersPage from "@/pages/users";
 import SignupPage from "@/pages/signup";
 import ResetPassword from "@/pages/reset-password";
 import DesignBuilder from "@/pages/design-builder";
-import DesignDemo from "@/pages/design-demo";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -66,9 +65,6 @@ function Router() {
       </Route>
       <Route path="/design-builder">
         <ProtectedRoute component={DesignBuilder} adminOnly />
-      </Route>
-      <Route path="/design-demo">
-        <ProtectedRoute component={DesignDemo} />
       </Route>
       <Route>
         <NotFound />

@@ -1,255 +1,287 @@
-import React, { createContext, useState, useEffect, ReactNode, useContext } from 'react';
-import { DesignSystem, designSystemToCssVariables } from '@/utils/design-system-mapper';
-import { applyClientTheme, clearClientThemes, getActiveClientId } from '@/utils/client-theme-manager';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-// Default design system configuration
-const defaultDesignSystem: DesignSystem = {
+// Define the theme structure to match what we're using in design-builder.tsx
+export interface DesignSystem {
+  theme: {
+    variant: 'professional' | 'tint' | 'vibrant';
+    primary: string;
+    appearance: 'light' | 'dark' | 'system';
+    radius: number;
+    animation: 'none' | 'minimal' | 'smooth' | 'bounce';
+  };
+  typography: {
+    primary: string;
+    heading: string;
+  };
+  colors: {
+    primary: string;
+    background: string;
+    foreground: string;
+    muted: string;
+    'muted-foreground': string;
+    card: string;
+    'card-foreground': string;
+    accent: string;
+    'accent-foreground': string;
+    destructive: string;
+    'destructive-foreground': string;
+    border: string;
+    ring: string;
+  };
+}
+
+// Default theme settings
+const defaultTheme: DesignSystem = {
   theme: {
     variant: 'professional',
-    primary: '#3366FF',
+    primary: 'hsl(205, 100%, 50%)',
     appearance: 'light',
-    radius: 6,
-    animation: 'all 0.2s ease-in-out',
+    radius: 0.5,
+    animation: 'smooth'
   },
   typography: {
-    primary: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif',
-    heading: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif',
+    primary: 'roc-grotesk',
+    heading: 'ivypresto-display'
   },
   colors: {
-    primary: '#3366FF',
-    background: '#FFFFFF',
-    foreground: '#1F2933',
-    muted: '#F4F5F7',
-    'muted-foreground': '#7B8794',
-    card: '#FFFFFF',
-    'card-foreground': '#1F2933',
-    accent: '#6554C0',
-    'accent-foreground': '#FFFFFF',
-    destructive: '#FF5630',
-    'destructive-foreground': '#FFFFFF',
-    border: '#E1E4E8',
-    ring: '#3366FF',
-  },
+    primary: 'hsl(205, 100%, 50%)',
+    background: '#ffffff',
+    foreground: '#000000',
+    muted: '#f1f5f9',
+    'muted-foreground': '#64748b',
+    card: '#ffffff',
+    'card-foreground': '#000000',
+    accent: '#f1f5f9',
+    'accent-foreground': '#0f172a',
+    destructive: '#ef4444',
+    'destructive-foreground': '#ffffff',
+    border: '#e2e8f0',
+    ring: 'hsl(205, 100%, 50%)'
+  }
 };
 
-interface ThemeContextType {
+type ThemeContextType = {
   designSystem: DesignSystem;
   draftDesignSystem: DesignSystem | null;
-  setDesignSystem: (system: DesignSystem) => void;
-  updateDraftDesignSystem: (updates: Partial<DesignSystem>) => void;
-  resetDraftDesignSystem: () => void;
-  applyDraftChanges: () => Promise<void>;
-  activeClientId: number | null;
-  setActiveClientId: (id: number | null) => void;
-  isDarkMode: boolean;
-  toggleDarkMode: () => void;
+  updateDesignSystem: (newTheme: Partial<DesignSystem>) => void;
+  updateDraftDesignSystem: (newTheme: Partial<DesignSystem>) => void;
+  applyDraftChanges: () => void;
+  isLoading: boolean;
 }
 
-export const ThemeContext = createContext<ThemeContextType>({
-  designSystem: defaultDesignSystem,
+const ThemeContext = createContext<ThemeContextType>({
+  designSystem: defaultTheme,
   draftDesignSystem: null,
-  setDesignSystem: () => {},
+  updateDesignSystem: () => {},
   updateDraftDesignSystem: () => {},
-  resetDraftDesignSystem: () => {},
-  applyDraftChanges: async () => {},
-  activeClientId: null,
-  setActiveClientId: () => {},
-  isDarkMode: false,
-  toggleDarkMode: () => {},
+  applyDraftChanges: () => {},
+  isLoading: true
 });
 
-interface ThemeProviderProps {
-  children: ReactNode;
-}
-
-// Custom hook to use the theme context
-export const useTheme = () => useContext(ThemeContext);
-
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Active design system state
-  const [designSystem, setDesignSystemState] = useState<DesignSystem>(defaultDesignSystem);
-  
-  // Draft design system for pending changes
+export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
+  const [designSystem, setDesignSystem] = useState<DesignSystem>(defaultTheme);
   const [draftDesignSystem, setDraftDesignSystem] = useState<DesignSystem | null>(null);
-  
-  // Active client ID for client-specific styling
-  const [activeClientId, setActiveClientIdState] = useState<number | null>(getActiveClientId());
-  
-  // Track dark mode state
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(
-    designSystem.theme.appearance === 'dark' || 
-    (designSystem.theme.appearance === 'system' && 
-      window.matchMedia('(prefers-color-scheme: dark)').matches)
-  );
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Apply the design system to the document root on initial load
+  // Load theme settings from the API
   useEffect(() => {
-    document.documentElement.style.cssText = designSystemToCssVariables(designSystem);
-    
-    // Add dark mode class if necessary
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark-mode');
-    } else {
-      document.documentElement.classList.remove('dark-mode');
-    }
-    
-    // Listen for system preference changes if set to 'system'
-    if (designSystem.theme.appearance === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      
-      const handleChange = (e: MediaQueryListEvent) => {
-        setIsDarkMode(e.matches);
-      };
-      
-      mediaQuery.addEventListener('change', handleChange);
-      
-      return () => {
-        mediaQuery.removeEventListener('change', handleChange);
-      };
-    }
-  }, [designSystem, isDarkMode]);
-
-  // Apply client theme when activeClientId changes
-  useEffect(() => {
-    if (activeClientId) {
-      applyClientTheme(activeClientId);
-    } else {
-      clearClientThemes();
-    }
-  }, [activeClientId]);
-
-  // Set the design system
-  const setDesignSystem = (system: DesignSystem) => {
-    setDesignSystemState(system);
-    setDraftDesignSystem(null);
-  };
-
-  // Helper function to ensure type safety when merging partial updates
-  const safeDesignSystemMerge = (base: DesignSystem, updates: Partial<DesignSystem>): DesignSystem => {
-    // Create a deep clone to avoid accidental mutations
-    const result = JSON.parse(JSON.stringify(base)) as DesignSystem;
-    
-    // Handle theme updates
-    if (updates.theme) {
-      result.theme = {
-        ...result.theme,
-        ...(updates.theme || {})
-      };
-      
-      // Ensure appearance stays as a valid union type
-      if (updates.theme.appearance) {
-        const appearance = updates.theme.appearance;
-        if (appearance === 'light' || appearance === 'dark' || appearance === 'system') {
-          result.theme.appearance = appearance;
-        }
-      }
-    }
-    
-    // Handle typography updates
-    if (updates.typography) {
-      result.typography = {
-        ...result.typography,
-        ...(updates.typography || {})
-      };
-    }
-    
-    // Handle colors updates
-    if (updates.colors) {
-      result.colors = {
-        ...result.colors,
-        ...(updates.colors || {})
-      };
-    }
-    
-    return result;
-  };
-
-  // Update the draft design system with partial changes
-  const updateDraftDesignSystem = (updates: Partial<DesignSystem>) => {
-    // If no draft exists yet, create one based on current design system
-    if (!draftDesignSystem) {
-      setDraftDesignSystem(safeDesignSystemMerge(designSystem, updates));
-    } else {
-      // Otherwise update the existing draft
-      setDraftDesignSystem(safeDesignSystemMerge(draftDesignSystem, updates));
-    }
-  };
-
-  // Reset the draft design system
-  const resetDraftDesignSystem = () => {
-    setDraftDesignSystem(null);
-  };
-
-  // Apply draft changes to the active design system
-  const applyDraftChanges = async () => {
-    if (!draftDesignSystem) return;
-    
-    try {
-      // Here we would make an API call to save the design system changes
-      // For now, just update the state
-      setDesignSystemState(draftDesignSystem);
-      setDraftDesignSystem(null);
-      
-      // Example API call (commented out)
-      // await fetch('/api/design-system', {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(draftDesignSystem),
-      // });
-      
-      return Promise.resolve();
-    } catch (error) {
-      console.error('Failed to save design system changes:', error);
-      return Promise.reject(error);
-    }
-  };
-
-  // Set the active client ID
-  const setActiveClientId = (id: number | null) => {
-    setActiveClientIdState(id);
-  };
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode;
-    setIsDarkMode(newDarkMode);
-    
-    // Update the design system appearance
-    const appearance: 'light' | 'dark' | 'system' = newDarkMode ? 'dark' : 'light';
-    
-    // Create a partial update with just the appearance change
-    // The safe merge function will handle preserving all other required properties
-    const updates: Partial<DesignSystem> = {
-      theme: { 
-        variant: designSystem.theme.variant,
-        primary: designSystem.theme.primary,
-        appearance,
-        radius: designSystem.theme.radius,
-        animation: designSystem.theme.animation
+    const fetchThemeSettings = async () => {
+      try {
+        const response = await fetch('/api/design-system');
+        if (!response.ok) throw new Error('Failed to fetch theme settings');
+        const data = await response.json();
+        setDesignSystem(data);
+        // Initialize draft with the same data
+        setDraftDesignSystem(data);
+      } catch (error) {
+        console.error('Error loading theme settings:', error);
+        // Keep using default theme if we can't load from API
+        setDraftDesignSystem(defaultTheme);
+      } finally {
+        setIsLoading(false);
       }
     };
+
+    fetchThemeSettings();
+  }, []);
+
+  // Function to convert hex color to HSL format
+  const hexToHSL = (hex: string) => {
+    // Remove the # if present
+    hex = hex.replace(/^#/, '');
+
+    // Convert from hex to RGB
+    let r = parseInt(hex.substring(0, 2), 16) / 255;
+    let g = parseInt(hex.substring(2, 4), 16) / 255;
+    let b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    // Find max and min values
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
     
-    // Use the safe merge function to ensure type safety
-    const updatedSystem = safeDesignSystemMerge(designSystem, updates);
-    setDesignSystemState(updatedSystem);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      
+      switch (max) {
+        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+        case g: h = (b - r) / d + 2; break;
+        case b: h = (r - g) / d + 4; break;
+      }
+      
+      h = Math.round(h * 60);
+    }
+    
+    s = Math.round(s * 100);
+    l = Math.round(l * 100);
+
+    return `${h} ${s}% ${l}%`;
+  };
+
+  // Check if a string is a hex color
+  const isHexColor = (color: string) => {
+    return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
+  };
+
+  // Apply the theme CSS variables to the document root
+  useEffect(() => {
+    if (isLoading) return;
+    
+    // Use draft system for preview if available, otherwise use the main design system
+    const activeSystem = draftDesignSystem || designSystem;
+    const root = document.documentElement;
+    
+    // Apply border radius
+    root.style.setProperty('--radius', `${activeSystem.theme.radius}rem`);
+    
+    // Apply colors
+    Object.entries(activeSystem.colors).forEach(([key, value]) => {
+      // Convert hex colors to HSL for better compatibility with shadcn-ui
+      if (isHexColor(value)) {
+        // If the color is in hex format, convert it to HSL
+        root.style.setProperty(`--${key}`, hexToHSL(value));
+      } else if (value.startsWith('hsl(')) {
+        // If it's already in HSL format, extract the values without nesting
+        // Extract the HSL values (h, s, l) from "hsl(205, 100%, 50%)" format
+        const hslMatch = value.match(/hsl\(([^)]+)\)/);
+        if (hslMatch && hslMatch[1]) {
+          root.style.setProperty(`--${key}`, hslMatch[1]);
+        } else {
+          root.style.setProperty(`--${key}`, value);
+        }
+      } else {
+        root.style.setProperty(`--${key}`, value);
+      }
+    });
+    
+    // Make sure primary color is set properly
+    if (activeSystem.theme.primary) {
+      if (isHexColor(activeSystem.theme.primary)) {
+        // If primary is in hex format, convert it to HSL
+        root.style.setProperty('--primary', hexToHSL(activeSystem.theme.primary));
+      } else if (activeSystem.theme.primary.startsWith('hsl(')) {
+        // If it's already in HSL format, extract the values without nesting
+        const hslMatch = activeSystem.theme.primary.match(/hsl\(([^)]+)\)/);
+        if (hslMatch && hslMatch[1]) {
+          root.style.setProperty('--primary', hslMatch[1]);
+        } else {
+          root.style.setProperty('--primary', activeSystem.theme.primary);
+        }
+      } else {
+        root.style.setProperty('--primary', activeSystem.theme.primary);
+      }
+    }
+    
+    // Apply animation settings
+    let animationSpeed = '0s';
+    switch (activeSystem.theme.animation) {
+      case 'none':
+        animationSpeed = '0s';
+        break;
+      case 'minimal':
+        animationSpeed = '0.1s';
+        break;
+      case 'smooth':
+        animationSpeed = '0.2s';
+        break;
+      case 'bounce':
+        animationSpeed = '0.3s';
+        break;
+    }
+    root.style.setProperty('--transition', animationSpeed);
+    
+    // Apply typography
+    if (activeSystem.typography.primary) {
+      root.style.setProperty('--font-sans', activeSystem.typography.primary);
+    }
+    if (activeSystem.typography.heading) {
+      root.style.setProperty('--font-heading', activeSystem.typography.heading);
+    }
+    
+    // Apply appearance (light/dark mode)
+    if (activeSystem.theme.appearance === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    
+    console.log('Theme applied:', activeSystem);
+  }, [designSystem, draftDesignSystem, isLoading]);
+
+  // Function to update theme settings (and persist to API)
+  const updateDesignSystem = async (newTheme: Partial<DesignSystem>) => {
+    // Update local state immediately for responsive UI
+    setDesignSystem(prev => ({ ...prev, ...newTheme }));
+    
+    // Also update draft state to stay in sync
+    if (draftDesignSystem) {
+      setDraftDesignSystem({ ...draftDesignSystem, ...newTheme } as DesignSystem);
+    }
+    
+    // Send update to the API
+    try {
+      const response = await fetch('/api/design-system', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTheme),
+      });
+      
+      if (!response.ok) throw new Error('Failed to update theme settings');
+    } catch (error) {
+      console.error('Error updating theme settings:', error);
+      // Could add error handling/rollback here
+    }
+  };
+
+  // Function to update draft design system (for live preview)
+  const updateDraftDesignSystem = (newTheme: Partial<DesignSystem>) => {
+    if (draftDesignSystem) {
+      setDraftDesignSystem({ ...draftDesignSystem, ...newTheme } as DesignSystem);
+    }
+  };
+
+  // Function to apply draft changes to the actual design system
+  const applyDraftChanges = async () => {
+    if (draftDesignSystem) {
+      // Apply draft changes to the main design system
+      await updateDesignSystem(draftDesignSystem);
+    }
   };
 
   return (
-    <ThemeContext.Provider
-      value={{
-        designSystem,
-        draftDesignSystem,
-        setDesignSystem,
-        updateDraftDesignSystem,
-        resetDraftDesignSystem,
-        applyDraftChanges,
-        activeClientId,
-        setActiveClientId,
-        isDarkMode,
-        toggleDarkMode,
-      }}
-    >
+    <ThemeContext.Provider value={{ 
+      designSystem, 
+      draftDesignSystem, 
+      updateDesignSystem, 
+      updateDraftDesignSystem,
+      applyDraftChanges,
+      isLoading 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
 };
+
+export const useTheme = () => useContext(ThemeContext);
