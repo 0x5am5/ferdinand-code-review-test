@@ -1,6 +1,5 @@
 // Button component styling
-@use '../tokens/semantic' as *;
-@use '../mixins/typography' as *;
+@use '../tokens/core' as *;
 
 .btn {
   display: inline-flex;

@@ -1,7 +1,8 @@
 // Typography Mixins
 // These mixins provide consistent typography styles
 
-@import '../tokens/semantic';
+@use '../tokens/semantic' as *;
+@use '../mixins/responsive' as *;
 
 // Headings
 @mixin heading-1 {

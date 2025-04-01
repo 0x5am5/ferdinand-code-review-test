@@ -1,11 +1,16 @@
 // Main SCSS Entry Point
 // This file serves as the entry point for all SCSS styles
 
-// Import tokens and mixins
-@import './tokens/core';
-@import './tokens/semantic';
-@import './mixins/responsive';
-@import './mixins/typography';
+// Import tokens
+@use './tokens/core' as *;
+@use './tokens/semantic' as *;
+
+// Import mixins
+@use './mixins/responsive' as *;
+@use './mixins/typography' as *;
+
+// Import components
+@use './components/button' as *;
 
 // Base styles
 html, body {
@@ -201,5 +206,4 @@ p {
 }
 
 // Component imports
-@import './components/button';
 // Add more component imports as needed

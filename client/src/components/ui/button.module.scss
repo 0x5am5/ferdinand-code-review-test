@@ -1,60 +1,62 @@
-@import '../../styles/tokens/semantic';
-@import '../../styles/mixins/typography';
+@use '../../styles/tokens/core' as *;
+@use '../../styles/tokens/semantic' as *;
+@use '../../styles/mixins/typography' as *;
 
 .button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: $font-weight-medium;
-  transition: all 0.2s ease-in-out;
+  border-radius: var(--border-radius-base);
+  font-weight: var(--font-weight-medium);
+  transition: var(--transition-default);
   cursor: pointer;
   
   // Size variants
   &.small {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
   }
   
   &.large {
-    padding: 0.75rem 1.5rem;
-    font-size: 1.125rem;
+    padding: var(--space-3) var(--space-6);
+    font-size: var(--font-size-lg);
   }
   
   // Style variants
   &.primary {
-    background-color: $color-button-primary-bg;
-    color: $color-button-primary-text;
+    background-color: var(--color-brand-primary-base);
+    color: var(--color-text-on-brand);
     border: none;
     
     &:hover:not(:disabled) {
-      background-color: $color-button-primary-hover;
+      background-color: var(--color-brand-primary-dark1);
     }
     
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 3px rgba($color-button-primary-bg, 0.4);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-primary-base) 40%, transparent);
     }
     
     &:disabled {
-      background-color: $color-button-primary-disabled;
+      opacity: 0.7;
       cursor: not-allowed;
     }
   }
   
   &.secondary {
-    background-color: $color-button-secondary-bg;
-    color: $color-button-secondary-text;
-    border: 1px solid $color-button-secondary-border;
+    background-color: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-ui-border);
     
     &:hover:not(:disabled) {
-      background-color: $color-button-secondary-hover;
+      background-color: var(--color-bg-tertiary);
+      filter: brightness(0.98);
     }
     
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 3px rgba($color-button-secondary-text, 0.2);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-text-primary) 20%, transparent);
     }
     
     &:disabled {
@@ -65,17 +67,17 @@
   
   &.ghost {
     background-color: transparent;
-    color: $color-button-tertiary-text;
+    color: var(--color-text-primary);
     border: none;
     
     &:hover:not(:disabled) {
-      color: $color-button-tertiary-hover;
-      background-color: rgba($color-button-secondary-bg, 0.5);
+      color: var(--color-text-primary);
+      background-color: var(--color-ui-hover);
     }
     
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 3px rgba($color-button-tertiary-text, 0.1);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-text-primary) 10%, transparent);
     }
     
     &:disabled {
@@ -85,17 +87,17 @@
   }
   
   &.destructive {
-    background-color: $color-interactive-error-base;
-    color: $color-neutral-0;
+    background-color: var(--color-interactive-error-base);
+    color: var(--color-neutral-0);
     border: none;
     
     &:hover:not(:disabled) {
-      background-color: $color-interactive-error-dark1;
+      background-color: var(--color-interactive-error-dark1);
     }
     
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 3px rgba($color-interactive-error-base, 0.4);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-interactive-error-base) 40%, transparent);
     }
     
     &:disabled {

@@ -1,5 +1,7 @@
 // Responsive Mixins
 // These mixins help with consistent responsive behavior
+@use "sass:map";
+@use '../tokens/core' as *;
 
 // Breakpoint map
 $breakpoints: (
@@ -15,9 +17,9 @@ $breakpoints: (
 /// @requires $breakpoints
 @mixin respond-to($breakpoint) {
   // If the key exists in the map
-  @if map-has-key($breakpoints, $breakpoint) {
+  @if map.has-key($breakpoints, $breakpoint) {
     // Get the breakpoint value
-    $breakpoint-value: map-get($breakpoints, $breakpoint);
+    $breakpoint-value: map.get($breakpoints, $breakpoint);
     
     // Write the media query
     @media (min-width: $breakpoint-value) {
@@ -28,16 +30,16 @@ $breakpoints: (
   // If the key doesn't exist in the map
   @else {
     @warn "Unfortunately, no value could be retrieved from `#{$breakpoint}`. "
-        + "Available breakpoints are: #{map-keys($breakpoints)}.";
+        + "Available breakpoints are: #{map.keys($breakpoints)}.";
   }
 }
 
 // Max-width breakpoint
 @mixin respond-to-max($breakpoint) {
   // If the key exists in the map
-  @if map-has-key($breakpoints, $breakpoint) {
+  @if map.has-key($breakpoints, $breakpoint) {
     // Get the breakpoint value and subtract 0.02px to ensure proper behavior
-    $breakpoint-value: map-get($breakpoints, $breakpoint) - 0.02px;
+    $breakpoint-value: map.get($breakpoints, $breakpoint) - 0.02px;
     
     // Write the media query
     @media (max-width: $breakpoint-value) {
@@ -48,17 +50,17 @@ $breakpoints: (
   // If the key doesn't exist in the map
   @else {
     @warn "Unfortunately, no value could be retrieved from `#{$breakpoint}`. "
-        + "Available breakpoints are: #{map-keys($breakpoints)}.";
+        + "Available breakpoints are: #{map.keys($breakpoints)}.";
   }
 }
 
 // Between two breakpoints
 @mixin respond-between($lower, $upper) {
   // If both keys exist in the map
-  @if map-has-key($breakpoints, $lower) and map-has-key($breakpoints, $upper) {
+  @if map.has-key($breakpoints, $lower) and map.has-key($breakpoints, $upper) {
     // Get the breakpoint values
-    $lower-value: map-get($breakpoints, $lower);
-    $upper-value: map-get($breakpoints, $upper) - 0.02px;
+    $lower-value: map.get($breakpoints, $lower);
+    $upper-value: map.get($breakpoints, $upper) - 0.02px;
     
     // Write the media query
     @media (min-width: $lower-value) and (max-width: $upper-value) {
@@ -69,7 +71,7 @@ $breakpoints: (
   // If one of the keys doesn't exist
   @else {
     @warn "Unfortunately, one or both of the breakpoints `#{$lower}` and `#{$upper}` don't exist. "
-        + "Available breakpoints are: #{map-keys($breakpoints)}.";
+        + "Available breakpoints are: #{map.keys($breakpoints)}.";
   }
 }
 
@@ -84,18 +86,18 @@ $breakpoints: (
   @include respond-to('tablet') {
     padding-left: $space-6;
     padding-right: $space-6;
-    max-width: calc(#{map-get($breakpoints, 'tablet')} - #{$space-8});
+    max-width: calc(#{map.get($breakpoints, 'tablet')} - #{$space-8});
   }
   
   @include respond-to('laptop') {
-    max-width: calc(#{map-get($breakpoints, 'laptop')} - #{$space-16});
+    max-width: calc(#{map.get($breakpoints, 'laptop')} - #{$space-16});
   }
   
   @include respond-to('desktop') {
-    max-width: calc(#{map-get($breakpoints, 'desktop')} - #{$space-16});
+    max-width: calc(#{map.get($breakpoints, 'desktop')} - #{$space-16});
   }
   
   @include respond-to('widescreen') {
-    max-width: calc(#{map-get($breakpoints, 'widescreen')} - #{$space-32});
+    max-width: calc(#{map.get($breakpoints, 'widescreen')} - #{$space-32});
   }
 }

@@ -2,7 +2,7 @@
 // These tokens map specific purposes to core tokens
 // This is where most customization should happen
 
-@import './core';
+@use './core' as *;
 
 // =============================================================================
 // COLORS
