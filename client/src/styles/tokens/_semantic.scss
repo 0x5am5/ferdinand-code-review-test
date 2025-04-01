@@ -1,0 +1,246 @@
+// Semantic Tokens
+// These tokens map specific purposes to core tokens
+// This is where most customization should happen
+
+@import './core';
+
+// =============================================================================
+// COLORS
+// =============================================================================
+
+// Light mode color mapping
+:root {
+  // Brand colors
+  --color-brand-primary-base: #{$color-brand-primary-base};
+  --color-brand-primary-light1: #{$color-brand-primary-light1};
+  --color-brand-primary-dark1: #{$color-brand-primary-dark1};
+  
+  // Text colors
+  --color-text-primary: #{$color-neutral-900};
+  --color-text-secondary: #{$color-neutral-600};
+  --color-text-tertiary: #{$color-neutral-500};
+  --color-text-on-brand: #{$color-neutral-50};
+  --color-text-link: #{$color-brand-primary-base};
+  --color-text-disabled: #{$color-neutral-400};
+  
+  // Background colors
+  --color-bg-primary: #{$color-neutral-50};
+  --color-bg-secondary: #{$color-neutral-100};
+  --color-bg-tertiary: #{$color-neutral-200};
+  --color-bg-brand: #{$color-brand-primary-base};
+  
+  // UI element colors
+  --color-ui-border: #{$color-neutral-200};
+  --color-ui-hover: #{$color-neutral-100};
+  --color-ui-focus: rgba(#{$color-brand-primary-base}, 0.3);
+  --color-ui-disabled: #{$color-neutral-200};
+  
+  // Status colors
+  --color-status-info: #{$color-info-base};
+  --color-status-success: #{$color-success-base};
+  --color-status-warning: #{$color-warning-base};
+  --color-status-error: #{$color-error-base};
+  
+  // Status background colors
+  --color-status-info-bg: #{$color-info-light};
+  --color-status-success-bg: #{$color-success-light};
+  --color-status-warning-bg: #{$color-warning-light};
+  --color-status-error-bg: #{$color-error-light};
+}
+
+// Dark mode color mapping
+.dark-mode {
+  // Brand colors (usually the same)
+  --color-brand-primary-base: #{$color-brand-primary-base};
+  --color-brand-primary-light1: #{$color-brand-primary-light1};
+  --color-brand-primary-dark1: #{$color-brand-primary-dark1};
+  
+  // Text colors (inverted)
+  --color-text-primary: #{$color-neutral-50};
+  --color-text-secondary: #{$color-neutral-300};
+  --color-text-tertiary: #{$color-neutral-400};
+  --color-text-on-brand: #{$color-neutral-50};
+  --color-text-link: #{$color-brand-primary-light1};
+  --color-text-disabled: #{$color-neutral-600};
+  
+  // Background colors (inverted)
+  --color-bg-primary: #{$color-neutral-900};
+  --color-bg-secondary: #{$color-neutral-800};
+  --color-bg-tertiary: #{$color-neutral-700};
+  --color-bg-brand: #{$color-brand-primary-base};
+  
+  // UI element colors (inverted)
+  --color-ui-border: #{$color-neutral-700};
+  --color-ui-hover: #{$color-neutral-800};
+  --color-ui-focus: rgba(#{$color-brand-primary-base}, 0.3);
+  --color-ui-disabled: #{$color-neutral-800};
+  
+  // Status colors (generally remain the same for visibility)
+  --color-status-info: #{$color-info-light};
+  --color-status-success: #{$color-success-light};
+  --color-status-warning: #{$color-warning-base};
+  --color-status-error: #{$color-error-base};
+  
+  // Status background colors (darker in dark mode)
+  --color-status-info-bg: #0a1b33; // dark version of info-light
+  --color-status-success-bg: #0a2818; // dark version of success-light
+  --color-status-warning-bg: #332109; // dark version of warning-light
+  --color-status-error-bg: #330a14; // dark version of error-light
+}
+
+// =============================================================================
+// TYPOGRAPHY
+// =============================================================================
+
+:root {
+  // Font families
+  --font-family-primary: #{$font-family-sans};
+  --font-family-headings: #{$font-family-sans};
+  --font-family-mono: #{$font-family-mono};
+  
+  // Font sizes
+  --font-size-2xs: #{$font-size-2xs};
+  --font-size-xs: #{$font-size-xs};
+  --font-size-sm: #{$font-size-sm};
+  --font-size-base: #{$font-size-base};
+  --font-size-lg: #{$font-size-lg};
+  --font-size-xl: #{$font-size-xl};
+  --font-size-2xl: #{$font-size-2xl};
+  --font-size-3xl: #{$font-size-3xl};
+  --font-size-4xl: #{$font-size-4xl};
+  --font-size-5xl: #{$font-size-5xl};
+  --font-size-6xl: #{$font-size-6xl};
+  
+  // Font weights
+  --font-weight-light: #{$font-weight-light};
+  --font-weight-normal: #{$font-weight-normal};
+  --font-weight-medium: #{$font-weight-medium};
+  --font-weight-semibold: #{$font-weight-semibold};
+  --font-weight-bold: #{$font-weight-bold};
+  
+  // Line heights
+  --line-height-none: #{$line-height-none};
+  --line-height-tight: #{$line-height-tight};
+  --line-height-snug: #{$line-height-snug};
+  --line-height-normal: #{$line-height-normal};
+  --line-height-relaxed: #{$line-height-relaxed};
+  --line-height-loose: #{$line-height-loose};
+}
+
+// =============================================================================
+// SPACING
+// =============================================================================
+
+:root {
+  // All spacing variables are mapped directly from core 
+  --space-0: #{$space-0};
+  --space-px: #{$space-px};
+  --space-0_5: #{$space-0_5};
+  --space-1: #{$space-1};
+  --space-1_5: #{$space-1_5};
+  --space-2: #{$space-2};
+  --space-2_5: #{$space-2_5};
+  --space-3: #{$space-3};
+  --space-3_5: #{$space-3_5};
+  --space-4: #{$space-4};
+  --space-5: #{$space-5};
+  --space-6: #{$space-6};
+  --space-7: #{$space-7};
+  --space-8: #{$space-8};
+  --space-9: #{$space-9};
+  --space-10: #{$space-10};
+  --space-11: #{$space-11};
+  --space-12: #{$space-12};
+  --space-14: #{$space-14};
+  --space-16: #{$space-16};
+  --space-20: #{$space-20};
+  --space-24: #{$space-24};
+  --space-28: #{$space-28};
+  --space-32: #{$space-32};
+  --space-36: #{$space-36};
+  --space-40: #{$space-40};
+  --space-44: #{$space-44};
+  --space-48: #{$space-48};
+  --space-52: #{$space-52};
+  --space-56: #{$space-56};
+  --space-60: #{$space-60};
+  --space-64: #{$space-64};
+  --space-72: #{$space-72};
+  --space-80: #{$space-80};
+  --space-96: #{$space-96};
+  
+  // Component-specific spacing
+  --spacing-page-padding: var(--space-6);
+  --spacing-section-gap: var(--space-8);
+  --spacing-card-padding: var(--space-4);
+  --spacing-form-gap: var(--space-4);
+  --spacing-input-padding: var(--space-2) var(--space-3);
+}
+
+// =============================================================================
+// BORDERS & SHADOWS
+// =============================================================================
+
+:root {
+  // Border radius
+  --border-radius-none: #{$border-radius-none};
+  --border-radius-xs: #{$border-radius-xs};
+  --border-radius-sm: #{$border-radius-sm};
+  --border-radius-base: #{$border-radius-base};
+  --border-radius-md: #{$border-radius-md};
+  --border-radius-lg: #{$border-radius-lg};
+  --border-radius-xl: #{$border-radius-xl};
+  --border-radius-2xl: #{$border-radius-2xl};
+  --border-radius-full: #{$border-radius-full};
+  
+  // Shadows
+  --shadow-none: #{$shadow-none};
+  --shadow-xs: #{$shadow-xs};
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+  --shadow-xl: #{$shadow-xl};
+  --shadow-2xl: #{$shadow-2xl};
+  --shadow-inner: #{$shadow-inner};
+  
+  // Component specific borders
+  --border-width-default: 1px;
+  --border-width-thick: 2px;
+  --border-width-thicker: 4px;
+  --border-color-default: var(--color-ui-border);
+  --border-color-focus: var(--color-brand-primary-base);
+}
+
+// =============================================================================
+// ANIMATION
+// =============================================================================
+
+:root {
+  --transition-default: #{$transition-default};
+  --transition-slower: #{$transition-slower};
+  --transition-fast: #{$transition-fast};
+}
+
+// =============================================================================
+// Z-INDEX
+// =============================================================================
+
+:root {
+  --z-index-negative: #{$z-index-negative};
+  --z-index-0: #{$z-index-0};
+  --z-index-10: #{$z-index-10};
+  --z-index-20: #{$z-index-20};
+  --z-index-30: #{$z-index-30};
+  --z-index-40: #{$z-index-40};
+  --z-index-50: #{$z-index-50};
+  --z-index-max: #{$z-index-max};
+  
+  // Component specific z-indices
+  --z-index-dropdown: var(--z-index-10);
+  --z-index-sticky: var(--z-index-20);
+  --z-index-fixed: var(--z-index-30);
+  --z-index-modal-backdrop: var(--z-index-40);
+  --z-index-modal: var(--z-index-50);
+  --z-index-popover: var(--z-index-50);
+  --z-index-tooltip: var(--z-index-max);
+}

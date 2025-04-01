@@ -1,0 +1,88 @@
+// Card component styling
+@import '../tokens/semantic';
+@import '../mixins/layout';
+
+.card {
+  background-color: $color-background-default;
+  border-radius: 0.5rem;
+  border: 1px solid $color-border-default;
+  box-shadow: 0 2px 4px $color-elevation-shadow-1;
+  transition: all 0.2s ease-in-out;
+  overflow: hidden;
+  
+  // Card header styling
+  &__header {
+    padding: $space-4;
+    border-bottom: 1px solid $color-border-subtle;
+    
+    &--with-action {
+      @include flex-row-between;
+    }
+  }
+  
+  // Card body styling
+  &__body {
+    padding: $space-4;
+  }
+  
+  // Card footer styling
+  &__footer {
+    padding: $space-4;
+    border-top: 1px solid $color-border-subtle;
+    
+    &--with-action {
+      @include flex-row-between;
+    }
+  }
+  
+  // Card media - image container
+  &__media {
+    width: 100%;
+    
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  }
+  
+  // Card hover effect
+  &:hover {
+    box-shadow: 0 4px 8px $color-elevation-shadow-2;
+  }
+  
+  // Card padding variations
+  &--compact {
+    .card__header,
+    .card__body,
+    .card__footer {
+      padding: $space-2;
+    }
+  }
+  
+  &--spacious {
+    .card__header,
+    .card__body,
+    .card__footer {
+      padding: $space-6;
+    }
+  }
+  
+  // Special card variations
+  &--outlined {
+    box-shadow: none;
+  }
+  
+  &--elevated {
+    box-shadow: 0 4px 12px $color-elevation-shadow-2;
+  }
+  
+  &--interactive {
+    cursor: pointer;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px $color-elevation-shadow-2;
+    }
+  }
+}

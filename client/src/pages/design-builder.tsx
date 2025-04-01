@@ -18,7 +18,8 @@ import { InfoIcon, XIcon, ChevronRightIcon } from "lucide-react";
 
 export default function DesignBuilder() {
   const { toast } = useToast();
-  const { designSystem: appliedDesignSystem, draftDesignSystem, updateDesignSystem, updateDraftDesignSystem, applyDraftChanges, isLoading } = useTheme();
+  const { designSystem: appliedDesignSystem, draftDesignSystem, setDesignSystem, updateDraftDesignSystem, resetDraftDesignSystem, applyDraftChanges, isDarkMode } = useTheme();
+  const isLoading = false; // hardcoded for now since we don't have this in the context
   
   // Ref to track if typography settings have been loaded
   const typographySettingsLoaded = useRef(false);
@@ -216,26 +217,46 @@ export default function DesignBuilder() {
     <div className="flex h-screen">
       <Sidebar />
       <main className="design-builder--main flex-1 p-8 overflow-auto">
-        <div class="savebar">
+        <div className="savebar">
           <Button onClick={handleSaveChanges}>
             Save Changes
           </Button>
         </div>
         <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">Design Builder</h1>
-              <p className="text-muted-foreground">
-                Control the overall design system of your application
-              </p>
-            </div>
-          </div>
 
           {/* Three-column layout: 1/3 for settings, 2/3 for preview */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left column: All customization options in a single container */}
             <div className="space-y-6">
               <div>
+                <h1 className="">Design Builder</h1>
+                <p className="text-muted-foreground">
+                  Control the overall design system of your application
+                </p>
+              </div>
+              
+              <div>
+                {/* Color System Section */}
+                <div className="border-b pb-6 mb-6">
+                  <h2 className="text-xl font-semibold mb-4">Color System</h2>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-medium mb-4">Base Colors</h3>
+                      <div className="grid gap-4">
+                        {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
+                          <div key={key} className="space-y-2">
+                            <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
+                            <ImprovedColorPicker
+                              value={color}
+                              onChange={(value) => handleColorChange(key, value)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 {/* Theme Settings */}
                 <div className="border-b pb-6 mb-6">
                   <h2 className="text-xl font-semibold mb-4">Theme Settings</h2>
@@ -419,27 +440,6 @@ export default function DesignBuilder() {
                     </div>
                   </div>
                 </div>
-
-                {/* Color System Section */}
-                <div>
-                  <h2 className="text-xl font-semibold mb-4">Color System</h2>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="font-medium mb-4">Base Colors</h3>
-                      <div className="grid gap-4">
-                        {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
-                          <div key={key} className="space-y-2">
-                            <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
-                            <ImprovedColorPicker
-                              value={color}
-                              onChange={(value) => handleColorChange(key, value)}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -448,6 +448,7 @@ export default function DesignBuilder() {
               <Card className="p-6 h-full">
                 <h2 className="text-xl font-semibold mb-6">Preview</h2>
                 <div className="space-y-10">
+                  
                   {/* Color Preview Section */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium border-b pb-2">Color System Preview</h3>

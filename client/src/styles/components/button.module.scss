@@ -1,0 +1,132 @@
+// Import semantic variables
+@import '../tokens/semantic';
+@import '../mixins/responsive';
+
+// Button base styles
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-weight: $font-weight-medium;
+  transition: $transition-default;
+  cursor: pointer;
+  text-align: center;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &:focus-visible {
+    outline: 2px solid $color-component-ring;
+    outline-offset: 2px;
+  }
+}
+
+// Button size variations
+.button--default {
+  height: $space-10;
+  padding: 0 $space-4;
+  border-radius: $border-radius-base;
+  font-size: $font-size-base;
+  
+  @include respond-to('tablet') {
+    height: $space-11;
+    padding: 0 $space-5;
+  }
+}
+
+.button--small {
+  height: $space-8;
+  padding: 0 $space-3;
+  border-radius: $border-radius-small;
+  font-size: $font-size-sm;
+  
+  @include respond-to('tablet') {
+    height: $space-9;
+  }
+}
+
+.button--large {
+  height: $space-12;
+  padding: 0 $space-6;
+  border-radius: $border-radius-large;
+  font-size: $font-size-lg;
+  
+  @include respond-to('tablet') {
+    height: $space-14;
+  }
+}
+
+// Button variant styles
+.button--primary {
+  background-color: $color-brand-primary-base;
+  color: $color-text-on-brand;
+  border: 1px solid transparent;
+  
+  &:hover:not(:disabled) {
+    background-color: $color-brand-primary-dark1;
+  }
+  
+  &:active:not(:disabled) {
+    background-color: darken($color-brand-primary-dark1, 5%);
+  }
+}
+
+.button--secondary {
+  background-color: $color-component-card;
+  color: $color-component-card-foreground;
+  border: 1px solid $color-neutral-border;
+  
+  &:hover:not(:disabled) {
+    background-color: $color-neutral-muted;
+    border-color: $color-neutral-muted-foreground;
+  }
+  
+  &:active:not(:disabled) {
+    background-color: darken($color-neutral-muted, 5%);
+  }
+}
+
+.button--ghost {
+  background-color: transparent;
+  color: $color-neutral-foreground;
+  border: 1px solid transparent;
+  
+  &:hover:not(:disabled) {
+    background-color: $color-neutral-muted;
+  }
+  
+  &:active:not(:disabled) {
+    background-color: darken($color-neutral-muted, 5%);
+  }
+}
+
+.button--destructive {
+  background-color: $color-component-destructive;
+  color: $color-component-destructive-foreground;
+  border: 1px solid transparent;
+  
+  &:hover:not(:disabled) {
+    background-color: darken($color-component-destructive, 5%);
+  }
+  
+  &:active:not(:disabled) {
+    background-color: darken($color-component-destructive, 10%);
+  }
+}
+
+// Button modifiers
+.button--full-width {
+  width: 100%;
+}
+
+.button--with-icon {
+  gap: $space-2;
+  
+  svg {
+    height: $space-4;
+    width: $space-4;
+  }
+}

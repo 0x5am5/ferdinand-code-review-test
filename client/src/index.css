@@ -1,3 +1,6 @@
+/* Import our custom SCSS styles - will coexist with Tailwind during transition */
+@import './styles/main.scss';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -96,10 +99,6 @@
   
   .bg-primary {
     background-color: hsl(var(--primary));
-  }
-
-  .bg-primary\/90 {
-    background-color: hsl(var(--primary) / 0.9);
   }
 }
 

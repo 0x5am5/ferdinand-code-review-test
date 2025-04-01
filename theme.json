@@ -9,7 +9,7 @@
     "heading": "ivypresto-display"
   },
   "colors": {
-    "primary": "hsl(205, 100%, 50%)",
+    "primary": "#2a79bf",
     "background": "#ffffff",
     "foreground": "#000000",
     "muted": "#f1f5f9",
@@ -22,5 +22,8 @@
     "destructive-foreground": "#ffffff",
     "border": "#e2e8f0",
     "ring": "hsl(205, 100%, 50%)"
+  },
+  "typography_extended": {
+    "headingScale": 1.2
   }
 }

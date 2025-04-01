@@ -1,0 +1,338 @@
+// src/styles/tokens/_core.scss
+// Core design tokens - raw values that don't reference other variables
+
+// Brand Colors
+$color-brand-primary-base: #3366FF;
+$color-brand-primary-light1: #668AFF;
+$color-brand-primary-light2: #99B1FF;
+$color-brand-primary-dark1: #1A40CC;
+$color-brand-primary-dark2: #051A80;
+
+$color-brand-secondary-base: #6554C0;
+$color-brand-secondary-light1: #8F7BD0;
+$color-brand-secondary-light2: #B9A7E0;
+$color-brand-secondary-dark1: #4A3C9B;
+$color-brand-secondary-dark2: #2E2463;
+
+// Neutral Colors
+$color-neutral-0: #FFFFFF;    // Pure white or lightest
+$color-neutral-100: #F4F5F7;
+$color-neutral-200: #E1E4E8;
+$color-neutral-300: #CBD2D9;
+$color-neutral-400: #9AA5B1;
+$color-neutral-500: #7B8794;
+$color-neutral-600: #616E7C;
+$color-neutral-700: #52606D;
+$color-neutral-800: #3E4C59;
+$color-neutral-900: #1F2933;   // Near black or darkest
+
+// Interactive Colors – Success
+$color-interactive-success-base: #36B37E;
+$color-interactive-success-light1: #79F2C0;
+$color-interactive-success-light2: #ABF5D1;
+$color-interactive-success-dark1: #006644;
+$color-interactive-success-dark2: #004D40;
+
+// Interactive Colors – Warning
+$color-interactive-warning-base: #FFAB00;
+$color-interactive-warning-light1: #FFD580;
+$color-interactive-warning-light2: #FFF0B3;
+$color-interactive-warning-dark1: #CC8800;
+$color-interactive-warning-dark2: #A36700;
+
+// Interactive Colors – Error
+$color-interactive-error-base: #FF5630;
+$color-interactive-error-light1: #FF8F73;
+$color-interactive-error-light2: #FFBDAD;
+$color-interactive-error-dark1: #DE350B;
+$color-interactive-error-dark2: #BF2600;
+
+// src/styles/tokens/_semantic.scss
+// Semantic variables that map to core variables
+@import './core';
+
+// -------------------------------------------------------------
+// SEMANTIC TOKENS – Mapped to Raw Color Variables
+// These are the tokens used in UI design, referencing raw values
+// -------------------------------------------------------------
+
+// -----------------
+// Backgrounds
+// -----------------
+$color-background-default:           $color-neutral-0;                     // Main UI background
+$color-background-subtle:            $color-neutral-100;                  // Cards, soft sections
+$color-background-accent:            $color-brand-secondary-light1;      // Decorative areas
+$color-background-inverse:           $color-neutral-900;                 // Footers, dark areas
+$color-background-brand:             $color-brand-primary-base;          // Hero sections, highlights
+
+// -----------------
+// Text
+// -----------------
+$color-text-primary:                 $color-neutral-900;                 // Default body copy
+$color-text-secondary:               $color-neutral-700;                 // Subheadings, muted content
+$color-text-tertiary:                $color-neutral-500;                 // Labels, disabled states
+$color-text-inverse:                 $color-neutral-0;                   // On dark backgrounds
+$color-text-link-default:            $color-brand-primary-base;          // Default link color
+$color-text-link-hover:              $color-brand-primary-dark1;         // Link hover state
+$color-text-link-visited:            $color-brand-primary-dark2;         // Optional visited styling
+$color-text-accent:                  $color-brand-secondary-base;        // Branded emphasis
+$color-text-error:                   $color-interactive-error-base;      // Error messages
+$color-text-success:                 $color-interactive-success-base;    // Confirmation text
+
+// -----------------
+// Borders
+// -----------------
+$color-border-default:               $color-neutral-200;                 // General border
+$color-border-subtle:                $color-neutral-100;                 // Dividers
+$color-border-strong:                $color-neutral-300;                 // Card outlines
+$color-border-active:                $color-brand-primary-base;          // Focused input or active state
+$color-border-error:                 $color-interactive-error-base;      // Input error states
+$color-border-success:               $color-interactive-success-base;    // Valid input states
+
+// -----------------
+// Buttons – Primary
+// -----------------
+$color-button-primary-bg:            $color-brand-primary-base;          // Main action background
+$color-button-primary-text:          $color-neutral-0;                   // Text on primary buttons
+$color-button-primary-hover:         $color-brand-primary-dark1;         // Hover state
+$color-button-primary-disabled:      $color-neutral-300;                 // Disabled button
+
+// -----------------
+// Buttons – Secondary
+// -----------------
+$color-button-secondary-bg:          $color-neutral-100;                 // Subtle button bg
+$color-button-secondary-text:        $color-brand-primary-base;          // Text
+$color-button-secondary-hover:       $color-neutral-200;                 // Hover state
+$color-button-secondary-border:      $color-neutral-300;                 // Border
+
+// -----------------
+// Buttons – Tertiary (Ghost)
+// -----------------
+$color-button-tertiary-text:         $color-brand-primary-base;          // Text only
+$color-button-tertiary-hover:        $color-brand-primary-light1;        // On hover
+$color-button-tertiary-border:       $color-neutral-200;                 // Optional outline
+
+// -----------------
+// Inputs
+// -----------------
+$color-input-bg:                     $color-neutral-0;                   // Input background
+$color-input-border:                 $color-neutral-300;                 // Default border
+$color-input-focus:                  $color-brand-primary-base;          // Focus outline
+$color-input-placeholder:            $color-neutral-500;                 // Placeholder text
+$color-input-disabled:               $color-neutral-100;                 // Disabled input
+
+// -----------------
+// Tags & Badges
+// -----------------
+$color-tag-info-bg:                  $color-brand-secondary-light2;      // Info tag bg
+$color-tag-info-text:                $color-brand-secondary-dark2;       // Info tag text
+$color-tag-success-bg:               $color-interactive-success-light1;
+$color-tag-error-bg:                 $color-interactive-error-light1;
+$color-tag-warning-bg:               $color-interactive-warning-light1;
+
+// -----------------
+// Feedback States
+// -----------------
+$color-feedback-success-bg:          $color-interactive-success-light1;
+$color-feedback-success-text:        $color-interactive-success-dark2;
+$color-feedback-success-icon:        $color-interactive-success-base;
+
+$color-feedback-error-bg:            $color-interactive-error-light1;
+$color-feedback-error-text:          $color-interactive-error-dark2;
+$color-feedback-error-icon:          $color-interactive-error-base;
+
+$color-feedback-warning-bg:          $color-interactive-warning-light1;
+$color-feedback-warning-text:        $color-interactive-warning-dark2;
+$color-feedback-warning-icon:        $color-interactive-warning-base;
+
+$color-feedback-info-bg:             $color-brand-secondary-light1;
+$color-feedback-info-text:           $color-brand-secondary-dark1;
+$color-feedback-info-icon:           $color-brand-secondary-base;
+
+// -----------------
+// Overlays & Elevation
+// -----------------
+$color-overlay-backdrop:             rgba($color-neutral-900, 0.5);      // Modal background
+$color-elevation-shadow-1:           rgba($color-neutral-900, 0.05);     // Light shadow
+$color-elevation-shadow-2:           rgba($color-neutral-900, 0.1);      // Medium shadow
+
+// -----------------
+// Charts / Data Viz (Optional)
+// -----------------
+$color-chart-primary:                $color-brand-primary-base;
+$color-chart-secondary:              $color-brand-secondary-base;
+$color-chart-positive:               $color-interactive-success-base;
+$color-chart-negative:               $color-interactive-error-base;
+$color-chart-neutral:                $color-neutral-400;
+
+// src/styles/global.scss
+// Main import file
+@import './reset';
+@import './tokens/semantic';
+@import './mixins/responsive';
+@import './mixins/typography';
+
+// Global styles
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, 
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  color: $color-text-primary;
+  background-color: $color-background-default;
+  line-height: 1.5;
+}
+
+// Example component SCSS module
+// src/components/Card/Card.module.scss
+@import '../../styles/tokens/semantic';
+
+.card {
+  border-radius: 8px;
+  border: 1px solid $color-border-default;
+  background-color: $color-background-default;
+  box-shadow: 0 1px 2px $color-elevation-shadow-1;
+  padding: 1.5rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  
+  &:hover {
+    border-color: $color-border-strong;
+  }
+}
+
+.cardHeader {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cardTitle {
+  color: $color-text-primary;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cardContent {
+  color: $color-text-secondary;
+}
+
+// Example Button component SCSS module
+// src/components/Button/Button.module.scss
+@import '../../styles/tokens/semantic';
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s;
+  padding: 0.5rem 1rem;
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($color-brand-primary-base, 0.3);
+  }
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+.primary {
+  background-color: $color-button-primary-bg;
+  color: $color-button-primary-text;
+  border: none;
+  
+  &:hover:not(:disabled) {
+    background-color: $color-button-primary-hover;
+  }
+  
+  &:disabled {
+    background-color: $color-button-primary-disabled;
+  }
+}
+
+.secondary {
+  background-color: $color-button-secondary-bg;
+  color: $color-button-secondary-text;
+  border: 1px solid $color-button-secondary-border;
+  
+  &:hover:not(:disabled) {
+    background-color: $color-button-secondary-hover;
+  }
+}
+
+.ghost {
+  background-color: transparent;
+  color: $color-button-tertiary-text;
+  border: none;
+  
+  &:hover:not(:disabled) {
+    background-color: $color-button-tertiary-hover;
+  }
+}
+
+// Example React component with SCSS Module
+// src/components/Card/Card.tsx
+import React from 'react';
+import styles from './Card.module.scss';
+
+type CardProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ children, className = '', ...props }, ref) => (
+    <div ref={ref} className={`${styles.card} ${className}`} {...props}>
+      {children}
+    </div>
+  )
+);
+
+export const CardHeader = ({ children, className = '', ...props }) => (
+  <div className={`${styles.cardHeader} ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+export const CardTitle = ({ children, className = '', ...props }) => (
+  <h3 className={`${styles.cardTitle} ${className}`} {...props}>
+    {children}
+  </h3>
+);
+
+export const CardContent = ({ children, className = '', ...props }) => (
+  <div className={`${styles.cardContent} ${className}`} {...props}>
+    {children}
+  </div>
+);
+
+// Button component example
+// src/components/Button/Button.tsx
+import React from 'react';
+import styles from './Button.module.scss';
+
+type ButtonProps = {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  className?: string;
+} & React.ButtonHTMLAttributes<HTMLButtonElement>;
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ children, variant = 'primary', className = '', ...props }, ref) => {
+    const variantClass = styles[variant];
+    
+    return (
+      <button 
+        ref={ref}
+        className={`${styles.button} ${variantClass} ${className}`}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
+);

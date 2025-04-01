@@ -1,0 +1,144 @@
+// Typography Mixins
+// These mixins provide consistent typography styles
+
+@import '../tokens/semantic';
+
+// Headings
+@mixin heading-1 {
+  font-family: var(--font-family-headings);
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.02em;
+  
+  @include respond-to('tablet') {
+    font-size: var(--font-size-5xl);
+  }
+  
+  @include respond-to('desktop') {
+    font-size: var(--font-size-6xl);
+  }
+}
+
+@mixin heading-2 {
+  font-family: var(--font-family-headings);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.01em;
+  
+  @include respond-to('tablet') {
+    font-size: var(--font-size-4xl);
+  }
+}
+
+@mixin heading-3 {
+  font-family: var(--font-family-headings);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  
+  @include respond-to('tablet') {
+    font-size: var(--font-size-3xl);
+  }
+}
+
+@mixin heading-4 {
+  font-family: var(--font-family-headings);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  
+  @include respond-to('tablet') {
+    font-size: var(--font-size-2xl);
+  }
+}
+
+@mixin heading-5 {
+  font-family: var(--font-family-headings);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  
+  @include respond-to('tablet') {
+    font-size: var(--font-size-xl);
+  }
+}
+
+@mixin heading-6 {
+  font-family: var(--font-family-headings);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  
+  @include respond-to('tablet') {
+    font-size: var(--font-size-lg);
+  }
+}
+
+// Body text
+@mixin body-lg {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+@mixin body-md {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+@mixin body-sm {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+@mixin body-xs {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+// Special text styles
+@mixin label {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none);
+  letter-spacing: 0.01em;
+}
+
+@mixin caption {
+  font-family: var(--font-family-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-tertiary);
+}
+
+@mixin monospace {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+// Text truncation
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Multi-line truncation
+@mixin truncate-lines($lines: 2) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
