@@ -139,7 +139,7 @@ $font-size-lg:                   $font-size-md * $font-scale-ratio;  // h3
 $font-size-md:                   $font-size-sm * $font-scale-ratio;  // h4
 $font-size-sm:                   $font-size-base * $font-scale-ratio;  // h5
 $font-size-xs:                   $font-size-base;  // body
-$font-size-xxs:                  ;  // caption/small
+$font-size-xxs:                  $font-size-base * 0.875;  // caption/small
 
 // -----------------
 // Font Weights
