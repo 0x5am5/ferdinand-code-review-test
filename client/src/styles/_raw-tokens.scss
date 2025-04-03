@@ -51,16 +51,18 @@ $transition-base:                  all $transition-duration-base $transition-eas
 // Brand Colors
 // -----------------
 $color-brand-primary-base:         blue;
-$color-brand-primary-lighter1:     lighten($color-brand-primary-base, 20%);
-$color-brand-primary-lighter2:     lighten($color-brand-primary-base, 40%);
-$color-brand-primary-darker1:      darken($color-brand-primary-base, 20%);
-$color-brand-primary-darker2:      darken($color-brand-primary-base, 40%);
+@use "sass:color";
+
+$color-brand-primary-lighter1:     color.adjust($color-brand-primary-base, $lightness: 20%);
+$color-brand-primary-lighter2:     color.adjust($color-brand-primary-base, $lightness: 40%);
+$color-brand-primary-darker1:      color.adjust($color-brand-primary-base, $lightness: -20%);
+$color-brand-primary-darker2:      color.adjust($color-brand-primary-base, $lightness: -40%);
 
 $color-brand-secondary-base:       red;
-$color-brand-secondary-lighter1:   lighten($color-brand-secondary-base, 20%);
-$color-brand-secondary-lighter2:   lighten($color-brand-secondary-base, 40%);
-$color-brand-secondary-darker1:    darken($color-brand-secondary-base, 20%);
-$color-brand-secondary-darker2:    darken($color-brand-secondary-base, 40%);
+$color-brand-secondary-lighter1:   color.adjust($color-brand-secondary-base, $lightness: 20%);
+$color-brand-secondary-lighter2:   color.adjust($color-brand-secondary-base, $lightness: 40%);
+$color-brand-secondary-darker1:    color.adjust($color-brand-secondary-base, $lightness: -20%);
+$color-brand-secondary-darker2:    color.adjust($color-brand-secondary-base, $lightness: -40%);
 
 // -----------------
 // Neutral Colors (Grayscale)
@@ -133,12 +135,12 @@ $line-height-ratio:              1.6;
 // -----------------
 // Font Sizes (calculated from base * ratio)
 // -----------------
-$font-size-xxl:                  $font-size-xl * $font-scale-ratio;  // e.g. h1
-$font-size-xl:                   $font-size-lg * $font-scale-ratio;  // h2
-$font-size-lg:                   $font-size-md * $font-scale-ratio;  // h3
-$font-size-md:                   $font-size-sm * $font-scale-ratio;  // h4
-$font-size-sm:                   $font-size-base * $font-scale-ratio;  // h5
 $font-size-xs:                   $font-size-base;  // body
+$font-size-sm:                   $font-size-base * $font-scale-ratio;  // h5
+$font-size-md:                   $font-size-sm * $font-scale-ratio;  // h4
+$font-size-lg:                   $font-size-md * $font-scale-ratio;  // h3
+$font-size-xl:                   $font-size-lg * $font-scale-ratio;  // h2
+$font-size-xxl:                  $font-size-xl * $font-scale-ratio;  // h1
 $font-size-xxs:                  $font-size-base * 0.875;  // caption/small
 
 // -----------------
