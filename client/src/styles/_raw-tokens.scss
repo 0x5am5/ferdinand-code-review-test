@@ -50,67 +50,67 @@ $transition-base:                  all $transition-duration-base $transition-eas
 // -----------------
 // Brand Colors
 // -----------------
-$color-brand-primary-base:         ;
-$color-brand-primary-lighter1:     ;
-$color-brand-primary-lighter2:     ;
-$color-brand-primary-darker1:      ;
-$color-brand-primary-darker2:      ;
+$color-brand-primary-base:         blue;
+$color-brand-primary-lighter1:     lighten($color-brand-primary-base, 20%);
+$color-brand-primary-lighter2:     lighten($color-brand-primary-base, 40%);
+$color-brand-primary-darker1:      darken($color-brand-primary-base, 20%);
+$color-brand-primary-darker2:      darken($color-brand-primary-base, 40%);
 
-$color-brand-secondary-base:       ;
-$color-brand-secondary-lighter1:   ;
-$color-brand-secondary-lighter2:   ;
-$color-brand-secondary-darker1:    ;
-$color-brand-secondary-darker2:    ;
+$color-brand-secondary-base:       red;
+$color-brand-secondary-lighter1:   lighten($color-brand-secondary-base, 20%);
+$color-brand-secondary-lighter2:   lighten($color-brand-secondary-base, 40%);
+$color-brand-secondary-darker1:    darken($color-brand-secondary-base, 20%);
+$color-brand-secondary-darker2:    darken($color-brand-secondary-base, 40%);
 
 // -----------------
 // Neutral Colors (Grayscale)
 // -----------------
-$color-neutral-0:                  ;
-$color-neutral-100:                ;
-$color-neutral-200:                ;
-$color-neutral-300:                ;
-$color-neutral-400:                ;
-$color-neutral-500:                ;
-$color-neutral-600:                ;
-$color-neutral-700:                ;
-$color-neutral-800:                ;
-$color-neutral-900:                ;
+$color-neutral-0:                  #ffffff;
+$color-neutral-100:                #f8f9fa;
+$color-neutral-200:                #e9ecef;
+$color-neutral-300:                #dee2e6;
+$color-neutral-400:                #ced4da;
+$color-neutral-500:                #adb5bd;
+$color-neutral-600:                #6c757d;
+$color-neutral-700:                #495057;
+$color-neutral-800:                #343a40;
+$color-neutral-900:                #212529;
 
 // -----------------
 // Interactive Colors – Success
 // -----------------
-$color-interactive-success-base:       ;
-$color-interactive-success-lighter1:   ;
-$color-interactive-success-lighter2:   ;
-$color-interactive-success-darker1:    ;
-$color-interactive-success-darker2:    ;
+$color-interactive-success-base:       #28a745;
+$color-interactive-success-lighter1:   lighten($color-interactive-success-base, 20%);
+$color-interactive-success-lighter2:   lighten($color-interactive-success-base, 40%);
+$color-interactive-success-darker1:    darken($color-interactive-success-base, 20%);
+$color-interactive-success-darker2:    darken($color-interactive-success-base, 40%);
 
 // -----------------
 // Interactive Colors – Warning
 // -----------------
-$color-interactive-warning-base:       ;
-$color-interactive-warning-lighter1:   ;
-$color-interactive-warning-lighter2:   ;
-$color-interactive-warning-darker1:    ;
-$color-interactive-warning-darker2:    ;
+$color-interactive-warning-base:       #ffc107;
+$color-interactive-warning-lighter1:   lighten($color-interactive-warning-base, 20%);
+$color-interactive-warning-lighter2:   lighten($color-interactive-warning-base, 40%);
+$color-interactive-warning-darker1:    darken($color-interactive-warning-base, 20%);
+$color-interactive-warning-darker2:    darken($color-interactive-warning-base, 40%);
 
 // -----------------
 // Interactive Colors – Error
 // -----------------
-$color-interactive-error-base:         ;
-$color-interactive-error-lighter1:     ;
-$color-interactive-error-lighter2:     ;
-$color-interactive-error-darker1:      ;
-$color-interactive-error-darker2:      ;
+$color-interactive-error-base:         #dc3545;
+$color-interactive-error-lighter1:     lighten($color-interactive-error-base, 20%);
+$color-interactive-error-lighter2:     lighten($color-interactive-error-base, 40%);
+$color-interactive-error-darker1:      darken($color-interactive-error-base, 20%);
+$color-interactive-error-darker2:      darken($color-interactive-error-base, 40%);
 
 // -----------------
 // Interactive Colors – Links
 // -----------------
-$color-interactive-link-base:         ;
-$color-interactive-link-lighter1:     ;
-$color-interactive-link-lighter2:     ;
-$color-interactive-link-darker1:      ;
-$color-interactive-link-darker2:      ;
+$color-interactive-link-base:          #007bff;
+$color-interactive-link-lighter1:      lighten($color-interactive-link-base, 20%);
+$color-interactive-link-lighter2:      lighten($color-interactive-link-base, 40%);
+$color-interactive-link-darker1:       darken($color-interactive-link-base, 20%);
+$color-interactive-link-darker2:       darken($color-interactive-link-base, 40%);
 
 // =============================================================
 // TYPOGRAPHY TOKENS
