@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -15,11 +14,33 @@ import { useTheme, DesignSystem } from "../contexts/ThemeContext";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { InfoIcon, CheckIcon, XIcon, ChevronRightIcon } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  InfoIcon, 
+  CheckIcon, 
+  XIcon, 
+  ChevronRightIcon, 
+  SaveIcon, 
+  UndoIcon, 
+  RedoIcon, 
+  RotateCcwIcon,
+  AlertTriangleIcon 
+} from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useLocation } from "wouter";
 
 export default function DesignBuilder() {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const { designSystem: appliedDesignSystem, draftDesignSystem, updateDesignSystem, updateDraftDesignSystem, applyDraftChanges, isLoading } = useTheme();
+  
+  // History management for undo/redo functionality
+  const [history, setHistory] = useState<DesignSystem[]>([]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
+  const [showLeaveAlert, setShowLeaveAlert] = useState(false);
+  const [navTarget, setNavTarget] = useState("");
   
   // Ref to track if typography settings have been loaded
   const typographySettingsLoaded = useRef(false);
@@ -83,31 +104,104 @@ export default function DesignBuilder() {
     loadTypographySettings();
   }, [isLoading]);
   
+  // Initialize history with the loaded design system
+  useEffect(() => {
+    if (!isLoading && draftDesignSystem && history.length === 0) {
+      setHistory([draftDesignSystem]);
+      setCurrentHistoryIndex(0);
+    }
+  }, [isLoading, draftDesignSystem, history.length]);
+  
+  // Confirm navigation if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+      return undefined;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+  
   // Use the draft for display purposes
   const designSystem = draftDesignSystem || appliedDesignSystem;
   
+  // Add change to history
+  const addToHistory = useCallback((newState: DesignSystem) => {
+    setHistory(prev => {
+      // Slice history to current index to remove any "future" history
+      const newHistory = [...prev.slice(0, currentHistoryIndex + 1), JSON.parse(JSON.stringify(newState))];
+      // Keep only last 20 states to avoid memory issues
+      return newHistory.slice(-20);
+    });
+    setCurrentHistoryIndex(prev => Math.min(prev + 1, 19));
+    setHasUnsavedChanges(true);
+  }, [currentHistoryIndex]);
+  
   const handleThemeChange = (key: string, value: any) => {
+    const updatedDesignSystem = { 
+      ...designSystem,
+      theme: {
+        ...designSystem.theme,
+        [key]: value
+      }
+    };
+    
     updateDraftDesignSystem({ 
       theme: {
         ...designSystem.theme,
         [key]: value
       }
     });
+    
+    addToHistory(updatedDesignSystem);
   };
   
   const handleColorChange = (key: string, value: string) => {
+    const updatedDesignSystem = { 
+      ...designSystem,
+      colors: {
+        ...designSystem.colors,
+        [key]: value
+      }
+    };
+    
     updateDraftDesignSystem({ 
       colors: {
         ...designSystem.colors,
         [key]: value
       }
     });
+    
+    addToHistory(updatedDesignSystem);
+  };
+  
+  const handleRawTokenChange = (category: string, key: string, value: number) => {
+    // This is a placeholder for the raw token changes that would need to be implemented
+    console.log(`Changed ${category} token: ${key} to ${value}`);
+    setHasUnsavedChanges(true);
   };
   
   // Updated to handle typography changes, including properties not directly in the typography object
   const handleTypographyChange = (key: string, value: string | number) => {
+    let updatedDesignSystem = { ...designSystem };
+    
     // First, handle the basic typography settings (font family)
     if (key === 'primary' || key === 'heading') {
+      updatedDesignSystem = {
+        ...designSystem,
+        typography: {
+          ...designSystem.typography,
+          [key]: value
+        }
+      };
+      
       updateDraftDesignSystem({ 
         typography: {
           ...designSystem.typography,
@@ -130,6 +224,8 @@ export default function DesignBuilder() {
       // Apply the setting to the document for immediate visual feedback
       applyTypographySetting(key, value);
     }
+    
+    addToHistory(updatedDesignSystem);
   };
   
   // Function to apply typography settings to the document
@@ -163,6 +259,41 @@ export default function DesignBuilder() {
     }
   };
 
+  // Undo last change
+  const handleUndo = () => {
+    if (currentHistoryIndex > 0) {
+      const previousState = history[currentHistoryIndex - 1];
+      updateDraftDesignSystem(previousState);
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+      setHasUnsavedChanges(true);
+    }
+  };
+  
+  // Redo previously undone change
+  const handleRedo = () => {
+    if (currentHistoryIndex < history.length - 1) {
+      const nextState = history[currentHistoryIndex + 1];
+      updateDraftDesignSystem(nextState);
+      setCurrentHistoryIndex(currentHistoryIndex + 1);
+      setHasUnsavedChanges(true);
+    }
+  };
+  
+  // Discard all unsaved changes
+  const handleDiscardChanges = () => {
+    if (appliedDesignSystem) {
+      updateDraftDesignSystem(appliedDesignSystem);
+      setHistory([appliedDesignSystem]);
+      setCurrentHistoryIndex(0);
+      setHasUnsavedChanges(false);
+      
+      toast({
+        title: "Changes discarded",
+        description: "All changes have been reset to the last saved state"
+      });
+    }
+  };
+
   const handleSaveChanges = async () => {
     try {
       // First, apply draft changes to the main design system
@@ -185,6 +316,8 @@ export default function DesignBuilder() {
         }
       }
       
+      setHasUnsavedChanges(false);
+      
       toast({
         title: "Design system saved",
         description: "All your design system changes have been applied"
@@ -196,6 +329,23 @@ export default function DesignBuilder() {
         description: "Main design settings saved, but typography details could not be saved",
         variant: "destructive"
       });
+    }
+  };
+  
+  // Handle navigation with confirmation if needed
+  const handleNavigation = (path: string) => {
+    if (hasUnsavedChanges) {
+      setNavTarget(path);
+      setShowLeaveAlert(true);
+    } else {
+      navigate(path);
+    }
+  };
+  
+  const confirmNavigation = () => {
+    setShowLeaveAlert(false);
+    if (navTarget) {
+      navigate(navTarget);
     }
   };
 
@@ -216,61 +366,72 @@ export default function DesignBuilder() {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <main className="p-8 overflow-auto">
-        <div className="builder--controls">
-          <Button onClick={handleSaveChanges}>
-            Save Changes
-          </Button>
-        </div>
-        
-        <div className="flex-1">
-          {/* Three-column layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-            {/* Left column: Editable fields (1 column) */}
-            <div className="lg:col-span-1">
-              <h1>Design Builder</h1>
+      <main className="flex-1 p-8 overflow-auto">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">Design Builder</h1>
               <p className="text-muted-foreground">
                 Control the overall design system of your application
               </p>
-                <div className="space-y-6">
-                  {/* Color System Section */}
-                  <div className="border-b pb-4">
-                    <h3 className="text-lg font-medium mb-3">Color System</h3>
-                    <div className="space-y-4">
-                      {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
-                        <div key={key} className="space-y-2">
-                          <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
-                          <ColorPicker
-                            value={color}
-                            onChange={(value) => handleColorChange(key, value)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Theme Settings Section */}
-                  <div className="border-b pb-4">
-                    <h3 className="text-lg font-medium mb-3">Theme Settings</h3>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
-                        <div className="pt-2 pb-2">
-                          <Slider 
-                            id="radius"
-                            defaultValue={[designSystem?.theme.radius || 0.5]} 
-                            max={2} 
-                            step={0.1}
-                            onValueChange={(value) => handleThemeChange('radius', value[0])}
-                          />
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Controls the roundness of UI elements
-                        </p>
-                      </div>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleUndo}
+                disabled={currentHistoryIndex <= 0}
+                title="Undo"
+              >
+                <UndoIcon className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={handleRedo}
+                disabled={currentHistoryIndex >= history.length - 1}
+                title="Redo"
+              >
+                <RedoIcon className="h-4 w-4" />
+              </Button>
+              {hasUnsavedChanges && (
+                <Button 
+                  variant="outline" 
+                  onClick={handleDiscardChanges}
+                  className="gap-2"
+                >
+                  <RotateCcwIcon className="h-4 w-4" />
+                  Discard Changes
+                </Button>
+              )}
+              <Button 
+                onClick={handleSaveChanges}
+                className="gap-2"
+                disabled={!hasUnsavedChanges}
+              >
+                <SaveIcon className="h-4 w-4" />
+                Save Changes
+              </Button>
+            </div>
+          </div>
 
+          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid grid-cols-4 mb-8">
+              <TabsTrigger value="general">General</TabsTrigger>
+              <TabsTrigger value="colors">Colors</TabsTrigger>
+              <TabsTrigger value="typography">Typography</TabsTrigger>
+              <TabsTrigger value="borders">Borders</TabsTrigger>
+            </TabsList>
+            
+            {/* Main content with all tabs */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left column: Settings controls (1 column) */}
+              <div className="lg:col-span-1">
+                <Card className="p-6">
+                  {/* General Tab Content */}
+                  <TabsContent value="general" className="mt-0">
+                    <h2 className="text-xl font-semibold mb-4">General Settings</h2>
+                    <div className="space-y-6">
                       <div>
                         <Label htmlFor="animation">Animation Style</Label>
                         <Select 
@@ -291,95 +452,44 @@ export default function DesignBuilder() {
                           Controls the animation style
                         </p>
                       </div>
+                      
+                      <div>
+                        <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
+                        <div className="pt-2 pb-2">
+                          <Slider 
+                            id="radius"
+                            defaultValue={[designSystem?.theme.radius || 0.5]} 
+                            max={2} 
+                            step={0.1}
+                            onValueChange={(value) => handleThemeChange('radius', value[0])}
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Controls the roundness of UI elements
+                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Raw Design Tokens Section */}
-                  <div className="border-b pb-4">
-                    <h3 className="text-lg font-medium mb-3">Raw Design Tokens</h3>
-                    
-                    {/* Spacing Tokens */}
-                    <div className="space-y-4 mb-6">
-                      <h4 className="font-medium">Spacing Scale</h4>
-                      {[
-                        { key: 'xs', value: 0.25 },
-                        { key: 'sm', value: 0.5 },
-                        { key: 'md', value: 1 },
-                        { key: 'lg', value: 1.5 },
-                        { key: 'xl', value: 2 },
-                        { key: 'xxl', value: 3 },
-                        { key: 'xxxl', value: 4 }
-                      ].map(({ key, value }) => (
+                  </TabsContent>
+                  
+                  {/* Colors Tab Content */}
+                  <TabsContent value="colors" className="mt-0">
+                    <h2 className="text-xl font-semibold mb-4">Color System</h2>
+                    <div className="space-y-4">
+                      {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
                         <div key={key} className="space-y-2">
-                          <Label className="capitalize">Spacing {key}</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              step="0.25"
-                              defaultValue={value}
-                              className="w-24"
-                              onChange={(e) => handleRawTokenChange('spacing', `spacing_${key}`, parseFloat(e.target.value))}
-                            />
-                            <span className="text-muted-foreground self-center">rem</span>
-                          </div>
+                          <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
+                          <ColorPicker
+                            value={color}
+                            onChange={(value) => handleColorChange(key, value)}
+                          />
                         </div>
                       ))}
                     </div>
-
-                    {/* Border Radius Tokens */}
-                    <div className="space-y-4 mb-6">
-                      <h4 className="font-medium">Border Radius Scale</h4>
-                      {[
-                        { key: 'none', value: 0 },
-                        { key: 'sm', value: 2 },
-                        { key: 'md', value: 4 },
-                        { key: 'lg', value: 8 },
-                        { key: 'xl', value: 16 },
-                        { key: 'full', value: 9999 }
-                      ].map(({ key, value }) => (
-                        <div key={key} className="space-y-2">
-                          <Label className="capitalize">Radius {key}</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              defaultValue={value}
-                              className="w-24"
-                              onChange={(e) => handleRawTokenChange('radius', `radius_${key}`, parseInt(e.target.value))}
-                            />
-                            <span className="text-muted-foreground self-center">px</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Transitions */}
-                    <div className="space-y-4 mb-6">
-                      <h4 className="font-medium">Transitions</h4>
-                      {[
-                        { key: 'fast', value: 150 },
-                        { key: 'base', value: 300 },
-                        { key: 'slow', value: 500 }
-                      ].map(({ key, value }) => (
-                        <div key={key} className="space-y-2">
-                          <Label className="capitalize">Duration {key}</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              type="number"
-                              step="50"
-                              defaultValue={value}
-                              className="w-24"
-                              onChange={(e) => handleRawTokenChange('transition', `transition_duration_${key}`, parseInt(e.target.value))}
-                            />
-                            <span className="text-muted-foreground self-center">ms</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Typography Settings Section */}
-                  <div className="border-b pb-4">
-                    <h3 className="text-lg font-medium mb-3">Typography Settings</h3>
+                  </TabsContent>
+                  
+                  {/* Typography Tab Content */}
+                  <TabsContent value="typography" className="mt-0">
+                    <h2 className="text-xl font-semibold mb-4">Typography Settings</h2>
                     
                     {/* Font Selection */}
                     <div className="space-y-4">
@@ -508,159 +618,261 @@ export default function DesignBuilder() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground italic mt-3">
-                      Note: These settings will update the global styles.
-                    </p>
-                  </div>
-
-                </div>
-            </div>
-
-            {/* Right column: Component Preview (2 columns) */}
-            <div className="sticky self-start overflow-auto lg:col-span-2">
-              <Card className="p-6 h-full">
-                <h2 className="text-xxl mb-6">Preview</h2>
-                <div className="space-y-10">
-                  {/* Color Preview Section */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Color System Preview</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <ColorCard name="Primary" hex={designSystem?.colors.primary || "#0000ff"} />
-                      <ColorCard name="Background" hex={designSystem?.colors.background || "#ffffff"} />
-                      <ColorCard name="Foreground" hex={designSystem?.colors.foreground || "#000000"} />
-                      <ColorCard name="Muted" hex={designSystem?.colors.muted || "#f1f5f9"} />
-                      <ColorCard name="Accent" hex={designSystem?.colors.accent || "#f1f5f9"} />
-                      <ColorCard name="Destructive" hex={designSystem?.colors.destructive || "#ef4444"} />
-                    </div>
-                  </div>
+                  </TabsContent>
                   
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Typography</h3>
+                  {/* Borders Tab Content */}
+                  <TabsContent value="borders" className="mt-0">
+                    <h2 className="text-xl font-semibold mb-4">Border Settings</h2>
                     <div className="space-y-4">
                       <div>
-                        <h1 className="text-4xl font-bold mb-2">Heading 1</h1>
-                        <h2 className="text-3xl font-bold mb-2">Heading 2</h2>
-                        <h3 className="text-2xl font-bold mb-2">Heading 3</h3>
-                        <h4 className="text-xl font-bold mb-2">Heading 4</h4>
+                        <Label htmlFor="border-color">Border Color</Label>
+                        <ColorPicker
+                          value={designSystem?.colors.border || "#e2e8f0"}
+                          onChange={(value) => handleColorChange('border', value)}
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="border-widths">Border Width Scale</Label>
+                        <div className="space-y-3 mt-2">
+                          {[
+                            { key: 'hairline', value: 1, label: 'Hairline' },
+                            { key: 'thin', value: 2, label: 'Thin' },
+                            { key: 'medium', value: 4, label: 'Medium' },
+                            { key: 'thick', value: 8, label: 'Thick' }
+                          ].map(({ key, value, label }) => (
+                            <div key={key} className="flex items-center justify-between">
+                              <span>{label}</span>
+                              <div className="flex gap-2 items-center">
+                                <Input 
+                                  type="number" 
+                                  value={value}
+                                  className="w-20"
+                                  onChange={(e) => setHasUnsavedChanges(true)}
+                                />
+                                <span className="text-muted-foreground text-sm">px</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="border-styles">Border Styles</Label>
+                        <div className="grid grid-cols-2 gap-2 mt-2">
+                          {['solid', 'dashed', 'dotted', 'double'].map(style => (
+                            <div 
+                              key={style}
+                              className="border-2 p-3 text-center rounded cursor-pointer hover:bg-accent"
+                              style={{ borderStyle: style }}
+                              onClick={() => setHasUnsavedChanges(true)}
+                            >
+                              {style}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Card>
+              </div>
+
+              {/* Right column: Component Preview (2 columns) */}
+              <div className="lg:col-span-2">
+                <Card className="p-6">
+                  <h2 className="text-xl font-semibold mb-6">Component Preview</h2>
+                  
+                  {/* General Tab Preview */}
+                  <TabsContent value="general" className="mt-0 space-y-8">
+                    <Alert className="mb-4">
+                      <InfoIcon className="h-4 w-4 mr-2" />
+                      <AlertTitle>Design System Preview</AlertTitle>
+                      <AlertDescription>
+                        Changes are shown in real-time but will only be applied when you save.
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card className="p-4">
+                        <h3 className="font-medium mb-2">Animation: {designSystem.theme.animation}</h3>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button>Hover Me</Button>
+                          <Button variant="outline">Interactive</Button>
+                        </div>
+                      </Card>
+                      
+                      <Card className="p-4">
+                        <h3 className="font-medium mb-2">Border Radius: {designSystem.theme.radius}rem</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-primary h-16 w-full"></div>
+                          <Input placeholder="Input field" />
+                        </div>
+                      </Card>
+                    </div>
+                  </TabsContent>
+                  
+                  {/* Colors Tab Preview */}
+                  <TabsContent value="colors" className="mt-0">
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <ColorCard name="Primary" hex={designSystem?.colors.primary || "#0000ff"} />
+                        <ColorCard name="Background" hex={designSystem?.colors.background || "#ffffff"} />
+                        <ColorCard name="Foreground" hex={designSystem?.colors.foreground || "#000000"} />
+                        <ColorCard name="Muted" hex={designSystem?.colors.muted || "#f1f5f9"} />
+                        <ColorCard name="Accent" hex={designSystem?.colors.accent || "#f1f5f9"} />
+                        <ColorCard name="Destructive" hex={designSystem?.colors.destructive || "#ef4444"} />
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium border-b pb-2">UI Components with Current Colors</h3>
+                        <div className="space-y-4">
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="default">Primary Button</Button>
+                            <Button variant="secondary">Secondary</Button>
+                            <Button variant="destructive">Destructive</Button>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2">
+                            <Badge>Badge</Badge>
+                            <Badge variant="secondary">Secondary</Badge>
+                            <Badge variant="destructive">Destructive</Badge>
+                          </div>
+                          
+                          <Alert>
+                            <InfoIcon className="h-4 w-4 mr-2" />
+                            <AlertTitle>Information Alert</AlertTitle>
+                            <AlertDescription>
+                              This alert uses background and foreground colors.
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                  
+                  {/* Typography Tab Preview */}
+                  <TabsContent value="typography" className="mt-0">
+                    <div className="space-y-6">
+                      <h3 className="text-lg font-medium border-b pb-2">Type Scale</h3>
+                      <div className="space-y-4">
+                        <h1 className="text-4xl font-bold">Heading 1</h1>
+                        <h2 className="text-3xl font-bold">Heading 2</h2>
+                        <h3 className="text-2xl font-bold">Heading 3</h3>
+                        <h4 className="text-xl font-bold">Heading 4</h4>
                         <h5 className="text-lg font-bold">Heading 5</h5>
                       </div>
-                      <div>
-                        <p className="mb-2">Regular paragraph text. The quick brown fox jumps over the lazy dog.</p>
-                        <p className="text-sm mb-2">Small text for captions and secondary content.</p>
-                        <p><strong>Bold text</strong> and <em>italic text</em> for emphasis.</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Buttons</h3>
-                    <div className="grid gap-4">
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="default">Default</Button>
-                        <Button variant="secondary">Secondary</Button>
-                        <Button variant="outline">Outline</Button>
-                        <Button variant="ghost">Ghost</Button>
-                        <Button variant="destructive">Destructive</Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="default" size="sm">Small</Button>
-                        <Button variant="default">Default</Button>
-                        <Button variant="default" size="lg">Large</Button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button variant="outline">
-                          <ChevronRightIcon className="mr-2 h-4 w-4" /> Button with Icon
-                        </Button>
-                        <Button variant="default" disabled>
-                          Disabled
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Badges & Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge>Default</Badge>
-                      <Badge variant="secondary">Secondary</Badge>
-                      <Badge variant="outline">Outline</Badge>
-                      <Badge variant="destructive">Destructive</Badge>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Form Controls</h3>
-                    <div className="space-y-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="example-input">Input Field</Label>
-                        <Input id="example-input" placeholder="Enter text..." />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="example-switch" className="cursor-pointer">Toggle Switch</Label>
-                        <Switch id="example-switch" />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="example-select">Select Dropdown</Label>
-                        <Select defaultValue="option1">
-                          <SelectTrigger id="example-select">
-                            <SelectValue placeholder="Select option" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="option1">Option 1</SelectItem>
-                            <SelectItem value="option2">Option 2</SelectItem>
-                            <SelectItem value="option3">Option 3</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Alerts & Messaging</h3>
-                    <div className="space-y-4">
-                      <Alert>
-                        <InfoIcon className="h-4 w-4 mr-2" />
-                        <AlertTitle>Information</AlertTitle>
-                        <AlertDescription>
-                          This is a neutral information alert.
-                        </AlertDescription>
-                      </Alert>
-                      <Alert variant="destructive">
-                        <XIcon className="h-4 w-4 mr-2" />
-                        <AlertTitle>Error</AlertTitle>
-                        <AlertDescription>
-                          This is a destructive error alert.
-                        </AlertDescription>
-                      </Alert>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Cards</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <Card className="p-4">
-                        <h4 className="font-medium mb-2">Simple Card</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Cards are used to group related content.
-                        </p>
-                      </Card>
-                      <Card className="p-4">
-                        <div className="flex justify-between items-center mb-4">
-                          <h4 className="font-medium">Card with Actions</h4>
-                          <Button variant="outline" size="sm">Action</Button>
+                      
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-medium border-b pb-2">Text Styles</h3>
+                        <div className="space-y-4">
+                          <p className="max-w-prose">
+                            Regular paragraph text. Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+                            Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. 
+                            Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor.
+                          </p>
+                          <p className="text-sm max-w-prose">
+                            Small text for captions and secondary content. The quick brown fox jumps over the lazy dog.
+                          </p>
+                          <div className="space-y-1">
+                            <p><strong>Bold text</strong> for emphasis</p>
+                            <p><em>Italic text</em> for emphasis</p>
+                            <p><a href="#" className="text-primary underline">Link text</a> for navigation</p>
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          This card includes a button for interactive elements.
-                        </p>
-                      </Card>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </Card>
+                  </TabsContent>
+                  
+                  {/* Borders Tab Preview */}
+                  <TabsContent value="borders" className="mt-0">
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="text-lg font-medium border-b pb-2 mb-4">Border Widths</h3>
+                          <div className="space-y-4">
+                            {[
+                              { key: 'hairline', value: '1px', label: 'Hairline' },
+                              { key: 'thin', value: '2px', label: 'Thin' },
+                              { key: 'medium', value: '4px', label: 'Medium' },
+                              { key: 'thick', value: '8px', label: 'Thick' }
+                            ].map(({ key, value, label }) => (
+                              <div key={key} className="flex items-center gap-3">
+                                <div 
+                                  className={`h-16 w-16 bg-background`}
+                                  style={{ 
+                                    borderWidth: value, 
+                                    borderStyle: 'solid',
+                                    borderColor: designSystem.colors.border
+                                  }}
+                                ></div>
+                                <span>{label} ({value})</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-lg font-medium border-b pb-2 mb-4">Border Styles</h3>
+                          <div className="space-y-4">
+                            {['solid', 'dashed', 'dotted', 'double'].map(style => (
+                              <div key={style} className="flex items-center gap-3">
+                                <div 
+                                  className={`h-16 w-16 bg-background`}
+                                  style={{ 
+                                    borderWidth: '2px', 
+                                    borderStyle: style,
+                                    borderColor: designSystem.colors.border
+                                  }}
+                                ></div>
+                                <span className="capitalize">{style}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-lg font-medium border-b pb-2 mb-4">UI Components with Borders</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Card className="p-4 border">
+                            <h4 className="font-medium mb-2">Card Component</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Cards use border styles for their outline.
+                            </p>
+                          </Card>
+                          
+                          <div className="space-y-2">
+                            <Input placeholder="Input with border" />
+                            <Button variant="outline">Outline Button</Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Card>
+              </div>
             </div>
-          </div>
+          </Tabs>
         </div>
       </main>
+      
+      {/* Alert dialog for unsaved changes */}
+      <AlertDialog open={showLeaveAlert} onOpenChange={setShowLeaveAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes that will be lost if you leave this page. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmNavigation}>
+              Leave Without Saving
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

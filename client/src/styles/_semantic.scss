@@ -40,6 +40,57 @@
 // -------------------------------------------------------------
 
 // =============================================================
+// SEMANTIC COLOR TOKENS ALIGNED WITH MATERIAL DESIGN 3
+// =============================================================
+
+// -----------------
+// Primary Colors
+// -----------------
+$color-primary:                  $color-brand-primary-base;
+$color-on-primary:               $color-neutral-0;
+$color-primary-container:        $color-brand-primary-lighter1;
+$color-on-primary-container:     $color-brand-primary-darker1;
+
+// -----------------
+// Secondary Colors
+// -----------------
+$color-secondary:                $color-brand-secondary-base;
+$color-on-secondary:             $color-neutral-0;
+$color-secondary-container:      $color-brand-secondary-lighter1;
+$color-on-secondary-container:   $color-brand-secondary-darker1;
+
+// -----------------
+// Tertiary Colors
+// -----------------
+$color-tertiary:                 $color-brand-tertiary-base;
+$color-on-tertiary:              $color-neutral-0;
+$color-tertiary-container:       $color-brand-tertiary-lighter1;
+$color-on-tertiary-container:    $color-brand-tertiary-darker1;
+
+// -----------------
+// Error Colors
+// -----------------
+$color-error:                    $color-interactive-error-base;
+$color-on-error:                 $color-neutral-0;
+$color-error-container:          $color-interactive-error-lighter1;
+$color-on-error-container:       $color-interactive-error-darker1;
+
+// -----------------
+// Neutral Colors (Backgrounds and Surfaces)
+// -----------------
+$color-background:               $color-neutral-0;
+$color-on-background:            $color-neutral-900;
+$color-surface:                  $color-neutral-100;
+$color-on-surface:               $color-neutral-800;
+$color-surface-variant:          $color-neutral-200;
+$color-on-surface-variant:       $color-neutral-700;
+
+// -----------------
+// Outline Color
+// -----------------
+$color-outline:                  $color-neutral-500;
+
+// =============================================================
 // LAYOUT & SPACING
 // =============================================================
 $container-padding:              $spacing-lg;

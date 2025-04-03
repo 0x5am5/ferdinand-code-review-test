@@ -46,12 +46,12 @@ $transition-base:                  all $transition-duration-base $transition-eas
 // =============================================================
 // COLOR TOKENS
 // =============================================================
+@use "sass:color";
 
 // -----------------
 // Brand Colors
 // -----------------
 $color-brand-primary-base:         blue;
-@use "sass:color";
 
 $color-brand-primary-lighter1:     color.adjust($color-brand-primary-base, $lightness: 20%);
 $color-brand-primary-lighter2:     color.adjust($color-brand-primary-base, $lightness: 40%);
@@ -63,6 +63,12 @@ $color-brand-secondary-lighter1:   color.adjust($color-brand-secondary-base, $li
 $color-brand-secondary-lighter2:   color.adjust($color-brand-secondary-base, $lightness: 40%);
 $color-brand-secondary-darker1:    color.adjust($color-brand-secondary-base, $lightness: -20%);
 $color-brand-secondary-darker2:    color.adjust($color-brand-secondary-base, $lightness: -40%);
+
+$color-brand-tertiary-base:        green;
+$color-brand-tertiary-lighter1:    color.adjust($color-brand-tertiary-base, $lightness: 20%);
+$color-brand-tertiary-lighter2:    color.adjust($color-brand-tertiary-base, $lightness: 40%);
+$color-brand-tertiary-darker1:     color.adjust($color-brand-tertiary-base, $lightness: -20%);
+$color-brand-tertiary-darker2:     color.adjust($color-brand-tertiary-base, $lightness: -40%);
 
 // -----------------
 // Neutral Colors (Grayscale)

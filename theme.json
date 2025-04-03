@@ -2,7 +2,7 @@
   "variant": "professional",
   "primary": "hsl(205, 100%, 50%)",
   "appearance": "light",
-  "radius": 0.3,
+  "radius": 0.4,
   "animation": "smooth",
   "font": {
     "primary": "roc-grotesk",
