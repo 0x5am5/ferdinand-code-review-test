@@ -41,18 +41,18 @@ export function Sidebar() {
   return (
     <div 
       className={cn(
-        "flex h-screen flex-col bg-sidebar transition-all duration-200",
-        isCollapsed ? "w-16" : "w-64"
+        "sidebar",
+        isCollapsed ? "sidebar--collapsed" : "sidebar--expanded"
       )}
     >
-      <div className="relative flex items-center p-4 h-16">
+      <div className="sidebar__header">
         {!isCollapsed && (
           <h1 className="app-name--h1">Ferdinand</h1>
         )}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute -right-4 top-6 bg-background border shadow-sm"
+          className="sidebar__toggle-button"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           {isCollapsed ? (
@@ -64,7 +64,7 @@ export function Sidebar() {
       </div>
 
       {isSuperAdmin && !isCollapsed && (
-        <div className="bg-primary-light px-4 py-2 border-b">
+        <div className="sidebar__admin-panel">
           <p className="text-sm font-medium text-primary mb-2">Super Admin</p>
           <Select defaultValue={user?.role}>
             <SelectTrigger className="w-full">
@@ -81,8 +81,8 @@ export function Sidebar() {
         </div>
       )}
 
-      <ScrollArea className="flex-1 px-2 py-2">
-        <nav className="flex flex-col gap-1">
+      <ScrollArea>
+        <nav className="sidebar__nav">
           {navigation.map((item) => {
             const Icon = item.icon;
             return (
@@ -90,11 +90,11 @@ export function Sidebar() {
                 key={item.href} 
                 href={item.href}
                 className={cn(
-                  "sidebar-link",
-                  location === item.href && "active"
+                  "sidebar__link",
+                  location === item.href && "sidebar__link--active"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon />
                 {!isCollapsed && <span>{item.name}</span>}
               </Link>
             );
@@ -102,7 +102,7 @@ export function Sidebar() {
 
           {user?.role === UserRole.SUPER_ADMIN && (
             <>
-              <div className="my-2 border-t" />
+              <div className="sidebar__divider" />
               {adminNavigation.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -110,11 +110,11 @@ export function Sidebar() {
                     key={item.href} 
                     href={item.href}
                     className={cn(
-                      "sidebar-link",
-                      location === item.href && "active"
+                      "sidebar__link",
+                      location === item.href && "sidebar__link--active"
                     )}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon />
                     {!isCollapsed && <span>{item.name}</span>}
                   </Link>
                 );
@@ -124,7 +124,7 @@ export function Sidebar() {
         </nav>
       </ScrollArea>
 
-      <div className="p-4 border-t">
+      <div className="sidebar__footer">
         <AuthButton collapsed={isCollapsed} />
       </div>
     </div>
