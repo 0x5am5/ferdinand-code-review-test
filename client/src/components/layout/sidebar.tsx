@@ -41,11 +41,11 @@ export function Sidebar() {
   return (
     <div 
       className={cn(
-        "flex h-screen flex-col border-r bg-sidebar transition-all duration-200",
+        "flex h-screen flex-col bg-sidebar transition-all duration-200",
         isCollapsed ? "w-16" : "w-64"
       )}
     >
-      <div className="relative flex items-center p-4 h-16 border-b">
+      <div className="relative flex items-center p-4 h-16">
         {!isCollapsed && (
           <h1 className="app-name--h1">Ferdinand</h1>
         )}

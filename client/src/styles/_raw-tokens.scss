@@ -1,0 +1,167 @@
+// -------------------------------------------------------------
+// RAW DESIGN TOKENS – COLORS & TYPOGRAPHY
+// -------------------------------------------------------------
+
+// =============================================================
+// General TOKENS
+// =============================================================
+$default-unit:                     rem;
+
+// =============================================================
+// SPACING TOKENS
+// =============================================================
+$spacing-xs:                       0.25#{$default-unit};   // 4px
+$spacing-sm:                       0.5#{$default-unit};    // 8px
+$spacing-md:                       1#{$default-unit};      // 16px
+$spacing-lg:                       1.5#{$default-unit};    // 24px
+$spacing-xl:                       2#{$default-unit};      // 32px
+$spacing-xxl:                      3#{$default-unit};      // 48px
+$spacing-xxxl:                     4#{$default-unit};      // 64px
+
+// =============================================================
+// BORDER RADIUS TOKENS
+// =============================================================
+$radius-none:                      0;
+$radius-sm:                        2px;
+$radius-md:                        4px;
+$radius-lg:                        8px;
+$radius-xl:                        16px;
+$radius-full:                      9999px;
+
+// =============================================================
+// TRANSITIONS / ANIMATION TOKENS
+// =============================================================
+$transition-duration-fast:         150ms;
+$transition-duration-base:         300ms;
+$transition-duration-slow:         500ms;
+
+$transition-ease-in:               ease-in;
+$transition-ease-out:              ease-out;
+$transition-ease-in-out:           ease-in-out;
+$transition-linear:                linear;
+
+$transition-base:                  all $transition-duration-base $transition-ease-in-out;
+
+
+// =============================================================
+// COLOR TOKENS
+// =============================================================
+
+// -----------------
+// Brand Colors
+// -----------------
+$color-brand-primary-base:         ;
+$color-brand-primary-lighter1:     ;
+$color-brand-primary-lighter2:     ;
+$color-brand-primary-darker1:      ;
+$color-brand-primary-darker2:      ;
+
+$color-brand-secondary-base:       ;
+$color-brand-secondary-lighter1:   ;
+$color-brand-secondary-lighter2:   ;
+$color-brand-secondary-darker1:    ;
+$color-brand-secondary-darker2:    ;
+
+// -----------------
+// Neutral Colors (Grayscale)
+// -----------------
+$color-neutral-0:                  ;
+$color-neutral-100:                ;
+$color-neutral-200:                ;
+$color-neutral-300:                ;
+$color-neutral-400:                ;
+$color-neutral-500:                ;
+$color-neutral-600:                ;
+$color-neutral-700:                ;
+$color-neutral-800:                ;
+$color-neutral-900:                ;
+
+// -----------------
+// Interactive Colors – Success
+// -----------------
+$color-interactive-success-base:       ;
+$color-interactive-success-lighter1:   ;
+$color-interactive-success-lighter2:   ;
+$color-interactive-success-darker1:    ;
+$color-interactive-success-darker2:    ;
+
+// -----------------
+// Interactive Colors – Warning
+// -----------------
+$color-interactive-warning-base:       ;
+$color-interactive-warning-lighter1:   ;
+$color-interactive-warning-lighter2:   ;
+$color-interactive-warning-darker1:    ;
+$color-interactive-warning-darker2:    ;
+
+// -----------------
+// Interactive Colors – Error
+// -----------------
+$color-interactive-error-base:         ;
+$color-interactive-error-lighter1:     ;
+$color-interactive-error-lighter2:     ;
+$color-interactive-error-darker1:      ;
+$color-interactive-error-darker2:      ;
+
+// -----------------
+// Interactive Colors – Links
+// -----------------
+$color-interactive-link-base:         ;
+$color-interactive-link-lighter1:     ;
+$color-interactive-link-lighter2:     ;
+$color-interactive-link-darker1:      ;
+$color-interactive-link-darker2:      ;
+
+// =============================================================
+// TYPOGRAPHY TOKENS
+// =============================================================
+
+// -----------------
+// Font Families
+// -----------------
+$font-family-base:               'Inter', sans-serif;
+$font-family-secondary:          'Inter', sans-serif;
+$font-family-mono:               'Courier New', monospace;
+
+// -----------------
+// Font Scale Settings
+// -----------------
+$font-size-base:                 1rem;       // Typically 16px
+$font-scale-ratio:               1.333;      // Perfect Fourth
+$line-height-ratio:              1.6;
+
+// -----------------
+// Font Sizes (calculated from base * ratio)
+// -----------------
+$font-size-xxl:                  $font-size-xl * $font-scale-ratio;  // e.g. h1
+$font-size-xl:                   $font-size-lg * $font-scale-ratio;  // h2
+$font-size-lg:                   $font-size-md * $font-scale-ratio;  // h3
+$font-size-md:                   $font-size-sm * $font-scale-ratio;  // h4
+$font-size-sm:                   $font-size-base * $font-scale-ratio;  // h5
+$font-size-xs:                   $font-size-base;  // body
+$font-size-xxs:                  ;  // caption/small
+
+// -----------------
+// Font Weights
+// -----------------
+$font-weight-light:              300;
+$font-weight-regular:            400;
+$font-weight-medium:             500;
+$font-weight-bold:               700;
+
+// -----------------
+// Line Heights
+// -----------------
+$line-height-tight:              1.2;
+$line-height-default:            $line-height-ratio;
+$line-height-loose:              1.8;
+
+// -----------------
+// Letter Spacing Scale
+// -----------------
+$letter-spacing-none:            0;
+$letter-spacing-xs:              -0.01em;
+$letter-spacing-sm:              0.005em;
+$letter-spacing-md:              0.01em;
+$letter-spacing-lg:              0.025em;
+$letter-spacing-xl:              0.05em;
