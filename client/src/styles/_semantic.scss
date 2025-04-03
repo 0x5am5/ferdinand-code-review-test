@@ -34,3 +34,93 @@
   --heading-weight: #{$heading-weight};
   --body-weight: #{$body-weight};
 }
+
+// -------------------------------------------------------------
+// SEMANTIC TOKENS – Mapped to Raw Variables
+// -------------------------------------------------------------
+
+// =============================================================
+// LAYOUT & SPACING
+// =============================================================
+$container-padding:              $spacing-lg;
+$section-gap:                    $spacing-xl;
+$card-padding:                   $spacing-md;
+$grid-gap:                       $spacing-md;
+$form-element-spacing:           $spacing-sm;
+
+// =============================================================
+// RADIUS
+// =============================================================
+$radius-button:                  $radius-md;
+$radius-card:                    $radius-lg;
+$radius-chip:                    $radius-full;
+
+// =============================================================
+// TRANSITIONS
+// =============================================================
+$transition-button:              $transition-base;
+$transition-input:               $transition-base;
+$transition-fade:                opacity $transition-duration-base ease-in-out;
+
+// =============================================================
+// BACKGROUNDS
+// =============================================================
+$color-background-default:       $color-neutral-0;
+$color-background-subtle:        $color-neutral-100;
+$color-background-muted:         $color-neutral-200;
+$color-background-inverse:       $color-neutral-900;
+$color-background-accent:        $color-brand-secondary-lighter1;
+
+// =============================================================
+// TEXT
+// =============================================================
+$color-text-primary:             $color-neutral-900;
+$color-text-secondary:           $color-neutral-600;
+$color-text-muted:               $color-neutral-500;
+$color-text-inverse:             $color-neutral-0;
+$color-text-error:               $color-interactive-error-base;
+$color-text-success:             $color-interactive-success-base;
+$color-text-link:                $color-interactive-link-base;
+
+// =============================================================
+// BORDERS
+// =============================================================
+$color-border-default:           $color-neutral-200;
+$color-border-subtle:            $color-neutral-100;
+$color-border-strong:            $color-neutral-300;
+$color-border-focus:             $color-brand-primary-base;
+$color-border-error:             $color-interactive-error-base;
+
+// =============================================================
+// BUTTONS
+// =============================================================
+$color-button-primary-bg:        $color-brand-primary-base;
+$color-button-primary-text:      $color-neutral-0;
+$color-button-primary-hover:     $color-brand-primary-darker1;
+$color-button-primary-disabled:  $color-neutral-300;
+
+$color-button-secondary-bg:      $color-neutral-100;
+$color-button-secondary-text:    $color-brand-primary-base;
+$color-button-secondary-border:  $color-neutral-300;
+$color-button-secondary-hover:   $color-neutral-200;
+
+// =============================================================
+// TYPOGRAPHY – SEMANTIC MAPPINGS
+// =============================================================
+$text-h1-font-size:              $font-size-xxl;
+$text-h2-font-size:              $font-size-xl;
+$text-h3-font-size:              $font-size-lg;
+$text-h4-font-size:              $font-size-md;
+$text-h5-font-size:              $font-size-sm;
+$text-body-font-size:            $font-size-xs;
+$text-caption-font-size:         $font-size-xxs;
+
+$text-heading-font-weight:       $font-weight-medium;
+$text-body-font-weight:          $font-weight-regular;
+
+$text-heading-line-height:       $line-height-tight;
+$text-body-line-height:          $line-height-default;
+
+$text-heading-letter-spacing:    $letter-spacing-none;
+$text-body-letter-spacing:       $letter-spacing-sm;
+$text-caption-letter-spacing:    $letter-spacing-md;
