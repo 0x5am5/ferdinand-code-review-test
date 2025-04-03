@@ -105,19 +105,7 @@ export default function DesignBuilder() {
   };
   
   // Updated to handle typography changes, including properties not directly in the typography object
-  const handleRawTokenChange = (category: string, key: string, value: number) => {
-  updateDraftDesignSystem({
-    raw_tokens: {
-      ...designSystem?.raw_tokens,
-      [category]: {
-        ...(designSystem?.raw_tokens?.[category] || {}),
-        [key]: value
-      }
-    }
-  });
-};
-
-const handleTypographyChange = (key: string, value: string | number) => {
+  const handleTypographyChange = (key: string, value: string | number) => {
     // First, handle the basic typography settings (font family)
     if (key === 'primary' || key === 'heading') {
       updateDraftDesignSystem({ 
@@ -313,15 +301,24 @@ const handleTypographyChange = (key: string, value: string | number) => {
                     {/* Spacing Tokens */}
                     <div className="space-y-4 mb-6">
                       <h4 className="font-medium">Spacing Scale</h4>
-                      {['xs', 'sm', 'md', 'lg', 'xl', 'xxl', 'xxxl'].map((size) => (
-                        <div key={size} className="space-y-2">
-                          <Label className="capitalize">Spacing {size}</Label>
+                      {[
+                        { key: 'xs', value: 0.25 },
+                        { key: 'sm', value: 0.5 },
+                        { key: 'md', value: 1 },
+                        { key: 'lg', value: 1.5 },
+                        { key: 'xl', value: 2 },
+                        { key: 'xxl', value: 3 },
+                        { key: 'xxxl', value: 4 }
+                      ].map(({ key, value }) => (
+                        <div key={key} className="space-y-2">
+                          <Label className="capitalize">Spacing {key}</Label>
                           <div className="flex gap-2">
                             <Input
                               type="number"
+                              step="0.25"
+                              defaultValue={value}
                               className="w-24"
-                              value={designSystem?.raw_tokens?.spacing?.[`spacing_${size}`] || 0}
-                              onChange={(e) => handleRawTokenChange('spacing', `spacing_${size}`, parseFloat(e.target.value))}
+                              onChange={(e) => handleRawTokenChange('spacing', `spacing_${key}`, parseFloat(e.target.value))}
                             />
                             <span className="text-muted-foreground self-center">rem</span>
                           </div>
@@ -332,15 +329,22 @@ const handleTypographyChange = (key: string, value: string | number) => {
                     {/* Border Radius Tokens */}
                     <div className="space-y-4 mb-6">
                       <h4 className="font-medium">Border Radius Scale</h4>
-                      {['none', 'sm', 'md', 'lg', 'xl', 'full'].map((size) => (
-                        <div key={size} className="space-y-2">
-                          <Label className="capitalize">Radius {size}</Label>
+                      {[
+                        { key: 'none', value: 0 },
+                        { key: 'sm', value: 2 },
+                        { key: 'md', value: 4 },
+                        { key: 'lg', value: 8 },
+                        { key: 'xl', value: 16 },
+                        { key: 'full', value: 9999 }
+                      ].map(({ key, value }) => (
+                        <div key={key} className="space-y-2">
+                          <Label className="capitalize">Radius {key}</Label>
                           <div className="flex gap-2">
                             <Input
                               type="number"
+                              defaultValue={value}
                               className="w-24"
-                              value={designSystem?.raw_tokens?.radius?.[`radius_${size}`] || 0}
-                              onChange={(e) => handleRawTokenChange('radius', `radius_${size}`, parseFloat(e.target.value))}
+                              onChange={(e) => handleRawTokenChange('radius', `radius_${key}`, parseInt(e.target.value))}
                             />
                             <span className="text-muted-foreground self-center">px</span>
                           </div>
@@ -351,15 +355,20 @@ const handleTypographyChange = (key: string, value: string | number) => {
                     {/* Transitions */}
                     <div className="space-y-4 mb-6">
                       <h4 className="font-medium">Transitions</h4>
-                      {['fast', 'base', 'slow'].map((speed) => (
-                        <div key={speed} className="space-y-2">
-                          <Label className="capitalize">Duration {speed}</Label>
+                      {[
+                        { key: 'fast', value: 150 },
+                        { key: 'base', value: 300 },
+                        { key: 'slow', value: 500 }
+                      ].map(({ key, value }) => (
+                        <div key={key} className="space-y-2">
+                          <Label className="capitalize">Duration {key}</Label>
                           <div className="flex gap-2">
                             <Input
                               type="number"
+                              step="50"
+                              defaultValue={value}
                               className="w-24"
-                              value={designSystem?.raw_tokens?.transition?.[`transition_duration_${speed}`] || 0}
-                              onChange={(e) => handleRawTokenChange('transition', `transition_duration_${speed}`, parseFloat(e.target.value))}
+                              onChange={(e) => handleRawTokenChange('transition', `transition_duration_${key}`, parseInt(e.target.value))}
                             />
                             <span className="text-muted-foreground self-center">ms</span>
                           </div>

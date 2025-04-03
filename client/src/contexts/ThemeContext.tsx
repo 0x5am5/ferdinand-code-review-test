@@ -3,28 +3,9 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 // Define the theme structure to match what we're using in design-builder.tsx
 export interface DesignSystem {
   raw_tokens?: {
-    spacing?: {
-      spacing_xs?: number;
-      spacing_sm?: number;
-      spacing_md?: number;
-      spacing_lg?: number;
-      spacing_xl?: number;
-      spacing_xxl?: number;
-      spacing_xxxl?: number;
-    };
-    radius?: {
-      radius_none?: number;
-      radius_sm?: number;
-      radius_md?: number;
-      radius_lg?: number;
-      radius_xl?: number;
-      radius_full?: number;
-    };
-    transition?: {
-      transition_duration_fast?: number;
-      transition_duration_base?: number;
-      transition_duration_slow?: number;
-    };
+    spacing?: Record<string, number>;
+    radius?: Record<string, number>;
+    transition?: Record<string, number>;
   };
   theme: {
     variant: 'professional' | 'tint' | 'vibrant';
@@ -142,22 +123,22 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     // Find max and min values
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    
+
     let h = 0, s = 0, l = (max + min) / 2;
 
     if (max !== min) {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      
+
       switch (max) {
         case r: h = (g - b) / d + (g < b ? 6 : 0); break;
         case g: h = (b - r) / d + 2; break;
         case b: h = (r - g) / d + 4; break;
       }
-      
+
       h = Math.round(h * 60);
     }
-    
+
     s = Math.round(s * 100);
     l = Math.round(l * 100);
 
@@ -172,14 +153,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   // Apply the theme CSS variables to the document root
   useEffect(() => {
     if (isLoading) return;
-    
+
     // Use draft system for preview if available, otherwise use the main design system
     const activeSystem = draftDesignSystem || designSystem;
     const root = document.documentElement;
-    
+
     // Apply border radius
     root.style.setProperty('--radius', `${activeSystem.theme.radius}rem`);
-    
+
     // Apply colors
     Object.entries(activeSystem.colors).forEach(([key, value]) => {
       // Convert hex colors to HSL for better compatibility with shadcn-ui
@@ -199,7 +180,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         root.style.setProperty(`--${key}`, value);
       }
     });
-    
+
     // Make sure primary color is set properly
     if (activeSystem.theme.primary) {
       if (isHexColor(activeSystem.theme.primary)) {
@@ -217,7 +198,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         root.style.setProperty('--primary', activeSystem.theme.primary);
       }
     }
-    
+
     // Apply animation settings
     let animationSpeed = '0s';
     switch (activeSystem.theme.animation) {
@@ -235,7 +216,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         break;
     }
     root.style.setProperty('--transition', animationSpeed);
-    
+
     // Apply typography
     if (activeSystem.typography.primary) {
       root.style.setProperty('--font-sans', activeSystem.typography.primary);
@@ -243,14 +224,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     if (activeSystem.typography.heading) {
       root.style.setProperty('--font-heading', activeSystem.typography.heading);
     }
-    
+
     // Apply appearance (light/dark mode)
     if (activeSystem.theme.appearance === 'dark') {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
-    
+
     console.log('Theme applied:', activeSystem);
   }, [designSystem, draftDesignSystem, isLoading]);
 
@@ -258,12 +239,12 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const updateDesignSystem = async (newTheme: Partial<DesignSystem>) => {
     // Update local state immediately for responsive UI
     setDesignSystem(prev => ({ ...prev, ...newTheme }));
-    
+
     // Also update draft state to stay in sync
     if (draftDesignSystem) {
       setDraftDesignSystem({ ...draftDesignSystem, ...newTheme } as DesignSystem);
     }
-    
+
     // Send update to the API
     try {
       const response = await fetch('/api/design-system', {
@@ -271,7 +252,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTheme),
       });
-      
+
       if (!response.ok) throw new Error('Failed to update theme settings');
     } catch (error) {
       console.error('Error updating theme settings:', error);
