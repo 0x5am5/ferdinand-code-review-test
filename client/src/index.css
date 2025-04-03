@@ -105,3 +105,8 @@
   font-size: 40px;
   margin: 20px 0;
 } 
+
+.builder--controls {
+  position: fixed;
+  bottom: 0;
+}

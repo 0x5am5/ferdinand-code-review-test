@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ColorPickerProps {
   value: string;
@@ -56,6 +57,67 @@ function rgbToHex(r: number, g: number, b: number) {
   }).join("");
 }
 
+// Convert RGB to HSV (Hue, Saturation, Value)
+function rgbToHsv(r: number, g: number, b: number) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  
+  let h = 0;
+  const s = max === 0 ? 0 : d / max;
+  const v = max;
+
+  if (max !== min) {
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
+  }
+
+  return { h: h * 360, s: s * 100, v: v * 100 };
+}
+
+// Convert HSV to RGB
+function hsvToRgb(h: number, s: number, v: number) {
+  h /= 360;
+  s /= 100;
+  v /= 100;
+
+  let r = 0, g = 0, b = 0;
+  const i = Math.floor(h * 6);
+  const f = h * 6 - i;
+  const p = v * (1 - s);
+  const q = v * (1 - f * s);
+  const t = v * (1 - (1 - f) * s);
+
+  switch (i % 6) {
+    case 0: r = v; g = t; b = p; break;
+    case 1: r = q; g = v; b = p; break;
+    case 2: r = p; g = v; b = t; break;
+    case 3: r = p; g = q; b = v; break;
+    case 4: r = t; g = p; b = v; break;
+    case 5: r = v; g = p; b = q; break;
+  }
+
+  return {
+    r: Math.round(r * 255),
+    g: Math.round(g * 255),
+    b: Math.round(b * 255)
+  };
+}
+
 export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
   // Safe initialization handling both string and null/undefined cases
   const initialValue = typeof value === 'string' && value ? (value.startsWith("#") ? value : "#000000") : "#000000";
@@ -64,6 +126,15 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
   const [red, setRed] = useState(r);
   const [green, setGreen] = useState(g);
   const [blue, setBlue] = useState(b);
+  
+  // Convert to HSV for color spectrum and saturation strip
+  const { h, s, v } = rgbToHsv(r, g, b);
+  const [hue, setHue] = useState(h);
+  const [saturation, setSaturation] = useState(s);
+  const [brightness, setBrightness] = useState(v);
+  
+  // Reference for the color spectrum area
+  const spectrumRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
     // Ensure value is a string and has a valid format
@@ -79,11 +150,20 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
         setRed(r);
         setGreen(g);
         setBlue(b);
+        
+        // Update HSV values
+        const { h, s, v } = rgbToHsv(r, g, b);
+        setHue(h);
+        setSaturation(s);
+        setBrightness(v);
       } catch (error) {
         // In case of invalid hex, use default black
         setRed(0);
         setGreen(0);
         setBlue(0);
+        setHue(0);
+        setSaturation(0);
+        setBrightness(0);
       }
     }
   }, [value, hexValue]);
@@ -105,30 +185,76 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
       setRed(r);
       setGreen(g);
       setBlue(b);
+      
+      // Update HSV values
+      const { h, s, v } = rgbToHsv(r, g, b);
+      setHue(h);
+      setSaturation(s);
+      setBrightness(v);
+      
       onChange(newHex);
     }
   };
   
-  const handleRgbChange = (color: "r" | "g" | "b", value: number[]) => {
-    const newValue = value[0];
+  const handleSpectrumClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!spectrumRef.current) return;
     
-    if (color === "r") {
-      setRed(newValue);
-    } else if (color === "g") {
-      setGreen(newValue);
-    } else if (color === "b") {
-      setBlue(newValue);
-    }
+    const rect = spectrumRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     
-    const newHex = rgbToHex(
-      color === "r" ? newValue : red,
-      color === "g" ? newValue : green,
-      color === "b" ? newValue : blue
-    );
+    // Calculate hue and saturation as percentages
+    const newSaturation = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const newBrightness = Math.max(0, Math.min(100, 100 - (y / rect.height) * 100));
     
+    setSaturation(newSaturation);
+    setBrightness(newBrightness);
+    
+    // Convert HSV to RGB
+    const { r, g, b } = hsvToRgb(hue, newSaturation, newBrightness);
+    setRed(r);
+    setGreen(g);
+    setBlue(b);
+    
+    // Update hex value
+    const newHex = rgbToHex(r, g, b);
     setHexValue(newHex);
     onChange(newHex);
   };
+  
+  const handleHueChange = (value: number[]) => {
+    const newHue = value[0];
+    setHue(newHue);
+    
+    // Convert HSV to RGB
+    const { r, g, b } = hsvToRgb(newHue, saturation, brightness);
+    setRed(r);
+    setGreen(g);
+    setBlue(b);
+    
+    // Update hex value
+    const newHex = rgbToHex(r, g, b);
+    setHexValue(newHex);
+    onChange(newHex);
+  };
+  
+  const handleOpacityChange = (value: number[]) => {
+    // For future implementation of opacity/alpha channel
+    // Currently we just show the slider for visual consistency with the example
+  };
+  
+  // Get the background for the spectrum based on current hue
+  const getSpectrumBackground = () => {
+    const pureColor = hsvToRgb(hue, 100, 100);
+    return `linear-gradient(to right, white, rgb(${pureColor.r}, ${pureColor.g}, ${pureColor.b})), 
+            linear-gradient(to bottom, rgba(0,0,0,0), black)`;
+  };
+  
+  // Create a background for the hue slider that shows the spectrum of hues
+  const hueGradient = "linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)";
+  
+  // Create a checkerboard pattern for the opacity slider background
+  const opacityBackground = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAGUlEQVQYV2M4gwH+YwCGIasIUwhT25BVBADtzYNYrHvv4gAAAABJRU5ErkJggg==')";
   
   return (
     <Popover>
@@ -146,59 +272,88 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64">
+      <PopoverContent className="w-72">
         <div className="grid gap-4">
-          <div className="space-y-2">
+          {/* Color spectrum */}
+          <div 
+            ref={spectrumRef}
+            className="relative w-full h-40 rounded-md cursor-crosshair"
+            style={{ 
+              background: getSpectrumBackground(),
+              backgroundBlendMode: "multiply"
+            }}
+            onClick={handleSpectrumClick}
+          >
+            {/* Indicator dot for current selection */}
             <div 
-              className="w-full h-24 rounded-md" 
-              style={{ backgroundColor: hexValue }} 
+              className="absolute w-4 h-4 rounded-full border-2 border-white transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ 
+                left: `${saturation}%`, 
+                top: `${100 - brightness}%`,
+                backgroundColor: hexValue,
+                boxShadow: "0 0 0 1px rgba(0,0,0,0.3)"
+              }}
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="hex">Hex</Label>
-            <Input
-              id="hex"
-              value={hexValue}
-              onChange={handleHexChange}
-              className="h-8"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="r">Red ({red})</Label>
+          {/* Hue slider */}
+          <div className="space-y-1.5">
             <Slider
-              id="r"
+              className="h-4 rounded-md"
               min={0}
-              max={255}
+              max={360}
               step={1}
-              defaultValue={[red]}
-              onValueChange={(value) => handleRgbChange("r", value)}
+              value={[hue]}
+              onValueChange={handleHueChange}
+              style={{ 
+                background: hueGradient,
+              }}
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="g">Green ({green})</Label>
+          {/* Opacity slider (visual only for now) */}
+          <div className="space-y-1.5">
             <Slider
-              id="g" 
+              className="h-4 rounded-md"
               min={0}
-              max={255}
+              max={100}
               step={1}
-              defaultValue={[green]}
-              onValueChange={(value) => handleRgbChange("g", value)}
+              value={[100]}
+              onValueChange={handleOpacityChange}
+              style={{ 
+                background: opacityBackground,
+              }}
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="b">Blue ({blue})</Label>
-            <Slider
-              id="b"
-              min={0}
-              max={255}
-              step={1}
-              defaultValue={[blue]}
-              onValueChange={(value) => handleRgbChange("b", value)}
-            />
+          {/* Color value inputs */}
+          <div className="grid grid-cols-4 gap-2 items-center">
+            <Select defaultValue="hex">
+              <SelectTrigger className="h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="hex">Hex</SelectItem>
+                <SelectItem value="rgb">RGB</SelectItem>
+                <SelectItem value="hsl">HSL</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <div className="col-span-2">
+              <Input
+                value={hexValue.substring(1)}
+                onChange={(e) => handleHexChange({ target: { value: `#${e.target.value}` } } as React.ChangeEvent<HTMLInputElement>)}
+                className="h-8"
+              />
+            </div>
+            
+            <div>
+              <Input
+                value="100%"
+                className="h-8"
+                readOnly
+              />
+            </div>
           </div>
         </div>
       </PopoverContent>

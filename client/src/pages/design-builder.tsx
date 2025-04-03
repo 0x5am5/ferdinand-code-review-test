@@ -164,11 +164,11 @@ export default function DesignBuilder() {
   };
 
   const handleSaveChanges = async () => {
-    // First, apply draft changes to the main design system
-    await applyDraftChanges();
-    
-    // Save typography extended settings to database
     try {
+      // First, apply draft changes to the main design system
+      await applyDraftChanges();
+      
+      // Save typography extended settings to database
       const typographySettings = localStorage.getItem('typographySettings');
       if (typographySettings) {
         const settings = JSON.parse(typographySettings);
@@ -216,178 +216,119 @@ export default function DesignBuilder() {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">Design Builder</h1>
+      <main className="p-8 overflow-auto">
+        <div className="builder--controls">
+          <Button onClick={handleSaveChanges}>
+            Save Changes
+          </Button>
+        </div>
+        
+        <div className="flex-1">
+          {/* Three-column layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            {/* Left column: Editable fields (1 column) */}
+            <div className="lg:col-span-1">
+              <h1>Design Builder</h1>
               <p className="text-muted-foreground">
                 Control the overall design system of your application
               </p>
-            </div>
-            <Button onClick={handleSaveChanges}>
-              Save Changes
-            </Button>
-          </div>
-
-          {/* Two-column layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left column: Editable fields */}
-            <div className="space-y-8">
-              {/* Theme Settings Section */}
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Theme Settings</h2>
-                <div className="grid gap-6">
-                  <div>
-                    <Label htmlFor="variant">Theme Variant</Label>
-                    <Select 
-                      value={designSystem?.theme.variant} 
-                      onValueChange={(value) => handleThemeChange('variant', value)}
-                    >
-                      <SelectTrigger id="variant" className="w-full max-w-xs">
-                        <SelectValue placeholder="Select variant" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="professional">Professional</SelectItem>
-                        <SelectItem value="tint">Tint</SelectItem>
-                        <SelectItem value="vibrant">Vibrant</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Determines the overall look and feel of the UI
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="appearance">Appearance Mode</Label>
-                    <Select 
-                      value={designSystem?.theme.appearance} 
-                      onValueChange={(value) => handleThemeChange('appearance', value as 'light' | 'dark' | 'system')}
-                    >
-                      <SelectTrigger id="appearance" className="w-full max-w-xs">
-                        <SelectValue placeholder="Select appearance" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Controls light/dark mode
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="primary-color">Primary Color</Label>
-                    <div className="max-w-xs mt-1">
-                      <ColorPicker
-                        value={designSystem?.theme.primary || '#0000ff'}
-                        onChange={(value) => handleThemeChange('primary', value)}
-                      />
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Main brand color used throughout the UI
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
-                    <div className="pt-2 pb-4">
-                      <Slider 
-                        id="radius"
-                        defaultValue={[designSystem?.theme.radius || 0.5]} 
-                        max={2} 
-                        step={0.1}
-                        onValueChange={(value) => handleThemeChange('radius', value[0])}
-                      />
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Controls the roundness of UI elements (0 = square, 2 = very rounded)
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="animation">Animation Style</Label>
-                    <Select 
-                      value={designSystem?.theme.animation} 
-                      onValueChange={(value) => handleThemeChange('animation', value)}
-                    >
-                      <SelectTrigger id="animation" className="w-full max-w-xs">
-                        <SelectValue placeholder="Select animation style" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="minimal">Minimal</SelectItem>
-                        <SelectItem value="smooth">Smooth</SelectItem>
-                        <SelectItem value="bounce">Bounce</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Controls the animation style throughout the application
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Typography Settings Section */}
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Typography Settings</h2>
                 <div className="space-y-6">
-                  {/* Font Selection */}
-                  <div className="space-y-6 border-b pb-6">
-                    <h3 className="text-lg font-medium">Font Families</h3>
-                    <div>
-                      <Label htmlFor="primary-font">Primary Font</Label>
-                      <Input 
-                        id="primary-font"
-                        value={designSystem?.typography.primary} 
-                        onChange={(e) => handleTypographyChange('primary', e.target.value)}
-                        className="max-w-xs mt-1"
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Main font used for body text
-                      </p>
+                  {/* Color System Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="text-lg font-medium mb-3">Color System</h3>
+                    <div className="space-y-4">
+                      {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
+                        <div key={key} className="space-y-2">
+                          <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
+                          <ColorPicker
+                            value={color}
+                            onChange={(value) => handleColorChange(key, value)}
+                          />
+                        </div>
+                      ))}
                     </div>
+                  </div>
+                  
+                  {/* Theme Settings Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="text-lg font-medium mb-3">Theme Settings</h3>
                     
-                    <div>
-                      <Label htmlFor="heading-font">Heading Font</Label>
-                      <Input 
-                        id="heading-font"
-                        value={designSystem?.typography.heading} 
-                        onChange={(e) => handleTypographyChange('heading', e.target.value)}
-                        className="max-w-xs mt-1"
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Font used for headings
-                      </p>
-                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
+                        <div className="pt-2 pb-2">
+                          <Slider 
+                            id="radius"
+                            defaultValue={[designSystem?.theme.radius || 0.5]} 
+                            max={2} 
+                            step={0.1}
+                            onValueChange={(value) => handleThemeChange('radius', value[0])}
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Controls the roundness of UI elements
+                        </p>
+                      </div>
 
-                    <div className="mt-4">
-                      <h3 className="font-medium mb-2">Typography Preview</h3>
-                      <div className="grid gap-4">
-                        <TypographyCard 
-                          name="Primary Font"
-                          family={designSystem?.typography.primary || "System UI"}
-                          weights={["400", "700"]}
-                          specimen="The quick brown fox jumps over the lazy dog."
-                          url=""
-                        />
-                        <TypographyCard 
-                          name="Heading Font"
-                          family={designSystem?.typography.heading || "System UI"}
-                          weights={["400", "700"]}
-                          specimen="The quick brown fox jumps over the lazy dog."
-                          url=""
-                        />
+                      <div>
+                        <Label htmlFor="animation">Animation Style</Label>
+                        <Select 
+                          value={designSystem?.theme.animation} 
+                          onValueChange={(value) => handleThemeChange('animation', value)}
+                        >
+                          <SelectTrigger id="animation" className="w-full mt-1">
+                            <SelectValue placeholder="Select animation style" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="minimal">Minimal</SelectItem>
+                            <SelectItem value="smooth">Smooth</SelectItem>
+                            <SelectItem value="bounce">Bounce</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Controls the animation style
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* HTML Element Styling */}
-                  <div className="space-y-6">
-                    <h3 className="text-lg font-medium">HTML Element Styling</h3>
-                    <div className="space-y-4 border rounded-md p-4">
+                  {/* Typography Settings Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="text-lg font-medium mb-3">Typography Settings</h3>
+                    
+                    {/* Font Selection */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="primary-font">Primary Font</Label>
+                        <Input 
+                          id="primary-font"
+                          value={designSystem?.typography.primary} 
+                          onChange={(e) => handleTypographyChange('primary', e.target.value)}
+                          className="mt-1"
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Main font used for body text
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="heading-font">Heading Font</Label>
+                        <Input 
+                          id="heading-font"
+                          value={designSystem?.typography.heading} 
+                          onChange={(e) => handleTypographyChange('heading', e.target.value)}
+                          className="mt-1"
+                        />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Font used for headings
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* HTML Element Styling */}
+                    <div className="space-y-4 mt-4">
                       <div>
                         <Label htmlFor="heading-size-scale">Heading Size Scale: <span id="heading-scale-value">1</span></Label>
                         <Slider 
@@ -396,7 +337,7 @@ export default function DesignBuilder() {
                           min={0.8} 
                           max={1.5} 
                           step={0.05}
-                          className="max-w-xs mt-2"
+                          className="mt-2"
                           onValueChange={(value) => {
                             handleTypographyChange('headingScale', value[0]);
                             document.getElementById('heading-scale-value')!.textContent = value[0].toString();
@@ -415,7 +356,7 @@ export default function DesignBuilder() {
                           min={0.8} 
                           max={1.2} 
                           step={0.05}
-                          className="max-w-xs mt-2"
+                          className="mt-2"
                           onValueChange={(value) => {
                             handleTypographyChange('bodyTextSize', value[0]);
                             document.getElementById('body-size-value')!.textContent = value[0].toString();
@@ -434,7 +375,7 @@ export default function DesignBuilder() {
                           min={1} 
                           max={2} 
                           step={0.1}
-                          className="max-w-xs mt-2"
+                          className="mt-2"
                           onValueChange={(value) => {
                             handleTypographyChange('lineHeight', value[0]);
                             document.getElementById('line-height-value')!.textContent = value[0].toString();
@@ -445,14 +386,14 @@ export default function DesignBuilder() {
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4 mt-4">
+                      <div className="grid grid-cols-1 gap-4 mt-4">
                         <div>
                           <Label htmlFor="heading-weight">Heading Weight</Label>
                           <Select 
                             defaultValue="700"
                             onValueChange={(value) => handleTypographyChange('headingWeight', value)}
                           >
-                            <SelectTrigger id="heading-weight" className="mt-2">
+                            <SelectTrigger id="heading-weight" className="mt-1">
                               <SelectValue placeholder="Select weight" />
                             </SelectTrigger>
                             <SelectContent>
@@ -471,7 +412,7 @@ export default function DesignBuilder() {
                             defaultValue="400"
                             onValueChange={(value) => handleTypographyChange('bodyWeight', value)}
                           >
-                            <SelectTrigger id="body-weight" className="mt-2">
+                            <SelectTrigger id="body-weight" className="mt-1">
                               <SelectValue placeholder="Select weight" />
                             </SelectTrigger>
                             <SelectContent>
@@ -484,44 +425,23 @@ export default function DesignBuilder() {
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground italic">
-                      Note: These settings will update the global styles for all HTML elements across the application.
+                    <p className="text-sm text-muted-foreground italic mt-3">
+                      Note: These settings will update the global styles.
                     </p>
                   </div>
-                </div>
-              </Card>
 
-              {/* Color System Section */}
-              <Card className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Color System</h2>
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="font-medium mb-4">Base Colors</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
-                        <div key={key} className="space-y-2">
-                          <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
-                          <ColorPicker
-                            value={color}
-                            onChange={(value) => handleColorChange(key, value)}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
-              </Card>
             </div>
 
-            {/* Right column: Component Preview */}
-            <div className="sticky top-8 self-start max-h-[calc(100vh-8rem)] overflow-auto">
+            {/* Right column: Component Preview (2 columns) */}
+            <div className="sticky self-start overflow-auto lg:col-span-2">
               <Card className="p-6 h-full">
-                <h2 className="text-xl font-semibold mb-6">Component Preview</h2>
+                <h2 className="text-xxl mb-6">Preview</h2>
                 <div className="space-y-10">
-                  {/* Color Preview Section - Moved from left column */}
+                  {/* Color Preview Section */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium border-b pb-2">Color System Preview</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <ColorCard name="Primary" hex={designSystem?.colors.primary || "#0000ff"} />
                       <ColorCard name="Background" hex={designSystem?.colors.background || "#ffffff"} />
                       <ColorCard name="Foreground" hex={designSystem?.colors.foreground || "#000000"} />
@@ -530,6 +450,25 @@ export default function DesignBuilder() {
                       <ColorCard name="Destructive" hex={designSystem?.colors.destructive || "#ef4444"} />
                     </div>
                   </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium border-b pb-2">Typography</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h1 className="text-4xl font-bold mb-2">Heading 1</h1>
+                        <h2 className="text-3xl font-bold mb-2">Heading 2</h2>
+                        <h3 className="text-2xl font-bold mb-2">Heading 3</h3>
+                        <h4 className="text-xl font-bold mb-2">Heading 4</h4>
+                        <h5 className="text-lg font-bold">Heading 5</h5>
+                      </div>
+                      <div>
+                        <p className="mb-2">Regular paragraph text. The quick brown fox jumps over the lazy dog.</p>
+                        <p className="text-sm mb-2">Small text for captions and secondary content.</p>
+                        <p><strong>Bold text</strong> and <em>italic text</em> for emphasis.</p>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium border-b pb-2">Buttons</h3>
                     <div className="grid gap-4">
@@ -614,26 +553,8 @@ export default function DesignBuilder() {
                   </div>
 
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium border-b pb-2">Typography</h3>
-                    <div className="space-y-4">
-                      <div>
-                        <h1 className="text-4xl font-bold mb-2">Heading 1</h1>
-                        <h2 className="text-3xl font-bold mb-2">Heading 2</h2>
-                        <h3 className="text-2xl font-bold mb-2">Heading 3</h3>
-                        <h4 className="text-xl font-bold mb-2">Heading 4</h4>
-                        <h5 className="text-lg font-bold">Heading 5</h5>
-                      </div>
-                      <div>
-                        <p className="mb-2">Regular paragraph text. The quick brown fox jumps over the lazy dog.</p>
-                        <p className="text-sm mb-2">Small text for captions and secondary content.</p>
-                        <p><strong>Bold text</strong> and <em>italic text</em> for emphasis.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
                     <h3 className="text-lg font-medium border-b pb-2">Cards</h3>
-                    <div className="grid gap-4">
+                    <div className="grid md:grid-cols-2 gap-4">
                       <Card className="p-4">
                         <h4 className="font-medium mb-2">Simple Card</h4>
                         <p className="text-sm text-muted-foreground">
