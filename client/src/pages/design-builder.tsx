@@ -105,7 +105,19 @@ export default function DesignBuilder() {
   };
   
   // Updated to handle typography changes, including properties not directly in the typography object
-  const handleTypographyChange = (key: string, value: string | number) => {
+  const handleRawTokenChange = (category: string, key: string, value: number) => {
+  updateDraftDesignSystem({
+    raw_tokens: {
+      ...designSystem?.raw_tokens,
+      [category]: {
+        ...(designSystem?.raw_tokens?.[category] || {}),
+        [key]: value
+      }
+    }
+  });
+};
+
+const handleTypographyChange = (key: string, value: string | number) => {
     // First, handle the basic typography settings (font family)
     if (key === 'primary' || key === 'heading') {
       updateDraftDesignSystem({ 
@@ -291,6 +303,68 @@ export default function DesignBuilder() {
                           Controls the animation style
                         </p>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Raw Design Tokens Section */}
+                  <div className="border-b pb-4">
+                    <h3 className="text-lg font-medium mb-3">Raw Design Tokens</h3>
+                    
+                    {/* Spacing Tokens */}
+                    <div className="space-y-4 mb-6">
+                      <h4 className="font-medium">Spacing Scale</h4>
+                      {['xs', 'sm', 'md', 'lg', 'xl', 'xxl', 'xxxl'].map((size) => (
+                        <div key={size} className="space-y-2">
+                          <Label className="capitalize">Spacing {size}</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              className="w-24"
+                              value={designSystem?.raw_tokens?.spacing?.[`spacing_${size}`] || 0}
+                              onChange={(e) => handleRawTokenChange('spacing', `spacing_${size}`, parseFloat(e.target.value))}
+                            />
+                            <span className="text-muted-foreground self-center">rem</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Border Radius Tokens */}
+                    <div className="space-y-4 mb-6">
+                      <h4 className="font-medium">Border Radius Scale</h4>
+                      {['none', 'sm', 'md', 'lg', 'xl', 'full'].map((size) => (
+                        <div key={size} className="space-y-2">
+                          <Label className="capitalize">Radius {size}</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              className="w-24"
+                              value={designSystem?.raw_tokens?.radius?.[`radius_${size}`] || 0}
+                              onChange={(e) => handleRawTokenChange('radius', `radius_${size}`, parseFloat(e.target.value))}
+                            />
+                            <span className="text-muted-foreground self-center">px</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Transitions */}
+                    <div className="space-y-4 mb-6">
+                      <h4 className="font-medium">Transitions</h4>
+                      {['fast', 'base', 'slow'].map((speed) => (
+                        <div key={speed} className="space-y-2">
+                          <Label className="capitalize">Duration {speed}</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              className="w-24"
+                              value={designSystem?.raw_tokens?.transition?.[`transition_duration_${speed}`] || 0}
+                              onChange={(e) => handleRawTokenChange('transition', `transition_duration_${speed}`, parseFloat(e.target.value))}
+                            />
+                            <span className="text-muted-foreground self-center">ms</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 

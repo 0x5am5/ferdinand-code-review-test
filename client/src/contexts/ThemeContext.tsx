@@ -2,6 +2,30 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 // Define the theme structure to match what we're using in design-builder.tsx
 export interface DesignSystem {
+  raw_tokens?: {
+    spacing?: {
+      spacing_xs?: number;
+      spacing_sm?: number;
+      spacing_md?: number;
+      spacing_lg?: number;
+      spacing_xl?: number;
+      spacing_xxl?: number;
+      spacing_xxxl?: number;
+    };
+    radius?: {
+      radius_none?: number;
+      radius_sm?: number;
+      radius_md?: number;
+      radius_lg?: number;
+      radius_xl?: number;
+      radius_full?: number;
+    };
+    transition?: {
+      transition_duration_fast?: number;
+      transition_duration_base?: number;
+      transition_duration_slow?: number;
+    };
+  };
   theme: {
     variant: 'professional' | 'tint' | 'vibrant';
     primary: string;

@@ -172,7 +172,7 @@ export function registerRoutes(app: Express) {
       if (!role || !Object.values(UserRole).includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
-      
+
       const updatedUser = await storage.updateUserRole(req.session.userId, role);
       res.json(updatedUser);
     } catch (error) {
@@ -244,7 +244,7 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error updating client order" });
     }
   });
-  
+
   // Update client information
   app.patch("/api/clients/:id", async (req, res) => {
     try {
@@ -252,19 +252,19 @@ export function registerRoutes(app: Express) {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
-      
+
       const client = await storage.getClient(id);
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
-      
+
       // If user is updating the client, record who made the change
       const userId = req.session.userId;
       if (userId) {
         req.body.lastEditedBy = userId;
         req.body.updatedAt = new Date();
       }
-      
+
       // Update the client
       const updatedClient = await storage.updateClient(id, req.body);
       res.json(updatedClient);
@@ -594,7 +594,7 @@ export function registerRoutes(app: Express) {
     try {
       // For user invitation, we'll use the invitations system which already has email handling
       // and proper error validation
-      
+
       // Create an invitation with the provided user data
       const invitationData = {
         email: req.body.email,
@@ -602,7 +602,7 @@ export function registerRoutes(app: Express) {
         role: req.body.role || UserRole.STANDARD,
         clientIds: req.body.clientIds || undefined
       };
-      
+
       // Check if a user with this email already exists
       const existingUser = await storage.getUserByEmail(invitationData.email);
       if (existingUser) {
@@ -611,12 +611,12 @@ export function registerRoutes(app: Express) {
           code: "EMAIL_EXISTS"
         });
       }
-      
+
       // Check if an invitation with this email already exists
       const existingInvitations = await db.query.invitations.findMany({
         where: eq(schema.invitations.email, invitationData.email)
       });
-      
+
       // Only consider unused invitations as duplicates
       const pendingInvitation = existingInvitations.find(inv => !inv.used);
       if (pendingInvitation) {
@@ -626,17 +626,17 @@ export function registerRoutes(app: Express) {
           invitationId: pendingInvitation.id
         });
       }
-      
+
       // Create the invitation
       const invitation = await storage.createInvitation(invitationData);
-      
+
       // Calculate the invitation link
       const inviteLink = `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`;
-      
+
       // Get client information if a clientId is provided
       let clientName = "our platform";
       let logoUrl = undefined;
-      
+
       if (invitationData.clientIds && invitationData.clientIds.length > 0) {
         try {
           const client = await storage.getClient(invitationData.clientIds[0]);
@@ -649,7 +649,7 @@ export function registerRoutes(app: Express) {
           // Continue with default values if client fetch fails
         }
       }
-      
+
       // Send invitation email
       try {
         await emailService.sendInvitationEmail({
@@ -660,13 +660,13 @@ export function registerRoutes(app: Express) {
           expiration: "7 days",
           logoUrl
         });
-        
+
         console.log(`Invitation email sent to ${invitationData.email}`);
       } catch (emailError) {
         console.error("Failed to send invitation email:", emailError);
         // We don't want to fail the entire invitation process if just the email fails
       }
-      
+
       // Return success with the invitation data
       res.status(201).json({
         id: invitation.id,
@@ -689,12 +689,12 @@ export function registerRoutes(app: Express) {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
-      
+
       const { role } = req.body;
       if (!role || !Object.values(UserRole).includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
       }
-      
+
       const updatedUser = await storage.updateUserRole(id, role);
       res.json(updatedUser);
     } catch (error) {
@@ -702,27 +702,27 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error updating user role" });
     }
   });
-  
+
   // Send password reset email to user
   app.post("/api/users/:id/reset-password", async (req, res) => {
     try {
       console.log(`[PASSWORD RESET] Request received for user ID: ${req.params.id}`);
-      
+
       const userId = parseInt(req.params.id);
       if (isNaN(userId)) {
         console.log(`[PASSWORD RESET] Invalid user ID: ${req.params.id}`);
         return res.status(400).json({ message: "Invalid user ID" });
       }
-      
+
       // Get the user
       const user = await storage.getUser(userId);
       if (!user) {
         console.log(`[PASSWORD RESET] User not found for ID: ${userId}`);
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       console.log(`[PASSWORD RESET] Found user: ${user.email} (ID: ${user.id})`);
-      
+
       // Generate a reset token that includes the user ID and expiration time
       const expirationTime = Date.now() + 24 * 60 * 60 * 1000; // 24 hours from now
       const tokenData = {
@@ -730,15 +730,15 @@ export function registerRoutes(app: Express) {
         email: user.email,
         exp: expirationTime
       };
-      
+
       // We'll encode this as a base64 string - in a real app you'd use a JWT or store in the database
       const resetToken = Buffer.from(JSON.stringify(tokenData)).toString('base64');
-      
+
       // Create the reset link
       const baseUrl = process.env.APP_URL || `http://${req.headers.host}`;
       const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
       console.log(`[PASSWORD RESET] Generated reset link: ${resetLink}`);
-      
+
       // Send the password reset email
       console.log(`[PASSWORD RESET] Attempting to send email to: ${user.email}`);
       const emailSent = await emailService.sendPasswordResetEmail({
@@ -746,70 +746,70 @@ export function registerRoutes(app: Express) {
         resetLink,
         clientName: "Brand Guidelines Platform"
       });
-      
+
       console.log(`[PASSWORD RESET] Email sent successfully: ${emailSent}`);
-      
+
       res.json({ success: true, message: "Password reset email sent" });
     } catch (error) {
       console.error("Error sending password reset:", error);
       res.status(500).json({ message: "Failed to send password reset email" });
     }
   });
-  
+
   // Handle password reset form submission
   app.post("/api/reset-password", async (req, res) => {
     try {
       console.log("[PASSWORD RESET] Processing password reset request");
       const { token, password } = req.body;
-      
+
       if (!token || !password) {
         return res.status(400).json({ message: "Token and new password are required" });
       }
-      
+
       // Validate password
       if (password.length < 8) {
         return res.status(400).json({ message: "Password must be at least 8 characters" });
       }
-      
+
       try {
         // Decode the token
         const tokenData = JSON.parse(Buffer.from(token, 'base64').toString());
         console.log("[PASSWORD RESET] Token data:", tokenData);
-        
+
         // Validate token expiration
         if (!tokenData.exp || tokenData.exp < Date.now()) {
           console.log("[PASSWORD RESET] Token expired:", tokenData.exp, "<", Date.now());
           return res.status(400).json({ message: "Reset token has expired" });
         }
-        
+
         // Get the user from the token
         const user = await storage.getUser(tokenData.userId);
         if (!user) {
           console.log("[PASSWORD RESET] User not found:", tokenData.userId);
           return res.status(404).json({ message: "User not found" });
         }
-        
+
         // Verify the email matches
         if (user.email !== tokenData.email) {
           console.log("[PASSWORD RESET] Email mismatch:", user.email, "!==", tokenData.email);
           return res.status(400).json({ message: "Invalid reset token" });
         }
-        
+
         console.log(`[PASSWORD RESET] Resetting password for user ${user.id} (${user.email})`);
-        
+
         // In a real app, you would hash the password here before storing it
         // Now, actually update the user's password in the database
         await storage.updateUserPassword(user.id, password);
-        
+
         console.log("[PASSWORD RESET] Password reset successfully for", user.email);
-        
+
         // Send confirmation email
         await emailService.sendEmail({
           to: user.email,
           subject: "Your password has been reset",
           text: `Your password for Brand Guidelines Platform has been reset successfully. If you did not make this change, please contact support immediately.`
         });
-        
+
         res.json({ success: true });
       } catch (tokenError) {
         console.error("[PASSWORD RESET] Token parsing error:", tokenError);
@@ -828,7 +828,7 @@ export function registerRoutes(app: Express) {
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
-      
+
       const clients = await storage.getUserClients(id);
       res.json(clients);
     } catch (error) {
@@ -836,22 +836,22 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error fetching user clients" });
     }
   });
-  
+
   // Get all client assignments for all users
   app.get("/api/users/client-assignments", async (req, res) => {
     try {
       // Get all users
       const userList = await storage.getUsers();
-      
+
       // Create a map to store user assignments
       const assignments: Record<number, any[]> = {};
-      
+
       // Get clients for each user
       await Promise.all(userList.map(async (user) => {
         const userClients = await storage.getUserClients(user.id);
         assignments[user.id] = userClients;
       }));
-      
+
       res.json(assignments);
     } catch (error) {
       console.error("Error fetching client assignments:", error);
@@ -863,14 +863,14 @@ export function registerRoutes(app: Express) {
   app.post("/api/user-clients", async (req, res) => {
     try {
       let { userId, clientId } = req.body;
-      
+
       // If userId is not provided, use the current user's ID
       if (!userId && req.session.userId) {
         userId = req.session.userId;
       } else if (!userId) {
         return res.status(401).json({ message: "User ID is required or user must be authenticated" });
       }
-      
+
       // Check if this relationship already exists to prevent duplicates
       const existingRelationship = await db.select()
         .from(userClients)
@@ -880,48 +880,48 @@ export function registerRoutes(app: Express) {
             eq(userClients.clientId, clientId)
           )
         );
-      
+
       if (existingRelationship.length > 0) {
         return res.status(409).json({ 
           message: "This user is already associated with this client",
           userClient: existingRelationship[0]
         });
       }
-      
+
       const parsed = insertUserClientSchema.safeParse({
         userId,
         clientId
       });
-      
+
       if (!parsed.success) {
         return res.status(400).json({
           message: "Invalid user-client data",
           errors: parsed.error.errors
         });
       }
-      
+
       // Verify user exists
       const userExists = await db.select()
         .from(users)
         .where(eq(users.id, userId));
-        
+
       if (userExists.length === 0) {
         return res.status(404).json({ message: "User not found" });
       }
-      
+
       // Verify client exists
       const clientExists = await db.select()
         .from(clients)
         .where(eq(clients.id, clientId));
-        
+
       if (clientExists.length === 0) {
         return res.status(404).json({ message: "Client not found" });
       }
-      
+
       const [userClient] = await db.insert(userClients)
         .values(parsed.data)
         .returning();
-      
+
       res.status(201).json(userClient);
     } catch (error) {
       console.error("Error creating user-client relationship:", error);
@@ -938,11 +938,11 @@ export function registerRoutes(app: Express) {
     try {
       const userId = parseInt(req.params.userId);
       const clientId = parseInt(req.params.clientId);
-      
+
       if (isNaN(userId) || isNaN(clientId)) {
         return res.status(400).json({ message: "Invalid user or client ID" });
       }
-      
+
       // Delete the user-client relationship
       await db.delete(userClients)
         .where(
@@ -952,7 +952,7 @@ export function registerRoutes(app: Express) {
           )
         )
         .execute();
-        
+
       // Verify relationship was removed
       const verifyDeletion = await db.select().from(userClients)
         .where(
@@ -961,42 +961,42 @@ export function registerRoutes(app: Express) {
             eq(userClients.clientId, clientId)
           )
         );
-        
+
       if (verifyDeletion.length > 0) {
         throw new Error("Failed to delete user-client relationship");
       }
-      
+
       res.status(200).json({ message: "User-client relationship deleted successfully" });
     } catch (error) {
       console.error("Error deleting user-client relationship:", error);
       res.status(500).json({ message: "Error deleting user-client relationship" });
     }
   });
-  
+
   // Get users for a specific client
   app.get("/api/clients/:clientId/users", validateClientId, async (req: RequestWithClientId, res) => {
     try {
       const clientId = req.clientId!;
-      
+
       // Query all users who have this client assigned
       const userClientRows = await db
         .select()
         .from(userClients)
         .where(eq(userClients.clientId, clientId));
-      
+
       if (userClientRows.length === 0) {
         return res.json([]);
       }
-      
+
       // Get user IDs from the relationships
       const userIds = userClientRows.map(row => row.userId);
-      
+
       // Fetch the actual user details
       const userList = await db
         .select()
         .from(users)
         .where(inArray(users.id, userIds));
-      
+
       res.json(userList);
     } catch (error) {
       console.error("Error fetching client users:", error);
@@ -1012,28 +1012,28 @@ export function registerRoutes(app: Express) {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-      
+
       // Get the user to check their role
       const user = await storage.getUser(req.session.userId);
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
-      
+
       // Only allow admins and super admins to view all invitations
       if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
-      
+
       // Get all pending invitations
       const pendingInvitations = await db.query.invitations.findMany({
         where: eq(schema.invitations.used, false)
       });
-      
+
       // Enhance invitations with client data
       const enhancedInvitations = await Promise.all(
         pendingInvitations.map(async (invitation) => {
           let clientData = undefined;
-          
+
           if (invitation.clientIds && invitation.clientIds.length > 0) {
             try {
               const client = await storage.getClient(invitation.clientIds[0]);
@@ -1048,36 +1048,36 @@ export function registerRoutes(app: Express) {
               console.error("Error fetching client data for invitation:", err);
             }
           }
-          
+
           // Exclude token from response
           const { token, ...safeInvitation } = invitation;
-          
+
           return {
             ...safeInvitation,
             clientData
           };
         })
       );
-      
+
       res.json(enhancedInvitations);
     } catch (error) {
       console.error("Error fetching invitations:", error);
       res.status(500).json({ message: "Error fetching invitations" });
     }
   });
-  
+
   // Create a new invitation
   app.post("/api/invitations", async (req, res) => {
     try {
       const parsed = insertInvitationSchema.safeParse(req.body);
-      
+
       if (!parsed.success) {
         return res.status(400).json({
           message: "Invalid invitation data",
           errors: parsed.error.errors
         });
       }
-      
+
       // Check if a user with this email already exists
       const existingUser = await storage.getUserByEmail(parsed.data.email);
       if (existingUser) {
@@ -1086,12 +1086,12 @@ export function registerRoutes(app: Express) {
           code: "EMAIL_EXISTS"
         });
       }
-      
+
       // Check if an invitation with this email already exists
       const existingInvitations = await db.query.invitations.findMany({
         where: eq(schema.invitations.email, parsed.data.email)
       });
-      
+
       // Only consider unused invitations as duplicates
       const pendingInvitation = existingInvitations.find(inv => !inv.used);
       if (pendingInvitation) {
@@ -1101,16 +1101,16 @@ export function registerRoutes(app: Express) {
           invitationId: pendingInvitation.id
         });
       }
-      
+
       const invitation = await storage.createInvitation(parsed.data);
-      
+
       // Calculate the invitation link
       const inviteLink = `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`;
-      
+
       // Get client information if a clientId is provided
       let clientName = "our platform";
       let logoUrl = undefined;
-      
+
       if (req.body.clientIds && Array.isArray(req.body.clientIds) && req.body.clientIds.length > 0) {
         try {
           const client = await storage.getClient(req.body.clientIds[0]);
@@ -1123,7 +1123,7 @@ export function registerRoutes(app: Express) {
           // Continue with default values if client fetch fails
         }
       }
-      
+
       // Send invitation email
       try {
         await emailService.sendInvitationEmail({
@@ -1134,13 +1134,13 @@ export function registerRoutes(app: Express) {
           expiration: "7 days",
           logoUrl
         });
-        
+
         console.log(`Invitation email sent to ${parsed.data.email}`);
       } catch (emailError) {
         console.error("Failed to send invitation email:", emailError);
         // We don't want to fail the entire invitation process if just the email fails
       }
-      
+
       // Return the invitation with the token (this will be used to create the invitation link)
       res.status(201).json({
         ...invitation,
@@ -1151,27 +1151,27 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error creating invitation" });
     }
   });
-  
+
   // Get invitation by token (used when a user clicks on an invitation link)
   app.get("/api/invitations/:token", async (req, res) => {
     try {
       const { token } = req.params;
       const invitation = await storage.getInvitation(token);
-      
+
       if (!invitation) {
         return res.status(404).json({ message: "Invitation not found" });
       }
-      
+
       // Check if invitation is expired
       if (new Date(invitation.expiresAt) < new Date()) {
         return res.status(400).json({ message: "Invitation has expired" });
       }
-      
+
       // Check if invitation has already been used
       if (invitation.used) {
         return res.status(400).json({ message: "Invitation has already been used" });
       }
-      
+
       // Return the invitation data (but not the token)
       res.json({
         id: invitation.id,
@@ -1185,35 +1185,35 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error fetching invitation" });
     }
   });
-  
+
   // Get client data for invitation
   app.get("/api/invitations/:token/client", async (req, res) => {
     try {
       const { token } = req.params;
       const invitation = await storage.getInvitation(token);
-      
+
       if (!invitation) {
         return res.status(404).json({ message: "Invitation not found" });
       }
-      
+
       // Check if invitation is expired
       if (new Date(invitation.expiresAt) < new Date()) {
         return res.status(400).json({ message: "Invitation has expired" });
       }
-      
+
       // If no clientIds, return empty response
       if (!invitation.clientIds || invitation.clientIds.length === 0) {
         return res.json({ clientData: null });
       }
-      
+
       // Get the first client (for branding purposes)
       const clientId = invitation.clientIds[0];
       const client = await storage.getClient(clientId);
-      
+
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
-      
+
       // Fetch logo asset if available
       let logoUrl = null;
       const assets = await storage.getClientAssets(clientId);
@@ -1224,11 +1224,11 @@ export function registerRoutes(app: Express) {
         'type' in asset.data && 
         asset.data.type === 'primary'
       );
-      
+
       if (logoAsset) {
         logoUrl = `/api/assets/${logoAsset.id}/file`;
       }
-      
+
       // Return client data with logo URL
       res.json({
         clientData: {
@@ -1243,16 +1243,16 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error fetching client for invitation" });
     }
   });
-  
+
   // Mark invitation as used (called after user registration is complete)
   app.post("/api/invitations/:id/use", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid invitation ID" });
       }
-      
+
       const invitation = await storage.markInvitationAsUsed(id);
       res.json({ message: "Invitation marked as used", invitation });
     } catch (error) {
@@ -1260,37 +1260,37 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error updating invitation" });
     }
   });
-  
+
   // Resend invitation email
   app.post("/api/invitations/:id/resend", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid invitation ID" });
       }
-      
+
       // Get the invitation from database
       const invitation = await db.query.invitations.findFirst({
         where: eq(schema.invitations.id, id)
       });
-      
+
       if (!invitation) {
         return res.status(404).json({ message: "Invitation not found" });
       }
-      
+
       // If invitation is already used, return error
       if (invitation.used) {
         return res.status(400).json({ message: "Invitation has already been used" });
       }
-      
+
       // Calculate the invitation link
       const inviteLink = `${req.protocol}://${req.get('host')}/signup?token=${invitation.token}`;
-      
+
       // Get client information if a clientId is provided
       let clientName = "our platform";
       let logoUrl = undefined;
-      
+
       if (invitation.clientIds && invitation.clientIds.length > 0) {
         try {
           const client = await storage.getClient(invitation.clientIds[0]);
@@ -1303,7 +1303,7 @@ export function registerRoutes(app: Express) {
           // Continue with default values if client fetch fails
         }
       }
-      
+
       // Send the invitation email
       try {
         await emailService.resendInvitationEmail({
@@ -1314,9 +1314,9 @@ export function registerRoutes(app: Express) {
           expiration: "7 days",
           logoUrl
         });
-        
+
         console.log(`Invitation email resent to ${invitation.email}`);
-        
+
         // Return success
         res.json({ 
           message: "Invitation email resent successfully",
@@ -1459,7 +1459,7 @@ export function registerRoutes(app: Express) {
     try {
       // For development, we're temporarily removing authentication
       // In production, we'd want to check if user has admin rights
-      
+
       // Read the theme.json file from the project root
       const themeData = fs.readFileSync('./theme.json', 'utf8');
       const parsedTheme = JSON.parse(themeData);
@@ -1513,8 +1513,41 @@ export function registerRoutes(app: Express) {
       // For development, we're temporarily removing authentication
       // In production, we'd want to check if user has admin rights
 
-      const { theme, typography, colors } = req.body;
-      
+      const { theme, typography, colors, raw_tokens } = req.body;
+
+      // Update raw-tokens.scss if raw_tokens are provided
+      if (raw_tokens) {
+        let rawTokensContent = `// This file is auto-generated by the design builder\n\n`;
+
+        // Add spacing tokens
+        if (raw_tokens.spacing) {
+          rawTokensContent += `// Spacing Tokens\n`;
+          Object.entries(raw_tokens.spacing).forEach(([key, value]) => {
+            rawTokensContent += `$${key}: ${value}#{$default-unit};\n`;
+          });
+          rawTokensContent += `\n`;
+        }
+
+        // Add radius tokens
+        if (raw_tokens.radius) {
+          rawTokensContent += `// Border Radius Tokens\n`;
+          Object.entries(raw_tokens.radius).forEach(([key, value]) => {
+            rawTokensContent += `$${key}: ${value}px;\n`;
+          });
+          rawTokensContent += `\n`;
+        }
+
+        // Add transition tokens
+        if (raw_tokens.transition) {
+          rawTokensContent += `// Transition Tokens\n`;
+          Object.entries(raw_tokens.transition).forEach(([key, value]) => {
+            rawTokensContent += `$${key}: ${value}ms;\n`;
+          });
+        }
+
+        fs.writeFileSync('./client/src/styles/_raw-tokens.scss', rawTokensContent);
+      }
+
       // We need at least one section to update
       if (!theme && !typography && !colors) {
         return res.status(400).json({ message: "Invalid design system data" });
@@ -1554,19 +1587,19 @@ export function registerRoutes(app: Express) {
       res.status(500).json({ message: "Error updating design system" });
     }
   });
-  
+
   // Extended typography settings route
   app.patch("/api/design-system/typography", async (req, res) => {
     try {
       // For development, we're temporarily removing authentication
       // In production, we'd want to check if user has admin rights
-      
+
       const typographySettings = req.body;
-      
+
       if (!typographySettings || Object.keys(typographySettings).length === 0) {
         return res.status(400).json({ message: "No typography settings provided" });
       }
-      
+
       // Read existing theme.json to get current settings
       let existingTheme: any = {};
       try {
@@ -1576,7 +1609,7 @@ export function registerRoutes(app: Express) {
         console.error("Error reading existing theme.json:", error);
         return res.status(500).json({ message: "Error reading theme configuration" });
       }
-      
+
       // Add or update the typography_extended property in theme.json
       const updatedTheme = {
         ...existingTheme,
@@ -1585,10 +1618,10 @@ export function registerRoutes(app: Express) {
           ...typographySettings
         }
       };
-      
+
       // Write updated theme back to theme.json
       fs.writeFileSync('./theme.json', JSON.stringify(updatedTheme, null, 2));
-      
+
       // Return success response
       res.json({ 
         message: "Typography settings updated successfully", 
