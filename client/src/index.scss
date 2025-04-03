@@ -1,0 +1,124 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 205 100% 50%;
+    --primary-foreground: 210 40% 98%;
+    --primary-light: 205 100% 95%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 205 100% 50%;
+    --radius: 0.5rem;
+    --transition: 0.2s ease;
+    --font-sans: 'roc-grotesk';
+    --font-heading: 'ivypresto-display';
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-hover: 210 40% 96.1%;
+    --sidebar-active: 205 100% 95%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --heading-1-size: 2.5rem;
+    --heading-2-size: 2rem;
+    --heading-3-size: 1.5rem;
+    --body-size: 1rem;
+    --line-height: 1.5;
+    --heading-weight: 700;
+    --body-weight: 400;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-roc antialiased;
+  }
+
+  h1, h2, h3, p {
+    line-height: var(--line-height);
+  }
+
+  h1 {
+    @apply font-ivy mb-6;
+    font-size: var(--heading-1-size);
+    font-weight: var(--heading-weight);
+  }
+
+  h2 {
+    @apply font-roc mb-4;
+    font-size: var(--heading-2-size);
+    font-weight: var(--heading-weight);
+  }
+
+  h3 {
+    @apply font-roc mb-3;
+    font-size: var(--heading-3-size);
+    font-weight: var(--heading-weight);
+  }
+
+  p {
+    @apply font-roc mb-4;
+    font-size: var(--body-size);
+    font-weight: var(--body-weight);
+  }
+}
+
+@layer components {
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2 rounded-md transition-colors text-sidebar-foreground;
+    
+    &:hover {
+      @apply bg-sidebar-hover;
+    }
+    
+    &.active {
+      @apply bg-sidebar-active text-primary;
+    }
+  }
+
+  .card {
+    @apply bg-card rounded-lg border p-6 shadow-sm transition-shadow;
+    
+    &:hover {
+      @apply shadow-md;
+    }
+  }
+}
+
+.flex-direction {
+  &--column {
+    flex-direction: column;
+  }
+}
+
+.app-name {
+  &--h1 {
+    font-style: italic;
+    font-size: 40px;
+    margin: 20px 0;
+  }
+}
+
+.builder {
+  &--controls {
+    position: fixed;
+    bottom: 0;
+  }
+}
