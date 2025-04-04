@@ -649,19 +649,340 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                     
-                    {/* Semantic Colors (UI Component Colors) */}
+                    {/* Semantic Colors from _semantic.scss */}
                     <div className="mt-8 border-t pt-4">
-                      <h3 className="text-md font-semibold mb-3">UI Component Colors</h3>
+                      <h3 className="text-md font-semibold mb-3">Semantic Colors</h3>
                       <div className="space-y-4">
-                        {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
-                          <div key={key} className="space-y-2">
-                            <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
-                            <ColorPicker
-                              value={color}
-                              onChange={(value) => handleColorChange(key, value)}
-                            />
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Primary Colors</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Primary ($color-primary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'brand.primary_base', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Primary ($color-on-primary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Primary Container ($color-primary-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                onChange={(value) => {
+                                  // Using the lighten effect similar to _semantic.scss
+                                  // We're updating the primary base here as it affects the derived colors
+                                  handleRawTokenChange('colors', 'brand.primary_base', value);
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a lighter version of Primary color</span>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Primary Container ($color-on-primary-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                onChange={(value) => {
+                                  // Using the darken effect similar to _semantic.scss
+                                  // We're updating the primary base here as it affects the derived colors
+                                  handleRawTokenChange('colors', 'brand.primary_base', value);
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a darker version of Primary color</span>
+                            </div>
                           </div>
-                        ))}
+                        </div>
+                        
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Secondary Colors</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Secondary ($color-secondary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"}
+                                onChange={(value) => handleRawTokenChange('colors', 'brand.secondary_base', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Secondary ($color-on-secondary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Secondary Container ($color-secondary-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"}
+                                onChange={(value) => {
+                                  // Using the lighten effect similar to _semantic.scss
+                                  handleRawTokenChange('colors', 'brand.secondary_base', value);
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a lighter version of Secondary color</span>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Secondary Container ($color-on-secondary-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"}
+                                onChange={(value) => {
+                                  // Using the darken effect similar to _semantic.scss
+                                  handleRawTokenChange('colors', 'brand.secondary_base', value);
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a darker version of Secondary color</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Tertiary Colors</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Tertiary ($color-tertiary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"}
+                                onChange={(value) => handleRawTokenChange('colors', 'brand.tertiary_base', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Tertiary ($color-on-tertiary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Tertiary Container ($color-tertiary-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"}
+                                onChange={(value) => {
+                                  // Using the lighten effect similar to _semantic.scss
+                                  handleRawTokenChange('colors', 'brand.tertiary_base', value);
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a lighter version of Tertiary color</span>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Tertiary Container ($color-on-tertiary-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"}
+                                onChange={(value) => {
+                                  // Using the darken effect similar to _semantic.scss
+                                  handleRawTokenChange('colors', 'brand.tertiary_base', value);
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a darker version of Tertiary color</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Error Colors</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Error ($color-error)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"}
+                                onChange={(value) => handleRawTokenChange('colors', 'interactive.error_base', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Error ($color-on-error)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Error Container ($color-error-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"}
+                                onChange={(value) => handleRawTokenChange('colors', 'interactive.error_base', value)}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a lighter version of Error color</span>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Error Container ($color-on-error-container)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"}
+                                onChange={(value) => handleRawTokenChange('colors', 'interactive.error_base', value)}
+                              />
+                              <span className="text-xs text-muted-foreground">This is a darker version of Error color</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Neutral Colors (Backgrounds and Surfaces)</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Background ($color-background)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'neutral.neutral_0', value);
+                                  handleColorChange("background", value);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Background ($color-on-background)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'neutral.neutral_900', value);
+                                  handleColorChange("foreground", value);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Surface ($color-surface)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'neutral.neutral_100', value);
+                                  handleColorChange("card", value);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Surface ($color-on-surface)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_800 || "#343a40"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'neutral.neutral_800', value);
+                                  handleColorChange("card-foreground", value);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Surface Variant ($color-surface-variant)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'neutral.neutral_200', value);
+                                  handleColorChange("muted", value);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>On Surface Variant ($color-on-surface-variant)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_700 || "#495057"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'neutral.neutral_700', value);
+                                  handleColorChange("muted-foreground", value);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Outline & Border</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Outline ($color-outline)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_500', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Border ($color-border-default)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'neutral.neutral_200', value);
+                                  handleColorChange("border", value);
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Border Focus ($color-border-focus)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                onChange={(value) => {
+                                  handleRawTokenChange('colors', 'brand.primary_base', value);
+                                  handleColorChange("ring", value);
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Text Colors</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Text Primary ($color-text-primary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_900', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Text Secondary ($color-text-secondary)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_600 || "#6c757d"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_600', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Text Muted ($color-text-muted)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_500', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Text Inverse ($color-text-inverse)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Button Colors</h4>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label>Button Primary BG ($color-button-primary-bg)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'brand.primary_base', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Button Primary Text ($color-button-primary-text)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Button Secondary BG ($color-button-secondary-bg)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"}
+                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_100', value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Button Secondary Text ($color-button-secondary-text)</Label>
+                              <ColorPicker
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                onChange={(value) => handleRawTokenChange('colors', 'brand.primary_base', value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
@@ -978,17 +1299,106 @@ export default function DesignBuilder() {
                   {/* Colors Tab Preview */}
                   <TabsContent value="colors" className="mt-0">
                     <div className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <ColorCard name="Primary" hex={designSystem?.colors.primary || "#0000ff"} />
-                        <ColorCard name="Background" hex={designSystem?.colors.background || "#ffffff"} />
-                        <ColorCard name="Foreground" hex={designSystem?.colors.foreground || "#000000"} />
-                        <ColorCard name="Muted" hex={designSystem?.colors.muted || "#f1f5f9"} />
-                        <ColorCard name="Accent" hex={designSystem?.colors.accent || "#f1f5f9"} />
-                        <ColorCard name="Destructive" hex={designSystem?.colors.destructive || "#ef4444"} />
+                      <h3 className="text-lg font-medium border-b pb-2">Semantic Color Preview</h3>
+                      
+                      {/* Primary Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Primary Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Primary ($color-primary)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="On Primary ($color-on-primary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Primary Container ($color-primary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} lighter={true} />
+                          <ColorCard name="On Primary Container ($color-on-primary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} darker={true} />
+                        </div>
+                      </div>
+                      
+                      {/* Secondary Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Secondary Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Secondary ($color-secondary)" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} />
+                          <ColorCard name="On Secondary ($color-on-secondary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Secondary Container ($color-secondary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} lighter={true} />
+                          <ColorCard name="On Secondary Container ($color-on-secondary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} darker={true} />
+                        </div>
+                      </div>
+                      
+                      {/* Tertiary Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Tertiary Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Tertiary ($color-tertiary)" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} />
+                          <ColorCard name="On Tertiary ($color-on-tertiary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Tertiary Container ($color-tertiary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} lighter={true} />
+                          <ColorCard name="On Tertiary Container ($color-on-tertiary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} darker={true} />
+                        </div>
+                      </div>
+                      
+                      {/* Error Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Error Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Error ($color-error)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
+                          <ColorCard name="On Error ($color-on-error)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Error Container ($color-error-container)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} lighter={true} />
+                          <ColorCard name="On Error Container ($color-on-error-container)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} darker={true} />
+                        </div>
+                      </div>
+                      
+                      {/* Background Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Background & Surface Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Background ($color-background)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="On Background ($color-on-background)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"} />
+                          <ColorCard name="Surface ($color-surface)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
+                          <ColorCard name="On Surface ($color-on-surface)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_800 || "#343a40"} />
+                          <ColorCard name="Surface Variant ($color-surface-variant)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
+                          <ColorCard name="On Surface Variant ($color-on-surface-variant)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_700 || "#495057"} />
+                        </div>
+                      </div>
+                      
+                      {/* Text Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Text Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Text Primary ($color-text-primary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"} />
+                          <ColorCard name="Text Secondary ($color-text-secondary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_600 || "#6c757d"} />
+                          <ColorCard name="Text Muted ($color-text-muted)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"} />
+                          <ColorCard name="Text Inverse ($color-text-inverse)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Text Error ($color-text-error)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
+                          <ColorCard name="Text Success ($color-text-success)" hex={designSystem?.raw_tokens?.colors?.interactive?.success_base || "#28a745"} />
+                        </div>
+                      </div>
+                      
+                      {/* Border & Outline Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Border & Outline Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Outline ($color-outline)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"} />
+                          <ColorCard name="Border Default ($color-border-default)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
+                          <ColorCard name="Border Subtle ($color-border-subtle)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
+                          <ColorCard name="Border Strong ($color-border-strong)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_300 || "#dee2e6"} />
+                          <ColorCard name="Border Focus ($color-border-focus)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="Border Error ($color-border-error)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
+                        </div>
+                      </div>
+                      
+                      {/* Button Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Button Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <ColorCard name="Button Primary BG ($color-button-primary-bg)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="Button Primary Text ($color-button-primary-text)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Button Primary Hover ($color-button-primary-hover)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} darker={true} />
+                          <ColorCard name="Button Secondary BG ($color-button-secondary-bg)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
+                          <ColorCard name="Button Secondary Text ($color-button-secondary-text)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="Button Secondary Border ($color-button-secondary-border)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_300 || "#dee2e6"} />
+                        </div>
                       </div>
                       
                       <div className="space-y-4">
-                        <h3 className="text-lg font-medium border-b pb-2">Raw & Semantic Color Variables</h3>
+                        <h3 className="text-lg font-medium border-b pb-2">Semantic Color Component Previews</h3>
                         <div className="space-y-4">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="p-4 border rounded">
@@ -997,23 +1407,23 @@ export default function DesignBuilder() {
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-brand-primary-base)" }}
+                                    style={{ backgroundColor: "var(--color-primary)" }}
                                   ></div>
-                                  <span>Primary Base (--color-brand-primary-base)</span>
+                                  <span>Primary ($color-primary)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-brand-primary-lighter1)" }}
+                                    style={{ backgroundColor: "var(--color-secondary)" }}
                                   ></div>
-                                  <span>Primary Lighter (--color-brand-primary-lighter1)</span>
+                                  <span>Secondary ($color-secondary)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-brand-primary-darker1)" }}
+                                    style={{ backgroundColor: "var(--color-tertiary)" }}
                                   ></div>
-                                  <span>Primary Darker (--color-brand-primary-darker1)</span>
+                                  <span>Tertiary ($color-tertiary)</span>
                                 </div>
                               </div>
                             </div>
@@ -1023,45 +1433,55 @@ export default function DesignBuilder() {
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-interactive-success-base)" }}
+                                    style={{ backgroundColor: "var(--color-error)" }}
                                   ></div>
-                                  <span>Success (--color-interactive-success-base)</span>
+                                  <span>Error ($color-error)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-interactive-error-base)" }}
+                                    style={{ backgroundColor: "var(--color-text-success)" }}
                                   ></div>
-                                  <span>Error (--color-interactive-error-base)</span>
+                                  <span>Success ($color-text-success)</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div 
                                     className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-interactive-warning-base)" }}
+                                    style={{ backgroundColor: "var(--color-text-link)" }}
                                   ></div>
-                                  <span>Warning (--color-interactive-warning-base)</span>
+                                  <span>Link ($color-text-link)</span>
                                 </div>
                               </div>
                             </div>
                           </div>
                           
-                          <h4 className="text-md font-semibold mt-4">Components with Raw Variables</h4>
+                          <h4 className="text-md font-semibold mt-4">Buttons with Semantic Variables</h4>
                           <div className="flex flex-wrap gap-2">
                             <div 
-                              className="py-2 px-4 rounded text-white" 
-                              style={{ backgroundColor: "var(--color-brand-primary-base)" }}
+                              className="py-2 px-4 rounded" 
+                              style={{ 
+                                backgroundColor: "var(--color-button-primary-bg)",
+                                color: "var(--color-button-primary-text)"
+                              }}
                             >
                               Primary Button
                             </div>
                             <div 
-                              className="py-2 px-4 rounded text-white" 
-                              style={{ backgroundColor: "var(--color-interactive-success-base)" }}
+                              className="py-2 px-4 rounded" 
+                              style={{ 
+                                backgroundColor: "var(--color-button-secondary-bg)",
+                                color: "var(--color-button-secondary-text)",
+                                border: "1px solid var(--color-button-secondary-border)"
+                              }}
                             >
-                              Success Button
+                              Secondary Button
                             </div>
                             <div 
-                              className="py-2 px-4 rounded text-white" 
-                              style={{ backgroundColor: "var(--color-interactive-error-base)" }}
+                              className="py-2 px-4 rounded" 
+                              style={{ 
+                                backgroundColor: "var(--color-error)",
+                                color: "var(--color-on-error)"
+                              }}
                             >
                               Error Button
                             </div>
