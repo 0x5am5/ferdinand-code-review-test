@@ -99,19 +99,19 @@ function hexToCmyk(hex: string) {
   return `cmyk(${Math.round(c * 100)}, ${Math.round(m * 100)}, ${Math.round(y * 100)}, ${Math.round(k * 100)})`;
 }
 
-function generateTintsAndShades(hex: string) {
+function generateTintsAndShades(hex: string, tintPercents = [60, 40, 20], shadePercents = [20, 40, 60]) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
 
-  const tints = [60, 40, 20].map(percent => {
+  const tints = tintPercents.map(percent => {
     const tintR = r + ((255 - r) * percent) / 100;
     const tintG = g + ((255 - g) * percent) / 100;
     const tintB = b + ((255 - b) * percent) / 100;
     return `#${Math.round(tintR).toString(16).padStart(2, '0')}${Math.round(tintG).toString(16).padStart(2, '0')}${Math.round(tintB).toString(16).padStart(2, '0')}`;
   });
 
-  const shades = [20, 40, 60].map(percent => {
+  const shades = shadePercents.map(percent => {
     const shadeR = r * (1 - percent / 100);
     const shadeG = g * (1 - percent / 100);
     const shadeB = b * (1 - percent / 100);
@@ -119,6 +119,21 @@ function generateTintsAndShades(hex: string) {
   });
 
   return { tints, shades };
+}
+
+function generateNeutralPalette(baseGrey: string) {
+  // Generate 10 shades from white to black
+  const tints = generateTintsAndShades(baseGrey, [90, 80, 70, 60, 50]).tints;
+  const shades = generateTintsAndShades(baseGrey, [40, 30, 20, 10, 5]).shades;
+  return [...tints, baseGrey, ...shades];
+}
+
+function generateContainerColors(baseColor: string) {
+  const { tints, shades } = generateTintsAndShades(baseColor, [60], [60]);
+  return {
+    container: tints[0],
+    onContainer: shades[0]
+  };
 }
 
 function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
@@ -392,6 +407,8 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'brand' | 'neutral' | 'interactive'>('brand');
   const [editingColor, setEditingColor] = useState<ColorData | null>(null);
+  const [brandColors, setBrandColors] = useState<ColorData[]>([]); // Added state for brand colors
+
 
   const form = useForm<ColorFormData>({
     resolver: zodResolver(colorFormSchema),
@@ -519,9 +536,9 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
     .map(parseColorAsset)
     .filter((color): color is ColorData => color !== null);
 
-  const brandColors = transformedColors.filter(c => c.category === 'brand');
-  const neutralColors = transformedColors.filter(c => c.category === 'neutral');
-  const interactiveColors = transformedColors.filter(c => c.category === 'interactive');
+  const brandColorsData = transformedColors.filter(c => c.category === 'brand');
+  const neutralColorsData = transformedColors.filter(c => c.category === 'neutral');
+  const interactiveColorsData = transformedColors.filter(c => c.category === 'interactive');
 
   const handleEditColor = (color: ColorData) => {
     setEditingColor(color);
@@ -556,6 +573,54 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
     }
   };
 
+  const handleAddBrandColor = (name: string, hex: string) => {
+    const colorKey = name.toLowerCase().replace(/\s+/g, '-');
+    handleColorChange(colorKey, hex, true);
+
+    // Add to brand colors list
+    const updatedBrandColors = [...brandColors, {
+      id: Date.now(),
+      name,
+      hex,
+      category: 'brand'
+    }];
+
+    setBrandColors(updatedBrandColors);
+  };
+
+  const handleColorChange = (key: string, value: string, isBaseColor = false) => {
+    //  Updated color change handling to dynamically generate container and neutral colors
+    const updatedDesignSystem = { 
+      ...designSystem,
+      colors: {
+        ...designSystem.colors,
+        [key]: value
+      }
+    };
+
+    if (isBaseColor) {
+      // Generate container colors
+      const { container, onContainer } = generateContainerColors(value);
+
+      // Update container colors
+      updatedDesignSystem.colors[`${key}-container`] = container;
+      updatedDesignSystem.colors[`on-${key}-container`] = onContainer;
+
+      // If it's a neutral base color, generate the palette
+      if (key === 'neutral-base') {
+        const neutralPalette = generateNeutralPalette(value);
+        neutralPalette.forEach((color, index) => {
+          const colorKey = `neutral-${index * 100}`;
+          updatedDesignSystem.colors[colorKey] = color;
+        });
+      }
+    }
+
+    updateDraftDesignSystem(updatedDesignSystem.colors);
+    addToHistory(updatedDesignSystem);
+  };
+
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -565,7 +630,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
       <div className="space-y-8">
         <ColorSection
           title="Brand Colors"
-          colors={brandColors}
+          colors={brandColorsData}
           onAddColor={() => {
             setSelectedCategory('brand');
             setEditingColor(null);
@@ -578,7 +643,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
 
         <ColorSection
           title="Neutral Colors"
-          colors={neutralColors}
+          colors={neutralColorsData}
           onAddColor={() => {
             setSelectedCategory('neutral');
             setEditingColor(null);
@@ -591,7 +656,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
 
         <ColorSection
           title="Interactive Colors"
-          colors={interactiveColors}
+          colors={interactiveColorsData}
           onAddColor={() => {
             setSelectedCategory('interactive');
             setEditingColor(null);
@@ -745,6 +810,9 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
 interface ColorManagerProps {
   clientId: number;
   colors: BrandAsset[];
+  updateDraftDesignSystem: (colors: any) => void; // Added type for updateDraftDesignSystem
+  addToHistory: (designSystem: any) => void; // Added type for addToHistory
+  designSystem: any; // Added type for designSystem
 }
 
 interface ColorData {
