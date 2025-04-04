@@ -1304,96 +1304,99 @@ export default function DesignBuilder() {
                       {/* Primary Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Primary Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Primary ($color-primary)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
-                          <ColorCard name="On Primary ($color-on-primary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Primary Container ($color-primary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} lighter={true} />
-                          <ColorCard name="On Primary Container ($color-on-primary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} darker={true} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Primary" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="On Primary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_container || (designSystem?.raw_tokens?.colors?.brand?.primary_lighter || "#ccd9ff")} />
+                          <ColorCard name="On Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_on_container || (designSystem?.raw_tokens?.colors?.brand?.primary_darker || "#000066")} />
                         </div>
                       </div>
                       
                       {/* Secondary Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Secondary Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Secondary ($color-secondary)" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} />
-                          <ColorCard name="On Secondary ($color-on-secondary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Secondary Container ($color-secondary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} lighter={true} />
-                          <ColorCard name="On Secondary Container ($color-on-secondary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} darker={true} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Secondary" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} />
+                          <ColorCard name="On Secondary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_container || (designSystem?.raw_tokens?.colors?.brand?.secondary_lighter || "#ffcccc")} />
+                          <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container || (designSystem?.raw_tokens?.colors?.brand?.secondary_darker || "#660000")} />
                         </div>
                       </div>
                       
                       {/* Tertiary Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Tertiary Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Tertiary ($color-tertiary)" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} />
-                          <ColorCard name="On Tertiary ($color-on-tertiary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Tertiary Container ($color-tertiary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} lighter={true} />
-                          <ColorCard name="On Tertiary Container ($color-on-tertiary-container)" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} darker={true} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Tertiary" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} />
+                          <ColorCard name="On Tertiary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_container || (designSystem?.raw_tokens?.colors?.brand?.tertiary_lighter || "#ccffcc")} />
+                          <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container || (designSystem?.raw_tokens?.colors?.brand?.tertiary_darker || "#006600")} />
                         </div>
                       </div>
                       
                       {/* Error Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Error Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Error ($color-error)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
-                          <ColorCard name="On Error ($color-on-error)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Error Container ($color-error-container)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} lighter={true} />
-                          <ColorCard name="On Error Container ($color-on-error-container)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} darker={true} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Error" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
+                          <ColorCard name="On Error" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_container || (designSystem?.raw_tokens?.colors?.interactive?.error_lighter || "#f8d7da")} />
+                          <ColorCard name="On Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_on_container || (designSystem?.raw_tokens?.colors?.interactive?.error_darker || "#721c24")} />
                         </div>
                       </div>
                       
                       {/* Background Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Background & Surface Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Background ($color-background)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="On Background ($color-on-background)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"} />
-                          <ColorCard name="Surface ($color-surface)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
-                          <ColorCard name="On Surface ($color-on-surface)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_800 || "#343a40"} />
-                          <ColorCard name="Surface Variant ($color-surface-variant)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
-                          <ColorCard name="On Surface Variant ($color-on-surface-variant)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_700 || "#495057"} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Background" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="On Background" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"} />
+                          <ColorCard name="Surface" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
+                          <ColorCard name="On Surface" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_800 || "#343a40"} />
+                          <ColorCard name="Surface Variant" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
+                          <ColorCard name="On Surface Variant" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_700 || "#495057"} />
                         </div>
                       </div>
                       
                       {/* Text Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Text Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Text Primary ($color-text-primary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"} />
-                          <ColorCard name="Text Secondary ($color-text-secondary)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_600 || "#6c757d"} />
-                          <ColorCard name="Text Muted ($color-text-muted)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"} />
-                          <ColorCard name="Text Inverse ($color-text-inverse)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Text Error ($color-text-error)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
-                          <ColorCard name="Text Success ($color-text-success)" hex={designSystem?.raw_tokens?.colors?.interactive?.success_base || "#28a745"} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Text Primary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_900 || "#212529"} />
+                          <ColorCard name="Text Secondary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_600 || "#6c757d"} />
+                          <ColorCard name="Text Muted" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"} />
+                          <ColorCard name="Text Inverse" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Text Error" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
+                          <ColorCard name="Text Success" hex={designSystem?.raw_tokens?.colors?.interactive?.success_base || "#28a745"} />
+                          <ColorCard name="Text Link" hex={designSystem?.raw_tokens?.colors?.interactive?.link_base || "#007bff"} />
                         </div>
                       </div>
                       
                       {/* Border & Outline Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Border & Outline Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Outline ($color-outline)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"} />
-                          <ColorCard name="Border Default ($color-border-default)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
-                          <ColorCard name="Border Subtle ($color-border-subtle)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
-                          <ColorCard name="Border Strong ($color-border-strong)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_300 || "#dee2e6"} />
-                          <ColorCard name="Border Focus ($color-border-focus)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
-                          <ColorCard name="Border Error ($color-border-error)" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Outline" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_500 || "#adb5bd"} />
+                          <ColorCard name="Border Default" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
+                          <ColorCard name="Border Subtle" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
+                          <ColorCard name="Border Strong" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_300 || "#dee2e6"} />
+                          <ColorCard name="Border Focus" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="Border Error" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
                         </div>
                       </div>
                       
                       {/* Button Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Button Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <ColorCard name="Button Primary BG ($color-button-primary-bg)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
-                          <ColorCard name="Button Primary Text ($color-button-primary-text)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Button Primary Hover ($color-button-primary-hover)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} darker={true} />
-                          <ColorCard name="Button Secondary BG ($color-button-secondary-bg)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
-                          <ColorCard name="Button Secondary Text ($color-button-secondary-text)" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
-                          <ColorCard name="Button Secondary Border ($color-button-secondary-border)" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_300 || "#dee2e6"} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          <ColorCard name="Button Primary BG" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="Button Primary Text" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                          <ColorCard name="Button Primary Hover" hex={designSystem?.raw_tokens?.colors?.brand?.primary_darker || "#000099"} />
+                          <ColorCard name="Button Primary Disabled" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_300 || "#dee2e6"} />
+                          <ColorCard name="Button Secondary BG" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_100 || "#f8f9fa"} />
+                          <ColorCard name="Button Secondary Text" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
+                          <ColorCard name="Button Secondary Border" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_300 || "#dee2e6"} />
+                          <ColorCard name="Button Secondary Hover" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
                         </div>
                       </div>
                       

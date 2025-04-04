@@ -1,20 +1,25 @@
 @use 'variables' as *;
 @use 'raw-tokens' as *;
+@use "sass:color";
+
+// =============================================================
+// COLOR TOKENS – Raw Values
+// =============================================================
 
 // Fallback values for raw tokens that might not be defined yet
 $color-brand-primary-base: blue !default;
-$color-brand-primary-lighter1: lighten(blue, 20%) !default;
-$color-brand-primary-darker1: darken(blue, 20%) !default;
+$color-brand-primary-lighter1: color.adjust(blue, $lightness: 20%) !default;
+$color-brand-primary-darker1: color.adjust(blue, $lightness: -20%) !default;
 $color-brand-secondary-base: red !default;
-$color-brand-secondary-lighter1: lighten(red, 20%) !default;
-$color-brand-secondary-darker1: darken(red, 20%) !default;
+$color-brand-secondary-lighter1: color.adjust(red, $lightness: 20%) !default;
+$color-brand-secondary-darker1: color.adjust(red, $lightness: -20%) !default;
 $color-brand-tertiary-base: green !default;
-$color-brand-tertiary-lighter1: lighten(green, 20%) !default;
-$color-brand-tertiary-darker1: darken(green, 20%) !default;
+$color-brand-tertiary-lighter1: color.adjust(green, $lightness: 20%) !default;
+$color-brand-tertiary-darker1: color.adjust(green, $lightness: -20%) !default;
 
 $color-interactive-error-base: #dc3545 !default;
-$color-interactive-error-lighter1: lighten(#dc3545, 20%) !default;
-$color-interactive-error-darker1: darken(#dc3545, 20%) !default;
+$color-interactive-error-lighter1: color.adjust(#dc3545, $lightness: 20%) !default;
+$color-interactive-error-darker1: color.adjust(#dc3545, $lightness: -20%) !default;
 $color-interactive-success-base: #28a745 !default;
 $color-interactive-warning-base: #ffc107 !default;
 $color-interactive-link-base: #007bff !default;
@@ -59,39 +64,47 @@ $letter-spacing-none: 0 !default;
 $letter-spacing-sm: 0.01em !default;
 $letter-spacing-md: 0.02em !default;
 
-:root {
-  --background: #{$background};
-  --foreground: #{$foreground};
-  --card: #{$card};
-  --card-foreground: #{$card-foreground};
-  --popover: #{$popover};
-  --popover-foreground: #{$popover-foreground};
-  --primary: #{$primary};
-  --primary-foreground: #{$primary-foreground};
-  --primary-light: #{$primary-light};
-  --secondary: #{$secondary};
-  --secondary-foreground: #{$secondary-foreground};
-  --muted: #{$muted};
-  --muted-foreground: #{$muted-foreground};
-  --accent: #{$accent};
-  --accent-foreground: #{$accent-foreground};
-  --destructive: #{$destructive};
-  --destructive-foreground: #{$destructive-foreground};
-  --border: #{$border};
-  --input: #{$input};
-  --ring: #{$ring};
-  --radius: #{$radius};
-  --transition: #{$transition};
-  --font-sans: #{$font-sans};
-  --font-heading: #{$font-heading};
-  --heading-1-size: #{$heading-1-size};
-  --heading-2-size: #{$heading-2-size};
-  --heading-3-size: #{$heading-3-size};
-  --body-size: #{$body-size};
-  --line-height: #{$line-height};
-  --heading-weight: #{$heading-weight};
-  --body-weight: #{$body-weight};
-}
+// =============================================================
+// BACKGROUNDS
+// =============================================================
+$color-background-default:       $color-neutral-0;
+$color-background-subtle:        $color-neutral-100;
+$color-background-muted:         $color-neutral-200;
+$color-background-inverse:       $color-neutral-900;
+$color-background-accent:        $color-brand-secondary-lighter1;
+
+// =============================================================
+// TEXT
+// =============================================================
+$color-text-primary:             $color-neutral-900;
+$color-text-secondary:           $color-neutral-600;
+$color-text-muted:               $color-neutral-500;
+$color-text-inverse:             $color-neutral-0;
+$color-text-error:               $color-interactive-error-base;
+$color-text-success:             $color-interactive-success-base;
+$color-text-link:                $color-interactive-link-base;
+
+// =============================================================
+// BORDERS
+// =============================================================
+$color-border-default:           $color-neutral-200;
+$color-border-subtle:            $color-neutral-100;
+$color-border-strong:            $color-neutral-300;
+$color-border-focus:             $color-brand-primary-base;
+$color-border-error:             $color-interactive-error-base;
+
+// =============================================================
+// BUTTONS
+// =============================================================
+$color-button-primary-bg:        $color-brand-primary-base;
+$color-button-primary-text:      $color-neutral-0;
+$color-button-primary-hover:     $color-brand-primary-darker1;
+$color-button-primary-disabled:  $color-neutral-300;
+
+$color-button-secondary-bg:      $color-neutral-100;
+$color-button-secondary-text:    $color-brand-primary-base;
+$color-button-secondary-border:  $color-neutral-300;
+$color-button-secondary-hover:   $color-neutral-200;
 
 // -------------------------------------------------------------
 // SEMANTIC TOKENS – Mapped to Raw Variables
@@ -148,6 +161,95 @@ $color-on-surface-variant:       $color-neutral-700;
 // -----------------
 $color-outline:                  $color-neutral-500;
 
+:root {
+  // Tailwind required variables
+  --background: #{$background};
+  --foreground: #{$foreground};
+  --card: #{$card};
+  --card-foreground: #{$card-foreground};
+  --popover: #{$popover};
+  --popover-foreground: #{$popover-foreground};
+  --primary: #{$primary};
+  --primary-foreground: #{$primary-foreground};
+  --primary-light: #{$primary-light};
+  --secondary: #{$secondary};
+  --secondary-foreground: #{$secondary-foreground};
+  --muted: #{$muted};
+  --muted-foreground: #{$muted-foreground};
+  --accent: #{$accent};
+  --accent-foreground: #{$accent-foreground};
+  --destructive: #{$destructive};
+  --destructive-foreground: #{$destructive-foreground};
+  --border: #{$border};
+  --input: #{$input};
+  --ring: #{$ring};
+  --radius: #{$radius};
+  --transition: #{$transition};
+  --font-sans: #{$font-sans};
+  --font-heading: #{$font-heading};
+  --heading-1-size: #{$heading-1-size};
+  --heading-2-size: #{$heading-2-size};
+  --heading-3-size: #{$heading-3-size};
+  --body-size: #{$body-size};
+  --line-height: #{$line-height};
+  --heading-weight: #{$heading-weight};
+  --body-weight: #{$body-weight};
+  
+  // Semantic color tokens
+  --color-primary: #{$color-primary};
+  --color-on-primary: #{$color-on-primary};
+  --color-primary-container: #{$color-primary-container};
+  --color-on-primary-container: #{$color-on-primary-container};
+  
+  --color-secondary: #{$color-secondary};
+  --color-on-secondary: #{$color-on-secondary};
+  --color-secondary-container: #{$color-secondary-container};
+  --color-on-secondary-container: #{$color-on-secondary-container};
+  
+  --color-tertiary: #{$color-tertiary};
+  --color-on-tertiary: #{$color-on-tertiary};
+  --color-tertiary-container: #{$color-tertiary-container};
+  --color-on-tertiary-container: #{$color-on-tertiary-container};
+  
+  --color-error: #{$color-error};
+  --color-on-error: #{$color-on-error};
+  --color-error-container: #{$color-error-container};
+  --color-on-error-container: #{$color-on-error-container};
+  
+  --color-background: #{$color-background};
+  --color-on-background: #{$color-on-background};
+  --color-surface: #{$color-surface};
+  --color-on-surface: #{$color-on-surface};
+  --color-surface-variant: #{$color-surface-variant};
+  --color-on-surface-variant: #{$color-on-surface-variant};
+  
+  --color-outline: #{$color-outline};
+  --color-border-default: #{$color-border-default};
+  --color-border-subtle: #{$color-border-subtle};
+  --color-border-strong: #{$color-border-strong};
+  --color-border-focus: #{$color-border-focus};
+  --color-border-error: #{$color-border-error};
+  
+  --color-text-primary: #{$color-text-primary};
+  --color-text-secondary: #{$color-text-secondary};
+  --color-text-muted: #{$color-text-muted};
+  --color-text-inverse: #{$color-text-inverse};
+  --color-text-error: #{$color-text-error};
+  --color-text-success: #{$color-text-success};
+  --color-text-link: #{$color-text-link};
+  
+  --color-button-primary-bg: #{$color-button-primary-bg};
+  --color-button-primary-text: #{$color-button-primary-text};
+  --color-button-primary-hover: #{$color-button-primary-hover};
+  --color-button-primary-disabled: #{$color-button-primary-disabled};
+  --color-button-secondary-bg: #{$color-button-secondary-bg};
+  --color-button-secondary-text: #{$color-button-secondary-text};
+  --color-button-secondary-border: #{$color-button-secondary-border};
+  --color-button-secondary-hover: #{$color-button-secondary-hover};
+}
+
+
+
 // =============================================================
 // LAYOUT & SPACING
 // =============================================================
@@ -170,48 +272,6 @@ $radius-chip:                    $radius-full;
 $transition-button:              $transition-base;
 $transition-input:               $transition-base;
 $transition-fade:                opacity $transition-duration-base ease-in-out;
-
-// =============================================================
-// BACKGROUNDS
-// =============================================================
-$color-background-default:       $color-neutral-0;
-$color-background-subtle:        $color-neutral-100;
-$color-background-muted:         $color-neutral-200;
-$color-background-inverse:       $color-neutral-900;
-$color-background-accent:        $color-brand-secondary-lighter1;
-
-// =============================================================
-// TEXT
-// =============================================================
-$color-text-primary:             $color-neutral-900;
-$color-text-secondary:           $color-neutral-600;
-$color-text-muted:               $color-neutral-500;
-$color-text-inverse:             $color-neutral-0;
-$color-text-error:               $color-interactive-error-base;
-$color-text-success:             $color-interactive-success-base;
-$color-text-link:                $color-interactive-link-base;
-
-// =============================================================
-// BORDERS
-// =============================================================
-$color-border-default:           $color-neutral-200;
-$color-border-subtle:            $color-neutral-100;
-$color-border-strong:            $color-neutral-300;
-$color-border-focus:             $color-brand-primary-base;
-$color-border-error:             $color-interactive-error-base;
-
-// =============================================================
-// BUTTONS
-// =============================================================
-$color-button-primary-bg:        $color-brand-primary-base;
-$color-button-primary-text:      $color-neutral-0;
-$color-button-primary-hover:     $color-brand-primary-darker1;
-$color-button-primary-disabled:  $color-neutral-300;
-
-$color-button-secondary-bg:      $color-neutral-100;
-$color-button-secondary-text:    $color-brand-primary-base;
-$color-button-secondary-border:  $color-neutral-300;
-$color-button-secondary-hover:   $color-neutral-200;
 
 // =============================================================
 // TYPOGRAPHY – SEMANTIC MAPPINGS
