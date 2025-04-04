@@ -47,9 +47,9 @@ export function Sidebar() {
     >
       <div className="sidebar__header">
         {!isCollapsed && (
-          
+
           <img 
-            src="/cow-logo.png" 
+            src="/ferdinand-logo.png" 
             alt="Ferdinand Logo" 
             className="h-8 w-auto"
           />
