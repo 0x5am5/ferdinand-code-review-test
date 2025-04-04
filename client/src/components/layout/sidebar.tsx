@@ -46,26 +46,15 @@ export function Sidebar() {
       )}
     >
       <div className="sidebar__header">
-        {!isCollapsed && (
-
+        
           <img 
             src="/src/ferdinand--logo.png" 
             alt="Ferdinand Logo" 
-            className="h-8 w-auto"
+            className={cn(
+              "sidebar--logo",
+              isCollapsed ? "sidebar--collapsed" : "sidebar--expanded"
+            )}
           />
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="sidebar__toggle-button"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
       </div>
 
       {isSuperAdmin && !isCollapsed && (
@@ -131,6 +120,19 @@ export function Sidebar() {
 
       <div className="sidebar__footer">
         <AuthButton collapsed={isCollapsed} />
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          className="sidebar__toggle-button"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
       </div>
     </div>
   );

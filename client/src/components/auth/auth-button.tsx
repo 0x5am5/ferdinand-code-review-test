@@ -57,7 +57,7 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
   if (!user) {
     return (
       <Button onClick={handleSignIn} variant="outline" {...buttonProps}>
-        <LogIn className="h-4 w-4" />
+        <LogIn className="button--auth" />
         {!collapsed && "Sign in with Google"}
       </Button>
     );
@@ -65,7 +65,7 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
 
   return (
     <Button onClick={handleSignOut} variant="outline" {...buttonProps}>
-      <LogOut className="h-4 w-4" />
+      <LogOut className="button--auth" />
       {!collapsed && "Sign out"}
     </Button>
   );
