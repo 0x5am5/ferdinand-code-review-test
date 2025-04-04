@@ -3,6 +3,7 @@
 @use 'semantic';
 @use 'mixins' as *;
 @use 'components/sidebar';
+@use 'components/button';
 
 @tailwind base;
 @tailwind components;
