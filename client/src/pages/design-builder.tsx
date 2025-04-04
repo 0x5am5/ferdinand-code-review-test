@@ -33,7 +33,7 @@ export default function DesignBuilder() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { designSystem: appliedDesignSystem, draftDesignSystem, updateDesignSystem, updateDraftDesignSystem, applyDraftChanges, isLoading } = useTheme();
-  
+
   // History management for undo/redo functionality
   const [history, setHistory] = useState<DesignSystem[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
@@ -41,10 +41,10 @@ export default function DesignBuilder() {
   const [activeTab, setActiveTab] = useState("general");
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
   const [navTarget, setNavTarget] = useState("");
-  
+
   // Ref to track if typography settings have been loaded
   const typographySettingsLoaded = useRef(false);
-  
+
   // Load typography settings from the server or from localStorage on initial render
   useEffect(() => {
     if (isLoading || typographySettingsLoaded.current) return;
@@ -59,12 +59,12 @@ export default function DesignBuilder() {
           if (data.typography_extended) {
             // Store it in localStorage for our local state
             localStorage.setItem('typographySettings', JSON.stringify(data.typography_extended));
-            
+
             // Apply each setting to the document
             Object.entries(data.typography_extended).forEach(([key, rawValue]) => {
               const value = rawValue as string | number;
               applyTypographySetting(key, value);
-              
+
               // Update the displayed value in the UI
               if (key === 'headingScale') {
                 const element = document.getElementById('heading-scale-value');
@@ -81,7 +81,7 @@ export default function DesignBuilder() {
         }
       } catch (error) {
         console.error('Error loading typography settings from server:', error);
-        
+
         // Fall back to localStorage if available
         const savedSettings = localStorage.getItem('typographySettings');
         if (savedSettings) {
@@ -97,13 +97,13 @@ export default function DesignBuilder() {
           }
         }
       }
-      
+
       typographySettingsLoaded.current = true;
     };
-    
+
     loadTypographySettings();
   }, [isLoading]);
-  
+
   // Initialize history with the loaded design system
   useEffect(() => {
     if (!isLoading && draftDesignSystem && history.length === 0) {
@@ -111,7 +111,7 @@ export default function DesignBuilder() {
       setCurrentHistoryIndex(0);
     }
   }, [isLoading, draftDesignSystem, history.length]);
-  
+
   // Confirm navigation if there are unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -122,16 +122,16 @@ export default function DesignBuilder() {
       }
       return undefined;
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
-  
+
   // Use the draft for display purposes
   const designSystem = draftDesignSystem || appliedDesignSystem;
-  
+
   // Add change to history
   const addToHistory = useCallback((newState: DesignSystem) => {
     setHistory(prev => {
@@ -143,7 +143,7 @@ export default function DesignBuilder() {
     setCurrentHistoryIndex(prev => Math.min(prev + 1, 19));
     setHasUnsavedChanges(true);
   }, [currentHistoryIndex]);
-  
+
   const handleThemeChange = (key: string, value: any) => {
     const updatedDesignSystem = { 
       ...designSystem,
@@ -152,17 +152,17 @@ export default function DesignBuilder() {
         [key]: value
       }
     };
-    
+
     updateDraftDesignSystem({ 
       theme: {
         ...designSystem.theme,
         [key]: value
       }
     });
-    
+
     addToHistory(updatedDesignSystem);
   };
-  
+
   const handleColorChange = (key: string, value: string) => {
     const updatedDesignSystem = { 
       ...designSystem,
@@ -171,24 +171,24 @@ export default function DesignBuilder() {
         [key]: value
       }
     };
-    
+
     updateDraftDesignSystem({ 
       colors: {
         ...designSystem.colors,
         [key]: value
       }
     });
-    
+
     addToHistory(updatedDesignSystem);
   };
-  
+
   const handleRawTokenChange = (
     category: 'default_unit' | 'spacing' | 'radius' | 'transition' | 'border' | 'colors', 
     key: string, 
     value: string | number
   ) => {
     const updatedRawTokens = { ...(designSystem.raw_tokens || {}) };
-    
+
     if (category === 'default_unit') {
       updatedRawTokens.default_unit = value as string;
     } else if (category === 'spacing') {
@@ -203,11 +203,11 @@ export default function DesignBuilder() {
       // Handle nested structure for colors
       // Extract parts from key: brand.primary_base, neutral.neutral_100, etc.
       const [colorType, colorName] = key.split('.');
-      
+
       if (!updatedRawTokens.colors) {
         updatedRawTokens.colors = {};
       }
-      
+
       if (colorType === 'brand') {
         updatedRawTokens.colors.brand = { ...(updatedRawTokens.colors.brand || {}), [colorName]: value as string };
       } else if (colorType === 'neutral') {
@@ -216,21 +216,21 @@ export default function DesignBuilder() {
         updatedRawTokens.colors.interactive = { ...(updatedRawTokens.colors.interactive || {}), [colorName]: value as string };
       }
     }
-    
+
     const updatedDesignSystem = { 
       ...designSystem,
       raw_tokens: updatedRawTokens
     };
-    
+
     updateDraftDesignSystem({ raw_tokens: updatedRawTokens });
     addToHistory(updatedDesignSystem);
     setHasUnsavedChanges(true);
   };
-  
+
   // Updated to handle typography changes, including properties not directly in the typography object
   const handleTypographyChange = (key: string, value: string | number) => {
     let updatedDesignSystem = { ...designSystem };
-    
+
     // First, handle the basic typography settings (font family)
     if (key === 'primary' || key === 'heading') {
       updatedDesignSystem = {
@@ -240,7 +240,7 @@ export default function DesignBuilder() {
           [key]: value
         }
       };
-      
+
       updateDraftDesignSystem({ 
         typography: {
           ...designSystem.typography,
@@ -253,24 +253,24 @@ export default function DesignBuilder() {
       // Store the updated typography settings in a separate object in localStorage
       let typographySettings = localStorage.getItem('typographySettings');
       let settings = typographySettings ? JSON.parse(typographySettings) : {};
-      
+
       // Update the specific setting
       settings[key] = value;
-      
+
       // Save to localStorage
       localStorage.setItem('typographySettings', JSON.stringify(settings));
-      
+
       // Apply the setting to the document for immediate visual feedback
       applyTypographySetting(key, value);
     }
-    
+
     addToHistory(updatedDesignSystem);
   };
-  
+
   // Function to apply typography settings to the document
   const applyTypographySetting = (key: string, value: string | number) => {
     const root = document.documentElement;
-    
+
     switch(key) {
       case 'headingScale':
         // Scale all heading sizes
@@ -307,7 +307,7 @@ export default function DesignBuilder() {
       setHasUnsavedChanges(true);
     }
   };
-  
+
   // Redo previously undone change
   const handleRedo = () => {
     if (currentHistoryIndex < history.length - 1) {
@@ -317,7 +317,7 @@ export default function DesignBuilder() {
       setHasUnsavedChanges(true);
     }
   };
-  
+
   // Discard all unsaved changes
   const handleDiscardChanges = () => {
     if (appliedDesignSystem) {
@@ -325,7 +325,7 @@ export default function DesignBuilder() {
       setHistory([appliedDesignSystem]);
       setCurrentHistoryIndex(0);
       setHasUnsavedChanges(false);
-      
+
       toast({
         title: "Changes discarded",
         description: "All changes have been reset to the last saved state"
@@ -337,26 +337,26 @@ export default function DesignBuilder() {
     try {
       // First, apply draft changes to the main design system
       await applyDraftChanges();
-      
+
       // Save typography extended settings to database
       const typographySettings = localStorage.getItem('typographySettings');
       if (typographySettings) {
         const settings = JSON.parse(typographySettings);
-        
+
         // Save the typography settings to the server
         const response = await fetch('/api/design-system/typography', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(settings),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to save typography settings');
         }
       }
-      
+
       setHasUnsavedChanges(false);
-      
+
       toast({
         title: "Design system saved",
         description: "All your design system changes have been applied"
@@ -370,7 +370,7 @@ export default function DesignBuilder() {
       });
     }
   };
-  
+
   // Handle navigation with confirmation if needed
   const handleNavigation = (path: string) => {
     if (hasUnsavedChanges) {
@@ -380,7 +380,7 @@ export default function DesignBuilder() {
       navigate(path);
     }
   };
-  
+
   const confirmNavigation = () => {
     setShowLeaveAlert(false);
     if (navTarget) {
@@ -462,7 +462,7 @@ export default function DesignBuilder() {
               <TabsTrigger value="typography">Typography</TabsTrigger>
               <TabsTrigger value="borders">Borders</TabsTrigger>
             </TabsList>
-            
+
             {/* Main content with all tabs */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left column: Settings controls (1 column) */}
@@ -496,7 +496,7 @@ export default function DesignBuilder() {
                               Controls the animation style
                             </p>
                           </div>
-                          
+
                           <div>
                             <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
                             <div className="pt-2 pb-2">
@@ -514,11 +514,11 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Design Tokens Section */}
                       <div>
                         <h3 className="text-md font-semibold mb-3">Design Tokens</h3>
-                        
+
                         {/* Default Unit */}
                         <div className="mb-4">
                           <Label htmlFor="default-unit">Default Unit</Label>
@@ -540,7 +540,7 @@ export default function DesignBuilder() {
                             Default unit used for spacing and sizing
                           </p>
                         </div>
-                        
+
                         {/* Spacing Variables */}
                         <div className="border-t pt-4 mt-4">
                           <h4 className="font-medium mb-3">Spacing Tokens</h4>
@@ -570,15 +570,15 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Colors Tab Content */}
                   <TabsContent value="colors" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Color System</h2>
-                    
+
                     {/* Raw Color Tokens */}
                     <div className="mb-8">
                       <h3 className="text-md font-semibold mb-3">Base Color Tokens</h3>
-                      
+
                       {/* Brand Colors */}
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Brand Colors</h4>
@@ -599,7 +599,7 @@ export default function DesignBuilder() {
                           ))}
                         </div>
                       </div>
-                      
+
                       {/* Neutral Colors */}
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Neutral Colors</h4>
@@ -624,7 +624,7 @@ export default function DesignBuilder() {
                           ))}
                         </div>
                       </div>
-                      
+
                       {/* Interactive Colors */}
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Interactive Colors</h4>
@@ -646,7 +646,7 @@ export default function DesignBuilder() {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Semantic Colors (UI Component Colors) */}
                     <div className="mt-8 border-t pt-4">
                       <h3 className="text-md font-semibold mb-3">UI Component Colors</h3>
@@ -663,11 +663,11 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Typography Tab Content */}
                   <TabsContent value="typography" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Typography Settings</h2>
-                    
+
                     {/* Font Selection */}
                     <div className="space-y-4">
                       <div>
@@ -682,7 +682,7 @@ export default function DesignBuilder() {
                           Main font used for body text
                         </p>
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="heading-font">Heading Font</Label>
                         <Input 
@@ -709,8 +709,16 @@ export default function DesignBuilder() {
                           step={0.05}
                           className="mt-2"
                           onValueChange={(value) => {
-                            handleTypographyChange('headingScale', value[0]);
-                            document.getElementById('heading-scale-value')!.textContent = value[0].toString();
+                            const scale = value[0];
+                            handleTypographyChange('headingScale', scale);
+                            document.getElementById('heading-scale-value')!.textContent = scale.toString();
+
+                            // Apply preview changes
+                            const root = document.documentElement;
+                            const baseHeadingSize = 2.5; // Base size for h1 in rem
+                            root.style.setProperty('--heading-1-size', `${baseHeadingSize * scale}rem`);
+                            root.style.setProperty('--heading-2-size', `${(baseHeadingSize * 0.8) * scale}rem`);
+                            root.style.setProperty('--heading-3-size', `${(baseHeadingSize * 0.6) * scale}rem`);
                           }}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
@@ -796,7 +804,7 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Borders Tab Content */}
                   <TabsContent value="borders" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Border Settings</h2>
@@ -813,7 +821,7 @@ export default function DesignBuilder() {
                           This color is used for borders throughout the application
                         </p>
                       </div>
-                      
+
                       {/* Border Width Tokens */}
                       <div className="border-t pt-4 mt-4">
                         <h3 className="text-md font-semibold mb-3">Border Width Tokens</h3>
@@ -851,8 +859,7 @@ export default function DesignBuilder() {
                             // Default border tokens if none exist
                             [
                               { key: 'border_width_hairline', value: 1, label: 'Hairline' },
-                              { key: 'border_width_thin', value: 2, label: 'Thin' },
-                              { key: 'border_width_medium', value: 4, label: 'Medium' },
+                              { key: 'border_width_thin', value: 2, label: 'Thin' },{ key: 'border_width_medium', value: 4, label: 'Medium' },
                               { key: 'border_width_thick', value: 8, label: 'Thick' }
                             ].map(({ key, value, label }) => (
                               <div key={key} className="flex items-center gap-3">
@@ -883,7 +890,7 @@ export default function DesignBuilder() {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Border Style Tokens */}
                       <div className="border-t pt-4 mt-4">
                         <h3 className="text-md font-semibold mb-3">Border Styles</h3>
@@ -900,7 +907,7 @@ export default function DesignBuilder() {
                           ))}
                         </div>
                       </div>
-                      
+
                       {/* Border Radius Tokens */}
                       <div className="border-t pt-4 mt-4">
                         <h3 className="text-md font-semibold mb-3">Border Radius Tokens</h3>
@@ -943,7 +950,7 @@ export default function DesignBuilder() {
               <div className="lg:col-span-2">
                 <Card className="p-6">
                   <h2 className="text-xl font-semibold mb-6">Component Preview</h2>
-                  
+
                   {/* General Tab Preview */}
                   <TabsContent value="general" className="mt-0 space-y-8">
                     <Alert className="mb-4">
@@ -953,7 +960,7 @@ export default function DesignBuilder() {
                         Changes are shown in real-time but will only be applied when you save.
                       </AlertDescription>
                     </Alert>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Card className="p-4">
                         <h3 className="font-medium mb-2">Animation: {designSystem.theme.animation}</h3>
@@ -962,7 +969,7 @@ export default function DesignBuilder() {
                           <Button variant="outline">Interactive</Button>
                         </div>
                       </Card>
-                      
+
                       <Card className="p-4">
                         <h3 className="font-medium mb-2">Border Radius: {designSystem.theme.radius}rem</h3>
                         <div className="grid grid-cols-2 gap-2">
@@ -972,7 +979,7 @@ export default function DesignBuilder() {
                       </Card>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Colors Tab Preview */}
                   <TabsContent value="colors" className="mt-0">
                     <div className="space-y-6">
@@ -984,7 +991,7 @@ export default function DesignBuilder() {
                         <ColorCard name="Accent" hex={designSystem?.colors.accent || "#f1f5f9"} />
                         <ColorCard name="Destructive" hex={designSystem?.colors.destructive || "#ef4444"} />
                       </div>
-                      
+
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium border-b pb-2">Raw & Semantic Color Variables</h3>
                         <div className="space-y-4">
@@ -1042,7 +1049,7 @@ export default function DesignBuilder() {
                               </div>
                             </div>
                           </div>
-                          
+
                           <h4 className="text-md font-semibold mt-4">Components with Raw Variables</h4>
                           <div className="flex flex-wrap gap-2">
                             <div 
@@ -1064,7 +1071,7 @@ export default function DesignBuilder() {
                               Error Button
                             </div>
                           </div>
-                          
+
                           <h4 className="text-md font-semibold mt-4">Standard Components</h4>
                           <div className="flex flex-wrap gap-2">
                             <Button variant="default">Primary Button</Button>
@@ -1075,7 +1082,7 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Typography Tab Preview */}
                   <TabsContent value="typography" className="mt-0">
                     <div className="space-y-6">
@@ -1087,7 +1094,7 @@ export default function DesignBuilder() {
                         <h4 className="text-xl font-bold">Heading 4</h4>
                         <h5 className="text-lg font-bold">Heading 5</h5>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium border-b pb-2">Text Styles</h3>
                         <div className="space-y-4">
@@ -1108,7 +1115,7 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Borders Tab Preview */}
                   <TabsContent value="borders" className="mt-0">
                     <div className="space-y-6">
@@ -1136,7 +1143,7 @@ export default function DesignBuilder() {
                             ))}
                           </div>
                         </div>
-                        
+
                         <div>
                           <h3 className="text-lg font-medium border-b pb-2 mb-4">Border Styles</h3>
                           <div className="space-y-4">
@@ -1156,7 +1163,7 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-lg font-medium border-b pb-2 mb-4">Components with Raw Border Variables</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1172,7 +1179,7 @@ export default function DesignBuilder() {
                               Using --border-width-thin & --color-brand-primary-base
                             </p>
                           </div>
-                          
+
                           <div className="p-4 rounded" 
                             style={{ 
                               borderWidth: "var(--border-width-medium)",
@@ -1185,7 +1192,7 @@ export default function DesignBuilder() {
                               Using --border-width-medium & --color-interactive-success-base
                             </p>
                           </div>
-                          
+
                           <div className="mt-4">
                             <h4 className="font-medium mb-2">Raw Border Button Examples</h4>
                             <div className="flex flex-wrap gap-2">
@@ -1213,7 +1220,7 @@ export default function DesignBuilder() {
                               </button>
                             </div>
                           </div>
-                          
+
                           <div className="mt-4">
                             <h4 className="font-medium mb-2">Standard Components</h4>
                             <div className="space-y-2">
@@ -1231,7 +1238,7 @@ export default function DesignBuilder() {
           </Tabs>
         </div>
       </main>
-      
+
       {/* Alert dialog for unsaved changes */}
       <AlertDialog open={showLeaveAlert} onOpenChange={setShowLeaveAlert}>
         <AlertDialogContent>

@@ -326,6 +326,19 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       root.style.setProperty('--font-heading', activeSystem.typography.heading);
     }
 
+    // Apply heading scale if available in typography settings
+    const typographySettings = localStorage.getItem('typographySettings');
+    if (typographySettings) {
+      const settings = JSON.parse(typographySettings);
+      if (settings.headingScale) {
+        const baseHeadingSize = 2.5; // Base size for h1 in rem
+        const scale = settings.headingScale;
+        root.style.setProperty('--heading-1-size', `${baseHeadingSize * scale}rem`);
+        root.style.setProperty('--heading-2-size', `${(baseHeadingSize * 0.8) * scale}rem`);
+        root.style.setProperty('--heading-3-size', `${(baseHeadingSize * 0.6) * scale}rem`);
+      }
+    }
+
     // Apply extended typography settings if available
     if (activeSystem.typography_extended) {
       Object.entries(activeSystem.typography_extended).forEach(([key, value]) => {
@@ -334,14 +347,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         root.style.setProperty(`--${cssVarName}`, String(value));
       });
     }
-    
+
     // Apply raw tokens if available
     if (activeSystem.raw_tokens) {
       // Apply default unit
       if (activeSystem.raw_tokens.default_unit) {
         root.style.setProperty('--default-unit', activeSystem.raw_tokens.default_unit);
       }
-      
+
       // Apply spacing tokens
       if (activeSystem.raw_tokens.spacing) {
         Object.entries(activeSystem.raw_tokens.spacing).forEach(([key, value]) => {
@@ -351,7 +364,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           root.style.setProperty(`--${cssVarName}`, `${value}${defaultUnit}`);
         });
       }
-      
+
       // Apply radius tokens
       if (activeSystem.raw_tokens.radius) {
         Object.entries(activeSystem.raw_tokens.radius).forEach(([key, value]) => {
@@ -359,7 +372,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           root.style.setProperty(`--${cssVarName}`, `${value}px`);
         });
       }
-      
+
       // Apply transition tokens
       if (activeSystem.raw_tokens.transition) {
         Object.entries(activeSystem.raw_tokens.transition).forEach(([key, value]) => {
@@ -371,7 +384,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           }
         });
       }
-      
+
       // Apply border tokens
       if (activeSystem.raw_tokens.border) {
         Object.entries(activeSystem.raw_tokens.border).forEach(([key, value]) => {
@@ -379,7 +392,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
           root.style.setProperty(`--${cssVarName}`, String(value));
         });
       }
-      
+
       // Apply raw color tokens
       if (activeSystem.raw_tokens.colors) {
         if (activeSystem.raw_tokens.colors.brand) {
@@ -388,14 +401,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
             root.style.setProperty(`--${cssVarName}`, value);
           });
         }
-        
+
         if (activeSystem.raw_tokens.colors.neutral) {
           Object.entries(activeSystem.raw_tokens.colors.neutral).forEach(([key, value]) => {
             const cssVarName = `color-neutral-${key.replace(/_/g, '-')}`;
             root.style.setProperty(`--${cssVarName}`, value);
           });
         }
-        
+
         if (activeSystem.raw_tokens.colors.interactive) {
           Object.entries(activeSystem.raw_tokens.colors.interactive).forEach(([key, value]) => {
             const cssVarName = `color-interactive-${key.replace(/_/g, '-')}`;
