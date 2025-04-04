@@ -123,7 +123,7 @@ export default function ClientDetails() {
             userPersonas: true,
             inspiration: true
           };
-          
+
           // Determine which tab should be default (first enabled one)
           let defaultTab = "logos";
           if (!featureToggles.logoSystem) {
@@ -132,9 +132,9 @@ export default function ClientDetails() {
             else if (featureToggles.userPersonas) defaultTab = "personas";
             else if (featureToggles.inspiration) defaultTab = "inspiration";
           }
-          
+
           const anyFeatureEnabled = Object.values(featureToggles).some(value => value === true);
-          
+
           if (!anyFeatureEnabled) {
             return (
               <Card className="mt-4">
@@ -147,7 +147,7 @@ export default function ClientDetails() {
               </Card>
             );
           }
-          
+
           return (
             <Tabs defaultValue={defaultTab} className="space-y-6">
               <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">

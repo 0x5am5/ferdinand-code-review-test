@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
@@ -31,18 +32,24 @@ export function ColorCard(props: {
   };
 
   return (
-    <Card>
+    <Card className="group w-full">
       <div 
-        className="h-32 rounded-t-lg" 
+        className="relative h-32 rounded-t-lg" 
         style={{ backgroundColor: displayColor }} 
-      />
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="text-sm md:text-base">{name}</span>
-          <Button variant="ghost" size="icon" onClick={copyHex}>
+      >
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={copyHex}
+          >
             <Copy className="h-4 w-4" />
           </Button>
-        </CardTitle>
+        </div>
+      </div>
+      <CardHeader>
+        <CardTitle className="text-sm md:text-base">{name}</CardTitle>
       </CardHeader>
       <CardContent>
         <code className="text-xs font-mono">{displayColor}</code>
