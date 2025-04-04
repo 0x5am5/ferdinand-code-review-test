@@ -173,7 +173,7 @@ export default function UsersPage() {
       return response.json();
     },
   });
-  
+
   // Get pending invitations
   const { data: pendingInvitations = [], isLoading: isLoadingInvitations } = useQuery<PendingInvitation[]>({
     queryKey: ["/api/invitations"],
@@ -189,7 +189,7 @@ export default function UsersPage() {
       return response.json();
     },
   });
-  
+
   // Resend invitation mutation
   const resendInvitation = useMutation({
     mutationFn: async (invitationId: number) => {
@@ -217,7 +217,7 @@ export default function UsersPage() {
       });
     }
   });
-  
+
   // Reset password mutation
   const resetPassword = useMutation({
     mutationFn: async (userId: number) => {
@@ -249,10 +249,10 @@ export default function UsersPage() {
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
-  
+
   // State for tracking user mutations
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Fetch client assignments for all users
   const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } = useQuery<Record<number, Client[]>>({
     queryKey: ["/api/users/client-assignments"],
@@ -302,7 +302,7 @@ export default function UsersPage() {
         // Check if this is a JSON response with error details
         if (err instanceof Error && 'response' in err) {
           const response = (err as any).response;
-          
+
           if (response?.data) {
             // Handle specific error codes
             if (response.data.code === 'EMAIL_EXISTS') {
@@ -310,20 +310,20 @@ export default function UsersPage() {
             } else if (response.data.code === 'INVITATION_EXISTS') {
               // Store the invitation ID for potential resend
               const invitationId = response.data.invitationId;
-              
+
               // Make this a special error object with the invitation ID
               const customError = new Error("An invitation for this email already exists. Would you like to resend it?");
               (customError as any).invitationId = invitationId;
               throw customError;
             }
-            
+
             // If there's a message but no specific code we recognize
             if (response.data.message) {
               throw new Error(response.data.message);
             }
           }
         }
-        
+
         // If we couldn't parse it as a special error, rethrow the original
         throw err;
       }
@@ -382,22 +382,22 @@ export default function UsersPage() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      
+
       // Find the client and update local state immediately
       const client = clients.find(c => c.id === variables.clientId);
       if (client) {
         // Create a copy of the current state
         const updatedAssignments = { ...userClientAssignments };
-        
+
         // Initialize the array if it doesn't exist
         if (!updatedAssignments[variables.userId]) {
           updatedAssignments[variables.userId] = [];
         }
-        
+
         // Add the client if it's not already in the array
         if (!updatedAssignments[variables.userId].some(c => c.id === client.id)) {
           updatedAssignments[variables.userId] = [...updatedAssignments[variables.userId], client];
-          
+
           // Update the query data directly in the cache
           queryClient.setQueryData(["/api/users/client-assignments"], updatedAssignments);
         }
@@ -419,15 +419,15 @@ export default function UsersPage() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      
+
       // Update local state immediately
       const updatedAssignments = { ...userClientAssignments };
-      
+
       if (updatedAssignments[variables.userId]) {
         // Remove the client from the array
         updatedAssignments[variables.userId] = updatedAssignments[variables.userId]
           .filter(c => c.id !== variables.clientId);
-        
+
         // Update the query data directly in the cache
         queryClient.setQueryData(["/api/users/client-assignments"], updatedAssignments);
       }
@@ -462,33 +462,33 @@ export default function UsersPage() {
 
   // Debounced search implementation
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
     }, 300);
-    
+
     return () => clearTimeout(timer);
   }, [searchQuery]);
-  
+
   // Enhanced search with fuzzy matching
   const filteredUsers = debouncedSearchQuery 
     ? users.filter((user) => {
         const nameMatch = user.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
         const emailMatch = user.email.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
         const roleMatch = user.role.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-        
+
         // Also match parts of names (first/last name)
         const nameParts = user.name?.toLowerCase().split(' ') || [];
         const namePartsMatch = nameParts.some(part => 
           part.startsWith(debouncedSearchQuery.toLowerCase())
         );
-        
+
         // Also match client names if assigned to user
         const clientMatch = userClientAssignments[user.id]?.some(client => 
           client.name.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
         );
-        
+
         return nameMatch || emailMatch || roleMatch || namePartsMatch || clientMatch;
       })
     : users;
@@ -499,7 +499,11 @@ export default function UsersPage() {
       <main className="flex-1 p-8 overflow-y-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">Users</h1>
-          <Button onClick={() => setIsInviteDialogOpen(true)}>
+          <Button 
+            onClick={() => setIsInviteDialogOpen(true)}
+            variant="default"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
             <UserPlus className="h-4 w-4 mr-2" />
             Invite User
           </Button>
@@ -526,7 +530,7 @@ export default function UsersPage() {
               </Button>
             )}
           </div>
-          
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -544,7 +548,7 @@ export default function UsersPage() {
             </Tooltip>
           </TooltipProvider>
         </div>
-        
+
         {/* Search results info */}
         {debouncedSearchQuery && (
           <div className="flex items-center mb-4 text-sm">
@@ -603,7 +607,7 @@ export default function UsersPage() {
                       const now = new Date();
                       const isExpired = expiresAt < now;
                       const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 3600 * 24));
-                      
+
                       return (
                         <TableRow key={invitation.id}>
                           <TableCell>{invitation.email}</TableCell>
@@ -681,7 +685,7 @@ export default function UsersPage() {
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead className="w-[200px]">Role</TableHead> {/* Increased width */}
                   <TableHead>Assigned Clients</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -723,7 +727,7 @@ export default function UsersPage() {
                         >
                           <SelectTrigger className="h-8 w-[130px]">
                             <SelectValue>
-                              <Badge variant={getRoleBadgeVariant(user.role)}>
+                              <Badge variant={getRoleBadgeVariant(user.role)} className="bg-secondary/10 text-secondary"> {/*Updated Color*/}
                                 {user.role.replace("_", " ")}
                               </Badge>
                             </SelectValue>
@@ -731,7 +735,7 @@ export default function UsersPage() {
                           <SelectContent>
                             {USER_ROLES.map((role) => (
                               <SelectItem key={role} value={role}>
-                                <Badge variant={getRoleBadgeVariant(role)}>
+                                <Badge variant={getRoleBadgeVariant(role)} className="bg-secondary/10 text-secondary"> {/*Updated Color*/}
                                   {role.replace("_", " ")}
                                 </Badge>
                               </SelectItem>
@@ -782,7 +786,7 @@ export default function UsersPage() {
                                         ))}
                                       </CommandGroup>
                                     )}
-                                    
+
                                     <CommandGroup heading="Available clients">
                                       {clients
                                         .filter(client => 
@@ -806,7 +810,7 @@ export default function UsersPage() {
                               </PopoverContent>
                             </Popover>
                           </div>
-                          
+
                           {/* Client chips for quick visual reference */}
                           {userClientAssignments[user.id]?.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
@@ -849,7 +853,7 @@ export default function UsersPage() {
                                   const pendingInvite = pendingInvitations.find(
                                     invite => invite.email === user.email && !invite.used
                                   );
-                                  
+
                                   if (pendingInvite) {
                                     resendInvitation.mutate(pendingInvite.id);
                                   }
@@ -869,9 +873,9 @@ export default function UsersPage() {
                                 <span>Reset Password</span>
                               </DropdownMenuItem>
                             )}
-                            
+
                             <DropdownMenuSeparator />
-                            
+
                             <DropdownMenuItem
                               className={user.role === UserRole.SUPER_ADMIN ? "text-red-500" : ""}
                             >
@@ -928,7 +932,7 @@ export default function UsersPage() {
                 Send an invitation to a new user to join the platform.
               </DialogDescription>
             </DialogHeader>
-            
+
             <Form {...inviteForm}>
               <form onSubmit={inviteForm.handleSubmit((data) => inviteUser.mutate(data))} className="space-y-4">
                 <FormField
@@ -944,7 +948,7 @@ export default function UsersPage() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={inviteForm.control}
                   name="email"
@@ -958,7 +962,7 @@ export default function UsersPage() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={inviteForm.control}
                   name="role"
@@ -986,7 +990,7 @@ export default function UsersPage() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={inviteForm.control}
                   name="clientIds"
@@ -1018,7 +1022,7 @@ export default function UsersPage() {
                             </label>
                           </div>
                         ))}
-                        
+
                         {clients.length === 0 && (
                           <div className="text-center p-2 text-muted-foreground">
                             No clients available to assign
@@ -1029,7 +1033,7 @@ export default function UsersPage() {
                     </FormItem>
                   )}
                 />
-                
+
                 <DialogFooter>
                   <Button type="submit" disabled={inviteUser.isPending}>
                     {inviteUser.isPending ? "Sending..." : "Send Invitation"}
@@ -1039,7 +1043,7 @@ export default function UsersPage() {
             </Form>
           </DialogContent>
         </Dialog>
-        
+
 
       </main>
     </div>
