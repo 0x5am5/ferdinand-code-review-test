@@ -16,6 +16,36 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// Import utility functions for generating color palettes
+function generateTintsAndShades(hex: string, tintPercents = [60, 40, 20], shadePercents = [20, 40, 60]) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  const tints = tintPercents.map(percent => {
+    const tintR = r + ((255 - r) * percent) / 100;
+    const tintG = g + ((255 - g) * percent) / 100;
+    const tintB = b + ((255 - b) * percent) / 100;
+    return `#${Math.round(tintR).toString(16).padStart(2, '0')}${Math.round(tintG).toString(16).padStart(2, '0')}${Math.round(tintB).toString(16).padStart(2, '0')}`;
+  });
+
+  const shades = shadePercents.map(percent => {
+    const shadeR = r * (1 - percent / 100);
+    const shadeG = g * (1 - percent / 100);
+    const shadeB = b * (1 - percent / 100);
+    return `#${Math.round(shadeR).toString(16).padStart(2, '0')}${Math.round(shadeG).toString(16).padStart(2, '0')}${Math.round(shadeB).toString(16).padStart(2, '0')}`;
+  });
+
+  return { tints, shades };
+}
+
+function generateNeutralPalette(baseGrey: string) {
+  // Generate 10 shades from white to black
+  const tints = generateTintsAndShades(baseGrey, [90, 80, 70, 60, 50]).tints;
+  const shades = generateTintsAndShades(baseGrey, [40, 30, 20, 10, 5]).shades;
+  return [...tints, baseGrey, ...shades];
+}
 import { 
   InfoIcon, 
   CheckIcon, 
@@ -48,6 +78,7 @@ export default function DesignBuilder() {
   
   // Load typography settings from the server or from localStorage on initial render
   useEffect(() => {
+    // Skip if still loading or if typography settings are already loaded
     if (isLoading || typographySettingsLoaded.current) return;
 
     const loadTypographySettings = async () => {
@@ -58,25 +89,20 @@ export default function DesignBuilder() {
           const data = await response.json();
           // If there's typography_extended data in the theme
           if (data.typography_extended) {
-            // Store it in localStorage for our local state
-            localStorage.setItem('typographySettings', JSON.stringify(data.typography_extended));
+            try {
+              // Store it in localStorage for our local state (in try/catch to handle localStorage errors)
+              localStorage.setItem('typographySettings', JSON.stringify(data.typography_extended));
+            } catch (storageError) {
+              console.error('Error saving typography settings to localStorage:', storageError);
+            }
             
             // Apply each setting to the document
             Object.entries(data.typography_extended).forEach(([key, rawValue]) => {
               const value = rawValue as string | number;
               applyTypographySetting(key, value);
               
-              // Update the displayed value in the UI
-              if (key === 'headingScale') {
-                const element = document.getElementById('heading-scale-value');
-                if (element) element.textContent = String(value);
-              } else if (key === 'bodyTextSize') {
-                const element = document.getElementById('body-size-value');
-                if (element) element.textContent = String(value);
-              } else if (key === 'lineHeight') {
-                const element = document.getElementById('line-height-value');
-                if (element) element.textContent = String(value);
-              }
+              // Use a separate function to update UI elements to avoid potential re-renders
+              updateUIElement(key, String(value));
             });
           }
         }
@@ -84,7 +110,13 @@ export default function DesignBuilder() {
         console.error('Error loading typography settings from server:', error);
         
         // Fall back to localStorage if available
-        const savedSettings = localStorage.getItem('typographySettings');
+        let savedSettings;
+        try {
+          savedSettings = localStorage.getItem('typographySettings');
+        } catch (e) {
+          console.error('Error accessing localStorage:', e);
+        }
+        
         if (savedSettings) {
           try {
             const settings = JSON.parse(savedSettings);
@@ -97,12 +129,28 @@ export default function DesignBuilder() {
             console.error('Error parsing typography settings from localStorage:', e);
           }
         }
+      } finally {
+        // Mark as loaded regardless of success to prevent infinite retries
+        typographySettingsLoaded.current = true;
       }
-      
-      typographySettingsLoaded.current = true;
+    };
+    
+    // Function to update UI elements without triggering re-renders
+    const updateUIElement = (key: string, value: string) => {
+      if (key === 'headingScale') {
+        const element = document.getElementById('heading-scale-value');
+        if (element) element.textContent = value;
+      } else if (key === 'bodyTextSize') {
+        const element = document.getElementById('body-size-value');
+        if (element) element.textContent = value;
+      } else if (key === 'lineHeight') {
+        const element = document.getElementById('line-height-value');
+        if (element) element.textContent = value;
+      }
     };
     
     loadTypographySettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
   
   // Initialize history with the loaded design system
@@ -586,45 +634,210 @@ export default function DesignBuilder() {
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Brand Colors</h4>
                         <div className="space-y-3">
-                          {designSystem?.raw_tokens?.colors?.brand && Object.entries(designSystem.raw_tokens.colors.brand).map(([key, value]) => (
+                          {designSystem?.raw_tokens?.colors?.brand && Object.entries(designSystem.raw_tokens.colors.brand)
+                            .filter(([key]) => !key.includes('container') && !key.includes('on_container'))
+                            .map(([key, value]) => (
                             <div key={key} className="flex items-center gap-3">
                               <Label htmlFor={`brand-${key}`} className="w-1/3 flex-shrink-0 text-sm">
                                 {key.replace(/_/g, ' ')}:
                               </Label>
-                              <div className="flex-1">
-                                <ColorPicker
-                                  id={`brand-${key}`}
-                                  value={value}
-                                  onChange={(value) => handleRawTokenChange('colors', `brand.${key}`, value)}
-                                />
+                              <div className="flex-1 flex gap-2">
+                                <div className="flex-1">
+                                  <ColorPicker
+                                    id={`brand-${key}`}
+                                    value={value}
+                                    onChange={(value) => {
+                                      // When base color changes, update it and derived container/on-container colors
+                                      handleRawTokenChange('colors', `brand.${key}`, value);
+                                      
+                                      // Auto-generate container color (lighter version)
+                                      const containerColor = lightenColor(value, 60);
+                                      const containerKey = key.replace('_base', '_container');
+                                      handleRawTokenChange('colors', `brand.${containerKey}`, containerColor);
+                                      
+                                      // Auto-generate on-container color (darker version)
+                                      const onContainerColor = darkenColor(value, 60);
+                                      const onContainerKey = key.replace('_base', '_on_container');
+                                      handleRawTokenChange('colors', `brand.${onContainerKey}`, onContainerColor);
+                                    }}
+                                  />
+                                </div>
+                                {/* Don't allow deleting primary color if it's the only one */}
+                                {(key !== 'primary_base' || Object.keys(designSystem?.raw_tokens?.colors?.brand || {}).filter(k => k.includes('_base')).length > 1) && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-muted-foreground hover:text-destructive"
+                                    onClick={() => {
+                                      // Get a copy of the current brand colors
+                                      const updatedColors = { ...(designSystem?.raw_tokens?.colors || {}) };
+                                      const updatedBrand = { ...(updatedColors.brand || {}) };
+                                      
+                                      // Remove the base color and its related container colors
+                                      const colorName = key.replace('_base', '');
+                                      delete updatedBrand[key]; // base
+                                      delete updatedBrand[`${colorName}_container`]; // container
+                                      delete updatedBrand[`${colorName}_on_container`]; // on-container
+                                      
+                                      // Update the design system
+                                      updatedColors.brand = updatedBrand;
+                                      
+                                      const updatedRawTokens = {
+                                        ...(designSystem.raw_tokens || {}),
+                                        colors: updatedColors
+                                      };
+                                      
+                                      updateDraftDesignSystem({ raw_tokens: updatedRawTokens });
+                                      
+                                      // Add to history for undo/redo
+                                      const updatedDesignSystem = { 
+                                        ...designSystem,
+                                        raw_tokens: updatedRawTokens
+                                      };
+                                      addToHistory(updatedDesignSystem);
+                                      
+                                      toast({
+                                        title: "Color removed",
+                                        description: `${colorName.charAt(0).toUpperCase() + colorName.slice(1)} color has been removed.`
+                                      });
+                                    }}
+                                  >
+                                    <XIcon className="h-4 w-4" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           ))}
+                          
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2"
+                            onClick={() => {
+                              // Find the next available base color name
+                              const existingKeys = Object.keys(designSystem?.raw_tokens?.colors?.brand || {})
+                                .filter(key => key.includes('_base'))
+                                .map(key => key.replace('_base', ''));
+                              
+                              let newColorName;
+                              if (!existingKeys.includes('primary')) {
+                                newColorName = 'primary';
+                              } else if (!existingKeys.includes('secondary')) {
+                                newColorName = 'secondary';
+                              } else if (!existingKeys.includes('tertiary')) {
+                                newColorName = 'tertiary';
+                              } else {
+                                // Generate a name like color4, color5, etc.
+                                const customColors = existingKeys
+                                  .filter(key => key.startsWith('color'))
+                                  .map(key => parseInt(key.replace('color', '')))
+                                  .sort((a, b) => a - b);
+                                
+                                const nextNumber = customColors.length > 0 ? customColors[customColors.length - 1] + 1 : 4;
+                                newColorName = `color${nextNumber}`;
+                              }
+                              
+                              // Default color is a shade of blue
+                              const defaultColor = '#2563eb';
+                              const newBaseKey = `${newColorName}_base`;
+                              const newContainerKey = `${newColorName}_container`;
+                              const newOnContainerKey = `${newColorName}_on_container`;
+                              
+                              // Add the new base color and its derived colors
+                              handleRawTokenChange('colors', `brand.${newBaseKey}`, defaultColor);
+                              handleRawTokenChange('colors', `brand.${newContainerKey}`, lightenColor(defaultColor, 60));
+                              handleRawTokenChange('colors', `brand.${newOnContainerKey}`, darkenColor(defaultColor, 60));
+                              
+                              toast({
+                                title: "New base color added",
+                                description: `${newColorName.charAt(0).toUpperCase() + newColorName.slice(1)} base color has been added to your system.`
+                              });
+                            }}
+                          >
+                            + Add New Base Color
+                          </Button>
                         </div>
                       </div>
                       
                       {/* Neutral Colors */}
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Neutral Colors</h4>
-                        <div className="grid grid-cols-2 gap-3">
-                          {designSystem?.raw_tokens?.colors?.neutral && Object.entries(designSystem.raw_tokens.colors.neutral).map(([key, value]) => (
-                            <div key={key} className="space-y-1">
-                              <div className="flex items-center justify-between">
-                                <Label htmlFor={`neutral-${key}`} className="text-sm">
-                                  {key.replace(/_/g, ' ')}
-                                </Label>
-                                <div 
-                                  className="w-6 h-6 rounded border" 
-                                  style={{ backgroundColor: value }}
-                                ></div>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="neutral-base">Neutral Base Gray</Label>
+                            <div className="flex gap-3">
+                              <div className="flex-1">
+                                <ColorPicker
+                                  id="neutral-base"
+                                  value={designSystem?.raw_tokens?.colors?.neutral?.neutral_base || "#6b7280"}
+                                  onChange={(value) => {
+                                    // When neutral base changes, update it and generate the entire neutral palette
+                                    handleRawTokenChange('colors', 'neutral.neutral_base', value);
+                                    
+                                    // Generate neutral palette (10 shades)
+                                    const neutralPalette = generateNeutralPalette(value);
+                                    
+                                    // Update all neutral colors
+                                    neutralPalette.forEach((color: string, index: number) => {
+                                      const colorKey = `neutral_${index * 100}`;
+                                      handleRawTokenChange('colors', `neutral.${colorKey}`, color);
+                                    });
+                                    
+                                    toast({
+                                      title: "Neutral palette updated",
+                                      description: "Generated 10 shades based on the base gray color."
+                                    });
+                                  }}
+                                />
                               </div>
-                              <ColorPicker
-                                id={`neutral-${key}`}
-                                value={value}
-                                onChange={(value) => handleRawTokenChange('colors', `neutral.${key}`, value)}
-                              />
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                  const baseGray = designSystem?.raw_tokens?.colors?.neutral?.neutral_base || "#6b7280";
+                                  
+                                  // Generate neutral palette (10 shades)
+                                  const neutralPalette = generateNeutralPalette(baseGray);
+                                  
+                                  // Update all neutral colors
+                                  neutralPalette.forEach((color: string, index: number) => {
+                                    const colorKey = `neutral_${index * 100}`;
+                                    handleRawTokenChange('colors', `neutral.${colorKey}`, color);
+                                  });
+                                  
+                                  toast({
+                                    title: "Neutral palette regenerated",
+                                    description: "Generated 10 shades based on the base gray color."
+                                  });
+                                }}
+                                title="Regenerate neutral palette"
+                              >
+                                <RotateCcwIcon className="h-4 w-4" />
+                              </Button>
                             </div>
-                          ))}
+                            <span className="text-xs text-muted-foreground">Base gray color used to generate the neutral palette</span>
+                          </div>
+                          
+                          <div className="grid grid-cols-5 gap-3 mt-4">
+                            {designSystem?.raw_tokens?.colors?.neutral && 
+                              Object.entries(designSystem.raw_tokens.colors.neutral)
+                                .filter(([key]) => key.includes('neutral_'))
+                                .sort((a, b) => {
+                                  const numA = parseInt(a[0].split('_')[1]);
+                                  const numB = parseInt(b[0].split('_')[1]);
+                                  return numA - numB;
+                                })
+                                .map(([key, value]) => (
+                                  <div key={key} className="text-center">
+                                    <div 
+                                      className="w-full aspect-square rounded border mb-1" 
+                                      style={{ backgroundColor: value }}
+                                    ></div>
+                                    <span className="text-xs">{key.replace('neutral_', '')}</span>
+                                  </div>
+                                ))
+                            }
+                          </div>
                         </div>
                       </div>
                       
@@ -632,20 +845,77 @@ export default function DesignBuilder() {
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Interactive Colors</h4>
                         <div className="space-y-3">
-                          {designSystem?.raw_tokens?.colors?.interactive && Object.entries(designSystem.raw_tokens.colors.interactive).map(([key, value]) => (
-                            <div key={key} className="flex items-center gap-3">
-                              <Label htmlFor={`interactive-${key}`} className="w-1/3 flex-shrink-0 text-sm">
-                                {key.replace(/_/g, ' ')}:
-                              </Label>
-                              <div className="flex-1">
-                                <ColorPicker
-                                  id={`interactive-${key}`}
-                                  value={value}
-                                  onChange={(value) => handleRawTokenChange('colors', `interactive.${key}`, value)}
-                                />
+                          {/* Initialize default interactive colors if they don't exist */}
+                          {!designSystem?.raw_tokens?.colors?.interactive?.success_base && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mb-2"
+                              onClick={() => {
+                                // Initialize default interactive colors
+                                const defaultInteractiveColors = {
+                                  success_base: "#28a745",
+                                  error_base: "#dc3545",
+                                  warning_base: "#ffc107",
+                                  link_base: "#007bff"
+                                };
+                                
+                                // Add each default color and generate container colors
+                                Object.entries(defaultInteractiveColors).forEach(([key, value]) => {
+                                  // Add base color
+                                  handleRawTokenChange('colors', `interactive.${key}`, value);
+                                  
+                                  // Add container color (lighter version)
+                                  const containerKey = key.replace('_base', '_container');
+                                  const containerColor = lightenColor(value, 60);
+                                  handleRawTokenChange('colors', `interactive.${containerKey}`, containerColor);
+                                  
+                                  // Add on-container color (darker version)
+                                  const onContainerKey = key.replace('_base', '_on_container');
+                                  const onContainerColor = darkenColor(value, 60);
+                                  handleRawTokenChange('colors', `interactive.${onContainerKey}`, onContainerColor);
+                                });
+                                
+                                toast({
+                                  title: "Default interactive colors added",
+                                  description: "Added success, error, warning, and link colors to your system."
+                                });
+                              }}
+                            >
+                              + Initialize Default Interactive Colors
+                            </Button>
+                          )}
+                          
+                          {designSystem?.raw_tokens?.colors?.interactive && Object.entries(designSystem.raw_tokens.colors.interactive)
+                            .filter(([key]) => key.includes('_base'))
+                            .map(([key, value]) => (
+                              <div key={key} className="flex items-center gap-3">
+                                <Label htmlFor={`interactive-${key}`} className="w-1/3 flex-shrink-0 text-sm">
+                                  {key.replace(/_/g, ' ')}:
+                                </Label>
+                                <div className="flex-1">
+                                  <ColorPicker
+                                    id={`interactive-${key}`}
+                                    value={value}
+                                    onChange={(value) => {
+                                      // Update base color
+                                      handleRawTokenChange('colors', `interactive.${key}`, value);
+                                      
+                                      // Update container color (lighter version)
+                                      const containerKey = key.replace('_base', '_container');
+                                      const containerColor = lightenColor(value, 60);
+                                      handleRawTokenChange('colors', `interactive.${containerKey}`, containerColor);
+                                      
+                                      // Update on-container color (darker version)
+                                      const onContainerKey = key.replace('_base', '_on_container');
+                                      const onContainerColor = darkenColor(value, 60);
+                                      handleRawTokenChange('colors', `interactive.${onContainerKey}`, onContainerColor);
+                                    }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))
+                          }
                         </div>
                       </div>
                     </div>
@@ -654,164 +924,72 @@ export default function DesignBuilder() {
                     <div className="mt-8 border-t pt-4">
                       <h3 className="text-md font-semibold mb-3">Semantic Colors</h3>
                       <div className="space-y-4">
-                        <div className="p-4 border rounded">
-                          <h4 className="text-md font-semibold mb-3">Primary Colors</h4>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Primary ($color-primary)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
-                                onChange={(value) => {
-                                  // When primary base changes, update it and derived container/on-container colors
-                                  handleRawTokenChange('colors', 'brand.primary_base', value);
-                                  
-                                  // Auto-generate container color (lighter version)
-                                  const containerColor = lightenColor(value, 60);
-                                  handleRawTokenChange('colors', 'brand.primary_container', containerColor);
-                                  
-                                  // Auto-generate on-container color (darker version)
-                                  const onContainerColor = darkenColor(value, 60);
-                                  handleRawTokenChange('colors', 'brand.primary_on_container', onContainerColor);
-                                }}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>On Primary ($color-on-primary)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
-                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Primary Container ($color-primary-container)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.primary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 60)}
-                                onChange={(value) => {
-                                  // Allow manual override of the auto-generated color
-                                  handleRawTokenChange('colors', 'brand.primary_container', value);
-                                }}
-                              />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than Primary (can be overridden)</span>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>On Primary Container ($color-on-primary-container)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.primary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 60)}
-                                onChange={(value) => {
-                                  // Allow manual override of the auto-generated color
-                                  handleRawTokenChange('colors', 'brand.primary_on_container', value);
-                                }}
-                              />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than Primary (can be overridden)</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="p-4 border rounded">
-                          <h4 className="text-md font-semibold mb-3">Secondary Colors</h4>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Secondary ($color-secondary)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"}
-                                onChange={(value) => {
-                                  // When secondary base changes, update it and derived container/on-container colors
-                                  handleRawTokenChange('colors', 'brand.secondary_base', value);
-                                  
-                                  // Auto-generate container color (lighter version)
-                                  const containerColor = lightenColor(value, 60);
-                                  handleRawTokenChange('colors', 'brand.secondary_container', containerColor);
-                                  
-                                  // Auto-generate on-container color (darker version)
-                                  const onContainerColor = darkenColor(value, 60);
-                                  handleRawTokenChange('colors', 'brand.secondary_on_container', onContainerColor);
-                                }}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>On Secondary ($color-on-secondary)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
-                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Secondary Container ($color-secondary-container)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 60)}
-                                onChange={(value) => {
-                                  // Allow manual override of the auto-generated color
-                                  handleRawTokenChange('colors', 'brand.secondary_container', value);
-                                }}
-                              />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than Secondary (can be overridden)</span>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>On Secondary Container ($color-on-secondary-container)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 60)}
-                                onChange={(value) => {
-                                  // Allow manual override of the auto-generated color
-                                  handleRawTokenChange('colors', 'brand.secondary_on_container', value);
-                                }}
-                              />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than Secondary (can be overridden)</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="p-4 border rounded">
-                          <h4 className="text-md font-semibold mb-3">Tertiary Colors</h4>
-                          <div className="space-y-4">
-                            <div className="space-y-2">
-                              <Label>Tertiary ($color-tertiary)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"}
-                                onChange={(value) => {
-                                  // When tertiary base changes, update it and derived container/on-container colors
-                                  handleRawTokenChange('colors', 'brand.tertiary_base', value);
-                                  
-                                  // Auto-generate container color (lighter version)
-                                  const containerColor = lightenColor(value, 60);
-                                  handleRawTokenChange('colors', 'brand.tertiary_container', containerColor);
-                                  
-                                  // Auto-generate on-container color (darker version)
-                                  const onContainerColor = darkenColor(value, 60);
-                                  handleRawTokenChange('colors', 'brand.tertiary_on_container', onContainerColor);
-                                }}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>On Tertiary ($color-on-tertiary)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
-                                onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Tertiary Container ($color-tertiary-container)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 60)}
-                                onChange={(value) => {
-                                  // Allow manual override of the auto-generated color
-                                  handleRawTokenChange('colors', 'brand.tertiary_container', value);
-                                }}
-                              />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than Tertiary (can be overridden)</span>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>On Tertiary Container ($color-on-tertiary-container)</Label>
-                              <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 60)}
-                                onChange={(value) => {
-                                  // Allow manual override of the auto-generated color
-                                  handleRawTokenChange('colors', 'brand.tertiary_on_container', value);
-                                }}
-                              />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than Tertiary (can be overridden)</span>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Dynamically generate semantic color sections based on defined base colors */}
+                        {designSystem?.raw_tokens?.colors?.brand && 
+                          Object.entries(designSystem.raw_tokens.colors.brand)
+                            .filter(([key]) => key.includes('_base'))
+                            .map(([key, value]) => {
+                              const colorName = key.replace('_base', '');
+                              const displayName = colorName.charAt(0).toUpperCase() + colorName.slice(1);
+                              const containerKey = `${colorName}_container`;
+                              const onContainerKey = `${colorName}_on_container`;
+                              
+                              return (
+                                <div key={key} className="pb-5">
+                                  <h4 className="text-md font-semibold mb-3">{displayName} Colors</h4>
+                                  <div className="space-y-4">
+                                    <div className="space-y-2">
+                                      <Label>{displayName} ($color-{colorName})</Label>
+                                      <ColorPicker
+                                        value={value}
+                                        onChange={(newValue) => {
+                                          // When base color changes, update it and derived container/on-container colors
+                                          handleRawTokenChange('colors', `brand.${key}`, newValue);
+                                          
+                                          // Auto-generate container color (lighter version)
+                                          const containerColor = lightenColor(newValue, 60);
+                                          handleRawTokenChange('colors', `brand.${containerKey}`, containerColor);
+                                          
+                                          // Auto-generate on-container color (darker version)
+                                          const onContainerColor = darkenColor(newValue, 60);
+                                          handleRawTokenChange('colors', `brand.${onContainerKey}`, onContainerColor);
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>On {displayName} ($color-on-{colorName})</Label>
+                                      <ColorPicker
+                                        value={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"}
+                                        onChange={(value) => handleRawTokenChange('colors', 'neutral.neutral_0', value)}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>{displayName} Container ($color-{colorName}-container)</Label>
+                                      <ColorPicker
+                                        value={designSystem?.raw_tokens?.colors?.brand?.[containerKey] || lightenColor(value, 60)}
+                                        onChange={(value) => {
+                                          // Allow manual override of the auto-generated color
+                                          handleRawTokenChange('colors', `brand.${containerKey}`, value);
+                                        }}
+                                      />
+                                      <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than {displayName} (can be overridden)</span>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>On {displayName} Container ($color-on-{colorName}-container)</Label>
+                                      <ColorPicker
+                                        value={designSystem?.raw_tokens?.colors?.brand?.[onContainerKey] || darkenColor(value, 60)}
+                                        onChange={(value) => {
+                                          // Allow manual override of the auto-generated color
+                                          handleRawTokenChange('colors', `brand.${onContainerKey}`, value);
+                                        }}
+                                      />
+                                      <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than {displayName} (can be overridden)</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                        }
                         
                         <div className="p-4 border rounded">
                           <h4 className="text-md font-semibold mb-3">Error Colors</h4>
@@ -1347,6 +1525,96 @@ export default function DesignBuilder() {
                   
                   {/* Colors Tab Preview */}
                   <TabsContent value="colors" className="mt-0">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-medium border-b pb-2">Base Color Tokens</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 mb-8">
+                        {/* Brand Colors */}
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Brand Colors</h4>
+                          <div className="space-y-2">
+                            {designSystem?.raw_tokens?.colors?.brand && 
+                              Object.entries(designSystem.raw_tokens.colors.brand)
+                                .filter(([key]) => key.includes('_base'))
+                                .map(([key, value]) => {
+                                  const colorName = key.replace('_base', '');
+                                  const displayName = colorName.charAt(0).toUpperCase() + colorName.slice(1);
+                                  return (
+                                    <div key={key} className="flex items-center gap-2">
+                                      <div 
+                                        className="w-10 h-10 rounded-full border" 
+                                        style={{ backgroundColor: value as string }}
+                                      ></div>
+                                      <span>{displayName}</span>
+                                    </div>
+                                  );
+                                })
+                            }
+                          </div>
+                        </div>
+
+                        {/* Neutral Colors */}
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Neutral Colors</h4>
+                          <div>
+                            {/* Neutral Base Color */}
+                            <div className="flex items-center gap-2 mb-4">
+                              <div 
+                                className="w-10 h-10 rounded-full border" 
+                                style={{ backgroundColor: designSystem?.raw_tokens?.colors?.neutral?.neutral_base || "#6b7280" }}
+                              ></div>
+                              <span>Base Gray</span>
+                            </div>
+                            
+                            {/* Neutral Color Palette */}
+                            <p className="text-sm mb-2">Color Palette (10 shades):</p>
+                            <div className="grid grid-cols-5 gap-2">
+                              {designSystem?.raw_tokens?.colors?.neutral && 
+                                Object.entries(designSystem.raw_tokens.colors.neutral)
+                                  .filter(([key]) => key.includes('neutral_') && key !== 'neutral_base')
+                                  .sort((a, b) => {
+                                    const numA = parseInt(a[0].split('_')[1]);
+                                    const numB = parseInt(b[0].split('_')[1]);
+                                    return numA - numB;
+                                  })
+                                  .map(([key, value]) => (
+                                    <div key={key} className="flex flex-col items-center">
+                                      <div 
+                                        className="w-8 h-8 rounded border mb-1" 
+                                        style={{ backgroundColor: value as string }}
+                                      ></div>
+                                      <span className="text-xs">{key.replace('neutral_', '')}</span>
+                                    </div>
+                                  ))
+                              }
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Interactive Colors */}
+                        <div className="p-4 border rounded">
+                          <h4 className="text-md font-semibold mb-3">Interactive Colors</h4>
+                          <div className="space-y-2">
+                            {designSystem?.raw_tokens?.colors?.interactive && 
+                              Object.entries(designSystem.raw_tokens.colors.interactive)
+                                .filter(([key]) => key.includes('_base'))
+                                .map(([key, value]) => {
+                                  const colorName = key.replace('_base', '');
+                                  const displayName = colorName.charAt(0).toUpperCase() + colorName.slice(1);
+                                  return (
+                                    <div key={key} className="flex items-center gap-2">
+                                      <div 
+                                        className="w-10 h-10 rounded-full border" 
+                                        style={{ backgroundColor: value as string }}
+                                      ></div>
+                                      <span>{displayName}</span>
+                                    </div>
+                                  );
+                                })
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <div className="space-y-6">
                       <h3 className="text-lg font-medium border-b pb-2">Semantic Color Preview</h3>
                       
@@ -1359,12 +1627,12 @@ export default function DesignBuilder() {
                           {designSystem?.raw_tokens?.colors?.brand?.primary_container ? (
                             <ColorCard name="Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_container} />
                           ) : (
-                            <ColorCard name="Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} lighter amount={30} />
+                            <ColorCard name="Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} lighter amount={60} />
                           )}
                           {designSystem?.raw_tokens?.colors?.brand?.primary_on_container ? (
                             <ColorCard name="On Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_on_container} />
                           ) : (
-                            <ColorCard name="On Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} darker amount={30} />
+                            <ColorCard name="On Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} darker amount={60} />
                           )}
                         </div>
                       </div>
@@ -1378,12 +1646,12 @@ export default function DesignBuilder() {
                           {designSystem?.raw_tokens?.colors?.brand?.secondary_container ? (
                             <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_container} />
                           ) : (
-                            <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} lighter amount={30} />
+                            <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} lighter amount={60} />
                           )}
                           {designSystem?.raw_tokens?.colors?.brand?.secondary_on_container ? (
                             <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container} />
                           ) : (
-                            <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} darker amount={30} />
+                            <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} darker amount={60} />
                           )}
                         </div>
                       </div>
@@ -1397,12 +1665,12 @@ export default function DesignBuilder() {
                           {designSystem?.raw_tokens?.colors?.brand?.tertiary_container ? (
                             <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_container} />
                           ) : (
-                            <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} lighter amount={30} />
+                            <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} lighter amount={60} />
                           )}
                           {designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container ? (
                             <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container} />
                           ) : (
-                            <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} darker amount={30} />
+                            <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} darker amount={60} />
                           )}
                         </div>
                       </div>
@@ -1416,12 +1684,12 @@ export default function DesignBuilder() {
                           {designSystem?.raw_tokens?.colors?.interactive?.error_container ? (
                             <ColorCard name="Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_container} />
                           ) : (
-                            <ColorCard name="Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} lighter amount={30} />
+                            <ColorCard name="Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} lighter amount={60} />
                           )}
                           {designSystem?.raw_tokens?.colors?.interactive?.error_on_container ? (
                             <ColorCard name="On Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_on_container} />
                           ) : (
-                            <ColorCard name="On Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} darker amount={30} />
+                            <ColorCard name="On Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} darker amount={60} />
                           )}
                         </div>
                       </div>
@@ -1480,105 +1748,104 @@ export default function DesignBuilder() {
                           <ColorCard name="Button Secondary Hover" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_200 || "#e9ecef"} />
                         </div>
                       </div>
-                      
+
+                      <h3 className="text-lg font-medium border-b pb-2">Semantic Color Component Previews</h3>
                       <div className="space-y-4">
-                        <h3 className="text-lg font-medium border-b pb-2">Semantic Color Component Previews</h3>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="p-4 border rounded">
-                              <h4 className="text-md font-semibold mb-3">Brand Colors</h4>
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-primary)" }}
-                                  ></div>
-                                  <span>Primary ($color-primary)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-secondary)" }}
-                                  ></div>
-                                  <span>Secondary ($color-secondary)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-tertiary)" }}
-                                  ></div>
-                                  <span>Tertiary ($color-tertiary)</span>
-                                </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="p-4 border rounded">
+                            <h4 className="text-md font-semibold mb-3">Brand Colors</h4>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded" 
+                                  style={{ backgroundColor: "var(--color-primary)" }}
+                                ></div>
+                                <span>Primary ($color-primary)</span>
                               </div>
-                            </div>
-                            <div className="p-4 border rounded">
-                              <h4 className="text-md font-semibold mb-3">Interactive Colors</h4>
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-error)" }}
-                                  ></div>
-                                  <span>Error ($color-error)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-text-success)" }}
-                                  ></div>
-                                  <span>Success ($color-text-success)</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-8 h-8 rounded" 
-                                    style={{ backgroundColor: "var(--color-text-link)" }}
-                                  ></div>
-                                  <span>Link ($color-text-link)</span>
-                                </div>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded" 
+                                  style={{ backgroundColor: "var(--color-secondary)" }}
+                                ></div>
+                                <span>Secondary ($color-secondary)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded" 
+                                  style={{ backgroundColor: "var(--color-tertiary)" }}
+                                ></div>
+                                <span>Tertiary ($color-tertiary)</span>
                               </div>
                             </div>
                           </div>
-                          
-                          <h4 className="text-md font-semibold mt-4">Buttons with Semantic Variables</h4>
-                          <div className="flex flex-wrap gap-2">
-                            <div 
-                              className="py-2 px-4 rounded" 
-                              style={{ 
-                                backgroundColor: "var(--color-button-primary-bg)",
-                                color: "var(--color-button-primary-text)"
-                              }}
-                            >
-                              Primary Button
+                          <div className="p-4 border rounded">
+                            <h4 className="text-md font-semibold mb-3">Interactive Colors</h4>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded" 
+                                  style={{ backgroundColor: "var(--color-error)" }}
+                                ></div>
+                                <span>Error ($color-error)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded" 
+                                  style={{ backgroundColor: "var(--color-text-success)" }}
+                                ></div>
+                                <span>Success ($color-text-success)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-8 h-8 rounded" 
+                                  style={{ backgroundColor: "var(--color-text-link)" }}
+                                ></div>
+                                <span>Link ($color-text-link)</span>
+                              </div>
                             </div>
-                            <div 
-                              className="py-2 px-4 rounded" 
-                              style={{ 
-                                backgroundColor: "var(--color-button-secondary-bg)",
-                                color: "var(--color-button-secondary-text)",
-                                border: "1px solid var(--color-button-secondary-border)"
-                              }}
-                            >
-                              Secondary Button
-                            </div>
-                            <div 
-                              className="py-2 px-4 rounded" 
-                              style={{ 
-                                backgroundColor: "var(--color-error)",
-                                color: "var(--color-on-error)"
-                              }}
-                            >
-                              Error Button
-                            </div>
-                          </div>
-                          
-                          <h4 className="text-md font-semibold mt-4">Standard Components</h4>
-                          <div className="flex flex-wrap gap-2">
-                            <Button variant="default">Primary Button</Button>
-                            <Button variant="secondary">Secondary</Button>
-                            <Button variant="destructive">Destructive</Button>
                           </div>
                         </div>
+
+                        <h4 className="text-md font-semibold mt-4">Buttons with Semantic Variables</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <div 
+                            className="py-2 px-4 rounded" 
+                            style={{ 
+                              backgroundColor: "var(--color-button-primary-bg)",
+                              color: "var(--color-button-primary-text)"
+                            }}
+                          >
+                            Primary Button
+                          </div>
+                          <div 
+                            className="py-2 px-4 rounded" 
+                            style={{ 
+                              backgroundColor: "var(--color-button-secondary-bg)",
+                              color: "var(--color-button-secondary-text)",
+                              border: "1px solid var(--color-button-secondary-border)"
+                            }}
+                          >
+                            Secondary Button
+                          </div>
+                          <div 
+                            className="py-2 px-4 rounded" 
+                            style={{ 
+                              backgroundColor: "var(--color-error)",
+                              color: "var(--color-on-error)"
+                            }}
+                          >
+                            Error Button
+                          </div>
+                        </div>
+
+                        <h4 className="text-md font-semibold mt-4">Standard Components</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="default">Primary Button</Button>
+                          <Button variant="secondary">Secondary</Button>
+                          <Button variant="destructive">Destructive</Button>
+                        </div>
                       </div>
+                      
                     </div>
                   </TabsContent>
                   

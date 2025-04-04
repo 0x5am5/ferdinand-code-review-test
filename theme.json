@@ -2,7 +2,7 @@
   "variant": "professional",
   "primary": "hsl(205, 100%, 50%)",
   "appearance": "light",
-  "radius": 0.5,
+  "radius": 0.4,
   "animation": "smooth",
   "font": {
     "primary": "roc-grotesk",
@@ -26,7 +26,9 @@
   "raw_tokens": {
     "colors": {
       "brand": {
-        "primary_base": "#713535"
+        "primary_base": "#22c0d9",
+        "primary_container": "#a6e5ef",
+        "primary_on_container": "#0d4c56"
       },
       "interactive": {
         "success_base": "#00ff00"
@@ -36,6 +38,7 @@
   "typography_extended": {
     "headingScale": 1.25,
     "bodyTextSize": 1,
-    "lineHeight": 1.7
+    "lineHeight": 1.6,
+    "headingWeight": "600"
   }
 }

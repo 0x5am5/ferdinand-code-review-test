@@ -327,17 +327,26 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     // Apply heading scale if available in typography settings
-    const typographySettings = localStorage.getItem('typographySettings');
-    if (typographySettings) {
-      const settings = JSON.parse(typographySettings);
-      if (settings.headingScale) {
-        const baseHeadingSize = 2.5; // Base size for h1 in rem
-        const scale = settings.headingScale;
-        root.style.setProperty('--heading-1-size', `${baseHeadingSize * scale}rem`);
-        root.style.setProperty('--heading-2-size', `${(baseHeadingSize * 0.8) * scale}rem`);
-        root.style.setProperty('--heading-3-size', `${(baseHeadingSize * 0.6) * scale}rem`);
+    const applyTypographySettings = () => {
+      const typographySettings = localStorage.getItem('typographySettings');
+      if (typographySettings) {
+        try {
+          const settings = JSON.parse(typographySettings);
+          if (settings.headingScale) {
+            const baseHeadingSize = 2.5; // Base size for h1 in rem
+            const scale = settings.headingScale;
+            root.style.setProperty('--heading-1-size', `${baseHeadingSize * scale}rem`);
+            root.style.setProperty('--heading-2-size', `${(baseHeadingSize * 0.8) * scale}rem`);
+            root.style.setProperty('--heading-3-size', `${(baseHeadingSize * 0.6) * scale}rem`);
+          }
+        } catch (error) {
+          console.error('Error parsing typography settings:', error);
+        }
       }
-    }
+    };
+
+    // Run this but don't trigger re-renders from localStorage changes
+    applyTypographySettings();
 
     // Apply extended typography settings if available
     if (activeSystem.typography_extended) {
@@ -425,8 +434,34 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       root.classList.remove('dark');
     }
 
+    // Only log when design system changes, not on every render
     console.log('Theme applied:', activeSystem);
-  }, [designSystem, draftDesignSystem, isLoading]);
+    
+    // Using JSON.stringify prevents unnecessary re-renders by comparing 
+    // the actual content, not just object references
+  }, [
+    isLoading,
+    // Using JSON.stringify to compare the actual content rather than the reference
+    designSystem ? JSON.stringify({
+      theme: designSystem.theme,
+      colors: designSystem.colors,
+      typography: designSystem.typography,
+      // Only include necessary raw_tokens properties to avoid deep nesting issues
+      raw_tokens: designSystem.raw_tokens ? {
+        default_unit: designSystem.raw_tokens.default_unit,
+        colors: designSystem.raw_tokens.colors
+      } : undefined
+    }) : null,
+    draftDesignSystem ? JSON.stringify({
+      theme: draftDesignSystem.theme,
+      colors: draftDesignSystem.colors,
+      typography: draftDesignSystem.typography,
+      raw_tokens: draftDesignSystem.raw_tokens ? {
+        default_unit: draftDesignSystem.raw_tokens.default_unit,
+        colors: draftDesignSystem.raw_tokens.colors
+      } : undefined
+    }) : null
+  ]);
 
   // Function to update theme settings (and persist to API)
   const updateDesignSystem = async (newTheme: Partial<DesignSystem>) => {
@@ -482,4 +517,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useTheme = () => useContext(ThemeContext);
+export function useTheme() {
+  return useContext(ThemeContext);
+}
