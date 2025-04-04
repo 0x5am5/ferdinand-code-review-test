@@ -49,9 +49,9 @@ export function Sidebar() {
         {!isCollapsed && (
 
           <img 
-            src="/ferdinand-logo.png" 
+            src="/ferdinand--logo.png" 
             alt="Ferdinand Logo" 
-            className="h-8 w-auto"
+            className="sidebar--logo"
           />
         )}
         <Button
