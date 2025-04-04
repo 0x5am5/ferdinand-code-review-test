@@ -32,5 +32,10 @@
         "success_base": "#00ff00"
       }
     }
+  },
+  "typography_extended": {
+    "headingScale": 1.25,
+    "bodyTextSize": 1,
+    "lineHeight": 1.7
   }
 }

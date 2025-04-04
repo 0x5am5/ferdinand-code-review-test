@@ -86,3 +86,15 @@
     bottom: 0;
   }
 }
+
+.design-builder--preview {
+  postion: relative;
+  padding: 1rem;
+  
+  .component-preview--title {
+    width: 100%;
+    marign: -1rem;
+    padding: 1rem;
+    font-size: 12px;
+  }
+}
