@@ -48,7 +48,11 @@ export function Sidebar() {
       <div className="sidebar__header">
         {!isCollapsed && (
           
-          <h1 className="app-name--h1">Ferdinand</h1>
+          <img 
+            src="/cow-logo.png" 
+            alt="Ferdinand Logo" 
+            className="h-8 w-auto"
+          />
         )}
         <Button
           variant="ghost"
