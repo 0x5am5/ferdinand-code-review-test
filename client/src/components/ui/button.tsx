@@ -29,4 +29,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 Button.displayName = "Button"
 
-export { Button }
+// Temporary empty string to satisfy imports until all references are updated
+const buttonVariants = "";
+
+export { Button, buttonVariants }
