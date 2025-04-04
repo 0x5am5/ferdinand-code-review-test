@@ -51,7 +51,7 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
     size: "icon" as const,
     className: "w-full"
   } : {
-    className: "w-full justify-start gap-2"
+    className: ""
   };
 
   if (!user) {

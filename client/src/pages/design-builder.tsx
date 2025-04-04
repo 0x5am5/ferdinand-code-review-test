@@ -409,7 +409,7 @@ export default function DesignBuilder() {
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-2xl font-bold mb-2">Design Builder</h1>
+              <h1 className="">Design Builder</h1>
               <p className="text-muted-foreground">
                 Control the overall design system of your application
               </p>
@@ -444,6 +444,7 @@ export default function DesignBuilder() {
                 </Button>
               )}
               <Button 
+                variant="outline"
                 onClick={handleSaveChanges}
                 className="gap-2"
                 disabled={!hasUnsavedChanges}

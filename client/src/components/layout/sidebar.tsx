@@ -75,7 +75,6 @@ export function Sidebar() {
         </div>
       )}
 
-      <ScrollArea>
         <nav className="sidebar__nav">
           {navigation.map((item) => {
             const Icon = item.icon;
@@ -116,7 +115,6 @@ export function Sidebar() {
             </>
           )}
         </nav>
-      </ScrollArea>
 
       <div className="sidebar__footer">
         <AuthButton collapsed={isCollapsed} />
@@ -124,7 +122,7 @@ export function Sidebar() {
         <Button
           variant="ghost"
           size="icon"
-          className="sidebar__toggle-button"
+          className="sidebar__toggle-button button--outline"
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           {isCollapsed ? (
