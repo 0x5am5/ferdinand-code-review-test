@@ -47,6 +47,7 @@ export function Sidebar() {
     >
       <div className="sidebar__header">
         {!isCollapsed && (
+          
           <h1 className="app-name--h1">Ferdinand</h1>
         )}
         <Button
