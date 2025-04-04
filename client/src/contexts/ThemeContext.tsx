@@ -3,9 +3,16 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 // Define the theme structure to match what we're using in design-builder.tsx
 export interface DesignSystem {
   raw_tokens?: {
-    spacing?: Record<string, number>;
-    radius?: Record<string, number>;
-    transition?: Record<string, number>;
+    default_unit?: string;
+    spacing?: Record<string, number | string>;
+    radius?: Record<string, number | string>;
+    transition?: Record<string, string | number>;
+    border?: Record<string, string | number>;
+    colors?: {
+      brand?: Record<string, string>;
+      neutral?: Record<string, string>;
+      interactive?: Record<string, string>;
+    };
   };
   theme: {
     variant: 'professional' | 'tint' | 'vibrant';
@@ -33,10 +40,89 @@ export interface DesignSystem {
     border: string;
     ring: string;
   };
+  typography_extended?: {
+    font_family_base?: string;
+    font_family_secondary?: string;
+    font_family_mono?: string;
+    font_size_base?: number;
+    font_scale_ratio?: number;
+    line_height_ratio?: number;
+    font_weight_light?: number;
+    font_weight_regular?: number;
+    font_weight_medium?: number;
+    font_weight_bold?: number;
+    line_height_tight?: number;
+    line_height_default?: number;
+    line_height_loose?: number;
+  };
 }
 
 // Default theme settings
 const defaultTheme: DesignSystem = {
+  raw_tokens: {
+    default_unit: 'rem',
+    spacing: {
+      spacing_xs: 0.25,
+      spacing_sm: 0.5,
+      spacing_md: 1,
+      spacing_lg: 1.5,
+      spacing_xl: 2,
+      spacing_xxl: 3,
+      spacing_xxxl: 4
+    },
+    radius: {
+      radius_none: 0,
+      radius_sm: 2,
+      radius_md: 4,
+      radius_lg: 8,
+      radius_xl: 16,
+      radius_full: 9999
+    },
+    transition: {
+      transition_duration_fast: 150,
+      transition_duration_base: 300,
+      transition_duration_slow: 500,
+      transition_ease_in: 'ease-in',
+      transition_ease_out: 'ease-out',
+      transition_ease_in_out: 'ease-in-out',
+      transition_linear: 'linear'
+    },
+    border: {
+      border_width_hairline: 1,
+      border_width_thin: 2,
+      border_width_medium: 4,
+      border_width_thick: 8,
+      border_style_solid: 'solid',
+      border_style_dashed: 'dashed',
+      border_style_dotted: 'dotted',
+      border_style_double: 'double'
+    },
+    colors: {
+      brand: {
+        primary_base: 'blue',
+        secondary_base: 'red',
+        tertiary_base: 'green'
+      },
+      neutral: {
+        neutral_0: '#ffffff',
+        neutral_100: '#f8f9fa',
+        neutral_200: '#e9ecef',
+        neutral_300: '#dee2e6',
+        neutral_400: '#ced4da',
+        neutral_500: '#adb5bd',
+        neutral_600: '#6c757d',
+        neutral_700: '#495057',
+        neutral_800: '#343a40',
+        neutral_900: '#212529'
+      },
+      interactive: {
+        success_base: '#28a745',
+        warning_base: '#ffc107',
+        error_base: '#dc3545',
+        link_base: '#007bff'
+      }
+    }
+  },
   theme: {
     variant: 'professional',
     primary: 'hsl(205, 100%, 50%)',
@@ -62,6 +148,21 @@ const defaultTheme: DesignSystem = {
     'destructive-foreground': '#ffffff',
     border: '#e2e8f0',
     ring: 'hsl(205, 100%, 50%)'
+  },
+  typography_extended: {
+    font_family_base: 'Inter, sans-serif',
+    font_family_secondary: 'Inter, sans-serif',
+    font_family_mono: 'Courier New, monospace',
+    font_size_base: 1,
+    font_scale_ratio: 1.333,
+    line_height_ratio: 1.6,
+    font_weight_light: 300,
+    font_weight_regular: 400,
+    font_weight_medium: 500,
+    font_weight_bold: 700,
+    line_height_tight: 1.2,
+    line_height_default: 1.6,
+    line_height_loose: 1.8
   }
 };
 
@@ -223,6 +324,85 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     }
     if (activeSystem.typography.heading) {
       root.style.setProperty('--font-heading', activeSystem.typography.heading);
+    }
+
+    // Apply extended typography settings if available
+    if (activeSystem.typography_extended) {
+      Object.entries(activeSystem.typography_extended).forEach(([key, value]) => {
+        // Convert from snake_case to kebab-case for CSS variables
+        const cssVarName = key.replace(/_/g, '-');
+        root.style.setProperty(`--${cssVarName}`, String(value));
+      });
+    }
+    
+    // Apply raw tokens if available
+    if (activeSystem.raw_tokens) {
+      // Apply default unit
+      if (activeSystem.raw_tokens.default_unit) {
+        root.style.setProperty('--default-unit', activeSystem.raw_tokens.default_unit);
+      }
+      
+      // Apply spacing tokens
+      if (activeSystem.raw_tokens.spacing) {
+        Object.entries(activeSystem.raw_tokens.spacing).forEach(([key, value]) => {
+          // Transform from naming like "spacing_xs" to CSS variable naming "spacing-xs"
+          const cssVarName = key.replace(/_/g, '-');
+          const defaultUnit = activeSystem.raw_tokens?.default_unit || 'rem';
+          root.style.setProperty(`--${cssVarName}`, `${value}${defaultUnit}`);
+        });
+      }
+      
+      // Apply radius tokens
+      if (activeSystem.raw_tokens.radius) {
+        Object.entries(activeSystem.raw_tokens.radius).forEach(([key, value]) => {
+          const cssVarName = key.replace(/_/g, '-');
+          root.style.setProperty(`--${cssVarName}`, `${value}px`);
+        });
+      }
+      
+      // Apply transition tokens
+      if (activeSystem.raw_tokens.transition) {
+        Object.entries(activeSystem.raw_tokens.transition).forEach(([key, value]) => {
+          const cssVarName = key.replace(/_/g, '-');
+          if (typeof value === 'number') {
+            root.style.setProperty(`--${cssVarName}`, `${value}ms`);
+          } else {
+            root.style.setProperty(`--${cssVarName}`, String(value));
+          }
+        });
+      }
+      
+      // Apply border tokens
+      if (activeSystem.raw_tokens.border) {
+        Object.entries(activeSystem.raw_tokens.border).forEach(([key, value]) => {
+          const cssVarName = key.replace(/_/g, '-');
+          root.style.setProperty(`--${cssVarName}`, String(value));
+        });
+      }
+      
+      // Apply raw color tokens
+      if (activeSystem.raw_tokens.colors) {
+        if (activeSystem.raw_tokens.colors.brand) {
+          Object.entries(activeSystem.raw_tokens.colors.brand).forEach(([key, value]) => {
+            const cssVarName = `color-brand-${key.replace(/_/g, '-')}`;
+            root.style.setProperty(`--${cssVarName}`, value);
+          });
+        }
+        
+        if (activeSystem.raw_tokens.colors.neutral) {
+          Object.entries(activeSystem.raw_tokens.colors.neutral).forEach(([key, value]) => {
+            const cssVarName = `color-neutral-${key.replace(/_/g, '-')}`;
+            root.style.setProperty(`--${cssVarName}`, value);
+          });
+        }
+        
+        if (activeSystem.raw_tokens.colors.interactive) {
+          Object.entries(activeSystem.raw_tokens.colors.interactive).forEach(([key, value]) => {
+            const cssVarName = `color-interactive-${key.replace(/_/g, '-')}`;
+            root.style.setProperty(`--${cssVarName}`, value);
+          });
+        }
+      }
     }
 
     // Apply appearance (light/dark mode)

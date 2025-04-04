@@ -182,9 +182,48 @@ export default function DesignBuilder() {
     addToHistory(updatedDesignSystem);
   };
   
-  const handleRawTokenChange = (category: string, key: string, value: number) => {
-    // This is a placeholder for the raw token changes that would need to be implemented
-    console.log(`Changed ${category} token: ${key} to ${value}`);
+  const handleRawTokenChange = (
+    category: 'default_unit' | 'spacing' | 'radius' | 'transition' | 'border' | 'colors', 
+    key: string, 
+    value: string | number
+  ) => {
+    const updatedRawTokens = { ...(designSystem.raw_tokens || {}) };
+    
+    if (category === 'default_unit') {
+      updatedRawTokens.default_unit = value as string;
+    } else if (category === 'spacing') {
+      updatedRawTokens.spacing = { ...(updatedRawTokens.spacing || {}), [key]: value };
+    } else if (category === 'radius') {
+      updatedRawTokens.radius = { ...(updatedRawTokens.radius || {}), [key]: value };
+    } else if (category === 'transition') {
+      updatedRawTokens.transition = { ...(updatedRawTokens.transition || {}), [key]: value };
+    } else if (category === 'border') {
+      updatedRawTokens.border = { ...(updatedRawTokens.border || {}), [key]: value };
+    } else if (category === 'colors') {
+      // Handle nested structure for colors
+      // Extract parts from key: brand.primary_base, neutral.neutral_100, etc.
+      const [colorType, colorName] = key.split('.');
+      
+      if (!updatedRawTokens.colors) {
+        updatedRawTokens.colors = {};
+      }
+      
+      if (colorType === 'brand') {
+        updatedRawTokens.colors.brand = { ...(updatedRawTokens.colors.brand || {}), [colorName]: value as string };
+      } else if (colorType === 'neutral') {
+        updatedRawTokens.colors.neutral = { ...(updatedRawTokens.colors.neutral || {}), [colorName]: value as string };
+      } else if (colorType === 'interactive') {
+        updatedRawTokens.colors.interactive = { ...(updatedRawTokens.colors.interactive || {}), [colorName]: value as string };
+      }
+    }
+    
+    const updatedDesignSystem = { 
+      ...designSystem,
+      raw_tokens: updatedRawTokens
+    };
+    
+    updateDraftDesignSystem({ raw_tokens: updatedRawTokens });
+    addToHistory(updatedDesignSystem);
     setHasUnsavedChanges(true);
   };
   
@@ -432,41 +471,101 @@ export default function DesignBuilder() {
                   <TabsContent value="general" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">General Settings</h2>
                     <div className="space-y-6">
-                      <div>
-                        <Label htmlFor="animation">Animation Style</Label>
-                        <Select 
-                          value={designSystem?.theme.animation} 
-                          onValueChange={(value) => handleThemeChange('animation', value)}
-                        >
-                          <SelectTrigger id="animation" className="w-full mt-1">
-                            <SelectValue placeholder="Select animation style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="minimal">Minimal</SelectItem>
-                            <SelectItem value="smooth">Smooth</SelectItem>
-                            <SelectItem value="bounce">Bounce</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Controls the animation style
-                        </p>
+                      {/* Base Style Settings */}
+                      <div className="border-b pb-4">
+                        <h3 className="text-md font-semibold mb-3">Base Style</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="animation">Animation Style</Label>
+                            <Select 
+                              value={designSystem?.theme.animation} 
+                              onValueChange={(value) => handleThemeChange('animation', value)}
+                            >
+                              <SelectTrigger id="animation" className="w-full mt-1">
+                                <SelectValue placeholder="Select animation style" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="minimal">Minimal</SelectItem>
+                                <SelectItem value="smooth">Smooth</SelectItem>
+                                <SelectItem value="bounce">Bounce</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Controls the animation style
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
+                            <div className="pt-2 pb-2">
+                              <Slider 
+                                id="radius"
+                                defaultValue={[designSystem?.theme.radius || 0.5]} 
+                                max={2} 
+                                step={0.1}
+                                onValueChange={(value) => handleThemeChange('radius', value[0])}
+                              />
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Controls the roundness of UI elements
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       
+                      {/* Design Tokens Section */}
                       <div>
-                        <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
-                        <div className="pt-2 pb-2">
-                          <Slider 
-                            id="radius"
-                            defaultValue={[designSystem?.theme.radius || 0.5]} 
-                            max={2} 
-                            step={0.1}
-                            onValueChange={(value) => handleThemeChange('radius', value[0])}
-                          />
+                        <h3 className="text-md font-semibold mb-3">Design Tokens</h3>
+                        
+                        {/* Default Unit */}
+                        <div className="mb-4">
+                          <Label htmlFor="default-unit">Default Unit</Label>
+                          <Select 
+                            value={designSystem?.raw_tokens?.default_unit || 'rem'} 
+                            onValueChange={(value) => handleRawTokenChange('default_unit', 'default_unit', value)}
+                          >
+                            <SelectTrigger id="default-unit" className="w-full mt-1">
+                              <SelectValue placeholder="Select default unit" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="rem">rem</SelectItem>
+                              <SelectItem value="em">em</SelectItem>
+                              <SelectItem value="px">px</SelectItem>
+                              <SelectItem value="%">%</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Default unit used for spacing and sizing
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Controls the roundness of UI elements
-                        </p>
+                        
+                        {/* Spacing Variables */}
+                        <div className="border-t pt-4 mt-4">
+                          <h4 className="font-medium mb-3">Spacing Tokens</h4>
+                          <div className="space-y-3">
+                            {designSystem?.raw_tokens?.spacing && Object.entries(designSystem.raw_tokens.spacing).map(([key, value]) => (
+                              <div key={key} className="flex items-center gap-3">
+                                <Label htmlFor={`spacing-${key}`} className="w-1/3 flex-shrink-0 text-sm">
+                                  {key.replace(/_/g, ' ')}:
+                                </Label>
+                                <div className="flex-1">
+                                  <Input
+                                    id={`spacing-${key}`}
+                                    type="number"
+                                    value={value}
+                                    min={0}
+                                    step={0.1}
+                                    onChange={(e) => handleRawTokenChange('spacing', key, parseFloat(e.target.value))}
+                                  />
+                                </div>
+                                <div className="flex-shrink-0 w-16 text-sm text-muted-foreground">
+                                  {designSystem?.raw_tokens?.default_unit || 'rem'}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </TabsContent>
@@ -474,16 +573,93 @@ export default function DesignBuilder() {
                   {/* Colors Tab Content */}
                   <TabsContent value="colors" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Color System</h2>
-                    <div className="space-y-4">
-                      {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
-                        <div key={key} className="space-y-2">
-                          <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
-                          <ColorPicker
-                            value={color}
-                            onChange={(value) => handleColorChange(key, value)}
-                          />
+                    
+                    {/* Raw Color Tokens */}
+                    <div className="mb-8">
+                      <h3 className="text-md font-semibold mb-3">Base Color Tokens</h3>
+                      
+                      {/* Brand Colors */}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-medium mb-3">Brand Colors</h4>
+                        <div className="space-y-3">
+                          {designSystem?.raw_tokens?.colors?.brand && Object.entries(designSystem.raw_tokens.colors.brand).map(([key, value]) => (
+                            <div key={key} className="flex items-center gap-3">
+                              <Label htmlFor={`brand-${key}`} className="w-1/3 flex-shrink-0 text-sm">
+                                {key.replace(/_/g, ' ')}:
+                              </Label>
+                              <div className="flex-1">
+                                <ColorPicker
+                                  id={`brand-${key}`}
+                                  value={value}
+                                  onChange={(value) => handleRawTokenChange('colors', `brand.${key}`, value)}
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+                      
+                      {/* Neutral Colors */}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-medium mb-3">Neutral Colors</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          {designSystem?.raw_tokens?.colors?.neutral && Object.entries(designSystem.raw_tokens.colors.neutral).map(([key, value]) => (
+                            <div key={key} className="space-y-1">
+                              <div className="flex items-center justify-between">
+                                <Label htmlFor={`neutral-${key}`} className="text-sm">
+                                  {key.replace(/_/g, ' ')}
+                                </Label>
+                                <div 
+                                  className="w-6 h-6 rounded border" 
+                                  style={{ backgroundColor: value }}
+                                ></div>
+                              </div>
+                              <ColorPicker
+                                id={`neutral-${key}`}
+                                value={value}
+                                onChange={(value) => handleRawTokenChange('colors', `neutral.${key}`, value)}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Interactive Colors */}
+                      <div className="border-t pt-4 mt-4">
+                        <h4 className="font-medium mb-3">Interactive Colors</h4>
+                        <div className="space-y-3">
+                          {designSystem?.raw_tokens?.colors?.interactive && Object.entries(designSystem.raw_tokens.colors.interactive).map(([key, value]) => (
+                            <div key={key} className="flex items-center gap-3">
+                              <Label htmlFor={`interactive-${key}`} className="w-1/3 flex-shrink-0 text-sm">
+                                {key.replace(/_/g, ' ')}:
+                              </Label>
+                              <div className="flex-1">
+                                <ColorPicker
+                                  id={`interactive-${key}`}
+                                  value={value}
+                                  onChange={(value) => handleRawTokenChange('colors', `interactive.${key}`, value)}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Semantic Colors (UI Component Colors) */}
+                    <div className="mt-8 border-t pt-4">
+                      <h3 className="text-md font-semibold mb-3">UI Component Colors</h3>
+                      <div className="space-y-4">
+                        {designSystem && Object.entries(designSystem.colors).map(([key, color]) => (
+                          <div key={key} className="space-y-2">
+                            <Label className="capitalize">{key.replace(/-/g, ' ')}</Label>
+                            <ColorPicker
+                              value={color}
+                              onChange={(value) => handleColorChange(key, value)}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </TabsContent>
                   
@@ -623,51 +799,136 @@ export default function DesignBuilder() {
                   {/* Borders Tab Content */}
                   <TabsContent value="borders" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Border Settings</h2>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
+                      {/* Global Border Color */}
                       <div>
-                        <Label htmlFor="border-color">Border Color</Label>
+                        <Label htmlFor="border-color">Global Border Color</Label>
                         <ColorPicker
+                          id="border-color"
                           value={designSystem?.colors.border || "#e2e8f0"}
                           onChange={(value) => handleColorChange('border', value)}
                         />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          This color is used for borders throughout the application
+                        </p>
                       </div>
                       
-                      <div>
-                        <Label htmlFor="border-widths">Border Width Scale</Label>
+                      {/* Border Width Tokens */}
+                      <div className="border-t pt-4 mt-4">
+                        <h3 className="text-md font-semibold mb-3">Border Width Tokens</h3>
                         <div className="space-y-3 mt-2">
-                          {[
-                            { key: 'hairline', value: 1, label: 'Hairline' },
-                            { key: 'thin', value: 2, label: 'Thin' },
-                            { key: 'medium', value: 4, label: 'Medium' },
-                            { key: 'thick', value: 8, label: 'Thick' }
-                          ].map(({ key, value, label }) => (
-                            <div key={key} className="flex items-center justify-between">
-                              <span>{label}</span>
-                              <div className="flex gap-2 items-center">
-                                <Input 
-                                  type="number" 
-                                  value={value}
-                                  className="w-20"
-                                  onChange={(e) => setHasUnsavedChanges(true)}
-                                />
-                                <span className="text-muted-foreground text-sm">px</span>
+                          {designSystem?.raw_tokens?.border ? (
+                            Object.entries(designSystem.raw_tokens.border)
+                              .filter(([key]) => key.includes('width'))
+                              .map(([key, value]) => (
+                                <div key={key} className="flex items-center gap-3">
+                                  <Label htmlFor={`border-${key}`} className="w-1/3 flex-shrink-0 text-sm">
+                                    {key.replace(/_/g, ' ')}:
+                                  </Label>
+                                  <div className="flex-1">
+                                    <Input
+                                      id={`border-${key}`}
+                                      type="number"
+                                      value={typeof value === 'number' ? value : 1}
+                                      min={0}
+                                      max={20}
+                                      onChange={(e) => handleRawTokenChange('border', key, parseInt(e.target.value))}
+                                    />
+                                  </div>
+                                  <div className="flex-shrink-0 w-16 text-sm text-muted-foreground">
+                                    px
+                                  </div>
+                                  <div 
+                                    className="w-12 h-8 rounded" 
+                                    style={{ 
+                                      border: `${typeof value === 'number' ? value : 1}px solid ${designSystem?.colors.border || "#e2e8f0"}`,
+                                    }}
+                                  ></div>
+                                </div>
+                            ))
+                          ) : (
+                            // Default border tokens if none exist
+                            [
+                              { key: 'border_width_hairline', value: 1, label: 'Hairline' },
+                              { key: 'border_width_thin', value: 2, label: 'Thin' },
+                              { key: 'border_width_medium', value: 4, label: 'Medium' },
+                              { key: 'border_width_thick', value: 8, label: 'Thick' }
+                            ].map(({ key, value, label }) => (
+                              <div key={key} className="flex items-center gap-3">
+                                <Label htmlFor={`border-${key}`} className="w-1/3 flex-shrink-0 text-sm">
+                                  {label}:
+                                </Label>
+                                <div className="flex-1">
+                                  <Input
+                                    id={`border-${key}`}
+                                    type="number"
+                                    value={value}
+                                    min={0}
+                                    max={20}
+                                    onChange={(e) => handleRawTokenChange('border', key, parseInt(e.target.value))}
+                                  />
+                                </div>
+                                <div className="flex-shrink-0 w-16 text-sm text-muted-foreground">
+                                  px
+                                </div>
+                                <div 
+                                  className="w-12 h-8 rounded" 
+                                  style={{ 
+                                    border: `${value}px solid ${designSystem?.colors.border || "#e2e8f0"}`,
+                                  }}
+                                ></div>
                               </div>
-                            </div>
-                          ))}
+                            ))
+                          )}
                         </div>
                       </div>
                       
-                      <div>
-                        <Label htmlFor="border-styles">Border Styles</Label>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
+                      {/* Border Style Tokens */}
+                      <div className="border-t pt-4 mt-4">
+                        <h3 className="text-md font-semibold mb-3">Border Styles</h3>
+                        <div className="grid grid-cols-2 gap-3 mt-2">
                           {['solid', 'dashed', 'dotted', 'double'].map(style => (
                             <div 
                               key={style}
                               className="border-2 p-3 text-center rounded cursor-pointer hover:bg-accent"
                               style={{ borderStyle: style }}
-                              onClick={() => setHasUnsavedChanges(true)}
+                              onClick={() => handleRawTokenChange('border', `border_style_${style}`, style)}
                             >
                               {style}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Border Radius Tokens */}
+                      <div className="border-t pt-4 mt-4">
+                        <h3 className="text-md font-semibold mb-3">Border Radius Tokens</h3>
+                        <div className="space-y-3 mt-2">
+                          {designSystem?.raw_tokens?.radius && Object.entries(designSystem.raw_tokens.radius).map(([key, value]) => (
+                            <div key={key} className="flex items-center gap-3">
+                              <Label htmlFor={`radius-${key}`} className="w-1/3 flex-shrink-0 text-sm">
+                                {key.replace(/_/g, ' ')}:
+                              </Label>
+                              <div className="flex-1">
+                                <Input
+                                  id={`radius-${key}`}
+                                  type="number"
+                                  value={typeof value === 'number' ? value : 0}
+                                  min={0}
+                                  max={100}
+                                  onChange={(e) => handleRawTokenChange('radius', key, parseInt(e.target.value))}
+                                />
+                              </div>
+                              <div className="flex-shrink-0 w-16 text-sm text-muted-foreground">
+                                px
+                              </div>
+                              <div 
+                                className="w-12 h-12 border-2" 
+                                style={{ 
+                                  borderRadius: `${typeof value === 'number' ? value : 0}px`,
+                                  borderColor: designSystem?.colors.border || "#e2e8f0",
+                                }}
+                              ></div>
                             </div>
                           ))}
                         </div>
@@ -724,27 +985,91 @@ export default function DesignBuilder() {
                       </div>
                       
                       <div className="space-y-4">
-                        <h3 className="text-lg font-medium border-b pb-2">UI Components with Current Colors</h3>
+                        <h3 className="text-lg font-medium border-b pb-2">Raw & Semantic Color Variables</h3>
                         <div className="space-y-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="p-4 border rounded">
+                              <h4 className="text-md font-semibold mb-3">Brand Colors</h4>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-8 h-8 rounded" 
+                                    style={{ backgroundColor: "var(--color-brand-primary-base)" }}
+                                  ></div>
+                                  <span>Primary Base (--color-brand-primary-base)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-8 h-8 rounded" 
+                                    style={{ backgroundColor: "var(--color-brand-primary-lighter1)" }}
+                                  ></div>
+                                  <span>Primary Lighter (--color-brand-primary-lighter1)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-8 h-8 rounded" 
+                                    style={{ backgroundColor: "var(--color-brand-primary-darker1)" }}
+                                  ></div>
+                                  <span>Primary Darker (--color-brand-primary-darker1)</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-4 border rounded">
+                              <h4 className="text-md font-semibold mb-3">Interactive Colors</h4>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-8 h-8 rounded" 
+                                    style={{ backgroundColor: "var(--color-interactive-success-base)" }}
+                                  ></div>
+                                  <span>Success (--color-interactive-success-base)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-8 h-8 rounded" 
+                                    style={{ backgroundColor: "var(--color-interactive-error-base)" }}
+                                  ></div>
+                                  <span>Error (--color-interactive-error-base)</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-8 h-8 rounded" 
+                                    style={{ backgroundColor: "var(--color-interactive-warning-base)" }}
+                                  ></div>
+                                  <span>Warning (--color-interactive-warning-base)</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <h4 className="text-md font-semibold mt-4">Components with Raw Variables</h4>
+                          <div className="flex flex-wrap gap-2">
+                            <div 
+                              className="py-2 px-4 rounded text-white" 
+                              style={{ backgroundColor: "var(--color-brand-primary-base)" }}
+                            >
+                              Primary Button
+                            </div>
+                            <div 
+                              className="py-2 px-4 rounded text-white" 
+                              style={{ backgroundColor: "var(--color-interactive-success-base)" }}
+                            >
+                              Success Button
+                            </div>
+                            <div 
+                              className="py-2 px-4 rounded text-white" 
+                              style={{ backgroundColor: "var(--color-interactive-error-base)" }}
+                            >
+                              Error Button
+                            </div>
+                          </div>
+                          
+                          <h4 className="text-md font-semibold mt-4">Standard Components</h4>
                           <div className="flex flex-wrap gap-2">
                             <Button variant="default">Primary Button</Button>
                             <Button variant="secondary">Secondary</Button>
                             <Button variant="destructive">Destructive</Button>
                           </div>
-                          
-                          <div className="flex flex-wrap gap-2">
-                            <Badge>Badge</Badge>
-                            <Badge variant="secondary">Secondary</Badge>
-                            <Badge variant="destructive">Destructive</Badge>
-                          </div>
-                          
-                          <Alert>
-                            <InfoIcon className="h-4 w-4 mr-2" />
-                            <AlertTitle>Information Alert</AlertTitle>
-                            <AlertDescription>
-                              This alert uses background and foreground colors.
-                            </AlertDescription>
-                          </Alert>
                         </div>
                       </div>
                     </div>
@@ -832,18 +1157,68 @@ export default function DesignBuilder() {
                       </div>
                       
                       <div>
-                        <h3 className="text-lg font-medium border-b pb-2 mb-4">UI Components with Borders</h3>
+                        <h3 className="text-lg font-medium border-b pb-2 mb-4">Components with Raw Border Variables</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Card className="p-4 border">
-                            <h4 className="font-medium mb-2">Card Component</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Cards use border styles for their outline.
+                          <div className="p-4 rounded" 
+                            style={{ 
+                              borderWidth: "var(--border-width-thin)",
+                              borderStyle: "solid",
+                              borderColor: "var(--color-brand-primary-base)",
+                              borderRadius: "var(--radius-md)"
+                            }}>
+                            <h4 className="font-medium mb-2">Primary Border Card</h4>
+                            <p className="text-sm">
+                              Using --border-width-thin & --color-brand-primary-base
                             </p>
-                          </Card>
+                          </div>
                           
-                          <div className="space-y-2">
-                            <Input placeholder="Input with border" />
-                            <Button variant="outline">Outline Button</Button>
+                          <div className="p-4 rounded" 
+                            style={{ 
+                              borderWidth: "var(--border-width-medium)",
+                              borderStyle: "solid",
+                              borderColor: "var(--color-interactive-success-base)",
+                              borderRadius: "var(--radius-lg)"
+                            }}>
+                            <h4 className="font-medium mb-2">Success Border Card</h4>
+                            <p className="text-sm">
+                              Using --border-width-medium & --color-interactive-success-base
+                            </p>
+                          </div>
+                          
+                          <div className="mt-4">
+                            <h4 className="font-medium mb-2">Raw Border Button Examples</h4>
+                            <div className="flex flex-wrap gap-2">
+                              <button 
+                                className="py-2 px-4 bg-transparent" 
+                                style={{ 
+                                  borderWidth: "var(--border-width-thin)",
+                                  borderStyle: "solid",
+                                  borderColor: "var(--color-brand-primary-base)",
+                                  borderRadius: "var(--radius-md)",
+                                  color: "var(--color-brand-primary-base)"
+                                }}>
+                                Primary Outline
+                              </button>
+                              <button 
+                                className="py-2 px-4 bg-transparent" 
+                                style={{ 
+                                  borderWidth: "var(--border-width-thin)",
+                                  borderStyle: "solid",
+                                  borderColor: "var(--color-interactive-error-base)",
+                                  borderRadius: "var(--radius-md)",
+                                  color: "var(--color-interactive-error-base)"
+                                }}>
+                                Error Outline
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4">
+                            <h4 className="font-medium mb-2">Standard Components</h4>
+                            <div className="space-y-2">
+                              <Input placeholder="Input with border" />
+                              <Button variant="outline">Outline Button</Button>
+                            </div>
                           </div>
                         </div>
                       </div>

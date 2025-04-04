@@ -22,5 +22,15 @@
     "destructive-foreground": "#ffffff",
     "border": "#e2e8f0",
     "ring": "hsl(205, 100%, 50%)"
+  },
+  "raw_tokens": {
+    "colors": {
+      "brand": {
+        "primary_base": "#713535"
+      },
+      "interactive": {
+        "success_base": "#00ff00"
+      }
+    }
   }
 }

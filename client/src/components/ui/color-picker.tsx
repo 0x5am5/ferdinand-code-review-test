@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ColorPickerProps {
+  id?: string; // Optional id for the component
   value: string;
   onChange: (value: string) => void;
   className?: string;
@@ -118,7 +119,7 @@ function hsvToRgb(h: number, s: number, v: number) {
   };
 }
 
-export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
+export function ColorPicker({ id, value, onChange, className }: ColorPickerProps) {
   // Safe initialization handling both string and null/undefined cases
   const initialValue = typeof value === 'string' && value ? (value.startsWith("#") ? value : "#000000") : "#000000";
   const [hexValue, setHexValue] = useState(initialValue);
@@ -260,6 +261,7 @@ export function ColorPicker({ value, onChange, className }: ColorPickerProps) {
     <Popover>
       <PopoverTrigger asChild>
         <Button 
+          id={id}
           variant="outline" 
           className={cn("w-full justify-start text-left font-normal", className)}
         >
