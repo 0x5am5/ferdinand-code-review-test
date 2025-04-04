@@ -2,35 +2,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Simple color adjustment functions
-const lightenColor = (hex: string): string => {
-  // Use a simple lightening technique to avoid complexity
-  return hex;
-};
-
-const darkenColor = (hex: string): string => {
-  // Use a simple darkening technique to avoid complexity
-  return hex;
-};
+import { lightenColor, darkenColor } from "@/lib/utils";
 
 export function ColorCard(props: {
   name: string;
   hex: string;
   lighter?: boolean;
   darker?: boolean;
+  amount?: number;
 }) {
-  const { name, hex, lighter = false, darker = false } = props;
+  const { name, hex, lighter = false, darker = false, amount = 20 } = props;
   const { toast } = useToast();
   
-  // Apply adjustments if needed (simplified version)
-  const displayColor = hex;
+  // Apply adjustments if needed
+  let displayColor = hex;
+  if (lighter) {
+    displayColor = lightenColor(hex, amount);
+  } else if (darker) {
+    displayColor = darkenColor(hex, amount);
+  }
   
   const copyHex = () => {
-    navigator.clipboard.writeText(hex);
+    navigator.clipboard.writeText(displayColor);
     toast({
       title: "Copied!",
-      description: `${hex} has been copied to your clipboard.`,
+      description: `${displayColor} has been copied to your clipboard.`,
     });
   };
 
@@ -49,10 +45,11 @@ export function ColorCard(props: {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <code className="text-xs font-mono">{hex}</code>
+        <code className="text-xs font-mono">{displayColor}</code>
         {(lighter || darker) && (
           <div className="mt-2 text-xs text-muted-foreground">
-            Note: This would be {lighter ? "lightened" : "darkened"} in the final theme
+            {lighter && `${amount}% lighter than ${hex}`}
+            {darker && `${amount}% darker than ${hex}`}
           </div>
         )}
       </CardContent>

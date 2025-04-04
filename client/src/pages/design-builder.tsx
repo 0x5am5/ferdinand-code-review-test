@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TypographyCard } from "@/components/brand/typography-card";
 import { ColorCard } from "@/components/brand/color-card";
 import { useTheme, DesignSystem } from "../contexts/ThemeContext";
+import { lightenColor, darkenColor } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -660,7 +661,18 @@ export default function DesignBuilder() {
                               <Label>Primary ($color-primary)</Label>
                               <ColorPicker
                                 value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
-                                onChange={(value) => handleRawTokenChange('colors', 'brand.primary_base', value)}
+                                onChange={(value) => {
+                                  // When primary base changes, update it and derived container/on-container colors
+                                  handleRawTokenChange('colors', 'brand.primary_base', value);
+                                  
+                                  // Auto-generate container color (lighter version)
+                                  const containerColor = lightenColor(value, 30);
+                                  handleRawTokenChange('colors', 'brand.primary_container', containerColor);
+                                  
+                                  // Auto-generate on-container color (darker version)
+                                  const onContainerColor = darkenColor(value, 30);
+                                  handleRawTokenChange('colors', 'brand.primary_on_container', onContainerColor);
+                                }}
                               />
                             </div>
                             <div className="space-y-2">
@@ -673,26 +685,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Primary Container ($color-primary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 30)}
                                 onChange={(value) => {
-                                  // Using the lighten effect similar to _semantic.scss
-                                  // We're updating the primary base here as it affects the derived colors
-                                  handleRawTokenChange('colors', 'brand.primary_base', value);
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'brand.primary_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a lighter version of Primary color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Primary (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Primary Container ($color-on-primary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"}
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 30)}
                                 onChange={(value) => {
-                                  // Using the darken effect similar to _semantic.scss
-                                  // We're updating the primary base here as it affects the derived colors
-                                  handleRawTokenChange('colors', 'brand.primary_base', value);
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'brand.primary_on_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a darker version of Primary color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Primary (can be overridden)</span>
                             </div>
                           </div>
                         </div>
@@ -704,7 +714,18 @@ export default function DesignBuilder() {
                               <Label>Secondary ($color-secondary)</Label>
                               <ColorPicker
                                 value={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"}
-                                onChange={(value) => handleRawTokenChange('colors', 'brand.secondary_base', value)}
+                                onChange={(value) => {
+                                  // When secondary base changes, update it and derived container/on-container colors
+                                  handleRawTokenChange('colors', 'brand.secondary_base', value);
+                                  
+                                  // Auto-generate container color (lighter version)
+                                  const containerColor = lightenColor(value, 30);
+                                  handleRawTokenChange('colors', 'brand.secondary_container', containerColor);
+                                  
+                                  // Auto-generate on-container color (darker version)
+                                  const onContainerColor = darkenColor(value, 30);
+                                  handleRawTokenChange('colors', 'brand.secondary_on_container', onContainerColor);
+                                }}
                               />
                             </div>
                             <div className="space-y-2">
@@ -717,24 +738,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Secondary Container ($color-secondary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"}
+                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 30)}
                                 onChange={(value) => {
-                                  // Using the lighten effect similar to _semantic.scss
-                                  handleRawTokenChange('colors', 'brand.secondary_base', value);
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'brand.secondary_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a lighter version of Secondary color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Secondary (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Secondary Container ($color-on-secondary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"}
+                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 30)}
                                 onChange={(value) => {
-                                  // Using the darken effect similar to _semantic.scss
-                                  handleRawTokenChange('colors', 'brand.secondary_base', value);
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'brand.secondary_on_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a darker version of Secondary color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Secondary (can be overridden)</span>
                             </div>
                           </div>
                         </div>
@@ -746,7 +767,18 @@ export default function DesignBuilder() {
                               <Label>Tertiary ($color-tertiary)</Label>
                               <ColorPicker
                                 value={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"}
-                                onChange={(value) => handleRawTokenChange('colors', 'brand.tertiary_base', value)}
+                                onChange={(value) => {
+                                  // When tertiary base changes, update it and derived container/on-container colors
+                                  handleRawTokenChange('colors', 'brand.tertiary_base', value);
+                                  
+                                  // Auto-generate container color (lighter version)
+                                  const containerColor = lightenColor(value, 30);
+                                  handleRawTokenChange('colors', 'brand.tertiary_container', containerColor);
+                                  
+                                  // Auto-generate on-container color (darker version)
+                                  const onContainerColor = darkenColor(value, 30);
+                                  handleRawTokenChange('colors', 'brand.tertiary_on_container', onContainerColor);
+                                }}
                               />
                             </div>
                             <div className="space-y-2">
@@ -759,24 +791,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Tertiary Container ($color-tertiary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"}
+                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 30)}
                                 onChange={(value) => {
-                                  // Using the lighten effect similar to _semantic.scss
-                                  handleRawTokenChange('colors', 'brand.tertiary_base', value);
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'brand.tertiary_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a lighter version of Tertiary color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Tertiary (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Tertiary Container ($color-on-tertiary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"}
+                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 30)}
                                 onChange={(value) => {
-                                  // Using the darken effect similar to _semantic.scss
-                                  handleRawTokenChange('colors', 'brand.tertiary_base', value);
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'brand.tertiary_on_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a darker version of Tertiary color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Tertiary (can be overridden)</span>
                             </div>
                           </div>
                         </div>
@@ -788,7 +820,18 @@ export default function DesignBuilder() {
                               <Label>Error ($color-error)</Label>
                               <ColorPicker
                                 value={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"}
-                                onChange={(value) => handleRawTokenChange('colors', 'interactive.error_base', value)}
+                                onChange={(value) => {
+                                  // When error base changes, update it and derived container/on-container colors
+                                  handleRawTokenChange('colors', 'interactive.error_base', value);
+                                  
+                                  // Auto-generate container color (lighter version)
+                                  const containerColor = lightenColor(value, 30);
+                                  handleRawTokenChange('colors', 'interactive.error_container', containerColor);
+                                  
+                                  // Auto-generate on-container color (darker version)
+                                  const onContainerColor = darkenColor(value, 30);
+                                  handleRawTokenChange('colors', 'interactive.error_on_container', onContainerColor);
+                                }}
                               />
                             </div>
                             <div className="space-y-2">
@@ -801,18 +844,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Error Container ($color-error-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"}
-                                onChange={(value) => handleRawTokenChange('colors', 'interactive.error_base', value)}
+                                value={designSystem?.raw_tokens?.colors?.interactive?.error_container || lightenColor(designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545", 30)}
+                                onChange={(value) => {
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'interactive.error_container', value);
+                                }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a lighter version of Error color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Error (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Error Container ($color-on-error-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"}
-                                onChange={(value) => handleRawTokenChange('colors', 'interactive.error_base', value)}
+                                value={designSystem?.raw_tokens?.colors?.interactive?.error_on_container || darkenColor(designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545", 30)}
+                                onChange={(value) => {
+                                  // Allow manual override of the auto-generated color
+                                  handleRawTokenChange('colors', 'interactive.error_on_container', value);
+                                }}
                               />
-                              <span className="text-xs text-muted-foreground">This is a darker version of Error color</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Error (can be overridden)</span>
                             </div>
                           </div>
                         </div>
@@ -1307,8 +1356,16 @@ export default function DesignBuilder() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                           <ColorCard name="Primary" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} />
                           <ColorCard name="On Primary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_container || (designSystem?.raw_tokens?.colors?.brand?.primary_lighter || "#ccd9ff")} />
-                          <ColorCard name="On Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_on_container || (designSystem?.raw_tokens?.colors?.brand?.primary_darker || "#000066")} />
+                          {designSystem?.raw_tokens?.colors?.brand?.primary_container ? (
+                            <ColorCard name="Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_container} />
+                          ) : (
+                            <ColorCard name="Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} lighter amount={30} />
+                          )}
+                          {designSystem?.raw_tokens?.colors?.brand?.primary_on_container ? (
+                            <ColorCard name="On Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_on_container} />
+                          ) : (
+                            <ColorCard name="On Primary Container" hex={designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff"} darker amount={30} />
+                          )}
                         </div>
                       </div>
                       
@@ -1318,8 +1375,16 @@ export default function DesignBuilder() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                           <ColorCard name="Secondary" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} />
                           <ColorCard name="On Secondary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_container || (designSystem?.raw_tokens?.colors?.brand?.secondary_lighter || "#ffcccc")} />
-                          <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container || (designSystem?.raw_tokens?.colors?.brand?.secondary_darker || "#660000")} />
+                          {designSystem?.raw_tokens?.colors?.brand?.secondary_container ? (
+                            <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_container} />
+                          ) : (
+                            <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} lighter amount={30} />
+                          )}
+                          {designSystem?.raw_tokens?.colors?.brand?.secondary_on_container ? (
+                            <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container} />
+                          ) : (
+                            <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} darker amount={30} />
+                          )}
                         </div>
                       </div>
                       
@@ -1329,8 +1394,16 @@ export default function DesignBuilder() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                           <ColorCard name="Tertiary" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} />
                           <ColorCard name="On Tertiary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_container || (designSystem?.raw_tokens?.colors?.brand?.tertiary_lighter || "#ccffcc")} />
-                          <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container || (designSystem?.raw_tokens?.colors?.brand?.tertiary_darker || "#006600")} />
+                          {designSystem?.raw_tokens?.colors?.brand?.tertiary_container ? (
+                            <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_container} />
+                          ) : (
+                            <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} lighter amount={30} />
+                          )}
+                          {designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container ? (
+                            <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container} />
+                          ) : (
+                            <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} darker amount={30} />
+                          )}
                         </div>
                       </div>
                       
@@ -1340,8 +1413,16 @@ export default function DesignBuilder() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                           <ColorCard name="Error" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
                           <ColorCard name="On Error" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          <ColorCard name="Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_container || (designSystem?.raw_tokens?.colors?.interactive?.error_lighter || "#f8d7da")} />
-                          <ColorCard name="On Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_on_container || (designSystem?.raw_tokens?.colors?.interactive?.error_darker || "#721c24")} />
+                          {designSystem?.raw_tokens?.colors?.interactive?.error_container ? (
+                            <ColorCard name="Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_container} />
+                          ) : (
+                            <ColorCard name="Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} lighter amount={30} />
+                          )}
+                          {designSystem?.raw_tokens?.colors?.interactive?.error_on_container ? (
+                            <ColorCard name="On Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_on_container} />
+                          ) : (
+                            <ColorCard name="On Error Container" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} darker amount={30} />
+                          )}
                         </div>
                       </div>
                       
