@@ -129,6 +129,7 @@ function generateNeutralPalette(baseGrey: string) {
 }
 
 function generateContainerColors(baseColor: string) {
+  // Updated to use 60% for both lighter and darker values
   const { tints, shades } = generateTintsAndShades(baseColor, [60], [60]);
   return {
     container: tints[0],
@@ -401,13 +402,13 @@ function ColorSection({ title, colors = [], onAddColor, deleteColor, onEditColor
   );
 }
 
-export function ColorManager({ clientId, colors }: ColorManagerProps) {
+export function ColorManager({ clientId, colors, designSystem, updateDraftDesignSystem, addToHistory }: ColorManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'brand' | 'neutral' | 'interactive'>('brand');
   const [editingColor, setEditingColor] = useState<ColorData | null>(null);
-  const [brandColors, setBrandColors] = useState<ColorData[]>([]); // Added state for brand colors
+  // We don't need an extra state since colors are derived from props
 
 
   const form = useForm<ColorFormData>({
@@ -576,24 +577,17 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
   const handleAddBrandColor = (name: string, hex: string) => {
     const colorKey = name.toLowerCase().replace(/\s+/g, '-');
     handleColorChange(colorKey, hex, true);
-
-    // Add to brand colors list
-    const updatedBrandColors = [...brandColors, {
-      id: Date.now(),
-      name,
-      hex,
-      category: 'brand'
-    }];
-
-    setBrandColors(updatedBrandColors);
+    
+    // We're not managing an internal color state anymore
+    // The colors will be updated through the API and the component will re-render
   };
 
   const handleColorChange = (key: string, value: string, isBaseColor = false) => {
     //  Updated color change handling to dynamically generate container and neutral colors
     const updatedDesignSystem = { 
-      ...designSystem,
+      ...(designSystem || {}),
       colors: {
-        ...designSystem.colors,
+        ...(designSystem?.colors || {}),
         [key]: value
       }
     };
@@ -616,8 +610,14 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
       }
     }
 
-    updateDraftDesignSystem(updatedDesignSystem.colors);
-    addToHistory(updatedDesignSystem);
+    // Only call these if the props are provided
+    if (updateDraftDesignSystem) {
+      updateDraftDesignSystem(updatedDesignSystem.colors);
+    }
+    
+    if (addToHistory) {
+      addToHistory(updatedDesignSystem);
+    }
   };
 
 
@@ -810,9 +810,9 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
 interface ColorManagerProps {
   clientId: number;
   colors: BrandAsset[];
-  updateDraftDesignSystem: (colors: any) => void; // Added type for updateDraftDesignSystem
-  addToHistory: (designSystem: any) => void; // Added type for addToHistory
-  designSystem: any; // Added type for designSystem
+  updateDraftDesignSystem?: (colors: any) => void; // Made optional
+  addToHistory?: (designSystem: any) => void; // Made optional
+  designSystem?: any; // Made optional
 }
 
 interface ColorData {

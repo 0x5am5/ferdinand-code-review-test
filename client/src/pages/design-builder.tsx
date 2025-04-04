@@ -666,11 +666,11 @@ export default function DesignBuilder() {
                                   handleRawTokenChange('colors', 'brand.primary_base', value);
                                   
                                   // Auto-generate container color (lighter version)
-                                  const containerColor = lightenColor(value, 30);
+                                  const containerColor = lightenColor(value, 60);
                                   handleRawTokenChange('colors', 'brand.primary_container', containerColor);
                                   
                                   // Auto-generate on-container color (darker version)
-                                  const onContainerColor = darkenColor(value, 30);
+                                  const onContainerColor = darkenColor(value, 60);
                                   handleRawTokenChange('colors', 'brand.primary_on_container', onContainerColor);
                                 }}
                               />
@@ -685,24 +685,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Primary Container ($color-primary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.primary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 30)}
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'brand.primary_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Primary (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than Primary (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Primary Container ($color-on-primary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.primary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 30)}
+                                value={designSystem?.raw_tokens?.colors?.brand?.primary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.primary_base || "#0000ff", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'brand.primary_on_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Primary (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than Primary (can be overridden)</span>
                             </div>
                           </div>
                         </div>
@@ -719,11 +719,11 @@ export default function DesignBuilder() {
                                   handleRawTokenChange('colors', 'brand.secondary_base', value);
                                   
                                   // Auto-generate container color (lighter version)
-                                  const containerColor = lightenColor(value, 30);
+                                  const containerColor = lightenColor(value, 60);
                                   handleRawTokenChange('colors', 'brand.secondary_container', containerColor);
                                   
                                   // Auto-generate on-container color (darker version)
-                                  const onContainerColor = darkenColor(value, 30);
+                                  const onContainerColor = darkenColor(value, 60);
                                   handleRawTokenChange('colors', 'brand.secondary_on_container', onContainerColor);
                                 }}
                               />
@@ -738,24 +738,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Secondary Container ($color-secondary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 30)}
+                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'brand.secondary_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Secondary (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than Secondary (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Secondary Container ($color-on-secondary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 30)}
+                                value={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'brand.secondary_on_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Secondary (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than Secondary (can be overridden)</span>
                             </div>
                           </div>
                         </div>
@@ -772,11 +772,11 @@ export default function DesignBuilder() {
                                   handleRawTokenChange('colors', 'brand.tertiary_base', value);
                                   
                                   // Auto-generate container color (lighter version)
-                                  const containerColor = lightenColor(value, 30);
+                                  const containerColor = lightenColor(value, 60);
                                   handleRawTokenChange('colors', 'brand.tertiary_container', containerColor);
                                   
                                   // Auto-generate on-container color (darker version)
-                                  const onContainerColor = darkenColor(value, 30);
+                                  const onContainerColor = darkenColor(value, 60);
                                   handleRawTokenChange('colors', 'brand.tertiary_on_container', onContainerColor);
                                 }}
                               />
@@ -791,24 +791,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Tertiary Container ($color-tertiary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 30)}
+                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_container || lightenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'brand.tertiary_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Tertiary (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than Tertiary (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Tertiary Container ($color-on-tertiary-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 30)}
+                                value={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container || darkenColor(designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'brand.tertiary_on_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Tertiary (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than Tertiary (can be overridden)</span>
                             </div>
                           </div>
                         </div>
@@ -825,11 +825,11 @@ export default function DesignBuilder() {
                                   handleRawTokenChange('colors', 'interactive.error_base', value);
                                   
                                   // Auto-generate container color (lighter version)
-                                  const containerColor = lightenColor(value, 30);
+                                  const containerColor = lightenColor(value, 60);
                                   handleRawTokenChange('colors', 'interactive.error_container', containerColor);
                                   
                                   // Auto-generate on-container color (darker version)
-                                  const onContainerColor = darkenColor(value, 30);
+                                  const onContainerColor = darkenColor(value, 60);
                                   handleRawTokenChange('colors', 'interactive.error_on_container', onContainerColor);
                                 }}
                               />
@@ -844,24 +844,24 @@ export default function DesignBuilder() {
                             <div className="space-y-2">
                               <Label>Error Container ($color-error-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.interactive?.error_container || lightenColor(designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545", 30)}
+                                value={designSystem?.raw_tokens?.colors?.interactive?.error_container || lightenColor(designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'interactive.error_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% lighter than Error (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% lighter than Error (can be overridden)</span>
                             </div>
                             <div className="space-y-2">
                               <Label>On Error Container ($color-on-error-container)</Label>
                               <ColorPicker
-                                value={designSystem?.raw_tokens?.colors?.interactive?.error_on_container || darkenColor(designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545", 30)}
+                                value={designSystem?.raw_tokens?.colors?.interactive?.error_on_container || darkenColor(designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545", 60)}
                                 onChange={(value) => {
                                   // Allow manual override of the auto-generated color
                                   handleRawTokenChange('colors', 'interactive.error_on_container', value);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">Auto-generated as 30% darker than Error (can be overridden)</span>
+                              <span className="text-xs text-muted-foreground">Auto-generated as 60% darker than Error (can be overridden)</span>
                             </div>
                           </div>
                         </div>
