@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const { toast } = useToast();
 
   const { data: clients = [] } = useQuery<Client[]>({
