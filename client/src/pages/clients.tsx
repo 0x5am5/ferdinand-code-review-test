@@ -1,7 +1,11 @@
 
 import { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/api";
+import { DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Client } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,8 +25,54 @@ export default function Clients() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const { toast } = useToast();
 
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [deletingClient, setDeletingClient] = useState<Client | null>(null);
+  const queryClient = useQueryClient();
+
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
+  });
+
+  const deleteClient = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/clients/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "Success",
+        description: "Client deleted successfully",
+      });
+      setDeletingClient(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateClient = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Client> }) => {
+      await apiRequest("PATCH", `/api/clients/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "Success",
+        description: "Client updated successfully",
+      });
+      setEditingClient(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   const filteredClients = clients.filter(
@@ -175,10 +225,18 @@ export default function Clients() {
                             <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setEditingClient(client)}
+                        >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => setDeletingClient(client)}
+                        >
                           <Trash className="h-4 w-4" />
                         </Button>
                       </div>
@@ -189,6 +247,72 @@ export default function Clients() {
             </table>
           </div>
         )}
+
+        {/* Edit Client Dialog */}
+        <Dialog open={!!editingClient} onOpenChange={(open) => !open && setEditingClient(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Client</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Name</Label>
+                <Input
+                  value={editingClient?.name || ''}
+                  onChange={(e) => setEditingClient(prev => prev ? {...prev, name: e.target.value} : null)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={editingClient?.description || ''}
+                  onChange={(e) => setEditingClient(prev => prev ? {...prev, description: e.target.value} : null)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingClient(null)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={() => editingClient && updateClient.mutate({
+                  id: editingClient.id,
+                  data: {
+                    name: editingClient.name,
+                    description: editingClient.description
+                  }
+                })}
+                disabled={updateClient.isPending}
+              >
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!deletingClient} onOpenChange={(open) => !open && setDeletingClient(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Client</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete {deletingClient?.name}? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeletingClient(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deletingClient && deleteClient.mutate(deletingClient.id)}
+                disabled={deleteClient.isPending}
+              >
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
