@@ -48,10 +48,9 @@ export function ColorCard(props: {
           </Button>
         </div>
       </div>
-      <CardHeader>
-        <CardTitle className="text-sm md:text-base">{name}</CardTitle>
-      </CardHeader>
+      
       <CardContent>
+        <h5 className="color--header">{name}</h5>
         <code className="text-xs font-mono">{displayColor}</code>
         {(lighter || darker) && (
           <div className="mt-2 text-xs text-muted-foreground">

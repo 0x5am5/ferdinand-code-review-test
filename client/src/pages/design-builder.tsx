@@ -81,7 +81,37 @@ export default function DesignBuilder() {
     // Skip if still loading or if typography settings are already loaded
     if (isLoading || typographySettingsLoaded.current) return;
 
+    // Mark as loaded at the beginning to prevent potential re-runs
+    typographySettingsLoaded.current = true;
+    
+    // Store UI element updates in a queue to process in one batch
+    const uiUpdates = new Map<string, string>();
+    
+    // Function to update UI elements without triggering re-renders
+    // Uses a safer approach with DOM references captured once
+    const updateUIElements = () => {
+      if (uiUpdates.size === 0) return;
+      
+      const headingScaleEl = document.getElementById('heading-scale-value');
+      const bodySizeEl = document.getElementById('body-size-value');
+      const lineHeightEl = document.getElementById('line-height-value');
+      
+      if (uiUpdates.has('headingScale') && headingScaleEl) {
+        headingScaleEl.textContent = uiUpdates.get('headingScale') || '';
+      }
+      
+      if (uiUpdates.has('bodyTextSize') && bodySizeEl) {
+        bodySizeEl.textContent = uiUpdates.get('bodyTextSize') || '';
+      }
+      
+      if (uiUpdates.has('lineHeight') && lineHeightEl) {
+        lineHeightEl.textContent = uiUpdates.get('lineHeight') || '';
+      }
+    };
+
     const loadTypographySettings = async () => {
+      let extendedTypography: Record<string, any> | null = null;
+      
       try {
         // First try to load from the server
         const response = await fetch('/api/design-system');
@@ -89,68 +119,56 @@ export default function DesignBuilder() {
           const data = await response.json();
           // If there's typography_extended data in the theme
           if (data.typography_extended) {
+            extendedTypography = data.typography_extended;
+            
+            // Safely save to localStorage
             try {
-              // Store it in localStorage for our local state (in try/catch to handle localStorage errors)
               localStorage.setItem('typographySettings', JSON.stringify(data.typography_extended));
             } catch (storageError) {
               console.error('Error saving typography settings to localStorage:', storageError);
             }
-            
-            // Apply each setting to the document
-            Object.entries(data.typography_extended).forEach(([key, rawValue]) => {
-              const value = rawValue as string | number;
-              applyTypographySetting(key, value);
-              
-              // Use a separate function to update UI elements to avoid potential re-renders
-              updateUIElement(key, String(value));
-            });
           }
         }
       } catch (error) {
         console.error('Error loading typography settings from server:', error);
-        
-        // Fall back to localStorage if available
-        let savedSettings;
+      }
+      
+      // If we couldn't get from server, try localStorage
+      if (!extendedTypography) {
         try {
-          savedSettings = localStorage.getItem('typographySettings');
-        } catch (e) {
-          console.error('Error accessing localStorage:', e);
-        }
-        
-        if (savedSettings) {
-          try {
-            const settings = JSON.parse(savedSettings);
-            // Apply each setting
-            Object.entries(settings).forEach(([key, rawValue]) => {
-              const value = rawValue as string | number;
-              applyTypographySetting(key, value);
-            });
-          } catch (e) {
-            console.error('Error parsing typography settings from localStorage:', e);
+          const savedSettings = localStorage.getItem('typographySettings');
+          if (savedSettings) {
+            extendedTypography = JSON.parse(savedSettings);
           }
+        } catch (e) {
+          console.error('Error loading typography settings from localStorage:', e);
         }
-      } finally {
-        // Mark as loaded regardless of success to prevent infinite retries
-        typographySettingsLoaded.current = true;
+      }
+      
+      // Apply the typography settings if we got them from anywhere
+      if (extendedTypography) {
+        try {
+          Object.entries(extendedTypography).forEach(([key, rawValue]) => {
+            const value = rawValue as string | number;
+            applyTypographySetting(key, value);
+            
+            // Queue UI updates to handle in one batch
+            uiUpdates.set(key, String(value));
+          });
+          
+          // Apply all UI updates at once
+          updateUIElements();
+        } catch (error) {
+          console.error('Error applying typography settings:', error);
+        }
       }
     };
     
-    // Function to update UI elements without triggering re-renders
-    const updateUIElement = (key: string, value: string) => {
-      if (key === 'headingScale') {
-        const element = document.getElementById('heading-scale-value');
-        if (element) element.textContent = value;
-      } else if (key === 'bodyTextSize') {
-        const element = document.getElementById('body-size-value');
-        if (element) element.textContent = value;
-      } else if (key === 'lineHeight') {
-        const element = document.getElementById('line-height-value');
-        if (element) element.textContent = value;
-      }
-    };
+    // Load settings with error isolation
+    loadTypographySettings().catch(err => {
+      console.error('Unexpected error loading typography settings:', err);
+    });
     
-    loadTypographySettings();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
   
   // Initialize history with the loaded design system
@@ -278,41 +296,69 @@ export default function DesignBuilder() {
   
   // Updated to handle typography changes, including properties not directly in the typography object
   const handleTypographyChange = (key: string, value: string | number) => {
-    let updatedDesignSystem = { ...designSystem };
+    // Create a deep copy to avoid direct references that could cause circular updates
+    const designSystemCopy = JSON.parse(JSON.stringify(designSystem));
+    let updatedDesignSystem = designSystemCopy;
     
     // First, handle the basic typography settings (font family)
     if (key === 'primary' || key === 'heading') {
       updatedDesignSystem = {
-        ...designSystem,
+        ...designSystemCopy,
         typography: {
-          ...designSystem.typography,
+          ...designSystemCopy.typography,
           [key]: value
         }
       };
       
+      // Only update necessary fields with a clean object
       updateDraftDesignSystem({ 
         typography: {
-          ...designSystem.typography,
+          ...designSystemCopy.typography,
           [key]: value
         }
       });
     } 
     // For extended typography settings that are not directly in the typography object
     else {
-      // Store the updated typography settings in a separate object in localStorage
-      let typographySettings = localStorage.getItem('typographySettings');
-      let settings = typographySettings ? JSON.parse(typographySettings) : {};
-      
-      // Update the specific setting
-      settings[key] = value;
-      
-      // Save to localStorage
-      localStorage.setItem('typographySettings', JSON.stringify(settings));
-      
-      // Apply the setting to the document for immediate visual feedback
-      applyTypographySetting(key, value);
+      try {
+        // Safely work with localStorage
+        let settings = {};
+        try {
+          const typographySettings = localStorage.getItem('typographySettings');
+          if (typographySettings) {
+            settings = JSON.parse(typographySettings);
+          }
+        } catch (error) {
+          console.error('Error parsing typography settings from localStorage:', error);
+        }
+        
+        // Create a new object instead of modifying the existing one
+        const updatedSettings = { ...settings, [key]: value };
+        
+        // Safely save to localStorage
+        try {
+          localStorage.setItem('typographySettings', JSON.stringify(updatedSettings));
+        } catch (error) {
+          console.error('Error saving typography settings to localStorage:', error);
+        }
+        
+        // Apply the setting to the document for immediate visual feedback
+        // But do it without triggering additional renders
+        setTimeout(() => {
+          applyTypographySetting(key, value);
+        }, 0);
+        
+        // Update our design system copy with the new typography_extended data
+        if (!updatedDesignSystem.typography_extended) {
+          updatedDesignSystem.typography_extended = {};
+        }
+        updatedDesignSystem.typography_extended[key] = value;
+      } catch (error) {
+        console.error('Error in handleTypographyChange:', error);
+      }
     }
     
+    // Only record in history after all updates are done
     addToHistory(updatedDesignSystem);
   };
   
@@ -1616,6 +1662,66 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                     <div className="space-y-6">
+                      <h3 className="text-lg font-medium border-b pb-2">Base Color Tokens Preview</h3>
+                      
+                      {/* Brand Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Brand Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          {designSystem?.raw_tokens?.colors?.brand && 
+                            Object.entries(designSystem.raw_tokens.colors.brand)
+                              .filter(([key]) => key.includes('_base'))
+                              .map(([key, value]) => {
+                                const colorName = key.replace('_base', '');
+                                const displayName = colorName.charAt(0).toUpperCase() + colorName.slice(1);
+                                return (
+                                  <ColorCard key={key} name={`${displayName} Base`} hex={value as string} />
+                                );
+                              })
+                          }
+                        </div>
+                      </div>
+                      
+                      {/* Neutral Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Neutral Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-3">
+                          {designSystem?.raw_tokens?.colors?.neutral && 
+                            Object.entries(designSystem.raw_tokens.colors.neutral)
+                              .filter(([key]) => key.includes('neutral_') && key !== 'neutral_base')
+                              .sort((a, b) => {
+                                const numA = parseInt(a[0].split('_')[1]);
+                                const numB = parseInt(b[0].split('_')[1]);
+                                return numA - numB;
+                              })
+                              .map(([key, value]) => {
+                                const shade = key.replace('neutral_', '');
+                                return (
+                                  <ColorCard key={key} name={`Neutral ${shade}`} hex={value as string} />
+                                );
+                              })
+                          }
+                        </div>
+                      </div>
+                      
+                      {/* Interactive Colors */}
+                      <div className="space-y-2 mb-6">
+                        <h4 className="font-medium">Interactive Colors</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                          {designSystem?.raw_tokens?.colors?.interactive && 
+                            Object.entries(designSystem.raw_tokens.colors.interactive)
+                              .filter(([key]) => key.includes('_base'))
+                              .map(([key, value]) => {
+                                const colorName = key.replace('_base', '');
+                                const displayName = colorName.charAt(0).toUpperCase() + colorName.slice(1);
+                                return (
+                                  <ColorCard key={key} name={displayName} hex={value as string} />
+                                );
+                              })
+                          }
+                        </div>
+                      </div>
+                    
                       <h3 className="text-lg font-medium border-b pb-2">Semantic Color Preview</h3>
                       
                       {/* Primary Colors */}
@@ -1637,43 +1743,47 @@ export default function DesignBuilder() {
                         </div>
                       </div>
                       
-                      {/* Secondary Colors */}
-                      <div className="space-y-2 mb-6">
-                        <h4 className="font-medium">Secondary Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                          <ColorCard name="Secondary" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} />
-                          <ColorCard name="On Secondary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          {designSystem?.raw_tokens?.colors?.brand?.secondary_container ? (
-                            <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_container} />
-                          ) : (
-                            <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} lighter amount={60} />
-                          )}
-                          {designSystem?.raw_tokens?.colors?.brand?.secondary_on_container ? (
-                            <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container} />
-                          ) : (
-                            <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base || "#ff0000"} darker amount={60} />
-                          )}
+                      {/* Secondary Colors - Only show if secondary_base exists */}
+                      {designSystem?.raw_tokens?.colors?.brand?.secondary_base && (
+                        <div className="space-y-2 mb-6">
+                          <h4 className="font-medium">Secondary Colors</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                            <ColorCard name="Secondary" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base} />
+                            <ColorCard name="On Secondary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                            {designSystem?.raw_tokens?.colors?.brand?.secondary_container ? (
+                              <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_container} />
+                            ) : (
+                              <ColorCard name="Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base} lighter amount={60} />
+                            )}
+                            {designSystem?.raw_tokens?.colors?.brand?.secondary_on_container ? (
+                              <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_on_container} />
+                            ) : (
+                              <ColorCard name="On Secondary Container" hex={designSystem?.raw_tokens?.colors?.brand?.secondary_base} darker amount={60} />
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       
-                      {/* Tertiary Colors */}
-                      <div className="space-y-2 mb-6">
-                        <h4 className="font-medium">Tertiary Colors</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                          <ColorCard name="Tertiary" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} />
-                          <ColorCard name="On Tertiary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
-                          {designSystem?.raw_tokens?.colors?.brand?.tertiary_container ? (
-                            <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_container} />
-                          ) : (
-                            <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} lighter amount={60} />
-                          )}
-                          {designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container ? (
-                            <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container} />
-                          ) : (
-                            <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base || "#00ff00"} darker amount={60} />
-                          )}
+                      {/* Tertiary Colors - Only show if tertiary_base exists */}
+                      {designSystem?.raw_tokens?.colors?.brand?.tertiary_base && (
+                        <div className="space-y-2 mb-6">
+                          <h4 className="font-medium">Tertiary Colors</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                            <ColorCard name="Tertiary" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base} />
+                            <ColorCard name="On Tertiary" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_0 || "#ffffff"} />
+                            {designSystem?.raw_tokens?.colors?.brand?.tertiary_container ? (
+                              <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_container} />
+                            ) : (
+                              <ColorCard name="Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base} lighter amount={60} />
+                            )}
+                            {designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container ? (
+                              <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_on_container} />
+                            ) : (
+                              <ColorCard name="On Tertiary Container" hex={designSystem?.raw_tokens?.colors?.brand?.tertiary_base} darker amount={60} />
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                       
                       {/* Error Colors */}
                       <div className="space-y-2 mb-6">
@@ -1762,6 +1872,7 @@ export default function DesignBuilder() {
                                 ></div>
                                 <span>Primary ($color-primary)</span>
                               </div>
+                              {designSystem?.raw_tokens?.colors?.brand?.secondary_base && (
                               <div className="flex items-center gap-2">
                                 <div 
                                   className="w-8 h-8 rounded" 
@@ -1769,6 +1880,8 @@ export default function DesignBuilder() {
                                 ></div>
                                 <span>Secondary ($color-secondary)</span>
                               </div>
+                            )}
+                            {designSystem?.raw_tokens?.colors?.brand?.tertiary_base && (
                               <div className="flex items-center gap-2">
                                 <div 
                                   className="w-8 h-8 rounded" 
@@ -1776,6 +1889,7 @@ export default function DesignBuilder() {
                                 ></div>
                                 <span>Tertiary ($color-tertiary)</span>
                               </div>
+                            )}
                             </div>
                           </div>
                           <div className="p-4 border rounded">
