@@ -64,7 +64,7 @@ export default function DesignBuilder() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { designSystem: appliedDesignSystem, draftDesignSystem, updateDesignSystem, updateDraftDesignSystem, applyDraftChanges, isLoading } = useTheme();
-  
+
   // History management for undo/redo functionality
   const [history, setHistory] = useState<DesignSystem[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
@@ -72,10 +72,10 @@ export default function DesignBuilder() {
   const [activeTab, setActiveTab] = useState("general");
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
   const [navTarget, setNavTarget] = useState("");
-  
+
   // Ref to track if typography settings have been loaded
   const typographySettingsLoaded = useRef(false);
-  
+
   // Load typography settings from the server or from localStorage on initial render
   useEffect(() => {
     // Skip if still loading or if typography settings are already loaded
@@ -83,27 +83,27 @@ export default function DesignBuilder() {
 
     // Mark as loaded at the beginning to prevent potential re-runs
     typographySettingsLoaded.current = true;
-    
+
     // Store UI element updates in a queue to process in one batch
     const uiUpdates = new Map<string, string>();
-    
+
     // Function to update UI elements without triggering re-renders
     // Uses a safer approach with DOM references captured once
     const updateUIElements = () => {
       if (uiUpdates.size === 0) return;
-      
+
       const headingScaleEl = document.getElementById('heading-scale-value');
       const bodySizeEl = document.getElementById('body-size-value');
       const lineHeightEl = document.getElementById('line-height-value');
-      
+
       if (uiUpdates.has('headingScale') && headingScaleEl) {
         headingScaleEl.textContent = uiUpdates.get('headingScale') || '';
       }
-      
+
       if (uiUpdates.has('bodyTextSize') && bodySizeEl) {
         bodySizeEl.textContent = uiUpdates.get('bodyTextSize') || '';
       }
-      
+
       if (uiUpdates.has('lineHeight') && lineHeightEl) {
         lineHeightEl.textContent = uiUpdates.get('lineHeight') || '';
       }
@@ -111,7 +111,7 @@ export default function DesignBuilder() {
 
     const loadTypographySettings = async () => {
       let extendedTypography: Record<string, any> | null = null;
-      
+
       try {
         // First try to load from the server
         const response = await fetch('/api/design-system');
@@ -120,7 +120,7 @@ export default function DesignBuilder() {
           // If there's typography_extended data in the theme
           if (data.typography_extended) {
             extendedTypography = data.typography_extended;
-            
+
             // Safely save to localStorage
             try {
               localStorage.setItem('typographySettings', JSON.stringify(data.typography_extended));
@@ -132,7 +132,7 @@ export default function DesignBuilder() {
       } catch (error) {
         console.error('Error loading typography settings from server:', error);
       }
-      
+
       // If we couldn't get from server, try localStorage
       if (!extendedTypography) {
         try {
@@ -144,18 +144,18 @@ export default function DesignBuilder() {
           console.error('Error loading typography settings from localStorage:', e);
         }
       }
-      
+
       // Apply the typography settings if we got them from anywhere
       if (extendedTypography) {
         try {
           Object.entries(extendedTypography).forEach(([key, rawValue]) => {
             const value = rawValue as string | number;
             applyTypographySetting(key, value);
-            
+
             // Queue UI updates to handle in one batch
             uiUpdates.set(key, String(value));
           });
-          
+
           // Apply all UI updates at once
           updateUIElements();
         } catch (error) {
@@ -163,14 +163,14 @@ export default function DesignBuilder() {
         }
       }
     };
-    
+
     // Load settings with error isolation
     loadTypographySettings().catch(err => {
       console.error('Unexpected error loading typography settings:', err);
     });
-    
+
   }, [isLoading]);
-  
+
   // Initialize history with the loaded design system
   useEffect(() => {
     if (!isLoading && draftDesignSystem && history.length === 0) {
@@ -178,7 +178,7 @@ export default function DesignBuilder() {
       setCurrentHistoryIndex(0);
     }
   }, [isLoading, draftDesignSystem, history.length]);
-  
+
   // Confirm navigation if there are unsaved changes
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -189,16 +189,16 @@ export default function DesignBuilder() {
       }
       return undefined;
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
-  
+
   // Use the draft for display purposes
   const designSystem = draftDesignSystem || appliedDesignSystem;
-  
+
   // Add change to history
   const addToHistory = useCallback((newState: DesignSystem) => {
     setHistory(prev => {
@@ -210,7 +210,7 @@ export default function DesignBuilder() {
     setCurrentHistoryIndex(prev => Math.min(prev + 1, 19));
     setHasUnsavedChanges(true);
   }, [currentHistoryIndex]);
-  
+
   const handleThemeChange = (key: string, value: any) => {
     const updatedDesignSystem = { 
       ...designSystem,
@@ -219,17 +219,17 @@ export default function DesignBuilder() {
         [key]: value
       }
     };
-    
+
     updateDraftDesignSystem({ 
       theme: {
         ...designSystem.theme,
         [key]: value
       }
     });
-    
+
     addToHistory(updatedDesignSystem);
   };
-  
+
   const handleColorChange = (key: string, value: string) => {
     const updatedDesignSystem = { 
       ...designSystem,
@@ -238,24 +238,24 @@ export default function DesignBuilder() {
         [key]: value
       }
     };
-    
+
     updateDraftDesignSystem({ 
       colors: {
         ...designSystem.colors,
         [key]: value
       }
     });
-    
+
     addToHistory(updatedDesignSystem);
   };
-  
+
   const handleRawTokenChange = (
     category: 'default_unit' | 'spacing' | 'radius' | 'transition' | 'border' | 'colors', 
     key: string, 
     value: string | number
   ) => {
     const updatedRawTokens = { ...(designSystem.raw_tokens || {}) };
-    
+
     if (category === 'default_unit') {
       updatedRawTokens.default_unit = value as string;
     } else if (category === 'spacing') {
@@ -270,11 +270,11 @@ export default function DesignBuilder() {
       // Handle nested structure for colors
       // Extract parts from key: brand.primary_base, neutral.neutral_100, etc.
       const [colorType, colorName] = key.split('.');
-      
+
       if (!updatedRawTokens.colors) {
         updatedRawTokens.colors = {};
       }
-      
+
       if (colorType === 'brand') {
         updatedRawTokens.colors.brand = { ...(updatedRawTokens.colors.brand || {}), [colorName]: value as string };
       } else if (colorType === 'neutral') {
@@ -283,23 +283,23 @@ export default function DesignBuilder() {
         updatedRawTokens.colors.interactive = { ...(updatedRawTokens.colors.interactive || {}), [colorName]: value as string };
       }
     }
-    
+
     const updatedDesignSystem = { 
       ...designSystem,
       raw_tokens: updatedRawTokens
     };
-    
+
     updateDraftDesignSystem({ raw_tokens: updatedRawTokens });
     addToHistory(updatedDesignSystem);
     setHasUnsavedChanges(true);
   };
-  
+
   // Updated to handle typography changes, including properties not directly in the typography object
   const handleTypographyChange = (key: string, value: string | number) => {
     // Create a deep copy to avoid direct references that could cause circular updates
     const designSystemCopy = JSON.parse(JSON.stringify(designSystem));
     let updatedDesignSystem = designSystemCopy;
-    
+
     // First, handle the basic typography settings (font family)
     if (key === 'primary' || key === 'heading') {
       updatedDesignSystem = {
@@ -309,7 +309,7 @@ export default function DesignBuilder() {
           [key]: value
         }
       };
-      
+
       // Only update necessary fields with a clean object
       updateDraftDesignSystem({ 
         typography: {
@@ -331,23 +331,23 @@ export default function DesignBuilder() {
         } catch (error) {
           console.error('Error parsing typography settings from localStorage:', error);
         }
-        
+
         // Create a new object instead of modifying the existing one
         const updatedSettings = { ...settings, [key]: value };
-        
+
         // Safely save to localStorage
         try {
           localStorage.setItem('typographySettings', JSON.stringify(updatedSettings));
         } catch (error) {
           console.error('Error saving typography settings to localStorage:', error);
         }
-        
+
         // Apply the setting to the document for immediate visual feedback
         // But do it without triggering additional renders
         setTimeout(() => {
           applyTypographySetting(key, value);
         }, 0);
-        
+
         // Update our design system copy with the new typography_extended data
         if (!updatedDesignSystem.typography_extended) {
           updatedDesignSystem.typography_extended = {};
@@ -357,15 +357,15 @@ export default function DesignBuilder() {
         console.error('Error in handleTypographyChange:', error);
       }
     }
-    
+
     // Only record in history after all updates are done
     addToHistory(updatedDesignSystem);
   };
-  
+
   // Function to apply typography settings to the document
   const applyTypographySetting = (key: string, value: string | number) => {
     const root = document.documentElement;
-    
+
     switch(key) {
       case 'headingScale':
         // Scale all heading sizes
@@ -402,7 +402,7 @@ export default function DesignBuilder() {
       setHasUnsavedChanges(true);
     }
   };
-  
+
   // Redo previously undone change
   const handleRedo = () => {
     if (currentHistoryIndex < history.length - 1) {
@@ -412,7 +412,7 @@ export default function DesignBuilder() {
       setHasUnsavedChanges(true);
     }
   };
-  
+
   // Discard all unsaved changes
   const handleDiscardChanges = () => {
     if (appliedDesignSystem) {
@@ -420,7 +420,7 @@ export default function DesignBuilder() {
       setHistory([appliedDesignSystem]);
       setCurrentHistoryIndex(0);
       setHasUnsavedChanges(false);
-      
+
       toast({
         title: "Changes discarded",
         description: "All changes have been reset to the last saved state"
@@ -432,26 +432,26 @@ export default function DesignBuilder() {
     try {
       // First, apply draft changes to the main design system
       await applyDraftChanges();
-      
+
       // Save typography extended settings to database
       const typographySettings = localStorage.getItem('typographySettings');
       if (typographySettings) {
         const settings = JSON.parse(typographySettings);
-        
+
         // Save the typography settings to the server
         const response = await fetch('/api/design-system/typography', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(settings),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to save typography settings');
         }
       }
-      
+
       setHasUnsavedChanges(false);
-      
+
       toast({
         title: "Design system saved",
         description: "All your design system changes have been applied"
@@ -465,7 +465,7 @@ export default function DesignBuilder() {
       });
     }
   };
-  
+
   // Handle navigation with confirmation if needed
   const handleNavigation = (path: string) => {
     if (hasUnsavedChanges) {
@@ -475,7 +475,7 @@ export default function DesignBuilder() {
       navigate(path);
     }
   };
-  
+
   const confirmNavigation = () => {
     setShowLeaveAlert(false);
     if (navTarget) {
@@ -557,10 +557,10 @@ export default function DesignBuilder() {
               <TabsTrigger value="typography">Typography</TabsTrigger>
               <TabsTrigger value="borders">Borders</TabsTrigger>
             </TabsList>
-            
+
             {/* Main content with all tabs */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
+
               {/* Left column: Settings controls (1 column) */}
               <div className="lg:col-span-1">
                 <div className="editor-container"
@@ -593,7 +593,7 @@ export default function DesignBuilder() {
                               Controls the animation style
                             </p>
                           </div>
-                          
+
                           <div>
                             <Label htmlFor="radius">Border Radius: {designSystem?.theme.radius}rem</Label>
                             <div className="pt-2 pb-2">
@@ -611,11 +611,11 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Design Tokens Section */}
                       <div>
                         <h3 className="text-md font-semibold mb-3">Design Tokens</h3>
-                        
+
                         {/* Default Unit */}
                         <div className="mb-4">
                           <Label htmlFor="default-unit">Default Unit</Label>
@@ -637,7 +637,7 @@ export default function DesignBuilder() {
                             Default unit used for spacing and sizing
                           </p>
                         </div>
-                        
+
                         {/* Spacing Variables */}
                         <div className="border-t pt-4 mt-4">
                           <h4 className="font-medium mb-3">Spacing Tokens</h4>
@@ -667,15 +667,15 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Colors Tab Content */}
                   <TabsContent value="colors" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Color System</h2>
-                    
+
                     {/* Raw Color Tokens */}
                     <div className="mb-8">
                       <h3 className="text-md font-semibold mb-3">Base Color Tokens</h3>
-                      
+
                       {/* Brand Colors */}
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Brand Colors</h4>
@@ -695,12 +695,12 @@ export default function DesignBuilder() {
                                     onChange={(value) => {
                                       // When base color changes, update it and derived container/on-container colors
                                       handleRawTokenChange('colors', `brand.${key}`, value);
-                                      
+
                                       // Auto-generate container color (lighter version)
                                       const containerColor = lightenColor(value, 60);
                                       const containerKey = key.replace('_base', '_container');
                                       handleRawTokenChange('colors', `brand.${containerKey}`, containerColor);
-                                      
+
                                       // Auto-generate on-container color (darker version)
                                       const onContainerColor = darkenColor(value, 60);
                                       const onContainerKey = key.replace('_base', '_on_container');
@@ -718,30 +718,30 @@ export default function DesignBuilder() {
                                       // Get a copy of the current brand colors
                                       const updatedColors = { ...(designSystem?.raw_tokens?.colors || {}) };
                                       const updatedBrand = { ...(updatedColors.brand || {}) };
-                                      
+
                                       // Remove the base color and its related container colors
                                       const colorName = key.replace('_base', '');
                                       delete updatedBrand[key]; // base
                                       delete updatedBrand[`${colorName}_container`]; // container
                                       delete updatedBrand[`${colorName}_on_container`]; // on-container
-                                      
+
                                       // Update the design system
                                       updatedColors.brand = updatedBrand;
-                                      
+
                                       const updatedRawTokens = {
                                         ...(designSystem.raw_tokens || {}),
                                         colors: updatedColors
                                       };
-                                      
+
                                       updateDraftDesignSystem({ raw_tokens: updatedRawTokens });
-                                      
+
                                       // Add to history for undo/redo
                                       const updatedDesignSystem = { 
                                         ...designSystem,
                                         raw_tokens: updatedRawTokens
                                       };
                                       addToHistory(updatedDesignSystem);
-                                      
+
                                       toast({
                                         title: "Color removed",
                                         description: `${colorName.charAt(0).toUpperCase() + colorName.slice(1)} color has been removed.`
@@ -754,7 +754,7 @@ export default function DesignBuilder() {
                               </div>
                             </div>
                           ))}
-                          
+
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -764,7 +764,7 @@ export default function DesignBuilder() {
                               const existingKeys = Object.keys(designSystem?.raw_tokens?.colors?.brand || {})
                                 .filter(key => key.includes('_base'))
                                 .map(key => key.replace('_base', ''));
-                              
+
                               let newColorName;
                               if (!existingKeys.includes('primary')) {
                                 newColorName = 'primary';
@@ -778,22 +778,22 @@ export default function DesignBuilder() {
                                   .filter(key => key.startsWith('color'))
                                   .map(key => parseInt(key.replace('color', '')))
                                   .sort((a, b) => a - b);
-                                
+
                                 const nextNumber = customColors.length > 0 ? customColors[customColors.length - 1] + 1 : 4;
                                 newColorName = `color${nextNumber}`;
                               }
-                              
+
                               // Default color is a shade of blue
                               const defaultColor = '#2563eb';
                               const newBaseKey = `${newColorName}_base`;
                               const newContainerKey = `${newColorName}_container`;
                               const newOnContainerKey = `${newColorName}_on_container`;
-                              
+
                               // Add the new base color and its derived colors
                               handleRawTokenChange('colors', `brand.${newBaseKey}`, defaultColor);
                               handleRawTokenChange('colors', `brand.${newContainerKey}`, lightenColor(defaultColor, 60));
                               handleRawTokenChange('colors', `brand.${newOnContainerKey}`, darkenColor(defaultColor, 60));
-                              
+
                               toast({
                                 title: "New base color added",
                                 description: `${newColorName.charAt(0).toUpperCase() + newColorName.slice(1)} base color has been added to your system.`
@@ -804,7 +804,7 @@ export default function DesignBuilder() {
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Neutral Colors */}
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Neutral Colors</h4>
@@ -819,16 +819,16 @@ export default function DesignBuilder() {
                                   onChange={(value) => {
                                     // When neutral base changes, update it and generate the entire neutral palette
                                     handleRawTokenChange('colors', 'neutral.neutral_base', value);
-                                    
+
                                     // Generate neutral palette (10 shades)
                                     const neutralPalette = generateNeutralPalette(value);
-                                    
+
                                     // Update all neutral colors
                                     neutralPalette.forEach((color: string, index: number) => {
                                       const colorKey = `neutral_${index * 100}`;
                                       handleRawTokenChange('colors', `neutral.${colorKey}`, color);
                                     });
-                                    
+
                                     toast({
                                       title: "Neutral palette updated",
                                       description: "Generated 10 shades based on the base gray color."
@@ -841,16 +841,17 @@ export default function DesignBuilder() {
                                 size="icon"
                                 onClick={() => {
                                   const baseGray = designSystem?.raw_tokens?.colors?.neutral?.neutral_base || "#6b7280";
-                                  
+
                                   // Generate neutral palette (10 shades)
                                   const neutralPalette = generateNeutralPalette(baseGray);
-                                  
+
                                   // Update all neutral colors
                                   neutralPalette.forEach((color: string, index: number) => {
                                     const colorKey = `neutral_${index * 100}`;
                                     handleRawTokenChange('colors', `neutral.${colorKey}`, color);
                                   });
-                                  
+
+                               ```javascript
                                   toast({
                                     title: "Neutral palette regenerated",
                                     description: "Generated 10 shades based on the base gray color."
@@ -863,7 +864,7 @@ export default function DesignBuilder() {
                             </div>
                             <span className="text-xs text-muted-foreground">Base gray color used to generate the neutral palette</span>
                           </div>
-                          
+
                           <div className="grid grid-cols-5 gap-3 mt-4">
                             {designSystem?.raw_tokens?.colors?.neutral && 
                               Object.entries(designSystem.raw_tokens.colors.neutral)
@@ -879,14 +880,19 @@ export default function DesignBuilder() {
                                       className="w-full aspect-square rounded border mb-1" 
                                       style={{ backgroundColor: value }}
                                     ></div>
-                                    <span className="text-xs">{key.replace('neutral_', '')}</span>
+                                    <Input 
+                                      type="text" 
+                                      value={value} 
+                                      onChange={(e) => handleRawTokenChange('colors', key, e.target.value)}
+                                      className="w-full mt-1"
+                                    />
                                   </div>
                                 ))
                             }
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Interactive Colors */}
                       <div className="border-t pt-4 mt-4">
                         <h4 className="font-medium mb-3">Interactive Colors</h4>
@@ -905,23 +911,23 @@ export default function DesignBuilder() {
                                   warning_base: "#ffc107",
                                   link_base: "#007bff"
                                 };
-                                
+
                                 // Add each default color and generate container colors
                                 Object.entries(defaultInteractiveColors).forEach(([key, value]) => {
                                   // Add base color
                                   handleRawTokenChange('colors', `interactive.${key}`, value);
-                                  
+
                                   // Add container color (lighter version)
                                   const containerKey = key.replace('_base', '_container');
                                   const containerColor = lightenColor(value, 60);
                                   handleRawTokenChange('colors', `interactive.${containerKey}`, containerColor);
-                                  
+
                                   // Add on-container color (darker version)
                                   const onContainerKey = key.replace('_base', '_on_container');
                                   const onContainerColor = darkenColor(value, 60);
                                   handleRawTokenChange('colors', `interactive.${onContainerKey}`, onContainerColor);
                                 });
-                                
+
                                 toast({
                                   title: "Default interactive colors added",
                                   description: "Added success, error, warning, and link colors to your system."
@@ -931,7 +937,7 @@ export default function DesignBuilder() {
                               + Initialize Default Interactive Colors
                             </Button>
                           )}
-                          
+
                           {designSystem?.raw_tokens?.colors?.interactive && Object.entries(designSystem.raw_tokens.colors.interactive)
                             .filter(([key]) => key.includes('_base'))
                             .map(([key, value]) => (
@@ -946,12 +952,12 @@ export default function DesignBuilder() {
                                     onChange={(value) => {
                                       // Update base color
                                       handleRawTokenChange('colors', `interactive.${key}`, value);
-                                      
+
                                       // Update container color (lighter version)
                                       const containerKey = key.replace('_base', '_container');
                                       const containerColor = lightenColor(value, 60);
                                       handleRawTokenChange('colors', `interactive.${containerKey}`, containerColor);
-                                      
+
                                       // Update on-container color (darker version)
                                       const onContainerKey = key.replace('_base', '_on_container');
                                       const onContainerColor = darkenColor(value, 60);
@@ -962,10 +968,26 @@ export default function DesignBuilder() {
                               </div>
                             ))
                           }
+                          <div className="space-y-3">
+                            {['error', 'warning', 'link'].map(type => (
+                              <div key={type} className="flex items-center gap-3">
+                                <Label htmlFor={`interactive-${type}`} className="w-1/3 flex-shrink-0 text-sm capitalize">
+                                  {type} Base:
+                                </Label>
+                                <div className="flex-1">
+                                  <ColorPicker
+                                    id={`interactive-${type}`}
+                                    value={designSystem?.raw_tokens?.colors?.interactive?.[`${type}_base`] || '#000000'}
+                                    onChange={(value) => handleRawTokenChange('colors', `interactive.${type}_base`, value)}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Semantic Colors from _semantic.scss */}
                     <div className="mt-8 border-t pt-4">
                       <h3 className="text-md font-semibold mb-3">Semantic Colors</h3>
@@ -979,7 +1001,7 @@ export default function DesignBuilder() {
                               const displayName = colorName.charAt(0).toUpperCase() + colorName.slice(1);
                               const containerKey = `${colorName}_container`;
                               const onContainerKey = `${colorName}_on_container`;
-                              
+
                               return (
                                 <div key={key} className="pb-5">
                                   <h4 className="text-md font-semibold mb-3">{displayName} Colors</h4>
@@ -991,11 +1013,11 @@ export default function DesignBuilder() {
                                         onChange={(newValue) => {
                                           // When base color changes, update it and derived container/on-container colors
                                           handleRawTokenChange('colors', `brand.${key}`, newValue);
-                                          
+
                                           // Auto-generate container color (lighter version)
                                           const containerColor = lightenColor(newValue, 60);
                                           handleRawTokenChange('colors', `brand.${containerKey}`, containerColor);
-                                          
+
                                           // Auto-generate on-container color (darker version)
                                           const onContainerColor = darkenColor(newValue, 60);
                                           handleRawTokenChange('colors', `brand.${onContainerKey}`, onContainerColor);
@@ -1036,7 +1058,7 @@ export default function DesignBuilder() {
                               );
                             })
                         }
-                        
+
                         <div className="p-4 border rounded">
                           <h4 className="text-md font-semibold mb-3">Error Colors</h4>
                           <div className="space-y-4">
@@ -1047,11 +1069,11 @@ export default function DesignBuilder() {
                                 onChange={(value) => {
                                   // When error base changes, update it and derived container/on-container colors
                                   handleRawTokenChange('colors', 'interactive.error_base', value);
-                                  
+
                                   // Auto-generate container color (lighter version)
                                   const containerColor = lightenColor(value, 60);
                                   handleRawTokenChange('colors', 'interactive.error_container', containerColor);
-                                  
+
                                   // Auto-generate on-container color (darker version)
                                   const onContainerColor = darkenColor(value, 60);
                                   handleRawTokenChange('colors', 'interactive.error_on_container', onContainerColor);
@@ -1089,7 +1111,7 @@ export default function DesignBuilder() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="p-4 border rounded">
                           <h4 className="text-md font-semibold mb-3">Neutral Colors (Backgrounds and Surfaces)</h4>
                           <div className="space-y-4">
@@ -1155,7 +1177,7 @@ export default function DesignBuilder() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="p-4 border rounded">
                           <h4 className="text-md font-semibold mb-3">Outline & Border</h4>
                           <div className="space-y-4">
@@ -1188,7 +1210,7 @@ export default function DesignBuilder() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="p-4 border rounded">
                           <h4 className="text-md font-semibold mb-3">Text Colors</h4>
                           <div className="space-y-4">
@@ -1222,7 +1244,7 @@ export default function DesignBuilder() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="p-4 border rounded">
                           <h4 className="text-md font-semibold mb-3">Button Colors</h4>
                           <div className="space-y-4">
@@ -1259,11 +1281,11 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Typography Tab Content */}
                   <TabsContent value="typography" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Typography Settings</h2>
-                    
+
                     {/* Font Selection */}
                     <div className="space-y-4">
                       <div>
@@ -1278,7 +1300,7 @@ export default function DesignBuilder() {
                           Main font used for body text
                         </p>
                       </div>
-                      
+
                       <div>
                         <Label htmlFor="heading-font">Heading Font</Label>
                         <Input 
@@ -1392,7 +1414,7 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Borders Tab Content */}
                   <TabsContent value="borders" className="mt-0">
                     <h2 className="text-xl font-semibold mb-4">Border Settings</h2>
@@ -1409,7 +1431,7 @@ export default function DesignBuilder() {
                           This color is used for borders throughout the application
                         </p>
                       </div>
-                      
+
                       {/* Border Width Tokens */}
                       <div className="border-t pt-4 mt-4">
                         <h3 className="text-md font-semibold mb-3">Border Width Tokens</h3>
@@ -1479,7 +1501,7 @@ export default function DesignBuilder() {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Border Style Tokens */}
                       <div className="border-t pt-4 mt-4">
                         <h3 className="text-md font-semibold mb-3">Border Styles</h3>
@@ -1496,7 +1518,7 @@ export default function DesignBuilder() {
                           ))}
                         </div>
                       </div>
-                      
+
                       {/* Border Radius Tokens */}
                       <div className="border-t pt-4 mt-4">
                         <h3 className="text-md font-semibold mb-3">Border Radius Tokens</h3>
@@ -1539,7 +1561,7 @@ export default function DesignBuilder() {
               <div className="lg:col-span-2">
                 <Card className="design-builder--preview">
                   <h2 className="component-preview--title">Component Preview</h2>
-                  
+
                   {/* General Tab Preview */}
                   <TabsContent value="general" className="mt-0 space-y-8">
                     <Alert className="mb-4">
@@ -1549,7 +1571,7 @@ export default function DesignBuilder() {
                         Changes are shown in real-time but will only be applied when you save.
                       </AlertDescription>
                     </Alert>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <Card className="p-4">
                         <h3 className="font-medium mb-2">Animation: {designSystem.theme.animation}</h3>
@@ -1558,7 +1580,7 @@ export default function DesignBuilder() {
                           <Button variant="outline">Interactive</Button>
                         </div>
                       </Card>
-                      
+
                       <Card className="p-4">
                         <h3 className="font-medium mb-2">Border Radius: {designSystem.theme.radius}rem</h3>
                         <div className="grid grid-cols-2 gap-2">
@@ -1568,7 +1590,7 @@ export default function DesignBuilder() {
                       </Card>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Colors Tab Preview */}
                   <TabsContent value="colors" className="mt-0">
                     <div className="space-y-4">
@@ -1576,7 +1598,7 @@ export default function DesignBuilder() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 mb-8">
                         {/* Brand Colors */}
                         <div className="p-4 border rounded">
-                          <h4 className="text-md font-semibold mb-3">Brand Colors</h4>
+                          <h4 className="text-mdfont-semibold mb-3">Brand Colors</h4>
                           <div className="space-y-2">
                             {designSystem?.raw_tokens?.colors?.brand && 
                               Object.entries(designSystem.raw_tokens.colors.brand)
@@ -1610,7 +1632,7 @@ export default function DesignBuilder() {
                               ></div>
                               <span>Base Gray</span>
                             </div>
-                            
+
                             {/* Neutral Color Palette */}
                             <p className="text-sm mb-2">Color Palette (10 shades):</p>
                             <div className="grid grid-cols-5 gap-2">
@@ -1663,7 +1685,7 @@ export default function DesignBuilder() {
                     </div>
                     <div className="space-y-6">
                       <h3 className="text-lg font-medium border-b pb-2">Base Color Tokens Preview</h3>
-                      
+
                       {/* Brand Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Brand Colors</h4>
@@ -1681,7 +1703,7 @@ export default function DesignBuilder() {
                           }
                         </div>
                       </div>
-                      
+
                       {/* Neutral Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Neutral Colors</h4>
@@ -1703,7 +1725,7 @@ export default function DesignBuilder() {
                           }
                         </div>
                       </div>
-                      
+
                       {/* Interactive Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Interactive Colors</h4>
@@ -1721,9 +1743,9 @@ export default function DesignBuilder() {
                           }
                         </div>
                       </div>
-                    
+
                       <h3 className="text-lg font-medium border-b pb-2">Semantic Color Preview</h3>
-                      
+
                       {/* Primary Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Primary Colors</h4>
@@ -1742,7 +1764,7 @@ export default function DesignBuilder() {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Secondary Colors - Only show if secondary_base exists */}
                       {designSystem?.raw_tokens?.colors?.brand?.secondary_base && (
                         <div className="space-y-2 mb-6">
@@ -1763,7 +1785,7 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Tertiary Colors - Only show if tertiary_base exists */}
                       {designSystem?.raw_tokens?.colors?.brand?.tertiary_base && (
                         <div className="space-y-2 mb-6">
@@ -1784,7 +1806,7 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Error Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Error Colors</h4>
@@ -1803,7 +1825,7 @@ export default function DesignBuilder() {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Background Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Background & Surface Colors</h4>
@@ -1816,7 +1838,7 @@ export default function DesignBuilder() {
                           <ColorCard name="On Surface Variant" hex={designSystem?.raw_tokens?.colors?.neutral?.neutral_700 || "#495057"} />
                         </div>
                       </div>
-                      
+
                       {/* Text Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Text Colors</h4>
@@ -1830,7 +1852,7 @@ export default function DesignBuilder() {
                           <ColorCard name="Text Link" hex={designSystem?.raw_tokens?.colors?.interactive?.link_base || "#007bff"} />
                         </div>
                       </div>
-                      
+
                       {/* Border & Outline Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Border & Outline Colors</h4>
@@ -1843,7 +1865,7 @@ export default function DesignBuilder() {
                           <ColorCard name="Border Error" hex={designSystem?.raw_tokens?.colors?.interactive?.error_base || "#dc3545"} />
                         </div>
                       </div>
-                      
+
                       {/* Button Colors */}
                       <div className="space-y-2 mb-6">
                         <h4 className="font-medium">Button Colors</h4>
@@ -1959,10 +1981,10 @@ export default function DesignBuilder() {
                           <Button variant="destructive">Destructive</Button>
                         </div>
                       </div>
-                      
+
                     </div>
                   </TabsContent>
-                  
+
                   {/* Typography Tab Preview */}
                   <TabsContent value="typography" className="mt-0">
                     <div className="space-y-6">
@@ -1974,7 +1996,7 @@ export default function DesignBuilder() {
                         <h4 className="text-xl font-bold">Heading 4</h4>
                         <h5 className="text-lg font-bold">Heading 5</h5>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <h3 className="text-lg font-medium border-b pb-2">Text Styles</h3>
                         <div className="space-y-4">
@@ -1995,7 +2017,7 @@ export default function DesignBuilder() {
                       </div>
                     </div>
                   </TabsContent>
-                  
+
                   {/* Borders Tab Preview */}
                   <TabsContent value="borders" className="mt-0">
                     <div className="space-y-6">
@@ -2023,7 +2045,7 @@ export default function DesignBuilder() {
                             ))}
                           </div>
                         </div>
-                        
+
                         <div>
                           <h3 className="text-lg font-medium border-b pb-2 mb-4">Border Styles</h3>
                           <div className="space-y-4">
@@ -2043,7 +2065,7 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <h3 className="text-lg font-medium border-b pb-2 mb-4">Components with Raw Border Variables</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2059,7 +2081,7 @@ export default function DesignBuilder() {
                               Using --border-width-thin & --color-brand-primary-base
                             </p>
                           </div>
-                          
+
                           <div className="p-4 rounded" 
                             style={{ 
                               borderWidth: "var(--border-width-medium)",
@@ -2072,7 +2094,7 @@ export default function DesignBuilder() {
                               Using --border-width-medium & --color-interactive-success-base
                             </p>
                           </div>
-                          
+
                           <div className="mt-4">
                             <h4 className="font-medium mb-2">Raw Border Button Examples</h4>
                             <div className="flex flex-wrap gap-2">
@@ -2100,7 +2122,7 @@ export default function DesignBuilder() {
                               </button>
                             </div>
                           </div>
-                          
+
                           <div className="mt-4">
                             <h4 className="font-medium mb-2">Standard Components</h4>
                             <div className="space-y-2">
@@ -2118,7 +2140,7 @@ export default function DesignBuilder() {
           </Tabs>
         </div>
       </main>
-      
+
       {/* Alert dialog for unsaved changes */}
       <AlertDialog open={showLeaveAlert} onOpenChange={setShowLeaveAlert}>
         <AlertDialogContent>
