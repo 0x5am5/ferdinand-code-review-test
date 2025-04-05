@@ -34,7 +34,10 @@
         "secondary_on_container": "#0e275e",
         "tertiary_base": "#de25eb",
         "tertiary_container": "#f1a7f7",
-        "tertiary_on_container": "#580e5e"
+        "tertiary_on_container": "#580e5e",
+        "color4_base": "#b7f454",
+        "color4_container": "#e2faba",
+        "color4_on_container": "#496121"
       },
       "interactive": {
         "success_base": "#00ff00"

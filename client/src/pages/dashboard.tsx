@@ -382,12 +382,12 @@ export default function Dashboard() {
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                       >
-                        <Card className="group h-full">
-                          <CardHeader className="pb-2 relative">
-                            <div className="absolute right-4 top-4 cursor-move">
-                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                        <Card className="dashboard-card group h-full">
+                          <CardHeader className="pb-5 relative">
+                            <div className="dashboard-card--nav">
+                              <GripVertical className="drag-and-drop--handle h-4 w-4 text-muted-foreground" />
 
-                              <div className="flex flex-col">
+                              
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -451,7 +451,7 @@ export default function Dashboard() {
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
-                              </div>
+                              
                             </div>
                             <Link
                               href={`/clients/${client.id}`}
