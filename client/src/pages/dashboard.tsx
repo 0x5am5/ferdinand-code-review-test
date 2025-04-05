@@ -382,11 +382,11 @@ export default function Dashboard() {
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
                       >
-                        <Card className="group">
+                        <Card className="group h-full">
                           <CardHeader className="pb-2 relative">
                             <div className="absolute right-4 top-4 cursor-move">
                               <GripVertical className="h-4 w-4 text-muted-foreground" />
-                              
+
                               <div className="flex flex-col">
                                 <Button
                                   variant="ghost"
@@ -402,7 +402,7 @@ export default function Dashboard() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                
+
                                 <Button
                                   variant="ghost"
                                   size="icon"
