@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
+
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, UserRole, Client, USER_ROLES } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -494,9 +494,7 @@ export default function UsersPage() {
     : users;
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
+    <div className="p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold">Users</h1>
           <Button 
@@ -1045,7 +1043,6 @@ export default function UsersPage() {
         </Dialog>
 
 
-      </main>
     </div>
   );
 }

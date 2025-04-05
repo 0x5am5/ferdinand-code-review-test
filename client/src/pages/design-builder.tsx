@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Sidebar } from "@/components/layout/sidebar";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -64,7 +63,7 @@ export default function DesignBuilder() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
   const { designSystem: appliedDesignSystem, draftDesignSystem, updateDesignSystem, updateDraftDesignSystem, applyDraftChanges, isLoading } = useTheme();
-
+  
   // History management for undo/redo functionality
   const [history, setHistory] = useState<DesignSystem[]>([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
@@ -196,8 +195,7 @@ export default function DesignBuilder() {
     };
   }, [hasUnsavedChanges]);
 
-  // Use the draft for display purposes
-  const designSystem = draftDesignSystem || appliedDesignSystem;
+  // (Draft logic handled inline)
 
   // Add change to history
   const addToHistory = useCallback((newState: DesignSystem) => {
@@ -485,68 +483,63 @@ export default function DesignBuilder() {
 
   if (isLoading || !designSystem) {
     return (
-      <div className="flex h-screen">
-        <Sidebar />
-        <main className="flex-1 p-8">
-          <h1 className="text-2xl font-bold mb-6">Design Builder</h1>
-          <div className="grid gap-6">
-            <p>Loading design system...</p>
-          </div>
-        </main>
+      <div className="p-8">
+        <h1 className="text-2xl font-bold mb-6">Design Builder</h1>
+        <div className="grid gap-6">
+          <p>Loading design system...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-auto">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="">Design Builder</h1>
-              <p className="text-muted-foreground">
-                Control the overall design system of your application
-              </p>
-            </div>
-            <div className="flex gap-2">
+    <div className="p-8 overflow-auto">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="">Design Builder</h1>
+            <p className="text-muted-foreground">
+              Control the overall design system of your application
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleUndo}
+              disabled={currentHistoryIndex <= 0}
+              title="Undo"
+            >
+              <UndoIcon className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={handleRedo}
+              disabled={currentHistoryIndex >= history.length - 1}
+              title="Redo"
+            >
+              <RedoIcon className="h-4 w-4" />
+            </Button>
+            {hasUnsavedChanges && (
               <Button 
                 variant="outline" 
-                size="icon" 
-                onClick={handleUndo}
-                disabled={currentHistoryIndex <= 0}
-                title="Undo"
-              >
-                <UndoIcon className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={handleRedo}
-                disabled={currentHistoryIndex >= history.length - 1}
-                title="Redo"
-              >
-                <RedoIcon className="h-4 w-4" />
-              </Button>
-              {hasUnsavedChanges && (
-                <Button 
-                  variant="outline" 
-                  onClick={handleDiscardChanges}
-                  className="gap-2"
-                >
-                  <RotateCcwIcon className="h-4 w-4" />
-                  Discard Changes
-                </Button>
-              )}
-              <Button 
-                variant="outline"
-                onClick={handleSaveChanges}
+                onClick={handleDiscardChanges}
                 className="gap-2"
-                disabled={!hasUnsavedChanges}
               >
-                <SaveIcon className="h-4 w-4" />
-                Save Changes
+                <RotateCcwIcon className="h-4 w-4" />
+                Discard Changes
               </Button>
+            )}
+            <Button 
+              variant="outline"
+              onClick={handleSaveChanges}
+              className="gap-2"
+              disabled={!hasUnsavedChanges}
+            >
+              <SaveIcon className="h-4 w-4" />
+              Save Changes
+            </Button>
             </div>
           </div>
 
@@ -2138,25 +2131,25 @@ export default function DesignBuilder() {
             </div>
           </Tabs>
         </div>
-      </main>
+      </div>
 
-      {/* Alert dialog for unsaved changes */}
-      <AlertDialog open={showLeaveAlert} onOpenChange={setShowLeaveAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have unsaved changes that will be lost if you leave this page. Are you sure you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmNavigation}>
-              Leave Without Saving
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
+    {/* Alert dialog for unsaved changes */}
+    <AlertDialog open={showLeaveAlert} onOpenChange={setShowLeaveAlert}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+          <AlertDialogDescription>
+            You have unsaved changes that will be lost if you leave this page. Are you sure you want to continue?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={confirmNavigation}>
+            Leave Without Saving
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </div>
+);
 }

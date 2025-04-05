@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -147,9 +146,7 @@ export default function Clients() {
   }, [editingClient]);
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
+    <div className="p-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold">Clients</h1>
           <div className="flex items-center gap-4">
@@ -670,7 +667,6 @@ export default function Clients() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </main>
     </div>
   );
 }

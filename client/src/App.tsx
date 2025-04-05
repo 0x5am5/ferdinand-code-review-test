@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "@/components/layout/page-transition";
+import { Sidebar } from "@/components/layout/sidebar";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -18,7 +19,6 @@ import DesignBuilder from "@/pages/design-builder";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import { Sidebar } from "@/components/layout/sidebar";
 
 function ProtectedRoute({ 
   component: Component,
@@ -40,68 +40,68 @@ function Router() {
   }
   
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       <Sidebar />
-      <main className="flex-1">
+      <main className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           <Switch location={location} key={location}>
-        <Route path="/login">
-          <PageTransition>
-            <Login />
-          </PageTransition>
-        </Route>
-        <Route path="/dashboard">
-          <PageTransition>
-            <ProtectedRoute component={Dashboard} />
-          </PageTransition>
-        </Route>
-        <Route path="/admin/instances">
-          <PageTransition>
-            <ProtectedRoute component={Instances} adminOnly />
-          </PageTransition>
-        </Route>
-        <Route path="/clients">
-          <PageTransition>
-            <ProtectedRoute component={Clients} />
-          </PageTransition>
-        </Route>
-        <Route path="/clients/new">
-          <PageTransition>
-            <ProtectedRoute component={NewClientPage} />
-          </PageTransition>
-        </Route>
-        <Route path="/clients/:id">
-          <PageTransition>
-            <ProtectedRoute component={ClientDetails} />
-          </PageTransition>
-        </Route>
-        <Route path="/users">
-          <PageTransition>
-            <ProtectedRoute component={UsersPage} adminOnly />
-          </PageTransition>
-        </Route>
-        <Route path="/signup">
-          <PageTransition>
-            <SignupPage />
-          </PageTransition>
-        </Route>
-        <Route path="/reset-password">
-          <PageTransition>
-            <ResetPassword />
-          </PageTransition>
-        </Route>
-        <Route path="/design-builder">
-          <PageTransition>
-            <ProtectedRoute component={DesignBuilder} adminOnly />
-          </PageTransition>
-        </Route>
-        <Route>
-          <PageTransition>
-            <NotFound />
-          </PageTransition>
-        </Route>
-      </Switch>
-      </AnimatePresence>
+            <Route path="/login">
+              <PageTransition>
+                <Login />
+              </PageTransition>
+            </Route>
+            <Route path="/dashboard">
+              <PageTransition>
+                <ProtectedRoute component={Dashboard} />
+              </PageTransition>
+            </Route>
+            <Route path="/admin/instances">
+              <PageTransition>
+                <ProtectedRoute component={Instances} adminOnly />
+              </PageTransition>
+            </Route>
+            <Route path="/clients">
+              <PageTransition>
+                <ProtectedRoute component={Clients} />
+              </PageTransition>
+            </Route>
+            <Route path="/clients/new">
+              <PageTransition>
+                <ProtectedRoute component={NewClientPage} />
+              </PageTransition>
+            </Route>
+            <Route path="/clients/:id">
+              <PageTransition>
+                <ProtectedRoute component={ClientDetails} />
+              </PageTransition>
+            </Route>
+            <Route path="/users">
+              <PageTransition>
+                <ProtectedRoute component={UsersPage} adminOnly />
+              </PageTransition>
+            </Route>
+            <Route path="/signup">
+              <PageTransition>
+                <SignupPage />
+              </PageTransition>
+            </Route>
+            <Route path="/reset-password">
+              <PageTransition>
+                <ResetPassword />
+              </PageTransition>
+            </Route>
+            <Route path="/design-builder">
+              <PageTransition>
+                <ProtectedRoute component={DesignBuilder} adminOnly />
+              </PageTransition>
+            </Route>
+            <Route>
+              <PageTransition>
+                <NotFound />
+              </PageTransition>
+            </Route>
+          </Switch>
+        </AnimatePresence>
       </main>
     </div>
   );

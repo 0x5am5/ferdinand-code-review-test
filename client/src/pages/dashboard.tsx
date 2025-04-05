@@ -1,4 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
+
 import { UserManager } from "@/components/client/user-manager";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
@@ -302,9 +302,7 @@ export default function Dashboard() {
     });
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
+    <div className="p-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold">Client Instances</h1>
         </div>
@@ -878,7 +876,6 @@ export default function Dashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </main>
     </div>
   );
 }
