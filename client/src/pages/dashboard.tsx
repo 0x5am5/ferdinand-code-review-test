@@ -454,7 +454,7 @@ export default function Dashboard() {
                                   </div>
                                 </div>
 
-                                <div className="flex gap-2 z-10">
+                                <div className="absolute right-4 top-16 flex flex-col gap-2 z-10">
                                   <Button
                                     variant="ghost"
                                     size="icon"
