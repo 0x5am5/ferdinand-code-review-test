@@ -40,6 +40,7 @@ function Router() {
 
   return (
     <AnimatePresence mode="wait">
+      <div>
       <Switch>
         <Route path="/login">
           <PageTransition>
@@ -51,52 +52,53 @@ function Router() {
             <ProtectedRoute component={Dashboard} />
           </PageTransition>
         </Route>
-      <Route path="/admin/instances">
-        <PageTransition>
-          <ProtectedRoute component={Instances} adminOnly />
-        </PageTransition>
-      </Route>
-      <Route path="/clients">
-        <PageTransition>
-          <ProtectedRoute component={Clients} />
-        </PageTransition>
-      </Route>
-      <Route path="/clients/new">
-        <PageTransition>
-          <ProtectedRoute component={NewClientPage} />
-        </PageTransition>
-      </Route>
-      <Route path="/clients/:id">
-        <PageTransition>
-          <ProtectedRoute component={ClientDetails} />
-        </PageTransition>
-      </Route>
-      <Route path="/users">
-        <PageTransition>
-          <ProtectedRoute component={UsersPage} adminOnly />
-        </PageTransition>
-      </Route>
-      <Route path="/signup">
-        <PageTransition>
-          <SignupPage />
-        </PageTransition>
-      </Route>
-      <Route path="/reset-password">
-        <PageTransition>
-          <ResetPassword />
-        </PageTransition>
-      </Route>
-      <Route path="/design-builder">
-        <PageTransition>
-          <ProtectedRoute component={DesignBuilder} adminOnly />
-        </PageTransition>
-      </Route>
-      <Route>
-        <PageTransition>
-          <NotFound />
-        </PageTransition>
-      </Route>
-    </Switch>
+        <Route path="/admin/instances">
+          <PageTransition>
+            <ProtectedRoute component={Instances} adminOnly />
+          </PageTransition>
+        </Route>
+        <Route path="/clients">
+          <PageTransition>
+            <ProtectedRoute component={Clients} />
+          </PageTransition>
+        </Route>
+        <Route path="/clients/new">
+          <PageTransition>
+            <ProtectedRoute component={NewClientPage} />
+          </PageTransition>
+        </Route>
+        <Route path="/clients/:id">
+          <PageTransition>
+            <ProtectedRoute component={ClientDetails} />
+          </PageTransition>
+        </Route>
+        <Route path="/users">
+          <PageTransition>
+            <ProtectedRoute component={UsersPage} adminOnly />
+          </PageTransition>
+        </Route>
+        <Route path="/signup">
+          <PageTransition>
+            <SignupPage />
+          </PageTransition>
+        </Route>
+        <Route path="/reset-password">
+          <PageTransition>
+            <ResetPassword />
+          </PageTransition>
+        </Route>
+        <Route path="/design-builder">
+          <PageTransition>
+            <ProtectedRoute component={DesignBuilder} adminOnly />
+          </PageTransition>
+        </Route>
+        <Route>
+          <PageTransition>
+            <NotFound />
+          </PageTransition>
+        </Route>
+      </Switch>
+      </div>
     </AnimatePresence>
   );
 }
