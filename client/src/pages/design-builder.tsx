@@ -852,8 +852,6 @@ export default function DesignBuilder() {
                                   });
 
                                   toast({
-```javascript
-                                  toast({
                                     title: "Neutral palette regenerated",
                                     description: "Generated 10 shades based on the base gray color."
                                   });
