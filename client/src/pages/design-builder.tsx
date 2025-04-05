@@ -851,7 +851,8 @@ export default function DesignBuilder() {
                                     handleRawTokenChange('colors', `neutral.${colorKey}`, color);
                                   });
 
-                               ```javascript
+                                  toast({
+```javascript
                                   toast({
                                     title: "Neutral palette regenerated",
                                     description: "Generated 10 shades based on the base gray color."
@@ -1598,7 +1599,7 @@ export default function DesignBuilder() {
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 mb-8">
                         {/* Brand Colors */}
                         <div className="p-4 border rounded">
-                          <h4 className="text-mdfont-semibold mb-3">Brand Colors</h4>
+                          <h4 className="text-md font-semibold mb-3">Brand Colors</h4>
                           <div className="space-y-2">
                             {designSystem?.raw_tokens?.colors?.brand && 
                               Object.entries(designSystem.raw_tokens.colors.brand)
