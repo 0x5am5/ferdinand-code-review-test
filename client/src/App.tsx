@@ -2,6 +2,8 @@ import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { AnimatePresence } from "framer-motion";
+import { PageTransition } from "@/components/layout/page-transition";
 import NotFound from "@/pages/not-found";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
@@ -37,39 +39,65 @@ function Router() {
   }
 
   return (
-    <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/dashboard">
-        <ProtectedRoute component={Dashboard} />
-      </Route>
+    <AnimatePresence mode="wait">
+      <Switch>
+        <Route path="/login">
+          <PageTransition>
+            <Login />
+          </PageTransition>
+        </Route>
+        <Route path="/dashboard">
+          <PageTransition>
+            <ProtectedRoute component={Dashboard} />
+          </PageTransition>
+        </Route>
       <Route path="/admin/instances">
-        <ProtectedRoute component={Instances} adminOnly />
+        <PageTransition>
+          <ProtectedRoute component={Instances} adminOnly />
+        </PageTransition>
       </Route>
       <Route path="/clients">
-        <ProtectedRoute component={Clients} />
+        <PageTransition>
+          <ProtectedRoute component={Clients} />
+        </PageTransition>
       </Route>
       <Route path="/clients/new">
-        <ProtectedRoute component={NewClientPage} />
+        <PageTransition>
+          <ProtectedRoute component={NewClientPage} />
+        </PageTransition>
       </Route>
       <Route path="/clients/:id">
-        <ProtectedRoute component={ClientDetails} />
+        <PageTransition>
+          <ProtectedRoute component={ClientDetails} />
+        </PageTransition>
       </Route>
       <Route path="/users">
-        <ProtectedRoute component={UsersPage} adminOnly />
+        <PageTransition>
+          <ProtectedRoute component={UsersPage} adminOnly />
+        </PageTransition>
       </Route>
       <Route path="/signup">
-        <SignupPage />
+        <PageTransition>
+          <SignupPage />
+        </PageTransition>
       </Route>
       <Route path="/reset-password">
-        <ResetPassword />
+        <PageTransition>
+          <ResetPassword />
+        </PageTransition>
       </Route>
       <Route path="/design-builder">
-        <ProtectedRoute component={DesignBuilder} adminOnly />
+        <PageTransition>
+          <ProtectedRoute component={DesignBuilder} adminOnly />
+        </PageTransition>
       </Route>
       <Route>
-        <NotFound />
+        <PageTransition>
+          <NotFound />
+        </PageTransition>
       </Route>
     </Switch>
+    </AnimatePresence>
   );
 }
 
