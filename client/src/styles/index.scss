@@ -4,6 +4,7 @@
 @use 'mixins' as *;
 @use 'components/sidebar';
 @use 'components/button';
+@use 'components/card';
 
 @tailwind base;
 @tailwind components;
