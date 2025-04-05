@@ -386,6 +386,72 @@ export default function Dashboard() {
                           <CardHeader className="pb-2 relative">
                             <div className="absolute right-4 top-4 cursor-move">
                               <GripVertical className="h-4 w-4 text-muted-foreground" />
+                              
+                              <div className="flex flex-col">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    window.open(
+                                      `/preview/${client.id}`,
+                                      "_blank",
+                                    );
+                                  }}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const url = `${window.location.origin}/clients/${client.id}`;
+                                    navigator.clipboard.writeText(url);
+                                    toast({
+                                      title: "Link copied",
+                                      description:
+                                        "Client URL has been copied to clipboard",
+                                      duration: 2000,
+                                    });
+                                  }}
+                                >
+                                  <Share className="h-4 w-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setEditingClient(client);
+                                      }}
+                                    >
+                                      <Edit2 className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setDeletingClient(client);
+                                      }}
+                                      className="text-red-600"
+                                    >
+                                      <Trash className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </div>
                             <Link
                               href={`/clients/${client.id}`}
@@ -452,71 +518,6 @@ export default function Dashboard() {
                                       </div>
                                     )}
                                   </div>
-                                </div>
-
-                                <div className="absolute right-4 top-16 flex flex-col gap-2 z-10">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      window.open(
-                                        `/preview/${client.id}`,
-                                        "_blank",
-                                      );
-                                    }}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      const url = `${window.location.origin}/clients/${client.id}`;
-                                      navigator.clipboard.writeText(url);
-                                      toast({
-                                        title: "Link copied",
-                                        description:
-                                          "Client URL has been copied to clipboard",
-                                        duration: 2000,
-                                      });
-                                    }}
-                                  >
-                                    <Share className="h-4 w-4" />
-                                  </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                      <DropdownMenuItem
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setEditingClient(client);
-                                        }}
-                                      >
-                                        <Edit2 className="mr-2 h-4 w-4" />
-                                        Edit
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setDeletingClient(client);
-                                        }}
-                                        className="text-red-600"
-                                      >
-                                        <Trash className="mr-2 h-4 w-4" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
                                 </div>
                               </div>
                             </Link>
