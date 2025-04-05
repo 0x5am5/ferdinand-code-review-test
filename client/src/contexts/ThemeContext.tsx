@@ -136,7 +136,7 @@ const defaultTheme: DesignSystem = {
   },
   colors: {
     primary: 'hsl(205, 100%, 50%)',
-    background: '#ffffff',
+    background: '#f0f1f2',
     foreground: '#000000',
     muted: '#f1f5f9',
     'muted-foreground': '#64748b',
