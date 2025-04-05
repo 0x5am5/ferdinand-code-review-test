@@ -39,9 +39,11 @@ function Router() {
   }
   
   return (
-    <div>
-      <AnimatePresence mode="wait">
-        <Switch location={location} key={location}>
+    <div className="flex">
+      <Sidebar />
+      <main className="flex-1">
+        <AnimatePresence mode="wait">
+          <Switch location={location} key={location}>
         <Route path="/login">
           <PageTransition>
             <Login />
@@ -99,6 +101,7 @@ function Router() {
         </Route>
       </Switch>
       </AnimatePresence>
+      </main>
     </div>
   );
 }
