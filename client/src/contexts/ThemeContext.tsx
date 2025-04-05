@@ -166,21 +166,23 @@ const defaultTheme: DesignSystem = {
   }
 };
 
-type ThemeContextType = {
+// Define the context interface
+export interface ThemeContextType {
   designSystem: DesignSystem;
   draftDesignSystem: DesignSystem | null;
-  updateDesignSystem: (newTheme: Partial<DesignSystem>) => void;
+  updateDesignSystem: (newTheme: Partial<DesignSystem>) => Promise<void>;
   updateDraftDesignSystem: (newTheme: Partial<DesignSystem>) => void;
-  applyDraftChanges: () => void;
+  applyDraftChanges: () => Promise<void>;
   isLoading: boolean;
 }
 
-const ThemeContext = createContext<ThemeContextType>({
+// Create the context with default values
+export const ThemeContext = createContext<ThemeContextType>({
   designSystem: defaultTheme,
   draftDesignSystem: null,
-  updateDesignSystem: () => {},
+  updateDesignSystem: async () => {},
   updateDraftDesignSystem: () => {},
-  applyDraftChanges: () => {},
+  applyDraftChanges: async () => {},
   isLoading: true
 });
 
@@ -619,12 +621,14 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         return updatedDesignSystem;
       });
 
-      // Wait for state update to complete before updating draft
-      setTimeout(() => {
-        // Also update draft state to stay in sync, but only if it exists
-        if (draftDesignSystem) {
-          // Use the same approach for updating the draft
-          const draftUpdatedDesignSystem = JSON.parse(JSON.stringify(draftDesignSystem));
+      // Also update draft state to stay in sync, but only if it exists
+      if (draftDesignSystem) {
+        // Use functional update to ensure we're working with the latest state
+        setDraftDesignSystem(prevDraft => {
+          if (!prevDraft) return null;
+          
+          // Create a deep copy of the previous draft
+          const draftUpdatedDesignSystem = JSON.parse(JSON.stringify(prevDraft));
           
           // Apply the same changes to draft
           if (cleanNewTheme.theme) {
@@ -646,14 +650,57 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
             };
           }
           
+          // Handle raw tokens for draft
           if (cleanNewTheme.raw_tokens) {
-            // Use the same detailed merging approach as above
-            // (Code omitted for brevity but would be the same as for main design system)
+            // Ensure raw_tokens exists
+            draftUpdatedDesignSystem.raw_tokens = draftUpdatedDesignSystem.raw_tokens || {};
+            
+            // Handle default_unit
+            if (cleanNewTheme.raw_tokens.default_unit) {
+              draftUpdatedDesignSystem.raw_tokens.default_unit = cleanNewTheme.raw_tokens.default_unit;
+            }
+            
+            // Handle colors for draft
+            if (cleanNewTheme.raw_tokens.colors) {
+              draftUpdatedDesignSystem.raw_tokens.colors = draftUpdatedDesignSystem.raw_tokens.colors || {};
+              
+              // Handle color categories for draft
+              if (cleanNewTheme.raw_tokens.colors.brand) {
+                draftUpdatedDesignSystem.raw_tokens.colors.brand = {
+                  ...(draftUpdatedDesignSystem.raw_tokens.colors.brand || {}),
+                  ...cleanNewTheme.raw_tokens.colors.brand
+                };
+              }
+              
+              if (cleanNewTheme.raw_tokens.colors.neutral) {
+                draftUpdatedDesignSystem.raw_tokens.colors.neutral = {
+                  ...(draftUpdatedDesignSystem.raw_tokens.colors.neutral || {}),
+                  ...cleanNewTheme.raw_tokens.colors.neutral
+                };
+              }
+              
+              if (cleanNewTheme.raw_tokens.colors.interactive) {
+                draftUpdatedDesignSystem.raw_tokens.colors.interactive = {
+                  ...(draftUpdatedDesignSystem.raw_tokens.colors.interactive || {}),
+                  ...cleanNewTheme.raw_tokens.colors.interactive
+                };
+              }
+            }
+            
+            // Handle other tokens for draft
+            ['spacing', 'radius', 'transition', 'border'].forEach(key => {
+              if (cleanNewTheme.raw_tokens[key]) {
+                draftUpdatedDesignSystem.raw_tokens[key] = {
+                  ...(draftUpdatedDesignSystem.raw_tokens[key] || {}),
+                  ...cleanNewTheme.raw_tokens[key]
+                };
+              }
+            });
           }
           
-          setDraftDesignSystem(draftUpdatedDesignSystem);
-        }
-      }, 0);
+          return draftUpdatedDesignSystem;
+        });
+      }
 
       // Send update to the API
       const response = await fetch('/api/design-system', {
@@ -672,14 +719,84 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   // Function to update draft design system (for live preview)
   const updateDraftDesignSystem = (newTheme: Partial<DesignSystem>) => {
     if (draftDesignSystem) {
-      // Create a clean copy to avoid reference issues
-      const updatedTheme = JSON.parse(JSON.stringify({ 
-        ...draftDesignSystem,
-        ...newTheme
-      }));
+      // Create a clean copy of the new theme
+      const cleanNewTheme = JSON.parse(JSON.stringify(newTheme));
       
       // Use a functional update to ensure we're working with the latest state
-      setDraftDesignSystem(updatedTheme);
+      setDraftDesignSystem(prevDraft => {
+        if (!prevDraft) return null;
+        
+        // Create a deep copy of the previous draft
+        const updatedDraft = JSON.parse(JSON.stringify(prevDraft));
+        
+        // Carefully merge the new theme properties
+        if (cleanNewTheme.theme) {
+          updatedDraft.theme = { ...updatedDraft.theme, ...cleanNewTheme.theme };
+        }
+        
+        if (cleanNewTheme.colors) {
+          updatedDraft.colors = { ...updatedDraft.colors, ...cleanNewTheme.colors };
+        }
+        
+        if (cleanNewTheme.typography) {
+          updatedDraft.typography = { ...updatedDraft.typography, ...cleanNewTheme.typography };
+        }
+        
+        if (cleanNewTheme.typography_extended) {
+          updatedDraft.typography_extended = { 
+            ...(updatedDraft.typography_extended || {}),
+            ...cleanNewTheme.typography_extended
+          };
+        }
+        
+        // Handle raw tokens update
+        if (cleanNewTheme.raw_tokens) {
+          updatedDraft.raw_tokens = updatedDraft.raw_tokens || {};
+          
+          // Handle default_unit
+          if (cleanNewTheme.raw_tokens.default_unit) {
+            updatedDraft.raw_tokens.default_unit = cleanNewTheme.raw_tokens.default_unit;
+          }
+          
+          // Handle colors with nested structure
+          if (cleanNewTheme.raw_tokens.colors) {
+            updatedDraft.raw_tokens.colors = updatedDraft.raw_tokens.colors || {};
+            
+            if (cleanNewTheme.raw_tokens.colors.brand) {
+              updatedDraft.raw_tokens.colors.brand = { 
+                ...(updatedDraft.raw_tokens.colors.brand || {}),
+                ...cleanNewTheme.raw_tokens.colors.brand
+              };
+            }
+            
+            if (cleanNewTheme.raw_tokens.colors.neutral) {
+              updatedDraft.raw_tokens.colors.neutral = { 
+                ...(updatedDraft.raw_tokens.colors.neutral || {}),
+                ...cleanNewTheme.raw_tokens.colors.neutral
+              };
+            }
+            
+            if (cleanNewTheme.raw_tokens.colors.interactive) {
+              updatedDraft.raw_tokens.colors.interactive = { 
+                ...(updatedDraft.raw_tokens.colors.interactive || {}),
+                ...cleanNewTheme.raw_tokens.colors.interactive
+              };
+            }
+          }
+          
+          // Handle other token types
+          ['spacing', 'radius', 'transition', 'border'].forEach(key => {
+            if (cleanNewTheme.raw_tokens[key]) {
+              updatedDraft.raw_tokens[key] = {
+                ...(updatedDraft.raw_tokens[key] || {}),
+                ...cleanNewTheme.raw_tokens[key]
+              };
+            }
+          });
+        }
+        
+        return updatedDraft;
+      });
     }
   };
 
@@ -705,10 +822,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Use a named function declaration
-function useThemeHook() {
+// Export it in a way that's compatible with React Fast Refresh
+export function useTheme() {
   return useContext(ThemeContext);
 }
-
-// Export it - this way we maintain consistent exports for React Fast Refresh
-export const useTheme = useThemeHook;
