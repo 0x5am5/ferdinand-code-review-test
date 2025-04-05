@@ -384,12 +384,12 @@ export default function Dashboard() {
                       >
                         <Card className="group">
                           <CardHeader className="pb-2 relative">
-                            <div className="cursor-move">
+                            <div className="absolute right-4 top-4 cursor-move">
                               <GripVertical className="h-4 w-4 text-muted-foreground" />
                             </div>
                             <Link
                               href={`/clients/${client.id}`}
-                              className="block w-full p-4 relative"
+                              className="block w-full relative"
                             >
                               <div className="flex items-start flex-direction--column">
                                 {client.logo && (
