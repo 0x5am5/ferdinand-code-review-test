@@ -1,137 +1,162 @@
-import { cn } from "@/lib/utils";
+import { FC } from "react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AuthButton } from "@/components/auth/auth-button";
 import { 
-  LayoutDashboard, Settings, ChevronLeft, ChevronRight,
-  Users, Palette, BookOpen, Briefcase
+  CircleUserIcon, 
+  HomeIcon, 
+  BuildingIcon, 
+  UsersIcon,
+  PaletteIcon,
+  ServerIcon,
+  LogOutIcon
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { User, UserRole } from "@shared/schema";
-import { useState } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useTheme } from "@/contexts/ThemeContext";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Clients", href: "/clients", icon: Briefcase },
-  { name: "Users", href: "/users", icon: Users },
-  { name: "Design Builder", href: "/design-builder", icon: Palette },
-];
+interface NavItem {
+  title: string;
+  href: string;
+  icon: React.ReactNode;
+  adminOnly?: boolean;
+}
 
-const adminNavigation = [
-  { name: "Settings", href: "/admin/settings", icon: Settings },
-];
-
-export function Sidebar() {
+/**
+ * Application sidebar navigation
+ */
+export const Sidebar: FC = () => {
   const [location] = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const { data: user } = useQuery<User>({ 
-    queryKey: ["/api/user"],
-  });
-
-  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
-
+  const themeContext = useTheme();
+  
+  // In a real app, you'd get this from the auth context
+  const isAdmin = true; // Hardcoded for development
+  
+  const navItems: NavItem[] = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: <HomeIcon className="h-4 w-4" />
+    },
+    {
+      title: "Clients",
+      href: "/clients",
+      icon: <BuildingIcon className="h-4 w-4" />
+    },
+    {
+      title: "Users",
+      href: "/users",
+      icon: <UsersIcon className="h-4 w-4" />,
+      adminOnly: true
+    },
+    {
+      title: "Design Builder",
+      href: "/design-builder",
+      icon: <PaletteIcon className="h-4 w-4" />,
+      adminOnly: true
+    },
+    {
+      title: "Instances",
+      href: "/admin/instances",
+      icon: <ServerIcon className="h-4 w-4" />,
+      adminOnly: true
+    }
+  ];
+  
+  const filteredNavItems = navItems.filter(item => 
+    !item.adminOnly || (item.adminOnly && isAdmin)
+  );
+  
+  const isActiveLink = (href: string) => {
+    if (href === '/clients' && location.startsWith('/clients/')) {
+      return true;
+    }
+    return location === href;
+  };
+  
+  const handleLogout = () => {
+    // Would handle logout in real app
+    console.log("Logging out...");
+  };
+  
+  const toggleTheme = async () => {
+    if (!themeContext || !themeContext.designSystem || !themeContext.updateDesignSystem) {
+      console.error("Theme context not properly initialized");
+      return;
+    }
+    
+    const currentAppearance = themeContext.designSystem.theme.appearance;
+    const newAppearance = currentAppearance === 'dark' ? 'light' : 'dark';
+    
+    await themeContext.updateDesignSystem({
+      theme: {
+        ...themeContext.designSystem.theme,
+        appearance: newAppearance
+      }
+    });
+  };
+  
+  const isDarkMode = themeContext?.designSystem?.theme?.appearance === 'dark';
+  
   return (
-    <div 
-      className={cn(
-        "sidebar",
-        isCollapsed ? "sidebar--collapsed" : "sidebar--expanded"
-      )}
-    >
-      <div className="sidebar__header">
-        
-          <img 
-            src="/src/ferdinand--logo.png" 
-            alt="Ferdinand Logo" 
-            className={cn(
-              "sidebar--logo",
-              isCollapsed ? "sidebar--collapsed" : "sidebar--expanded"
-            )}
-          />
-      </div>
-
-      {isSuperAdmin && !isCollapsed && (
-        <div className="sidebar__admin-panel">
-          <p className="text-sm font-medium text-primary mb-2">Super Admin</p>
-          <Select defaultValue={user?.role}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Switch role" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.values(UserRole).map((role) => (
-                <SelectItem key={role} value={role}>
-                  {role.replace('_', ' ')}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col">
+      <div className="p-4 border-b flex items-center gap-3">
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-xl">
+          F
         </div>
-      )}
-
-        <nav className="sidebar__nav">
-          {navigation.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link 
-                key={item.href} 
-                href={item.href}
-                className={cn(
-                  "sidebar__link",
-                  location === item.href && "sidebar__link--active"
-                )}
+        <div>
+          <h2 className="font-bold">Ferdinand</h2>
+          <p className="text-xs text-muted-foreground">Brand Management</p>
+        </div>
+      </div>
+      
+      <ScrollArea className="flex-1 py-4">
+        <nav className="px-2 space-y-1">
+          {filteredNavItems.map((item) => (
+            <Link key={item.href} href={item.href}>
+              <Button
+                variant="ghost"
+                className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+                  ${isActiveLink(item.href) 
+                    ? 'bg-muted font-medium' 
+                    : 'hover:bg-muted/50'}`}
               >
-                <Icon />
-                {!isCollapsed && <span>{item.name}</span>}
-              </Link>
-            );
-          })}
-
-          {user?.role === UserRole.SUPER_ADMIN && (
-            <>
-              <div className="sidebar__divider" />
-              {adminNavigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link 
-                    key={item.href} 
-                    href={item.href}
-                    className={cn(
-                      "sidebar__link",
-                      location === item.href && "sidebar__link--active"
-                    )}
-                  >
-                    <Icon />
-                    {!isCollapsed && <span>{item.name}</span>}
-                  </Link>
-                );
-              })}
-            </>
-          )}
+                {item.icon}
+                {item.title}
+              </Button>
+            </Link>
+          ))}
         </nav>
-
-      <div className="sidebar__footer">
-        <AuthButton collapsed={isCollapsed} />
+      </ScrollArea>
+      
+      <div className="border-t p-4 space-y-4">
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="dark-mode" 
+            checked={isDarkMode}
+            onCheckedChange={toggleTheme}
+          />
+          <Label htmlFor="dark-mode">Dark Mode</Label>
+        </div>
         
-        <Button
-          variant="ghost"
-          size="icon"
-          className="sidebar__toggle-button button--outline"
-          onClick={() => setIsCollapsed(!isCollapsed)}
+        <div className="flex items-center gap-3 px-3 py-2">
+          <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">Admin User</p>
+            <p className="text-xs text-muted-foreground truncate">admin@example.com</p>
+          </div>
+        </div>
+        
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="w-full justify-start text-muted-foreground" 
+          onClick={handleLogout}
         >
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
+          <LogOutIcon className="h-4 w-4 mr-2" />
+          Sign Out
         </Button>
       </div>
-    </div>
+    </aside>
   );
-}
+};

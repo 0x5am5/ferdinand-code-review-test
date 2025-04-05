@@ -1,18 +1,25 @@
-import { ReactNode } from "react";
+import { ReactNode, FC } from "react";
 import { Sidebar } from "./sidebar";
-import { AnimatePresence } from "framer-motion";
 import { PageTransition } from "./page-transition";
+import { AnimatePresence } from "framer-motion";
 
 interface AppLayoutProps {
   children: ReactNode;
   pageKey: string;
 }
 
-export function AppLayout({ children, pageKey }: AppLayoutProps) {
+/**
+ * App layout component that provides a consistent layout structure with 
+ * fixed sidebar and animated page transitions
+ */
+export const AppLayout: FC<AppLayoutProps> = ({ children, pageKey }) => {
   return (
     <div className="flex h-screen">
+      {/* Fixed sidebar that doesn't re-render during page transitions */}
       <Sidebar />
-      <main className="flex-1 overflow-hidden">
+      
+      {/* Main content area with animated page transitions */}
+      <main className="flex-1 overflow-y-auto">
         <AnimatePresence mode="wait">
           <PageTransition key={pageKey}>
             {children}
@@ -21,4 +28,4 @@ export function AppLayout({ children, pageKey }: AppLayoutProps) {
       </main>
     </div>
   );
-}
+};
