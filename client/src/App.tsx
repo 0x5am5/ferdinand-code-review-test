@@ -38,10 +38,12 @@ function Router() {
     return <Redirect to="/dashboard" />;
   }
 
+  const [location] = useLocation();
+  
   return (
-    <AnimatePresence mode="wait">
-      <div>
-      <Switch>
+    <div>
+      <AnimatePresence mode="wait">
+        <Switch location={location} key={location}>
         <Route path="/login">
           <PageTransition>
             <Login />
@@ -98,8 +100,8 @@ function Router() {
           </PageTransition>
         </Route>
       </Switch>
-      </div>
-    </AnimatePresence>
+      </AnimatePresence>
+    </div>
   );
 }
 
