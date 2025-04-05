@@ -37,8 +37,6 @@ function Router() {
   if (location === "/") {
     return <Redirect to="/dashboard" />;
   }
-
-  const [location] = useLocation();
   
   return (
     <div>
