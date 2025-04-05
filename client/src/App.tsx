@@ -18,6 +18,7 @@ import DesignBuilder from "@/pages/design-builder";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { Sidebar } from "@/components/layout/sidebar";
 
 function ProtectedRoute({ 
   component: Component,
