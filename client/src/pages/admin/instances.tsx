@@ -1,4 +1,3 @@
-import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
 import { 
@@ -59,86 +58,83 @@ export default function Instances() {
   });
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold">Client Instances</h1>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New Instance
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Client Instance</DialogTitle>
-              </DialogHeader>
-              
-              <Form {...form}>
-                <form 
-                  onSubmit={form.handleSubmit((data) => createClient.mutate(data))} 
-                  className="space-y-4"
-                >
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full"
-                    disabled={createClient.isPending}
-                  >
-                    Create Instance
-                  </Button>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        </div>
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold">Client Instances</h1>
         
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {clients?.map((client) => (
-            <Card key={client.id}>
-              <CardHeader>
-                <CardTitle>{client.name}</CardTitle>
-                <CardDescription>{client.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Created {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </main>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Instance
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create Client Instance</DialogTitle>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form 
+                onSubmit={form.handleSubmit((data) => createClient.mutate(data))} 
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={createClient.isPending}
+                >
+                  Create Instance
+                </Button>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {clients?.map((client) => (
+          <Card key={client.id}>
+            <CardHeader>
+              <CardTitle>{client.name}</CardTitle>
+              <CardDescription>{client.description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Created {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

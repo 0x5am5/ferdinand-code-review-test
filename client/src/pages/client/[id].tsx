@@ -1,4 +1,3 @@
-import { Sidebar } from "@/components/layout/sidebar";
 import { useQuery } from "@tanstack/react-query";
 import { Client, BrandAsset, UserPersona } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,63 +33,54 @@ export default function ClientDetails() {
 
   if (!clientId || isNaN(clientId)) {
     return (
-      <div className="flex h-screen">
-        <Sidebar />
-        <main className="flex-1 p-8">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                <CardTitle>Invalid Client ID</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Link href="/dashboard">
-                <Button variant="outline">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </main>
+      <div className="p-8">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <CardTitle>Invalid Client ID</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard">
+              <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   if (isLoadingClient || isLoadingAssets || isLoadingPersonas) {
     return (
-      <div className="flex h-screen">
-        <Sidebar />
-        <main className="flex-1 p-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </main>
+      <div className="p-8 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!client) {
     return (
-      <div className="flex h-screen">
-        <Sidebar />
-        <main className="flex-1 p-8">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-500" />
-                <CardTitle>Client Not Found</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Link href="/dashboard">
-                <Button variant="outline">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Dashboard
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </main>
+      <div className="p-8">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <CardTitle>Client Not Found</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Link href="/dashboard">
+              <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -101,20 +91,18 @@ export default function ClientDetails() {
   const fontAssets = assets.filter(asset => asset.category === 'font') || [];
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
-      <main className="flex-1 p-8 overflow-y-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <Link href="/dashboard">
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-4xl font-bold">{client.name}</h1>
-        </div>
+    <div className="p-8">
+      <div className="flex items-center gap-4 mb-8">
+        <Link href="/dashboard">
+          <Button variant="outline" size="icon">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <h1 className="text-4xl font-bold">{client.name}</h1>
+      </div>
 
-        {/* Get default tab based on available features */}
-        {(() => {
+      {/* Get default tab based on available features */}
+      {(() => {
           // Read feature toggles from client data
           const featureToggles = client.featureToggles || {
             logoSystem: true,
@@ -225,7 +213,6 @@ export default function ClientDetails() {
             </Tabs>
           );
         })()}
-      </main>
     </div>
   );
 }

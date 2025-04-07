@@ -254,264 +254,87 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Apply the theme CSS variables to the document root
+  // Only run this effect when specific values change
   useEffect(() => {
+    // Skip when loading
     if (isLoading) return;
-
-    // Create a stable reference to avoid unnecessary re-renders
-    const applyTheme = () => {
-      try {
-        // Use draft system for preview if available, otherwise use the main design system
-        const activeSystem = draftDesignSystem || designSystem;
-        if (!activeSystem) return;
-        
-        const root = document.documentElement;
-
-        // Apply border radius
-        root.style.setProperty('--radius', `${activeSystem.theme.radius}rem`);
-
-        // Apply colors
-        Object.entries(activeSystem.colors).forEach(([key, value]) => {
-          try {
-            // Convert hex colors to HSL for better compatibility with shadcn-ui
-            if (isHexColor(value)) {
-              // If the color is in hex format, convert it to HSL
-              root.style.setProperty(`--${key}`, hexToHSL(value));
-            } else if (value.startsWith('hsl(')) {
-              // If it's already in HSL format, extract the values without nesting
-              // Extract the HSL values (h, s, l) from "hsl(205, 100%, 50%)" format
-              const hslMatch = value.match(/hsl\(([^)]+)\)/);
-              if (hslMatch && hslMatch[1]) {
-                root.style.setProperty(`--${key}`, hslMatch[1]);
+    
+    const activeSystem = draftDesignSystem || designSystem;
+    if (!activeSystem) return;
+    
+    // Create a reference to document.documentElement to avoid accessing it repeatedly
+    const root = document.documentElement;
+    
+    // Apply only critical theme settings
+    try {
+      // Apply border radius
+      root.style.setProperty('--radius', `${activeSystem.theme.radius}rem`);
+      
+      // Apply primary color
+      if (activeSystem.theme.primary) {
+        if (activeSystem.theme.primary.startsWith('#')) {
+          root.style.setProperty('--primary', hexToHSL(activeSystem.theme.primary));
+        } else if (activeSystem.theme.primary.startsWith('hsl(')) {
+          const hslMatch = activeSystem.theme.primary.match(/hsl\(([^)]+)\)/);
+          if (hslMatch && hslMatch[1]) {
+            root.style.setProperty('--primary', hslMatch[1]);
+          }
+        }
+      }
+      
+      // Apply dark/light mode
+      if (activeSystem.theme.appearance === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      
+      // Apply typography
+      if (activeSystem.typography.primary) {
+        root.style.setProperty('--font-sans', activeSystem.typography.primary);
+      }
+      if (activeSystem.typography.heading) {
+        root.style.setProperty('--font-heading', activeSystem.typography.heading);
+      }
+      
+      // Apply theme colors
+      const colors = activeSystem.colors;
+      if (colors) {
+        Object.entries(colors).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            try {
+              if (value.startsWith('#')) {
+                root.style.setProperty(`--${key}`, hexToHSL(value));
+              } else if (value.startsWith('hsl(')) {
+                const hslMatch = value.match(/hsl\(([^)]+)\)/);
+                if (hslMatch && hslMatch[1]) {
+                  root.style.setProperty(`--${key}`, hslMatch[1]);
+                }
               } else {
                 root.style.setProperty(`--${key}`, value);
               }
-            } else {
-              root.style.setProperty(`--${key}`, value);
+            } catch (err) {
+              console.error(`Error setting color property --${key}:`, err);
             }
-          } catch (err) {
-            console.error(`Error setting color property --${key}:`, err);
           }
         });
-
-        // Make sure primary color is set properly
-        if (activeSystem.theme.primary) {
-          try {
-            if (isHexColor(activeSystem.theme.primary)) {
-              // If primary is in hex format, convert it to HSL
-              root.style.setProperty('--primary', hexToHSL(activeSystem.theme.primary));
-            } else if (activeSystem.theme.primary.startsWith('hsl(')) {
-              // If it's already in HSL format, extract the values without nesting
-              const hslMatch = activeSystem.theme.primary.match(/hsl\(([^)]+)\)/);
-              if (hslMatch && hslMatch[1]) {
-                root.style.setProperty('--primary', hslMatch[1]);
-              } else {
-                root.style.setProperty('--primary', activeSystem.theme.primary);
-              }
-            } else {
-              root.style.setProperty('--primary', activeSystem.theme.primary);
-            }
-          } catch (err) {
-            console.error('Error setting primary color:', err);
-          }
-        }
-
-        // Apply animation settings
-        let animationSpeed = '0s';
-        switch (activeSystem.theme.animation) {
-          case 'none':
-            animationSpeed = '0s';
-            break;
-          case 'minimal':
-            animationSpeed = '0.1s';
-            break;
-          case 'smooth':
-            animationSpeed = '0.2s';
-            break;
-          case 'bounce':
-            animationSpeed = '0.3s';
-            break;
-        }
-        root.style.setProperty('--transition', animationSpeed);
-
-        // Apply typography
-        if (activeSystem.typography.primary) {
-          root.style.setProperty('--font-sans', activeSystem.typography.primary);
-        }
-        if (activeSystem.typography.heading) {
-          root.style.setProperty('--font-heading', activeSystem.typography.heading);
-        }
-
-        // Apply heading scale if available in typography settings
-        try {
-          const typographySettings = localStorage.getItem('typographySettings');
-          if (typographySettings) {
-            const settings = JSON.parse(typographySettings);
-            if (settings.headingScale) {
-              const baseHeadingSize = 2.5; // Base size for h1 in rem
-              const scale = settings.headingScale;
-              root.style.setProperty('--heading-1-size', `${baseHeadingSize * scale}rem`);
-              root.style.setProperty('--heading-2-size', `${(baseHeadingSize * 0.8) * scale}rem`);
-              root.style.setProperty('--heading-3-size', `${(baseHeadingSize * 0.6) * scale}rem`);
-            }
-          }
-        } catch (error) {
-          console.error('Error applying typography settings:', error);
-        }
-
-        // Apply extended typography settings if available
-        if (activeSystem.typography_extended) {
-          Object.entries(activeSystem.typography_extended).forEach(([key, value]) => {
-            try {
-              // Convert from snake_case to kebab-case for CSS variables
-              const cssVarName = key.replace(/_/g, '-');
-              root.style.setProperty(`--${cssVarName}`, String(value));
-            } catch (err) {
-              console.error(`Error setting typography property --${key}:`, err);
-            }
-          });
-        }
-
-        // Apply raw tokens if available
-        if (activeSystem.raw_tokens) {
-          try {
-            // Apply default unit
-            if (activeSystem.raw_tokens.default_unit) {
-              root.style.setProperty('--default-unit', activeSystem.raw_tokens.default_unit);
-            }
-
-            // Apply spacing tokens
-            if (activeSystem.raw_tokens.spacing) {
-              Object.entries(activeSystem.raw_tokens.spacing).forEach(([key, value]) => {
-                try {
-                  // Transform from naming like "spacing_xs" to CSS variable naming "spacing-xs"
-                  const cssVarName = key.replace(/_/g, '-');
-                  const defaultUnit = activeSystem.raw_tokens?.default_unit || 'rem';
-                  root.style.setProperty(`--${cssVarName}`, `${value}${defaultUnit}`);
-                } catch (err) {
-                  console.error(`Error setting spacing property --${key}:`, err);
-                }
-              });
-            }
-
-            // Apply radius tokens
-            if (activeSystem.raw_tokens.radius) {
-              Object.entries(activeSystem.raw_tokens.radius).forEach(([key, value]) => {
-                try {
-                  const cssVarName = key.replace(/_/g, '-');
-                  root.style.setProperty(`--${cssVarName}`, `${value}px`);
-                } catch (err) {
-                  console.error(`Error setting radius property --${key}:`, err);
-                }
-              });
-            }
-
-            // Apply transition tokens
-            if (activeSystem.raw_tokens.transition) {
-              Object.entries(activeSystem.raw_tokens.transition).forEach(([key, value]) => {
-                try {
-                  const cssVarName = key.replace(/_/g, '-');
-                  if (typeof value === 'number') {
-                    root.style.setProperty(`--${cssVarName}`, `${value}ms`);
-                  } else {
-                    root.style.setProperty(`--${cssVarName}`, String(value));
-                  }
-                } catch (err) {
-                  console.error(`Error setting transition property --${key}:`, err);
-                }
-              });
-            }
-
-            // Apply border tokens
-            if (activeSystem.raw_tokens.border) {
-              Object.entries(activeSystem.raw_tokens.border).forEach(([key, value]) => {
-                try {
-                  const cssVarName = key.replace(/_/g, '-');
-                  root.style.setProperty(`--${cssVarName}`, String(value));
-                } catch (err) {
-                  console.error(`Error setting border property --${key}:`, err);
-                }
-              });
-            }
-
-            // Apply raw color tokens
-            if (activeSystem.raw_tokens.colors) {
-              try {
-                if (activeSystem.raw_tokens.colors.brand) {
-                  Object.entries(activeSystem.raw_tokens.colors.brand).forEach(([key, value]) => {
-                    try {
-                      const cssVarName = `color-brand-${key.replace(/_/g, '-')}`;
-                      root.style.setProperty(`--${cssVarName}`, value);
-                    } catch (err) {
-                      console.error(`Error setting brand color property --color-brand-${key}:`, err);
-                    }
-                  });
-                }
-
-                if (activeSystem.raw_tokens.colors.neutral) {
-                  Object.entries(activeSystem.raw_tokens.colors.neutral).forEach(([key, value]) => {
-                    try {
-                      const cssVarName = `color-neutral-${key.replace(/_/g, '-')}`;
-                      root.style.setProperty(`--${cssVarName}`, value);
-                    } catch (err) {
-                      console.error(`Error setting neutral color property --color-neutral-${key}:`, err);
-                    }
-                  });
-                }
-
-                if (activeSystem.raw_tokens.colors.interactive) {
-                  Object.entries(activeSystem.raw_tokens.colors.interactive).forEach(([key, value]) => {
-                    try {
-                      const cssVarName = `color-interactive-${key.replace(/_/g, '-')}`;
-                      root.style.setProperty(`--${cssVarName}`, value);
-                    } catch (err) {
-                      console.error(`Error setting interactive color property --color-interactive-${key}:`, err);
-                    }
-                  });
-                }
-              } catch (err) {
-                console.error('Error applying raw color tokens:', err);
-              }
-            }
-          } catch (err) {
-            console.error('Error applying raw tokens:', err);
-          }
-        }
-
-        // Apply appearance (light/dark mode)
-        if (activeSystem.theme.appearance === 'dark') {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
-
-        // Only log when design system changes, not on every render
-        console.log('Theme applied:', activeSystem);
-      } catch (error) {
-        console.error('Error applying theme:', error);
       }
-    };
-    
-    // Call the function
-    applyTheme();
-    
+    } catch (error) {
+      console.error("Error applying theme:", error);
+    }
+  // Use specific primitive values that, when changed, should trigger a re-render
   }, [
     isLoading,
-    // Only check for specific properties instead of stringifying entire objects
-    designSystem?.theme?.variant,
     designSystem?.theme?.primary,
-    designSystem?.theme?.appearance,
     designSystem?.theme?.radius,
-    designSystem?.theme?.animation,
+    designSystem?.theme?.appearance,
     designSystem?.typography?.primary,
     designSystem?.typography?.heading,
-    // Use a stable identifier for draftDesignSystem
-    draftDesignSystem?.theme?.variant,
     draftDesignSystem?.theme?.primary,
-    draftDesignSystem?.theme?.appearance,
     draftDesignSystem?.theme?.radius,
-    draftDesignSystem?.theme?.animation,
-    draftDesignSystem?.typography?.primary,
-    draftDesignSystem?.typography?.heading,
+    draftDesignSystem?.theme?.appearance,
+    draftDesignSystem?.typography?.primary, 
+    draftDesignSystem?.typography?.heading
   ]);
 
   // Function to update theme settings (and persist to API)
