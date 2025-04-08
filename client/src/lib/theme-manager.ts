@@ -18,6 +18,8 @@ export interface DesignSystem {
   theme: {
     variant: 'professional' | 'tint' | 'vibrant';
     primary: string;
+    secondary?: string;
+    tertiary?: string;
     appearance: 'light' | 'dark' | 'system';
     radius: number;
     animation: 'none' | 'minimal' | 'smooth' | 'bounce';
@@ -27,6 +29,7 @@ export interface DesignSystem {
     heading: string;
   };
   colors: {
+    // Basic colors
     primary: string;
     background: string;
     foreground: string;
@@ -40,6 +43,70 @@ export interface DesignSystem {
     'destructive-foreground': string;
     border: string;
     ring: string;
+    
+    // Material Design System Colors
+    // Primary color variants
+    'primary-tint-1'?: string; // 80% lighter
+    'primary-tint-2'?: string; // 90% lighter
+    'primary-shade-1'?: string; // 80% darker
+    'primary-shade-2'?: string; // 90% darker
+    'primary-container'?: string; // Container variant
+    'on-primary'?: string; // Text/icons on primary
+    'on-primary-container'?: string; // Text/icons on primary container
+    
+    // Secondary color variants (if secondary color exists)
+    'secondary'?: string;
+    'secondary-tint-1'?: string;
+    'secondary-tint-2'?: string;
+    'secondary-shade-1'?: string;
+    'secondary-shade-2'?: string;
+    'secondary-container'?: string;
+    'on-secondary'?: string;
+    'on-secondary-container'?: string;
+    
+    // Tertiary color variants (if tertiary color exists)
+    'tertiary'?: string;
+    'tertiary-tint-1'?: string;
+    'tertiary-tint-2'?: string;
+    'tertiary-shade-1'?: string;
+    'tertiary-shade-2'?: string;
+    'tertiary-container'?: string;
+    'on-tertiary'?: string;
+    'on-tertiary-container'?: string;
+    
+    // Neutral palette (11 shades from light to dark)
+    'neutral-0'?: string; // Lightest - white
+    'neutral-10'?: string;
+    'neutral-20'?: string;
+    'neutral-30'?: string;
+    'neutral-40'?: string;
+    'neutral-50'?: string; // Middle gray
+    'neutral-60'?: string;
+    'neutral-70'?: string;
+    'neutral-80'?: string;
+    'neutral-90'?: string;
+    'neutral-100'?: string; // Darkest - black
+    
+    // Interactive/System colors
+    'error'?: string;
+    'error-container'?: string;
+    'on-error'?: string;
+    'on-error-container'?: string;
+    
+    'success'?: string;
+    'success-container'?: string;
+    'on-success'?: string;
+    'on-success-container'?: string;
+    
+    'warning'?: string;
+    'warning-container'?: string;
+    'on-warning'?: string;
+    'on-warning-container'?: string;
+    
+    // Dark mode specific colors
+    'dark-background'?: string;
+    'dark-surface'?: string;
+    'dark-on-surface'?: string;
   };
   typography_extended?: {
     font_family_base?: string;
@@ -179,7 +246,7 @@ class ThemeManager {
     }
 
     try {
-      console.log('Updating draft theme:', newTheme);
+      console.log('Updating draft theme');
       
       // Deep merge the changes into the draft theme
       if (newTheme.theme) {
@@ -298,10 +365,9 @@ class ThemeManager {
       }
       
       // Notify subscribers of the draft change
+      // We're removing the direct applyTheme call to break the circular dependency
+      // The React hook will handle applying the theme to the DOM via its useEffect
       this.notify('draft-update', this.draftTheme);
-      
-      // Apply the draft theme to the DOM
-      this.applyTheme();
       
     } catch (error) {
       console.error('Error updating draft theme:', error);
@@ -343,98 +409,294 @@ class ThemeManager {
   resetDraftChanges() {
     if (this.currentTheme) {
       this.draftTheme = { ...this.currentTheme };
+      // Only notify subscribers, the React hook will handle the DOM updates
       this.notify('draft-update', this.draftTheme);
-      this.applyTheme();
     }
   }
 
-  // Apply theme to DOM
+  // Variable to store the timeout ID for debouncing
+  private applyThemeTimeout: NodeJS.Timeout | null = null;
+
+  // Apply theme to DOM with debounce to prevent maximum update depth issues
   applyTheme() {
-    // Use the draft theme if available, otherwise use current theme
-    const activeTheme = this.draftTheme || this.currentTheme;
-    if (!activeTheme) return;
-    
-    // Create a snapshot for comparison to prevent unnecessary updates
-    const snapshot = JSON.stringify({
-      primary: activeTheme.theme.primary,
-      variant: activeTheme.theme.variant,
-      appearance: activeTheme.theme.appearance,
-      radius: activeTheme.theme.radius,
-      animation: activeTheme.theme.animation,
-      typography: activeTheme.typography
-    });
-    
-    // If nothing changed, exit early
-    if (snapshot === this.lastAppliedTheme) return;
-    
-    console.log('Applying theme changes to DOM');
-    this.lastAppliedTheme = snapshot;
-    
-    // Get reference to document root
-    const root = document.documentElement;
-    
-    try {
-      // Apply border radius
-      root.style.setProperty('--radius', `${activeTheme.theme.radius}rem`);
-      
-      // Apply animation settings
-      const animationSettings = {
-        'none': '0s',
-        'minimal': '0.1s',
-        'smooth': '0.2s',
-        'bounce': '0.3s'
-      };
-      root.style.setProperty('--transition', animationSettings[activeTheme.theme.animation] || '0.2s');
-      
-      // Apply primary color and variants
-      if (activeTheme.theme.primary) {
-        const primaryHsl = this.hexToHSL(activeTheme.theme.primary);
-        root.style.setProperty('--primary', primaryHsl.hslString);
-        
-        // Add primary light variant
-        root.style.setProperty(
-          '--primary-light', 
-          `${primaryHsl.h} ${Math.min(100, primaryHsl.s + 10)}% ${Math.min(100, primaryHsl.l + 15)}%`
-        );
-        
-        // Add contrast text color for primary
-        root.style.setProperty(
-          '--primary-foreground', 
-          primaryHsl.l > 60 ? '240 10% 3.9%' : '0 0% 98%'
-        );
-        
-        // Apply dark/light mode
-        if (activeTheme.theme.appearance === 'dark') {
-          root.classList.add('dark');
-          
-          // Apply dark mode overrides
-          root.style.setProperty('--background', '240 10% 3.9%');
-          root.style.setProperty('--foreground', '0 0% 98%');
-          root.style.setProperty('--card', '240 10% 3.9%');
-          root.style.setProperty('--card-foreground', '0 0% 98%');
-          root.style.setProperty('--muted', '240 3.7% 15.9%');
-          root.style.setProperty('--muted-foreground', '240 5% 64.9%');
-        } else {
-          root.classList.remove('dark');
-          
-          // Apply variant-specific colors
-          Object.entries(activeTheme.colors).forEach(([key, value]) => {
-            this.setCssColorProperty(`--${key}`, value);
-          });
-        }
-      }
-      
-      // Apply typography
-      if (activeTheme.typography.primary) {
-        root.style.setProperty('--font-sans', activeTheme.typography.primary);
-      }
-      if (activeTheme.typography.heading) {
-        root.style.setProperty('--font-heading', activeTheme.typography.heading);
-      }
-      
-    } catch (error) {
-      console.error('Error applying theme to DOM:', error);
+    // Clear any pending timeout
+    if (this.applyThemeTimeout) {
+      clearTimeout(this.applyThemeTimeout);
     }
+    
+    // Debounce the theme application by 50ms
+    this.applyThemeTimeout = setTimeout(() => {
+      // Use the draft theme if available, otherwise use current theme
+      const activeTheme = this.draftTheme || this.currentTheme;
+      if (!activeTheme) return;
+      
+      // Create a snapshot for comparison to prevent unnecessary updates
+      const snapshot = JSON.stringify({
+        primary: activeTheme.theme.primary,
+        secondary: activeTheme.theme.secondary,
+        tertiary: activeTheme.theme.tertiary,
+        variant: activeTheme.theme.variant,
+        appearance: activeTheme.theme.appearance,
+        radius: activeTheme.theme.radius,
+        animation: activeTheme.theme.animation,
+        typography: activeTheme.typography
+      });
+      
+      // If nothing changed, exit early
+      if (snapshot === this.lastAppliedTheme) return;
+      
+      console.log('Applying theme changes to DOM');
+      this.lastAppliedTheme = snapshot;
+      
+      // Get reference to document root
+      const root = document.documentElement;
+      
+      try {
+        // Apply border radius
+        root.style.setProperty('--radius', `${activeTheme.theme.radius}rem`);
+        
+        // Apply animation settings
+        const animationSettings = {
+          'none': '0s',
+          'minimal': '0.1s',
+          'smooth': '0.2s',
+          'bounce': '0.3s'
+        };
+        
+        const animationValue = activeTheme.theme.animation as keyof typeof animationSettings;
+        root.style.setProperty('--transition', animationSettings[animationValue] || '0.2s');
+        
+        // Apply primary color and variants
+        if (activeTheme.theme.primary) {
+          // Apply the Material Design color system
+          // Convert primary color to HSL
+          const primaryHsl = this.hexToHSL(activeTheme.theme.primary);
+          
+          // Apply the primary color
+          root.style.setProperty('--primary', primaryHsl.hslString);
+          
+          // Apply primary tints and shades
+          if (activeTheme.colors['primary-tint-1']) {
+            this.setCssColorProperty('--primary-tint-1', activeTheme.colors['primary-tint-1']);
+          }
+          
+          if (activeTheme.colors['primary-tint-2']) {
+            this.setCssColorProperty('--primary-tint-2', activeTheme.colors['primary-tint-2']);
+          }
+          
+          if (activeTheme.colors['primary-shade-1']) {
+            this.setCssColorProperty('--primary-shade-1', activeTheme.colors['primary-shade-1']);
+          }
+          
+          if (activeTheme.colors['primary-shade-2']) {
+            this.setCssColorProperty('--primary-shade-2', activeTheme.colors['primary-shade-2']);
+          }
+          
+          // Apply container and on-color variants
+          if (activeTheme.colors['primary-container']) {
+            this.setCssColorProperty('--primary-container', activeTheme.colors['primary-container']);
+          }
+          
+          if (activeTheme.colors['on-primary']) {
+            this.setCssColorProperty('--on-primary', activeTheme.colors['on-primary']);
+          }
+          
+          if (activeTheme.colors['on-primary-container']) {
+            this.setCssColorProperty('--on-primary-container', activeTheme.colors['on-primary-container']);
+          }
+          
+          // Apply secondary color and variants if they exist
+          if (activeTheme.theme.secondary) {
+            // Convert secondary color to HSL
+            const secondaryHsl = this.hexToHSL(activeTheme.theme.secondary);
+            root.style.setProperty('--secondary', secondaryHsl.hslString);
+            
+            // Apply secondary variants
+            if (activeTheme.colors['secondary-tint-1']) {
+              this.setCssColorProperty('--secondary-tint-1', activeTheme.colors['secondary-tint-1']);
+            }
+            
+            if (activeTheme.colors['secondary-tint-2']) {
+              this.setCssColorProperty('--secondary-tint-2', activeTheme.colors['secondary-tint-2']);
+            }
+            
+            if (activeTheme.colors['secondary-shade-1']) {
+              this.setCssColorProperty('--secondary-shade-1', activeTheme.colors['secondary-shade-1']);
+            }
+            
+            if (activeTheme.colors['secondary-shade-2']) {
+              this.setCssColorProperty('--secondary-shade-2', activeTheme.colors['secondary-shade-2']);
+            }
+            
+            // Apply secondary container and on-color variants
+            if (activeTheme.colors['secondary-container']) {
+              this.setCssColorProperty('--secondary-container', activeTheme.colors['secondary-container']);
+            }
+            
+            if (activeTheme.colors['on-secondary']) {
+              this.setCssColorProperty('--on-secondary', activeTheme.colors['on-secondary']);
+            }
+            
+            if (activeTheme.colors['on-secondary-container']) {
+              this.setCssColorProperty('--on-secondary-container', activeTheme.colors['on-secondary-container']);
+            }
+          }
+          
+          // Apply tertiary color and variants if they exist
+          if (activeTheme.theme.tertiary) {
+            // Convert tertiary color to HSL
+            const tertiaryHsl = this.hexToHSL(activeTheme.theme.tertiary);
+            root.style.setProperty('--tertiary', tertiaryHsl.hslString);
+            
+            // Apply tertiary variants
+            if (activeTheme.colors['tertiary-tint-1']) {
+              this.setCssColorProperty('--tertiary-tint-1', activeTheme.colors['tertiary-tint-1']);
+            }
+            
+            if (activeTheme.colors['tertiary-tint-2']) {
+              this.setCssColorProperty('--tertiary-tint-2', activeTheme.colors['tertiary-tint-2']);
+            }
+            
+            if (activeTheme.colors['tertiary-shade-1']) {
+              this.setCssColorProperty('--tertiary-shade-1', activeTheme.colors['tertiary-shade-1']);
+            }
+            
+            if (activeTheme.colors['tertiary-shade-2']) {
+              this.setCssColorProperty('--tertiary-shade-2', activeTheme.colors['tertiary-shade-2']);
+            }
+            
+            // Apply tertiary container and on-color variants
+            if (activeTheme.colors['tertiary-container']) {
+              this.setCssColorProperty('--tertiary-container', activeTheme.colors['tertiary-container']);
+            }
+            
+            if (activeTheme.colors['on-tertiary']) {
+              this.setCssColorProperty('--on-tertiary', activeTheme.colors['on-tertiary']);
+            }
+            
+            if (activeTheme.colors['on-tertiary-container']) {
+              this.setCssColorProperty('--on-tertiary-container', activeTheme.colors['on-tertiary-container']);
+            }
+          }
+          
+          // Apply neutral palette
+          for (let i = 0; i <= 100; i += 10) {
+            const neutralKey = `neutral-${i}` as keyof DesignSystem['colors'];
+            if (activeTheme.colors[neutralKey]) {
+              this.setCssColorProperty(`--${neutralKey}`, activeTheme.colors[neutralKey] as string);
+            }
+          }
+          
+          // Apply interactive system colors
+          // Error colors
+          if (activeTheme.colors['error']) {
+            this.setCssColorProperty('--error', activeTheme.colors['error']);
+          }
+          
+          if (activeTheme.colors['error-container']) {
+            this.setCssColorProperty('--error-container', activeTheme.colors['error-container']);
+          }
+          
+          if (activeTheme.colors['on-error']) {
+            this.setCssColorProperty('--on-error', activeTheme.colors['on-error']);
+          }
+          
+          if (activeTheme.colors['on-error-container']) {
+            this.setCssColorProperty('--on-error-container', activeTheme.colors['on-error-container']);
+          }
+          
+          // Success colors
+          if (activeTheme.colors['success']) {
+            this.setCssColorProperty('--success', activeTheme.colors['success']);
+          }
+          
+          if (activeTheme.colors['success-container']) {
+            this.setCssColorProperty('--success-container', activeTheme.colors['success-container']);
+          }
+          
+          if (activeTheme.colors['on-success']) {
+            this.setCssColorProperty('--on-success', activeTheme.colors['on-success']);
+          }
+          
+          if (activeTheme.colors['on-success-container']) {
+            this.setCssColorProperty('--on-success-container', activeTheme.colors['on-success-container']);
+          }
+          
+          // Warning colors
+          if (activeTheme.colors['warning']) {
+            this.setCssColorProperty('--warning', activeTheme.colors['warning']);
+          }
+          
+          if (activeTheme.colors['warning-container']) {
+            this.setCssColorProperty('--warning-container', activeTheme.colors['warning-container']);
+          }
+          
+          if (activeTheme.colors['on-warning']) {
+            this.setCssColorProperty('--on-warning', activeTheme.colors['on-warning']);
+          }
+          
+          if (activeTheme.colors['on-warning-container']) {
+            this.setCssColorProperty('--on-warning-container', activeTheme.colors['on-warning-container']);
+          }
+          
+          // Apply dark/light mode
+          if (activeTheme.theme.appearance === 'dark') {
+            root.classList.add('dark');
+            
+            // Apply dark mode colors
+            if (activeTheme.colors['dark-background']) {
+              this.setCssColorProperty('--background', activeTheme.colors['dark-background']);
+            } else {
+              // Default dark mode if custom colors not set
+              root.style.setProperty('--background', '240 10% 3.9%');
+            }
+            
+            if (activeTheme.colors['dark-surface']) {
+              this.setCssColorProperty('--card', activeTheme.colors['dark-surface']);
+            } else {
+              root.style.setProperty('--card', '240 10% 3.9%');
+            }
+            
+            if (activeTheme.colors['dark-on-surface']) {
+              this.setCssColorProperty('--foreground', activeTheme.colors['dark-on-surface']);
+              this.setCssColorProperty('--card-foreground', activeTheme.colors['dark-on-surface']);
+            } else {
+              root.style.setProperty('--foreground', '0 0% 98%');
+              root.style.setProperty('--card-foreground', '0 0% 98%');
+            }
+            
+            // Default dark mode styles if not specifically set
+            if (!activeTheme.colors['muted']) {
+              root.style.setProperty('--muted', '240 3.7% 15.9%');
+            }
+            
+            if (!activeTheme.colors['muted-foreground']) {
+              root.style.setProperty('--muted-foreground', '240 5% 64.9%');
+            }
+          } else {
+            root.classList.remove('dark');
+            
+            // Apply all colors from the theme when in light mode
+            Object.entries(activeTheme.colors).forEach(([key, value]) => {
+              if (typeof value === 'string' && !key.startsWith('dark-')) {
+                this.setCssColorProperty(`--${key}`, value);
+              }
+            });
+          }
+        }
+        
+        // Apply typography
+        if (activeTheme.typography.primary) {
+          root.style.setProperty('--font-sans', activeTheme.typography.primary);
+        }
+        if (activeTheme.typography.heading) {
+          root.style.setProperty('--font-heading', activeTheme.typography.heading);
+        }
+        
+      } catch (error) {
+        console.error('Error applying theme to DOM:', error);
+      }
+    }, 50);
   }
 
   // Helper method to check if a string is a hex color
@@ -502,7 +764,7 @@ class ThemeManager {
     return `hsl(${h}, ${s}%, ${newL}%)`;
   }
 
-  // Generate variant-specific colors based on primary color
+  // Generate variant-specific colors based on primary color and Material Design principles
   private generateVariantColors(
     primaryColor: string, 
     variant: 'professional' | 'tint' | 'vibrant'
@@ -515,34 +777,85 @@ class ThemeManager {
     // Extract color components
     const { h, s, l } = this.hexToHSL(primaryColor);
     
-    // Create base theme colors that will be common across all variants
+    // Generate base result with primary color
     let colors: Record<string, string> = {
       primary: primaryColor,
       ring: primaryColor,
     };
     
-    // Apply variant-specific transformations
+    // Generate primary color variants according to Material Design principles
+    colors['primary-tint-1'] = this.generateTint(primaryColor, 0.8); // 80% lighter
+    colors['primary-tint-2'] = this.generateTint(primaryColor, 0.9); // 90% lighter
+    colors['primary-shade-1'] = this.generateShade(primaryColor, 0.8); // 80% darker
+    colors['primary-shade-2'] = this.generateShade(primaryColor, 0.9); // 90% darker
+    
+    // Generate on-color variants for text/icons
+    colors['on-primary'] = l > 60 ? '#000000' : '#ffffff';
+    
+    // Generate primary container colors
+    // For container variants, we use a more desaturated, lighter version of the primary
+    colors['primary-container'] = `hsl(${h}, ${Math.max(10, s * 0.5)}%, ${Math.min(95, l * 1.3)}%)`;
+    colors['on-primary-container'] = l > 70 ? '#000000' : primaryColor;
+    
+    // Generate neutral palette (11 shades from white to black)
+    const neutralHue = h; // Use the same hue as primary but very desaturated
+    const neutralSaturation = Math.min(s * 0.1, 5); // Very desaturated
+    
+    for (let i = 0; i <= 100; i += 10) {
+      // Neutral-0 is white, Neutral-100 is black
+      const neutralLightness = 100 - i;
+      colors[`neutral-${i}`] = `hsl(${neutralHue}, ${neutralSaturation}%, ${neutralLightness}%)`;
+    }
+    
+    // Set up error system colors
+    const errorHue = 0; // Red
+    colors['error'] = `hsl(${errorHue}, 90%, 60%)`;
+    colors['error-container'] = `hsl(${errorHue}, 80%, 90%)`;
+    colors['on-error'] = '#ffffff';
+    colors['on-error-container'] = `hsl(${errorHue}, 90%, 30%)`;
+    
+    // Set up success system colors
+    const successHue = 120; // Green
+    colors['success'] = `hsl(${successHue}, 70%, 40%)`;
+    colors['success-container'] = `hsl(${successHue}, 60%, 90%)`;
+    colors['on-success'] = '#ffffff';
+    colors['on-success-container'] = `hsl(${successHue}, 70%, 20%)`;
+    
+    // Set up warning system colors
+    const warningHue = 40; // Orange/Yellow
+    colors['warning'] = `hsl(${warningHue}, 90%, 50%)`;
+    colors['warning-container'] = `hsl(${warningHue}, 90%, 90%)`;
+    colors['on-warning'] = '#000000';
+    colors['on-warning-container'] = `hsl(${warningHue}, 90%, 30%)`;
+    
+    // Apply variant-specific styles
     switch (variant) {
       case 'professional':
-        // Professional: Subtle, low-saturation, corporate look
+        // Professional: Subtle, low-saturation, corporate look with Material Design principles
         colors = {
           ...colors,
           background: '#ffffff',
           foreground: '#000000',
-          muted: '#f1f5f9',
-          'muted-foreground': '#64748b',
+          muted: colors['neutral-10'],
+          'muted-foreground': colors['neutral-60'],
           card: '#ffffff',
           'card-foreground': '#000000',
-          accent: '#f1f5f9',
+          accent: colors['primary-tint-1'],
           'accent-foreground': '#0f172a',
-          destructive: '#ef4444',
-          'destructive-foreground': '#ffffff',
-          border: '#e2e8f0',
+          destructive: colors['error'],
+          'destructive-foreground': colors['on-error'],
+          border: colors['neutral-20'],
+          
+          // Dark mode specific colors
+          'dark-background': colors['neutral-90'],
+          'dark-surface': colors['neutral-80'],
+          'dark-on-surface': colors['neutral-20'],
         };
         break;
         
       case 'tint':
         // Tint: Subtle colorization of UI elements with the primary color
+        // with Material Design principles for color harmony
         colors = {
           ...colors,
           background: `hsl(${h}, 20%, 98%)`,
@@ -551,16 +864,52 @@ class ThemeManager {
           'muted-foreground': `hsl(${h}, 30%, 40%)`,
           card: `hsl(${h}, 5%, 100%)`,
           'card-foreground': `hsl(${h}, 80%, 10%)`,
-          accent: `hsl(${h}, 15%, 92%)`,
+          accent: colors['primary-tint-2'],
           'accent-foreground': `hsl(${h}, 80%, 10%)`,
-          destructive: '#ef4444',
-          'destructive-foreground': '#ffffff',
+          destructive: colors['error'],
+          'destructive-foreground': colors['on-error'],
           border: `hsl(${h}, 15%, 92%)`,
+          
+          // Dark mode has slight color tints rather than pure gray
+          'dark-background': `hsl(${h}, ${Math.min(s * 0.2, 10)}%, 10%)`,
+          'dark-surface': `hsl(${h}, ${Math.min(s * 0.2, 10)}%, 15%)`,
+          'dark-on-surface': `hsl(${h}, ${Math.min(s * 0.2, 10)}%, 90%)`,
         };
         break;
         
       case 'vibrant':
-        // Vibrant: High contrast, saturated colors
+        // Vibrant: High contrast, saturated colors with Material Design color harmony
+        // Create complementary color for accent (opposite on the color wheel)
+        const complementaryHue = (h + 180) % 360;
+        
+        // Secondary and tertiary colors based on triadic color scheme
+        const triadicHue1 = (h + 120) % 360;
+        const triadicHue2 = (h + 240) % 360;
+        
+        colors['secondary'] = `hsl(${triadicHue1}, ${Math.min(s * 0.9, 70)}%, ${l}%)`;
+        colors['tertiary'] = `hsl(${triadicHue2}, ${Math.min(s * 0.9, 70)}%, ${l}%)`;
+        
+        // Generate secondary and tertiary variants
+        colors['secondary-tint-1'] = this.generateTint(colors['secondary'], 0.8);
+        colors['secondary-tint-2'] = this.generateTint(colors['secondary'], 0.9);
+        colors['secondary-shade-1'] = this.generateShade(colors['secondary'], 0.8);
+        colors['secondary-shade-2'] = this.generateShade(colors['secondary'], 0.9);
+        
+        colors['tertiary-tint-1'] = this.generateTint(colors['tertiary'], 0.9);
+        colors['tertiary-tint-2'] = this.generateTint(colors['tertiary'], 0.8);
+        colors['tertiary-shade-1'] = this.generateShade(colors['tertiary'], 0.8);
+        colors['tertiary-shade-2'] = this.generateShade(colors['tertiary'], 0.9);
+        
+        // Container variants
+        colors['secondary-container'] = `hsl(${triadicHue1}, ${Math.max(10, s * 0.5)}%, ${Math.min(95, l * 1.3)}%)`;
+        colors['on-secondary-container'] = l > 70 ? '#000000' : colors['secondary'];
+        
+        colors['tertiary-container'] = `hsl(${triadicHue2}, ${Math.max(10, s * 0.5)}%, ${Math.min(95, l * 1.3)}%)`;
+        colors['on-tertiary-container'] = l > 70 ? '#000000' : colors['tertiary'];
+        
+        colors['on-secondary'] = l > 60 ? '#000000' : '#ffffff';
+        colors['on-tertiary'] = l > 60 ? '#000000' : '#ffffff';
+        
         colors = {
           ...colors,
           background: `hsl(${h}, 10%, 95%)`,
@@ -569,11 +918,16 @@ class ThemeManager {
           'muted-foreground': `hsl(${h}, 60%, 30%)`,
           card: `#ffffff`,
           'card-foreground': `hsl(${h}, 90%, 10%)`,
-          accent: `hsl(${h}, 80%, 90%)`,
+          accent: `hsl(${complementaryHue}, ${Math.min(s * 0.8, 70)}%, ${l}%)`,
           'accent-foreground': `hsl(${h}, 90%, 10%)`,
-          destructive: '#ff4444',
-          'destructive-foreground': '#ffffff',
+          destructive: colors['error'],
+          'destructive-foreground': colors['on-error'],
           border: `hsl(${h}, 30%, 85%)`,
+          
+          // Dark mode specific colors with vibrant accents
+          'dark-background': colors['neutral-90'],
+          'dark-surface': colors['neutral-80'],
+          'dark-on-surface': colors['neutral-10'],
         };
         break;
     }
