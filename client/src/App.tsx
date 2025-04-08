@@ -1,106 +1,68 @@
-import { Switch, Route, useLocation, Redirect } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import NotFound from "@/pages/not-found";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { useLocation, Route, Switch, Redirect } from "wouter";
 import Login from "@/pages/login";
-import Dashboard from "@/pages/dashboard";
-import Instances from "@/pages/admin/instances";
-import ClientDetails from "@/pages/clients/[id]";
-import Clients from "@/pages/clients";
-import NewClientPage from "@/pages/clients/new";
-import UsersPage from "@/pages/users";
 import SignupPage from "@/pages/signup";
-import ResetPassword from "@/pages/reset-password";
+import Dashboard from "@/pages/dashboard";
+import Users from "@/pages/users";
 import DesignBuilder from "@/pages/design-builder";
-import { useQuery } from "@tanstack/react-query";
-import { User } from "@shared/schema";
-// Theme manager is initialized automatically
-import { AppLayout } from "@/components/layout/app-layout";
-
-function ProtectedRoute({ 
-  component: Component,
-  adminOnly = false,
-}: { 
-  component: React.ComponentType;
-  adminOnly?: boolean;
-}) {
-  // Temporarily return the component directly for development
-  return <Component />;
-}
+import DesignEditor from "@/pages/design-editor";
+import Instances from "@/pages/admin/instances";
+import NewClientPage from "@/pages/clients/new";
+import ClientDetails from "@/pages/clients/[id]";
+import NotFound from "@/pages/not-found";
+import { ProtectedRoute } from "@/components/auth/auth-button";
+import AppLayout from "@/components/layout/app-layout";
 
 function Router() {
   const [location] = useLocation();
 
-  // Always redirect to dashboard from root
   if (location === "/") {
     return <Redirect to="/dashboard" />;
   }
-  
-  // Define if a route should use the AppLayout with sidebar
-  const isProtectedRoute = (path: string) => {
-    const publicRoutes = ['/login', '/signup', '/reset-password'];
-    return !publicRoutes.includes(path);
-  };
-  
-  // Get current page for transition key
-  const getPageKey = () => {
-    return location;
-  };
-  
+
   return (
-    <Switch location={location} key={location}>
-      {/* Public routes without sidebar */}
-      <Route path="/login">
-        <Login />
-      </Route>
-      <Route path="/signup">
-        <SignupPage />
-      </Route>
-      <Route path="/reset-password">
-        <ResetPassword />
-      </Route>
-      
-      {/* Protected routes with sidebar and page transitions */}
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={SignupPage} />
       <Route path="/dashboard">
-        <AppLayout pageKey={getPageKey()}>
+        <AppLayout pageKey="dashboard">
           <ProtectedRoute component={Dashboard} />
         </AppLayout>
       </Route>
+      <Route path="/design-builder">
+        <AppLayout pageKey="design-builder">
+          <ProtectedRoute component={DesignBuilder} />
+        </AppLayout>
+      </Route>
+      <Route path="/design-editor">
+        <AppLayout pageKey="design-editor">
+          <ProtectedRoute component={DesignEditor} />
+        </AppLayout>
+      </Route>
+      <Route path="/users">
+        <AppLayout pageKey="users">
+          <ProtectedRoute component={Users} adminOnly />
+        </AppLayout>
+      </Route>
       <Route path="/admin/instances">
-        <AppLayout pageKey={getPageKey()}>
+        <AppLayout pageKey="instances">
           <ProtectedRoute component={Instances} adminOnly />
         </AppLayout>
       </Route>
-      <Route path="/clients">
-        <AppLayout pageKey={getPageKey()}>
-          <ProtectedRoute component={Clients} />
-        </AppLayout>
-      </Route>
       <Route path="/clients/new">
-        <AppLayout pageKey={getPageKey()}>
+        <AppLayout pageKey="new-client">
           <ProtectedRoute component={NewClientPage} />
         </AppLayout>
       </Route>
       <Route path="/clients/:id">
-        <AppLayout pageKey={getPageKey()}>
+        <AppLayout pageKey="client-details">
           <ProtectedRoute component={ClientDetails} />
         </AppLayout>
       </Route>
-      <Route path="/users">
-        <AppLayout pageKey={getPageKey()}>
-          <ProtectedRoute component={UsersPage} adminOnly />
-        </AppLayout>
-      </Route>
-      <Route path="/design-builder">
-        <AppLayout pageKey={getPageKey()}>
-          <ProtectedRoute component={DesignBuilder} adminOnly />
-        </AppLayout>
-      </Route>
-      
-      {/* 404 Not Found */}
       <Route>
-        <AppLayout pageKey={getPageKey()}>
+        <AppLayout pageKey="not-found">
           <NotFound />
         </AppLayout>
       </Route>
