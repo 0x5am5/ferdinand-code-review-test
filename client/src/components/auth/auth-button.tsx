@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { signInWithGoogle, signOut } from "@/lib/auth";
+import { auth } from "@/lib/firebase";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
 import { LogIn, LogOut } from "lucide-react";
