@@ -18,11 +18,15 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
-      toast({
-        title: "Welcome!",
-        description: "You have successfully signed in.",
-      });
-      window.location.href = '/dashboard';
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Give Firebase time to complete auth
+      const user = auth.currentUser;
+      if (user) {
+        toast({
+          title: "Welcome!",
+          description: "You have successfully signed in.",
+        });
+        window.location.href = '/dashboard';
+      }
     } catch (error: any) {
       toast({
         title: "Authentication Error",
