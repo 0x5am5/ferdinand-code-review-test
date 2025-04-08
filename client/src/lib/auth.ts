@@ -20,7 +20,7 @@ export async function signInWithGoogle() {
 
     console.log("Authentication completed successfully");
     // Refresh the user data
-    queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/user"] });
   } catch (error: any) {
     console.error("Google sign-in error:", error);
     console.error("Error code:", error.code);
@@ -52,9 +52,10 @@ export async function signInWithGoogle() {
 export async function signOut() {
   try {
     await firebaseSignOut(auth);
+    // Call the logout endpoint to destroy the session
     await apiRequest("POST", "/api/auth/logout", {});
     // Clear the user data from React Query cache
-    queryClient.setQueryData(["/api/auth/me"], null);
+    queryClient.setQueryData(["/api/user"], null);
     // Redirect to login page
     window.location.href = "/login";
   } catch (error: any) {

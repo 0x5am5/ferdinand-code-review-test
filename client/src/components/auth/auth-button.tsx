@@ -12,7 +12,7 @@ interface AuthButtonProps {
 
 export function AuthButton({ collapsed = false }: AuthButtonProps) {
   const { data: user } = useQuery<User>({ 
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/user"],
   });
   const { toast } = useToast();
 

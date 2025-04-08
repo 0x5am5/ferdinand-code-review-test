@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ component: Component, adminOnly = false }: ProtectedRouteProps) {
   const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/auth/me"],
+    queryKey: ["/api/user"],
   });
 
   if (isLoading) {
@@ -26,7 +26,7 @@ export function ProtectedRoute({ component: Component, adminOnly = false }: Prot
     return <Redirect to="/login" />;
   }
 
-  if (adminOnly && !user.isAdmin) {
+  if (adminOnly && !(user.role === 'admin' || user.role === 'super_admin')) {
     return <Redirect to="/dashboard" />;
   }
 

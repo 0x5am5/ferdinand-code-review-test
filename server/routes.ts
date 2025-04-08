@@ -87,6 +87,17 @@ export function registerRoutes(app: Express) {
   app.get("/api/test", (_req, res) => {
     res.json({ message: "API is working" });
   });
+  
+  // Logout endpoint
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Error destroying session:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
 
   // Google Auth endpoint
   app.post("/api/auth/google", async (req, res) => {
