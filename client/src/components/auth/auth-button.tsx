@@ -22,6 +22,7 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
         title: "Welcome!",
         description: "You have successfully signed in.",
       });
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast({
         title: "Authentication Error",
