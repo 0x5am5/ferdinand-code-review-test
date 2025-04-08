@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@/hooks/use-theme-manager";
 import { 
   AlertDialog,
   AlertDialogAction,

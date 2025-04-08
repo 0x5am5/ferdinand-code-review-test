@@ -15,7 +15,7 @@ import ResetPassword from "@/pages/reset-password";
 import DesignBuilder from "@/pages/design-builder";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
-import { ThemeProvider } from "./contexts/ThemeContext";
+// Theme manager is initialized automatically
 import { AppLayout } from "@/components/layout/app-layout";
 
 function ProtectedRoute({ 
@@ -111,10 +111,8 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <Router />
-        <Toaster />
-      </ThemeProvider>
+      <Router />
+      <Toaster />
     </QueryClientProvider>
   );
 }

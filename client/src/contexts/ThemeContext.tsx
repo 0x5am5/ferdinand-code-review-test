@@ -176,7 +176,7 @@ export interface ThemeContextType {
   isLoading: boolean;
 }
 
-// Create the context with default values
+// Create and export the context
 export const ThemeContext = createContext<ThemeContextType>({
   designSystem: defaultTheme,
   draftDesignSystem: null,
@@ -186,7 +186,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   isLoading: true
 });
 
-// Export the provider component separately for React Fast Refresh compatibility
+// Export the provider component
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [designSystem, setDesignSystem] = useState<DesignSystem>(defaultTheme);
   const [draftDesignSystem, setDraftDesignSystem] = useState<DesignSystem | null>(null);
@@ -308,25 +308,28 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   // Store a memoized version of the active design system to prevent unnecessary re-renders
   const activeDesignSystemRef = React.useRef<string | null>(null);
   
-  // We use a single useEffect to apply theme changes to the DOM when needed
+  // Store a reference to the current theme snapshot to avoid unnecessary DOM updates
+  const lastAppliedThemeRef = React.useRef<string | null>(null);
+  
+  // Effect to initialize theme when data is loaded
   useEffect(() => {
-    // Don't do anything while data is loading
+    // Only run this effect once when loading completes
+    if (!isLoading) {
+      console.log('Initial theme loading complete, applying theme');
+      applyThemeToDom();
+    }
+  }, [isLoading]);
+  
+  // Separate effect to handle design system changes
+  useEffect(() => {
+    // Skip during loading phase
     if (isLoading) return;
     
-    // Apply initial theme once when loading completes
+    // Apply theme changes when design system changes
     applyThemeToDom();
     
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, 
-      // Using JSON.stringify instead of individual dependencies to prevent over-rendering
-      // while still catching all relevant changes
-      JSON.stringify(designSystem?.theme), 
-      JSON.stringify(designSystem?.typography),
-      JSON.stringify(designSystem?.colors?.primary),
-      JSON.stringify(draftDesignSystem?.theme),
-      JSON.stringify(draftDesignSystem?.typography),
-      JSON.stringify(draftDesignSystem?.colors?.primary)
-  ]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftDesignSystem, designSystem]);
   
   // Apply theme variant transformations based on the selected variant
   const applyThemeVariant = (primaryColor: string, variant: 'professional' | 'tint' | 'vibrant'): Record<string, string> => {
@@ -480,61 +483,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         // Set primary palette variables
         root.style.setProperty('--primary-light', `${primaryHsl.h} ${Math.min(100, primaryHsl.s + 10)}% ${Math.min(100, primaryHsl.l + 15)}%`);
         root.style.setProperty('--primary-foreground', primaryHsl.l > 60 ? '240 10% 3.9%' : '0 0% 98%');
-        
-        // Generate additional colors based on theme variant
-        const variantColors = applyThemeVariant(activeSystem.theme.primary, activeSystem.theme.variant);
-        
-        // Apply dark/light mode with variant-specific colors
-        if (activeSystem.theme.appearance === 'dark') {
-          root.classList.add('dark');
-          // Apply dark mode with variant adjustments
-          // First apply variant colors
-          Object.entries(variantColors).forEach(([key, value]) => {
-            try {
-              if (value.startsWith('#')) {
-                const result = hexToHSL(value);
-                root.style.setProperty(`--${key}`, result.hslString);
-              } else if (value.startsWith('hsl(')) {
-                const hslMatch = value.match(/hsl\(([^)]+)\)/);
-                if (hslMatch && hslMatch[1]) {
-                  root.style.setProperty(`--${key}`, hslMatch[1]);
-                }
-              } else {
-                root.style.setProperty(`--${key}`, value);
-              }
-            } catch (err) {
-              console.error(`Error setting variant color property --${key}:`, err);
-            }
-          });
-          
-          // Then apply specific dark mode overrides
-          root.style.setProperty('--background', '240 10% 3.9%');
-          root.style.setProperty('--foreground', '0 0% 98%');
-          root.style.setProperty('--card', '240 10% 3.9%');
-          root.style.setProperty('--card-foreground', '0 0% 98%');
-          root.style.setProperty('--muted', '240 3.7% 15.9%');
-          root.style.setProperty('--muted-foreground', '240 5% 64.9%');
-        } else {
-          root.classList.remove('dark');
-          // Apply light mode with variant-specific colors
-          Object.entries(variantColors).forEach(([key, value]) => {
-            try {
-              if (value.startsWith('#')) {
-                const result = hexToHSL(value);
-                root.style.setProperty(`--${key}`, result.hslString);
-              } else if (value.startsWith('hsl(')) {
-                const hslMatch = value.match(/hsl\(([^)]+)\)/);
-                if (hslMatch && hslMatch[1]) {
-                  root.style.setProperty(`--${key}`, hslMatch[1]);
-                }
-              } else {
-                root.style.setProperty(`--${key}`, value);
-              }
-            } catch (err) {
-              console.error(`Error setting variant color property --${key}:`, err);
-            }
-          });
-        };
         
         // Generate additional colors based on theme variant
         const variantColors = applyThemeVariant(activeSystem.theme.primary, activeSystem.theme.variant);
@@ -836,6 +784,9 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       // Create a clean copy of the theme to avoid reference issues
       const cleanNewTheme = JSON.parse(JSON.stringify(newTheme));
       
+      // Log the changes being made
+      console.log('Updating draft design system:', cleanNewTheme);
+      
       // Use functional update to ensure we work with the latest state
       setDraftDesignSystem(prevDraft => {
         // Get the current system to work with (draft or main)
@@ -845,12 +796,27 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         // Create a deep copy to avoid mutations
         const updatedSystem = JSON.parse(JSON.stringify(currentSystem));
         
-        // Merge theme properties
+        // Merge theme properties - this is where variant, primary color, appearance, etc. are updated
         if (cleanNewTheme.theme) {
           updatedSystem.theme = { 
             ...updatedSystem.theme, 
             ...cleanNewTheme.theme 
           };
+          
+          // If the variant or primary color changes, update variant-specific colors
+          if (cleanNewTheme.theme.variant || cleanNewTheme.theme.primary) {
+            const newVariant = cleanNewTheme.theme.variant || updatedSystem.theme.variant;
+            const newPrimary = cleanNewTheme.theme.primary || updatedSystem.theme.primary;
+            
+            // Generate variant-specific colors based on new variant/primary combination
+            const variantColors = applyThemeVariant(newPrimary, newVariant);
+            
+            // Merge the variant colors into the system colors
+            updatedSystem.colors = {
+              ...updatedSystem.colors,
+              ...variantColors
+            };
+          }
         }
         
         // Merge colors
@@ -953,6 +919,8 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       });
     } catch (error) {
       console.error('Error updating draft theme:', error);
+      // Fallback to ensure we don't break the UI
+      return;
     }
   };
 
