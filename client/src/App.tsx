@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
@@ -13,7 +14,7 @@ import NewClientPage from "@/pages/clients/new";
 import ClientDetails from "@/pages/clients/[id]";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "@/components/auth/auth-button";
-import AppLayout from "@/components/layout/app-layout";
+import { AppLayout } from "@/components/layout/app-layout";
 
 function Router() {
   const [location] = useLocation();
