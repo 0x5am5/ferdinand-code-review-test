@@ -28,10 +28,10 @@ interface NavItem {
 export const Sidebar: FC = () => {
   const [location] = useLocation();
   const themeContext = useTheme();
-  
+
   // In a real app, you'd get this from the auth context
   const isAdmin = true; // Hardcoded for development
-  
+
   const navItems: NavItem[] = [
     {
       title: "Dashboard",
@@ -56,32 +56,32 @@ export const Sidebar: FC = () => {
       adminOnly: true
     }
   ];
-  
+
   const filteredNavItems = navItems.filter(item => 
     !item.adminOnly || (item.adminOnly && isAdmin)
   );
-  
+
   const isActiveLink = (href: string) => {
     if (href === '/clients' && location.startsWith('/clients/')) {
       return true;
     }
     return location === href;
   };
-  
+
   const handleLogout = () => {
     // Would handle logout in real app
     console.log("Logging out...");
   };
-  
+
   const toggleTheme = async () => {
     if (!themeContext || !themeContext.designSystem || !themeContext.updateDesignSystem) {
       console.error("Theme context not properly initialized");
       return;
     }
-    
+
     const currentAppearance = themeContext.designSystem.theme.appearance;
     const newAppearance = currentAppearance === 'dark' ? 'light' : 'dark';
-    
+
     await themeContext.updateDesignSystem({
       theme: {
         ...themeContext.designSystem.theme,
@@ -89,15 +89,15 @@ export const Sidebar: FC = () => {
       }
     });
   };
-  
+
   const isDarkMode = themeContext?.designSystem?.theme?.appearance === 'dark';
-  
+
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 border-b">
         <h2 className="font-bold">Ferdinand</h2>
       </div>
-      
+
       <ScrollArea className="flex-1 py-4">
         <nav className="px-2 space-y-1">
           {filteredNavItems.map((item) => (
@@ -116,7 +116,7 @@ export const Sidebar: FC = () => {
           ))}
         </nav>
       </ScrollArea>
-      
+
       <div className="border-t p-4 space-y-4">
         <div className="flex items-center space-x-2">
           <Switch 
@@ -126,7 +126,7 @@ export const Sidebar: FC = () => {
           />
           <Label htmlFor="dark-mode">Dark Mode</Label>
         </div>
-        
+
         <div className="flex items-center gap-3 px-3 py-2">
           <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
           <div className="flex-1 min-w-0">
@@ -134,7 +134,7 @@ export const Sidebar: FC = () => {
             <p className="text-xs text-muted-foreground truncate">admin@example.com</p>
           </div>
         </div>
-        
+
         <Button 
           variant="ghost" 
           size="sm" 
