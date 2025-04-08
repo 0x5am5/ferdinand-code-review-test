@@ -186,6 +186,7 @@ export const ThemeContext = createContext<ThemeContextType>({
   isLoading: true
 });
 
+// Export the provider component separately for React Fast Refresh compatibility
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [designSystem, setDesignSystem] = useState<DesignSystem>(defaultTheme);
   const [draftDesignSystem, setDraftDesignSystem] = useState<DesignSystem | null>(null);
@@ -261,104 +262,122 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Store a memoized version of the active design system to prevent unnecessary re-renders
-  const activeDesignSystemRef = React.useRef<DesignSystem | null>(null);
+  const activeDesignSystemRef = React.useRef<string | null>(null);
   
-  // Apply the theme CSS variables to the document root
-  // Use a separate useEffect with useRef to ensure we don't cause infinite updates
+  // We use a single useEffect to apply theme changes to the DOM when needed
   useEffect(() => {
-    // Skip when loading
+    // Don't do anything while data is loading
     if (isLoading) return;
     
-    // Get the current active system (draft or main) 
+    // Apply initial theme once when loading completes
+    applyThemeToDom();
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, 
+      // Using JSON.stringify instead of individual dependencies to prevent over-rendering
+      // while still catching all relevant changes
+      JSON.stringify(designSystem?.theme), 
+      JSON.stringify(designSystem?.typography),
+      JSON.stringify(designSystem?.colors?.primary),
+      JSON.stringify(draftDesignSystem?.theme),
+      JSON.stringify(draftDesignSystem?.typography),
+      JSON.stringify(draftDesignSystem?.colors?.primary)
+  ]);
+  
+  // Extract theme application logic to a separate function to avoid duplicated code
+  const applyThemeToDom = () => {
+    // Get the active design system (draft takes precedence)
     const activeSystem = draftDesignSystem || designSystem;
     if (!activeSystem) return;
     
-    // Check if the design system has changed using a deep comparison
-    const currentSystemJson = JSON.stringify({
-      primary: activeSystem?.theme?.primary,
-      radius: activeSystem?.theme?.radius,
-      appearance: activeSystem?.theme?.appearance,
-      primaryFont: activeSystem?.typography?.primary,
-      headingFont: activeSystem?.typography?.heading
-    });
+    // Create a snapshot of the theme values that affect styling
+    const themeSnapshot = {
+      primary: activeSystem.theme.primary,
+      radius: activeSystem.theme.radius,
+      appearance: activeSystem.theme.appearance,
+      primaryFont: activeSystem.typography.primary,
+      headingFont: activeSystem.typography.heading,
+      variant: activeSystem.theme.variant,
+      animation: activeSystem.theme.animation,
+      background: activeSystem.colors.background,
+      foreground: activeSystem.colors.foreground,
+      card: activeSystem.colors.card,
+      accent: activeSystem.colors.accent,
+      border: activeSystem.colors.border,
+      ring: activeSystem.colors.ring
+    };
     
-    const prevSystemJson = activeDesignSystemRef.current ? JSON.stringify({
-      primary: activeDesignSystemRef.current?.theme?.primary,
-      radius: activeDesignSystemRef.current?.theme?.radius,
-      appearance: activeDesignSystemRef.current?.theme?.appearance,
-      primaryFont: activeDesignSystemRef.current?.typography?.primary,
-      headingFont: activeDesignSystemRef.current?.typography?.heading
-    }) : null;
+    // Convert to JSON for reliable deep comparison
+    const snapshotJson = JSON.stringify(themeSnapshot);
     
-    // Only update if there's an actual change
-    if (currentSystemJson !== prevSystemJson) {
-      console.log('Applying theme changes to DOM');
+    // Skip DOM updates if nothing has changed
+    if (snapshotJson === activeDesignSystemRef.current) return;
+    
+    // Log changes and update our reference value
+    console.log('Applying theme changes to DOM');
+    activeDesignSystemRef.current = snapshotJson;
+    
+    // Create a reference to document.documentElement
+    const root = document.documentElement;
+    
+    // Apply only critical theme settings
+    try {
+      // Apply border radius
+      root.style.setProperty('--radius', `${activeSystem.theme.radius}rem`);
       
-      // Update our reference with the new system
-      activeDesignSystemRef.current = JSON.parse(JSON.stringify(activeSystem));
-      
-      // Create a reference to document.documentElement
-      const root = document.documentElement;
-      
-      // Apply only critical theme settings
-      try {
-        // Apply border radius
-        root.style.setProperty('--radius', `${activeSystem.theme.radius}rem`);
-        
-        // Apply primary color
-        if (activeSystem.theme.primary) {
-          if (activeSystem.theme.primary.startsWith('#')) {
-            root.style.setProperty('--primary', hexToHSL(activeSystem.theme.primary));
-          } else if (activeSystem.theme.primary.startsWith('hsl(')) {
-            const hslMatch = activeSystem.theme.primary.match(/hsl\(([^)]+)\)/);
-            if (hslMatch && hslMatch[1]) {
-              root.style.setProperty('--primary', hslMatch[1]);
-            }
+      // Apply primary color
+      if (activeSystem.theme.primary) {
+        if (activeSystem.theme.primary.startsWith('#')) {
+          root.style.setProperty('--primary', hexToHSL(activeSystem.theme.primary));
+        } else if (activeSystem.theme.primary.startsWith('hsl(')) {
+          const hslMatch = activeSystem.theme.primary.match(/hsl\(([^)]+)\)/);
+          if (hslMatch && hslMatch[1]) {
+            root.style.setProperty('--primary', hslMatch[1]);
           }
         }
-        
-        // Apply dark/light mode
-        if (activeSystem.theme.appearance === 'dark') {
-          root.classList.add('dark');
-        } else {
-          root.classList.remove('dark');
-        }
-        
-        // Apply typography
-        if (activeSystem.typography.primary) {
-          root.style.setProperty('--font-sans', activeSystem.typography.primary);
-        }
-        if (activeSystem.typography.heading) {
-          root.style.setProperty('--font-heading', activeSystem.typography.heading);
-        }
-        
-        // Apply theme colors
-        const colors = activeSystem.colors;
-        if (colors) {
-          Object.entries(colors).forEach(([key, value]) => {
-            if (typeof value === 'string') {
-              try {
-                if (value.startsWith('#')) {
-                  root.style.setProperty(`--${key}`, hexToHSL(value));
-                } else if (value.startsWith('hsl(')) {
-                  const hslMatch = value.match(/hsl\(([^)]+)\)/);
-                  if (hslMatch && hslMatch[1]) {
-                    root.style.setProperty(`--${key}`, hslMatch[1]);
-                  }
-                } else {
-                  root.style.setProperty(`--${key}`, value);
-                }
-              } catch (err) {
-                console.error(`Error setting color property --${key}:`, err);
-              }
-            }
-          });
-        }
-      } catch (error) {
-        console.error("Error applying theme:", error);
       }
+      
+      // Apply dark/light mode
+      if (activeSystem.theme.appearance === 'dark') {
+        root.classList.add('dark');
+      } else {
+        root.classList.remove('dark');
+      }
+      
+      // Apply typography
+      if (activeSystem.typography.primary) {
+        root.style.setProperty('--font-sans', activeSystem.typography.primary);
+      }
+      if (activeSystem.typography.heading) {
+        root.style.setProperty('--font-heading', activeSystem.typography.heading);
+      }
+      
+      // Apply theme colors
+      const colors = activeSystem.colors;
+      if (colors) {
+        Object.entries(colors).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            try {
+              if (value.startsWith('#')) {
+                root.style.setProperty(`--${key}`, hexToHSL(value));
+              } else if (value.startsWith('hsl(')) {
+                const hslMatch = value.match(/hsl\(([^)]+)\)/);
+                if (hslMatch && hslMatch[1]) {
+                  root.style.setProperty(`--${key}`, hslMatch[1]);
+                }
+              } else {
+                root.style.setProperty(`--${key}`, value);
+              }
+            } catch (err) {
+              console.error(`Error setting color property --${key}:`, err);
+            }
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error applying theme:", error);
     }
-  }, [isLoading, designSystem, draftDesignSystem]);
+  };
 
   // Function to update theme settings (and persist to API)
   const updateDesignSystem = async (newTheme: Partial<DesignSystem>) => {
@@ -568,115 +587,121 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       // Create a clean copy of the theme to avoid reference issues
       const cleanNewTheme = JSON.parse(JSON.stringify(newTheme));
       
-      // Create a deep copied snapshot of the current state to work with
-      // Don't mutate this or directly use it as state, just use it to construct the new state
-      const currentSystem = JSON.parse(JSON.stringify(draftDesignSystem || designSystem));
-      
-      // Create a new design system by properly merging
-      const updatedSystem = {
-        ...currentSystem,
-      };
-      
-      // Carefully merge the new theme properties
-      if (cleanNewTheme.theme) {
-        updatedSystem.theme = {
-          ...updatedSystem.theme,
-          ...cleanNewTheme.theme
-        };
-      }
-      
-      if (cleanNewTheme.colors) {
-        updatedSystem.colors = {
-          ...updatedSystem.colors,
-          ...cleanNewTheme.colors
-        };
-      }
-      
-      if (cleanNewTheme.typography) {
-        updatedSystem.typography = {
-          ...updatedSystem.typography,
-          ...cleanNewTheme.typography
-        };
-      }
-      
-      if (cleanNewTheme.typography_extended) {
-        updatedSystem.typography_extended = {
-          ...(updatedSystem.typography_extended || {}),
-          ...cleanNewTheme.typography_extended
-        };
-      }
-      
-      // Handle raw tokens
-      if (cleanNewTheme.raw_tokens) {
-        // Start with existing tokens or empty object
-        updatedSystem.raw_tokens = {
-          ...(updatedSystem.raw_tokens || {})
-        };
+      // Use functional update to ensure we work with the latest state
+      setDraftDesignSystem(prevDraft => {
+        // Get the current system to work with (draft or main)
+        const currentSystem = prevDraft || designSystem;
+        if (!currentSystem) return null;
         
-        // Handle default_unit
-        if (cleanNewTheme.raw_tokens.default_unit) {
-          updatedSystem.raw_tokens.default_unit = cleanNewTheme.raw_tokens.default_unit;
+        // Create a deep copy to avoid mutations
+        const updatedSystem = JSON.parse(JSON.stringify(currentSystem));
+        
+        // Merge theme properties
+        if (cleanNewTheme.theme) {
+          updatedSystem.theme = { 
+            ...updatedSystem.theme, 
+            ...cleanNewTheme.theme 
+          };
         }
         
-        // Handle colors with nested structure
-        if (cleanNewTheme.raw_tokens.colors) {
-          updatedSystem.raw_tokens.colors = updatedSystem.raw_tokens.colors || {};
+        // Merge colors
+        if (cleanNewTheme.colors) {
+          updatedSystem.colors = { 
+            ...updatedSystem.colors, 
+            ...cleanNewTheme.colors 
+          };
+        }
+        
+        // Merge typography
+        if (cleanNewTheme.typography) {
+          updatedSystem.typography = { 
+            ...updatedSystem.typography, 
+            ...cleanNewTheme.typography 
+          };
+        }
+        
+        // Merge extended typography
+        if (cleanNewTheme.typography_extended) {
+          updatedSystem.typography_extended = { 
+            ...(updatedSystem.typography_extended || {}), 
+            ...cleanNewTheme.typography_extended 
+          };
+        }
+        
+        // Handle raw tokens
+        if (cleanNewTheme.raw_tokens) {
+          // Ensure raw_tokens exists
+          updatedSystem.raw_tokens = updatedSystem.raw_tokens || {};
           
-          if (cleanNewTheme.raw_tokens.colors.brand) {
-            updatedSystem.raw_tokens.colors.brand = {
-              ...(updatedSystem.raw_tokens.colors.brand || {}),
-              ...cleanNewTheme.raw_tokens.colors.brand
+          // Unit
+          if (cleanNewTheme.raw_tokens.default_unit) {
+            updatedSystem.raw_tokens.default_unit = cleanNewTheme.raw_tokens.default_unit;
+          }
+          
+          // Handle nested color tokens
+          if (cleanNewTheme.raw_tokens.colors) {
+            updatedSystem.raw_tokens.colors = updatedSystem.raw_tokens.colors || {};
+            
+            // Brand colors
+            if (cleanNewTheme.raw_tokens.colors.brand) {
+              updatedSystem.raw_tokens.colors.brand = {
+                ...(updatedSystem.raw_tokens.colors.brand || {}),
+                ...cleanNewTheme.raw_tokens.colors.brand
+              };
+            }
+            
+            // Neutral colors
+            if (cleanNewTheme.raw_tokens.colors.neutral) {
+              updatedSystem.raw_tokens.colors.neutral = {
+                ...(updatedSystem.raw_tokens.colors.neutral || {}),
+                ...cleanNewTheme.raw_tokens.colors.neutral
+              };
+            }
+            
+            // Interactive colors
+            if (cleanNewTheme.raw_tokens.colors.interactive) {
+              updatedSystem.raw_tokens.colors.interactive = {
+                ...(updatedSystem.raw_tokens.colors.interactive || {}),
+                ...cleanNewTheme.raw_tokens.colors.interactive
+              };
+            }
+          }
+          
+          // Spacing tokens
+          if (cleanNewTheme.raw_tokens.spacing) {
+            updatedSystem.raw_tokens.spacing = {
+              ...(updatedSystem.raw_tokens.spacing || {}),
+              ...cleanNewTheme.raw_tokens.spacing
             };
           }
           
-          if (cleanNewTheme.raw_tokens.colors.neutral) {
-            updatedSystem.raw_tokens.colors.neutral = {
-              ...(updatedSystem.raw_tokens.colors.neutral || {}),
-              ...cleanNewTheme.raw_tokens.colors.neutral
+          // Radius tokens
+          if (cleanNewTheme.raw_tokens.radius) {
+            updatedSystem.raw_tokens.radius = {
+              ...(updatedSystem.raw_tokens.radius || {}),
+              ...cleanNewTheme.raw_tokens.radius
             };
           }
           
-          if (cleanNewTheme.raw_tokens.colors.interactive) {
-            updatedSystem.raw_tokens.colors.interactive = {
-              ...(updatedSystem.raw_tokens.colors.interactive || {}),
-              ...cleanNewTheme.raw_tokens.colors.interactive
+          // Transition tokens
+          if (cleanNewTheme.raw_tokens.transition) {
+            updatedSystem.raw_tokens.transition = {
+              ...(updatedSystem.raw_tokens.transition || {}),
+              ...cleanNewTheme.raw_tokens.transition
+            };
+          }
+          
+          // Border tokens
+          if (cleanNewTheme.raw_tokens.border) {
+            updatedSystem.raw_tokens.border = {
+              ...(updatedSystem.raw_tokens.border || {}),
+              ...cleanNewTheme.raw_tokens.border
             };
           }
         }
         
-        // Handle other token types with type safety
-        if (cleanNewTheme.raw_tokens.spacing) {
-          updatedSystem.raw_tokens.spacing = {
-            ...(updatedSystem.raw_tokens.spacing || {}),
-            ...cleanNewTheme.raw_tokens.spacing
-          };
-        }
-        
-        if (cleanNewTheme.raw_tokens.radius) {
-          updatedSystem.raw_tokens.radius = {
-            ...(updatedSystem.raw_tokens.radius || {}),
-            ...cleanNewTheme.raw_tokens.radius
-          };
-        }
-        
-        if (cleanNewTheme.raw_tokens.transition) {
-          updatedSystem.raw_tokens.transition = {
-            ...(updatedSystem.raw_tokens.transition || {}),
-            ...cleanNewTheme.raw_tokens.transition
-          };
-        }
-        
-        if (cleanNewTheme.raw_tokens.border) {
-          updatedSystem.raw_tokens.border = {
-            ...(updatedSystem.raw_tokens.border || {}),
-            ...cleanNewTheme.raw_tokens.border
-          };
-        }
-      }
-      
-      // Set the draft design system with our completely constructed object
-      setDraftDesignSystem(updatedSystem);
-      
+        return updatedSystem;
+      });
     } catch (error) {
       console.error('Error updating draft theme:', error);
     }

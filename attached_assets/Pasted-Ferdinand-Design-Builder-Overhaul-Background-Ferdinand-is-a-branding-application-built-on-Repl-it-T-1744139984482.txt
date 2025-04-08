@@ -1,0 +1,141 @@
+Ferdinand Design Builder Overhaul
+Background
+Ferdinand is a branding application built on Repl.it. The design builder feature is currently non-functional despite having UI elements for theme variants, color selection, and other styling options. We need to rebuild the design builder functionality to make style changes propagate throughout the application and extend this capability to client instances.
+Current Issues
+
+Theme variant selector exists but doesn't apply changes (professional, tint, vibrant options)
+Primary color selector doesn't propagate changes to UI elements
+No save/revert functionality
+Light/dark mode selection not working
+Border radius and animation style selectors not functional
+
+Requirements
+Core Functionality
+
+Color system implementation based on Material Design principles
+Real-time updating of application styles when changes are made
+Save/revert functionality
+Extension of design builder to individual client instances
+
+Color System Implementation
+Follow Material Design color system approach with:
+Brand Colors
+
+Primary, Secondary, Tertiary colors as base brand colors
+For each brand color, automatically generate:
+
+Two lighter tints (80% lighter, 90% lighter)
+Two darker shades (80% darker, 90% darker)
+On-color variant (for text/icons on the base color)
+Container variant (for backgrounds)
+On-container variant (for text/icons on container)
+
+
+
+Neutral Palette
+
+Create 11 shades of gray from a single gray input
+Range should go from very light to very dark
+
+Interactive Colors
+
+Error, Success, Warning system colors
+These should have proper contrast with brand colors
+Each interactive color should have light/dark variants and on-color variants
+
+Technical Implementation Details
+Variable System
+Create a comprehensive CSS variable system with:
+
+Raw/core variables (base colors)
+Semantic variables (purpose-specific tokens mapped to core variables)
+
+Example structure:
+css/* Core Variables */
+--brand-primary: #3366FF;
+--brand-primary-tint-1: #668AFF; /* 80% lighter */
+--brand-primary-tint-2: #99B1FF; /* 90% lighter */
+--brand-primary-shade-1: #1A40CC; /* 80% darker */
+--brand-primary-shade-2: #051A80; /* 90% darker */
+
+/* Semantic Variables */
+--color-button-bg: var(--brand-primary);
+--color-button-text: white;
+--color-card-border: var(--neutral-200);
+State Management
+Implement a state management solution to:
+
+Store current theme settings
+Provide methods to update settings
+Enable save/revert functionality
+Persist settings between sessions
+
+Style Application
+Create a mechanism to:
+
+Apply theme changes in real-time
+Re-compile or regenerate CSS when changes are made
+Scope styles appropriately (global app styles vs client-specific themes)
+
+UI Components
+Update the design builder interface to:
+
+Show color input controls with preview
+Display generated palettes based on input colors
+Provide real-time preview of changes
+Include save/revert buttons
+Allow theme variant selection (professional, tint, vibrant)
+
+Specific Features to Implement
+1. Color Editor Page
+
+Create a dedicated color editor page in the design builder
+Allow adding new brand colors
+Show generated tints and shades for each color
+Display on-color variants
+Preview text/background combinations
+Implement color picker with hex/rgb/hsl input
+
+2. Theme Variants System
+
+Define characteristics for each theme variant (professional, tint, vibrant)
+Create preset mappings for each variant
+Implement logic to transform base colors according to variant rules
+
+3. Save/Load System
+
+Implement save functionality that persists theme settings
+Create a mechanism to revert unsaved changes
+Add ability to export/import theme settings
+Enable theme previewing before applying
+
+4. Application-Wide Style Propagation
+
+Ensure all UI components consume theme variables
+Update component styles to reflect theme changes
+Handle light/dark mode transitions
+Apply border radius settings consistently
+
+5. Client-Specific Theme Extension
+
+Design a system to extend global theming to client instances
+Create proper scoping for client-specific themes
+Build UI for client theme editing within client settings
+
+Technical Approach
+
+Use CSS custom properties (variables) for theme settings
+Implement a Theme Provider component to manage theme state
+Create utility functions to generate color variations
+Build a theme compilation system to convert settings to CSS
+Use React context or a state management library to share theme across components
+Implement proper file and component structure for maintainability
+
+Deliverables
+
+Complete color system implementation
+Functioning theme variant selection
+Save/revert capability
+Light/dark mode toggle
+Border radius and animation controls
+Client-specific theming extension
