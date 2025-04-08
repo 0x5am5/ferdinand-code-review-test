@@ -100,14 +100,8 @@ export const Sidebar: FC = () => {
   
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
-      <div className="p-4 border-b flex items-center gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-xl">
-          F
-        </div>
-        <div>
-          <h2 className="font-bold">Ferdinand</h2>
-          <p className="text-xs text-muted-foreground">Brand Management</p>
-        </div>
+      <div className="p-4 border-b">
+        <h2 className="font-bold">Ferdinand</h2>
       </div>
       
       <ScrollArea className="flex-1 py-4">
