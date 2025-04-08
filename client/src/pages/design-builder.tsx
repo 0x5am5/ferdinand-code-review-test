@@ -50,7 +50,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useLocation } from "wouter";
-import { Save, ArrowUpDown, Moon, Sun, Palette, Type, Check, Undo, Redo } from "lucide-react";
+import { Save, ArrowUpDown, Moon, Sun, Palette, Type, Check, Code } from "lucide-react";
 
 // Form schema for validation
 const themeFormSchema = z.object({
@@ -169,7 +169,7 @@ export default function DesignBuilder() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="theme">
             <Palette className="mr-2 h-4 w-4" />
             Theme
@@ -182,7 +182,10 @@ export default function DesignBuilder() {
             <ArrowUpDown className="mr-2 h-4 w-4" />
             Preview
           </TabsTrigger>
-          <TabsTrigger value="raw">Raw Variables</TabsTrigger>
+          <TabsTrigger value="raw">
+            <Code className="mr-2 h-4 w-4"/>
+            Raw Variables
+          </TabsTrigger>
 
         </TabsList>
 
