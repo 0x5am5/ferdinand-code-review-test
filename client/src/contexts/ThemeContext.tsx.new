@@ -223,7 +223,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Color utility functions
   // Function to convert hex color to HSL format
-  const hexToHSL = (hex: string) => {
+  const hexToHSL = (hex: string): { h: number; s: number; l: number; hslString: string } => {
     // Remove the # if present
     hex = hex.replace(/^#/, '');
 
@@ -338,7 +338,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     // Extract color components
     const { h, s, l } = hexToHSL(primaryColor);
     
-    // Create base theme colors that will be common across all variants
+    // Create base theme colors
     let colors: Record<string, string> = {
       primary: primaryColor,
       ring: primaryColor,
@@ -484,85 +484,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
         // Generate additional colors based on theme variant
         const variantColors = applyThemeVariant(activeSystem.theme.primary, activeSystem.theme.variant);
         
-        // Apply dark/light mode with variant-specific colors
+        // Apply dark/light mode
         if (activeSystem.theme.appearance === 'dark') {
           root.classList.add('dark');
-          // Apply dark mode with variant adjustments
-          // First apply variant colors
-          Object.entries(variantColors).forEach(([key, value]) => {
-            try {
-              if (value.startsWith('#')) {
-                const result = hexToHSL(value);
-                root.style.setProperty(`--${key}`, result.hslString);
-              } else if (value.startsWith('hsl(')) {
-                const hslMatch = value.match(/hsl\(([^)]+)\)/);
-                if (hslMatch && hslMatch[1]) {
-                  root.style.setProperty(`--${key}`, hslMatch[1]);
-                }
-              } else {
-                root.style.setProperty(`--${key}`, value);
-              }
-            } catch (err) {
-              console.error(`Error setting variant color property --${key}:`, err);
-            }
-          });
-          
-          // Then apply specific dark mode overrides
-          root.style.setProperty('--background', '240 10% 3.9%');
-          root.style.setProperty('--foreground', '0 0% 98%');
-          root.style.setProperty('--card', '240 10% 3.9%');
-          root.style.setProperty('--card-foreground', '0 0% 98%');
-          root.style.setProperty('--muted', '240 3.7% 15.9%');
-          root.style.setProperty('--muted-foreground', '240 5% 64.9%');
-        } else {
-          root.classList.remove('dark');
-          // Apply light mode with variant-specific colors
-          Object.entries(variantColors).forEach(([key, value]) => {
-            try {
-              if (value.startsWith('#')) {
-                const result = hexToHSL(value);
-                root.style.setProperty(`--${key}`, result.hslString);
-              } else if (value.startsWith('hsl(')) {
-                const hslMatch = value.match(/hsl\(([^)]+)\)/);
-                if (hslMatch && hslMatch[1]) {
-                  root.style.setProperty(`--${key}`, hslMatch[1]);
-                }
-              } else {
-                root.style.setProperty(`--${key}`, value);
-              }
-            } catch (err) {
-              console.error(`Error setting variant color property --${key}:`, err);
-            }
-          });
-        };
-        
-        // Generate additional colors based on theme variant
-        const variantColors = applyThemeVariant(activeSystem.theme.primary, activeSystem.theme.variant);
-        
-        // Apply dark/light mode with variant-specific colors
-        if (activeSystem.theme.appearance === 'dark') {
-          root.classList.add('dark');
-          // Apply dark mode with variant adjustments
-          // First apply variant colors
-          Object.entries(variantColors).forEach(([key, value]) => {
-            try {
-              if (value.startsWith('#')) {
-                const result = hexToHSL(value);
-                root.style.setProperty(`--${key}`, result.hslString);
-              } else if (value.startsWith('hsl(')) {
-                const hslMatch = value.match(/hsl\(([^)]+)\)/);
-                if (hslMatch && hslMatch[1]) {
-                  root.style.setProperty(`--${key}`, hslMatch[1]);
-                }
-              } else {
-                root.style.setProperty(`--${key}`, value);
-              }
-            } catch (err) {
-              console.error(`Error setting variant color property --${key}:`, err);
-            }
-          });
-          
-          // Then apply specific dark mode overrides
+          // Apply dark mode specific overrides
           root.style.setProperty('--background', '240 10% 3.9%');
           root.style.setProperty('--foreground', '0 0% 98%');
           root.style.setProperty('--card', '240 10% 3.9%');
@@ -803,10 +728,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
             
             // Handle other tokens for draft
             ['spacing', 'radius', 'transition', 'border'].forEach(key => {
-              if (cleanNewTheme.raw_tokens[key]) {
-                draftUpdatedDesignSystem.raw_tokens[key] = {
-                  ...(draftUpdatedDesignSystem.raw_tokens[key] || {}),
-                  ...cleanNewTheme.raw_tokens[key]
+              if (cleanNewTheme.raw_tokens && cleanNewTheme.raw_tokens[key as keyof typeof cleanNewTheme.raw_tokens]) {
+                draftUpdatedDesignSystem.raw_tokens[key as keyof typeof draftUpdatedDesignSystem.raw_tokens] = {
+                  ...(draftUpdatedDesignSystem.raw_tokens[key as keyof typeof draftUpdatedDesignSystem.raw_tokens] || {}),
+                  ...cleanNewTheme.raw_tokens[key as keyof typeof cleanNewTheme.raw_tokens]
                 };
               }
             });
@@ -838,147 +763,126 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Use functional update to ensure we work with the latest state
       setDraftDesignSystem(prevDraft => {
-        // Get the current system to work with (draft or main)
-        const currentSystem = prevDraft || designSystem;
-        if (!currentSystem) return null;
+        // Start with applied design system if draft doesn't exist yet
+        const baseDraft = prevDraft || designSystem;
+        // Create a deep copy for safety
+        const updatedDraft = JSON.parse(JSON.stringify(baseDraft));
         
-        // Create a deep copy to avoid mutations
-        const updatedSystem = JSON.parse(JSON.stringify(currentSystem));
-        
-        // Merge theme properties
+        // Merge in theme properties
         if (cleanNewTheme.theme) {
-          updatedSystem.theme = { 
-            ...updatedSystem.theme, 
-            ...cleanNewTheme.theme 
-          };
+          updatedDraft.theme = { ...updatedDraft.theme, ...cleanNewTheme.theme };
         }
         
-        // Merge colors
+        // Merge in colors
         if (cleanNewTheme.colors) {
-          updatedSystem.colors = { 
-            ...updatedSystem.colors, 
-            ...cleanNewTheme.colors 
-          };
+          updatedDraft.colors = { ...updatedDraft.colors, ...cleanNewTheme.colors };
         }
         
-        // Merge typography
+        // Merge in typography settings 
         if (cleanNewTheme.typography) {
-          updatedSystem.typography = { 
-            ...updatedSystem.typography, 
-            ...cleanNewTheme.typography 
-          };
+          updatedDraft.typography = { ...updatedDraft.typography, ...cleanNewTheme.typography };
         }
         
-        // Merge extended typography
+        // Handle extended typography settings
         if (cleanNewTheme.typography_extended) {
-          updatedSystem.typography_extended = { 
-            ...(updatedSystem.typography_extended || {}), 
+          updatedDraft.typography_extended = { 
+            ...(updatedDraft.typography_extended || {}),
             ...cleanNewTheme.typography_extended 
           };
         }
         
         // Handle raw tokens
         if (cleanNewTheme.raw_tokens) {
-          // Ensure raw_tokens exists
-          updatedSystem.raw_tokens = updatedSystem.raw_tokens || {};
+          // Make sure raw_tokens exists
+          updatedDraft.raw_tokens = updatedDraft.raw_tokens || {};
           
-          // Unit
+          // Handle default unit
           if (cleanNewTheme.raw_tokens.default_unit) {
-            updatedSystem.raw_tokens.default_unit = cleanNewTheme.raw_tokens.default_unit;
+            updatedDraft.raw_tokens.default_unit = cleanNewTheme.raw_tokens.default_unit;
           }
           
-          // Handle nested color tokens
+          // Handle color tokens
           if (cleanNewTheme.raw_tokens.colors) {
-            updatedSystem.raw_tokens.colors = updatedSystem.raw_tokens.colors || {};
+            updatedDraft.raw_tokens.colors = updatedDraft.raw_tokens.colors || {};
             
-            // Brand colors
+            // Handle brand colors
             if (cleanNewTheme.raw_tokens.colors.brand) {
-              updatedSystem.raw_tokens.colors.brand = {
-                ...(updatedSystem.raw_tokens.colors.brand || {}),
+              updatedDraft.raw_tokens.colors.brand = {
+                ...(updatedDraft.raw_tokens.colors.brand || {}),
                 ...cleanNewTheme.raw_tokens.colors.brand
               };
             }
             
-            // Neutral colors
+            // Handle neutral colors
             if (cleanNewTheme.raw_tokens.colors.neutral) {
-              updatedSystem.raw_tokens.colors.neutral = {
-                ...(updatedSystem.raw_tokens.colors.neutral || {}),
+              updatedDraft.raw_tokens.colors.neutral = {
+                ...(updatedDraft.raw_tokens.colors.neutral || {}),
                 ...cleanNewTheme.raw_tokens.colors.neutral
               };
             }
             
-            // Interactive colors
+            // Handle interactive colors
             if (cleanNewTheme.raw_tokens.colors.interactive) {
-              updatedSystem.raw_tokens.colors.interactive = {
-                ...(updatedSystem.raw_tokens.colors.interactive || {}),
+              updatedDraft.raw_tokens.colors.interactive = {
+                ...(updatedDraft.raw_tokens.colors.interactive || {}),
                 ...cleanNewTheme.raw_tokens.colors.interactive
               };
             }
           }
           
-          // Spacing tokens
-          if (cleanNewTheme.raw_tokens.spacing) {
-            updatedSystem.raw_tokens.spacing = {
-              ...(updatedSystem.raw_tokens.spacing || {}),
-              ...cleanNewTheme.raw_tokens.spacing
-            };
-          }
-          
-          // Radius tokens
-          if (cleanNewTheme.raw_tokens.radius) {
-            updatedSystem.raw_tokens.radius = {
-              ...(updatedSystem.raw_tokens.radius || {}),
-              ...cleanNewTheme.raw_tokens.radius
-            };
-          }
-          
-          // Transition tokens
-          if (cleanNewTheme.raw_tokens.transition) {
-            updatedSystem.raw_tokens.transition = {
-              ...(updatedSystem.raw_tokens.transition || {}),
-              ...cleanNewTheme.raw_tokens.transition
-            };
-          }
-          
-          // Border tokens
-          if (cleanNewTheme.raw_tokens.border) {
-            updatedSystem.raw_tokens.border = {
-              ...(updatedSystem.raw_tokens.border || {}),
-              ...cleanNewTheme.raw_tokens.border
-            };
-          }
+          // Handle other token categories
+          ['spacing', 'radius', 'transition', 'border'].forEach(key => {
+            if (cleanNewTheme.raw_tokens && cleanNewTheme.raw_tokens[key as keyof typeof cleanNewTheme.raw_tokens]) {
+              updatedDraft.raw_tokens[key as keyof typeof updatedDraft.raw_tokens] = {
+                ...(updatedDraft.raw_tokens[key as keyof typeof updatedDraft.raw_tokens] || {}),
+                ...cleanNewTheme.raw_tokens[key as keyof typeof cleanNewTheme.raw_tokens]
+              };
+            }
+          });
         }
         
-        return updatedSystem;
+        return updatedDraft;
       });
     } catch (error) {
-      console.error('Error updating draft theme:', error);
+      console.error('Error updating draft design system:', error);
+    }
+  };
+  
+  // Function to apply draft changes by calling the updateDesignSystem with the draft values
+  const applyDraftChanges = async () => {
+    try {
+      if (!draftDesignSystem) return;
+      
+      // Send the entire draft design system to be saved
+      await updateDesignSystem(draftDesignSystem);
+      
+      // After successful API update, clear the draft to avoid keeping stale state
+      setDraftDesignSystem(null);
+      
+      // Apply theme changes right away (don't wait for next render cycle)
+      applyThemeToDom();
+    } catch (error) {
+      console.error('Error applying draft changes:', error);
+      throw error;
     }
   };
 
-  // Function to apply draft changes to the actual design system
-  const applyDraftChanges = async () => {
-    if (draftDesignSystem) {
-      // Apply draft changes to the main design system
-      await updateDesignSystem(draftDesignSystem);
-    }
+  // Create the context value that will be provided
+  const contextValue: ThemeContextType = {
+    designSystem,
+    draftDesignSystem,
+    updateDesignSystem,
+    updateDraftDesignSystem,
+    applyDraftChanges,
+    isLoading
   };
 
   return (
-    <ThemeContext.Provider value={{ 
-      designSystem, 
-      draftDesignSystem, 
-      updateDesignSystem, 
-      updateDraftDesignSystem,
-      applyDraftChanges,
-      isLoading 
-    }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Export it in a way that's compatible with React Fast Refresh
-export function useTheme() {
-  return useContext(ThemeContext);
-}
+// Custom hook for using the theme context
+export const useTheme = () => useContext(ThemeContext);
