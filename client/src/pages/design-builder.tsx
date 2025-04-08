@@ -72,10 +72,10 @@ export default function DesignBuilder() {
     updateDraftDesignSystem,
     applyDraftChanges
   } = useThemeManager();
-  
+
   // Define the designSystem variable to use throughout the component
   const designSystem = draftDesignSystem || appliedDesignSystem;
-  
+
   // State for handling navigation confirmation
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
   const [navTarget, setNavTarget] = useState("");
@@ -103,7 +103,7 @@ export default function DesignBuilder() {
       updateDraftDesignSystem({
         theme: values
       });
-      
+
       setHasChanges(true);
       toast({
         title: "Changes applied to preview",
@@ -169,7 +169,7 @@ export default function DesignBuilder() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="theme">
             <Palette className="mr-2 h-4 w-4" />
             Theme
@@ -182,6 +182,8 @@ export default function DesignBuilder() {
             <ArrowUpDown className="mr-2 h-4 w-4" />
             Preview
           </TabsTrigger>
+          <TabsTrigger value="raw">Raw Variables</TabsTrigger>
+
         </TabsList>
 
         <TabsContent value="theme" className="space-y-4">
@@ -230,7 +232,7 @@ export default function DesignBuilder() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="primary"
@@ -257,7 +259,7 @@ export default function DesignBuilder() {
                       </FormItem>
                     )}
                   />
-                  
+
                   {form.watch('variant') === 'vibrant' && (
                     <>
                       <FormField
@@ -286,7 +288,7 @@ export default function DesignBuilder() {
                           </FormItem>
                         )}
                       />
-                      
+
                       <FormField
                         control={form.control}
                         name="tertiary"
@@ -315,7 +317,7 @@ export default function DesignBuilder() {
                       />
                     </>
                   )}
-                  
+
                   <FormField
                     control={form.control}
                     name="appearance"
@@ -359,7 +361,7 @@ export default function DesignBuilder() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="radius"
@@ -383,7 +385,7 @@ export default function DesignBuilder() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <FormField
                     control={form.control}
                     name="animation"
@@ -413,7 +415,7 @@ export default function DesignBuilder() {
                       </FormItem>
                     )}
                   />
-                  
+
                   <Button type="submit">Apply Changes</Button>
                 </form>
               </Form>
@@ -474,7 +476,7 @@ export default function DesignBuilder() {
                     </div>
                   </div>
                 </div>
-                
+
                 <Button
                   onClick={() => {
                     // Just apply changes without any further API call
@@ -578,7 +580,7 @@ export default function DesignBuilder() {
                     </Card>
                   </div>
                 </div>
-                
+
                 {form.watch('variant') === 'vibrant' && (
                   <div className="space-y-4">
                     <h3 className="text-lg font-medium">Material Design Color System</h3>
@@ -626,7 +628,7 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium mb-2">Secondary Color Palette</h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
@@ -654,7 +656,7 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium mb-2">System Colors</h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
@@ -680,7 +682,7 @@ export default function DesignBuilder() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium mb-2">Neutral Palette</h4>
                         <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-11 gap-1">
@@ -702,8 +704,75 @@ export default function DesignBuilder() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="raw" className="space-y-4">
+          <Card>
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-medium mb-4">CSS Variables</h3>
+                <div className="grid gap-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Colors</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><code>--background</code></div>
+                      <div><code>--foreground</code></div>
+                      <div><code>--primary</code></div>
+                      <div><code>--primary-foreground</code></div>
+                      <div><code>--primary-light</code></div>
+                      <div><code>--secondary</code></div>
+                      <div><code>--secondary-foreground</code></div>
+                      <div><code>--muted</code></div>
+                      <div><code>--muted-foreground</code></div>
+                      <div><code>--accent</code></div>
+                      <div><code>--accent-foreground</code></div>
+                      <div><code>--destructive</code></div>
+                      <div><code>--destructive-foreground</code></div>
+                      <div><code>--border</code></div>
+                      <div><code>--input</code></div>
+                      <div><code>--ring</code></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Typography</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><code>--font-sans</code></div>
+                      <div><code>--font-heading</code></div>
+                      <div><code>--heading-1-size</code></div>
+                      <div><code>--heading-2-size</code></div>
+                      <div><code>--heading-3-size</code></div>
+                      <div><code>--body-size</code></div>
+                      <div><code>--line-height</code></div>
+                      <div><code>--heading-weight</code></div>
+                      <div><code>--body-weight</code></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Layout & Animation</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><code>--radius</code></div>
+                      <div><code>--transition</code></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-medium mb-2">Sidebar</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div><code>--sidebar-background</code></div>
+                      <div><code>--sidebar-foreground</code></div>
+                      <div><code>--sidebar-hover</code></div>
+                      <div><code>--sidebar-active</code></div>
+                      <div><code>--sidebar-border</code></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
-      
+
       {/* Alert dialog for unsaved changes */}
       <AlertDialog open={showLeaveAlert} onOpenChange={setShowLeaveAlert}>
         <AlertDialogContent>
