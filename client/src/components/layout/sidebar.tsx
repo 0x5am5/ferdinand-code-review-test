@@ -54,12 +54,6 @@ export const Sidebar: FC = () => {
       href: "/design-builder",
       icon: <PaletteIcon className="h-4 w-4" />,
       adminOnly: true
-    },
-    {
-      title: "Instances",
-      href: "/admin/instances",
-      icon: <ServerIcon className="h-4 w-4" />,
-      adminOnly: true
     }
   ];
   
