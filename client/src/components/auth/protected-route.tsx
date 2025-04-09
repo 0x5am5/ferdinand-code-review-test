@@ -1,34 +1,27 @@
 
-import { useQuery } from "@tanstack/react-query";
-import { User } from "@shared/schema";
-import { Loader2 } from "lucide-react";
-import { Redirect } from "wouter";
+import { FC } from 'react';
+import { useAuth } from '@/hooks/use-auth';
+import { Redirect } from 'wouter';
 
 interface ProtectedRouteProps {
-  component: React.ComponentType;
+  component: FC;
   adminOnly?: boolean;
 }
 
-export function ProtectedRoute({ component: Component, adminOnly = false }: ProtectedRouteProps) {
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/user"],
-  });
+export const ProtectedRoute: FC<ProtectedRouteProps> = ({ component: Component, adminOnly }) => {
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   if (!user) {
     return <Redirect to="/login" />;
   }
 
-  if (adminOnly && !(user.role === 'admin' || user.role === 'super_admin')) {
+  if (adminOnly && !user.isAdmin) {
     return <Redirect to="/dashboard" />;
   }
 
   return <Component />;
-}
+};
