@@ -13,17 +13,8 @@ import NewClientPage from "@/pages/clients/new";
 import Users from "@/pages/users";
 import DesignEditor from "@/pages/design-editor";
 import DesignBuilder from "@/pages/design-builder";
-
-function ProtectedRoute({ 
-  component: Component,
-  adminOnly = false,
-}: { 
-  component: React.ComponentType;
-  adminOnly?: boolean;
-}) {
-  // Temporarily return the component directly for development
-  return <Component />;
-}
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { AuthProvider } from "@/hooks/use-auth";
 
 function Router() {
   const [location] = useLocation();
@@ -53,8 +44,10 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Router />
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

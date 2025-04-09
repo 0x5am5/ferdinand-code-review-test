@@ -32,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   } = useQuery<User | null>({
     queryKey: ["/api/user"],
     enabled: !!auth.currentUser, // Only run query when Firebase user exists
+    initialData: null,
   });
 
   // Handle Firebase auth state changes
@@ -86,7 +87,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
+      try {
+        // Call our backend to clear session
+        await apiRequest("POST", "/api/auth/logout", {});
+      } catch (e) {
+        console.error("Backend logout error:", e);
+      }
+      
+      // Clear the local cache
       queryClient.setQueryData(["/api/user"], null);
+      
+      // Redirect to login
+      window.location.href = "/login";
     } catch (error) {
       console.error("Logout error:", error);
       toast({
@@ -100,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        user,
+        user: user || null,
         firebaseUser: auth.currentUser,
         isLoading,
         error,

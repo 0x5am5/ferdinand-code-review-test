@@ -1,33 +1,20 @@
 import { Button } from "@/components/ui/button";
-import { signInWithGoogle, signOut } from "@/lib/auth";
-import { auth } from "@/lib/firebase";
-import { useQuery } from "@tanstack/react-query";
-import { User } from "@shared/schema";
 import { LogIn, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AuthButtonProps {
   collapsed?: boolean;
 }
 
 export function AuthButton({ collapsed = false }: AuthButtonProps) {
-  const { data: user } = useQuery<User>({ 
-    queryKey: ["/api/user"],
-  });
+  const { user, signInWithGoogle, logout } = useAuth();
   const { toast } = useToast();
 
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Give Firebase time to complete auth
-      const user = auth.currentUser;
-      if (user) {
-        toast({
-          title: "Welcome!",
-          description: "You have successfully signed in.",
-        });
-        window.location.href = '/dashboard';
-      }
+      // Success toast is shown in the useAuth hook
     } catch (error: any) {
       toast({
         title: "Authentication Error",
@@ -39,7 +26,7 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await logout();
       toast({
         title: "Signed out",
         description: "You have been signed out successfully.",
