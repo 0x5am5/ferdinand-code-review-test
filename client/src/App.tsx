@@ -21,46 +21,49 @@ function Router() {
   const [location] = useLocation();
 
   if (location === "/") {
-    return <Redirect to="/dashboard" />;
+    return <Redirect to="/login" />;
   }
 
   return (
     <Switch>
+      {/* Public routes that don't require authentication */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={SignupPage} />
+      
+      {/* Protected routes that require authentication */}
       <Route path="/dashboard">
         <AppLayout pageKey="dashboard">
-          <ProtectedRoute component={Dashboard} />
+          <Dashboard />
         </AppLayout>
       </Route>
       <Route path="/design-builder">
         <AppLayout pageKey="design-builder">
-          <ProtectedRoute component={DesignBuilder} />
+          <DesignBuilder />
         </AppLayout>
       </Route>
       <Route path="/design-editor">
         <AppLayout pageKey="design-editor">
-          <ProtectedRoute component={DesignEditor} />
+          <DesignEditor />
         </AppLayout>
       </Route>
       <Route path="/users">
         <AppLayout pageKey="users">
-          <ProtectedRoute component={Users} adminOnly />
+          <Users />
         </AppLayout>
       </Route>
       <Route path="/admin/instances">
         <AppLayout pageKey="instances">
-          <ProtectedRoute component={Instances} adminOnly />
+          <Instances />
         </AppLayout>
       </Route>
       <Route path="/clients/new">
         <AppLayout pageKey="new-client">
-          <ProtectedRoute component={NewClientPage} />
+          <NewClientPage />
         </AppLayout>
       </Route>
       <Route path="/clients/:id">
         <AppLayout pageKey="client-details">
-          <ProtectedRoute component={ClientDetails} />
+          <ClientDetails />
         </AppLayout>
       </Route>
       <Route>
@@ -75,10 +78,8 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-      </AuthProvider>
+      <Router />
+      <Toaster />
     </QueryClientProvider>
   );
 }

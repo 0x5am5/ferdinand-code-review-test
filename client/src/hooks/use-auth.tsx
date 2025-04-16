@@ -1,12 +1,11 @@
-import { createContext, ReactNode, useContext, useEffect } from "react";
-import {
-  useQuery,
-  useMutation,
-  UseMutationResult,
-} from "@tanstack/react-query";
-import { User as FirebaseUser, signInWithPopup, signOut } from "firebase/auth";
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { 
+  User as FirebaseUser, 
+  signInWithPopup, 
+  signOut,
+  onAuthStateChanged
+} from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@shared/schema";
 
@@ -23,84 +22,135 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  // Query for getting the user data from our backend
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useQuery<User | null>({
-    queryKey: ["/api/user"],
-    enabled: !!auth.currentUser, // Only run query when Firebase user exists
-    initialData: null,
-  });
+  // Fetch user data from our backend
+  const fetchUser = async () => {
+    try {
+      const response = await fetch("/api/user");
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data);
+      } else {
+        setUser(null);
+      }
+    } catch (e) {
+      console.error("Error fetching user:", e);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle Firebase auth state changes
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      if (firebaseUser) {
-        // Get the ID token to pass to backend
-        const idToken = await firebaseUser.getIdToken();
-        
-        // Call your backend to create/update user
+    console.log("Setting up auth state listener");
+    setIsLoading(true);
+    
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      console.log("Auth state changed:", fbUser?.email);
+      setFirebaseUser(fbUser);
+      
+      if (fbUser) {
         try {
-          const response = await apiRequest("POST", "/api/auth/google", {
-            idToken,
+          // Get the ID token
+          const idToken = await fbUser.getIdToken();
+          console.log("ID token obtained, creating session...");
+          
+          // Create session on backend
+          const response = await fetch("/api/auth/google", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ idToken }),
           });
           
-          if (!response.ok) {
-            throw new Error("Failed to authenticate with backend");
+          if (response.ok) {
+            console.log("Session created successfully");
+            // Fetch user data
+            await fetchUser();
+          } else {
+            const data = await response.json();
+            console.error("Failed to create session:", data);
+            setError(new Error(data.message || "Authentication failed"));
+            setIsLoading(false);
           }
-          
-          // Invalidate the user query to refetch latest data
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-        } catch (error) {
-          console.error("Backend auth error:", error);
-          toast({
-            title: "Authentication Error",
-            description: "Failed to complete authentication process",
-            variant: "destructive",
-          });
+        } catch (e: any) {
+          console.error("Auth processing error:", e);
+          setError(e);
+          setIsLoading(false);
         }
       } else {
-        // User is signed out
-        queryClient.setQueryData(["/api/user"], null);
+        // User is not authenticated
+        setUser(null);
+        setIsLoading(false);
       }
     });
 
-    return () => unsubscribe();
-  }, [toast]);
+    return () => {
+      console.log("Cleaning up auth listener");
+      unsubscribe();
+    };
+  }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+      console.log("Starting Google sign-in process...");
+      
+      const result = await signInWithPopup(auth, googleProvider);
+      
+      console.log("Sign-in successful:", result.user?.email);
+      
+      // Auth state listener will handle the session creation and user fetching
+      
+      toast({
+        title: "Sign In Successful",
+        description: `Signed in as ${result.user?.email}`,
+      });
+    } catch (error: any) {
       console.error("Google sign-in error:", error);
+      setError(error);
+      
       toast({
         title: "Sign In Error",
-        description: "Failed to sign in with Google",
+        description: error.message || "Failed to sign in with Google",
         variant: "destructive",
       });
+      
+      throw error;
     }
   };
 
   const logout = async () => {
     try {
+      console.log("Logging out...");
       await signOut(auth);
-      try {
-        // Call our backend to clear session
-        await apiRequest("POST", "/api/auth/logout", {});
-      } catch (e) {
-        console.error("Backend logout error:", e);
-      }
       
-      // Clear the local cache
-      queryClient.setQueryData(["/api/user"], null);
+      // Clear session on backend
+      await fetch("/api/auth/logout", { 
+        method: "POST" 
+      });
+      
+      setUser(null);
+      
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out",
+      });
       
       // Redirect to login
       window.location.href = "/login";
-    } catch (error) {
+    } catch (error: any) {
       console.error("Logout error:", error);
+      setError(error);
+      
       toast({
         title: "Logout Error",
         description: "Failed to sign out",
@@ -109,17 +159,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const contextValue: AuthContextType = {
+    user,
+    firebaseUser,
+    isLoading,
+    error,
+    signInWithGoogle,
+    logout,
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user: user || null,
-        firebaseUser: auth.currentUser,
-        isLoading,
-        error,
-        signInWithGoogle,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={contextValue}>
       {children}
     </AuthContext.Provider>
   );

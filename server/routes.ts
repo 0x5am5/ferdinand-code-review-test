@@ -102,50 +102,76 @@ export function registerRoutes(app: Express) {
   // Google Auth endpoint
   app.post("/api/auth/google", async (req, res) => {
     try {
+      console.log("Received Google auth request");
       const { idToken } = req.body;
 
       if (!idToken) {
+        console.log("No ID token provided");
         return res.status(400).json({ message: "No ID token provided" });
       }
 
+      console.log("Verifying Firebase ID token");
       // Verify the Firebase ID token
-      const decodedToken = await firebaseAuth.verifyIdToken(idToken);
+      try {
+        // Verify the Firebase ID token
+        const decodedToken = await firebaseAuth.verifyIdToken(idToken);
 
-      if (!decodedToken.email) {
-        return res.status(400).json({ message: "No email found in token" });
-      }
-
-      // Check if user exists
-      let user = await storage.getUserByEmail(decodedToken.email);
-
-      if (!user) {
-        // Create new user with guest role by default
-        try {
-          user = await storage.createUser({
-            email: decodedToken.email,
-            name: decodedToken.name || decodedToken.email.split('@')[0],
-            role: UserRole.GUEST,
-          });
-        } catch (error) {
-          console.error("Error creating user:", error);
-          return res.status(500).json({ message: "Failed to create user" });
+        if (!decodedToken.email) {
+          console.log("No email found in token");
+          return res.status(400).json({ message: "No email found in token" });
         }
-      }
 
-      if (!req.session) {
-        return res.status(500).json({ message: "Session not initialized" });
-      }
+        console.log(`User authenticated with email: ${decodedToken.email}`);
+        
+        // Check if user exists
+        console.log("Checking if user exists in database");
+        let user = await storage.getUserByEmail(decodedToken.email);
 
-      // Set user in session
-      req.session.userId = user.id;
-      await new Promise((resolve, reject) => {
-        req.session.save((err) => {
-          if (err) reject(err);
-          else resolve(undefined);
+        if (!user) {
+          console.log("User does not exist, creating new user");
+          // Create new user with guest role by default
+          try {
+            user = await storage.createUser({
+              email: decodedToken.email,
+              name: decodedToken.name || decodedToken.email.split('@')[0],
+              role: UserRole.GUEST,
+            });
+            console.log(`Created new user with ID: ${user.id}`);
+          } catch (error) {
+            console.error("Error creating user:", error);
+            return res.status(500).json({ message: "Failed to create user" });
+          }
+        } else {
+          console.log(`Found existing user with ID: ${user.id}`);
+        }
+
+        if (!req.session) {
+          console.log("Session not initialized");
+          return res.status(500).json({ message: "Session not initialized" });
+        }
+
+        // Set user in session
+        console.log("Setting user in session");
+        req.session.userId = user.id;
+        await new Promise((resolve, reject) => {
+          req.session.save((err) => {
+            if (err) {
+              console.error("Error saving session:", err);
+              reject(err);
+            }
+            else resolve(undefined);
+          });
         });
-      });
 
-      return res.json(user);
+        console.log("Authentication successful, sending user data");
+        return res.json(user);
+      } catch (tokenError) {
+        console.error("Token verification error:", tokenError);
+        return res.status(401).json({ 
+          message: "Token verification failed",
+          error: tokenError instanceof Error ? tokenError.message : "Unknown token error"
+        });
+      }
     } catch (error) {
       console.error("Auth error:", error);
       return res.status(401).json({ 
