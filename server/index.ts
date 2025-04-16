@@ -62,11 +62,11 @@ const ALL_PORTS = [PRIMARY_PORT, ...FALLBACK_PORTS];
 async function cleanup() {
   try {
     console.log('Starting port cleanup process...');
-    
+
     // Kill any processes on our target ports
     for (const port of ALL_PORTS) {
       console.log(`Cleaning up port ${port}...`);
-      
+
       try {
         // Kill any existing process on the port
         await execAsync(`npx kill-port ${port}`);
@@ -94,7 +94,7 @@ async function startServer(retries = 3) {
 
       // First ensure the ports are free
       await cleanup();
-      
+
       // Run database migrations
       console.log('Running database migrations...');
       await runMigrations();
@@ -118,24 +118,24 @@ async function startServer(retries = 3) {
       // Try to start with the primary port first, then fallbacks
       let serverStarted = false;
       let usedPort: number | null = null;
-      
+
       // Starting with the primary port
       console.log(`Attempting to start server on primary port ${PRIMARY_PORT}`);
-      
+
       // Try primary port first, then fallbacks
       const portsToTry = [PRIMARY_PORT, ...FALLBACK_PORTS];
-      
+
       // Try each port in sequence
       for (const port of portsToTry) {
         if (serverStarted) break;
-        
+
         try {
           // Start listening on the port
           await new Promise<void>((resolve, reject) => {
             const timeoutId = setTimeout(() => {
               reject(new Error(`Timeout when trying to bind to port ${port}`));
             }, 5000);
-            
+
             server!.listen(port, '0.0.0.0', () => {
               clearTimeout(timeoutId);
               console.log(`✓ Server started successfully on port ${port}`);
@@ -161,7 +161,7 @@ async function startServer(retries = 3) {
           // Continue to the next port
         }
       }
-      
+
       // If no port worked, throw an error
       if (!serverStarted) {
         throw new Error(`Could not start server on any of the ports: ${portsToTry.join(', ')}`);

@@ -63,9 +63,7 @@ googleProvider.addScope('email');
 
 // Set custom parameters for Google Auth  
 googleProvider.setCustomParameters({
-  prompt: 'select_account',
-  // Add redirect URI to the same origin to prevent CORS issues
-  redirect_uri: window.location.origin
+  prompt: 'select_account'
 });
 
 // Log the current domain for debugging
