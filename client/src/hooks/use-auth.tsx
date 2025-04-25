@@ -180,5 +180,15 @@ export function useAuth() {
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
+
+  // Wait until auth is initialized before returning context
+  if (context.isLoading) {
+    return {
+      ...context,
+      user: null,
+      firebaseUser: null
+    };
+  }
+
   return context;
 }
