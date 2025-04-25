@@ -808,10 +808,6 @@ export default function UsersPage() {
                     <TableCell>
                       <Select
                         defaultValue={user.role}
-                        disabled={
-                          currentUser?.role !== UserRole.SUPER_ADMIN &&
-                          value === UserRole.SUPER_ADMIN
-                        }
                         onValueChange={(value) => {
                           // Prevent non-super admins from assigning super admin role
                           if (
