@@ -976,12 +976,6 @@ function UsersPage() {
                                       </Button>
                                     </Badge>
                                   ),
-
-// Wrap the page with ProtectedRoute for admin-only access
-export default function ProtectedUsersPage() {
-  return <ProtectedRoute component={UsersPage} adminOnly={true} />;
-}
-
                                 )}
                               </div>
                             )}

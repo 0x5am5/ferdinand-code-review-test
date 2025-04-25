@@ -7,22 +7,19 @@ import {
   BuildingIcon,
   UsersIcon,
   PaletteIcon,
-  ServerIcon,
-  LogOutIcon
+  LogOutIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "@/contexts/ThemeContext";
-import useAuth from "@/hooks/useAuth"; // Assumed hook
-import ProtectedRoute from "@/components/ProtectedRoute"; // Assumed component
-
+import { useAuth } from "@/hooks/use-auth";
+import { UserRole } from "@shared/schema";
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ReactNode;
-  adminOnly?: boolean;
 }
 
 /**
@@ -31,39 +28,37 @@ interface NavItem {
 export const Sidebar: FC = () => {
   const [location] = useLocation();
   const themeContext = useTheme();
-  const { user } = useAuth(); // Get user data from auth context
+  const { user } = useAuth();
 
   const navItems: NavItem[] = [
     {
       title: "Dashboard",
       href: "/dashboard",
-      icon: <HomeIcon className="h-4 w-4" />
+      icon: <HomeIcon className="h-4 w-4" />,
     },
-    {
-      title: "Clients",
-      href: "/clients",
-      icon: <BuildingIcon className="h-4 w-4" />
-    },
-    {
-      title: "Users",
-      href: "/users",
-      icon: <UsersIcon className="h-4 w-4" />,
-      adminOnly: true
-    },
+    // {
+    //   title: "Clients",
+    //   href: "/clients",
+    //   icon: <BuildingIcon className="h-4 w-4" />,
+    // },
+    ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
+      ? [
+          {
+            title: "Users",
+            href: "/users",
+            icon: <UsersIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
     {
       title: "Design Builder",
       href: "/design-builder",
       icon: <PaletteIcon className="h-4 w-4" />,
-      adminOnly: true
-    }
+    },
   ];
 
-  const filteredNavItems = navItems.filter(item =>
-    !item.adminOnly || (item.adminOnly && (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'))
-  );
-
   const isActiveLink = (href: string) => {
-    if (href === '/clients' && location.startsWith('/clients/')) {
+    if (href === "/clients" && location.startsWith("/clients/")) {
       return true;
     }
     return location === href;
@@ -75,23 +70,27 @@ export const Sidebar: FC = () => {
   };
 
   const toggleTheme = async () => {
-    if (!themeContext || !themeContext.designSystem || !themeContext.updateDesignSystem) {
+    if (
+      !themeContext ||
+      !themeContext.designSystem ||
+      !themeContext.updateDesignSystem
+    ) {
       console.error("Theme context not properly initialized");
       return;
     }
 
     const currentAppearance = themeContext.designSystem.theme.appearance;
-    const newAppearance = currentAppearance === 'dark' ? 'light' : 'dark';
+    const newAppearance = currentAppearance === "dark" ? "light" : "dark";
 
     await themeContext.updateDesignSystem({
       theme: {
         ...themeContext.designSystem.theme,
-        appearance: newAppearance
-      }
+        appearance: newAppearance,
+      },
     });
   };
 
-  const isDarkMode = themeContext?.designSystem?.theme?.appearance === 'dark';
+  const isDarkMode = themeContext?.designSystem?.theme?.appearance === "dark";
 
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
@@ -101,14 +100,16 @@ export const Sidebar: FC = () => {
 
       <ScrollArea className="flex-1 py-4">
         <nav className="px-2 space-y-1">
-          {filteredNavItems.map((item) => (
+          {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <Button
                 variant="ghost"
                 className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                  ${isActiveLink(item.href)
-                    ? 'bg-muted font-medium'
-                    : 'hover:bg-muted/50'}`}
+                  ${
+                    isActiveLink(item.href)
+                      ? "bg-muted font-medium"
+                      : "hover:bg-muted/50"
+                  }`}
               >
                 {item.icon}
                 {item.title}
@@ -131,8 +132,12 @@ export const Sidebar: FC = () => {
         <div className="flex items-center gap-3 px-3 py-2">
           <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.name || 'User'}</p>
-            <p className="text-xs text-muted-foreground truncate">{user?.email || 'Unknown'}</p>
+            <p className="text-sm font-medium truncate">
+              {user?.name || "User"}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {user?.email || "Unknown"}
+            </p>
           </div>
         </div>
 
@@ -149,25 +154,3 @@ export const Sidebar: FC = () => {
     </aside>
   );
 };
-
-//users.tsx
-import { useParams } from "wouter";
-import useAuth from "@/hooks/useAuth"; // Assumed hook
-
-
-const UsersPage = () => {
-  const { user } = useAuth();
-  const params = useParams();
-  console.log('params', params)
-  if (!user || !(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
-    return <div>Unauthorized</div>
-  }
-    return (
-      <div>
-        <h1>Users Page</h1>
-        {/* Add your user management components here */}
-      </div>
-    );
-};
-
-export default UsersPage;
