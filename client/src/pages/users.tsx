@@ -99,22 +99,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-
-// Create form schemas
-const inviteUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1),
-  role: z.enum(USER_ROLES as [string, ...string[]]),
-  clientIds: z.array(z.number()).optional(),
-});
-
-const updateUserRoleSchema = z.object({
-  id: z.number(),
-  role: z.enum(USER_ROLES as [string, ...string[]]),
-});
-
-type InviteUserForm = z.infer<typeof inviteUserSchema>;
-type UpdateUserRoleForm = z.infer<typeof updateUserRoleSchema>;
+import { inviteUserSchema, updateUserRoleSchema } from "@shared/schema";
 
 // Helper to get badge variant based on role
 const getRoleBadgeVariant = (role: string) => {
@@ -507,6 +492,8 @@ export default function UsersPage() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  console.log(currentUser);
 
   // Enhanced search with fuzzy matching
   const filteredUsers = debouncedSearchQuery

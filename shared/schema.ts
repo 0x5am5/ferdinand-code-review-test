@@ -1,7 +1,15 @@
-import { pgTable, text, serial, integer, json, timestamp, boolean } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  json,
+  timestamp,
+  boolean,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from 'drizzle-orm';
+import { relations } from "drizzle-orm";
 
 // Constants
 export const LogoType = {
@@ -17,13 +25,13 @@ export const FILE_FORMATS = {
   PNG: "png",
   SVG: "svg",
   JPG: "jpg",
-  JPEG: "jpeg"
+  JPEG: "jpeg",
 } as const;
 
 export const ColorCategory = {
   BRAND: "brand",
   NEUTRAL: "neutral",
-  INTERACTIVE: "interactive"
+  INTERACTIVE: "interactive",
 } as const;
 
 export const FontSource = {
@@ -55,14 +63,14 @@ export const PersonaEventAttribute = {
   EARLY_PLANNER: "early_planner",
   REGIONAL: "regional",
   NATIONAL: "national",
-  TRENDING: "trending"
+  TRENDING: "trending",
 } as const;
 
 export const UserRole = {
   SUPER_ADMIN: "super_admin",
   ADMIN: "admin",
   STANDARD: "standard",
-  GUEST: "guest"
+  GUEST: "guest",
 } as const;
 
 // Database Tables
@@ -72,7 +80,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   password: text("password"),
   role: text("role", {
-    enum: ["super_admin", "admin", "standard", "guest"]
+    enum: ["super_admin", "admin", "standard", "guest"],
   }).notNull(),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
@@ -93,10 +101,10 @@ export const clients = pgTable("clients", {
   // Feature toggles
   featureToggles: json("feature_toggles").default({
     logoSystem: true,
-    colorSystem: true, 
+    colorSystem: true,
     typeSystem: true,
     userPersonas: true,
-    inspiration: true
+    inspiration: true,
   }),
   lastEditedBy: integer("last_edited_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -105,17 +113,23 @@ export const clients = pgTable("clients", {
 
 export const userClients = pgTable("user_clients", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  clientId: integer("client_id").notNull().references(() => clients.id),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const brandAssets = pgTable("brand_assets", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").notNull().references(() => clients.id),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
   name: text("name").notNull(),
   category: text("category", {
-    enum: ["logo", "color", "typography", "font"]
+    enum: ["logo", "color", "typography", "font"],
   }).notNull(),
   data: json("data"),
   fileData: text("file_data"),
@@ -126,7 +140,9 @@ export const brandAssets = pgTable("brand_assets", {
 
 export const userPersonas = pgTable("user_personas", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").notNull().references(() => clients.id),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
   name: text("name").notNull(),
   role: text("role"),
   imageUrl: text("image_url"),
@@ -143,7 +159,9 @@ export const userPersonas = pgTable("user_personas", {
 
 export const inspirationSections = pgTable("inspiration_sections", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").notNull().references(() => clients.id),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
   label: text("label").notNull(),
   order: integer("order").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -152,7 +170,9 @@ export const inspirationSections = pgTable("inspiration_sections", {
 
 export const inspirationImages = pgTable("inspiration_images", {
   id: serial("id").primaryKey(),
-  sectionId: integer("section_id").notNull().references(() => inspirationSections.id),
+  sectionId: integer("section_id")
+    .notNull()
+    .references(() => inspirationSections.id),
   url: text("url").notNull(),
   fileData: text("file_data").notNull(),
   mimeType: text("mime_type").notNull(),
@@ -166,7 +186,7 @@ export const invitations = pgTable("invitations", {
   email: text("email").notNull(),
   name: text("name").notNull(),
   role: text("role", {
-    enum: ["super_admin", "admin", "standard", "guest"]
+    enum: ["super_admin", "admin", "standard", "guest"],
   }).notNull(),
   token: text("token").notNull().unique(),
   createdById: integer("created_by_id").references(() => users.id),
@@ -175,6 +195,9 @@ export const invitations = pgTable("invitations", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export type InviteUserForm = z.infer<typeof inviteUserSchema>;
+export type UpdateUserRoleForm = z.infer<typeof updateUserRoleSchema>;
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
@@ -203,15 +226,16 @@ export const insertUserSchema = createInsertSchema(users)
   })
   .omit({ id: true });
 
-export const insertClientSchema = createInsertSchema(clients)
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true
-  });
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
-export const insertUserClientSchema = createInsertSchema(userClients)
-  .omit({ id: true, createdAt: true });
+export const insertUserClientSchema = createInsertSchema(userClients).omit({
+  id: true,
+  createdAt: true,
+});
 
 export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
@@ -233,21 +257,33 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
     data: z.object({
       type: z.enum(["solid", "gradient"]),
       category: z.enum(Object.values(ColorCategory) as [string, ...string[]]),
-      colors: z.array(z.object({
-        hex: z.string(),
-        rgb: z.string().optional(),
-        hsl: z.string().optional(),
-        cmyk: z.string().optional(),
-        pantone: z.string().optional(),
-      })).min(1),
-      tints: z.array(z.object({
-        percentage: z.number(),
-        hex: z.string(),
-      })).optional(),
-      shades: z.array(z.object({
-        percentage: z.number(),
-        hex: z.string(),
-      })).optional(),
+      colors: z
+        .array(
+          z.object({
+            hex: z.string(),
+            rgb: z.string().optional(),
+            hsl: z.string().optional(),
+            cmyk: z.string().optional(),
+            pantone: z.string().optional(),
+          }),
+        )
+        .min(1),
+      tints: z
+        .array(
+          z.object({
+            percentage: z.number(),
+            hex: z.string(),
+          }),
+        )
+        .optional(),
+      shades: z
+        .array(
+          z.object({
+            percentage: z.number(),
+            hex: z.string(),
+          }),
+        )
+        .optional(),
     }),
   });
 
@@ -257,18 +293,28 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
     category: z.literal("font"),
     data: z.object({
       source: z.enum(Object.values(FontSource) as [string, ...string[]]),
-      weights: z.array(z.enum(Object.values(FontWeight) as [string, ...string[]])),
-      styles: z.array(z.enum(Object.values(FontStyle) as [string, ...string[]])),
+      weights: z.array(
+        z.enum(Object.values(FontWeight) as [string, ...string[]]),
+      ),
+      styles: z.array(
+        z.enum(Object.values(FontStyle) as [string, ...string[]]),
+      ),
       sourceData: z.object({
         projectId: z.string().optional(),
         url: z.string().url().optional(),
-        files: z.array(z.object({
-          weight: z.enum(Object.values(FontWeight) as [string, ...string[]]),
-          style: z.enum(Object.values(FontStyle) as [string, ...string[]]),
-          format: z.enum(["woff", "woff2", "otf", "ttf", "eot"]),
-          fileName: z.string(),
-          fileData: z.string(),
-        })).optional(),
+        files: z
+          .array(
+            z.object({
+              weight: z.enum(
+                Object.values(FontWeight) as [string, ...string[]],
+              ),
+              style: z.enum(Object.values(FontStyle) as [string, ...string[]]),
+              format: z.enum(["woff", "woff2", "otf", "ttf", "eot"]),
+              fileName: z.string(),
+              fileData: z.string(),
+            }),
+          )
+          .optional(),
       }),
     }),
   });
@@ -276,36 +322,46 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
 export const insertUserPersonaSchema = createInsertSchema(userPersonas)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    demographics: z.object({
-      location: z.string().optional(),
-      occupation: z.string().optional(),
-      interests: z.array(z.string()).optional(),
-    }).optional(),
-    eventAttributes: z.array(z.enum(Object.values(PersonaEventAttribute) as [string, ...string[]])),
-    metrics: z.object({
-      eventAttendance: z.number().optional(),
-      engagementRate: z.number().optional(),
-      averageSpend: z.string().optional(),
-    }).optional(),
+    demographics: z
+      .object({
+        location: z.string().optional(),
+        occupation: z.string().optional(),
+        interests: z.array(z.string()).optional(),
+      })
+      .optional(),
+    eventAttributes: z.array(
+      z.enum(Object.values(PersonaEventAttribute) as [string, ...string[]]),
+    ),
+    metrics: z
+      .object({
+        eventAttendance: z.number().optional(),
+        engagementRate: z.number().optional(),
+        averageSpend: z.string().optional(),
+      })
+      .optional(),
   });
 
-export const insertInspirationSectionSchema = createInsertSchema(inspirationSections)
-  .omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInspirationSectionSchema = createInsertSchema(
+  inspirationSections,
+).omit({ id: true, createdAt: true, updatedAt: true });
 
-export const insertInspirationImageSchema = createInsertSchema(inspirationImages)
-  .omit({ id: true, createdAt: true, updatedAt: true });
+export const insertInspirationImageSchema = createInsertSchema(
+  inspirationImages,
+).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertInvitationSchema = createInsertSchema(invitations)
   .omit({ id: true, createdAt: true, token: true, expiresAt: true })
   .extend({
-    clientIds: z.array(z.number()).optional()
+    clientIds: z.array(z.number()).optional(),
   });
 
 export const updateClientOrderSchema = z.object({
-  clientOrders: z.array(z.object({
-    id: z.number(),
-    displayOrder: z.number()
-  }))
+  clientOrders: z.array(
+    z.object({
+      id: z.number(),
+      displayOrder: z.number(),
+    }),
+  ),
 });
 
 // Base Types
@@ -326,8 +382,12 @@ export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
 export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
 export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
 export type InsertUserClient = z.infer<typeof insertUserClientSchema>;
-export type InsertInspirationSection = z.infer<typeof insertInspirationSectionSchema>;
-export type InsertInspirationImage = z.infer<typeof insertInspirationImageSchema>;
+export type InsertInspirationSection = z.infer<
+  typeof insertInspirationSectionSchema
+>;
+export type InsertInspirationImage = z.infer<
+  typeof insertInspirationImageSchema
+>;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 
 // Other Types
@@ -342,3 +402,16 @@ export const FONT_WEIGHTS = Object.values(FontWeight);
 export const FONT_STYLES = Object.values(FontStyle);
 export const PERSONA_EVENT_ATTRIBUTES = Object.values(PersonaEventAttribute);
 export const USER_ROLES = Object.values(UserRole);
+
+// Create form schemas
+export const inviteUserSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(1),
+  role: z.enum(USER_ROLES as [string, ...string[]]),
+  clientIds: z.array(z.number()).optional(),
+});
+
+export const updateUserRoleSchema = z.object({
+  id: z.number(),
+  role: z.enum(USER_ROLES as [string, ...string[]]),
+});
