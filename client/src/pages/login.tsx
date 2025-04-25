@@ -1,80 +1,69 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LogIn, ArrowRight } from "lucide-react";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
+  const googleProvider = new GoogleAuthProvider();
   
-  // Simplified direct Firebase sign-in
   const handleSignIn = async () => {
     setIsLoading(true);
     setErrorMessage(null);
     
     try {
-      console.log("Starting Firebase sign-in...");
-      
-      // Attempt to sign in with Google
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("Sign-in successful:", result.user?.email);
       
-      if (result && result.user) {
-        // Get token for backend
-        const idToken = await result.user.getIdToken();
-        console.log("ID token obtained");
-        
-        // Create session on backend
-        const response = await fetch("/api/auth/google", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ idToken }),
-        });
-        
-        const data = await response.json();
-        console.log("Backend authentication response:", data);
-        
-        if (!response.ok) {
-          throw new Error(data.message || "Server authentication failed");
-        }
-        
-        toast({
-          title: "Sign In Successful",
-          description: `Welcome back, ${result.user.email}`,
-        });
-        
-        // Redirect to dashboard
-        window.location.href = "/dashboard";
+      if (!result.user) {
+        throw new Error("No user data returned");
       }
+
+      const idToken = await result.user.getIdToken();
+      
+      const response = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ idToken }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || "Server authentication failed");
+      }
+      
+      toast({
+        title: "Welcome!",
+        description: `Signed in as ${result.user.email}`,
+      });
+      
+      window.location.href = "/dashboard";
+      
     } catch (error: any) {
       console.error("Authentication error:", error);
       
-      // Detailed error logging
-      if (error.code) console.error(`Error code: ${error.code}`);
-      if (error.message) console.error(`Error message: ${error.message}`);
-      
       let errorMsg = "Authentication failed. Please try again.";
       
-      // Provide more helpful error messages for common problems
       if (error.code === "auth/popup-blocked") {
-        errorMsg = "The sign-in popup was blocked by your browser. Please allow popups for this site.";
-      } else if (error.code === "auth/popup-closed-by-user") {
-        errorMsg = "The sign-in popup was closed before completing authentication.";
+        errorMsg = "Please allow popups for this site to sign in.";
+      } else if (error.code === "auth/cancelled-popup-request") {
+        errorMsg = "Sign-in was cancelled.";
       } else if (error.code === "auth/network-request-failed") {
-        errorMsg = "Network connection issue. Please check your internet connection.";
+        errorMsg = "Network error. Please check your connection.";
       }
       
       setErrorMessage(errorMsg);
-      
       toast({
-        title: "Authentication Error",
+        title: "Sign In Error",
         description: errorMsg,
         variant: "destructive",
       });
