@@ -98,6 +98,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
 
 // Create form schemas
 const inviteUserSchema = z.object({
@@ -807,14 +808,23 @@ export default function UsersPage() {
                     <TableCell>
                       <Select
                         defaultValue={user.role}
-                        disabled={currentUser?.role !== UserRole.SUPER_ADMIN && value === UserRole.SUPER_ADMIN}
+                        disabled={
+                          currentUser?.role !== UserRole.SUPER_ADMIN &&
+                          value === UserRole.SUPER_ADMIN
+                        }
                         onValueChange={(value) => {
                           // Prevent non-super admins from assigning super admin role
-                          if (currentUser?.role !== UserRole.SUPER_ADMIN && value === UserRole.SUPER_ADMIN) {
+                          if (
+                            currentUser?.role !== UserRole.SUPER_ADMIN &&
+                            value === UserRole.SUPER_ADMIN
+                          ) {
                             return;
                           }
                           // Prevent admins from modifying super admin users
-                          if (currentUser?.role === UserRole.ADMIN && user.role === UserRole.SUPER_ADMIN) {
+                          if (
+                            currentUser?.role === UserRole.ADMIN &&
+                            user.role === UserRole.SUPER_ADMIN
+                          ) {
                             return;
                           }
                           updateUserRole.mutate({
@@ -856,85 +866,90 @@ export default function UsersPage() {
                         {/* Client assignments with improved UI */}
                         <div>
                           {currentUser?.role === UserRole.SUPER_ADMIN ? (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className={cn(
-                                  "w-full justify-start text-left font-normal h-8",
-                                  !userClientAssignments[user.id]?.length &&
-                                    "text-muted-foreground",
-                                )}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className={cn(
+                                    "w-full justify-start text-left font-normal h-8",
+                                    !userClientAssignments[user.id]?.length &&
+                                      "text-muted-foreground",
+                                  )}
+                                >
+                                  <Building2 className="h-4 w-4 mr-2 opacity-70" />
+                                  {userClientAssignments[user.id]?.length
+                                    ? `${userClientAssignments[user.id].length} client${userClientAssignments[user.id].length === 1 ? "" : "s"} assigned`
+                                    : "Assign clients"}
+                                  <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                className="w-80 p-0"
+                                align="start"
                               >
-                                <Building2 className="h-4 w-4 mr-2 opacity-70" />
-                                {userClientAssignments[user.id]?.length
-                                  ? `${userClientAssignments[user.id].length} client${userClientAssignments[user.id].length === 1 ? "" : "s"} assigned`
-                                  : "Assign clients"}
-                                <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 p-0" align="start">
-                              <Command>
-                                <CommandInput
-                                  placeholder="Search clients..."
-                                  className="border-none focus:ring-0"
-                                  autoFocus
-                                />
-                                <CommandList>
-                                  <CommandEmpty>No clients found</CommandEmpty>
-                                  {userClientAssignments[user.id]?.length >
-                                    0 && (
-                                    <CommandGroup heading="Assigned clients">
-                                      {userClientAssignments[user.id]?.map(
-                                        (client) => (
+                                <Command>
+                                  <CommandInput
+                                    placeholder="Search clients..."
+                                    className="border-none focus:ring-0"
+                                    autoFocus
+                                  />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      No clients found
+                                    </CommandEmpty>
+                                    {userClientAssignments[user.id]?.length >
+                                      0 && (
+                                      <CommandGroup heading="Assigned clients">
+                                        {userClientAssignments[user.id]?.map(
+                                          (client) => (
+                                            <CommandItem
+                                              key={client.id}
+                                              onSelect={() => {
+                                                removeClient.mutate({
+                                                  userId: user.id,
+                                                  clientId: client.id,
+                                                });
+                                              }}
+                                              className="bg-secondary/5 text-primary"
+                                            >
+                                              <Check className="h-4 w-4 mr-2 text-primary" />
+                                              <span>{client.name}</span>
+                                              <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                            </CommandItem>
+                                          ),
+                                        )}
+                                      </CommandGroup>
+                                    )}
+
+                                    <CommandGroup heading="Available clients">
+                                      {clients
+                                        .filter(
+                                          (client) =>
+                                            !userClientAssignments[
+                                              user.id
+                                            ]?.some((c) => c.id === client.id),
+                                        )
+                                        .map((client) => (
                                           <CommandItem
                                             key={client.id}
                                             onSelect={() => {
-                                              removeClient.mutate({
+                                              assignClient.mutate({
                                                 userId: user.id,
                                                 clientId: client.id,
                                               });
                                             }}
-                                            className="bg-secondary/5 text-primary"
+                                            className="cursor-pointer"
                                           >
-                                            <Check className="h-4 w-4 mr-2 text-primary" />
+                                            <Building2 className="mr-2 h-4 w-4 opacity-50" />
                                             <span>{client.name}</span>
-                                            <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
                                           </CommandItem>
-                                        ),
-                                      )}
+                                        ))}
                                     </CommandGroup>
-                                  )}
-
-                                  <CommandGroup heading="Available clients">
-                                    {clients
-                                      .filter(
-                                        (client) =>
-                                          !userClientAssignments[user.id]?.some(
-                                            (c) => c.id === client.id,
-                                          ),
-                                      )
-                                      .map((client) => (
-                                        <CommandItem
-                                          key={client.id}
-                                          onSelect={() => {
-                                            assignClient.mutate({
-                                              userId: user.id,
-                                              clientId: client.id,
-                                            });
-                                          }}
-                                          className="cursor-pointer"
-                                        >
-                                          <Building2 className="mr-2 h-4 w-4 opacity-50" />
-                                          <span>{client.name}</span>
-                                        </CommandItem>
-                                      ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
                           ) : (
                             <div className="text-sm text-muted-foreground">
                               Client assignment restricted to super admins
