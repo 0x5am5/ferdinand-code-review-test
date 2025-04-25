@@ -1,7 +1,8 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
-import { PanelLeft } from "lucide-react"
+import { LogOut, PanelLeft } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -368,13 +369,27 @@ const SidebarFooter = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
+  const { logout } = useAuth();
+  const { state } = useSidebar();
+  
   return (
     <div
       ref={ref}
       data-sidebar="footer"
       className={cn("flex flex-col gap-2 p-2", className)}
       {...props}
-    />
+    >
+      <button
+        onClick={logout}
+        className={cn(
+          "flex w-full items-center gap-2 rounded-md p-2 text-sm text-sidebar-foreground/70 outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+          state === "collapsed" && "justify-center"
+        )}
+      >
+        <LogOut className="h-4 w-4" />
+        {state !== "collapsed" && "Log out"}
+      </button>
+    </div>
   )
 })
 SidebarFooter.displayName = "SidebarFooter"
