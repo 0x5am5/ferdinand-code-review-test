@@ -3,6 +3,9 @@ import Login from "@/pages/login";
 import AuthDebug from "@/pages/auth-debug";
 import DesignEditor from '@/pages/design-editor';
 import DesignBuilder from '@/pages/design-builder';
+import { ProtectedRoute } from '@/components/ProtectedRoute'; // Assumed location
+import Users from '@/pages/users'; // Assumed location
+
 
 export const router = createBrowserRouter([
   {
@@ -15,5 +18,6 @@ export const router = createBrowserRouter([
   },
   { path: '/design-editor', element: <DesignEditor /> },
   { path: '/design-builder', element: <DesignBuilder /> },
+  { path: '/users', element: <ProtectedRoute component={Users} adminOnly /> }, // Added route with adminOnly protection
   // Your other routes...
 ]);
