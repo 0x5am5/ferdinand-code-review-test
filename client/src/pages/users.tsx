@@ -145,7 +145,7 @@ interface PendingInvitation {
   };
 }
 
-function UsersPage() {
+export default function UsersPage() {
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
