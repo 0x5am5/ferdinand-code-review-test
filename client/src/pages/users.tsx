@@ -151,7 +151,14 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
 
-  const { data: users = [], isLoading: isLoadingUsers } = useUsersQuery();
+  // Filter out users with admin/super_admin roles if current user is admin
+      const { data: allUsers = [], isLoading: isLoadingUsers } = useUsersQuery();
+      const users = allUsers.filter(u => {
+        if (currentUser?.role === UserRole.ADMIN) {
+          return !['ADMIN', 'SUPER_ADMIN'].includes(u.role);
+        }
+        return true;
+      });
   const { data: pendingInvitations = [], isLoading: isLoadingInvitations } =
     usePendingInvitationsQuery();
   const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } =
@@ -506,18 +513,16 @@ export default function UsersPage() {
                       <Select
                         defaultValue={user.role}
                         onValueChange={(value) => {
-                          // Prevent non-super admins from assigning super admin role
+                          // Prevent non-super admins from assigning admin roles
                           if (
                             currentUser?.role !== UserRole.SUPER_ADMIN &&
-                            value === UserRole.SUPER_ADMIN
+                            ['SUPER_ADMIN', 'ADMIN'].includes(value)
                           ) {
-                            return;
-                          }
-                          // Prevent admins from modifying super admin users
-                          if (
-                            currentUser?.role === UserRole.ADMIN &&
-                            user.role === UserRole.SUPER_ADMIN
-                          ) {
+                            toast({
+                              title: "Permission denied",
+                              description: "Only super admins can assign admin roles",
+                              variant: "destructive"
+                            });
                             return;
                           }
                           updateUserRole.mutate({
@@ -539,14 +544,17 @@ export default function UsersPage() {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {USER_ROLES.map((role) => (
+                          {USER_ROLES.filter(role => 
+                            // Only show admin roles to super admins
+                            currentUser?.role === UserRole.SUPER_ADMIN || 
+                            !['ADMIN', 'SUPER_ADMIN'].includes(role)
+                          ).map((role) => (
                             <SelectItem key={role} value={role}>
                               <Badge
                                 variant={getRoleBadgeVariant(role)}
                                 className="bg-secondary/10 text-secondary"
                               >
                                 {" "}
-                                {/*Updated Color*/}
                                 {role.replace("_", " ")}
                               </Badge>
                             </SelectItem>

@@ -614,7 +614,30 @@ export function registerRoutes(app: Express) {
   // Get all users
   app.get("/api/users", async (req, res) => {
     try {
-      const allUsers = await db.select().from(users);
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      let allUsers;
+      if (currentUser.role === UserRole.SUPER_ADMIN) {
+        // Super admins can see all users
+        allUsers = await db.select().from(users);
+      } else if (currentUser.role === UserRole.ADMIN) {
+        // Admins can only see non-admin users from their organization
+        const orgUsers = await db.select()
+          .from(users)
+          .where(sql`role NOT IN ('ADMIN', 'SUPER_ADMIN')`);
+        allUsers = orgUsers;
+      } else {
+        // Other users can only see themselves
+        allUsers = [currentUser];
+      }
+
       res.json(allUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
