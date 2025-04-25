@@ -1,4 +1,5 @@
 import { UserManager } from "@/components/client/user-manager";
+import { useClientsQuery, useUpdateClientMutation, useDeleteClientMutation, useUpdateClientOrderMutation } from "@/hooks/dashboard-api";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema, UserRole } from "@shared/schema";
 import {
@@ -70,6 +71,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
+
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -94,33 +98,31 @@ export default function Dashboard() {
 
   const { toast } = useToast();
 
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
-    select: (data) => {
-      // Filter clients based on user role and assignments
-      let filteredData = [...data];
+  const { data: clients = [] } = useClientsQuery(user);
+  const updateClient = useUpdateClientMutation();
+  const deleteClient = useDeleteClientMutation();
+  const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
 
-      // If admin, only show assigned clients
-      if (user?.role === UserRole.ADMIN) {
-        filteredData = filteredData.filter((client) =>
-          user.clientIds?.includes(client.id),
-        );
-      }
+  useEffect(() => {
+    if (updateClient.isSuccess) {
+      setEditingClient(null);
+      form.reset();
+    }
+  }, [updateClient.isSuccess]);
 
-      // Sort by displayOrder if available, fallback to id
-      return filteredData.sort((a, b) => {
-        if (
-          a.displayOrder !== null &&
-          a.displayOrder !== undefined &&
-          b.displayOrder !== null &&
-          b.displayOrder !== undefined
-        ) {
-          return Number(a.displayOrder) - Number(b.displayOrder);
-        }
-        return a.id - b.id;
-      });
-    },
-  });
+  useEffect(() => {
+    if (deleteClient.isSuccess) {
+      setDeletingClient(null);
+    }
+  }, [deleteClient.isSuccess]);
+
+  useEffect(() => {
+    if (updateClientOrder.isError) {
+      // Reset to the original order on error
+      setOrderedClients(clients);
+    }
+  }, [updateClientOrder.isError, clients]);
+
 
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
 
@@ -141,86 +143,7 @@ export default function Dashboard() {
     },
   });
 
-  // Update client mutation
-  const updateClient = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      await apiRequest("PATCH", `/api/clients/${id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      toast({
-        title: "Success",
-        description: "Client updated successfully",
-      });
-      setEditingClient(null);
-      form.reset();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
-  // Delete client mutation
-  const deleteClient = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/clients/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      toast({
-        title: "Success",
-        description: "Client deleted successfully",
-      });
-      setDeletingClient(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Update client order mutation
-  const updateClientOrder = useMutation({
-    mutationFn: async (
-      clientOrders: { id: number; displayOrder: number }[],
-    ) => {
-      const response = await apiRequest("PATCH", "/api/clients/order", {
-        clientOrders,
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update client order");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      toast({
-        title: "Success",
-        description: "Client order updated successfully",
-      });
-      // Ensure we stay in custom sort mode after reordering
-      setSortOrder("custom");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-      // Reset to the original order on error
-      setOrderedClients(clients);
-    },
-  });
-
-  // Handle drag end with improved animation and interaction
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
 
@@ -242,7 +165,6 @@ export default function Dashboard() {
     updateClientOrder.mutate(clientOrders);
   };
 
-  // Reset form when editing client changes
   useEffect(() => {
     if (editingClient) {
       form.reset({
