@@ -152,13 +152,13 @@ export default function UsersPage() {
   const { toast } = useToast();
 
   // Filter out users with admin/super_admin roles if current user is admin
-      const { data: allUsers = [], isLoading: isLoadingUsers } = useUsersQuery();
-      const users = allUsers.filter(u => {
-        if (currentUser?.role === UserRole.ADMIN) {
-          return !['ADMIN', 'SUPER_ADMIN'].includes(u.role);
-        }
-        return true;
-      });
+  const { data: allUsers = [], isLoading: isLoadingUsers } = useUsersQuery();
+  const users = allUsers.filter((u) => {
+    if (currentUser?.role === UserRole.ADMIN) {
+      return !["ADMIN", "SUPER_ADMIN"].includes(u.role);
+    }
+    return true;
+  });
   const { data: pendingInvitations = [], isLoading: isLoadingInvitations } =
     usePendingInvitationsQuery();
   const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } =
@@ -207,8 +207,6 @@ export default function UsersPage() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  console.log(currentUser);
 
   // Enhanced search with fuzzy matching
   const filteredUsers = debouncedSearchQuery
@@ -516,12 +514,13 @@ export default function UsersPage() {
                           // Prevent non-super admins from assigning admin roles
                           if (
                             currentUser?.role !== UserRole.SUPER_ADMIN &&
-                            ['SUPER_ADMIN', 'ADMIN'].includes(value)
+                            ["SUPER_ADMIN", "ADMIN"].includes(value)
                           ) {
                             toast({
                               title: "Permission denied",
-                              description: "Only super admins can assign admin roles",
-                              variant: "destructive"
+                              description:
+                                "Only super admins can assign admin roles",
+                              variant: "destructive",
                             });
                             return;
                           }
@@ -544,11 +543,15 @@ export default function UsersPage() {
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
-                          {USER_ROLES.filter(role => 
-                            // Only show admin roles to super admins
-                            currentUser?.role === UserRole.SUPER_ADMIN || 
-                            !['ADMIN', 'SUPER_ADMIN'].includes(role)
-                          ).map((role) => (
+                          {USER_ROLES.filter((role) => {
+                            if (
+                              role === "super_admin" &&
+                              currentUser?.role !== "super_admin"
+                            ) {
+                              return false;
+                            }
+                            return true;
+                          }).map((role) => (
                             <SelectItem key={role} value={role}>
                               <Badge
                                 variant={getRoleBadgeVariant(role)}
