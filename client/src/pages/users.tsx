@@ -1,11 +1,5 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import {
-  User,
-  UserRole,
-  Client,
-  USER_ROLES,
-  UpdateUserRoleForm,
-} from "@shared/schema";
+import { UserRole, Client, USER_ROLES } from "@shared/schema";
+import { useUsersQuery, usePendingInvitationsQuery, useUserClientAssignmentsQuery, useUpdateUserRoleMutation, useInviteUserMutation, useClientAssignmentMutations } from "@/lib/queries/users";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -160,89 +154,14 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
 
-  // Get all users
-  const { data: users = [], isLoading: isLoadingUsers } = useQuery<User[]>({
-    queryKey: ["/api/users"],
-    queryFn: async () => {
-      const response = await fetch("/api/users");
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-      return response.json();
-    },
-  });
+  const { data: users = [], isLoading: isLoadingUsers } = useUsersQuery();
+  const { data: pendingInvitations = [], isLoading: isLoadingInvitations } = usePendingInvitationsQuery();
+  const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } = useUserClientAssignmentsQuery(users.map(u => u.id));
 
-  // Get pending invitations
-  const { data: pendingInvitations = [], isLoading: isLoadingInvitations } =
-    useQuery<PendingInvitation[]>({
-      queryKey: ["/api/invitations"],
-      queryFn: async () => {
-        const response = await fetch("/api/invitations");
-        if (!response.ok) {
-          if (response.status === 403) {
-            // User doesn't have permission, return empty array
-            return [];
-          }
-          throw new Error("Failed to fetch pending invitations");
-        }
-        return response.json();
-      },
-    });
+  const updateUserRole = useUpdateUserRoleMutation();
+  const inviteUser = useInviteUserMutation();
+  const { assignClient, removeClient } = useClientAssignmentMutations();
 
-  // Resend invitation mutation
-  const resendInvitation = useMutation({
-    mutationFn: async (invitationId: number) => {
-      const response = await fetch(`/api/invitations/${invitationId}/resend`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to resend invitation");
-      }
-      return response.json();
-    },
-    onSuccess: (_, invitationId) => {
-      toast({
-        title: "Invitation resent",
-        description: "The invitation email has been resent successfully.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to resend invitation",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Reset password mutation
-  const resetPassword = useMutation({
-    mutationFn: async (userId: number) => {
-      const response = await fetch(`/api/users/${userId}/reset-password`, {
-        method: "POST",
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to send password reset");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Password reset email sent",
-        description: "A password reset link has been sent to the user's email.",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to send password reset",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   // Get all clients for assignment
   const { data: clients = [] } = useQuery<Client[]>({
@@ -252,228 +171,14 @@ export default function UsersPage() {
   // State for tracking user mutations
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Fetch client assignments for all users
-  const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } =
-    useQuery<Record<number, Client[]>>({
-      queryKey: ["/api/users/client-assignments"],
-      queryFn: async () => {
-        try {
-          const response = await fetch(`/api/users/client-assignments`);
-          if (!response.ok) {
-            throw new Error("Failed to fetch client assignments");
-          }
-          return await response.json();
-        } catch (error) {
-          console.error("Failed to fetch client assignments:", error);
-          return {};
-        }
-      },
-      enabled: users.length > 0,
-    });
 
   // Update user role
-  const updateUserRole = useMutation({
-    mutationFn: async (data: UpdateUserRoleForm) => {
-      return await apiRequest("PATCH", `/api/users/${data.id}/role`, {
-        role: data.role,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "Success",
-        description: "User role updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   // Invite new user
-  const inviteUser = useMutation({
-    mutationFn: async (data: InviteUserForm) => {
-      try {
-        const response = await apiRequest("POST", "/api/users", data);
-        return response;
-      } catch (err) {
-        // Check if this is a JSON response with error details
-        if (err instanceof Error && "response" in err) {
-          const response = (err as any).response;
-
-          if (response?.data) {
-            // Handle specific error codes
-            if (response.data.code === "EMAIL_EXISTS") {
-              throw new Error("A user with this email already exists.");
-            } else if (response.data.code === "INVITATION_EXISTS") {
-              // Store the invitation ID for potential resend
-              const invitationId = response.data.invitationId;
-
-              // Make this a special error object with the invitation ID
-              const customError = new Error(
-                "An invitation for this email already exists. Would you like to resend it?",
-              );
-              (customError as any).invitationId = invitationId;
-              throw customError;
-            }
-
-            // If there's a message but no specific code we recognize
-            if (response.data.message) {
-              throw new Error(response.data.message);
-            }
-          }
-        }
-
-        // If we couldn't parse it as a special error, rethrow the original
-        throw err;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
-      toast({
-        title: "Success",
-        description: "User invited successfully",
-      });
-      setIsInviteDialogOpen(false);
-      inviteForm.reset();
-    },
-    onError: (error: Error) => {
-      // Check if this is our special error with an invitation ID
-      if ("invitationId" in error) {
-        // Show a special toast with an action to resend
-        toast({
-          title: "Duplicate Invitation",
-          description: (
-            <div className="flex flex-col gap-2">
-              <p>{error.message}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Call resend mutation with the stored invitation ID
-                  resendInvitation.mutate((error as any).invitationId);
-                  // Close the dialog since we're handling this invitation already
-                  setIsInviteDialogOpen(false);
-                }}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Resend Invitation
-              </Button>
-            </div>
-          ),
-          duration: 10000,
-        });
-      } else {
-        // Regular error
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    },
-  });
 
   // Assign client to user
-  const assignClient = useMutation({
-    mutationFn: async ({
-      userId,
-      clientId,
-    }: {
-      userId: number;
-      clientId: number;
-    }) => {
-      return await apiRequest("POST", `/api/user-clients`, {
-        userId,
-        clientId,
-      });
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-
-      // Find the client and update local state immediately
-      const client = clients.find((c) => c.id === variables.clientId);
-      if (client) {
-        // Create a copy of the current state
-        const updatedAssignments = { ...userClientAssignments };
-
-        // Initialize the array if it doesn't exist
-        if (!updatedAssignments[variables.userId]) {
-          updatedAssignments[variables.userId] = [];
-        }
-
-        // Add the client if it's not already in the array
-        if (
-          !updatedAssignments[variables.userId].some((c) => c.id === client.id)
-        ) {
-          updatedAssignments[variables.userId] = [
-            ...updatedAssignments[variables.userId],
-            client,
-          ];
-
-          // Update the query data directly in the cache
-          queryClient.setQueryData(
-            ["/api/users/client-assignments"],
-            updatedAssignments,
-          );
-        }
-      }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   // Remove client from user
-  const removeClient = useMutation({
-    mutationFn: async ({
-      userId,
-      clientId,
-    }: {
-      userId: number;
-      clientId: number;
-    }) => {
-      return await apiRequest(
-        "DELETE",
-        `/api/user-clients/${userId}/${clientId}`,
-      );
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-
-      // Update local state immediately
-      const updatedAssignments = { ...userClientAssignments };
-
-      if (updatedAssignments[variables.userId]) {
-        // Remove the client from the array
-        updatedAssignments[variables.userId] = updatedAssignments[
-          variables.userId
-        ].filter((c) => c.id !== variables.clientId);
-
-        // Update the query data directly in the cache
-        queryClient.setQueryData(
-          ["/api/users/client-assignments"],
-          updatedAssignments,
-        );
-      }
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   // Define forms
   const inviteForm = useForm<InviteUserForm>({
