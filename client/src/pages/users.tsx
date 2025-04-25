@@ -151,14 +151,8 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { toast } = useToast();
 
-  // Filter out users with admin/super_admin roles if current user is admin
-  const { data: allUsers = [], isLoading: isLoadingUsers } = useUsersQuery();
-  const users = allUsers.filter((u) => {
-    if (currentUser?.role === UserRole.ADMIN) {
-      return !["ADMIN", "SUPER_ADMIN"].includes(u.role);
-    }
-    return true;
-  });
+  // Get users - server already handles filtering based on role and client assignments
+  const { data: users = [], isLoading: isLoadingUsers } = useUsersQuery();
   const { data: pendingInvitations = [], isLoading: isLoadingInvitations } =
     usePendingInvitationsQuery();
   const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } =

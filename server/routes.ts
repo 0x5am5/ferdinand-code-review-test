@@ -628,11 +628,26 @@ export function registerRoutes(app: Express) {
         // Super admins can see all users
         allUsers = await db.select().from(users);
       } else if (currentUser.role === UserRole.ADMIN) {
-        // Admins can only see non-admin users from their organization
-        const orgUsers = await db.select()
+        // Get admin's client assignments
+        const adminClients = await storage.getUserClients(currentUser.id);
+        
+        // Get all users assigned to the same clients
+        const clientUsers = await db.select()
+          .from(userClients)
+          .where(inArray(userClients.clientId, adminClients.map(c => c.id)));
+        
+        // Get unique user IDs
+        const userIds = [...new Set(clientUsers.map(uc => uc.userId))];
+        
+        // Get user details excluding other admins and super admins
+        allUsers = await db.select()
           .from(users)
-          .where(sql`role NOT IN ('ADMIN', 'SUPER_ADMIN')`);
-        allUsers = orgUsers;
+          .where(
+            and(
+              inArray(users.id, userIds),
+              sql`role NOT IN ('ADMIN', 'SUPER_ADMIN')`
+            )
+          );
       } else {
         // Other users can only see themselves
         allUsers = [currentUser];
