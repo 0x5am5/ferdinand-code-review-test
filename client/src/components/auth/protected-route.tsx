@@ -19,7 +19,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({ children, adminOnly })
     return <Redirect to="/login" />;
   }
 
-  if (adminOnly && !['SUPER_ADMIN', 'ADMIN'].includes(user.role)) {
+  if (adminOnly && !user.role?.includes('ADMIN')) {
     return <Redirect to="/dashboard" />;
   }
 
