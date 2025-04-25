@@ -1,6 +1,6 @@
 import { UserManager } from "@/components/client/user-manager";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Client, insertClientSchema } from "@shared/schema";
+import { Client, insertClientSchema, UserRole } from "@shared/schema";
 import {
   Card,
   CardContent,
@@ -74,20 +74,11 @@ import { Badge } from "@/components/ui/badge";
 export default function Dashboard() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">("custom");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
+    "custom",
+  );
   const location = useLocation();
-  
-  // Redirect standard users to design builder
-  useEffect(() => {
-    if (user?.role === UserRole.STANDARD) {
-      window.location.href = "/design-builder";
-    }
-  }, [user]);
 
-  // If user is being redirected, don't render the dashboard
-  if (user?.role === UserRole.STANDARD) {
-    return null;
-  }
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const [activeTab, setActiveTab] = useState("client-info");
@@ -108,11 +99,11 @@ export default function Dashboard() {
     select: (data) => {
       // Filter clients based on user role and assignments
       let filteredData = [...data];
-      
+
       // If admin, only show assigned clients
       if (user?.role === UserRole.ADMIN) {
-        filteredData = filteredData.filter(client => 
-          user.clientIds?.includes(client.id)
+        filteredData = filteredData.filter((client) =>
+          user.clientIds?.includes(client.id),
         );
       }
 
