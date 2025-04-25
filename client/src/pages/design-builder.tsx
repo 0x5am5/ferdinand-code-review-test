@@ -81,6 +81,9 @@ export default function DesignBuilder() {
   const [navTarget, setNavTarget] = useState("");
   const [activeTab, setActiveTab] = useState("theme");
   const [hasChanges, setHasChanges] = useState(false);
+  const userRole = 'editor'; // Replace with actual user role fetch mechanism.
+  const canEdit = ['editor', 'admin', 'super_admin'].includes(userRole);
+
 
   // Initialize the form with current theme values
   const form = useForm<z.infer<typeof themeFormSchema>>({
@@ -209,6 +212,7 @@ export default function DesignBuilder() {
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -245,13 +249,14 @@ export default function DesignBuilder() {
                         <div className="flex items-center gap-2">
                           <ColorPreview color={field.value} />
                           <FormControl>
-                            <Input {...field} type="color" className="w-10 h-10 p-1" />
+                            <Input {...field} type="color" className="w-10 h-10 p-1" disabled={!canEdit} />
                           </FormControl>
                           <FormControl>
                             <Input 
                               value={field.value} 
                               onChange={field.onChange}
                               className="w-32"
+                              disabled={!canEdit}
                             />
                           </FormControl>
                         </div>
@@ -274,13 +279,14 @@ export default function DesignBuilder() {
                             <div className="flex items-center gap-2">
                               <ColorPreview color={field.value || '#666666'} />
                               <FormControl>
-                                <Input {...field} type="color" className="w-10 h-10 p-1" />
+                                <Input {...field} type="color" className="w-10 h-10 p-1" disabled={!canEdit} />
                               </FormControl>
                               <FormControl>
                                 <Input 
                                   value={field.value || '#666666'} 
                                   onChange={field.onChange}
                                   className="w-32"
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                             </div>
@@ -301,13 +307,14 @@ export default function DesignBuilder() {
                             <div className="flex items-center gap-2">
                               <ColorPreview color={field.value || '#444444'} />
                               <FormControl>
-                                <Input {...field} type="color" className="w-10 h-10 p-1" />
+                                <Input {...field} type="color" className="w-10 h-10 p-1" disabled={!canEdit} />
                               </FormControl>
                               <FormControl>
                                 <Input 
                                   value={field.value || '#444444'} 
                                   onChange={field.onChange}
                                   className="w-32"
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                             </div>
@@ -330,6 +337,7 @@ export default function DesignBuilder() {
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -379,6 +387,7 @@ export default function DesignBuilder() {
                             defaultValue={[field.value]}
                             onValueChange={(values) => field.onChange(values[0])}
                             className="w-full"
+                            disabled={!canEdit}
                           />
                         </FormControl>
                         <FormDescription>
@@ -398,6 +407,7 @@ export default function DesignBuilder() {
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -419,7 +429,7 @@ export default function DesignBuilder() {
                     )}
                   />
 
-                  <Button type="submit">Apply Changes</Button>
+                  <Button type="submit" disabled={!canEdit}>Apply Changes</Button>
                 </form>
               </Form>
             </CardContent>
@@ -453,6 +463,7 @@ export default function DesignBuilder() {
                             });
                             setHasChanges(true);
                           }}
+                          disabled={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for body text throughout the application.
@@ -471,6 +482,7 @@ export default function DesignBuilder() {
                             });
                             setHasChanges(true);
                           }}
+                          disabled={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for headings and emphasized text.
@@ -488,6 +500,7 @@ export default function DesignBuilder() {
                       description: "Typography changes have been applied to the preview."
                     });
                   }}
+                  disabled={!canEdit}
                 >
                   Apply Typography Changes
                 </Button>
@@ -540,11 +553,11 @@ export default function DesignBuilder() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="preview-input">Input Field</Label>
-                      <Input id="preview-input" placeholder="Enter some text" />
+                      <Input id="preview-input" placeholder="Enter some text" disabled={!canEdit}/>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="preview-select">Select Menu</Label>
-                      <Select>
+                      <Select disabled={!canEdit}>
                         <SelectTrigger id="preview-select">
                           <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
@@ -558,7 +571,7 @@ export default function DesignBuilder() {
                     <div className="space-y-2">
                       <Label htmlFor="preview-checkbox">Checkbox</Label>
                       <div className="flex items-center space-x-2">
-                        <Switch id="preview-checkbox" />
+                        <Switch id="preview-checkbox" disabled={!canEdit}/>
                         <Label htmlFor="preview-checkbox">Toggle me</Label>
                       </div>
                     </div>
