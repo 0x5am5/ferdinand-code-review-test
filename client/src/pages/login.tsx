@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,12 +13,16 @@ import { LogIn, ArrowRight } from "lucide-react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
   const googleProvider = new GoogleAuthProvider();
+  const { user } = useAuth();
+  const [_location, setLocation] = useLocation();
 
   const handleSignIn = async () => {
     setIsLoading(true);
@@ -76,6 +80,12 @@ export default function Login() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      setLocation("/dashboard");
+    }
+  }, [user]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background">

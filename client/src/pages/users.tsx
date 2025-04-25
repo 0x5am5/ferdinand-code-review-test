@@ -1,5 +1,19 @@
-import { UserRole, Client, USER_ROLES } from "@shared/schema";
-import { useUsersQuery, usePendingInvitationsQuery, useUserClientAssignmentsQuery, useUpdateUserRoleMutation, useInviteUserMutation, useClientAssignmentMutations } from "@/lib/queries/users";
+import {
+  UserRole,
+  Client,
+  USER_ROLES,
+  UpdateUserRoleForm,
+  InviteUserForm,
+  Invitation,
+} from "@shared/schema";
+import {
+  useUsersQuery,
+  usePendingInvitationsQuery,
+  useUserClientAssignmentsQuery,
+  useUpdateUserRoleMutation,
+  useInviteUserMutation,
+  useClientAssignmentMutations,
+} from "@/lib/queries/users";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -155,30 +169,24 @@ export default function UsersPage() {
   const { toast } = useToast();
 
   const { data: users = [], isLoading: isLoadingUsers } = useUsersQuery();
-  const { data: pendingInvitations = [], isLoading: isLoadingInvitations } = usePendingInvitationsQuery();
-  const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } = useUserClientAssignmentsQuery(users.map(u => u.id));
+  const { data: pendingInvitations = [], isLoading: isLoadingInvitations } =
+    usePendingInvitationsQuery();
+  const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } =
+    useUserClientAssignmentsQuery(users.map((u) => u.id));
 
   const updateUserRole = useUpdateUserRoleMutation();
   const inviteUser = useInviteUserMutation();
   const { assignClient, removeClient } = useClientAssignmentMutations();
-
 
   // Get all clients for assignment
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
+  const resendInvitation = useInviteUserMutation();
+
   // State for tracking user mutations
   const [isProcessing, setIsProcessing] = useState(false);
-
-
-  // Update user role
-
-  // Invite new user
-
-  // Assign client to user
-
-  // Remove client from user
 
   // Define forms
   const inviteForm = useForm<InviteUserForm>({
@@ -232,10 +240,11 @@ export default function UsersPage() {
         );
 
         // Also match client names if assigned to user
-        const clientMatch = userClientAssignments[user.id]?.some((client) =>
-          client.name
-            .toLowerCase()
-            .includes(debouncedSearchQuery.toLowerCase()),
+        const clientMatch = userClientAssignments[user.id]?.some(
+          (client: Client) =>
+            client.name
+              .toLowerCase()
+              .includes(debouncedSearchQuery.toLowerCase()),
         );
 
         return (
@@ -365,7 +374,7 @@ export default function UsersPage() {
                       </TableRow>
                     ))
                   : pendingInvitations.length > 0 &&
-                    pendingInvitations.map((invitation) => {
+                    pendingInvitations.map((invitation: Invitation) => {
                       // Format expiration date
                       const expiresAt = new Date(invitation.expiresAt);
                       const now = new Date();
