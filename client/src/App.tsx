@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/use-auth";
@@ -30,7 +29,7 @@ function Router() {
       {/* Public routes that don't require authentication */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={SignupPage} />
-      
+
       {/* Protected routes that require authentication */}
       <Route path="/dashboard">
         <ProtectedRoute>
@@ -39,7 +38,7 @@ function Router() {
           </AppLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/design-builder">
         <ProtectedRoute>
           <AppLayout pageKey="design-builder">
@@ -47,7 +46,7 @@ function Router() {
           </AppLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/design-editor">
         <ProtectedRoute>
           <AppLayout pageKey="design-editor">
@@ -55,23 +54,23 @@ function Router() {
           </AppLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/users">
-        <ProtectedRoute adminOnly>
+        <ProtectedRoute>
           <AppLayout pageKey="users">
             <Users />
           </AppLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/admin/instances">
-        <ProtectedRoute adminOnly>
+        <ProtectedRoute>
           <AppLayout pageKey="instances">
             <Instances />
           </AppLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/clients/new">
         <ProtectedRoute>
           <AppLayout pageKey="new-client">
@@ -79,7 +78,7 @@ function Router() {
           </AppLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/clients/:id">
         <ProtectedRoute>
           <AppLayout pageKey="client-details">
@@ -87,7 +86,7 @@ function Router() {
           </AppLayout>
         </ProtectedRoute>
       </Route>
-      
+
       <Route>
         <AppLayout pageKey="not-found">
           <NotFound />
