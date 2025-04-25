@@ -1490,8 +1490,18 @@ export function registerRoutes(app: Express) {
   // Read the current theme.json file
   app.get("/api/design-system", async (req, res) => {
     try {
-      // For development, we're temporarily removing authentication
-      // In production, we'd want to check if user has admin rights
+      // Check if user is authenticated
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get user to check permissions
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Allow access for viewers and above since this is just reading
 
       // Read the theme.json file from the project root
       const themeData = fs.readFileSync('./theme.json', 'utf8');
@@ -1608,8 +1618,21 @@ export function registerRoutes(app: Express) {
   // Update design system
   app.patch("/api/design-system", async (req, res) => {
     try {
-      // For development, we're temporarily removing authentication
-      // In production, we'd want to check if user has admin rights
+      // Check if user is authenticated
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get user to check permissions
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Only allow editors, admins and super admins to modify the design system
+      if (![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role)) {
+        return res.status(403).json({ message: "Insufficient permissions to modify design system" });
+      }
 
       const { theme, typography, colors, raw_tokens } = req.body;
 
