@@ -1,14 +1,14 @@
 
-import { FC } from 'react';
+import { FC, ReactNode } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Redirect } from 'wouter';
 
 interface ProtectedRouteProps {
-  component: FC;
+  children: ReactNode;
   adminOnly?: boolean;
 }
 
-export const ProtectedRoute: FC<ProtectedRouteProps> = ({ component: Component, adminOnly }) => {
+export const ProtectedRoute: FC<ProtectedRouteProps> = ({ children, adminOnly }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -23,5 +23,5 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({ component: Component, 
     return <Redirect to="/dashboard" />;
   }
 
-  return <Component />;
+  return <>{children}</>;
 };
