@@ -156,6 +156,7 @@ interface PendingInvitation {
 }
 
 export default function UsersPage() {
+  const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -806,7 +807,16 @@ export default function UsersPage() {
                     <TableCell>
                       <Select
                         defaultValue={user.role}
+                        disabled={currentUser?.role !== UserRole.SUPER_ADMIN && value === UserRole.SUPER_ADMIN}
                         onValueChange={(value) => {
+                          // Prevent non-super admins from assigning super admin role
+                          if (currentUser?.role !== UserRole.SUPER_ADMIN && value === UserRole.SUPER_ADMIN) {
+                            return;
+                          }
+                          // Prevent admins from modifying super admin users
+                          if (currentUser?.role === UserRole.ADMIN && user.role === UserRole.SUPER_ADMIN) {
+                            return;
+                          }
                           updateUserRole.mutate({
                             id: user.id,
                             role: value as (typeof UserRole)[keyof typeof UserRole],
@@ -845,6 +855,7 @@ export default function UsersPage() {
                       <div className="space-y-2">
                         {/* Client assignments with improved UI */}
                         <div>
+                          {currentUser?.role === UserRole.SUPER_ADMIN ? (
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button
@@ -924,6 +935,11 @@ export default function UsersPage() {
                               </Command>
                             </PopoverContent>
                           </Popover>
+                          ) : (
+                            <div className="text-sm text-muted-foreground">
+                              Client assignment restricted to super admins
+                            </div>
+                          )}
                         </div>
 
                         {/* Client chips for quick visual reference */}
