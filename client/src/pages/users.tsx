@@ -100,6 +100,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { inviteUserSchema, updateUserRoleSchema } from "@shared/schema";
+import { InviteUserDialog } from "@/components/auth/invite-user-dialog";
 
 // Helper to get badge variant based on role
 const getRoleBadgeVariant = (role: string) => {
@@ -1082,136 +1083,12 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      {/* Invite User Dialog */}
-      <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite New User</DialogTitle>
-            <DialogDescription>
-              Send an invitation to a new user to join the platform.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...inviteForm}>
-            <form
-              onSubmit={inviteForm.handleSubmit((data) =>
-                inviteUser.mutate(data),
-              )}
-              className="space-y-4"
-            >
-              <FormField
-                control={inviteForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={inviteForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="john@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={inviteForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {USER_ROLES.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role.replace("_", " ")}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={inviteForm.control}
-                name="clientIds"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assign Clients</FormLabel>
-                    <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
-                      {clients.map((client) => (
-                        <div
-                          key={client.id}
-                          className="flex items-center space-x-2 bg-white z-30"
-                        >
-                          <Checkbox
-                            id={`client-${client.id}`}
-                            checked={field.value?.includes(client.id)}
-                            onCheckedChange={(
-                              checked: boolean | "indeterminate",
-                            ) => {
-                              const newValue = [...(field.value || [])];
-                              if (checked) {
-                                newValue.push(client.id);
-                              } else {
-                                const index = newValue.indexOf(client.id);
-                                if (index !== -1) newValue.splice(index, 1);
-                              }
-                              field.onChange(newValue);
-                            }}
-                          />
-                          <label
-                            htmlFor={`client-${client.id}`}
-                            className="text-sm cursor-pointer"
-                          >
-                            {client.name}
-                          </label>
-                        </div>
-                      ))}
-
-                      {clients.length === 0 && (
-                        <div className="text-center p-2 text-muted-foreground">
-                          No clients available to assign
-                        </div>
-                      )}
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
-                <Button type="submit" disabled={inviteUser.isPending}>
-                  {inviteUser.isPending ? "Sending..." : "Send Invitation"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <InviteUserDialog
+        open={isInviteDialogOpen}
+        onOpenChange={setIsInviteDialogOpen}
+        currentUser={currentUser}
+        clients={clients}
+      />
     </div>
   );
 }
