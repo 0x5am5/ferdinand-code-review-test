@@ -561,6 +561,7 @@ export default function UsersPage() {
                     </TableCell>
                     {currentUser?.role === UserRole.SUPER_ADMIN && (
                       <TableCell>
+                        {user.id !== currentUser.id && (
                         <div className="space-y-2">
                           {/* Client assignments with improved UI */}
                           <div>
@@ -683,6 +684,7 @@ export default function UsersPage() {
                             )}
                           </div>
                         </div>
+                        )}
                       </TableCell>
                     )}
                     <TableCell className="text-right">
