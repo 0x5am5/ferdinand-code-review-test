@@ -125,21 +125,17 @@ export function registerRoutes(app: Express) {
         
         // Check if user exists
         console.log("Checking if user exists in database");
-        let user = await storage.getUserByEmail(decodedToken.email);
+        const user = await storage.getUserByEmail(decodedToken.email);
 
         if (!user) {
-          console.log("User does not exist, creating new user");
-          // Create new user with guest role by default
+          console.log("User does not exist, deleting from Firebase");
           try {
-            user = await storage.createUser({
-              email: decodedToken.email,
-              name: decodedToken.name || decodedToken.email.split('@')[0],
-              role: UserRole.GUEST,
-            });
-            console.log(`Created new user with ID: ${user.id}`);
+            await firebaseAuth.deleteUser(decodedToken.uid);
+            console.log(`Deleted Firebase user with UID: ${decodedToken.uid}`);
+            return res.status(403).json({ message: "User not authorized" });
           } catch (error) {
-            console.error("Error creating user:", error);
-            return res.status(500).json({ message: "Failed to create user" });
+            console.error("Error deleting Firebase user:", error);
+            return res.status(500).json({ message: "Failed to delete unauthorized user" });
           }
         } else {
           console.log(`Found existing user with ID: ${user.id}`);
