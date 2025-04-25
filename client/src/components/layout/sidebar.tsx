@@ -1,10 +1,10 @@
 import { FC } from "react";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  CircleUserIcon, 
-  HomeIcon, 
-  BuildingIcon, 
+import {
+  CircleUserIcon,
+  HomeIcon,
+  BuildingIcon,
   UsersIcon,
   PaletteIcon,
   ServerIcon,
@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "@/contexts/ThemeContext";
+import useAuth from "@/hooks/useAuth"; // Assumed hook
+import ProtectedRoute from "@/components/ProtectedRoute"; // Assumed component
+
 
 interface NavItem {
   title: string;
@@ -28,9 +31,7 @@ interface NavItem {
 export const Sidebar: FC = () => {
   const [location] = useLocation();
   const themeContext = useTheme();
-
-  // In a real app, you'd get this from the auth context
-  const isAdmin = true; // Hardcoded for development
+  const { user } = useAuth(); // Get user data from auth context
 
   const navItems: NavItem[] = [
     {
@@ -57,8 +58,8 @@ export const Sidebar: FC = () => {
     }
   ];
 
-  const filteredNavItems = navItems.filter(item => 
-    !item.adminOnly || (item.adminOnly && isAdmin)
+  const filteredNavItems = navItems.filter(item =>
+    !item.adminOnly || (item.adminOnly && (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'))
   );
 
   const isActiveLink = (href: string) => {
@@ -105,8 +106,8 @@ export const Sidebar: FC = () => {
               <Button
                 variant="ghost"
                 className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                  ${isActiveLink(item.href) 
-                    ? 'bg-muted font-medium' 
+                  ${isActiveLink(item.href)
+                    ? 'bg-muted font-medium'
                     : 'hover:bg-muted/50'}`}
               >
                 {item.icon}
@@ -119,8 +120,8 @@ export const Sidebar: FC = () => {
 
       <div className="border-t p-4 space-y-4">
         <div className="flex items-center space-x-2">
-          <Switch 
-            id="dark-mode" 
+          <Switch
+            id="dark-mode"
             checked={isDarkMode}
             onCheckedChange={toggleTheme}
           />
@@ -130,15 +131,15 @@ export const Sidebar: FC = () => {
         <div className="flex items-center gap-3 px-3 py-2">
           <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Admin User</p>
-            <p className="text-xs text-muted-foreground truncate">admin@example.com</p>
+            <p className="text-sm font-medium truncate">{user?.name || 'User'}</p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email || 'Unknown'}</p>
           </div>
         </div>
 
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="w-full justify-start text-muted-foreground" 
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-muted-foreground"
           onClick={handleLogout}
         >
           <LogOutIcon className="h-4 w-4 mr-2" />
@@ -148,3 +149,25 @@ export const Sidebar: FC = () => {
     </aside>
   );
 };
+
+//users.tsx
+import { useParams } from "wouter";
+import useAuth from "@/hooks/useAuth"; // Assumed hook
+
+
+const UsersPage = () => {
+  const { user } = useAuth();
+  const params = useParams();
+  console.log('params', params)
+  if (!user || !(user.role === 'ADMIN' || user.role === 'SUPER_ADMIN')) {
+    return <div>Unauthorized</div>
+  }
+    return (
+      <div>
+        <h1>Users Page</h1>
+        {/* Add your user management components here */}
+      </div>
+    );
+};
+
+export default UsersPage;

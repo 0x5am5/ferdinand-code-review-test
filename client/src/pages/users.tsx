@@ -145,7 +145,7 @@ interface PendingInvitation {
   };
 }
 
-export default function UsersPage() {
+function UsersPage() {
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -976,6 +976,12 @@ export default function UsersPage() {
                                       </Button>
                                     </Badge>
                                   ),
+
+// Wrap the page with ProtectedRoute for admin-only access
+export default function ProtectedUsersPage() {
+  return <ProtectedRoute component={UsersPage} adminOnly={true} />;
+}
+
                                 )}
                               </div>
                             )}
