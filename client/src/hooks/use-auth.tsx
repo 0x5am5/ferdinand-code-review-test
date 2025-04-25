@@ -1,9 +1,15 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { 
-  User as FirebaseUser, 
-  signInWithPopup, 
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import {
+  User as FirebaseUser,
+  signInWithPopup,
   signOut,
-  onAuthStateChanged
+  onAuthStateChanged,
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -49,17 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log("Setting up auth state listener");
     setIsLoading(true);
-    
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       console.log("Auth state changed:", fbUser?.email);
       setFirebaseUser(fbUser);
-      
+
       if (fbUser) {
         try {
           // Get the ID token
           const idToken = await fbUser.getIdToken();
           console.log("ID token obtained, creating session...");
-          
+
           // Create session on backend
           const response = await fetch("/api/auth/google", {
             method: "POST",
@@ -68,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             },
             body: JSON.stringify({ idToken }),
           });
-          
+
           if (response.ok) {
             console.log("Session created successfully");
             // Fetch user data
@@ -100,16 +106,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       console.log("Starting Google sign-in process...");
-      
+
       const result = await signInWithPopup(auth, googleProvider);
-      
+
       console.log("Sign-in successful:", result.user?.email);
-      
+
       // Auth state listener will handle the session creation and user fetching
-      
+
       toast({
         title: "Sign In Successful",
         description: `Signed in as ${result.user?.email}`,
@@ -117,13 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       setError(error);
-      
+
       toast({
         title: "Sign In Error",
         description: error.message || "Failed to sign in with Google",
         variant: "destructive",
       });
-      
+
       throw error;
     }
   };
@@ -132,25 +138,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log("Logging out...");
       await signOut(auth);
-      
+
       // Clear session on backend
-      await fetch("/api/auth/logout", { 
-        method: "POST" 
+      await fetch("/api/auth/logout", {
+        method: "POST",
       });
-      
+
       setUser(null);
-      
+
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out",
       });
-      
+
       // Redirect to login
       window.location.href = "/login";
     } catch (error: any) {
       console.error("Logout error:", error);
       setError(error);
-      
+
       toast({
         title: "Logout Error",
         description: "Failed to sign out",
@@ -169,9 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
@@ -186,7 +190,7 @@ export function useAuth() {
     return {
       ...context,
       user: null,
-      firebaseUser: null
+      firebaseUser: null,
     };
   }
 
