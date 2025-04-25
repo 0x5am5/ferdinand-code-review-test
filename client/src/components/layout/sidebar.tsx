@@ -30,6 +30,8 @@ export const Sidebar: FC = () => {
   const themeContext = useTheme();
   const { user } = useAuth();
 
+  console.log(user?.role);
+
   const navItems: NavItem[] = [
     {
       title: "Dashboard",
