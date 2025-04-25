@@ -16,6 +16,7 @@ import ClientDetails from "@/pages/clients/[id]";
 import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
+import { UserRole } from "@shared/schema";
 
 function Router() {
   const [location] = useLocation();
@@ -32,40 +33,61 @@ function Router() {
       
       {/* Protected routes that require authentication */}
       <Route path="/dashboard">
-        <AppLayout pageKey="dashboard">
-          <Dashboard />
-        </AppLayout>
+        <ProtectedRoute>
+          <AppLayout pageKey="dashboard">
+            <Dashboard />
+          </AppLayout>
+        </ProtectedRoute>
       </Route>
+      
       <Route path="/design-builder">
-        <AppLayout pageKey="design-builder">
-          <DesignBuilder />
-        </AppLayout>
+        <ProtectedRoute>
+          <AppLayout pageKey="design-builder">
+            <DesignBuilder />
+          </AppLayout>
+        </ProtectedRoute>
       </Route>
+      
       <Route path="/design-editor">
-        <AppLayout pageKey="design-editor">
-          <DesignEditor />
-        </AppLayout>
+        <ProtectedRoute>
+          <AppLayout pageKey="design-editor">
+            <DesignEditor />
+          </AppLayout>
+        </ProtectedRoute>
       </Route>
+      
       <Route path="/users">
-        <AppLayout pageKey="users">
-          <Users />
-        </AppLayout>
+        <ProtectedRoute adminOnly>
+          <AppLayout pageKey="users">
+            <Users />
+          </AppLayout>
+        </ProtectedRoute>
       </Route>
+      
       <Route path="/admin/instances">
-        <AppLayout pageKey="instances">
-          <Instances />
-        </AppLayout>
+        <ProtectedRoute adminOnly>
+          <AppLayout pageKey="instances">
+            <Instances />
+          </AppLayout>
+        </ProtectedRoute>
       </Route>
+      
       <Route path="/clients/new">
-        <AppLayout pageKey="new-client">
-          <NewClientPage />
-        </AppLayout>
+        <ProtectedRoute>
+          <AppLayout pageKey="new-client">
+            <NewClientPage />
+          </AppLayout>
+        </ProtectedRoute>
       </Route>
+      
       <Route path="/clients/:id">
-        <AppLayout pageKey="client-details">
-          <ClientDetails />
-        </AppLayout>
+        <ProtectedRoute>
+          <AppLayout pageKey="client-details">
+            <ClientDetails />
+          </AppLayout>
+        </ProtectedRoute>
       </Route>
+      
       <Route>
         <AppLayout pageKey="not-found">
           <NotFound />
