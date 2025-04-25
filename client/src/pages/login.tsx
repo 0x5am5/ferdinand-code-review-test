@@ -1,7 +1,13 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LogIn, ArrowRight } from "lucide-react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
@@ -13,20 +19,20 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
   const googleProvider = new GoogleAuthProvider();
-  
+
   const handleSignIn = async () => {
     setIsLoading(true);
     setErrorMessage(null);
-    
+
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      
+
       if (!result.user) {
         throw new Error("No user data returned");
       }
 
       const idToken = await result.user.getIdToken();
-      
+
       const response = await fetch("/api/auth/google", {
         method: "POST",
         headers: {
@@ -34,25 +40,24 @@ export default function Login() {
         },
         body: JSON.stringify({ idToken }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || "Server authentication failed");
       }
-      
+
       toast({
         title: "Welcome!",
         description: `Signed in as ${result.user.email}`,
       });
-      
+
       window.location.href = "/dashboard";
-      
     } catch (error: any) {
       console.error("Authentication error:", error);
-      
+
       let errorMsg = "Authentication failed. Please try again.";
-      
+
       if (error.code === "auth/popup-blocked") {
         errorMsg = "Please allow popups for this site to sign in.";
       } else if (error.code === "auth/cancelled-popup-request") {
@@ -60,7 +65,7 @@ export default function Login() {
       } else if (error.code === "auth/network-request-failed") {
         errorMsg = "Network error. Please check your connection.";
       }
-      
+
       setErrorMessage(errorMsg);
       toast({
         title: "Sign In Error",
@@ -76,9 +81,7 @@ export default function Login() {
     <div className="min-h-screen w-full flex items-center justify-center bg-background">
       <Card className="w-full max-w-md mx-4 shadow-lg">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">
-            Ferdinand
-          </CardTitle>
+          <CardTitle className="text-2xl text-center">Ferdinand</CardTitle>
           <CardDescription className="text-center pt-2">
             Your brand guidelines platform
           </CardDescription>
@@ -89,11 +92,11 @@ export default function Login() {
               <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           )}
-          
-          <Button 
+
+          <Button
             onClick={handleSignIn}
             disabled={isLoading}
-            className="w-full"
+            className="w-full text-black border-black border-[1px] hover:bg-black hover:text-white"
             size="lg"
           >
             {isLoading ? (
@@ -108,7 +111,7 @@ export default function Login() {
               </>
             )}
           </Button>
-          
+
           <div className="w-full pt-4">
             <p className="text-sm text-center text-muted-foreground">
               First time here? Sign in to automatically create your account
