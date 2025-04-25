@@ -66,9 +66,14 @@ export const Sidebar: FC = () => {
     return location === href;
   };
 
-  const handleLogout = () => {
-    // Would handle logout in real app
-    console.log("Logging out...");
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const toggleTheme = async () => {
