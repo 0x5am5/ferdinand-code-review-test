@@ -38,11 +38,11 @@ export const Sidebar: FC = () => {
       href: "/dashboard",
       icon: <HomeIcon className="h-4 w-4" />,
     },
-    // {
-    //   title: "Clients",
-    //   href: "/clients",
-    //   icon: <BuildingIcon className="h-4 w-4" />,
-    // },
+    {
+      title: "Clients",
+      href: "/clients",
+      icon: <BuildingIcon className="h-4 w-4" />,
+    },
     ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
       ? [
           {
