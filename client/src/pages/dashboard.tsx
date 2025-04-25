@@ -1,4 +1,3 @@
-
 import { UserManager } from "@/components/client/user-manager";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Client, insertClientSchema } from "@shared/schema";
@@ -113,7 +112,9 @@ export default function Dashboard() {
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
 
   useEffect(() => {
-    setOrderedClients(clients);
+    if (!clients) {
+      setOrderedClients(clients);
+    }
   }, [clients]);
 
   const form = useForm({
@@ -303,344 +304,358 @@ export default function Dashboard() {
 
   return (
     <div className="p-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold">Client Instances</h1>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold">Client Instances</h1>
+      </div>
+
+      {/* Search and Sort Controls */}
+      <div className="flex gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search clients..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              {sortOrder === "custom" ? (
+                <>
+                  <GripVertical className="h-4 w-4 mr-2" />
+                  Custom Order
+                </>
+              ) : sortOrder === "asc" ? (
+                <>
+                  <SortAsc className="h-4 w-4 mr-2" />
+                  Sort A-Z
+                </>
+              ) : (
+                <>
+                  <SortDesc className="h-4 w-4 mr-2" />
+                  Sort Z-A
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => setSortOrder("custom")}>
+              <GripVertical className="mr-2 h-4 w-4" />
+              Custom Order
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortOrder("asc")}>
+              <SortAsc className="mr-2 h-4 w-4" />
+              Sort A-Z
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSortOrder("desc")}>
+              <SortDesc className="mr-2 h-4 w-4" />
+              Sort Z-A
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-        {/* Search and Sort Controls */}
-        <div className="flex gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search clients..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                {sortOrder === "custom" ? (
-                  <>
-                    <GripVertical className="h-4 w-4 mr-2" />
-                    Custom Order
-                  </>
-                ) : sortOrder === "asc" ? (
-                  <>
-                    <SortAsc className="h-4 w-4 mr-2" />
-                    Sort A-Z
-                  </>
-                ) : (
-                  <>
-                    <SortDesc className="h-4 w-4 mr-2" />
-                    Sort Z-A
-                  </>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setSortOrder("custom")}>
-                <GripVertical className="mr-2 h-4 w-4" />
-                Custom Order
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOrder("asc")}>
-                <SortAsc className="mr-2 h-4 w-4" />
-                Sort A-Z
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setSortOrder("desc")}>
-                <SortDesc className="mr-2 h-4 w-4" />
-                Sort Z-A
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable
+          droppableId="clients"
+          direction="horizontal"
+          ignoreContainerClipping={true}
+        >
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+            >
+              {filteredAndSortedClients.map((client, index) => (
+                <Draggable
+                  key={client.id}
+                  draggableId={client.id.toString()}
+                  index={index}
+                >
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                    >
+                      <Card className="dashboard-card group h-full">
+                        <CardHeader className="pb-5 relative">
+                          <div className="dashboard-card--nav">
+                            <GripVertical className="drag-and-drop--handle h-4 w-4 text-muted-foreground" />
 
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable
-            droppableId="clients"
-            direction="horizontal"
-            ignoreContainerClipping={true}
-          >
-            {(provided) => (
-              <div
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-              >
-                {filteredAndSortedClients.map((client, index) => (
-                  <Draggable
-                    key={client.id}
-                    draggableId={client.id.toString()}
-                    index={index}
-                  >
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                      >
-                        <Card className="dashboard-card group h-full">
-                          <CardHeader className="pb-5 relative">
-                            <div className="dashboard-card--nav">
-                              <GripVertical className="drag-and-drop--handle h-4 w-4 text-muted-foreground" />
-
-                              
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    window.open(
-                                      `/preview/${client.id}`,
-                                      "_blank",
-                                    );
-                                  }}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const url = `${window.location.origin}/clients/${client.id}`;
-                                    navigator.clipboard.writeText(url);
-                                    toast({
-                                      title: "Link copied",
-                                      description:
-                                        "Client URL has been copied to clipboard",
-                                      duration: 2000,
-                                    });
-                                  }}
-                                >
-                                  <Share className="h-4 w-4" />
-                                </Button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setEditingClient(client);
-                                      }}
-                                    >
-                                      <Edit2 className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setDeletingClient(client);
-                                      }}
-                                      className="text-red-600"
-                                    >
-                                      <Trash className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              
-                            </div>
-                            <Link
-                              href={`/clients/${client.id}`}
-                              className="block w-full relative"
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.open(`/preview/${client.id}`, "_blank");
+                              }}
                             >
-                              <div className="flex items-start flex-direction--column">
-                                {client.logo && (
-                                  <div className="w-16 h-16 mr-4 flex-shrink-0">
-                                    <img
-                                      src={client.logo}
-                                      alt={`${client.name} logo`}
-                                      className="w-full h-full object-contain"
-                                    />
-                                  </div>
-                                )}
-                                <div className="">
-                                  <CardTitle className="mb-2">
-                                    {client.name}
-                                  </CardTitle>
+                              <Eye className="h-4 w-4" />
+                            </Button>
 
-                                  {/* Client metadata */}
-                                  <div className="space-y-1 text-sm text-muted-foreground">
-                                    {client.website && (
-                                      <div className="flex items-top gap-2">
-                                        <Globe className="h-3.5 w-3.5" />
-                                        <span className="truncate">
-                                          {client.website}
-                                        </span>
-                                      </div>
-                                    )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const url = `${window.location.origin}/clients/${client.id}`;
+                                navigator.clipboard.writeText(url);
+                                toast({
+                                  title: "Link copied",
+                                  description:
+                                    "Client URL has been copied to clipboard",
+                                  duration: 2000,
+                                });
+                              }}
+                            >
+                              <Share className="h-4 w-4" />
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setEditingClient(client);
+                                  }}
+                                >
+                                  <Edit2 className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setDeletingClient(client);
+                                  }}
+                                  className="text-red-600"
+                                >
+                                  <Trash className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <Link
+                            href={`/clients/${client.id}`}
+                            className="block w-full relative"
+                          >
+                            <div className="flex items-start flex-direction--column">
+                              {client.logo && (
+                                <div className="w-16 h-16 mr-4 flex-shrink-0">
+                                  <img
+                                    src={client.logo}
+                                    alt={`${client.name} logo`}
+                                    className="w-full h-full object-contain"
+                                  />
+                                </div>
+                              )}
+                              <div className="">
+                                <CardTitle className="mb-2">
+                                  {client.name}
+                                </CardTitle>
 
-                                    {client.address && (
-                                      <div className="flex items-center gap-2">
-                                        <MapPin className="h-3.5 w-3.5" />
-                                        <span className="truncate">
-                                          {client.address}
-                                        </span>
-                                      </div>
-                                    )}
+                                {/* Client metadata */}
+                                <div className="space-y-1 text-sm text-muted-foreground">
+                                  {client.website && (
+                                    <div className="flex items-top gap-2">
+                                      <Globe className="h-3.5 w-3.5" />
+                                      <span className="truncate">
+                                        {client.website}
+                                      </span>
+                                    </div>
+                                  )}
 
-                                    {client.phone && (
-                                      <div className="flex items-center gap-2">
-                                        <Phone className="h-3.5 w-3.5" />
-                                        <span>{client.phone}</span>
-                                      </div>
-                                    )}
+                                  {client.address && (
+                                    <div className="flex items-center gap-2">
+                                      <MapPin className="h-3.5 w-3.5" />
+                                      <span className="truncate">
+                                        {client.address}
+                                      </span>
+                                    </div>
+                                  )}
 
-                                    {client.updatedAt && (
-                                      <div className="flex items-top gap-2">
-                                        <Clock className="h-3.5 w-3.5" />
-                                        <span>
-                                          Last updated:{" "}
-                                          {new Date(
-                                            client.updatedAt,
-                                          ).toLocaleDateString()}
-                                        </span>
-                                      </div>
-                                    )}
+                                  {client.phone && (
+                                    <div className="flex items-center gap-2">
+                                      <Phone className="h-3.5 w-3.5" />
+                                      <span>{client.phone}</span>
+                                    </div>
+                                  )}
 
-                                    {client.lastEditedBy && (
-                                      <div className="flex items-top gap-2">
-                                        <UserCircle className="h-3.5 w-3.5" />
-                                        <span>Edited by: Admin</span>
-                                      </div>
-                                    )}
-                                  </div>
+                                  {client.updatedAt && (
+                                    <div className="flex items-top gap-2">
+                                      <Clock className="h-3.5 w-3.5" />
+                                      <span>
+                                        Last updated:{" "}
+                                        {new Date(
+                                          client.updatedAt,
+                                        ).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {client.lastEditedBy && (
+                                    <div className="flex items-top gap-2">
+                                      <UserCircle className="h-3.5 w-3.5" />
+                                      <span>Edited by: Admin</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            </Link>
-                          </CardHeader>
-                        </Card>
-                      </div>
+                            </div>
+                          </Link>
+                        </CardHeader>
+                      </Card>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+
+              {/* Add New Client Card */}
+              <Link href="/clients/new">
+                <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
+                  <CardHeader className="h-full flex flex-col items-center justify-center text-center">
+                    <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
+                    <CardTitle className="text-muted-foreground">
+                      Add New Client
+                    </CardTitle>
+                  </CardHeader>
+                </Card>
+              </Link>
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+
+      {filteredAndSortedClients.length === 0 && searchQuery && (
+        <Card>
+          <CardHeader>
+            <CardTitle>No Results</CardTitle>
+            <CardDescription>
+              No clients found matching "{searchQuery}"
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Edit Client Dialog with Tabs */}
+      <Dialog
+        open={!!editingClient}
+        onOpenChange={(open) => !open && setEditingClient(null)}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit Client</DialogTitle>
+          </DialogHeader>
+
+          <Tabs
+            defaultValue="client-info"
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
+            <TabsList className="grid grid-cols-3 mb-6">
+              <TabsTrigger value="client-info">
+                <User className="h-4 w-4 mr-2" />
+                Client Information
+              </TabsTrigger>
+              <TabsTrigger value="features">
+                <Package className="h-4 w-4 mr-2" />
+                Features
+              </TabsTrigger>
+              <TabsTrigger value="users">
+                <Users className="h-4 w-4 mr-2" />
+                Users
+              </TabsTrigger>
+            </TabsList>
+
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit((data) => {
+                  if (editingClient) {
+                    // Merge feature toggles into the form data
+                    const dataWithToggles = {
+                      ...data,
+                      featureToggles,
+                    };
+                    updateClient.mutate({
+                      id: editingClient.id,
+                      data: dataWithToggles,
+                    });
+                  }
+                })}
+                className="space-y-4"
+              >
+                {/* Client Information Tab */}
+                <TabsContent value="client-info" className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
+                  />
 
-                {/* Add New Client Card */}
-                <Link href="/clients/new">
-                  <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
-                    <CardHeader className="h-full flex flex-col items-center justify-center text-center">
-                      <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
-                      <CardTitle className="text-muted-foreground">
-                        Add New Client
-                      </CardTitle>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-        {filteredAndSortedClients.length === 0 && searchQuery && (
-          <Card>
-            <CardHeader>
-              <CardTitle>No Results</CardTitle>
-              <CardDescription>
-                No clients found matching "{searchQuery}"
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="https://example.com"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-        {/* Edit Client Dialog with Tabs */}
-        <Dialog
-          open={!!editingClient}
-          onOpenChange={(open) => !open && setEditingClient(null)}
-        >
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Edit Client</DialogTitle>
-            </DialogHeader>
-
-            <Tabs
-              defaultValue="client-info"
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-3 mb-6">
-                <TabsTrigger value="client-info">
-                  <User className="h-4 w-4 mr-2" />
-                  Client Information
-                </TabsTrigger>
-                <TabsTrigger value="features">
-                  <Package className="h-4 w-4 mr-2" />
-                  Features
-                </TabsTrigger>
-                <TabsTrigger value="users">
-                  <Users className="h-4 w-4 mr-2" />
-                  Users
-                </TabsTrigger>
-              </TabsList>
-
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit((data) => {
-                    if (editingClient) {
-                      // Merge feature toggles into the form data
-                      const dataWithToggles = {
-                        ...data,
-                        featureToggles,
-                      };
-                      updateClient.mutate({
-                        id: editingClient.id,
-                        data: dataWithToggles,
-                      });
-                    }
-                  })}
-                  className="space-y-4"
-                >
-                  {/* Client Information Tab */}
-                  <TabsContent value="client-info" className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
-                      name="name"
+                      name="address"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Name</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Description</FormLabel>
-                          <FormControl>
-                            <Textarea {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="website"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Website</FormLabel>
+                          <FormLabel>Address</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="https://example.com"
+                              placeholder="Enter client address"
                               {...field}
                               value={field.value || ""}
                             />
@@ -650,232 +665,211 @@ export default function Dashboard() {
                       )}
                     />
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter client address"
-                                {...field}
-                                value={field.value || ""}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Enter phone number"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </TabsContent>
 
-                      <FormField
-                        control={form.control}
-                        name="phone"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Phone</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Enter phone number"
-                                {...field}
-                                value={field.value || ""}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </TabsContent>
+                {/* Features Tab */}
+                <TabsContent value="features" className="space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Brand Features</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Enable or disable features for this client. When a feature
+                      is disabled, it will be hidden from the client view but
+                      all data will remain in the database.
+                    </p>
 
-                  {/* Features Tab */}
-                  <TabsContent value="features" className="space-y-6">
                     <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Brand Features</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Enable or disable features for this client. When a
-                        feature is disabled, it will be hidden from the client
-                        view but all data will remain in the database.
-                      </p>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center">
-                              <Package className="h-4 w-4 mr-2" />
-                              <div className="font-medium">Logo System</div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Logo variations, usage guidelines, and downloads
-                            </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <Package className="h-4 w-4 mr-2" />
+                            <div className="font-medium">Logo System</div>
                           </div>
-                          <Switch
-                            checked={featureToggles.logoSystem}
-                            onCheckedChange={(checked) =>
-                              setFeatureToggles((prev) => ({
-                                ...prev,
-                                logoSystem: checked,
-                              }))
-                            }
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center">
-                              <Palette className="h-4 w-4 mr-2" />
-                              <div className="font-medium">Color System</div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Brand colors, palettes, and accessibility
-                              information
-                            </div>
+                          <div className="text-sm text-muted-foreground">
+                            Logo variations, usage guidelines, and downloads
                           </div>
-                          <Switch
-                            checked={featureToggles.colorSystem}
-                            onCheckedChange={(checked) =>
-                              setFeatureToggles((prev) => ({
-                                ...prev,
-                                colorSystem: checked,
-                              }))
-                            }
-                          />
                         </div>
+                        <Switch
+                          checked={featureToggles.logoSystem}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              logoSystem: checked,
+                            }))
+                          }
+                        />
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center">
-                              <Type className="h-4 w-4 mr-2" />
-                              <div className="font-medium">Type System</div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Typography, fonts, and text styling guidelines
-                            </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <Palette className="h-4 w-4 mr-2" />
+                            <div className="font-medium">Color System</div>
                           </div>
-                          <Switch
-                            checked={featureToggles.typeSystem}
-                            onCheckedChange={(checked) =>
-                              setFeatureToggles((prev) => ({
-                                ...prev,
-                                typeSystem: checked,
-                              }))
-                            }
-                          />
+                          <div className="text-sm text-muted-foreground">
+                            Brand colors, palettes, and accessibility
+                            information
+                          </div>
                         </div>
+                        <Switch
+                          checked={featureToggles.colorSystem}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              colorSystem: checked,
+                            }))
+                          }
+                        />
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center">
-                              <User className="h-4 w-4 mr-2" />
-                              <div className="font-medium">User Personas</div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Customer personas and target audience profiles
-                            </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <Type className="h-4 w-4 mr-2" />
+                            <div className="font-medium">Type System</div>
                           </div>
-                          <Switch
-                            checked={featureToggles.userPersonas}
-                            onCheckedChange={(checked) =>
-                              setFeatureToggles((prev) => ({
-                                ...prev,
-                                userPersonas: checked,
-                              }))
-                            }
-                          />
+                          <div className="text-sm text-muted-foreground">
+                            Typography, fonts, and text styling guidelines
+                          </div>
                         </div>
+                        <Switch
+                          checked={featureToggles.typeSystem}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              typeSystem: checked,
+                            }))
+                          }
+                        />
+                      </div>
 
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <div className="flex items-center">
-                              <Eye className="h-4 w-4 mr-2" />
-                              <div className="font-medium">Inspiration</div>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              Brand inspiration boards and mood collections
-                            </div>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <User className="h-4 w-4 mr-2" />
+                            <div className="font-medium">User Personas</div>
                           </div>
-                          <Switch
-                            checked={featureToggles.inspiration}
-                            onCheckedChange={(checked) =>
-                              setFeatureToggles((prev) => ({
-                                ...prev,
-                                inspiration: checked,
-                              }))
-                            }
-                          />
+                          <div className="text-sm text-muted-foreground">
+                            Customer personas and target audience profiles
+                          </div>
                         </div>
+                        <Switch
+                          checked={featureToggles.userPersonas}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              userPersonas: checked,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <Eye className="h-4 w-4 mr-2" />
+                            <div className="font-medium">Inspiration</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Brand inspiration boards and mood collections
+                          </div>
+                        </div>
+                        <Switch
+                          checked={featureToggles.inspiration}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              inspiration: checked,
+                            }))
+                          }
+                        />
                       </div>
                     </div>
-                  </TabsContent>
+                  </div>
+                </TabsContent>
 
-                  {/* Users Tab */}
-                  <TabsContent value="users" className="space-y-6">
-                    {editingClient && (
-                      <UserManager clientId={editingClient.id} />
-                    )}
-                  </TabsContent>
+                {/* Users Tab */}
+                <TabsContent value="users" className="space-y-6">
+                  {editingClient && <UserManager clientId={editingClient.id} />}
+                </TabsContent>
 
-                  <DialogFooter>
-                    {activeTab === "client-info" && (
-                      <Button type="submit" disabled={updateClient.isPending}>
-                        Save Changes
-                      </Button>
-                    )}
-                    {activeTab === "features" && (
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          if (editingClient) {
-                            // Save feature toggles to the database
-                            updateClient.mutate({
-                              id: editingClient.id,
-                              data: { featureToggles },
-                            });
-                          }
-                        }}
-                        disabled={updateClient.isPending}
-                      >
-                        Save Features
-                      </Button>
-                    )}
-                  </DialogFooter>
-                </form>
-              </Form>
-            </Tabs>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  {activeTab === "client-info" && (
+                    <Button type="submit" disabled={updateClient.isPending}>
+                      Save Changes
+                    </Button>
+                  )}
+                  {activeTab === "features" && (
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (editingClient) {
+                          // Save feature toggles to the database
+                          updateClient.mutate({
+                            id: editingClient.id,
+                            data: { featureToggles },
+                          });
+                        }
+                      }}
+                      disabled={updateClient.isPending}
+                    >
+                      Save Features
+                    </Button>
+                  )}
+                </DialogFooter>
+              </form>
+            </Form>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={!!deletingClient}
-          onOpenChange={(open) => !open && setDeletingClient(null)}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Client</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete {deletingClient?.name}? This
-                action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deletingClient}
+        onOpenChange={(open) => !open && setDeletingClient(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Client</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {deletingClient?.name}? This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDeletingClient(null)}>
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() =>
-                  deletingClient && deleteClient.mutate(deletingClient.id)
-                }
-                disabled={deleteClient.isPending}
-              >
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingClient(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deletingClient && deleteClient.mutate(deletingClient.id)
+              }
+              disabled={deleteClient.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
