@@ -72,10 +72,22 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
-    "custom",
-  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">("custom");
+  const location = useLocation();
+  
+  // Redirect standard users to design builder
+  useEffect(() => {
+    if (user?.role === UserRole.STANDARD) {
+      window.location.href = "/design-builder";
+    }
+  }, [user]);
+
+  // If user is being redirected, don't render the dashboard
+  if (user?.role === UserRole.STANDARD) {
+    return null;
+  }
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
   const [activeTab, setActiveTab] = useState("client-info");
@@ -94,8 +106,18 @@ export default function Dashboard() {
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
     select: (data) => {
+      // Filter clients based on user role and assignments
+      let filteredData = [...data];
+      
+      // If admin, only show assigned clients
+      if (user?.role === UserRole.ADMIN) {
+        filteredData = filteredData.filter(client => 
+          user.clientIds?.includes(client.id)
+        );
+      }
+
       // Sort by displayOrder if available, fallback to id
-      return [...data].sort((a, b) => {
+      return filteredData.sort((a, b) => {
         if (
           a.displayOrder !== null &&
           a.displayOrder !== undefined &&
@@ -523,17 +545,19 @@ export default function Dashboard() {
               ))}
               {provided.placeholder}
 
-              {/* Add New Client Card */}
-              <Link href="/clients/new">
-                <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
-                  <CardHeader className="h-full flex flex-col items-center justify-center text-center">
-                    <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
-                    <CardTitle className="text-muted-foreground">
-                      Add New Client
-                    </CardTitle>
-                  </CardHeader>
-                </Card>
-              </Link>
+              {/* Add New Client Card - Only visible to super admins */}
+              {user?.role === UserRole.SUPER_ADMIN && (
+                <Link href="/clients/new">
+                  <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
+                    <CardHeader className="h-full flex flex-col items-center justify-center text-center">
+                      <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
+                      <CardTitle className="text-muted-foreground">
+                        Add New Client
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              )}
             </div>
           )}
         </Droppable>
