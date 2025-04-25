@@ -1,6 +1,10 @@
 import { UserManager } from "@/components/client/user-manager";
-import { useClientsQuery, useUpdateClientMutation, useDeleteClientMutation, useUpdateClientOrderMutation } from "@/hooks/dashboard-api";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import {
+  useClientsQuery,
+  useUpdateClientMutation,
+  useDeleteClientMutation,
+  useUpdateClientOrderMutation,
+} from "@/lib/queries/dashboard";
 import { Client, insertClientSchema, UserRole } from "@shared/schema";
 import {
   Card,
@@ -10,7 +14,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Plus,
   Search,
   SortAsc,
   SortDesc,
@@ -33,6 +36,7 @@ import {
   Phone,
   Clock,
   UserCircle,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -63,17 +67,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/useAuth";
-import { useLocation } from "wouter";
-
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -81,7 +79,6 @@ export default function Dashboard() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
     "custom",
   );
-  const location = useLocation();
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
@@ -123,7 +120,6 @@ export default function Dashboard() {
     }
   }, [updateClientOrder.isError, clients]);
 
-
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
 
   useEffect(() => {
@@ -142,7 +138,6 @@ export default function Dashboard() {
       phone: "",
     },
   });
-
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;

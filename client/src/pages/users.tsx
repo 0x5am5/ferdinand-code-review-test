@@ -1,5 +1,11 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { User, UserRole, Client, USER_ROLES } from "@shared/schema";
+import {
+  User,
+  UserRole,
+  Client,
+  USER_ROLES,
+  UpdateUserRoleForm,
+} from "@shared/schema";
 import { cn } from "@/lib/utils";
 import {
   Popover,
@@ -71,27 +77,22 @@ import { useState, useEffect } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Plus,
   Search,
   MoreHorizontal,
   UserPlus,
-  Mail,
   Filter,
   X,
   RefreshCw,
   Users,
   Building2,
-  Briefcase,
   UserCheck,
   Shield,
-  Settings,
   Loader2,
   ChevronDown,
   Check,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -109,6 +110,8 @@ const getRoleBadgeVariant = (role: string) => {
       return "destructive";
     case UserRole.ADMIN:
       return "default";
+    case UserRole.EDITOR:
+      return "secondary";
     case UserRole.STANDARD:
       return "secondary";
     case UserRole.GUEST:

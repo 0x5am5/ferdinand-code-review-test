@@ -69,6 +69,7 @@ export const PersonaEventAttribute = {
 export const UserRole = {
   SUPER_ADMIN: "super_admin",
   ADMIN: "admin",
+  EDITOR: "editor",
   STANDARD: "standard",
   GUEST: "guest",
 } as const;
@@ -80,7 +81,7 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   password: text("password"),
   role: text("role", {
-    enum: ["super_admin", "admin", "standard", "guest"],
+    enum: ["super_admin", "admin", "editor", "standard", "guest"],
   }).notNull(),
   lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
