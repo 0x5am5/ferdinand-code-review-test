@@ -10,11 +10,13 @@ export function useClientsQuery(
   return useQuery<Client[]>({
     queryKey: ["/api/clients"],
     select: (data) => {
+      if (!data) return [];
       let filteredData = [...data];
 
-      if (user?.role === UserRole.ADMIN) {
+      // Only filter for regular admins, super admins see all clients
+      if (user?.role === UserRole.ADMIN && user.clientIds) {
         filteredData = filteredData.filter((client) =>
-          user.clientIds?.includes(client.id),
+          user.clientIds.includes(client.id),
         );
       }
 
