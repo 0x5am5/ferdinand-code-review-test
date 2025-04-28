@@ -16,6 +16,7 @@ import NotFound from "@/pages/not-found";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
 import { UserRole } from "@shared/schema";
+import Clients from "./pages/clients";
 
 function Router() {
   const [location] = useLocation();
@@ -83,6 +84,14 @@ function Router() {
         <ProtectedRoute>
           <AppLayout pageKey="client-details">
             <ClientDetails />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/clients">
+        <ProtectedRoute>
+          <AppLayout pageKey="client-details">
+            <Clients />
           </AppLayout>
         </ProtectedRoute>
       </Route>

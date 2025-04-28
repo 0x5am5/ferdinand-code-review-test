@@ -169,28 +169,6 @@ export default function UsersPage() {
 
   const resendInvitation = useInviteUserMutation();
 
-  // State for tracking user mutations
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // Define forms
-  const inviteForm = useForm<InviteUserForm>({
-    resolver: zodResolver(inviteUserSchema),
-    defaultValues: {
-      email: "",
-      name: "",
-      role: UserRole.STANDARD,
-      clientIds: [],
-    },
-  });
-
-  const updateRoleForm = useForm<UpdateUserRoleForm>({
-    resolver: zodResolver(updateUserRoleSchema),
-    defaultValues: {
-      id: 0,
-      role: UserRole.STANDARD,
-    },
-  });
-
   // Debounced search implementation
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
 
@@ -562,128 +540,132 @@ export default function UsersPage() {
                     {currentUser?.role === UserRole.SUPER_ADMIN && (
                       <TableCell>
                         {user.id !== currentUser.id && (
-                        <div className="space-y-2">
-                          {/* Client assignments with improved UI */}
-                          <div>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={cn(
-                                    "w-full justify-start text-left font-normal h-8",
-                                    !userClientAssignments[user.id]?.length &&
-                                      "text-muted-foreground",
-                                  )}
+                          <div className="space-y-2">
+                            {/* Client assignments with improved UI */}
+                            <div>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className={cn(
+                                      "w-full justify-start text-left font-normal h-8",
+                                      !userClientAssignments[user.id]?.length &&
+                                        "text-muted-foreground",
+                                    )}
+                                  >
+                                    <Building2 className="h-4 w-4 mr-2 opacity-70" />
+                                    {userClientAssignments[user.id]?.length
+                                      ? `${userClientAssignments[user.id].length} client${userClientAssignments[user.id].length === 1 ? "" : "s"} assigned`
+                                      : "Assign clients"}
+                                    <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-80 p-0"
+                                  align="start"
                                 >
-                                  <Building2 className="h-4 w-4 mr-2 opacity-70" />
-                                  {userClientAssignments[user.id]?.length
-                                    ? `${userClientAssignments[user.id].length} client${userClientAssignments[user.id].length === 1 ? "" : "s"} assigned`
-                                    : "Assign clients"}
-                                  <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-80 p-0"
-                                align="start"
-                              >
-                                <Command>
-                                  <CommandInput
-                                    placeholder="Search clients..."
-                                    className="border-none focus:ring-0"
-                                    autoFocus
-                                  />
-                                  <CommandList>
-                                    <CommandEmpty>
-                                      No clients found
-                                    </CommandEmpty>
-                                    {userClientAssignments[user.id]?.length >
-                                      0 && (
-                                      <CommandGroup heading="Assigned clients">
-                                        {userClientAssignments[user.id]?.map(
-                                          (client) => (
+                                  <Command>
+                                    <CommandInput
+                                      placeholder="Search clients..."
+                                      className="border-none focus:ring-0"
+                                      autoFocus
+                                    />
+                                    <CommandList>
+                                      <CommandEmpty>
+                                        No clients found
+                                      </CommandEmpty>
+                                      {userClientAssignments[user.id]?.length >
+                                        0 && (
+                                        <CommandGroup heading="Assigned clients">
+                                          {userClientAssignments[user.id]?.map(
+                                            (client) => (
+                                              <CommandItem
+                                                key={client.id}
+                                                onSelect={() => {
+                                                  removeClient.mutate({
+                                                    userId: user.id,
+                                                    clientId: client.id,
+                                                  });
+                                                }}
+                                                className="bg-secondary/5 text-primary"
+                                              >
+                                                <Check className="h-4 w-4 mr-2 text-primary" />
+                                                <span>{client.name}</span>
+                                                <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                              </CommandItem>
+                                            ),
+                                          )}
+                                        </CommandGroup>
+                                      )}
+
+                                      <CommandGroup heading="Available clients">
+                                        {clients
+                                          .filter(
+                                            (client) =>
+                                              !userClientAssignments[
+                                                user.id
+                                              ]?.some(
+                                                (c) => c.id === client.id,
+                                              ),
+                                          )
+                                          .map((client) => (
                                             <CommandItem
                                               key={client.id}
                                               onSelect={() => {
-                                                removeClient.mutate({
+                                                assignClient.mutate({
                                                   userId: user.id,
                                                   clientId: client.id,
                                                 });
                                               }}
-                                              className="bg-secondary/5 text-primary"
+                                              className="cursor-pointer"
                                             >
-                                              <Check className="h-4 w-4 mr-2 text-primary" />
+                                              <Building2 className="mr-2 h-4 w-4 opacity-50" />
                                               <span>{client.name}</span>
-                                              <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
                                             </CommandItem>
-                                          ),
-                                        )}
+                                          ))}
                                       </CommandGroup>
-                                    )}
-
-                                    <CommandGroup heading="Available clients">
-                                      {clients
-                                        .filter(
-                                          (client) =>
-                                            !userClientAssignments[
-                                              user.id
-                                            ]?.some((c) => c.id === client.id),
-                                        )
-                                        .map((client) => (
-                                          <CommandItem
-                                            key={client.id}
-                                            onSelect={() => {
-                                              assignClient.mutate({
-                                                userId: user.id,
-                                                clientId: client.id,
-                                              });
-                                            }}
-                                            className="cursor-pointer"
-                                          >
-                                            <Building2 className="mr-2 h-4 w-4 opacity-50" />
-                                            <span>{client.name}</span>
-                                          </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                            {/* Client chips for quick visual reference */}
-                            {userClientAssignments[user.id]?.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {userClientAssignments[user.id]?.map(
-                                  (client) => (
-                                    <Badge
-                                      key={client.id}
-                                      variant="outline"
-                                      className="flex items-center gap-1 bg-secondary/10 pl-1.5 pr-0.5 py-0.5 rounded-md border border-secondary/30 hover:border-secondary/50 transition-colors group"
-                                    >
-                                      <Building2 className="h-3 w-3 mr-1 text-muted-foreground" />
-                                      <span className="text-xs font-medium">
-                                        {client.name}
-                                      </span>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-4 w-4 p-0 ml-1 opacity-60 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 rounded-full transition-all"
-                                        onClick={() =>
-                                          removeClient.mutate({
-                                            userId: user.id,
-                                            clientId: client.id,
-                                          })
-                                        }
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                              {/* Client chips for quick visual reference */}
+                              {userClientAssignments[user.id]?.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {userClientAssignments[user.id]?.map(
+                                    (client) => (
+                                      <Badge
+                                        key={client.id}
+                                        variant="outline"
+                                        className="flex items-center gap-1 bg-secondary/10 pl-1.5 pr-0.5 py-0.5 rounded-md border border-secondary/30 hover:border-secondary/50 transition-colors group"
                                       >
-                                        <span className="sr-only">Remove</span>
-                                        <X className="h-2.5 w-2.5" />
-                                      </Button>
-                                    </Badge>
-                                  ),
-                                )}
-                              </div>
-                            )}
+                                        <Building2 className="h-3 w-3 mr-1 text-muted-foreground" />
+                                        <span className="text-xs font-medium">
+                                          {client.name}
+                                        </span>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-4 w-4 p-0 ml-1 opacity-60 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 rounded-full transition-all"
+                                          onClick={() =>
+                                            removeClient.mutate({
+                                              userId: user.id,
+                                              clientId: client.id,
+                                            })
+                                          }
+                                        >
+                                          <span className="sr-only">
+                                            Remove
+                                          </span>
+                                          <X className="h-2.5 w-2.5" />
+                                        </Button>
+                                      </Badge>
+                                    ),
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
                         )}
                       </TableCell>
                     )}

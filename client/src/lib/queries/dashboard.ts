@@ -1,19 +1,20 @@
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Client, UserRole } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
 // Get all clients query with role-based filtering
-export function useClientsQuery(user: { role?: UserRole; clientIds?: number[] } | null) {
+export function useClientsQuery(
+  user: { role?: UserRole; clientIds?: number[] } | null,
+) {
   return useQuery<Client[]>({
     queryKey: ["/api/clients"],
     select: (data) => {
       let filteredData = [...data];
-      
+
       if (user?.role === UserRole.ADMIN) {
-        filteredData = filteredData.filter(client => 
-          user.clientIds?.includes(client.id)
+        filteredData = filteredData.filter((client) =>
+          user.clientIds?.includes(client.id),
         );
       }
 
@@ -85,12 +86,16 @@ export function useDeleteClientMutation() {
 }
 
 // Update client order mutation
-export function useUpdateClientOrderMutation(setSortOrder: (order: "custom") => void) {
+export function useUpdateClientOrderMutation(
+  setSortOrder: (order: "custom") => void,
+) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (clientOrders: { id: number; displayOrder: number }[]) => {
+    mutationFn: async (
+      clientOrders: { id: number; displayOrder: number }[],
+    ) => {
       const response = await apiRequest("PATCH", "/api/clients/order", {
         clientOrders,
       });
