@@ -30,9 +30,6 @@ import * as fs from "fs";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerUserRoutes } from "./routes/users";
 import { registerClientRoutes } from "./routes/clients";
-import { registerAssetRoutes } from "./routes/assets";
-import { registerInvitationRoutes } from "./routes/invitations";
-import { registerDesignSystemRoutes } from "./routes/design-system";
 
 // Add session augmentation for TypeScript
 declare module "express-session" {
@@ -87,8 +84,5 @@ export function registerRoutes(app: Express) {
   // Register modular routes
   registerAuthRoutes(app);
   registerUserRoutes(app);
-  registerClientRoutes(app, upload);
-  registerAssetRoutes(app, upload);
-  registerInvitationRoutes(app);
-  registerDesignSystemRoutes(app, fs);
+  registerClientRoutes(app);
 }
