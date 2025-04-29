@@ -82,7 +82,7 @@ export default function DesignBuilder() {
   const [activeTab, setActiveTab] = useState("theme");
   const [hasChanges, setHasChanges] = useState(false);
   const userRole = 'editor'; // Replace with actual user role fetch mechanism.
-  const canEdit = ['editor', 'admin', 'super_admin'].includes(userRole);
+  const canEdit = ['editor', 'admin'].includes(userRole);
 
 
   // Initialize the form with current theme values
@@ -160,6 +160,9 @@ export default function DesignBuilder() {
         <div>
           <h1 className="text-3xl font-bold">Design Builder</h1>
           <p className="text-muted-foreground">Customize your application's design system</p>
+          {!canEdit && (
+            <p className="text-sm text-destructive mt-2">You need editor or admin permissions to make changes</p>
+          )}
         </div>
         <div className="flex gap-2">
           {hasChanges && (
