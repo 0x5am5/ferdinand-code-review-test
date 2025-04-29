@@ -109,7 +109,13 @@ export default function Dashboard() {
     }
   }, [deleteClient.isSuccess]);
 
-  const [orderedClients, setOrderedClients] = useState<Client[]>(clients || []);
+  const [orderedClients, setOrderedClients] = useState<Client[]>([]);
+
+  useEffect(() => {
+    if (clients) {
+      setOrderedClients(clients);
+    }
+  }, [clients]);
 
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
