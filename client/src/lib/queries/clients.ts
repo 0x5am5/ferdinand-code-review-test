@@ -1,46 +1,44 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Client, UserRole } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "../queryClient";
+import { Client } from "@shared/schema";
+import { toast } from "@/hooks/use-toast";
 
-// Get all clients query with role-based filtering
-export function useClientsQuery(
-  user: { role: typeof UserRole; clientIds?: number[] } | null,
-) {
-  return useQuery<Client[]>({
+export const useClientsQuery = () =>
+  useQuery<Client[]>({
     queryKey: ["/api/clients"],
-    select: (data) => {
-      if (!data) return [];
-      let filteredData = [...data];
+  });
 
-      if (user.role === UserRole.ADMIN && user.clientIds) {
-        filteredData = filteredData.filter(
-          (client) => user.clientIds?.includes(client.id) ?? false,
-        );
-      }
-
-      return filteredData.sort((a, b) => {
-        if (
-          a.displayOrder !== null &&
-          a.displayOrder !== undefined &&
-          b.displayOrder !== null &&
-          b.displayOrder !== undefined
-        ) {
-          return Number(a.displayOrder) - Number(b.displayOrder);
-        }
-        return a.id - b.id;
+export function useDeleteClientMutation() {
+  return useMutation({
+    mutationFn: async (id: number) => {
+      // Wait for the animation to complete before deleting from the server
+      return new Promise((resolve) => {
+        setTimeout(async () => {
+          const result = await apiRequest("DELETE", `/api/clients/${id}`);
+          resolve(result);
+        }, 300); // Animation duration
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "Success",
+        description: "Client deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
 }
 
-// Update client mutation
 export function useUpdateClientMutation() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Client> }) => {
       await apiRequest("PATCH", `/api/clients/${id}`, data);
     },
     onSuccess: () => {
@@ -60,39 +58,10 @@ export function useUpdateClientMutation() {
   });
 }
 
-// Delete client mutation
-export function useDeleteClientMutation() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/clients/${id}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      toast({
-        title: "Success",
-        description: "Client deleted successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
-
 // Update client order mutation
 export function useUpdateClientOrderMutation(
   setSortOrder: (order: "custom") => void,
 ) {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
   return useMutation({
     mutationFn: async (
       clientOrders: { id: number; displayOrder: number }[],

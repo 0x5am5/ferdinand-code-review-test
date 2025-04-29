@@ -30,19 +30,23 @@ export const Sidebar: FC = () => {
   const themeContext = useTheme();
   const { user } = useAuth();
 
-  console.log(user?.role);
-
   const navItems: NavItem[] = [
     {
       title: "Dashboard",
       href: "/dashboard",
       icon: <HomeIcon className="h-4 w-4" />,
     },
-    {
-      title: "Clients",
-      href: "/clients",
-      icon: <BuildingIcon className="h-4 w-4" />,
-    },
+    ...(user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR
+      ? [
+          {
+            title: "Brands",
+            href: "/clients",
+            icon: <BuildingIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
     ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
       ? [
           {

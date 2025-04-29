@@ -1,14 +1,12 @@
 import { UserManager } from "@/components/client/user-manager";
 import {
-  useClientsQuery,
   useUpdateClientMutation,
   useDeleteClientMutation,
   useUpdateClientOrderMutation,
-} from "@/lib/queries/dashboard";
+} from "@/lib/queries/clients";
 import { Client, insertClientSchema, UserRole } from "@shared/schema";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -17,7 +15,6 @@ import {
   Search,
   SortAsc,
   SortDesc,
-  MoreVertical,
   Edit2,
   Trash,
   GripVertical,
@@ -26,8 +23,6 @@ import {
   MoreHorizontal,
   User,
   Users,
-  Mail,
-  UserPlus,
   Package,
   Palette,
   Type,
@@ -72,6 +67,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
+import { useClientsQuery } from "@/lib/queries/clients";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -95,10 +91,10 @@ export default function Dashboard() {
 
   const { toast } = useToast();
 
-  const { data: clients = [] } = useClientsQuery(user);
+  const { data: clients = [] } = useClientsQuery();
+  const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
-  const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
 
   useEffect(() => {
     if (updateClient.isSuccess) {
@@ -113,20 +109,7 @@ export default function Dashboard() {
     }
   }, [deleteClient.isSuccess]);
 
-  useEffect(() => {
-    if (updateClientOrder.isError) {
-      // Reset to the original order on error
-      setOrderedClients(clients);
-    }
-  }, [updateClientOrder.isError, clients]);
-
-  const [orderedClients, setOrderedClients] = useState<Client[]>([]);
-
-  useEffect(() => {
-    if (clients) {
-      setOrderedClients(clients);
-    }
-  }, [clients]);
+  const [orderedClients, setOrderedClients] = useState<Client[]>(clients);
 
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
@@ -744,7 +727,10 @@ export default function Dashboard() {
 
                 <DialogFooter>
                   {activeTab === "client-info" && (
-                    <Button type="submit" disabled={updateClient.isPending}>
+                    <Button
+                      type="submit"
+                      disabled={useUpdateClientMutation.isPending}
+                    >
                       Save Changes
                     </Button>
                   )}
@@ -754,13 +740,13 @@ export default function Dashboard() {
                       onClick={() => {
                         if (editingClient) {
                           // Save feature toggles to the database
-                          updateClient.mutate({
+                          useUpdateClientMutation.mutate({
                             id: editingClient.id,
                             data: { featureToggles },
                           });
                         }
                       }}
-                      disabled={updateClient.isPending}
+                      disabled={useUpdateClientMutation.isPending}
                     >
                       Save Features
                     </Button>
@@ -793,9 +779,10 @@ export default function Dashboard() {
             <Button
               variant="destructive"
               onClick={() =>
-                deletingClient && deleteClient.mutate(deletingClient.id)
+                deletingClient &&
+                useDeleteClientMutation.mutate(deletingClient.id)
               }
-              disabled={deleteClient.isPending}
+              disabled={useDeleteClientMutation.isPending}
             >
               Delete
             </Button>

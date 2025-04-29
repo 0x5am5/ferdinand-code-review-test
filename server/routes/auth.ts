@@ -1,8 +1,6 @@
-
 import type { Express } from "express";
 import { storage } from "../storage";
 import { auth as firebaseAuth } from "../firebase";
-import { UserRole } from "@shared/schema";
 
 export function registerAuthRoutes(app: Express) {
   // Logout endpoint
@@ -51,7 +49,9 @@ export function registerAuthRoutes(app: Express) {
           return res.status(403).json({ message: "User not authorized" });
         } catch (error) {
           console.error("Error deleting Firebase user:", error);
-          return res.status(500).json({ message: "Failed to delete unauthorized user" });
+          return res
+            .status(500)
+            .json({ message: "Failed to delete unauthorized user" });
         }
       } else {
         console.log(`Found existing user with ID: ${user.id}`);
