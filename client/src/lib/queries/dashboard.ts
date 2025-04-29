@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 
 // Get all clients query with role-based filtering
 export function useClientsQuery(
-  user: { role?: UserRole; clientIds?: number[] } | null,
+  user: { role: typeof UserRole; clientIds?: number[] } | null,
 ) {
   return useQuery<Client[]>({
     queryKey: ["/api/clients"],
@@ -13,10 +13,9 @@ export function useClientsQuery(
       if (!data) return [];
       let filteredData = [...data];
 
-      // Only filter for regular admins, super admins see all clients
-      if (user?.role === UserRole.ADMIN && user.clientIds) {
-        filteredData = filteredData.filter((client) =>
-          user.clientIds.includes(client.id),
+      if (user.role === UserRole.ADMIN && user.clientIds) {
+        filteredData = filteredData.filter(
+          (client) => user.clientIds?.includes(client.id) ?? false,
         );
       }
 

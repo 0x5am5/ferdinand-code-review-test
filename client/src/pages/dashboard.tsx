@@ -123,7 +123,7 @@ export default function Dashboard() {
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
 
   useEffect(() => {
-    if (!clients) {
+    if (clients) {
       setOrderedClients(clients);
     }
   }, [clients]);
@@ -217,7 +217,7 @@ export default function Dashboard() {
 
   const filteredAndSortedClients = orderedClients
     .filter(
-      (client) =>
+      (client: Client) =>
         client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
     )

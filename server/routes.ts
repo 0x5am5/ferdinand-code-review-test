@@ -224,10 +224,30 @@ export function registerRoutes(app: Express) {
   });
 
   // Client routes
-  app.get("/api/clients", async (_req, res) => {
+  app.get("/api/clients", async (req, res) => {
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       const clients = await storage.getClients();
-      res.json(clients);
+      const user = await storage.getUser(req.session.userId);
+
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      if (!user.role) {
+        return res.status(400).json({ message: "User role not defined" });
+      }
+
+      const filteredClients = clients.filter((client) => {
+        if (user.role === UserRole.SUPER_ADMIN) return true;
+
+        return user.clientIds.includes(client.id);
+      });
+
+      res.json(filteredClients);
     } catch (error) {
       console.error("Error fetching clients:", error);
       res.status(500).json({ message: "Error fetching clients" });
@@ -1039,11 +1059,9 @@ export function registerRoutes(app: Express) {
       if (!userId && req.session.userId) {
         userId = req.session.userId;
       } else if (!userId) {
-        return res
-          .status(401)
-          .json({
-            message: "User ID is required or user must be authenticated",
-          });
+        return res.status(401).json({
+          message: "User ID is required or user must be authenticated",
+        });
       }
 
       // Check if this relationship already exists to prevent duplicates
@@ -1831,11 +1849,9 @@ export function registerRoutes(app: Express) {
           user.role,
         )
       ) {
-        return res
-          .status(403)
-          .json({
-            message: "Insufficient permissions to modify design system",
-          });
+        return res.status(403).json({
+          message: "Insufficient permissions to modify design system",
+        });
       }
 
       const { theme, typography, colors, raw_tokens } = req.body;
