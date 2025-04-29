@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   const { toast } = useToast();
 
-  const { data: clients = [] } = useClientsQuery();
+  const { data: clients } = useClientsQuery();
   const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
@@ -109,7 +109,7 @@ export default function Dashboard() {
     }
   }, [deleteClient.isSuccess]);
 
-  const [orderedClients, setOrderedClients] = useState<Client[]>(clients);
+  const [orderedClients, setOrderedClients] = useState<Client[]>(clients || []);
 
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
@@ -214,6 +214,8 @@ export default function Dashboard() {
       }
       return b.name.localeCompare(a.name);
     });
+
+  console.log(filteredAndSortedClients, orderedClients, clients);
 
   return (
     <div className="p-8">

@@ -1,31 +1,26 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useThemeManager } from "@/hooks/use-theme-manager";
-import { 
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogContent, 
+  AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle 
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger
-} from "@/components/ui/tabs";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -33,14 +28,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
 } from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -50,27 +45,45 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useLocation } from "wouter";
-import { Save, ArrowUpDown, Moon, Sun, Palette, Type, Check, Code } from "lucide-react";
+import {
+  Save,
+  ArrowUpDown,
+  Moon,
+  Sun,
+  Palette,
+  Type,
+  Check,
+  Code,
+} from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 // Form schema for validation
 const themeFormSchema = z.object({
-  variant: z.enum(['professional', 'tint', 'vibrant']),
-  primary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Must be a valid hex color"),
-  secondary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Must be a valid hex color").optional(),
-  tertiary: z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Must be a valid hex color").optional(),
-  appearance: z.enum(['light', 'dark', 'system']),
+  variant: z.enum(["professional", "tint", "vibrant"]),
+  primary: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Must be a valid hex color"),
+  secondary: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Must be a valid hex color")
+    .optional(),
+  tertiary: z
+    .string()
+    .regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/, "Must be a valid hex color")
+    .optional(),
+  appearance: z.enum(["light", "dark", "system"]),
   radius: z.number().min(0).max(2),
-  animation: z.enum(['none', 'minimal', 'smooth', 'bounce'])
+  animation: z.enum(["none", "minimal", "smooth", "bounce"]),
 });
 
 export default function DesignBuilder() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
-  const { 
-    designSystem: appliedDesignSystem, 
-    draftDesignSystem, 
+  const {
+    designSystem: appliedDesignSystem,
+    draftDesignSystem,
     updateDraftDesignSystem,
-    applyDraftChanges
+    applyDraftChanges,
   } = useThemeManager();
 
   // Define the designSystem variable to use throughout the component
@@ -81,9 +94,9 @@ export default function DesignBuilder() {
   const [navTarget, setNavTarget] = useState("");
   const [activeTab, setActiveTab] = useState("theme");
   const [hasChanges, setHasChanges] = useState(false);
-  const userRole = 'editor'; // Replace with actual user role fetch mechanism.
-  const canEdit = ['editor', 'admin'].includes(userRole);
-
+  const { user, isLoading } = useAuth();
+  const userRole = user?.role; // Replace with actual user role fetch mechanism.
+  const canEdit = ["editor", "admin"].includes(userRole);
 
   // Initialize the form with current theme values
   const form = useForm<z.infer<typeof themeFormSchema>>({
@@ -91,12 +104,12 @@ export default function DesignBuilder() {
     defaultValues: {
       variant: designSystem.theme.variant,
       primary: designSystem.theme.primary,
-      secondary: designSystem.theme.secondary || '#666666',
-      tertiary: designSystem.theme.tertiary || '#444444',
+      secondary: designSystem.theme.secondary || "#666666",
+      tertiary: designSystem.theme.tertiary || "#444444",
       appearance: designSystem.theme.appearance,
       radius: designSystem.theme.radius,
-      animation: designSystem.theme.animation
-    }
+      animation: designSystem.theme.animation,
+    },
   });
 
   // Handle form submission
@@ -104,19 +117,20 @@ export default function DesignBuilder() {
     try {
       // Update the draft theme
       updateDraftDesignSystem({
-        theme: values
+        theme: values,
       });
 
       setHasChanges(true);
       toast({
         title: "Changes applied to preview",
-        description: "Your changes have been applied to the preview. Save to make them permanent.",
+        description:
+          "Your changes have been applied to the preview. Save to make them permanent.",
       });
     } catch (error) {
       toast({
         title: "Error",
         description: "There was an error applying your changes.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -134,7 +148,7 @@ export default function DesignBuilder() {
       toast({
         title: "Error saving changes",
         description: "There was an error saving your changes.",
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -148,20 +162,28 @@ export default function DesignBuilder() {
 
   // Color preview component
   const ColorPreview = ({ color }: { color: string | undefined }) => (
-    <div 
-      className="h-6 w-6 rounded-full inline-block mr-2 border border-border" 
-      style={{ backgroundColor: color || '#cccccc' }}
+    <div
+      className="h-6 w-6 rounded-full inline-block mr-2 border border-border"
+      style={{ backgroundColor: color || "#cccccc" }}
     />
   );
+
+  if (isLoading) return null;
 
   return (
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Design Builder</h1>
-          <p className="text-muted-foreground">Customize your application's design system</p>
-          {!canEdit && (
-            <p className="text-sm text-destructive mt-2">You need editor or admin permissions to make changes</p>
+
+          {!canEdit ? (
+            <p className="text-sm text-destructive mt-2">
+              You need editor or admin permissions to make changes
+            </p>
+          ) : (
+            <p className="text-muted-foreground">
+              Customize your application's design system
+            </p>
           )}
         </div>
         <div className="flex gap-2">
@@ -174,7 +196,11 @@ export default function DesignBuilder() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="theme">
             <Palette className="mr-2 h-4 w-4" />
@@ -189,10 +215,9 @@ export default function DesignBuilder() {
             Preview
           </TabsTrigger>
           <TabsTrigger value="raw">
-            <Code className="mr-2 h-4 w-4"/>
+            <Code className="mr-2 h-4 w-4" />
             Raw Variables
           </TabsTrigger>
-
         </TabsList>
 
         <TabsContent value="theme" className="space-y-4">
@@ -200,22 +225,26 @@ export default function DesignBuilder() {
             <CardHeader>
               <CardTitle>Theme Settings</CardTitle>
               <CardDescription>
-                Customize the colors, appearance, and other theme settings using Material Design principles.
+                Customize the colors, appearance, and other theme settings using
+                Material Design principles.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-8"
+                >
                   <FormField
                     control={form.control}
                     name="variant"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Theme Variant</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
+                        <Select
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!canEdit}
+                          readOnly={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -223,7 +252,9 @@ export default function DesignBuilder() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="professional">Professional</SelectItem>
+                            <SelectItem value="professional">
+                              Professional
+                            </SelectItem>
                             <SelectItem value="tint">Tint</SelectItem>
                             <SelectItem value="vibrant">Vibrant</SelectItem>
                           </SelectContent>
@@ -233,9 +264,18 @@ export default function DesignBuilder() {
                         </FormDescription>
                         <div className="mt-2">
                           <ul className="list-disc pl-5 text-xs space-y-1">
-                            <li><strong>Professional:</strong> Subtle, balanced colors for corporate applications</li>
-                            <li><strong>Tint:</strong> Gentle color tinting across the interface</li> 
-                            <li><strong>Vibrant:</strong> High-contrast, full Material Design color system</li>
+                            <li>
+                              <strong>Professional:</strong> Subtle, balanced
+                              colors for corporate applications
+                            </li>
+                            <li>
+                              <strong>Tint:</strong> Gentle color tinting across
+                              the interface
+                            </li>
+                            <li>
+                              <strong>Vibrant:</strong> High-contrast, full
+                              Material Design color system
+                            </li>
                           </ul>
                         </div>
                         <FormMessage />
@@ -252,14 +292,19 @@ export default function DesignBuilder() {
                         <div className="flex items-center gap-2">
                           <ColorPreview color={field.value} />
                           <FormControl>
-                            <Input {...field} type="color" className="w-10 h-10 p-1" disabled={!canEdit} />
+                            <Input
+                              {...field}
+                              type="color"
+                              className="w-10 h-10 p-1"
+                              readOnly={!canEdit}
+                            />
                           </FormControl>
                           <FormControl>
-                            <Input 
-                              value={field.value} 
+                            <Input
+                              value={field.value}
                               onChange={field.onChange}
                               className="w-32"
-                              disabled={!canEdit}
+                              readOnly={!canEdit}
                             />
                           </FormControl>
                         </div>
@@ -271,7 +316,7 @@ export default function DesignBuilder() {
                     )}
                   />
 
-                  {form.watch('variant') === 'vibrant' && (
+                  {form.watch("variant") === "vibrant" && (
                     <>
                       <FormField
                         control={form.control}
@@ -280,21 +325,27 @@ export default function DesignBuilder() {
                           <FormItem>
                             <FormLabel>Secondary Color</FormLabel>
                             <div className="flex items-center gap-2">
-                              <ColorPreview color={field.value || '#666666'} />
+                              <ColorPreview color={field.value || "#666666"} />
                               <FormControl>
-                                <Input {...field} type="color" className="w-10 h-10 p-1" disabled={!canEdit} />
+                                <Input
+                                  {...field}
+                                  type="color"
+                                  className="w-10 h-10 p-1"
+                                  readOnly={!canEdit}
+                                />
                               </FormControl>
                               <FormControl>
-                                <Input 
-                                  value={field.value || '#666666'} 
+                                <Input
+                                  value={field.value || "#666666"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  disabled={!canEdit}
+                                  readOnly={!canEdit}
                                 />
                               </FormControl>
                             </div>
                             <FormDescription>
-                              Secondary brand color for accents and complementary elements.
+                              Secondary brand color for accents and
+                              complementary elements.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -308,21 +359,27 @@ export default function DesignBuilder() {
                           <FormItem>
                             <FormLabel>Tertiary Color</FormLabel>
                             <div className="flex items-center gap-2">
-                              <ColorPreview color={field.value || '#444444'} />
+                              <ColorPreview color={field.value || "#444444"} />
                               <FormControl>
-                                <Input {...field} type="color" className="w-10 h-10 p-1" disabled={!canEdit} />
+                                <Input
+                                  {...field}
+                                  type="color"
+                                  className="w-10 h-10 p-1"
+                                  readOnly={!canEdit}
+                                />
                               </FormControl>
                               <FormControl>
-                                <Input 
-                                  value={field.value || '#444444'} 
+                                <Input
+                                  value={field.value || "#444444"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  disabled={!canEdit}
+                                  readOnly={!canEdit}
                                 />
                               </FormControl>
                             </div>
                             <FormDescription>
-                              Tertiary color for additional UI accents and visual hierarchy.
+                              Tertiary color for additional UI accents and
+                              visual hierarchy.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -337,10 +394,10 @@ export default function DesignBuilder() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Appearance</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
+                        <Select
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!canEdit}
+                          readOnly={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -388,9 +445,11 @@ export default function DesignBuilder() {
                             max={2}
                             step={0.1}
                             defaultValue={[field.value]}
-                            onValueChange={(values) => field.onChange(values[0])}
+                            onValueChange={(values) =>
+                              field.onChange(values[0])
+                            }
                             className="w-full"
-                            disabled={!canEdit}
+                            readOnly={!canEdit}
                           />
                         </FormControl>
                         <FormDescription>
@@ -407,10 +466,10 @@ export default function DesignBuilder() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Animation Style</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
+                        <Select
+                          onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!canEdit}
+                          readOnly={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -425,14 +484,15 @@ export default function DesignBuilder() {
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          Controls the animation speed and style throughout the UI.
+                          Controls the animation speed and style throughout the
+                          UI.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <Button type="submit" disabled={!canEdit}>Apply Changes</Button>
+                  {canEdit && <Button type="submit">Apply Changes</Button>}
                 </form>
               </Form>
             </CardContent>
@@ -455,18 +515,18 @@ export default function DesignBuilder() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label>Primary Font</Label>
-                        <Input 
+                        <Input
                           value={designSystem.typography.primary}
                           onChange={(e) => {
                             updateDraftDesignSystem({
                               typography: {
                                 ...designSystem.typography,
-                                primary: e.target.value
-                              }
+                                primary: e.target.value,
+                              },
                             });
                             setHasChanges(true);
                           }}
-                          disabled={!canEdit}
+                          readOnly={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for body text throughout the application.
@@ -474,18 +534,18 @@ export default function DesignBuilder() {
                       </div>
                       <div>
                         <Label>Heading Font</Label>
-                        <Input 
+                        <Input
                           value={designSystem.typography.heading}
                           onChange={(e) => {
                             updateDraftDesignSystem({
                               typography: {
                                 ...designSystem.typography,
-                                heading: e.target.value
-                              }
+                                heading: e.target.value,
+                              },
                             });
                             setHasChanges(true);
                           }}
-                          disabled={!canEdit}
+                          readOnly={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for headings and emphasized text.
@@ -495,18 +555,20 @@ export default function DesignBuilder() {
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => {
-                    // Just apply changes without any further API call
-                    toast({
-                      title: "Changes applied to preview",
-                      description: "Typography changes have been applied to the preview."
-                    });
-                  }}
-                  disabled={!canEdit}
-                >
-                  Apply Typography Changes
-                </Button>
+                {canEdit && (
+                  <Button
+                    onClick={() => {
+                      // Just apply changes without any further API call
+                      toast({
+                        title: "Changes applied to preview",
+                        description:
+                          "Typography changes have been applied to the preview.",
+                      });
+                    }}
+                  >
+                    Apply Typography Changes
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -530,8 +592,9 @@ export default function DesignBuilder() {
                     <h3 className="text-2xl font-bold">Heading 3</h3>
                     <h4 className="text-xl font-bold">Heading 4</h4>
                     <p className="text-base">
-                      Regular paragraph text. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                      Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula.
+                      Regular paragraph text. Lorem ipsum dolor sit amet,
+                      consectetur adipiscing elit. Nullam in dui mauris. Vivamus
+                      hendrerit arcu sed erat molestie vehicula.
                     </p>
                     <p className="text-sm text-muted-foreground">
                       This is smaller muted text often used for descriptions.
@@ -556,11 +619,15 @@ export default function DesignBuilder() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <Label htmlFor="preview-input">Input Field</Label>
-                      <Input id="preview-input" placeholder="Enter some text" disabled={!canEdit}/>
+                      <Input
+                        id="preview-input"
+                        placeholder="Enter some text"
+                        readOnly={!canEdit}
+                      />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="preview-select">Select Menu</Label>
-                      <Select disabled={!canEdit}>
+                      <Select readOnly={!canEdit}>
                         <SelectTrigger id="preview-select">
                           <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
@@ -574,7 +641,7 @@ export default function DesignBuilder() {
                     <div className="space-y-2">
                       <Label htmlFor="preview-checkbox">Checkbox</Label>
                       <div className="flex items-center space-x-2">
-                        <Switch id="preview-checkbox" disabled={!canEdit}/>
+                        <Switch id="preview-checkbox" readOnly={!canEdit} />
                         <Label htmlFor="preview-checkbox">Toggle me</Label>
                       </div>
                     </div>
@@ -600,48 +667,87 @@ export default function DesignBuilder() {
                   </div>
                 </div>
 
-                {form.watch('variant') === 'vibrant' && (
+                {form.watch("variant") === "vibrant" && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Material Design Color System</h3>
+                    <h3 className="text-lg font-medium">
+                      Material Design Color System
+                    </h3>
                     <Card className="mb-4 border-primary/20">
                       <CardContent className="pt-6">
                         <p className="text-sm">
-                          The Material Design color system creates harmony across UI elements with a limited palette that still provides flexibility.
-                          It helps maintain accessible color contrast while supporting a cohesive experience.
+                          The Material Design color system creates harmony
+                          across UI elements with a limited palette that still
+                          provides flexibility. It helps maintain accessible
+                          color contrast while supporting a cohesive experience.
                         </p>
                       </CardContent>
                     </Card>
                     <div className="space-y-8">
                       <div>
-                        <h4 className="font-medium mb-2">Primary Color Palette</h4>
+                        <h4 className="font-medium mb-2">
+                          Primary Color Palette
+                        </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                           <div className="flex flex-col items-center">
                             <div className="h-10 w-full bg-primary rounded-md mb-1"></div>
                             <span className="text-xs">Primary</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--primary-tint-1)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--primary-tint-1)",
+                              }}
+                            ></div>
                             <span className="text-xs">Tint 1</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--primary-tint-2)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--primary-tint-2)",
+                              }}
+                            ></div>
                             <span className="text-xs">Tint 2</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--primary-shade-1)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--primary-shade-1)",
+                              }}
+                            ></div>
                             <span className="text-xs">Shade 1</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--primary-shade-2)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--primary-shade-2)",
+                              }}
+                            ></div>
                             <span className="text-xs">Shade 2</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--primary-container)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--primary-container)",
+                              }}
+                            ></div>
                             <span className="text-xs">Container</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--on-primary-container)', color: 'var(--primary-container)'}}>
-                              <div className="h-full flex items-center justify-center text-xs">Text</div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--on-primary-container)",
+                                color: "var(--primary-container)",
+                              }}
+                            >
+                              <div className="h-full flex items-center justify-center text-xs">
+                                Text
+                              </div>
                             </div>
                             <span className="text-xs">On Container</span>
                           </div>
@@ -649,27 +755,56 @@ export default function DesignBuilder() {
                       </div>
 
                       <div>
-                        <h4 className="font-medium mb-2">Secondary Color Palette</h4>
+                        <h4 className="font-medium mb-2">
+                          Secondary Color Palette
+                        </h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--secondary)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{ backgroundColor: "var(--secondary)" }}
+                            ></div>
                             <span className="text-xs">Secondary</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--secondary-tint-1)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--secondary-tint-1)",
+                              }}
+                            ></div>
                             <span className="text-xs">Tint 1</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--secondary-tint-2)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--secondary-tint-2)",
+                              }}
+                            ></div>
                             <span className="text-xs">Tint 2</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--secondary-container)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--secondary-container)",
+                              }}
+                            ></div>
                             <span className="text-xs">Container</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--on-secondary-container)', color: 'var(--secondary-container)'}}>
-                              <div className="h-full flex items-center justify-center text-xs">Text</div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor:
+                                  "var(--on-secondary-container)",
+                                color: "var(--secondary-container)",
+                              }}
+                            >
+                              <div className="h-full flex items-center justify-center text-xs">
+                                Text
+                              </div>
                             </div>
                             <span className="text-xs">On Container</span>
                           </div>
@@ -680,23 +815,42 @@ export default function DesignBuilder() {
                         <h4 className="font-medium mb-2">System Colors</h4>
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--error)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{ backgroundColor: "var(--error)" }}
+                            ></div>
                             <span className="text-xs">Error</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--success)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{ backgroundColor: "var(--success)" }}
+                            ></div>
                             <span className="text-xs">Success</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--warning)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{ backgroundColor: "var(--warning)" }}
+                            ></div>
                             <span className="text-xs">Warning</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--error-container)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--error-container)",
+                              }}
+                            ></div>
                             <span className="text-xs">Error Container</span>
                           </div>
                           <div className="flex flex-col items-center">
-                            <div className="h-10 w-full rounded-md mb-1" style={{backgroundColor: 'var(--success-container)'}}></div>
+                            <div
+                              className="h-10 w-full rounded-md mb-1"
+                              style={{
+                                backgroundColor: "var(--success-container)",
+                              }}
+                            ></div>
                             <span className="text-xs">Success Container</span>
                           </div>
                         </div>
@@ -705,15 +859,22 @@ export default function DesignBuilder() {
                       <div>
                         <h4 className="font-medium mb-2">Neutral Palette</h4>
                         <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-11 gap-1">
-                          {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => (
-                            <div key={value} className="flex flex-col items-center">
-                              <div 
-                                className="h-10 w-full rounded-md mb-1" 
-                                style={{backgroundColor: `var(--neutral-${value})`}}
-                              ></div>
-                              <span className="text-xs">{value}</span>
-                            </div>
-                          ))}
+                          {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(
+                            (value) => (
+                              <div
+                                key={value}
+                                className="flex flex-col items-center"
+                              >
+                                <div
+                                  className="h-10 w-full rounded-md mb-1"
+                                  style={{
+                                    backgroundColor: `var(--neutral-${value})`,
+                                  }}
+                                ></div>
+                                <span className="text-xs">{value}</span>
+                              </div>
+                            ),
+                          )}
                         </div>
                       </div>
                     </div>
@@ -733,56 +894,120 @@ export default function DesignBuilder() {
                   <div>
                     <h4 className="font-medium mb-2">Colors</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div><code>--background</code></div>
-                      <div><code>--foreground</code></div>
-                      <div><code>--primary</code></div>
-                      <div><code>--primary-foreground</code></div>
-                      <div><code>--primary-light</code></div>
-                      <div><code>--secondary</code></div>
-                      <div><code>--secondary-foreground</code></div>
-                      <div><code>--muted</code></div>
-                      <div><code>--muted-foreground</code></div>
-                      <div><code>--accent</code></div>
-                      <div><code>--accent-foreground</code></div>
-                      <div><code>--destructive</code></div>
-                      <div><code>--destructive-foreground</code></div>
-                      <div><code>--border</code></div>
-                      <div><code>--input</code></div>
-                      <div><code>--ring</code></div>
+                      <div>
+                        <code>--background</code>
+                      </div>
+                      <div>
+                        <code>--foreground</code>
+                      </div>
+                      <div>
+                        <code>--primary</code>
+                      </div>
+                      <div>
+                        <code>--primary-foreground</code>
+                      </div>
+                      <div>
+                        <code>--primary-light</code>
+                      </div>
+                      <div>
+                        <code>--secondary</code>
+                      </div>
+                      <div>
+                        <code>--secondary-foreground</code>
+                      </div>
+                      <div>
+                        <code>--muted</code>
+                      </div>
+                      <div>
+                        <code>--muted-foreground</code>
+                      </div>
+                      <div>
+                        <code>--accent</code>
+                      </div>
+                      <div>
+                        <code>--accent-foreground</code>
+                      </div>
+                      <div>
+                        <code>--destructive</code>
+                      </div>
+                      <div>
+                        <code>--destructive-foreground</code>
+                      </div>
+                      <div>
+                        <code>--border</code>
+                      </div>
+                      <div>
+                        <code>--input</code>
+                      </div>
+                      <div>
+                        <code>--ring</code>
+                      </div>
                     </div>
                   </div>
 
                   <div>
                     <h4 className="font-medium mb-2">Typography</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div><code>--font-sans</code></div>
-                      <div><code>--font-heading</code></div>
-                      <div><code>--heading-1-size</code></div>
-                      <div><code>--heading-2-size</code></div>
-                      <div><code>--heading-3-size</code></div>
-                      <div><code>--body-size</code></div>
-                      <div><code>--line-height</code></div>
-                      <div><code>--heading-weight</code></div>
-                      <div><code>--body-weight</code></div>
+                      <div>
+                        <code>--font-sans</code>
+                      </div>
+                      <div>
+                        <code>--font-heading</code>
+                      </div>
+                      <div>
+                        <code>--heading-1-size</code>
+                      </div>
+                      <div>
+                        <code>--heading-2-size</code>
+                      </div>
+                      <div>
+                        <code>--heading-3-size</code>
+                      </div>
+                      <div>
+                        <code>--body-size</code>
+                      </div>
+                      <div>
+                        <code>--line-height</code>
+                      </div>
+                      <div>
+                        <code>--heading-weight</code>
+                      </div>
+                      <div>
+                        <code>--body-weight</code>
+                      </div>
                     </div>
                   </div>
 
                   <div>
                     <h4 className="font-medium mb-2">Layout & Animation</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div><code>--radius</code></div>
-                      <div><code>--transition</code></div>
+                      <div>
+                        <code>--radius</code>
+                      </div>
+                      <div>
+                        <code>--transition</code>
+                      </div>
                     </div>
                   </div>
 
                   <div>
                     <h4 className="font-medium mb-2">Sidebar</h4>
                     <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div><code>--sidebar-background</code></div>
-                      <div><code>--sidebar-foreground</code></div>
-                      <div><code>--sidebar-hover</code></div>
-                      <div><code>--sidebar-active</code></div>
-                      <div><code>--sidebar-border</code></div>
+                      <div>
+                        <code>--sidebar-background</code>
+                      </div>
+                      <div>
+                        <code>--sidebar-foreground</code>
+                      </div>
+                      <div>
+                        <code>--sidebar-hover</code>
+                      </div>
+                      <div>
+                        <code>--sidebar-active</code>
+                      </div>
+                      <div>
+                        <code>--sidebar-border</code>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -798,7 +1023,8 @@ export default function DesignBuilder() {
           <AlertDialogHeader>
             <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes that will be lost if you leave this page. Are you sure you want to continue?
+              You have unsaved changes that will be lost if you leave this page.
+              Are you sure you want to continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

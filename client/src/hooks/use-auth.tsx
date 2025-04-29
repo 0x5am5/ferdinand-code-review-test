@@ -108,11 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      console.log("Starting Google sign-in process...");
-
       const result = await signInWithPopup(auth, googleProvider);
-
-      console.log("Sign-in successful:", result.user?.email);
 
       // Auth state listener will handle the session creation and user fetching
 
