@@ -112,15 +112,15 @@ export default function Dashboard() {
     );
   }
 
-  if (clients?.length === 1) {
-    setLocation(`/clients/${clients[0].id}`);
-  }
+  useEffect(() => {
+    if (clients?.length === 1) {
+      setLocation(`/clients/${clients[0].id}`);
+    }
+  }, [clients]);
 
   useEffect(() => {
     if (updateClient.isSuccess) {
-      // Ensure this hook is always called
       setEditingClient(null);
-    }
       form.reset();
     }
   }, [updateClient.isSuccess]);
