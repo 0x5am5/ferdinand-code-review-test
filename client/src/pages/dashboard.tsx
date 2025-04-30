@@ -118,7 +118,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (updateClient.isSuccess) {
+      // Ensure this hook is always called
       setEditingClient(null);
+    }
       form.reset();
     }
   }, [updateClient.isSuccess]);
