@@ -36,9 +36,7 @@ export const Sidebar: FC = () => {
       href: "/dashboard",
       icon: <HomeIcon className="h-4 w-4" />,
     },
-    ...(user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR
+    ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
       ? [
           {
             title: "Brands",
@@ -56,11 +54,17 @@ export const Sidebar: FC = () => {
           },
         ]
       : []),
-    {
-      title: "Design Builder",
-      href: "/design-builder",
-      icon: <PaletteIcon className="h-4 w-4" />,
-    },
+    ...(user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR
+      ? [
+          {
+            title: "Design Builder",
+            href: "/design-builder",
+            icon: <PaletteIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
   ];
 
   const isActiveLink = (href: string) => {

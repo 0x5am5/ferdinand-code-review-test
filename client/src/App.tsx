@@ -41,7 +41,7 @@ function Router() {
       </Route>
 
       <Route path="/design-builder">
-        <ProtectedRoute>
+        <ProtectedRoute roles={[]}>
           <AppLayout pageKey="design-builder">
             <DesignBuilder />
           </AppLayout>
@@ -57,7 +57,7 @@ function Router() {
       </Route>
 
       <Route path="/users">
-        <ProtectedRoute>
+        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
           <AppLayout pageKey="users">
             <Users />
           </AppLayout>
@@ -73,7 +73,7 @@ function Router() {
       </Route>
 
       <Route path="/clients/new">
-        <ProtectedRoute>
+        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
           <AppLayout pageKey="new-client">
             <NewClientPage />
           </AppLayout>
@@ -89,7 +89,7 @@ function Router() {
       </Route>
 
       <Route path="/clients">
-        <ProtectedRoute>
+        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
           <AppLayout pageKey="client-details">
             <Clients />
           </AppLayout>

@@ -1,8 +1,26 @@
-
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { User, Client, UpdateUserRoleForm, InviteUserForm } from "@shared/schema";
+import {
+  User,
+  Client,
+  UpdateUserRoleForm,
+  InviteUserForm,
+} from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+interface PendingInvitation {
+  id: number;
+  email: string;
+  role: string;
+  clientIds: number[] | null;
+  expiresAt: string;
+  used: boolean;
+  clientData?: {
+    name: string;
+    logoUrl?: string;
+    primaryColor?: string;
+  };
+}
 
 // Get all users
 export function useUsersQuery() {
@@ -58,7 +76,7 @@ export function useUserClientAssignmentsQuery(userIds: number[]) {
 // Update user role mutation
 export function useUpdateUserRoleMutation() {
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (data: UpdateUserRoleForm) => {
       return await apiRequest("PATCH", `/api/users/${data.id}/role`, {
@@ -85,7 +103,7 @@ export function useUpdateUserRoleMutation() {
 // Invite user mutation
 export function useInviteUserMutation() {
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: async (data: InviteUserForm) => {
       return await apiRequest("POST", "/api/users", data);
@@ -113,8 +131,17 @@ export function useClientAssignmentMutations() {
   const { toast } = useToast();
 
   const assignClient = useMutation({
-    mutationFn: async ({ userId, clientId }: { userId: number; clientId: number }) => {
-      return await apiRequest("POST", `/api/user-clients`, { userId, clientId });
+    mutationFn: async ({
+      userId,
+      clientId,
+    }: {
+      userId: number;
+      clientId: number;
+    }) => {
+      return await apiRequest("POST", `/api/user-clients`, {
+        userId,
+        clientId,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -129,8 +156,17 @@ export function useClientAssignmentMutations() {
   });
 
   const removeClient = useMutation({
-    mutationFn: async ({ userId, clientId }: { userId: number; clientId: number }) => {
-      return await apiRequest("DELETE", `/api/user-clients/${userId}/${clientId}`);
+    mutationFn: async ({
+      userId,
+      clientId,
+    }: {
+      userId: number;
+      clientId: number;
+    }) => {
+      return await apiRequest(
+        "DELETE",
+        `/api/user-clients/${userId}/${clientId}`,
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });

@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { UserRole } from "@shared/schema";
 
 interface Image {
   id: number;
@@ -32,9 +34,9 @@ function ImageDropzone({ onDrop }: DropzoneProps) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': []
+      "image/*": [],
     },
-    maxSize: 5 * 1024 * 1024 // 5MB max size
+    maxSize: 5 * 1024 * 1024, // 5MB max size
   });
 
   return (
@@ -43,7 +45,7 @@ function ImageDropzone({ onDrop }: DropzoneProps) {
         border-2 border-dashed rounded-lg aspect-square
         flex items-center justify-center cursor-pointer
         transition-colors
-        ${isDragActive ? 'border-primary bg-primary/10' : 'hover:border-primary'}
+        ${isDragActive ? "border-primary bg-primary/10" : "hover:border-primary"}
       `}
       {...getRootProps()}
     >
@@ -68,6 +70,13 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   const [editingLabel, setEditingLabel] = useState<number | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  if (!user) return null;
+  const isAbleToEdit = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+  ].includes(user.role);
 
   // Fetch sections
   const { data: sections = [] } = useQuery<Section[]>({
@@ -78,16 +87,19 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   // Create section mutation
   const createSection = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/clients/${clientId}/inspiration/sections`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `/api/clients/${clientId}/inspiration/sections`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            label: "New Section",
+            order: sections.length,
+          }),
         },
-        body: JSON.stringify({
-          label: "New Section",
-          order: sections.length,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -97,7 +109,9 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/inspiration/sections`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/inspiration/sections`],
+      });
       toast({
         title: "Success",
         description: "Section created successfully",
@@ -115,16 +129,19 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   // Update section mutation
   const updateSection = useMutation({
     mutationFn: async ({ id, newLabel }: { id: number; newLabel: string }) => {
-      const response = await fetch(`/api/clients/${clientId}/inspiration/sections/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `/api/clients/${clientId}/inspiration/sections/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            label: newLabel,
+            order: sections.find((s) => s.id === id)?.order || 0,
+          }),
         },
-        body: JSON.stringify({
-          label: newLabel,
-          order: sections.find(s => s.id === id)?.order || 0,
-        }),
-      });
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -134,7 +151,9 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/inspiration/sections`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/inspiration/sections`],
+      });
       toast({
         title: "Success",
         description: "Section updated successfully",
@@ -152,15 +171,24 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
 
   // Upload image mutation
   const uploadImage = useMutation({
-    mutationFn: async ({ sectionId, file }: { sectionId: number; file: File }) => {
+    mutationFn: async ({
+      sectionId,
+      file,
+    }: {
+      sectionId: number;
+      file: File;
+    }) => {
       const formData = new FormData();
-      formData.append('image', file);
-      formData.append('order', '0'); // Default order for now
+      formData.append("image", file);
+      formData.append("order", "0"); // Default order for now
 
-      const response = await fetch(`/api/clients/${clientId}/inspiration/sections/${sectionId}/images`, {
-        method: 'POST',
-        body: formData,
-      });
+      const response = await fetch(
+        `/api/clients/${clientId}/inspiration/sections/${sectionId}/images`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -170,7 +198,9 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/inspiration/sections`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/inspiration/sections`],
+      });
       toast({
         title: "Success",
         description: "Image uploaded successfully",
@@ -185,35 +215,38 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     },
   });
 
-  const handleDrop = useCallback((files: File[], sectionId: number) => {
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+  const handleDrop = useCallback(
+    (files: File[], sectionId: number) => {
+      const imageFiles = files.filter((file) => file.type.startsWith("image/"));
 
-    if (imageFiles.length === 0) {
-      toast({
-        title: "Invalid files",
-        description: "Please upload image files only",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    imageFiles.forEach(file => {
-      if (file.size > 5 * 1024 * 1024) {
+      if (imageFiles.length === 0) {
         toast({
-          title: "File too large",
-          description: "Image must be less than 5MB",
+          title: "Invalid files",
+          description: "Please upload image files only",
           variant: "destructive",
         });
         return;
       }
-      uploadImage.mutate({ sectionId, file });
-    });
-  }, [uploadImage, toast]);
+
+      imageFiles.forEach((file) => {
+        if (file.size > 5 * 1024 * 1024) {
+          toast({
+            title: "File too large",
+            description: "Image must be less than 5MB",
+            variant: "destructive",
+          });
+          return;
+        }
+        uploadImage.mutate({ sectionId, file });
+      });
+    },
+    [uploadImage, toast],
+  );
 
   return (
     <div className="space-y-8">
-      {sections.length === 0 ? (
-        <div 
+      {sections.length === 0 && isAbleToEdit ? (
+        <div
           className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
           onClick={() => createSection.mutate()}
         >
@@ -240,8 +273,13 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
                     <form
                       onSubmit={(e) => {
                         e.preventDefault();
-                        const input = e.currentTarget.elements.namedItem('label') as HTMLInputElement;
-                        updateSection.mutate({ id: section.id, newLabel: input.value });
+                        const input = e.currentTarget.elements.namedItem(
+                          "label",
+                        ) as HTMLInputElement;
+                        updateSection.mutate({
+                          id: section.id,
+                          newLabel: input.value,
+                        });
                       }}
                       className="flex-1"
                     >
@@ -249,19 +287,28 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
                         name="label"
                         defaultValue={section.label}
                         autoFocus
-                        onBlur={(e) => updateSection.mutate({ id: section.id, newLabel: e.target.value })}
+                        onBlur={(e) =>
+                          updateSection.mutate({
+                            id: section.id,
+                            newLabel: e.target.value,
+                          })
+                        }
                       />
                     </form>
                   ) : (
                     <>
-                      <Label className="text-lg font-medium">{section.label}</Label>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingLabel(section.id)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
+                      <Label className="text-lg font-medium">
+                        {section.label}
+                      </Label>
+                      {isAbleToEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingLabel(section.id)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -281,34 +328,44 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
                         alt=""
                         className="w-full h-full object-cover rounded-lg"
                       />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => {/* TODO: Implement delete */}}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      {isAbleToEdit && (
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => {
+                            /* TODO: Implement delete */
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
                     </motion.div>
                   ))}
 
-                  <ImageDropzone onDrop={(files) => handleDrop(files, section.id)} />
+                  {isAbleToEdit && (
+                    <ImageDropzone
+                      onDrop={(files) => handleDrop(files, section.id)}
+                    />
+                  )}
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
 
           {/* Add Section Button */}
-          <motion.div
-            layout
-            onClick={() => createSection.mutate()}
-            className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
-          >
-            <Plus className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              Add Another Section
-            </p>
-          </motion.div>
+          {isAbleToEdit && (
+            <motion.div
+              layout
+              onClick={() => createSection.mutate()}
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+            >
+              <Plus className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                Add Another Section
+              </p>
+            </motion.div>
+          )}
         </div>
       )}
     </div>

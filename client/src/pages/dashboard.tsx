@@ -34,7 +34,7 @@ import {
   Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import {
@@ -75,6 +75,14 @@ export default function Dashboard() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
     "custom",
   );
+  const [, setLocation] = useLocation();
+
+  if (!user) return null;
+  const isAbleToEdit = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+  ].includes(user.role);
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
@@ -91,10 +99,22 @@ export default function Dashboard() {
 
   const { toast } = useToast();
 
-  const { data: clients } = useClientsQuery();
+  const { data: clients, isLoading: clientsIsLoading } = useClientsQuery();
   const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
+
+  if (clientsIsLoading) {
+    return (
+      <div className="p-8 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (clients?.length === 1) {
+    setLocation(`/clients/${clients[0].id}`);
+  }
 
   useEffect(() => {
     if (updateClient.isSuccess) {
@@ -221,8 +241,6 @@ export default function Dashboard() {
       return b.name.localeCompare(a.name);
     });
 
-  console.log(filteredAndSortedClients, orderedClients, clients);
-
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -337,36 +355,38 @@ export default function Dashboard() {
                             >
                               <Share className="h-4 w-4" />
                             </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setEditingClient(client);
-                                  }}
-                                >
-                                  <Edit2 className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setDeletingClient(client);
-                                  }}
-                                  className="text-red-600"
-                                >
-                                  <Trash className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            {isAbleToEdit && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setEditingClient(client);
+                                    }}
+                                  >
+                                    <Edit2 className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setDeletingClient(client);
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <Trash className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
                           <Link
                             href={`/clients/${client.id}`}

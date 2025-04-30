@@ -1,4 +1,12 @@
-import { Plus, Edit2, Trash2, Check, Copy, RotateCcw, Download } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Check,
+  Copy,
+  RotateCcw,
+  Download,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useState } from "react";
@@ -30,13 +38,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BrandAsset } from "@shared/schema";
+import { BrandAsset, UserRole } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useAuth } from "@/hooks/use-auth";
 
 // Color conversion utilities
 function hexToRgb(hex: string) {
@@ -60,7 +76,9 @@ function hexToHsl(hex: string) {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s, l = (max + min) / 2;
+  let h = 0,
+    s,
+    l = (max + min) / 2;
 
   if (max === min) {
     h = s = 0;
@@ -69,9 +87,15 @@ function hexToHsl(hex: string) {
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
     }
     h /= 6;
   }
@@ -99,23 +123,27 @@ function hexToCmyk(hex: string) {
   return `cmyk(${Math.round(c * 100)}, ${Math.round(m * 100)}, ${Math.round(y * 100)}, ${Math.round(k * 100)})`;
 }
 
-function generateTintsAndShades(hex: string, tintPercents = [60, 40, 20], shadePercents = [20, 40, 60]) {
+function generateTintsAndShades(
+  hex: string,
+  tintPercents = [60, 40, 20],
+  shadePercents = [20, 40, 60],
+) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
 
-  const tints = tintPercents.map(percent => {
+  const tints = tintPercents.map((percent) => {
     const tintR = r + ((255 - r) * percent) / 100;
     const tintG = g + ((255 - g) * percent) / 100;
     const tintB = b + ((255 - b) * percent) / 100;
-    return `#${Math.round(tintR).toString(16).padStart(2, '0')}${Math.round(tintG).toString(16).padStart(2, '0')}${Math.round(tintB).toString(16).padStart(2, '0')}`;
+    return `#${Math.round(tintR).toString(16).padStart(2, "0")}${Math.round(tintG).toString(16).padStart(2, "0")}${Math.round(tintB).toString(16).padStart(2, "0")}`;
   });
 
-  const shades = shadePercents.map(percent => {
+  const shades = shadePercents.map((percent) => {
     const shadeR = r * (1 - percent / 100);
     const shadeG = g * (1 - percent / 100);
     const shadeB = b * (1 - percent / 100);
-    return `#${Math.round(shadeR).toString(16).padStart(2, '0')}${Math.round(shadeG).toString(16).padStart(2, '0')}${Math.round(shadeB).toString(16).padStart(2, '0')}`;
+    return `#${Math.round(shadeR).toString(16).padStart(2, "0")}${Math.round(shadeG).toString(16).padStart(2, "0")}${Math.round(shadeB).toString(16).padStart(2, "0")}`;
   });
 
   return { tints, shades };
@@ -133,7 +161,7 @@ function generateContainerColors(baseColor: string) {
   const { tints, shades } = generateTintsAndShades(baseColor, [60], [60]);
   return {
     container: tints[0],
-    onContainer: shades[0]
+    onContainer: shades[0],
   };
 }
 
@@ -147,18 +175,15 @@ function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
       setTimeout(() => setCopied(false), 2000);
       onClick?.();
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error("Failed to copy:", err);
     }
   };
 
   return (
-    <div
-      className="relative cursor-pointer group"
-      onClick={handleClick}
-    >
+    <div className="relative cursor-pointer group" onClick={handleClick}>
       <div
         className="rounded-md transition-all duration-200 group-hover:ring-2 ring-primary/20"
-        style={{ backgroundColor: hex, height: onClick ? '8rem' : '1.5rem' }}
+        style={{ backgroundColor: hex, height: onClick ? "8rem" : "1.5rem" }}
       />
       <AnimatePresence>
         {copied ? (
@@ -184,7 +209,11 @@ function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
   );
 }
 
-function ColorChip({ color, onEdit, onDelete }: {
+function ColorChip({
+  color,
+  onEdit,
+  onDelete,
+}: {
   color: ColorData;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -196,6 +225,10 @@ function ColorChip({ color, onEdit, onDelete }: {
     name: color.name,
     hex: color.hex,
   });
+
+  const { user } = useAuth();
+
+  if (!user) return null;
 
   const handleCopy = (value: string) => {
     navigator.clipboard.writeText(value);
@@ -220,52 +253,55 @@ function ColorChip({ color, onEdit, onDelete }: {
       className="relative min-w-[280px] border rounded-lg bg-white overflow-hidden group"
     >
       {/* Quick edit hover menu */}
-      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 bg-white/90 hover:bg-white"
-          onClick={() => setIsEditing(true)}
-        >
-          <Edit2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 bg-white/90 hover:bg-white"
-          onClick={() => handleCopy(color.hex)}
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 bg-white/90 hover:bg-white"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Color</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this color? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={onDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+      {user.role !== UserRole.STANDARD && (
+        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={() => handleCopy(color.hex)}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-white/90 hover:bg-white"
               >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Color</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this color? This action cannot
+                  be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
 
       {/* Color content */}
       <div className="p-4">
@@ -273,13 +309,17 @@ function ColorChip({ color, onEdit, onDelete }: {
           <form onSubmit={handleQuickEdit} className="space-y-2">
             <Input
               value={editValue.name}
-              onChange={(e) => setEditValue(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setEditValue((prev) => ({ ...prev, name: e.target.value }))
+              }
               className="font-medium"
               autoFocus
             />
             <Input
               value={editValue.hex}
-              onChange={(e) => setEditValue(prev => ({ ...prev, hex: e.target.value }))}
+              onChange={(e) =>
+                setEditValue((prev) => ({ ...prev, hex: e.target.value }))
+              }
               pattern="^#[0-9A-Fa-f]{6}$"
               className="font-mono"
             />
@@ -300,10 +340,7 @@ function ColorChip({ color, onEdit, onDelete }: {
         ) : (
           <>
             <h4 className="font-medium mb-1">{color.name}</h4>
-            <ColorBlock
-              hex={color.hex}
-              onClick={() => handleCopy(color.hex)}
-            />
+            <ColorBlock hex={color.hex} onClick={() => handleCopy(color.hex)} />
           </>
         )}
       </div>
@@ -362,20 +399,32 @@ function ColorChip({ color, onEdit, onDelete }: {
   );
 }
 
-function ColorSection({ title, colors = [], onAddColor, deleteColor, onEditColor }: {
+function ColorSection({
+  title,
+  colors = [],
+  onAddColor,
+  deleteColor,
+  onEditColor,
+}: {
   title: string;
   colors: ColorData[];
   onAddColor: () => void;
   deleteColor: (colorId: number) => void;
   onEditColor: (color: ColorData) => void;
 }) {
+  const { user } = useAuth();
+
+  if (!user) return null;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-xl font-semibold">{title}</h3>
-        <Button variant="outline" size="icon" onClick={onAddColor}>
-          <Plus className="h-4 w-4" />
-        </Button>
+        {user.role !== UserRole.STANDARD && (
+          <Button variant="outline" size="icon" onClick={onAddColor}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
       </div>
       {colors.length > 0 ? (
         <ScrollArea className="w-full whitespace-nowrap rounded-md border">
@@ -402,21 +451,28 @@ function ColorSection({ title, colors = [], onAddColor, deleteColor, onEditColor
   );
 }
 
-export function ColorManager({ clientId, colors, designSystem, updateDraftDesignSystem, addToHistory }: ColorManagerProps) {
+export function ColorManager({
+  clientId,
+  colors,
+  designSystem,
+  updateDraftDesignSystem,
+  addToHistory,
+}: ColorManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingColor, setIsAddingColor] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<'brand' | 'neutral' | 'interactive'>('brand');
+  const [selectedCategory, setSelectedCategory] = useState<
+    "brand" | "neutral" | "interactive"
+  >("brand");
   const [editingColor, setEditingColor] = useState<ColorData | null>(null);
   // We don't need an extra state since colors are derived from props
-
 
   const form = useForm<ColorFormData>({
     resolver: zodResolver(colorFormSchema),
     defaultValues: {
-      name: '',
-      hex: '#000000',
-      type: 'solid',
+      name: "",
+      hex: "#000000",
+      type: "solid",
     },
   });
 
@@ -424,17 +480,19 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
     mutationFn: async (data: ColorFormData) => {
       const payload = {
         name: data.name,
-        category: 'color',
+        category: "color",
         clientId,
         data: {
           type: data.type,
           category: selectedCategory,
-          colors: [{
-            hex: data.hex,
-            rgb: data.rgb,
-            cmyk: data.cmyk,
-            pantone: data.pantone,
-          }],
+          colors: [
+            {
+              hex: data.hex,
+              rgb: data.rgb,
+              cmyk: data.cmyk,
+              pantone: data.pantone,
+            },
+          ],
           tints: generateTintsAndShades(data.hex).tints.map((hex, i) => ({
             percentage: [60, 40, 20][i],
             hex,
@@ -446,13 +504,16 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
         },
       };
 
-      const response = await fetch(`/api/clients/${clientId}/assets${editingColor?.id ? `/${editingColor.id}` : ''}`, {
-        method: editingColor ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `/api/clients/${clientId}/assets${editingColor?.id ? `/${editingColor.id}` : ""}`,
+        {
+          method: editingColor ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -463,11 +524,13 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`]
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
       toast({
         title: "Success",
-        description: editingColor ? "Color updated successfully" : "Color added successfully",
+        description: editingColor
+          ? "Color updated successfully"
+          : "Color added successfully",
       });
       setIsAddingColor(false);
       setEditingColor(null);
@@ -484,9 +547,12 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
 
   const deleteColor = useMutation({
     mutationFn: async (colorId: number) => {
-      const response = await fetch(`/api/clients/${clientId}/assets/${colorId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/clients/${clientId}/assets/${colorId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -495,7 +561,7 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`]
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
       toast({
         title: "Success",
@@ -513,7 +579,8 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
 
   const parseColorAsset = (asset: BrandAsset): ColorData | null => {
     try {
-      const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+      const data =
+        typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
       if (!data?.colors?.[0]) return null;
 
       return {
@@ -527,19 +594,25 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
         category: data.category,
       };
     } catch (error) {
-      console.error('Error parsing color asset:', error);
+      console.error("Error parsing color asset:", error);
       return null;
     }
   };
 
   const transformedColors = colors
-    .filter(asset => asset.category === 'color')
+    .filter((asset) => asset.category === "color")
     .map(parseColorAsset)
     .filter((color): color is ColorData => color !== null);
 
-  const brandColorsData = transformedColors.filter(c => c.category === 'brand');
-  const neutralColorsData = transformedColors.filter(c => c.category === 'neutral');
-  const interactiveColorsData = transformedColors.filter(c => c.category === 'interactive');
+  const brandColorsData = transformedColors.filter(
+    (c) => c.category === "brand",
+  );
+  const neutralColorsData = transformedColors.filter(
+    (c) => c.category === "neutral",
+  );
+  const interactiveColorsData = transformedColors.filter(
+    (c) => c.category === "interactive",
+  );
 
   const handleEditColor = (color: ColorData) => {
     setEditingColor(color);
@@ -550,7 +623,7 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
       rgb: color.rgb,
       cmyk: color.cmyk,
       pantone: color.pantone,
-      type: 'solid',
+      type: "solid",
     });
     setIsAddingColor(true);
   };
@@ -558,38 +631,42 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
   const handleHexChange = (hex: string) => {
     if (hex.match(/^#[0-9A-F]{6}$/i)) {
       // Auto-generate name if not set
-      if (!form.getValues('name')) {
-        form.setValue('name', `Color ${hex.toUpperCase()}`);
+      if (!form.getValues("name")) {
+        form.setValue("name", `Color ${hex.toUpperCase()}`);
       }
 
       // Auto-calculate other color formats
       const rgb = hexToRgb(hex);
       const cmyk = hexToCmyk(hex);
 
-      if (rgb) form.setValue('rgb', rgb);
-      if (cmyk) form.setValue('cmyk', cmyk);
-      if (!form.getValues('pantone')) {
-        form.setValue('pantone', ''); // Clear pantone as it can't be auto-calculated
+      if (rgb) form.setValue("rgb", rgb);
+      if (cmyk) form.setValue("cmyk", cmyk);
+      if (!form.getValues("pantone")) {
+        form.setValue("pantone", ""); // Clear pantone as it can't be auto-calculated
       }
     }
   };
 
   const handleAddBrandColor = (name: string, hex: string) => {
-    const colorKey = name.toLowerCase().replace(/\s+/g, '-');
+    const colorKey = name.toLowerCase().replace(/\s+/g, "-");
     handleColorChange(colorKey, hex, true);
-    
+
     // We're not managing an internal color state anymore
     // The colors will be updated through the API and the component will re-render
   };
 
-  const handleColorChange = (key: string, value: string, isBaseColor = false) => {
+  const handleColorChange = (
+    key: string,
+    value: string,
+    isBaseColor = false,
+  ) => {
     //  Updated color change handling to dynamically generate container and neutral colors
-    const updatedDesignSystem = { 
+    const updatedDesignSystem = {
       ...(designSystem || {}),
       colors: {
         ...(designSystem?.colors || {}),
-        [key]: value
-      }
+        [key]: value,
+      },
     };
 
     if (isBaseColor) {
@@ -601,7 +678,7 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
       updatedDesignSystem.colors[`on-${key}-container`] = onContainer;
 
       // If it's a neutral base color, generate the palette
-      if (key === 'neutral-base') {
+      if (key === "neutral-base") {
         const neutralPalette = generateNeutralPalette(value);
         neutralPalette.forEach((color, index) => {
           const colorKey = `neutral-${index * 100}`;
@@ -614,12 +691,11 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
     if (updateDraftDesignSystem) {
       updateDraftDesignSystem(updatedDesignSystem.colors);
     }
-    
+
     if (addToHistory) {
       addToHistory(updatedDesignSystem);
     }
   };
-
 
   return (
     <div className="space-y-8">
@@ -632,7 +708,7 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
           title="Brand Colors"
           colors={brandColorsData}
           onAddColor={() => {
-            setSelectedCategory('brand');
+            setSelectedCategory("brand");
             setEditingColor(null);
             form.reset();
             setIsAddingColor(true);
@@ -645,7 +721,7 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
           title="Neutral Colors"
           colors={neutralColorsData}
           onAddColor={() => {
-            setSelectedCategory('neutral');
+            setSelectedCategory("neutral");
             setEditingColor(null);
             form.reset();
             setIsAddingColor(true);
@@ -658,7 +734,7 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
           title="Interactive Colors"
           colors={interactiveColorsData}
           onAddColor={() => {
-            setSelectedCategory('interactive');
+            setSelectedCategory("interactive");
             setEditingColor(null);
             form.reset();
             setIsAddingColor(true);
@@ -671,25 +747,27 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
       <Dialog open={isAddingColor} onOpenChange={setIsAddingColor}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{editingColor ? 'Edit Color' : 'Add New Color'}</DialogTitle>
+            <DialogTitle>
+              {editingColor ? "Edit Color" : "Add New Color"}
+            </DialogTitle>
             <DialogDescription>
               {editingColor
-                ? 'Edit the color details below.'
-                : 'Add a new color to your brand system. You can specify various color formats and create gradients.'}
+                ? "Edit the color details below."
+                : "Add a new color to your brand system. You can specify various color formats and create gradients."}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => createColor.mutate(data))} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit((data) => createColor.mutate(data))}
+              className="space-y-4"
+            >
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Color Type</FormLabel>
-                    <Select
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -792,11 +870,12 @@ export function ColorManager({ clientId, colors, designSystem, updateDraftDesign
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={createColor.isPending}
-                >
-                  {createColor.isPending ? "Saving..." : editingColor ? "Save Changes" : "Add Color"}
+                <Button type="submit" disabled={createColor.isPending}>
+                  {createColor.isPending
+                    ? "Saving..."
+                    : editingColor
+                      ? "Save Changes"
+                      : "Add Color"}
                 </Button>
               </div>
             </form>
@@ -823,7 +902,7 @@ interface ColorData {
   cmyk?: string;
   pantone?: string;
   name: string;
-  category: 'brand' | 'neutral' | 'interactive';
+  category: "brand" | "neutral" | "interactive";
 }
 
 const colorFormSchema = z.object({

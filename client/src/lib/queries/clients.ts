@@ -1,11 +1,29 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "../queryClient";
-import { Client } from "@shared/schema";
+import { Client, UserPersona } from "@shared/schema";
 import { toast } from "@/hooks/use-toast";
 
 export const useClientsQuery = () =>
   useQuery<Client[]>({
     queryKey: ["/api/clients"],
+  });
+
+export const useClientsById = (clientId: number) =>
+  useQuery<Client>({
+    queryKey: [`/api/clients/${clientId}`],
+    enabled: !!clientId,
+  });
+
+export const useClientAssetsById = (clientId: number) =>
+  useQuery<BrandAsset[]>({
+    queryKey: [`/api/clients/${clientId}/assets`],
+    enabled: !!clientId,
+  });
+
+export const useClientPersonasById = (clientId: number) =>
+  useQuery<UserPersona[]>({
+    queryKey: [`/api/clients/${clientId}/personas`],
+    enabled: !!clientId,
   });
 
 export function useDeleteClientMutation() {

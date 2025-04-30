@@ -1,4 +1,13 @@
-import { Plus, Edit2, Trash2, Download, X, ChevronUp, ChevronDown, Lock } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Download,
+  X,
+  ChevronUp,
+  ChevronDown,
+  Lock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,13 +18,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { BrandAsset, FontSource, FontWeight, FontStyle } from "@shared/schema";
+  BrandAsset,
+  FontSource,
+  FontWeight,
+  FontStyle,
+  UserRole,
+} from "@shared/schema";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -24,13 +34,29 @@ import { Label } from "@/components/ui/label";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 // Form schemas for different font sources
 const fileUploadSchema = z.object({
-  files: z.array(z.instanceof(File)).min(1, "At least one font file is required"),
+  files: z
+    .array(z.instanceof(File))
+    .min(1, "At least one font file is required"),
   name: z.string().min(1, "Font name is required"),
   weights: z.array(z.string()).min(1, "At least one weight is required"),
   styles: z.array(z.string()).min(1, "At least one style is required"),
@@ -56,23 +82,51 @@ type GoogleFontForm = z.infer<typeof googleFontSchema>;
 
 // Available font weights and styles
 const availableWeights = [
-  "100", "200", "300", "400", "500", "600", "700", "800", "900"
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900",
 ];
 
-const availableStyles = [
-  "normal", "italic"
+const availableStyles = ["normal", "italic"];
+
+const allWeights = [
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "700",
+  "800",
+  "900",
 ];
 
-const allWeights = ["100", "200", "300", "400", "500", "600", "700", "800", "900"];
-
-
-function FontCard({ font, onEdit, onDelete }: {
+function FontCard({
+  font,
+  onEdit,
+  onDelete,
+}: {
   font: FontData;
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
   const previewText = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz";
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  const isAbleToEdit = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+  ].includes(user.role);
 
   return (
     <motion.div
@@ -84,17 +138,25 @@ function FontCard({ font, onEdit, onDelete }: {
     >
       {/* Quick action menu */}
       <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        {font.source === 'file' && (
+        {font.source === "file" && (
           <Button variant="ghost" size="icon">
             <Download className="h-4 w-4" />
           </Button>
         )}
-        <Button variant="ghost" size="icon" onClick={onEdit}>
-          <Edit2 className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" onClick={() => setShowConfirmDelete(true)}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        {isAbleToEdit && (
+          <>
+            <Button variant="ghost" size="icon" onClick={onEdit}>
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowConfirmDelete(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Font info */}
@@ -107,12 +169,12 @@ function FontCard({ font, onEdit, onDelete }: {
 
       {/* Preview */}
       <div className="space-y-4">
-        {font.weights.map(weight => (
+        {font.weights.map((weight) => (
           <div key={weight} className="space-y-2">
-            {font.styles.map(style => (
+            {font.styles.map((style) => (
               <div key={`${weight}-${style}`} className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  {weight} {style !== 'normal' ? style : ''}
+                  {weight} {style !== "normal" ? style : ""}
                 </p>
                 <p
                   className="text-xl truncate"
@@ -136,11 +198,15 @@ function FontCard({ font, onEdit, onDelete }: {
           <DialogHeader>
             <DialogTitle>Delete Font</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {font.name}? This action cannot be undone.
+              Are you sure you want to delete {font.name}? This action cannot be
+              undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmDelete(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowConfirmDelete(false)}
+            >
               Cancel
             </Button>
             <Button
@@ -167,7 +233,7 @@ function AddFontCard({ onClick }: { onClick: () => void }) {
       animate={{ opacity: 1, scale: 1 }}
       className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"
       onClick={onClick}
-      style={{ minHeight: '300px' }}
+      style={{ minHeight: "300px" }}
     >
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
         <Plus className="h-6 w-6 text-primary" />
@@ -188,7 +254,7 @@ function WeightStyleSelector({
   onWeightChange,
   onStyleChange,
   availableWeights = ["400"], // Default to regular weight if none specified
-  onUnavailableWeightClick
+  onUnavailableWeightClick,
 }: {
   selectedWeights: string[];
   selectedStyles: string[];
@@ -202,10 +268,11 @@ function WeightStyleSelector({
       <div>
         <Label>Font Weights</Label>
         <p className="text-sm text-muted-foreground mb-2">
-          Select available weights or upload additional font files for more options
+          Select available weights or upload additional font files for more
+          options
         </p>
         <div className="grid grid-cols-3 gap-2 mt-2">
-          {allWeights.map(weight => {
+          {allWeights.map((weight) => {
             const isAvailable = availableWeights.includes(weight);
             const isSelected = selectedWeights.includes(weight);
 
@@ -220,12 +287,12 @@ function WeightStyleSelector({
                     return;
                   }
                   if (isSelected) {
-                    onWeightChange(selectedWeights.filter(w => w !== weight));
+                    onWeightChange(selectedWeights.filter((w) => w !== weight));
                   } else {
                     onWeightChange([...selectedWeights, weight].sort());
                   }
                 }}
-                className={`h-auto py-2 ${!isAvailable ? 'opacity-50' : ''}`}
+                className={`h-auto py-2 ${!isAvailable ? "opacity-50" : ""}`}
               >
                 {weight}
                 {!isAvailable && <Lock className="h-3 w-3 ml-1" />}
@@ -238,14 +305,14 @@ function WeightStyleSelector({
       <div>
         <Label>Font Styles</Label>
         <div className="grid grid-cols-2 gap-2 mt-2">
-          {availableStyles.map(style => (
+          {availableStyles.map((style) => (
             <Button
               key={style}
               type="button"
               variant={selectedStyles.includes(style) ? "default" : "outline"}
               onClick={() => {
                 if (selectedStyles.includes(style)) {
-                  onStyleChange(selectedStyles.filter(s => s !== style));
+                  onStyleChange(selectedStyles.filter((s) => s !== style));
                 } else {
                   onStyleChange([...selectedStyles, style]);
                 }
@@ -265,10 +332,21 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isAddingFont, setIsAddingFont] = useState(false);
-  const [activeTab, setActiveTab] = useState<"file" | "adobe" | "google">("file");
+  const [activeTab, setActiveTab] = useState<"file" | "adobe" | "google">(
+    "file",
+  );
   const [editingFont, setEditingFont] = useState<FontData | null>(null);
   const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  const isAbleToEdit = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+  ].includes(user.role);
 
   // Forms for different font sources
   const fileForm = useForm<FileUploadForm>({
@@ -278,7 +356,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       files: [],
       weights: ["400"],
       styles: ["normal"],
-    }
+    },
   });
 
   const adobeForm = useForm<AdobeFontForm>({
@@ -288,7 +366,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       projectId: "",
       weights: ["400"],
       styles: ["normal"],
-    }
+    },
   });
 
   const googleForm = useForm<GoogleFontForm>({
@@ -298,13 +376,17 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       url: "",
       weights: ["400"],
       styles: ["normal"],
-    }
+    },
   });
 
   // Add font mutation
   const addFont = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await apiRequest("POST", `/api/clients/${clientId}/assets`, data);
+      const response = await apiRequest(
+        "POST",
+        `/api/clients/${clientId}/assets`,
+        data,
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to add font");
@@ -313,7 +395,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`]
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
       toast({
         title: "Success",
@@ -336,7 +418,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Delete font mutation
   const deleteFont = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/clients/${clientId}/assets/${id}`);
+      const response = await apiRequest(
+        "DELETE",
+        `/api/clients/${clientId}/assets/${id}`,
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to delete font");
@@ -344,7 +429,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`]
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
       toast({
         title: "Success",
@@ -362,8 +447,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   // Edit font mutation
   const editFont = useMutation({
-    mutationFn: async ({ id, data }: { id: number, data: any }) => {
-      const response = await apiRequest("PATCH", `/api/clients/${clientId}/assets/${id}`, data);
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await apiRequest(
+        "PATCH",
+        `/api/clients/${clientId}/assets/${id}`,
+        data,
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to update font");
@@ -372,7 +461,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`]
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
       toast({
         title: "Success",
@@ -391,14 +480,14 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   const handleFileUpload = (data: FileUploadForm) => {
     const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('category', 'font');
-    formData.append('source', FontSource.FILE);
-    formData.append('weights', JSON.stringify(selectedWeights));
-    formData.append('styles', JSON.stringify(selectedStyles));
+    formData.append("name", data.name);
+    formData.append("category", "font");
+    formData.append("source", FontSource.FILE);
+    formData.append("weights", JSON.stringify(selectedWeights));
+    formData.append("styles", JSON.stringify(selectedStyles));
 
     data.files.forEach((file) => {
-      formData.append('fontFiles', file);
+      formData.append("fontFiles", file);
     });
 
     addFont.mutate(formData);
@@ -406,28 +495,34 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   const handleAdobeFont = (data: AdobeFontForm) => {
     const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('category', 'font');
-    formData.append('source', FontSource.ADOBE);
-    formData.append('weights', JSON.stringify(selectedWeights));
-    formData.append('styles', JSON.stringify(selectedStyles));
-    formData.append('sourceData', JSON.stringify({
-      projectId: data.projectId
-    }));
+    formData.append("name", data.name);
+    formData.append("category", "font");
+    formData.append("source", FontSource.ADOBE);
+    formData.append("weights", JSON.stringify(selectedWeights));
+    formData.append("styles", JSON.stringify(selectedStyles));
+    formData.append(
+      "sourceData",
+      JSON.stringify({
+        projectId: data.projectId,
+      }),
+    );
 
     addFont.mutate(formData);
   };
 
   const handleGoogleFont = (data: GoogleFontForm) => {
     const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('category', 'font');
-    formData.append('source', FontSource.GOOGLE);
-    formData.append('weights', JSON.stringify(selectedWeights));
-    formData.append('styles', JSON.stringify(selectedStyles));
-    formData.append('sourceData', JSON.stringify({
-      url: data.url
-    }));
+    formData.append("name", data.name);
+    formData.append("category", "font");
+    formData.append("source", FontSource.GOOGLE);
+    formData.append("weights", JSON.stringify(selectedWeights));
+    formData.append("styles", JSON.stringify(selectedStyles));
+    formData.append(
+      "sourceData",
+      JSON.stringify({
+        url: data.url,
+      }),
+    );
 
     addFont.mutate(formData);
   };
@@ -444,14 +539,14 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
     const updateData = {
       name: editingFont.name,
-      category: 'font',
+      category: "font",
       source: editingFont.source,
       data: {
         source: editingFont.source,
         weights: selectedWeights,
         styles: selectedStyles,
-        sourceData: editingFont.sourceData
-      }
+        sourceData: editingFont.sourceData,
+      },
     };
 
     await editFont.mutateAsync({ id: editingFont.id!, data: updateData });
@@ -459,7 +554,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   const parseFontAsset = (asset: BrandAsset): FontData | null => {
     try {
-      const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+      const data =
+        typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
       if (!data?.source) return null;
 
       return {
@@ -471,13 +567,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         sourceData: data.sourceData,
       };
     } catch (error) {
-      console.error('Error parsing font asset:', error);
+      console.error("Error parsing font asset:", error);
       return null;
     }
   };
 
   const transformedFonts = fonts
-    .filter(asset => asset.category === 'font')
+    .filter((asset) => asset.category === "font")
     .map(parseFontAsset)
     .filter((font): font is FontData => font !== null);
 
@@ -506,236 +602,281 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
             />
           ))}
         </AnimatePresence>
-        <AddFontCard onClick={() => setIsAddingFont(true)} />
+        {isAbleToEdit && <AddFontCard onClick={() => setIsAddingFont(true)} />}
       </div>
 
       {/* Add Font Dialog */}
-      <Dialog open={isAddingFont} onOpenChange={setIsAddingFont}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Add New Font</DialogTitle>
-            <DialogDescription>
-              Add fonts from your computer or connect to Adobe/Google Fonts
-            </DialogDescription>
-          </DialogHeader>
+      {isAbleToEdit && (
+        <Dialog open={isAddingFont} onOpenChange={setIsAddingFont}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Add New Font</DialogTitle>
+              <DialogDescription>
+                Add fonts from your computer or connect to Adobe/Google Fonts
+              </DialogDescription>
+            </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="mt-4">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="file">Upload Files</TabsTrigger>
-              <TabsTrigger value="adobe">Adobe Fonts</TabsTrigger>
-              <TabsTrigger value="google">Google Fonts</TabsTrigger>
-            </TabsList>
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as typeof activeTab)}
+              className="mt-4"
+            >
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="file">Upload Files</TabsTrigger>
+                <TabsTrigger value="adobe">Adobe Fonts</TabsTrigger>
+                <TabsTrigger value="google">Google Fonts</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="file" className="space-y-4">
-              <Form {...fileForm}>
-                <form onSubmit={fileForm.handleSubmit(handleFileUpload)} className="space-y-4">
-                  <FormField
-                    control={fileForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Font Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="e.g., Helvetica Neue" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <TabsContent value="file" className="space-y-4">
+                <Form {...fileForm}>
+                  <form
+                    onSubmit={fileForm.handleSubmit(handleFileUpload)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={fileForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Font Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="e.g., Helvetica Neue"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={fileForm.control}
-                    name="files"
-                    render={({ field: { onChange, value, ...field } }) => (
-                      <FormItem>
-                        <FormLabel>Font Files</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="file"
-                            accept=".woff,.woff2,.otf,.ttf,.eot"
-                            multiple
-                            onChange={(e) => onChange(Array.from(e.target.files || []))}
-                            {...field}
-                          />
-                        </FormControl>
-                        <p className="text-sm text-muted-foreground">
-                          Supported formats: WOFF, WOFF2, OTF, TTF, EOT
-                        </p>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={fileForm.control}
+                      name="files"
+                      render={({ field: { onChange, value, ...field } }) => (
+                        <FormItem>
+                          <FormLabel>Font Files</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="file"
+                              accept=".woff,.woff2,.otf,.ttf,.eot"
+                              multiple
+                              onChange={(e) =>
+                                onChange(Array.from(e.target.files || []))
+                              }
+                              {...field}
+                            />
+                          </FormControl>
+                          <p className="text-sm text-muted-foreground">
+                            Supported formats: WOFF, WOFF2, OTF, TTF, EOT
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <WeightStyleSelector
-                    selectedWeights={selectedWeights}
-                    selectedStyles={selectedStyles}
-                    onWeightChange={setSelectedWeights}
-                    onStyleChange={setSelectedStyles}
-                    availableWeights={["400"]} // For new fonts, only allow 400 initially
-                    onUnavailableWeightClick={handleUnavailableWeightClick}
-                  />
+                    <WeightStyleSelector
+                      selectedWeights={selectedWeights}
+                      selectedStyles={selectedStyles}
+                      onWeightChange={setSelectedWeights}
+                      onStyleChange={setSelectedStyles}
+                      availableWeights={["400"]} // For new fonts, only allow 400 initially
+                      onUnavailableWeightClick={handleUnavailableWeightClick}
+                    />
 
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={addFont.isPending}>
-                      {addFont.isPending ? "Adding..." : "Add Font"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </TabsContent>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsAddingFont(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={addFont.isPending}>
+                        {addFont.isPending ? "Adding..." : "Add Font"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </TabsContent>
 
-            <TabsContent value="adobe" className="space-y-4">
-              <Form {...adobeForm}>
-                <form onSubmit={adobeForm.handleSubmit(handleAdobeFont)} className="space-y-4">
-                  <FormField
-                    control={adobeForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Font Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="e.g., Adobe Clean" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <TabsContent value="adobe" className="space-y-4">
+                <Form {...adobeForm}>
+                  <form
+                    onSubmit={adobeForm.handleSubmit(handleAdobeFont)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={adobeForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Font Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Adobe Clean" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={adobeForm.control}
-                    name="projectId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Adobe Fonts Project ID</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter your Adobe Fonts project ID" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={adobeForm.control}
+                      name="projectId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Adobe Fonts Project ID</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="Enter your Adobe Fonts project ID"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <WeightStyleSelector
-                    selectedWeights={selectedWeights}
-                    selectedStyles={selectedStyles}
-                    onWeightChange={setSelectedWeights}
-                    onStyleChange={setSelectedStyles}
-                    availableWeights={["400"]}
-                    onUnavailableWeightClick={handleUnavailableWeightClick}
-                  />
+                    <WeightStyleSelector
+                      selectedWeights={selectedWeights}
+                      selectedStyles={selectedStyles}
+                      onWeightChange={setSelectedWeights}
+                      onStyleChange={setSelectedStyles}
+                      availableWeights={["400"]}
+                      onUnavailableWeightClick={handleUnavailableWeightClick}
+                    />
 
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={addFont.isPending}>
-                      {addFont.isPending ? "Adding..." : "Add Font"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </TabsContent>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsAddingFont(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={addFont.isPending}>
+                        {addFont.isPending ? "Adding..." : "Add Font"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </TabsContent>
 
-            <TabsContent value="google" className="space-y-4">
-              <Form {...googleForm}>
-                <form onSubmit={googleForm.handleSubmit(handleGoogleFont)} className="space-y-4">
-                  <FormField
-                    control={googleForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Font Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="e.g., Roboto" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <TabsContent value="google" className="space-y-4">
+                <Form {...googleForm}>
+                  <form
+                    onSubmit={googleForm.handleSubmit(handleGoogleFont)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={googleForm.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Font Name</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Roboto" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={googleForm.control}
-                    name="url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Google Fonts URL</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="https://fonts.googleapis.com/css2?family=..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                      control={googleForm.control}
+                      name="url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Google Fonts URL</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="https://fonts.googleapis.com/css2?family=..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  <WeightStyleSelector
-                    selectedWeights={selectedWeights}
-                    selectedStyles={selectedStyles}
-                    onWeightChange={setSelectedWeights}
-                    onStyleChange={setSelectedStyles}
-                    availableWeights={["400"]}
-                    onUnavailableWeightClick={handleUnavailableWeightClick}
-                  />
+                    <WeightStyleSelector
+                      selectedWeights={selectedWeights}
+                      selectedStyles={selectedStyles}
+                      onWeightChange={setSelectedWeights}
+                      onStyleChange={setSelectedStyles}
+                      availableWeights={["400"]}
+                      onUnavailableWeightClick={handleUnavailableWeightClick}
+                    />
 
-                  <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsAddingFont(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={addFont.isPending}>
-                      {addFont.isPending ? "Adding..." : "Add Font"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsAddingFont(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={addFont.isPending}>
+                        {addFont.isPending ? "Adding..." : "Add Font"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Edit Font Dialog */}
-      <Dialog open={!!editingFont} onOpenChange={(open) => !open && setEditingFont(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Font</DialogTitle>
-            <DialogDescription>
-              Update font properties
-            </DialogDescription>
-          </DialogHeader>
+      {isAbleToEdit && (
+        <Dialog
+          open={!!editingFont}
+          onOpenChange={(open) => !open && setEditingFont(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Font</DialogTitle>
+              <DialogDescription>Update font properties</DialogDescription>
+            </DialogHeader>
 
-          <div className="space-y-4">
-            <div>
-              <Label>Font Name</Label>
-              <Input
-                value={editingFont?.name || ''}
-                onChange={(e) => setEditingFont(prev => prev ? { ...prev, name: e.target.value } : null)}
+            <div className="space-y-4">
+              <div>
+                <Label>Font Name</Label>
+                <Input
+                  value={editingFont?.name || ""}
+                  onChange={(e) =>
+                    setEditingFont((prev) =>
+                      prev ? { ...prev, name: e.target.value } : null,
+                    )
+                  }
+                />
+              </div>
+
+              <WeightStyleSelector
+                selectedWeights={selectedWeights}
+                selectedStyles={selectedStyles}
+                onWeightChange={setSelectedWeights}
+                onStyleChange={setSelectedStyles}
+                availableWeights={editingFont?.weights || ["400"]}
+                onUnavailableWeightClick={handleUnavailableWeightClick}
               />
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditingFont(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateFont}
+                  disabled={editFont.isPending}
+                >
+                  {editFont.isPending ? "Updating..." : "Update Font"}
+                </Button>
+              </DialogFooter>
             </div>
-
-            <WeightStyleSelector
-              selectedWeights={selectedWeights}
-              selectedStyles={selectedStyles}
-              onWeightChange={setSelectedWeights}
-              onStyleChange={setSelectedStyles}
-              availableWeights={editingFont?.weights || ["400"]}
-              onUnavailableWeightClick={handleUnavailableWeightClick}
-            />
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingFont(null)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleUpdateFont}
-                disabled={editFont.isPending}
-              >
-                {editFont.isPending ? "Updating..." : "Update Font"}
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -748,7 +889,7 @@ interface FontManagerProps {
 interface FontData {
   id?: number;
   name: string;
-  source: typeof FontSource[keyof typeof FontSource];
+  source: (typeof FontSource)[keyof typeof FontSource];
   weights: string[];
   styles: string[];
   sourceData: {
