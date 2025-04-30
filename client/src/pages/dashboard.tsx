@@ -114,10 +114,10 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    if (clients?.length === 1) {
+    if (clients && clients.length === 1) {
       setLocation(`/clients/${clients[0].id}`);
     }
-  }, [clients]);
+  }, [clients, setLocation]);
 
   useEffect(() => {
     if (updateClient.isSuccess) {
