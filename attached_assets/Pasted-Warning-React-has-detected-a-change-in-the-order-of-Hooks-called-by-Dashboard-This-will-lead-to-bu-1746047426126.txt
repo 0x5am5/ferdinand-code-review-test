@@ -1,0 +1,116 @@
+Warning: React has detected a change in the order of Hooks called by Dashboard. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useContext                 useContext
+2. useState                   useState
+3. useState                   useState
+4. useContext                 useContext
+5. useSyncExternalStore       useSyncExternalStore
+6. useRef                     useRef
+7. useInsertionEffect         useInsertionEffect
+8. useState                   useState
+9. useState                   useState
+10. useState                  useState
+11. useState                  useState
+12. useState                  useState
+13. useEffect                 useEffect
+14. useContext                useContext
+15. useContext                useContext
+16. useContext                useContext
+17. useEffect                 useEffect
+18. useState                  useState
+19. useCallback               useCallback
+20. useSyncExternalStore      useSyncExternalStore
+21. useEffect                 useEffect
+22. useContext                useContext
+23. useState                  useState
+24. useEffect                 useEffect
+25. useCallback               useCallback
+26. useSyncExternalStore      useSyncExternalStore
+27. useCallback               useCallback
+28. useContext                useContext
+29. useState                  useState
+30. useEffect                 useEffect
+31. useCallback               useCallback
+32. useSyncExternalStore      useSyncExternalStore
+33. useCallback               useCallback
+34. useContext                useContext
+35. useState                  useState
+36. useEffect                 useEffect
+37. useCallback               useCallback
+38. useSyncExternalStore      useSyncExternalStore
+39. useCallback               useCallback
+40. undefined                 useEffect
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    at Dashboard (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/pages/dashboard.tsx:90:20)
+    at div
+    at MotionComponent (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=faac989c:945:40)
+    at PageTransition (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/components/layout/page-transition.tsx:19:3)
+    at PresenceChild (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=faac989c:121:24)
+    at AnimatePresence (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=faac989c:210:26)
+    at main
+    at div
+    at AppLayout (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/components/layout/app-layout.tsx:20:29)
+    at ProtectedRoute (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/components/auth/protected-route.tsx:21:3)
+    at Route (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=faac989c:191:16)
+    at Switch (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=faac989c:247:17)
+    at Router (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/App.tsx?v=gyUItSFmUmi4wGKcn8fQK:39:22)
+    at AuthProvider (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/hooks/use-auth.tsx:32:32)
+    at QueryClientProvider (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=faac989c:2805:3)
+    at App
+Rendered more hooks than during the previous render.
+at updateWorkInProgressHook (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:11678:21)
+at updateEffectImpl (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12074:22)
+at updateEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12099:18)
+at Object.useEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12703:22)
+at useEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=faac989c:1078:29)
+at Dashboard (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/pages/dashboard.tsx:128:3)
+at renderWithHooks (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:11548:26)
+at updateFunctionComponent (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:14582:28)
+at beginWork (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:15924:22)
+at HTMLUnknownElement.callCallback2 (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:3674:22)
+Rendered more hooks than during the previous render.
+at updateWorkInProgressHook (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:11678:21)
+at updateEffectImpl (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12074:22)
+at updateEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12099:18)
+at Object.useEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12703:22)
+at useEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=faac989c:1078:29)
+at Dashboard (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/pages/dashboard.tsx:128:3)
+at renderWithHooks (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:11548:26)
+at updateFunctionComponent (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:14582:28)
+at beginWork (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:15924:22)
+at HTMLUnknownElement.callCallback2 (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:3674:22)
+The above error occurred in the <Dashboard> component:
+
+    at Dashboard (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/pages/dashboard.tsx:90:20)
+    at div
+    at MotionComponent (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=faac989c:945:40)
+    at PageTransition (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/components/layout/page-transition.tsx:19:3)
+    at PresenceChild (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=faac989c:121:24)
+    at AnimatePresence (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/framer-motion.js?v=faac989c:210:26)
+    at main
+    at div
+    at AppLayout (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/components/layout/app-layout.tsx:20:29)
+    at ProtectedRoute (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/components/auth/protected-route.tsx:21:3)
+    at Route (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=faac989c:191:16)
+    at Switch (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=faac989c:247:17)
+    at Router (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/App.tsx?v=gyUItSFmUmi4wGKcn8fQK:39:22)
+    at AuthProvider (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/hooks/use-auth.tsx:32:32)
+    at QueryClientProvider (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=faac989c:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+Rendered more hooks than during the previous render.
+at updateWorkInProgressHook (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:11678:21)
+at updateEffectImpl (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12074:22)
+at updateEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12099:18)
+at Object.useEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:12703:22)
+at useEffect (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-QCHXOAYK.js?v=faac989c:1078:29)
+at Dashboard (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/src/pages/dashboard.tsx:128:3)
+at renderWithHooks (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:11548:26)
+at updateFunctionComponent (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:14582:28)
+at beginWork (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:15924:22)
+at beginWork$1 (https://3fc3a052-7343-4b9f-9388-7eb42ba83b7a-00-3hpbdxa1xujxe.janeway.replit.dev:5000/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=faac989c:19753:22)
