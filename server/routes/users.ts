@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { UserRole, users, userClients } from "@shared/schema";
+import { UserRole, users, userClients, invitations } from "@shared/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import { emailService } from "../email-service";
@@ -99,7 +99,7 @@ export function registerUserRoutes(app: Express) {
 
       // Check if an invitation with this email already exists
       const existingInvitations = await db.query.invitations.findMany({
-        where: eq(schema.invitations.email, invitationData.email),
+        where: eq(invitations.email, invitationData.email),
       });
 
       // Only consider unused invitations as duplicates
