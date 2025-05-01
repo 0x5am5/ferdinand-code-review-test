@@ -77,13 +77,11 @@ export default function Dashboard() {
   );
   const [, setLocation] = useLocation();
 
-  const isAbleToEdit = user ? [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role) : false;
-
-  if (!user) return null;
+  const isAbleToEdit = user
+    ? [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR].includes(
+        user.role,
+      )
+    : false;
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
@@ -104,14 +102,7 @@ export default function Dashboard() {
   const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
-
-  if (clientsIsLoading) {
-    return (
-      <div className="p-8 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const [orderedClients, setOrderedClients] = useState<Client[]>([]);
 
   useEffect(() => {
     if (clients && clients.length === 1) {
@@ -131,8 +122,6 @@ export default function Dashboard() {
       setDeletingClient(null);
     }
   }, [deleteClient.isSuccess]);
-
-  const [orderedClients, setOrderedClients] = useState<Client[]>([]);
 
   useEffect(() => {
     if (clients) {
@@ -243,6 +232,14 @@ export default function Dashboard() {
       }
       return b.name.localeCompare(a.name);
     });
+
+  if (clientsIsLoading) {
+    return (
+      <div className="p-8 flex justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">

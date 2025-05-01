@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { UserRole, inviteUserSchema, type User } from "@shared/schema";
 import { useForm } from "react-hook-form";
@@ -40,7 +39,12 @@ interface InviteUserDialogProps {
   clients: any[];
 }
 
-export function InviteUserDialog({ open, onOpenChange, currentUser, clients }: InviteUserDialogProps) {
+export function InviteUserDialog({
+  open,
+  onOpenChange,
+  currentUser,
+  clients,
+}: InviteUserDialogProps) {
   const { toast } = useToast();
 
   // Get available roles based on current user's role
@@ -48,7 +52,12 @@ export function InviteUserDialog({ open, onOpenChange, currentUser, clients }: I
     if (currentUser?.role === UserRole.SUPER_ADMIN) {
       return Object.values(UserRole);
     } else if (currentUser?.role === UserRole.ADMIN) {
-      return [UserRole.ADMIN, UserRole.STANDARD, UserRole.GUEST];
+      return [
+        UserRole.ADMIN,
+        UserRole.STANDARD,
+        UserRole.GUEST,
+        UserRole.EDITOR,
+      ];
     }
     return [];
   };
@@ -75,7 +84,9 @@ export function InviteUserDialog({ open, onOpenChange, currentUser, clients }: I
             if (response.data.code === "EMAIL_EXISTS") {
               throw new Error("A user with this email already exists.");
             } else if (response.data.code === "INVITATION_EXISTS") {
-              const customError = new Error("An invitation for this email already exists. Would you like to resend it?");
+              const customError = new Error(
+                "An invitation for this email already exists. Would you like to resend it?",
+              );
               (customError as any).invitationId = response.data.invitationId;
               throw customError;
             }
@@ -117,7 +128,12 @@ export function InviteUserDialog({ open, onOpenChange, currentUser, clients }: I
         </DialogHeader>
 
         <Form {...inviteForm}>
-          <form onSubmit={inviteForm.handleSubmit((data) => inviteUser.mutate(data))} className="space-y-4">
+          <form
+            onSubmit={inviteForm.handleSubmit((data) =>
+              inviteUser.mutate(data),
+            )}
+            className="space-y-4"
+          >
             <FormField
               control={inviteForm.control}
               name="name"
@@ -152,7 +168,10 @@ export function InviteUserDialog({ open, onOpenChange, currentUser, clients }: I
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Role</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a role" />
@@ -180,7 +199,10 @@ export function InviteUserDialog({ open, onOpenChange, currentUser, clients }: I
                     <FormLabel>Assign Clients</FormLabel>
                     <div className="max-h-40 overflow-y-auto space-y-2 border rounded-md p-2">
                       {clients.map((client) => (
-                        <div key={client.id} className="flex items-center space-x-2 bg-white z-30">
+                        <div
+                          key={client.id}
+                          className="flex items-center space-x-2 bg-white z-30"
+                        >
                           <Checkbox
                             id={`client-${client.id}`}
                             checked={field.value?.includes(client.id)}
@@ -195,7 +217,10 @@ export function InviteUserDialog({ open, onOpenChange, currentUser, clients }: I
                               field.onChange(newValue);
                             }}
                           />
-                          <label htmlFor={`client-${client.id}`} className="text-sm cursor-pointer">
+                          <label
+                            htmlFor={`client-${client.id}`}
+                            className="text-sm cursor-pointer"
+                          >
                             {client.name}
                           </label>
                         </div>

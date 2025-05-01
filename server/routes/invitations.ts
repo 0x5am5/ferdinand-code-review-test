@@ -3,7 +3,7 @@ import { storage } from "../storage";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import { UserRole } from "@shared/schema";
+import { invitations, UserRole } from "@shared/schema";
 
 export function registerInvitationRoutes(app: Express) {
   // Get all pending invitations
@@ -27,7 +27,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get all pending invitations
       const pendingInvitations = await db.query.invitations.findMany({
-        where: eq(schema.invitations.used, false),
+        where: eq(invitations.used, false),
       });
 
       // Enhance invitations with client data
