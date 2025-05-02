@@ -267,6 +267,7 @@ export default function Clients() {
                 <th className="text-left p-4">Name</th>
                 <th className="text-left p-4">Description</th>
                 <th className="text-left p-4">Features</th>
+                <th className="text-left p-4">Users</th>
                 <th className="text-left p-4">Created</th>
                 <th className="text-right p-4">Actions</th>
               </tr>
@@ -412,6 +413,39 @@ export default function Clients() {
                             </Button>
                           </Badge>
                         )}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
+                        {client.users?.map((user) => (
+                          <Badge
+                            key={user.id}
+                            className="flex items-center gap-1 bg-blue-100 text-blue-800 hover:bg-blue-200"
+                          >
+                            <UserCircle className="h-3 w-3" />
+                            {user.name}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 p-0 ml-1 hover:bg-blue-200"
+                              onClick={() => {
+                                // Handle user removal
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        ))}
+                        <Input
+                          className="w-32 h-6 text-sm"
+                          placeholder="Add user..."
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && e.currentTarget.value) {
+                              // Handle adding new user
+                              e.currentTarget.value = '';
+                            }
+                          }}
+                        />
                       </div>
                     </td>
                     <td className="p-4">
