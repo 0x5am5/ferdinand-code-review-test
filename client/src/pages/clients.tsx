@@ -563,7 +563,7 @@ export default function Clients() {
                               <span>Add User</span>
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-80 p-0" align="start">
+                          <PopoverContent className="w-80 p-0 bg-white border shadow-md" align="start">
                             <Command>
                               <CommandInput 
                                 placeholder="Search users..." 
@@ -606,7 +606,7 @@ export default function Clients() {
                                           setActiveClientId(client.id);
                                           assignUser.mutate(user.id);
                                         }}
-                                        className="flex items-center gap-2 cursor-pointer"
+                                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-100"
                                       >
                                         <UserCircle className="h-4 w-4 opacity-70" />
                                         <div className="flex flex-col">
@@ -625,7 +625,7 @@ export default function Clients() {
                                       setInviteName('');
                                       setInviteDialogOpen(true);
                                     }}
-                                    className="flex items-center gap-2 cursor-pointer"
+                                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-100"
                                   >
                                     <UserPlus className="h-4 w-4 text-primary" />
                                     <span className="font-medium">Invite new user</span>
