@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { UserRole, users, userClients, invitations, insertUserClientSchema } from "@shared/schema";
+import { UserRole, users, userClients, invitations, insertUserClientSchema, clients } from "@shared/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import { emailService } from "../email-service";
