@@ -3,7 +3,7 @@ import { storage } from "../storage";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import { invitations, UserRole } from "@shared/schema";
+import { insertInvitationSchema, invitations, UserRole } from "@shared/schema";
 
 export function registerInvitationRoutes(app: Express) {
   // Get all pending invitations
@@ -90,7 +90,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Check if an invitation with this email already exists
       const existingInvitations = await db.query.invitations.findMany({
-        where: eq(schema.invitations.email, parsed.data.email),
+        where: eq(invitations.email, parsed.data.email),
       });
 
       // Only consider unused invitations as duplicates
@@ -283,7 +283,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get the invitation from database
       const invitation = await db.query.invitations.findFirst({
-        where: eq(schema.invitations.id, id),
+        where: eq(invitations.id, id),
       });
 
       if (!invitation) {

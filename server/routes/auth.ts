@@ -44,7 +44,7 @@ export function registerAuthRoutes(app: Express) {
       if (!user) {
         console.log("User does not exist, deleting from Firebase");
         try {
-          await firebaseAuth.deleteUser(decodedToken.uid);
+          // await firebaseAuth.deleteUser(decodedToken.uid);
           console.log(`Deleted Firebase user with UID: ${decodedToken.uid}`);
           return res.status(403).json({ message: "User not authorized" });
         } catch (error) {

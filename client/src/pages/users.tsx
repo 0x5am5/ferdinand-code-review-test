@@ -1,14 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
-import {
-  UserRole,
-  Client,
-  USER_ROLES,
-  UpdateUserRoleForm,
-  InviteUserForm,
-  Invitation,
-  User,
-} from "@shared/schema";
+import { UserRole, Client, USER_ROLES, Invitation } from "@shared/schema";
 import {
   useUsersQuery,
   usePendingInvitationsQuery,
@@ -60,8 +52,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -121,7 +111,7 @@ const getInitials = (name: string) => {
 };
 
 // Define interface for pending invitations
-interface PendingInvitation {
+export interface PendingInvitation {
   id: number;
   email: string;
   role: string;
@@ -158,13 +148,31 @@ export default function UsersPage() {
 
   const { mutate: updateUserRole } = useUpdateUserRoleMutation();
   const { assignClient, removeClient } = useClientAssignmentMutations();
+  const { mutate: resetPassword } = useMutation({
+    mutationFn: async (userId: number) => {
+      return await apiRequest("POST", `/api/users/${userId}/reset-password`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Password reset email sent successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Get all clients for assignment
   const { data: clients = [] } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
-  const resendInvitation = useInviteUserMutation();
+  const { mutate: resendInvitation } = useInviteUserMutation();
 
   // Debounced search implementation
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
@@ -575,7 +583,7 @@ export default function UsersPage() {
                                       0 && (
                                       <CommandGroup heading="Assigned clients">
                                         {userClientAssignments[user.id]?.map(
-                                          (client) => (
+                                          (client: Client) => (
                                             <CommandItem
                                               key={client.id}
                                               onSelect={() => {
@@ -670,19 +678,19 @@ export default function UsersPage() {
                         <DropdownMenuContent align="end" className="w-56">
                           {/* Check if user has a pending invitation */}
                           {pendingInvitations.some(
-                            (invite) =>
+                            (invite: Invitation) =>
                               invite.email === user.email && !invite.used,
                           ) ? (
                             <DropdownMenuItem
                               onClick={() => {
                                 // Look up the pending invitation for this user by email
                                 const pendingInvite = pendingInvitations.find(
-                                  (invite) =>
+                                  (invite: Invitation) =>
                                     invite.email === user.email && !invite.used,
                                 );
 
                                 if (pendingInvite) {
-                                  resendInvitation.mutate(pendingInvite.id);
+                                  resendInvitation(pendingInvite.id);
                                 }
                               }}
                             >
@@ -693,7 +701,7 @@ export default function UsersPage() {
                             /* For active users, show Reset Password option */
                             <DropdownMenuItem
                               onClick={() => {
-                                resetPassword.mutate(user.id);
+                                resetPassword(user.id);
                               }}
                             >
                               <RefreshCw className="mr-2 h-4 w-4" />
