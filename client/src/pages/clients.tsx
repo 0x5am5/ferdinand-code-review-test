@@ -34,6 +34,7 @@ import {
   Type,
   User,
   Image,
+  UserCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -50,6 +51,9 @@ import {
   useDeleteClientMutation,
   useUpdateClientMutation,
 } from "@/lib/queries/clients";
+import { useUsersQuery, useClientAssignmentMutations } from "@/lib/queries/users";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,6 +76,8 @@ export default function Clients() {
   const { data: clients = [] } = useClientsQuery();
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
+  const { data: users = [] } = useUsersQuery();
+  const { assignUser, unassignUser } = useClientAssignmentMutations();
 
   const filteredClients = clients.filter(
     (client) =>
@@ -429,23 +435,33 @@ export default function Clients() {
                               size="icon"
                               className="h-4 w-4 p-0 ml-1 hover:bg-blue-200"
                               onClick={() => {
-                                // Handle user removal
+                                unassignUser({ clientId: client.id, userId: user.id })
                               }}
                             >
                               <X className="h-3 w-3" />
                             </Button>
                           </Badge>
                         ))}
-                        <Input
-                          className="w-32 h-6 text-sm"
-                          placeholder="Add user..."
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && e.currentTarget.value) {
-                              // Handle adding new user
-                              e.currentTarget.value = '';
-                            }
-                          }}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent>
+                            <Command>
+                              <CommandInput placeholder="Search users..." />
+                              <CommandList>
+                                {users.map(user => (
+                                  <CommandItem key={user.id} value={user.id} onSelect={() => assignUser({ clientId: client.id, userId: user.id })}>
+                                    <UserCircle className="mr-2 h-4 w-4" />
+                                    {user.name}
+                                  </CommandItem>
+                                ))}
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </td>
                     <td className="p-4">
