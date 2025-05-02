@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "../queryClient";
-import { Client, UserPersona } from "@shared/schema";
+import { Client, UserPersona, User, BrandAsset } from "@shared/schema";
 import { toast } from "@/hooks/use-toast";
 
 export const useClientsQuery = () =>
@@ -23,6 +23,19 @@ export const useClientAssetsById = (clientId: number) =>
 export const useClientPersonasById = (clientId: number) =>
   useQuery<UserPersona[]>({
     queryKey: [`/api/clients/${clientId}/personas`],
+    enabled: !!clientId,
+  });
+
+export const useClientUsersQuery = (clientId: number) =>
+  useQuery<User[]>({
+    queryKey: [`/api/clients/${clientId}/users`],
+    queryFn: async () => {
+      const response = await fetch(`/api/clients/${clientId}/users`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch client users');
+      }
+      return response.json();
+    },
     enabled: !!clientId,
   });
 
@@ -110,4 +123,79 @@ export function useUpdateClientOrderMutation(
       });
     },
   });
+}
+
+// Client user assignment mutations
+export function useClientUserMutations(clientId: number) {
+  const assignUser = useMutation({
+    mutationFn: async (userId: number) => {
+      return await apiRequest("POST", `/api/user-clients`, {
+        userId,
+        clientId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/users`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "User assigned",
+        description: "User has been assigned to this client successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const removeUser = useMutation({
+    mutationFn: async (userId: number) => {
+      return await apiRequest("DELETE", `/api/user-clients/${userId}/${clientId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/users`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      toast({
+        title: "User removed",
+        description: "User has been removed from this client successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const inviteUser = useMutation({
+    mutationFn: async ({ email, name, role }: { email: string; name: string; role: string }) => {
+      return await apiRequest("POST", "/api/invitations", {
+        email,
+        name: name || email.split('@')[0], // Generate a default name from email if not provided
+        role: role.toLowerCase(),
+        clientIds: [clientId]
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/users`] });
+      toast({
+        title: "Invitation sent",
+        description: "User invitation has been sent successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  return { assignUser, removeUser, inviteUser };
 }

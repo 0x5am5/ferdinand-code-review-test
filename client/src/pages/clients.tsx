@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Client } from "@shared/schema";
+import { Client, User } from "@shared/schema";
 import {
   Card,
   CardContent,
@@ -32,14 +32,21 @@ import {
   Package,
   Palette,
   Type,
-  User,
+  User as UserIcon,
   Image,
+  UserCircle,
+  ChevronDown,
+  UserPlus,
+  Mail,
+  Search,
+  Check,
 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -49,7 +56,30 @@ import {
   useClientsQuery,
   useDeleteClientMutation,
   useUpdateClientMutation,
+  useClientUsersQuery,
+  useClientUserMutations,
 } from "@/lib/queries/clients";
+import { useUsersQuery } from "@/lib/queries/users";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,12 +96,87 @@ export default function Clients() {
     userPersonas: true,
     inspiration: true,
   });
-  const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>(
-    {},
-  );
+  const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>({});
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteRole, setInviteRole] = useState<string>("standard");
+  const [activeClientId, setActiveClientId] = useState<number | null>(null);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+
   const { data: clients = [] } = useClientsQuery();
+  const { data: allUsers = [] } = useUsersQuery();
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
+  
+  // Load client users for active client
+  const { data: activeClientUsers = [] } = useClientUsersQuery(activeClientId || 0);
+  const { assignUser, removeUser, inviteUser } = useClientUserMutations(activeClientId || 0);
+  
+  // Create a map to store client users with a default empty array for each client
+  const [clientUsersMap, setClientUsersMap] = useState<Map<number, User[]>>(new Map());
+  
+  // When activeClientId changes, update the map with fetched users
+  useEffect(() => {
+    if (activeClientId && activeClientUsers.length > 0) {
+      setClientUsersMap(prevMap => {
+        const newMap = new Map(prevMap);
+        newMap.set(activeClientId, activeClientUsers);
+        return newMap;
+      });
+    }
+  }, [activeClientId, activeClientUsers]);
+  
+  // Filter users that are not already assigned to the active client
+  const availableUsers = allUsers.filter(user => 
+    !activeClientUsers.some(clientUser => clientUser.id === user.id)
+  );
+  
+  // Filter users based on search query
+  const filteredAvailableUsers = availableUsers.filter(user => 
+    user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
+    user.email.toLowerCase().includes(userSearchQuery.toLowerCase())
+  );
+
+  // Initialize the map with empty arrays for each client
+  useEffect(() => {
+    if (clients.length > 0) {
+      const initialMap = new Map<number, User[]>();
+      clients.forEach(client => {
+        // Initialize with an empty array for each client
+        initialMap.set(client.id, []);
+      });
+      setClientUsersMap(initialMap);
+    }
+  }, [clients]);
+  
+  // Load users for all clients after the map is initialized
+  useEffect(() => {
+    const loadAllClientUsers = async () => {
+      // Only load if we have clients and the map is initialized
+      if (clients.length > 0 && clientUsersMap.size > 0) {
+        for (const client of clients) {
+          try {
+            const response = await fetch(`/api/clients/${client.id}/users`);
+            if (response.ok) {
+              const users = await response.json();
+              if (Array.isArray(users)) {
+                setClientUsersMap(prevMap => {
+                  const newMap = new Map(prevMap);
+                  newMap.set(client.id, users);
+                  return newMap;
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Error loading users for client ${client.id}:`, error);
+          }
+        }
+      }
+    };
+    
+    loadAllClientUsers();
+  }, [clients, clientUsersMap.size]);
 
   const filteredClients = clients.filter(
     (client) =>
@@ -184,7 +289,7 @@ export default function Clients() {
                   )}
                   {(client.featureToggles as any)?.userPersonas && (
                     <Badge className="bg-amber-100 text-amber-800">
-                      <User className="h-3 w-3 mr-1" />
+                      <UserIcon className="h-3 w-3 mr-1" />
                       Personas
                     </Badge>
                   )}
@@ -367,7 +472,7 @@ export default function Clients() {
                         )}
                         {clientFeatures.userPersonas && (
                           <Badge className="flex items-center gap-1 bg-amber-100 text-amber-800 hover:bg-amber-200">
-                            <User className="h-3 w-3" />
+                            <UserIcon className="h-3 w-3" />
                             Personas
                             <Button
                               variant="ghost"
@@ -417,10 +522,11 @@ export default function Clients() {
                     </td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
-                        {client.users?.map((user) => (
+                        {/* Fetch and display client users or use cached ones */}
+                        {(clientUsersMap.get(client.id) || []).map((user) => (
                           <Badge
                             key={user.id}
-                            className="flex items-center gap-1 bg-blue-100 text-blue-800 hover:bg-blue-200"
+                            className="flex items-center gap-1 bg-blue-100 text-blue-800 hover:bg-blue-200 text-xs"
                           >
                             <UserCircle className="h-3 w-3" />
                             {user.name}
@@ -429,23 +535,106 @@ export default function Clients() {
                               size="icon"
                               className="h-4 w-4 p-0 ml-1 hover:bg-blue-200"
                               onClick={() => {
-                                // Handle user removal
+                                setActiveClientId(client.id);
+                                removeUser.mutate(user.id);
                               }}
                             >
                               <X className="h-3 w-3" />
                             </Button>
                           </Badge>
                         ))}
-                        <Input
-                          className="w-32 h-6 text-sm"
-                          placeholder="Add user..."
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && e.currentTarget.value) {
-                              // Handle adding new user
-                              e.currentTarget.value = '';
+                        
+                        {/* User management dropdown */}
+                        <Popover
+                          onOpenChange={(open) => {
+                            if (open) {
+                              setActiveClientId(client.id);
+                              setUserSearchQuery('');
                             }
                           }}
-                        />
+                        >
+                          <PopoverTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              className="h-6 text-xs p-2 flex items-center gap-1"
+                              onClick={() => setActiveClientId(client.id)}
+                            >
+                              <UserPlus className="h-3 w-3" />
+                              <span>Add User</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80 p-0" align="start">
+                            <Command>
+                              <CommandInput 
+                                placeholder="Search users..." 
+                                className="border-none focus:ring-0"
+                                value={userSearchQuery}
+                                onValueChange={setUserSearchQuery}
+                              />
+                              
+                              <CommandList>
+                                <CommandEmpty>
+                                  {userSearchQuery ? (
+                                    <div className="py-3 px-4 text-sm text-center">
+                                      <p>No users found matching <strong>{userSearchQuery}</strong></p>
+                                      <Button 
+                                        variant="link" 
+                                        className="mt-2 h-auto p-0"
+                                        onClick={() => {
+                                          setInviteEmail(userSearchQuery);
+                                          setInviteName('');
+                                          setInviteDialogOpen(true);
+                                        }}
+                                      >
+                                        <Mail className="h-3 w-3 mr-1" />
+                                        Invite by email
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <div className="py-3 px-4 text-sm text-center">
+                                      No users available to add
+                                    </div>
+                                  )}
+                                </CommandEmpty>
+                                
+                                {filteredAvailableUsers.length > 0 && (
+                                  <CommandGroup heading="Select a user">
+                                    {filteredAvailableUsers.map((user) => (
+                                      <CommandItem
+                                        key={user.id}
+                                        onSelect={() => {
+                                          setActiveClientId(client.id);
+                                          assignUser.mutate(user.id);
+                                        }}
+                                        className="flex items-center gap-2 cursor-pointer"
+                                      >
+                                        <UserCircle className="h-4 w-4 opacity-70" />
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{user.name}</span>
+                                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                                
+                                <CommandGroup>
+                                  <CommandItem
+                                    onSelect={() => {
+                                      setInviteEmail(userSearchQuery);
+                                      setInviteName('');
+                                      setInviteDialogOpen(true);
+                                    }}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <UserPlus className="h-4 w-4 text-primary" />
+                                    <span className="font-medium">Invite new user</span>
+                                  </CommandItem>
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </td>
                     <td className="p-4">
@@ -623,7 +812,7 @@ export default function Clients() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2" />
+                        <UserIcon className="h-4 w-4 mr-2" />
                         <div className="font-medium">User Personas</div>
                       </div>
                       <div className="text-sm text-muted-foreground">
@@ -725,6 +914,84 @@ export default function Clients() {
               }}
             >
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite User Dialog */}
+      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite User</DialogTitle>
+            <DialogDescription>
+              Send an invitation to a new user to join the platform and this client.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input 
+                id="email"
+                value={inviteEmail} 
+                onChange={(e) => setInviteEmail(e.target.value)} 
+                placeholder="user@example.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Name (optional)</Label>
+              <Input 
+                id="name"
+                value={inviteName} 
+                onChange={(e) => setInviteName(e.target.value)} 
+                placeholder="User's name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select 
+                defaultValue={inviteRole} 
+                onValueChange={(value) => setInviteRole(value)}
+              >
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="guest">Guest</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setInviteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (!activeClientId) return;
+                
+                inviteUser.mutate({
+                  email: inviteEmail, 
+                  name: inviteName, 
+                  role: inviteRole
+                });
+                
+                setInviteDialogOpen(false);
+                setInviteEmail('');
+                setInviteName('');
+              }}
+              disabled={!inviteEmail || inviteUser.isPending}
+            >
+              Send Invitation
             </Button>
           </DialogFooter>
         </DialogContent>
