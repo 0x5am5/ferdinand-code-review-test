@@ -37,9 +37,9 @@ export const Sidebar: FC = () => {
   const themeContext = useTheme();
   const { user } = useAuth();
 
-  const [, params] = useLocation();
-  const isClientPage = params?.startsWith("/clients/");
-  const clientId = isClientPage ? params.split("/")[2] : null;
+  const [location] = useLocation();
+  const isClientPage = location.startsWith("/clients/");
+  const clientId = isClientPage ? location.split("/")[2] : null;
   const { data: client } = useClientsQuery();
 
   const getClientNavItems = () => {
