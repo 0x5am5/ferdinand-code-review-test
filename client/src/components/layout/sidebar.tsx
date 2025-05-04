@@ -14,6 +14,7 @@ import {
   UsersIcon,
   PaletteIcon,
   LogOutIcon,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -153,6 +154,7 @@ export const Sidebar: FC = () => {
                   {user?.email || "Unknown"}
                 </p>
               </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56" side="top">
