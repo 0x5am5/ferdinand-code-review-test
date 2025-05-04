@@ -1,4 +1,4 @@
-import { FC } from "react";
+import React, { FC, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -15,12 +15,18 @@ import {
   PaletteIcon,
   LogOutIcon,
   ChevronDown,
+  Search,
+  Command,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/use-auth";
+import { useSpotlight } from "@/hooks/use-spotlight";
+import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { UserRole } from "@shared/schema";
 
 interface NavItem {
@@ -36,6 +42,7 @@ export const Sidebar: FC = () => {
   const [location] = useLocation();
   const themeContext = useTheme();
   const { user } = useAuth();
+  const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
 
   const navItems: NavItem[] = [
     {
@@ -116,30 +123,77 @@ export const Sidebar: FC = () => {
 
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
-      <div className="p-4 border-b">
+      <div className="p-4 border-b flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-8 p-0"
+          onClick={openSearch}
+        >
+          <Search className="h-4 w-4" />
+          <span className="sr-only">Search</span>
+        </Button>
+      </div>
+      
+      <div className="px-4 py-2">
+        <Button
+          variant="outline"
+          className="w-full justify-between text-muted-foreground"
+          onClick={openSearch}
+        >
+          <div className="flex items-center gap-2">
+            <Search className="h-3.5 w-3.5" />
+            <span>Search...</span>
+          </div>
+          <div className="flex items-center text-xs">
+            <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
+            <span className="mx-0.5">+</span>
+            <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
+          </div>
+        </Button>
       </div>
 
-      <ScrollArea className="flex-1 py-4">
-        <nav className="px-2 space-y-1">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <Button
-                variant="ghost"
-                className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                  ${
-                    isActiveLink(item.href)
-                      ? "bg-muted font-medium"
-                      : "hover:bg-muted/50"
-                  }`}
-              >
-                {item.icon}
-                {item.title}
-              </Button>
-            </Link>
-          ))}
-        </nav>
-      </ScrollArea>
+      {showSearch ? (
+        <div className="flex-1 flex flex-col">
+          <div className="mb-2 px-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center text-muted-foreground gap-1"
+              onClick={closeSearch}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back</span>
+            </Button>
+          </div>
+          <SpotlightSearch 
+            className="flex-1" 
+            onClose={closeSearch} 
+          />
+        </div>
+      ) : (
+        <ScrollArea className="flex-1 py-4">
+          <nav className="px-2 space-y-1">
+            {navItems.map((item) => (
+              <Link key={item.href} href={item.href}>
+                <Button
+                  variant="ghost"
+                  className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+                    ${
+                      isActiveLink(item.href)
+                        ? "bg-muted font-medium"
+                        : "hover:bg-muted/50"
+                    }`}
+                >
+                  {item.icon}
+                  {item.title}
+                </Button>
+              </Link>
+            ))}
+          </nav>
+        </ScrollArea>
+      )}
 
       <div className="border-t p-4">
         <DropdownMenu>
