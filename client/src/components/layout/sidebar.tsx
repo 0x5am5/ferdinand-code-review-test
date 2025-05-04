@@ -2,6 +2,12 @@ import { FC } from "react";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   CircleUserIcon,
   HomeIcon,
   BuildingIcon,
@@ -134,28 +140,28 @@ export const Sidebar: FC = () => {
         </nav>
       </ScrollArea>
 
-      <div className="border-t p-4 space-y-1">
-        <div className="flex items-start gap-3 px-3 py-2">
-          <CircleUserIcon className="h-8 w-8 mt-1 text-muted-foreground" />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm m-0 font-medium truncate">
-              {user?.name || "User"}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user?.email || "Unknown"}
-            </p>
-          </div>
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start text-muted-foreground"
-          onClick={handleLogout}
-        >
-          <LogOutIcon className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
+      <div className="border-t p-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-2">
+              <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm m-0 font-medium truncate">
+                  {user?.name || "User"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {user?.email || "Unknown"}
+                </p>
+              </div>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56" side="top">
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOutIcon className="h-4 w-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );
