@@ -16,7 +16,7 @@ import {
   LogOutIcon,
   ChevronDown,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useTheme } from "@/contexts/ThemeContext";
