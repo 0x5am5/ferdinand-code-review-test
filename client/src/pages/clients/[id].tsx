@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useParams, useLocation } from "wouter";
+import { Link, useParams } from "wouter";
 import { LogoManager } from "@/components/brand/logo-manager";
 import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
 import {
@@ -15,9 +16,6 @@ import {
 
 export default function ClientDetails() {
   const { id } = useParams();
-  const [location] = useLocation();
-  const searchParams = new URLSearchParams(location.split("?")[1]);
-  const activeTab = searchParams.get("tab") || "logos";
   const clientId = id ? parseInt(id) : null;
 
   if (!clientId || isNaN(clientId)) {
@@ -32,7 +30,10 @@ export default function ClientDetails() {
           </CardHeader>
           <CardContent>
             <Link href="/dashboard">
-              <Button variant="outline">Back to Dashboard</Button>
+              <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -41,8 +42,10 @@ export default function ClientDetails() {
   }
 
   const { data: client, isLoading: isLoadingClient } = useClientsQuery();
-  const { isLoading: isLoadingAssets, data: assets = [] } = useClientAssetsById(clientId);
-  const { data: personas = [], isLoading: isLoadingPersonas } = useClientPersonasById(clientId);
+  const { isLoading: isLoadingAssets, data: assets = [] } =
+    useClientAssetsById(clientId);
+  const { data: personas = [], isLoading: isLoadingPersonas } =
+    useClientPersonasById(clientId);
 
   if (isLoadingClient || isLoadingAssets || isLoadingPersonas) {
     return (
@@ -64,7 +67,10 @@ export default function ClientDetails() {
           </CardHeader>
           <CardContent>
             <Link href="/dashboard">
-              <Button variant="outline">Back to Dashboard</Button>
+              <Button variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -72,38 +78,140 @@ export default function ClientDetails() {
     );
   }
 
+  // Filter assets by category
   const logoAssets = assets.filter((asset) => asset.category === "logo");
-  const colorAssets = assets.filter((asset) => asset.category === "color") || [];
+  const colorAssets =
+    assets.filter((asset) => asset.category === "color") || [];
   const fontAssets = assets.filter((asset) => asset.category === "font") || [];
-  const featureToggles = client.featureToggles || {
-    logoSystem: true,
-    colorSystem: true,
-    typeSystem: true,
-    userPersonas: true,
-    inspiration: true,
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case "logos":
-        return featureToggles.logoSystem ? <LogoManager clientId={clientId} logos={logoAssets} /> : null;
-      case "colors":
-        return featureToggles.colorSystem ? <ColorManager clientId={clientId} colors={colorAssets} /> : null;
-      case "typography":
-        return featureToggles.typeSystem ? <FontManager clientId={clientId} fonts={fontAssets} /> : null;
-      case "personas":
-        return featureToggles.userPersonas ? <PersonaManager clientId={clientId} personas={personas} /> : null;
-      case "inspiration":
-        return featureToggles.inspiration ? <InspirationBoard clientId={clientId} /> : null;
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="p-8">
-      <h1 className="text-4xl font-bold mb-8">{client.name}</h1>
-      {renderContent()}
+      <div className="flex items-center gap-4 mb-8">
+        <Link href="/clients">
+          <Button variant="outline" size="icon">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Link>
+        <h1 className="text-4xl font-bold">{client.name}</h1>
+      </div>
+
+      {/* Get default tab based on available features */}
+      {(() => {
+        // Read feature toggles from client data
+        const featureToggles = client.featureToggles || {
+          logoSystem: true,
+          colorSystem: true,
+          typeSystem: true,
+          userPersonas: true,
+          inspiration: true,
+        };
+
+        // Determine which tab should be default (first enabled one)
+        let defaultTab = "logos";
+        if (!featureToggles.logoSystem) {
+          if (featureToggles.colorSystem) defaultTab = "colors";
+          else if (featureToggles.typeSystem) defaultTab = "typography";
+          else if (featureToggles.userPersonas) defaultTab = "personas";
+          else if (featureToggles.inspiration) defaultTab = "inspiration";
+        }
+
+        const anyFeatureEnabled = Object.values(featureToggles).some(
+          (value) => value === true,
+        );
+
+        if (!anyFeatureEnabled) {
+          return (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>All Features Disabled</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>
+                  All features are currently disabled for this client. Enable
+                  features in the client settings.
+                </p>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        return (
+          <Tabs defaultValue={defaultTab} className="space-y-6">
+            <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
+              {featureToggles.logoSystem && (
+                <TabsTrigger
+                  value="logos"
+                  className="data-[state=active]:bg-background rounded-none h-full px-6"
+                >
+                  Logo System
+                </TabsTrigger>
+              )}
+              {featureToggles.colorSystem && (
+                <TabsTrigger
+                  value="colors"
+                  className="data-[state=active]:bg-background rounded-none h-full px-6"
+                >
+                  Colors
+                </TabsTrigger>
+              )}
+              {featureToggles.typeSystem && (
+                <TabsTrigger
+                  value="typography"
+                  className="data-[state=active]:bg-background rounded-none h-full px-6"
+                >
+                  Typography
+                </TabsTrigger>
+              )}
+              {featureToggles.userPersonas && (
+                <TabsTrigger
+                  value="personas"
+                  className="data-[state=active]:bg-background rounded-none h-full px-6"
+                >
+                  User Personas
+                </TabsTrigger>
+              )}
+              {featureToggles.inspiration && (
+                <TabsTrigger
+                  value="inspiration"
+                  className="data-[state=active]:bg-background rounded-none h-full px-6"
+                >
+                  Inspiration
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            {featureToggles.logoSystem && (
+              <TabsContent value="logos">
+                <LogoManager clientId={clientId} logos={logoAssets} />
+              </TabsContent>
+            )}
+
+            {featureToggles.colorSystem && (
+              <TabsContent value="colors">
+                <ColorManager clientId={clientId} colors={colorAssets} />
+              </TabsContent>
+            )}
+
+            {featureToggles.typeSystem && (
+              <TabsContent value="typography">
+                <FontManager clientId={clientId} fonts={fontAssets} />
+              </TabsContent>
+            )}
+
+            {featureToggles.userPersonas && (
+              <TabsContent value="personas">
+                <PersonaManager clientId={clientId} personas={personas} />
+              </TabsContent>
+            )}
+
+            {featureToggles.inspiration && (
+              <TabsContent value="inspiration">
+                <InspirationBoard clientId={clientId} />
+              </TabsContent>
+            )}
+          </Tabs>
+        );
+      })()}
     </div>
   );
 }
