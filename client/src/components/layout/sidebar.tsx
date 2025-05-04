@@ -37,7 +37,56 @@ export const Sidebar: FC = () => {
   const themeContext = useTheme();
   const { user } = useAuth();
 
-  const navItems: NavItem[] = [
+  const [, params] = useLocation();
+  const isClientPage = params?.startsWith("/clients/");
+  const clientId = isClientPage ? params.split("/")[2] : null;
+  const { data: client } = useClientsQuery();
+
+  const getClientNavItems = () => {
+    if (!client || !isClientPage) return [];
+    const featureToggles = client.featureToggles || {
+      logoSystem: true,
+      colorSystem: true,
+      typeSystem: true,
+      userPersonas: true,
+      inspiration: true,
+    };
+
+    return [
+      {
+        title: "Back to Dashboard",
+        href: "/dashboard",
+        icon: <ArrowLeft className="h-4 w-4" />,
+      },
+      ...(featureToggles.logoSystem ? [{
+        title: "Logo System",
+        href: `/clients/${clientId}?tab=logos`,
+        icon: <PackageIcon className="h-4 w-4" />,
+      }] : []),
+      ...(featureToggles.colorSystem ? [{
+        title: "Colors",
+        href: `/clients/${clientId}?tab=colors`,
+        icon: <PaletteIcon className="h-4 w-4" />,
+      }] : []),
+      ...(featureToggles.typeSystem ? [{
+        title: "Typography",
+        href: `/clients/${clientId}?tab=typography`,
+        icon: <TypeIcon className="h-4 w-4" />,
+      }] : []),
+      ...(featureToggles.userPersonas ? [{
+        title: "User Personas",
+        href: `/clients/${clientId}?tab=personas`,
+        icon: <UsersIcon className="h-4 w-4" />,
+      }] : []),
+      ...(featureToggles.inspiration ? [{
+        title: "Inspiration",
+        href: `/clients/${clientId}?tab=inspiration`,
+        icon: <ImageIcon className="h-4 w-4" />,
+      }] : []),
+    ];
+  };
+
+  const navItems: NavItem[] = isClientPage ? getClientNavItems() : [
     {
       title: "Dashboard",
       href: "/dashboard",
