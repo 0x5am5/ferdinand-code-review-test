@@ -134,20 +134,11 @@ export const Sidebar: FC = () => {
         </nav>
       </ScrollArea>
 
-      <div className="border-t p-4 space-y-4">
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="dark-mode"
-            checked={isDarkMode}
-            onCheckedChange={toggleTheme}
-          />
-          <Label htmlFor="dark-mode">Dark Mode</Label>
-        </div>
-
-        <div className="flex items-center gap-3 px-3 py-2">
-          <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
+      <div className="border-t p-4 space-y-1">
+        <div className="flex items-start gap-3 px-3 py-2">
+          <CircleUserIcon className="h-8 w-8 mt-1 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
+            <p className="text-sm m-0 font-medium truncate">
               {user?.name || "User"}
             </p>
             <p className="text-xs text-muted-foreground truncate">
