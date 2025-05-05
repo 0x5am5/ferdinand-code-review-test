@@ -271,11 +271,12 @@ function FileUpload({ type, clientId, onSuccess }: FileUploadProps) {
   );
 }
 
-function LogoDisplay({ logo, imageUrl, parsedData, onDelete }: { 
+function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId }: { 
   logo: BrandAsset, 
   imageUrl: string, 
   parsedData: any,
-  onDelete: (logoId: number) => void 
+  onDelete: (logoId: number) => void,
+  clientId: number
 }) {
   const { user = null } = useAuth();
   const type = parsedData.type;
@@ -501,6 +502,7 @@ function LogoSection({
                 imageUrl={imageUrl}
                 parsedData={parsedData}
                 onDelete={onDeleteLogo}
+                clientId={clientId}
               />
             );
           })}
