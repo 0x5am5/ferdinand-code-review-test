@@ -11,6 +11,7 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { Separator } from "@/components/ui/separator";
