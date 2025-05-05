@@ -209,7 +209,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
       <div 
         className={`flex flex-col items-center justify-center border-2 ${
           isDragging ? 'border-primary' : 'border-dashed border-muted-foreground/20'
-        } rounded-lg py-12 px-6 bg-muted/20 transition-colors duration-200 h-full min-h-[200px]`}
+        } rounded-lg py-12 px-6 bg-muted/20 transition-colors duration-200 h-full w-full min-h-[300px] ${className || ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -399,11 +399,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           style={{ minHeight: '250px' }}
         >
           {variant === 'dark' && !parsedData.hasDarkVariant ? (
-            <div className="text-center">
-              <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
-              <p className="text-muted-foreground mb-4">No dark variant available</p>
-              <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
-              <p className="text-muted-foreground mb-4">No dark variant available</p>
+            <div className="w-full h-full flex items-center justify-center">
               <FileUpload
                 type={type}
                 clientId={clientId}
@@ -411,10 +407,13 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 parentLogoId={logo.id}
                 queryClient={queryClient}
                 onSuccess={() => {
+                  // Update the parsedData to show we now have a dark variant
+                  parsedData.hasDarkVariant = true;
                   queryClient.invalidateQueries({
                     queryKey: [`/api/clients/${clientId}/assets`],
                   });
                 }}
+                className="w-full h-full"
               />
             </div>
           ) : (
