@@ -250,7 +250,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
               Drag and drop your logo file here, or click to browse.<br />
               Supported formats: {Object.values(FILE_FORMATS).join(", ")}
             </p>
-            <label>
+            <label className="cursor-pointer">
               <Input
                 type="file"
                 accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
@@ -260,6 +260,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
               <Button
                 variant="outline"
                 type="button"
+                onClick={() => document.querySelector('input[type="file"]')?.click()}
               >
                 Browse Files
               </Button>
