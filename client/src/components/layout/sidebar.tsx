@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect, useRef } from "react";
+import React, { FC, useState, useEffect } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -19,7 +19,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
@@ -43,18 +42,16 @@ export const Sidebar: FC = () => {
   const themeContext = useTheme();
   const { user } = useAuth();
   const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
-  const [query, setQuery] = useState("");
-  const [showKeyboardShortcut, setShowKeyboardShortcut] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("logos");
-
+  
   // Check if we're on a client detail page
   const isClientDetailPage = location.startsWith("/clients/") && location !== "/clients";
   let clientId: number | null = null;
-
+  
   if (isClientDetailPage && params?.id) {
     clientId = parseInt(params.id, 10);
   }
-
+  
   // Fetch client data if we're on a client page
   const { data: clients = [] } = useClientsQuery();
   const currentClient = clients.length ? clients.find(client => client.id === clientId) : null;
@@ -149,7 +146,7 @@ export const Sidebar: FC = () => {
   if (isClientDetailPage && clientId && currentClient) {
     // Safely handle feature toggles with proper type casting
     const clientToggles = (currentClient.featureToggles || {}) as any;
-
+    
     const featureToggles = {
       logoSystem: typeof clientToggles.logoSystem === 'boolean' ? clientToggles.logoSystem : defaultFeatureToggles.logoSystem,
       colorSystem: typeof clientToggles.colorSystem === 'boolean' ? clientToggles.colorSystem : defaultFeatureToggles.colorSystem,
@@ -157,7 +154,7 @@ export const Sidebar: FC = () => {
       userPersonas: typeof clientToggles.userPersonas === 'boolean' ? clientToggles.userPersonas : defaultFeatureToggles.userPersonas,
       inspiration: typeof clientToggles.inspiration === 'boolean' ? clientToggles.inspiration : defaultFeatureToggles.inspiration
     };
-
+    
     return (
       <ClientSidebar
         clientId={clientId}
@@ -172,26 +169,35 @@ export const Sidebar: FC = () => {
   // Otherwise, render the standard navigation sidebar
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
-      <div className="p-4">
+      <div className="p-4 flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
-      </div>
-
-      <div className="px-4 py-2 relative">
-        <Input
-          onFocus={() => setShowKeyboardShortcut(false)}
-          onBlur={() => setShowKeyboardShortcut(true)}
-          ref={useRef(null)}
-          placeholder="Search..."
-          className="w-full text-muted-foreground"
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-8 p-0"
           onClick={openSearch}
-        />
-        {showKeyboardShortcut && (
-          <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
+        >
+          <Search className="h-4 w-4" />
+          <span className="sr-only">Search</span>
+        </Button>
+      </div>
+      
+      <div className="px-4 py-2">
+        <Button
+          variant="outline"
+          className="w-full justify-between text-muted-foreground"
+          onClick={openSearch}
+        >
+          <div className="flex items-center gap-2">
+            <Search className="h-3.5 w-3.5" />
+            <span>Search...</span>
+          </div>
+          <div className="flex items-center text-xs">
             <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
             <span className="mx-0.5">+</span>
             <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
           </div>
-        )}
+        </Button>
       </div>
 
       {showSearch ? (

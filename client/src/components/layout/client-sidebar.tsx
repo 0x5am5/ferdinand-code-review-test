@@ -1,4 +1,4 @@
-import React, { FC, useRef, useState } from "react";
+import React, { FC } from "react";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -11,7 +11,6 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { Separator } from "@/components/ui/separator";
@@ -40,8 +39,6 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 }) => {
   const [, navigate] = useLocation();
   const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
-  const [query, setQuery] = useState("");
-  const [showKeyboardShortcut, setShowKeyboardShortcut] = useState(true);
 
   const tabs = [
     {
@@ -77,18 +74,18 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   ];
 
   const enabledTabs = tabs.filter(tab => tab.enabled);
-
+  
   // Handle tab change and dispatch custom event for client page
   const handleTabChange = (tabId: string) => {
     // Call the parent's callback
     onTabChange(tabId);
-
+    
     // Dispatch a custom event that the client page can listen for
     const event = new CustomEvent('client-tab-change', { 
       detail: { tab: tabId } 
     });
     window.dispatchEvent(event);
-
+    
     // Update URL without page reload
     const url = new URL(window.location.href);
     url.searchParams.set('tab', tabId);
@@ -97,19 +94,35 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
-      <div className="p-4">
+      <div className="p-4 flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
-      </div>
-
-      <div className="px-4 py-2 relative">
-        <Input
-          onFocus={() => setShowKeyboardShortcut(false)}
-          onBlur={() => setShowKeyboardShortcut(true)}
-          ref={useRef(null)}
-          placeholder="Search..."
-          className="w-full text-muted-foreground"
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-8 p-0"
           onClick={openSearch}
-        />
+        >
+          <Search className="h-4 w-4" />
+          <span className="sr-only">Search</span>
+        </Button>
+      </div>
+      
+      <div className="px-4 py-2">
+        <Button
+          variant="outline"
+          className="w-full justify-between text-muted-foreground"
+          onClick={openSearch}
+        >
+          <div className="flex items-center gap-2">
+            <Search className="h-3.5 w-3.5" />
+            <span>Search...</span>
+          </div>
+          <div className="flex items-center text-xs">
+            <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
+            <span className="mx-0.5">+</span>
+            <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
+          </div>
+        </Button>
       </div>
 
       {showSearch ? (
@@ -145,7 +158,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                 </Button>
               </Link>
             </div>
-
+            
             <div className="mb-2">
               <h3 className="text-lg font-semibold truncate">{clientName}</h3>
               <Badge variant="outline" className="mt-1">
@@ -153,9 +166,9 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
               </Badge>
             </div>
           </div>
-
+          
           <Separator className="mb-2" />
-
+          
           <ScrollArea className="flex-1">
             <div className="px-2 py-2">
               <div className="mb-2 px-3">
@@ -187,7 +200,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           </ScrollArea>
         </div>
       )}
-
+      
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
           <p className="mb-1">Brand last edited:</p>

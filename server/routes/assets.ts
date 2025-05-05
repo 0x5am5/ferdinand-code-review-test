@@ -50,7 +50,7 @@ export function registerAssetRoutes(app: Express) {
   // Handle both file uploads and other assets
   app.post(
     "/api/clients/:clientId/assets",
-    upload.any(),
+    upload.array("fontFiles"),
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {
