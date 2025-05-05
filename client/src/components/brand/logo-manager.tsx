@@ -375,19 +375,34 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete }: {
           }`}
           style={{ minHeight: '250px' }}
         >
-          <img
-            src={imageUrl}
-            alt={logo.name}
-            className="max-w-full max-h-[250px] object-contain"
-            style={{ 
-              filter: variant === 'dark' ? 'invert(1) brightness(1.5)' : 'none' 
-            }}
-            onError={(e) => {
-              console.error("Error loading image:", imageUrl);
-              e.currentTarget.src =
-                'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
-            }}
-          />
+          {variant === 'dark' && !parsedData.hasDarkVariant ? (
+            <div className="text-center">
+              <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
+              <p className="text-muted-foreground mb-4">No dark variant available</p>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {/* TODO: Implement dark variant upload */}}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Dark Variant
+              </Button>
+            </div>
+          ) : (
+            <img
+              src={imageUrl}
+              alt={logo.name}
+              className="max-w-full max-h-[250px] object-contain"
+              style={{ 
+                filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
+              }}
+              onError={(e) => {
+                console.error("Error loading image:", imageUrl);
+                e.currentTarget.src =
+                  'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
