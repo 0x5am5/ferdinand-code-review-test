@@ -104,6 +104,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
           format: fileFormat,
           isDarkVariant: true
         }));
+        formData.append("category", "logo");
 
         const response = await fetch(`/api/clients/${clientId}/assets/${parentLogoId}`, {
           method: "PATCH",
