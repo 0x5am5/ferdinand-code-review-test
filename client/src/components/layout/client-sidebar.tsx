@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -100,12 +100,10 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       
       <div className="px-4 py-2">
         <Input
-          ref={inputRef}
+          ref={useRef(null)}
           placeholder="Search..."
           className="w-full text-muted-foreground"
           onClick={openSearch}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
         />
         <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
           <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
