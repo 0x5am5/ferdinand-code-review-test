@@ -82,7 +82,6 @@ function FileUpload({ type, clientId, onSuccess, queryClient }: FileUploadProps)
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const createLogo = useMutation({
     mutationFn: async () => {
