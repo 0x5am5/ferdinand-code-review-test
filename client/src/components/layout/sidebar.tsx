@@ -169,35 +169,24 @@ export const Sidebar: FC = () => {
   // Otherwise, render the standard navigation sidebar
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
-      <div className="p-4 flex justify-between items-center">
+      <div className="p-4">
         <h2 className="font-bold">Ferdinand</h2>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-8 w-8 p-0"
-          onClick={openSearch}
-        >
-          <Search className="h-4 w-4" />
-          <span className="sr-only">Search</span>
-        </Button>
       </div>
       
       <div className="px-4 py-2">
-        <Button
-          variant="outline"
-          className="w-full justify-between text-muted-foreground"
+        <Input
+          ref={inputRef}
+          placeholder="Search..."
+          className="w-full text-muted-foreground"
           onClick={openSearch}
-        >
-          <div className="flex items-center gap-2">
-            <Search className="h-3.5 w-3.5" />
-            <span>Search...</span>
-          </div>
-          <div className="flex items-center text-xs">
-            <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
-            <span className="mx-0.5">+</span>
-            <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
-          </div>
-        </Button>
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
+          <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
+          <span className="mx-0.5">+</span>
+          <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
+        </div>
       </div>
 
       {showSearch ? (
