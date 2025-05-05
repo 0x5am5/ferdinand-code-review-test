@@ -94,11 +94,11 @@ function FileUpload({ type, clientId, onSuccess, queryClient }: FileUploadProps)
       const name = isDarkVariant 
         ? `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`
         : `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`;
-      
+
       formData.append("name", name);
       formData.append("type", type);
       formData.append("category", "logo");
-      
+
       if (isDarkVariant && parentLogoId) {
         formData.append("data", JSON.stringify({
           type,
@@ -168,12 +168,12 @@ function FileUpload({ type, clientId, onSuccess, queryClient }: FileUploadProps)
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    
+
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
       const file = files[0];
       const fileExtension = file.name.split(".").pop()?.toLowerCase();
-      
+
       if (!fileExtension || !Object.values(FILE_FORMATS).includes(fileExtension as any)) {
         toast({
           title: "Invalid file type",
@@ -182,7 +182,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient }: FileUploadProps)
         });
         return;
       }
-      
+
       setSelectedFile(file);
     }
   }, [toast]);
@@ -282,7 +282,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   const { user = null } = useAuth();
   const type = parsedData.type;
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
-  
+
   // Available formats for this logo
   const availableFormats = [
     { id: `current-${parsedData.format}`, format: parsedData.format, current: true },
@@ -302,7 +302,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
           </p>
         </div>
-        
+
         <div>
           <h5 className="text-sm font-medium flex items-center">
             <FileType className="h-4 w-4 mr-2" />
@@ -319,7 +319,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     <span className="ml-2 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] uppercase font-medium">Current</span>
                   )}
                 </div>
-                
+
                 {(item.current || item.available) ? (
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
                     <a href={imageUrl} download={`${logo.name}.${item.format}`}>
@@ -335,7 +335,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             ))}
           </div>
         </div>
-        
+
         {user && user.role !== UserRole.STANDARD && (
           <div>
             <AlertDialog>
@@ -371,7 +371,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           </div>
         )}
       </div>
-      
+
       {/* 3/4 column - Logo preview with light/dark toggle */}
       <div className="col-span-3 flex flex-col">
         <div className="mb-4 self-end">
@@ -388,7 +388,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             </TabsList>
           </Tabs>
         </div>
-        
+
         <div 
           className={`rounded-lg pt-[15vh] pb-[15vh] flex items-center justify-center ${
             variant === 'light' 
@@ -456,12 +456,14 @@ function LogoSection({
   type, 
   logos, 
   clientId, 
-  onDeleteLogo 
+  onDeleteLogo,
+  queryClient
 }: { 
   type: string, 
   logos: BrandAsset[],
   clientId: number,
-  onDeleteLogo: (logoId: number) => void
+  onDeleteLogo: (logoId: number) => void,
+  queryClient: any
 }) {
   const { user = null } = useAuth();
   const [uploadMode, setUploadMode] = useState(false);
@@ -475,7 +477,7 @@ function LogoSection({
             {type.charAt(0).toUpperCase() + type.slice(1)} Logo
           </h3>
         </div>
-        
+
         {!uploadMode && !hasLogos && user && user.role !== UserRole.STANDARD && (
           <Button 
             variant="outline" 
@@ -489,7 +491,7 @@ function LogoSection({
       </div>
 
       <Separator className="my-4" />
-      
+
       {/* Display logos if available */}
       {hasLogos ? (
         <div>
@@ -524,7 +526,7 @@ function LogoSection({
             <p className="text-sm text-muted-foreground">
               {logoDescriptions[type as keyof typeof logoDescriptions]}
             </p>
-            
+
             {uploadMode && (
               <Button 
                 variant="outline" 
@@ -536,13 +538,14 @@ function LogoSection({
               </Button>
             )}
           </div>
-          
+
           {/* 3/4 column - upload area or placeholder */}
           {uploadMode ? (
             <FileUpload 
               type={type} 
               clientId={clientId}
               onSuccess={() => setUploadMode(false)}
+              queryClient={queryClient}
             />
           ) : (
             <div className="col-span-3 bg-muted/10 rounded-lg flex flex-col items-center justify-center p-8 text-center">
@@ -649,6 +652,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
           logos={typeLogos}
           clientId={clientId}
           onDeleteLogo={(logoId) => deleteLogo.mutate(logoId)}
+          queryClient={queryClient}
         />
       ))}
     </div>
