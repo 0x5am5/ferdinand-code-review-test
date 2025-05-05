@@ -92,40 +92,45 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 
       const formData = new FormData();
       formData.append("file", selectedFile);
-      const name = isDarkVariant 
-        ? `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`
-        : `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`;
-
-      formData.append("name", name);
+      
+      // Use the same name for dark variant to replace existing logo
+      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
       formData.append("type", type);
       formData.append("category", "logo");
 
       if (isDarkVariant && parentLogoId) {
-        formData.append("data", JSON.stringify({
-          type,
-          format: selectedFile.name.split('.').pop()?.toLowerCase(),
-          isDarkVariant: true,
-          parentLogoId
-        }));
+        // Update existing logo instead of creating new one for dark variant
+        const response = await fetch(`/api/clients/${clientId}/assets/${parentLogoId}`, {
+          method: "PUT",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to update logo");
+        }
+
+        return await response.json();
       } else {
+        // Create new logo for main variant
         formData.append("data", JSON.stringify({
           type,
           format: selectedFile.name.split('.').pop()?.toLowerCase(),
           hasDarkVariant: false
         }));
+
+        const response = await fetch(`/api/clients/${clientId}/assets`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to upload logo");
+        }
+
+        return await response.json();
       }
-
-      const response = await fetch(`/api/clients/${clientId}/assets`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to upload logo");
-      }
-
-      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -210,11 +215,12 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
       <div 
         className={`flex flex-col items-center justify-center border-2 ${
           isDragging ? 'border-primary' : 'border-dashed border-muted-foreground/20'
-        } rounded-lg py-12 px-6 bg-muted/20 transition-colors duration-200 h-full w-full min-h-[300px]`}
+        } rounded-lg bg-muted/5 hover:bg-muted/10 transition-colors duration-200 h-full w-full min-h-[400px]`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        style={{ height: '100%' }}
       >
         {selectedFile ? (
           <>
