@@ -37,7 +37,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   activeTab = "logos",
   onTabChange,
 }) => {
-  const [, navigate] = useLocation();
+  const [, setLocation] = useLocation();
   const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
 
   const tabs = [
