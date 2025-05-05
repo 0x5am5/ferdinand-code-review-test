@@ -42,6 +42,7 @@ interface FileUploadProps {
   isDarkVariant?: boolean;
   parentLogoId?: number;
   queryClient: any;
+  className?: string;
 }
 
 // Main detailed writeups for each logo type
@@ -209,7 +210,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
       <div 
         className={`flex flex-col items-center justify-center border-2 ${
           isDragging ? 'border-primary' : 'border-dashed border-muted-foreground/20'
-        } rounded-lg py-12 px-6 bg-muted/20 transition-colors duration-200 h-full w-full min-h-[300px] ${className || ''}`}
+        } rounded-lg py-12 px-6 bg-muted/20 transition-colors duration-200 h-full w-full min-h-[300px]`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
