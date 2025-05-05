@@ -398,37 +398,89 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           style={{ minHeight: '250px' }}
         >
           {variant === 'dark' && !parsedData.hasDarkVariant ? (
-            <div className="text-center">
-              <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
-              <p className="text-muted-foreground mb-4">No dark variant available</p>
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Dark Variant
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Upload Dark Variant</DialogTitle>
-                    <DialogDescription>
-                      Upload a dark version of this logo for use on dark backgrounds.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <FileUpload 
-                    type={type} 
-                    clientId={clientId}
-                    isDarkVariant={true}
-                    parentLogoId={logo.id}
-                    onSuccess={() => {
+            <div 
+              className="text-center border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 transition-colors duration-200 cursor-pointer hover:border-primary/50"
+              onDragEnter={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const files = e.dataTransfer.files;
+                if (files && files.length > 0) {
+                  const formData = new FormData();
+                  formData.append("file", files[0]);
+                  formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                  formData.append("type", type);
+                  formData.append("category", "logo");
+                  formData.append("data", JSON.stringify({
+                    type,
+                    format: files[0].name.split('.').pop()?.toLowerCase(),
+                    isDarkVariant: true,
+                    parentLogoId: logo.id
+                  }));
+
+                  fetch(`/api/clients/${clientId}/assets`, {
+                    method: "POST",
+                    body: formData,
+                  }).then((response) => {
+                    if (response.ok) {
                       queryClient.invalidateQueries({
                         queryKey: [`/api/clients/${clientId}/assets`],
                       });
-                    }}
-                    queryClient={queryClient}
-                  />
-                </DialogContent>
-              </Dialog>
+                    }
+                  });
+                }
+              }}
+            >
+              <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
+              <p className="text-muted-foreground mb-4">No dark variant available</p>
+              <label className="cursor-pointer">
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      const formData = new FormData();
+                      formData.append("file", files[0]);
+                      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                      formData.append("type", type);
+                      formData.append("category", "logo");
+                      formData.append("data", JSON.stringify({
+                        type,
+                        format: files[0].name.split('.').pop()?.toLowerCase(),
+                        isDarkVariant: true,
+                        parentLogoId: logo.id
+                      }));
+
+                      fetch(`/api/clients/${clientId}/assets`, {
+                        method: "POST",
+                        body: formData,
+                      }).then((response) => {
+                        if (response.ok) {
+                          queryClient.invalidateQueries({
+                            queryKey: [`/api/clients/${clientId}/assets`],
+                          });
+                        }
+                      });
+                    }
+                  }}
+                />
+                <Button variant="outline" size="sm">
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Dark Variant
+                </Button>
+              </label>
+              <p className="text-sm text-muted-foreground mt-4">
+                Drag and drop or click to upload
+              </p>
             </div>
           ) : (
             <img
