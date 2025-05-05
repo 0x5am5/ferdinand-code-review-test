@@ -138,15 +138,16 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
             <div className="mb-3">
-              <Link href="/dashboard">
-                <Button
-                  variant="ghost"
-                  className="flex items-center text-muted-foreground gap-1 w-full justify-start"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>All Brands</span>
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                className="flex items-center text-muted-foreground gap-1 w-full justify-start"
+                onClick={() => {
+                  navigate("/dashboard");
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>All Brands</span>
+              </Button>
             </div>
             
           </div>
