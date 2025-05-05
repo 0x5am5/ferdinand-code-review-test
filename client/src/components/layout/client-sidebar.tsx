@@ -95,16 +95,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
-        <h2 className="font-bold">Ferdinand</h2>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-8 w-8 p-0"
-          onClick={openSearch}
-        >
-          <Search className="h-4 w-4" />
-          <span className="sr-only">Search</span>
-        </Button>
+        <h2 className="font-bold">{clientName}</h2>
       </div>
       
       <div className="px-4 py-2">
@@ -147,24 +138,17 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
             <div className="mb-3">
-              <Link href="/clients">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex items-center gap-1 text-muted-foreground w-full justify-start"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Back to Brands</span>
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex items-center gap-1 text-muted-foreground justify-start"
+                onClick={() => navigate("/dashboard")}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>All Brands</span>
+              </Button>
             </div>
             
-            <div className="mb-2">
-              <h3 className="text-lg font-semibold truncate">{clientName}</h3>
-              <Badge variant="outline" className="mt-1">
-                Brand ID: {clientId}
-              </Badge>
-            </div>
           </div>
           
           <Separator className="mb-2" />
@@ -204,7 +188,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
           <p className="mb-1">Brand last edited:</p>
-          <p>May 2, 2025</p>
+          <p className="mb-0">May 2, 2025</p>
         </div>
       </div>
     </aside>
