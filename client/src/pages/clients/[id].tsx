@@ -40,12 +40,12 @@ export default function ClientDetails() {
     };
 
     window.addEventListener('client-tab-change', handleTabChange as EventListener);
-    
+
     return () => {
       window.removeEventListener('client-tab-change', handleTabChange as EventListener);
     };
   }, []);
-  
+
   // Debug logging
   useEffect(() => {
     console.log('Current active tab:', activeTab);
@@ -162,7 +162,7 @@ export default function ClientDetails() {
             <CardContent>Logo System feature is disabled for this client.</CardContent>
           </Card>
         );
-      
+
       case "colors":
         return featureToggles.colorSystem ? (
           <ColorManager clientId={clientId} colors={colorAssets} />
@@ -174,7 +174,7 @@ export default function ClientDetails() {
             <CardContent>Color System feature is disabled for this client.</CardContent>
           </Card>
         );
-      
+
       case "typography":
         return featureToggles.typeSystem ? (
           <FontManager clientId={clientId} fonts={fontAssets} />
@@ -186,7 +186,7 @@ export default function ClientDetails() {
             <CardContent>Typography System feature is disabled for this client.</CardContent>
           </Card>
         );
-      
+
       case "personas":
         return featureToggles.userPersonas ? (
           <PersonaManager clientId={clientId} personas={personas} />
@@ -198,7 +198,7 @@ export default function ClientDetails() {
             <CardContent>User Personas feature is disabled for this client.</CardContent>
           </Card>
         );
-      
+
       case "inspiration":
         return featureToggles.inspiration ? (
           <InspirationBoard clientId={clientId} />
@@ -210,7 +210,7 @@ export default function ClientDetails() {
             <CardContent>Inspiration Board feature is disabled for this client.</CardContent>
           </Card>
         );
-      
+
       default:
         // Find first enabled tab
         if (featureToggles.logoSystem) return <LogoManager clientId={clientId} logos={logoAssets} />;
@@ -218,7 +218,7 @@ export default function ClientDetails() {
         if (featureToggles.typeSystem) return <FontManager clientId={clientId} fonts={fontAssets} />;
         if (featureToggles.userPersonas) return <PersonaManager clientId={clientId} personas={personas} />;
         if (featureToggles.inspiration) return <InspirationBoard clientId={clientId} />;
-        
+
         return (
           <Card>
             <CardHeader>
