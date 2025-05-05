@@ -41,6 +41,7 @@ interface FileUploadProps {
   onSuccess: () => void;
   isDarkVariant?: boolean;
   parentLogoId?: number;
+  queryClient?: any;
 }
 
 // Main detailed writeups for each logo type
@@ -77,7 +78,7 @@ function parseBrandAssetData(logo: BrandAsset) {
 }
 
 // Drag and drop file upload component
-function FileUpload({ type, clientId, onSuccess }: FileUploadProps) {
+function FileUpload({ type, clientId, onSuccess, queryClient }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
@@ -424,6 +425,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId }: {
                         queryKey: [`/api/clients/${clientId}/assets`],
                       });
                     }}
+                    queryClient={queryClient}
                   />
                 </DialogContent>
               </Dialog>
