@@ -133,23 +133,23 @@ export function registerAssetRoutes(app: Express) {
         // Default to logo asset
         const { name, type } = req.body;
         const files = req.files as Express.Multer.File[];
-        const file = files[0];
-
-        if (!file) {
+        
+        if (!files || files.length === 0) {
           return res.status(400).json({ message: "No file uploaded" });
         }
 
+        const file = files[0];
         const fileExtension = file.originalname.split(".").pop()?.toLowerCase();
 
         const logoAsset = {
           clientId,
           name,
           category: "logo" as const,
-          data: {
+          data: JSON.stringify({
             type,
             format: fileExtension || "png",
             fileName: file.originalname,
-          },
+          }),
           fileData: file.buffer.toString("base64"),
           mimeType: file.mimetype,
         };
