@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   BuildingIcon,
@@ -138,15 +138,14 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
             <div className="mb-3">
-              <Link href="/dashboard" className="block">
-                <Button
-                  variant="ghost"
-                  className="flex items-center text-muted-foreground gap-1 w-full justify-start"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>All Brands</span>
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                className="flex items-center text-muted-foreground gap-1"
+                onClick={() => navigate("/dashboard")}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>All Brands</span>
+              </Button>
             </div>
             
           </div>
