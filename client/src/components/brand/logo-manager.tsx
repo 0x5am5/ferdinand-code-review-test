@@ -102,6 +102,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
         formData.append("data", JSON.stringify({
           type,
           format: fileFormat,
+          hasDarkVariant: true,
           isDarkVariant: true
         }));
         formData.append("category", "logo");
