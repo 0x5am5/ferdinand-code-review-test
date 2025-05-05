@@ -368,7 +368,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete }: {
         </div>
         
         <div 
-          className={`rounded-lg p-8 flex items-center justify-center ${
+          className={`rounded-lg pt-[15vh] pb-[15vh] flex items-center justify-center ${
             variant === 'light' 
               ? 'bg-white' 
               : 'bg-slate-900'
