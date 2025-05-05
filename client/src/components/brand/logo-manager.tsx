@@ -41,7 +41,7 @@ interface FileUploadProps {
   onSuccess: () => void;
   isDarkVariant?: boolean;
   parentLogoId?: number;
-  queryClient?: any;
+  queryClient: any;
 }
 
 // Main detailed writeups for each logo type
@@ -78,7 +78,7 @@ function parseBrandAssetData(logo: BrandAsset) {
 }
 
 // Drag and drop file upload component
-function FileUpload({ type, clientId, onSuccess, queryClient }: FileUploadProps) {
+function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, parentLogoId }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
@@ -398,89 +398,23 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           style={{ minHeight: '250px' }}
         >
           {variant === 'dark' && !parsedData.hasDarkVariant ? (
-            <div 
-              className="text-center border-2 border-dashed border-muted-foreground/20 rounded-lg p-8 transition-colors duration-200 cursor-pointer hover:border-primary/50"
-              onDragEnter={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const files = e.dataTransfer.files;
-                if (files && files.length > 0) {
-                  const formData = new FormData();
-                  formData.append("file", files[0]);
-                  formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                  formData.append("type", type);
-                  formData.append("category", "logo");
-                  formData.append("data", JSON.stringify({
-                    type,
-                    format: files[0].name.split('.').pop()?.toLowerCase(),
-                    isDarkVariant: true,
-                    parentLogoId: logo.id
-                  }));
-
-                  fetch(`/api/clients/${clientId}/assets`, {
-                    method: "POST",
-                    body: formData,
-                  }).then((response) => {
-                    if (response.ok) {
-                      queryClient.invalidateQueries({
-                        queryKey: [`/api/clients/${clientId}/assets`],
-                      });
-                    }
-                  });
-                }
-              }}
-            >
+            <div className="text-center">
               <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
               <p className="text-muted-foreground mb-4">No dark variant available</p>
-              <label className="cursor-pointer">
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) {
-                      const formData = new FormData();
-                      formData.append("file", files[0]);
-                      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                      formData.append("type", type);
-                      formData.append("category", "logo");
-                      formData.append("data", JSON.stringify({
-                        type,
-                        format: files[0].name.split('.').pop()?.toLowerCase(),
-                        isDarkVariant: true,
-                        parentLogoId: logo.id
-                      }));
-
-                      fetch(`/api/clients/${clientId}/assets`, {
-                        method: "POST",
-                        body: formData,
-                      }).then((response) => {
-                        if (response.ok) {
-                          queryClient.invalidateQueries({
-                            queryKey: [`/api/clients/${clientId}/assets`],
-                          });
-                        }
-                      });
-                    }
-                  }}
-                />
-                <Button variant="outline" size="sm">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Dark Variant
-                </Button>
-              </label>
-              <p className="text-sm text-muted-foreground mt-4">
-                Drag and drop or click to upload
-              </p>
+              <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
+              <p className="text-muted-foreground mb-4">No dark variant available</p>
+              <FileUpload
+                type={type}
+                clientId={clientId}
+                isDarkVariant={true}
+                parentLogoId={logo.id}
+                queryClient={queryClient}
+                onSuccess={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: [`/api/clients/${clientId}/assets`],
+                  });
+                }}
+              />
             </div>
           ) : (
             <img
