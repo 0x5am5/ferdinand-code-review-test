@@ -314,7 +314,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete }: {
           </div>
         </div>
         
-        {user.role !== UserRole.STANDARD && (
+        {user && user.role !== UserRole.STANDARD && (
           <div>
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -424,7 +424,7 @@ function LogoSection({
           </p>
         </div>
         
-        {!uploadMode && !hasLogos && user.role !== UserRole.STANDARD && (
+        {!uploadMode && !hasLogos && user && user.role !== UserRole.STANDARD && (
           <Button 
             variant="outline" 
             size="sm"
@@ -496,7 +496,7 @@ function LogoSection({
               <p className="text-muted-foreground mb-4">
                 No {type.toLowerCase()} logo uploaded yet
               </p>
-              {user.role !== UserRole.STANDARD && (
+              {user && user.role !== UserRole.STANDARD && (
                 <Button 
                   variant="outline" 
                   size="sm"
