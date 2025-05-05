@@ -101,20 +101,15 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
         <h2 className="font-bold">Ferdinand</h2>
       </div>
 
-      <div className="px-4 py-2">
+      <div className="px-4 py-2 relative">
         <Input
+          onFocus={() => setShowKeyboardShortcut(false)}
+          onBlur={() => setShowKeyboardShortcut(true)}
           ref={useRef(null)}
           placeholder="Search..."
           className="w-full text-muted-foreground"
           onClick={openSearch}
         />
-        {showKeyboardShortcut && (
-          <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
-            <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
-            <span className="mx-0.5">+</span>
-            <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
-          </div>
-        )}
       </div>
 
       {showSearch ? (
