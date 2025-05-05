@@ -7,7 +7,7 @@ import multer from "multer";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import { RequestWithClientId } from "server/routes";
 
-const upload = multer();
+const upload = multer({ preservePath: true });
 
 export function registerAssetRoutes(app: Express) {
   // Get all assets

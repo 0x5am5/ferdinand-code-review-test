@@ -72,7 +72,7 @@ function UploadDialog({ type, clientId, onSuccess }: UploadDialogProps) {
       }
 
       const formData = new FormData();
-      formData.append("files", selectedFile);
+      formData.append("file", selectedFile);
       formData.append("name", logoName);
       formData.append("type", type);
       formData.append("category", "logo");
