@@ -1,4 +1,4 @@
-import React, { FC, useRef } from "react";
+import React, { FC, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -40,6 +40,8 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 }) => {
   const [, navigate] = useLocation();
   const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
+  const [query, setQuery] = useState("");
+  const [showKeyboardShortcut, setShowKeyboardShortcut] = useState(true);
 
   const tabs = [
     {
@@ -75,18 +77,18 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   ];
 
   const enabledTabs = tabs.filter(tab => tab.enabled);
-  
+
   // Handle tab change and dispatch custom event for client page
   const handleTabChange = (tabId: string) => {
     // Call the parent's callback
     onTabChange(tabId);
-    
+
     // Dispatch a custom event that the client page can listen for
     const event = new CustomEvent('client-tab-change', { 
       detail: { tab: tabId } 
     });
     window.dispatchEvent(event);
-    
+
     // Update URL without page reload
     const url = new URL(window.location.href);
     url.searchParams.set('tab', tabId);
@@ -98,7 +100,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       <div className="p-4">
         <h2 className="font-bold">Ferdinand</h2>
       </div>
-      
+
       <div className="px-4 py-2">
         <Input
           ref={useRef(null)}
@@ -106,11 +108,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           className="w-full text-muted-foreground"
           onClick={openSearch}
         />
-        <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
-          <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
-          <span className="mx-0.5">+</span>
-          <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
-        </div>
+        {showKeyboardShortcut && (
+          <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
+            <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
+            <span className="mx-0.5">+</span>
+            <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
+          </div>
+        )}
       </div>
 
       {showSearch ? (
@@ -146,7 +150,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                 </Button>
               </Link>
             </div>
-            
+
             <div className="mb-2">
               <h3 className="text-lg font-semibold truncate">{clientName}</h3>
               <Badge variant="outline" className="mt-1">
@@ -154,9 +158,9 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
               </Badge>
             </div>
           </div>
-          
+
           <Separator className="mb-2" />
-          
+
           <ScrollArea className="flex-1">
             <div className="px-2 py-2">
               <div className="mb-2 px-3">
@@ -188,7 +192,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           </ScrollArea>
         </div>
       )}
-      
+
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
           <p className="mb-1">Brand last edited:</p>

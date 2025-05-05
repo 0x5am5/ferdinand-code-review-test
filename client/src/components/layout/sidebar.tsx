@@ -43,16 +43,18 @@ export const Sidebar: FC = () => {
   const themeContext = useTheme();
   const { user } = useAuth();
   const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
+  const [query, setQuery] = useState("");
+  const [showKeyboardShortcut, setShowKeyboardShortcut] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("logos");
-  
+
   // Check if we're on a client detail page
   const isClientDetailPage = location.startsWith("/clients/") && location !== "/clients";
   let clientId: number | null = null;
-  
+
   if (isClientDetailPage && params?.id) {
     clientId = parseInt(params.id, 10);
   }
-  
+
   // Fetch client data if we're on a client page
   const { data: clients = [] } = useClientsQuery();
   const currentClient = clients.length ? clients.find(client => client.id === clientId) : null;
@@ -147,7 +149,7 @@ export const Sidebar: FC = () => {
   if (isClientDetailPage && clientId && currentClient) {
     // Safely handle feature toggles with proper type casting
     const clientToggles = (currentClient.featureToggles || {}) as any;
-    
+
     const featureToggles = {
       logoSystem: typeof clientToggles.logoSystem === 'boolean' ? clientToggles.logoSystem : defaultFeatureToggles.logoSystem,
       colorSystem: typeof clientToggles.colorSystem === 'boolean' ? clientToggles.colorSystem : defaultFeatureToggles.colorSystem,
@@ -155,7 +157,7 @@ export const Sidebar: FC = () => {
       userPersonas: typeof clientToggles.userPersonas === 'boolean' ? clientToggles.userPersonas : defaultFeatureToggles.userPersonas,
       inspiration: typeof clientToggles.inspiration === 'boolean' ? clientToggles.inspiration : defaultFeatureToggles.inspiration
     };
-    
+
     return (
       <ClientSidebar
         clientId={clientId}
@@ -173,19 +175,23 @@ export const Sidebar: FC = () => {
       <div className="p-4">
         <h2 className="font-bold">Ferdinand</h2>
       </div>
-      
-      <div className="px-4 py-2">
+
+      <div className="px-4 py-2 relative">
         <Input
+          onFocus={() => setShowKeyboardShortcut(false)}
+          onBlur={() => setShowKeyboardShortcut(true)}
           ref={useRef(null)}
           placeholder="Search..."
           className="w-full text-muted-foreground"
           onClick={openSearch}
         />
-        <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
-          <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
-          <span className="mx-0.5">+</span>
-          <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
-        </div>
+        {showKeyboardShortcut && (
+          <div className="absolute right-6 top-[4.5rem] flex items-center text-xs text-muted-foreground pointer-events-none">
+            <kbd className="rounded border px-1 py-0.5 bg-muted">⌘</kbd>
+            <span className="mx-0.5">+</span>
+            <kbd className="rounded border px-1 py-0.5 bg-muted">K</kbd>
+          </div>
+        )}
       </div>
 
       {showSearch ? (
