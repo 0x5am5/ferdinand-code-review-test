@@ -92,16 +92,21 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 
       const formData = new FormData();
       formData.append("file", selectedFile);
-
-      // Use the same name for dark variant to replace existing logo
       formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
       formData.append("type", type);
       formData.append("category", "logo");
 
+      const fileFormat = selectedFile.name.split('.').pop()?.toLowerCase();
+
       if (isDarkVariant && parentLogoId) {
-        // Update existing logo instead of creating new one for dark variant
+        formData.append("data", JSON.stringify({
+          type,
+          format: fileFormat,
+          isDarkVariant: true
+        }));
+
         const response = await fetch(`/api/clients/${clientId}/assets/${parentLogoId}`, {
-          method: "PUT",
+          method: "PATCH",
           body: formData,
         });
 
@@ -112,10 +117,9 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 
         return await response.json();
       } else {
-        // Create new logo for main variant
         formData.append("data", JSON.stringify({
           type,
-          format: selectedFile.name.split('.').pop()?.toLowerCase(),
+          format: fileFormat,
           hasDarkVariant: false
         }));
 
