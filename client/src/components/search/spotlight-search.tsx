@@ -1,12 +1,27 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
-import { Search, X, ChevronRight, Home, Building, Users, Palette } from "lucide-react";
+import { Search, X, ChevronRight, Home, Building, Users, Palette, User, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+
+// Types for clients and users
+interface Client {
+  id: number;
+  name: string;
+  industry?: string;
+}
+
+interface AppUser {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
 
 type SearchResult = {
   id: string;
@@ -37,7 +52,37 @@ export function SpotlightSearch({ onClose, className, ...props }: SpotlightSearc
     return () => clearTimeout(timer);
   }, []);
 
-  // Mock search results based on the navigation paths
+  // Fetch clients for search results
+  const { data: clients = [] } = useQuery<Client[], unknown, SearchResult[]>({
+    queryKey: ['/api/clients'],
+    enabled: user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN,
+    select: (data) => data.map((client) => ({
+      id: `client-${client.id}`,
+      type: "client" as const,
+      title: client.name,
+      subtitle: client.industry || "Client",
+      href: `/clients/${client.id}`,
+      icon: <div className="flex items-center justify-center w-6 h-6 rounded bg-indigo-100 text-indigo-600"><Briefcase className="h-3.5 w-3.5" /></div>,
+      tags: client.industry ? [client.industry, "brand", "client"] : ["brand", "client"],
+    })),
+  });
+
+  // Fetch users for search results
+  const { data: users = [] } = useQuery<AppUser[], unknown, SearchResult[]>({
+    queryKey: ['/api/users'],
+    enabled: user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN,
+    select: (data) => data.map((u) => ({
+      id: `user-${u.id}`,
+      type: "user" as const,
+      title: u.name,
+      subtitle: u.email,
+      href: `/users?highlight=${u.id}`,
+      icon: <div className="flex items-center justify-center w-6 h-6 rounded bg-purple-100 text-purple-600"><User className="h-3.5 w-3.5" /></div>,
+      tags: [u.role],
+    })),
+  });
+
+  // Navigation menu items
   const navigationItems = useMemo(() => {
     const items: SearchResult[] = [
       {
@@ -47,6 +92,7 @@ export function SpotlightSearch({ onClose, className, ...props }: SpotlightSearc
         subtitle: "Overview of your brand activities",
         href: "/dashboard",
         icon: <div className="flex items-center justify-center w-6 h-6 rounded bg-blue-100 text-blue-600"><Home className="h-3.5 w-3.5" /></div>,
+        tags: ["home", "overview", "dashboard"],
       },
     ];
 
@@ -60,6 +106,7 @@ export function SpotlightSearch({ onClose, className, ...props }: SpotlightSearc
           subtitle: "Manage client brands",
           href: "/clients",
           icon: <div className="flex items-center justify-center w-6 h-6 rounded bg-indigo-100 text-indigo-600"><Building className="h-3.5 w-3.5" /></div>,
+          tags: ["brands", "clients", "companies"],
         },
         {
           id: "users",
@@ -68,6 +115,7 @@ export function SpotlightSearch({ onClose, className, ...props }: SpotlightSearc
           subtitle: "Manage user accounts",
           href: "/users",
           icon: <div className="flex items-center justify-center w-6 h-6 rounded bg-purple-100 text-purple-600"><Users className="h-3.5 w-3.5" /></div>,
+          tags: ["users", "accounts", "team"],
         }
       );
     }
@@ -84,23 +132,29 @@ export function SpotlightSearch({ onClose, className, ...props }: SpotlightSearc
         subtitle: "Create and edit design assets",
         href: "/design-builder",
         icon: <div className="flex items-center justify-center w-6 h-6 rounded bg-pink-100 text-pink-600"><Palette className="h-3.5 w-3.5" /></div>,
+        tags: ["design", "assets", "brand", "creative"],
       });
     }
 
     return items;
   }, [user?.role]);
 
+  // Combine all search results
+  const allSearchResults = useMemo(() => {
+    return [...navigationItems, ...clients, ...users];
+  }, [navigationItems, clients, users]);
+
   // Filter results based on search query
   const filteredResults = useMemo(() => {
-    if (!query) return navigationItems;
+    if (!query) return allSearchResults;
     
-    return navigationItems.filter(
+    return allSearchResults.filter(
       (item) => 
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         (item.subtitle && item.subtitle.toLowerCase().includes(query.toLowerCase())) ||
-        (item.tags && item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase())))
+        (item.tags && item.tags.some((tag: string) => tag.toLowerCase().includes(query.toLowerCase())))
     );
-  }, [navigationItems, query]);
+  }, [allSearchResults, query]);
 
   const handleSelect = (result: SearchResult) => {
     navigate(result.href);
@@ -132,30 +186,51 @@ export function SpotlightSearch({ onClose, className, ...props }: SpotlightSearc
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="p-2 space-y-1">
+        <div className="p-2 space-y-4">
           {filteredResults.length > 0 ? (
             <>
-              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                Results
-              </div>
-              {filteredResults.map((result) => (
-                <button
-                  key={result.id}
-                  onClick={() => handleSelect(result)}
-                  className="flex items-center gap-2 w-full p-2 text-sm rounded-md hover:bg-muted text-left"
-                >
-                  {result.icon}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium">{result.title}</div>
-                    {result.subtitle && (
-                      <div className="text-xs text-muted-foreground truncate">
-                        {result.subtitle}
+              {/* Group results by type */}
+              {(() => {
+                // Get unique result types
+                const resultTypes = Array.from(new Set(filteredResults.map(r => r.type)));
+                
+                return resultTypes.map(type => {
+                  const resultsOfType = filteredResults.filter(r => r.type === type);
+                  if (resultsOfType.length === 0) return null;
+                  
+                  // Generate type label
+                  let typeLabel = "Results";
+                  if (type === "page") typeLabel = "Pages";
+                  if (type === "client") typeLabel = "Brands";
+                  if (type === "user") typeLabel = "Users";
+                  
+                  return (
+                    <div key={type} className="space-y-1">
+                      <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                        {typeLabel}
                       </div>
-                    )}
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </button>
-              ))}
+                      {resultsOfType.map((result) => (
+                        <button
+                          key={result.id}
+                          onClick={() => handleSelect(result)}
+                          className="flex items-center gap-2 w-full p-2 text-sm rounded-md hover:bg-muted text-left"
+                        >
+                          {result.icon}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium">{result.title}</div>
+                            {result.subtitle && (
+                              <div className="text-xs text-muted-foreground truncate">
+                                {result.subtitle}
+                              </div>
+                            )}
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        </button>
+                      ))}
+                    </div>
+                  );
+                });
+              })()}
             </>
           ) : (
             <div className="py-6 text-center">

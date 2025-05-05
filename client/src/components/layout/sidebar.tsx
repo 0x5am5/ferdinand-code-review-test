@@ -1,5 +1,5 @@
 import React, { FC, useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
@@ -16,18 +16,16 @@ import {
   LogOutIcon,
   ChevronDown,
   Search,
-  Command,
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { UserRole } from "@shared/schema";
+import { ClientSidebar } from "./client-sidebar";
+import { useClientsQuery } from "@/lib/queries/clients";
 
 interface NavItem {
   title: string;
@@ -40,10 +38,35 @@ interface NavItem {
  */
 export const Sidebar: FC = () => {
   const [location] = useLocation();
+  const params = useParams();
   const themeContext = useTheme();
   const { user } = useAuth();
   const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
+  const [activeTab, setActiveTab] = useState<string>("logos");
+  
+  // Check if we're on a client detail page
+  const isClientDetailPage = location.startsWith("/clients/") && location !== "/clients";
+  let clientId: number | null = null;
+  
+  if (isClientDetailPage && params?.id) {
+    clientId = parseInt(params.id, 10);
+  }
+  
+  // Fetch client data if we're on a client page
+  const { data: clients = [] } = useClientsQuery();
+  const currentClient = clients.length ? clients.find(client => client.id === clientId) : null;
+  console.log('Client ID:', clientId, 'Found client?', !!currentClient, 'Total clients:', clients.length);
 
+  // Default feature toggles
+  const defaultFeatureToggles = {
+    logoSystem: true,
+    colorSystem: true,
+    typeSystem: true,
+    userPersonas: true,
+    inspiration: true,
+  };
+
+  // Navigation items
   const navItems: NavItem[] = [
     {
       title: "Dashboard",
@@ -119,11 +142,34 @@ export const Sidebar: FC = () => {
     });
   };
 
-  const isDarkMode = themeContext?.designSystem?.theme?.appearance === "dark";
+  // If we're on a client detail page, render the client sidebar
+  if (isClientDetailPage && clientId && currentClient) {
+    // Safely handle feature toggles with proper type casting
+    const clientToggles = (currentClient.featureToggles || {}) as any;
+    
+    const featureToggles = {
+      logoSystem: typeof clientToggles.logoSystem === 'boolean' ? clientToggles.logoSystem : defaultFeatureToggles.logoSystem,
+      colorSystem: typeof clientToggles.colorSystem === 'boolean' ? clientToggles.colorSystem : defaultFeatureToggles.colorSystem,
+      typeSystem: typeof clientToggles.typeSystem === 'boolean' ? clientToggles.typeSystem : defaultFeatureToggles.typeSystem,
+      userPersonas: typeof clientToggles.userPersonas === 'boolean' ? clientToggles.userPersonas : defaultFeatureToggles.userPersonas,
+      inspiration: typeof clientToggles.inspiration === 'boolean' ? clientToggles.inspiration : defaultFeatureToggles.inspiration
+    };
+    
+    return (
+      <ClientSidebar
+        clientId={clientId}
+        clientName={currentClient.name}
+        featureToggles={featureToggles}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+    );
+  }
 
+  // Otherwise, render the standard navigation sidebar
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
-      <div className="p-4 border-b flex justify-between items-center">
+      <div className="p-4 flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
         <Button 
           variant="ghost" 

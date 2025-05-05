@@ -1,11 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useParams } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { LogoManager } from "@/components/brand/logo-manager";
 import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
 import {
@@ -13,10 +12,44 @@ import {
   useClientsQuery,
   useClientPersonasById,
 } from "@/lib/queries/clients";
+import { useEffect, useState } from "react";
 
 export default function ClientDetails() {
   const { id } = useParams();
   const clientId = id ? parseInt(id) : null;
+  const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<string>("logos");
+
+  // Get the active tab from the sidebar through URL query params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, []);
+
+  // Listen for tab changes from the sidebar
+  useEffect(() => {
+    // This function will be called from the sidebar
+    const handleTabChange = (e: CustomEvent) => {
+      if (e.detail && e.detail.tab) {
+        console.log('Received tab change event:', e.detail.tab);
+        setActiveTab(e.detail.tab);
+      }
+    };
+
+    window.addEventListener('client-tab-change', handleTabChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('client-tab-change', handleTabChange as EventListener);
+    };
+  }, []);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('Current active tab:', activeTab);
+  }, [activeTab]);
 
   if (!clientId || isNaN(clientId)) {
     return (
@@ -84,134 +117,123 @@ export default function ClientDetails() {
     assets.filter((asset) => asset.category === "color") || [];
   const fontAssets = assets.filter((asset) => asset.category === "font") || [];
 
-  return (
-    <div className="p-8">
-      <div className="flex items-center gap-4 mb-8">
-        <Link href="/clients">
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <h1 className="text-4xl font-bold">{client.name}</h1>
+  // Read feature toggles from client data
+  const featureToggles = client.featureToggles || {
+    logoSystem: true,
+    colorSystem: true,
+    typeSystem: true,
+    userPersonas: true,
+    inspiration: true,
+  };
+
+  const anyFeatureEnabled = Object.values(featureToggles).some(
+    (value) => value === true,
+  );
+
+  if (!anyFeatureEnabled) {
+    return (
+      <div className="p-8 pt-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>All Features Disabled</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>
+              All features are currently disabled for this client. Enable
+              features in the client settings.
+            </p>
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
 
-      {/* Get default tab based on available features */}
-      {(() => {
-        // Read feature toggles from client data
-        const featureToggles = client.featureToggles || {
-          logoSystem: true,
-          colorSystem: true,
-          typeSystem: true,
-          userPersonas: true,
-          inspiration: true,
-        };
-
-        // Determine which tab should be default (first enabled one)
-        let defaultTab = "logos";
-        if (!featureToggles.logoSystem) {
-          if (featureToggles.colorSystem) defaultTab = "colors";
-          else if (featureToggles.typeSystem) defaultTab = "typography";
-          else if (featureToggles.userPersonas) defaultTab = "personas";
-          else if (featureToggles.inspiration) defaultTab = "inspiration";
-        }
-
-        const anyFeatureEnabled = Object.values(featureToggles).some(
-          (value) => value === true,
+  // Render the content based on activeTab
+  const renderContent = () => {
+    switch (activeTab) {
+      case "logos":
+        return featureToggles.logoSystem ? (
+          <LogoManager clientId={clientId} logos={logoAssets} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Disabled</CardTitle>
+            </CardHeader>
+            <CardContent>Logo System feature is disabled for this client.</CardContent>
+          </Card>
         );
-
-        if (!anyFeatureEnabled) {
-          return (
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>All Features Disabled</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>
-                  All features are currently disabled for this client. Enable
-                  features in the client settings.
-                </p>
-              </CardContent>
-            </Card>
-          );
-        }
-
+      
+      case "colors":
+        return featureToggles.colorSystem ? (
+          <ColorManager clientId={clientId} colors={colorAssets} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Disabled</CardTitle>
+            </CardHeader>
+            <CardContent>Color System feature is disabled for this client.</CardContent>
+          </Card>
+        );
+      
+      case "typography":
+        return featureToggles.typeSystem ? (
+          <FontManager clientId={clientId} fonts={fontAssets} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Disabled</CardTitle>
+            </CardHeader>
+            <CardContent>Typography System feature is disabled for this client.</CardContent>
+          </Card>
+        );
+      
+      case "personas":
+        return featureToggles.userPersonas ? (
+          <PersonaManager clientId={clientId} personas={personas} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Disabled</CardTitle>
+            </CardHeader>
+            <CardContent>User Personas feature is disabled for this client.</CardContent>
+          </Card>
+        );
+      
+      case "inspiration":
+        return featureToggles.inspiration ? (
+          <InspirationBoard clientId={clientId} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Disabled</CardTitle>
+            </CardHeader>
+            <CardContent>Inspiration Board feature is disabled for this client.</CardContent>
+          </Card>
+        );
+      
+      default:
+        // Find first enabled tab
+        if (featureToggles.logoSystem) return <LogoManager clientId={clientId} logos={logoAssets} />;
+        if (featureToggles.colorSystem) return <ColorManager clientId={clientId} colors={colorAssets} />;
+        if (featureToggles.typeSystem) return <FontManager clientId={clientId} fonts={fontAssets} />;
+        if (featureToggles.userPersonas) return <PersonaManager clientId={clientId} personas={personas} />;
+        if (featureToggles.inspiration) return <InspirationBoard clientId={clientId} />;
+        
         return (
-          <Tabs defaultValue={defaultTab} className="space-y-6">
-            <TabsList className="bg-card w-full justify-start border-b rounded-none h-12 p-0">
-              {featureToggles.logoSystem && (
-                <TabsTrigger
-                  value="logos"
-                  className="data-[state=active]:bg-background rounded-none h-full px-6"
-                >
-                  Logo System
-                </TabsTrigger>
-              )}
-              {featureToggles.colorSystem && (
-                <TabsTrigger
-                  value="colors"
-                  className="data-[state=active]:bg-background rounded-none h-full px-6"
-                >
-                  Colors
-                </TabsTrigger>
-              )}
-              {featureToggles.typeSystem && (
-                <TabsTrigger
-                  value="typography"
-                  className="data-[state=active]:bg-background rounded-none h-full px-6"
-                >
-                  Typography
-                </TabsTrigger>
-              )}
-              {featureToggles.userPersonas && (
-                <TabsTrigger
-                  value="personas"
-                  className="data-[state=active]:bg-background rounded-none h-full px-6"
-                >
-                  User Personas
-                </TabsTrigger>
-              )}
-              {featureToggles.inspiration && (
-                <TabsTrigger
-                  value="inspiration"
-                  className="data-[state=active]:bg-background rounded-none h-full px-6"
-                >
-                  Inspiration
-                </TabsTrigger>
-              )}
-            </TabsList>
-
-            {featureToggles.logoSystem && (
-              <TabsContent value="logos">
-                <LogoManager clientId={clientId} logos={logoAssets} />
-              </TabsContent>
-            )}
-
-            {featureToggles.colorSystem && (
-              <TabsContent value="colors">
-                <ColorManager clientId={clientId} colors={colorAssets} />
-              </TabsContent>
-            )}
-
-            {featureToggles.typeSystem && (
-              <TabsContent value="typography">
-                <FontManager clientId={clientId} fonts={fontAssets} />
-              </TabsContent>
-            )}
-
-            {featureToggles.userPersonas && (
-              <TabsContent value="personas">
-                <PersonaManager clientId={clientId} personas={personas} />
-              </TabsContent>
-            )}
-
-            {featureToggles.inspiration && (
-              <TabsContent value="inspiration">
-                <InspirationBoard clientId={clientId} />
-              </TabsContent>
-            )}
-          </Tabs>
+          <Card>
+            <CardHeader>
+              <CardTitle>No Active Tab</CardTitle>
+            </CardHeader>
+            <CardContent>Please select a tab from the sidebar.</CardContent>
+          </Card>
         );
-      })()}
+    }
+  };
+
+  return (
+    <div className="p-8 pt-4">
+      <h1 className="text-3xl font-bold mb-8">{client.name}</h1>
+      {renderContent()}
     </div>
   );
 }
