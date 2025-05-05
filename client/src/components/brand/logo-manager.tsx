@@ -275,8 +275,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete }: {
       {/* 1/4 column - Logo information */}
       <div className="space-y-6">
         <div>
-          <h4 className="text-lg font-semibold mb-2">{logo.name}</h4>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-muted-foreground mb-4">
             {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
           </p>
         </div>
@@ -432,11 +431,6 @@ function LogoSection({
           <h3 className="text-xl font-semibold mb-1">
             {type.charAt(0).toUpperCase() + type.slice(1)} Logo
           </h3>
-          <p className="text-sm text-muted-foreground">
-            {type === "horizontal" && "Primary logo lockup that balances brand mark and wordmark for optimal visibility"}
-            {type === "vertical" && "Stacked version with mark above text"}
-            {type === "square" && "Compact version optimized for small spaces"}
-          </p>
         </div>
         
         {!uploadMode && !hasLogos && user && user.role !== UserRole.STANDARD && (
