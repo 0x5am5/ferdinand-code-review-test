@@ -195,6 +195,21 @@ export function registerAssetRoutes(app: Express) {
             ...req.body,
             clientId,
           });
+        } else if (req.body.category === "logo") {
+          // For logo updates, we'll pass through the data as-is
+          parsed = { success: true, data: {
+            ...req.body,
+            clientId,
+            category: "logo",
+            data: JSON.stringify({
+              type: req.body.type,
+              format: req.body.file?.originalname?.split('.').pop()?.toLowerCase() || 'png',
+              hasDarkVariant: req.body.hasDarkVariant || false,
+              isDarkVariant: req.body.isDarkVariant || false
+            }),
+            fileData: req.files?.[0]?.buffer?.toString('base64'),
+            mimeType: req.files?.[0]?.mimetype
+          }};
         } else {
           return res.status(400).json({ message: "Invalid asset category" });
         }
