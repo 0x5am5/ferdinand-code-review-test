@@ -39,6 +39,8 @@ interface FileUploadProps {
   type: string;
   clientId: number;
   onSuccess: () => void;
+  isDarkVariant?: boolean;
+  parentLogoId?: number;
 }
 
 // Main detailed writeups for each logo type
@@ -89,9 +91,28 @@ function FileUpload({ type, clientId, onSuccess }: FileUploadProps) {
 
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`); // Auto-generate name
+      const name = isDarkVariant 
+        ? `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`
+        : `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`;
+      
+      formData.append("name", name);
       formData.append("type", type);
       formData.append("category", "logo");
+      
+      if (isDarkVariant && parentLogoId) {
+        formData.append("data", JSON.stringify({
+          type,
+          format: selectedFile.name.split('.').pop()?.toLowerCase(),
+          isDarkVariant: true,
+          parentLogoId
+        }));
+      } else {
+        formData.append("data", JSON.stringify({
+          type,
+          format: selectedFile.name.split('.').pop()?.toLowerCase(),
+          hasDarkVariant: false
+        }));
+      }
 
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: "POST",
@@ -378,14 +399,33 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete }: {
             <div className="text-center">
               <FileType className="h-10 w-10 text-muted-foreground/30 mb-3 mx-auto" />
               <p className="text-muted-foreground mb-4">No dark variant available</p>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => {/* TODO: Implement dark variant upload */}}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Dark Variant
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Dark Variant
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Upload Dark Variant</DialogTitle>
+                    <DialogDescription>
+                      Upload a dark version of this logo for use on dark backgrounds.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <FileUpload 
+                    type={type} 
+                    clientId={clientId}
+                    isDarkVariant={true}
+                    parentLogoId={logo.id}
+                    onSuccess={() => {
+                      queryClient.invalidateQueries({
+                        queryKey: [`/api/clients/${clientId}/assets`],
+                      });
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
             </div>
           ) : (
             <img
