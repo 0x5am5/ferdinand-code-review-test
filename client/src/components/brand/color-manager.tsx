@@ -427,8 +427,8 @@ function ColorSection({
         )}
       </div>
       {colors.length > 0 ? (
-        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-          <div className="flex w-max space-x-4 p-4">
+        <ScrollArea className="w-full whitespace-nowrap rounded-md">
+          <div className="flex w-max space-x-6">
             <AnimatePresence>
               {colors.map((color) => (
                 <ColorChip
