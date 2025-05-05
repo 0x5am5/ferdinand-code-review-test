@@ -92,7 +92,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 
       const formData = new FormData();
       formData.append("file", selectedFile);
-      
+
       // Use the same name for dark variant to replace existing logo
       formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
       formData.append("type", type);
@@ -420,7 +420,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     queryKey: [`/api/clients/${clientId}/assets`],
                   });
                 }}
-                className="w-full h-full"
               />
             </div>
           ) : (
