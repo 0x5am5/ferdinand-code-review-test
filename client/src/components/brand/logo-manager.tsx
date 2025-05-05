@@ -433,7 +433,7 @@ function LogoSection({
             {type.charAt(0).toUpperCase() + type.slice(1)} Logo
           </h3>
           <p className="text-sm text-muted-foreground">
-            {type === "horizontal" && "Wide format logo with mark and text side by side"}
+            {type === "horizontal" && "Primary logo lockup that balances brand mark and wordmark for optimal visibility"}
             {type === "vertical" && "Stacked version with mark above text"}
             {type === "square" && "Compact version optimized for small spaces"}
           </p>
