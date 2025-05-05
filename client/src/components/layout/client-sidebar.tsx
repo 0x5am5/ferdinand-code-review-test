@@ -141,8 +141,9 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
               <Button
                 variant="ghost"
                 className="flex items-center text-muted-foreground gap-1 w-full justify-start"
-                onClick={() => {
-                  navigate("/dashboard");
+                onClick={(e) => {
+                  e.preventDefault();
+                  setLocation("/dashboard");
                 }}
               >
                 <ArrowLeft className="h-4 w-4" />
