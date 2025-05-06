@@ -102,36 +102,23 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant = fa
       formData.append("category", "logo");
       formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
 
+      formData.append("data", JSON.stringify({
+        type,
+        format: fileFormat,
+        hasDarkVariant: false
+      }));
+
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: "POST",
         body: formData,
       });
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to update logo");
-        }
-
-        return await response.json();
-      } else {
-        formData.append("data", JSON.stringify({
-          type,
-          format: fileFormat,
-          hasDarkVariant: false
-        }));
-
-        const response = await fetch(`/api/clients/${clientId}/assets`, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to upload logo");
-        }
-
-        return await response.json();
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to upload logo");
       }
+
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
