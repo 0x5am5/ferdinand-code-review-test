@@ -26,6 +26,8 @@ export const FILE_FORMATS = {
   SVG: "svg",
   JPG: "jpg",
   JPEG: "jpeg",
+  PDF: "pdf",
+  AI: "ai",
 } as const;
 
 export const ColorCategory = {
@@ -139,6 +141,20 @@ export const brandAssets = pgTable("brand_assets", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const convertedAssets = pgTable("converted_assets", {
+  id: serial("id").primaryKey(),
+  originalAssetId: integer("original_asset_id")
+    .notNull()
+    .references(() => brandAssets.id),
+  format: text("format", {
+    enum: Object.values(FILE_FORMATS),
+  }).notNull(),
+  fileData: text("file_data").notNull(),
+  mimeType: text("mime_type").notNull(),
+  isDarkVariant: boolean("is_dark_variant").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const userPersonas = pgTable("user_personas", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id")
@@ -217,6 +233,17 @@ export const userClientsRelations = relations(userClients, ({ one }) => ({
   client: one(clients, {
     fields: [userClients.clientId],
     references: [clients.id],
+  }),
+}));
+
+export const brandAssetsRelations = relations(brandAssets, ({ many }) => ({
+  convertedAssets: many(convertedAssets),
+}));
+
+export const convertedAssetsRelations = relations(convertedAssets, ({ one }) => ({
+  originalAsset: one(brandAssets, {
+    fields: [convertedAssets.originalAssetId],
+    references: [brandAssets.id],
   }),
 }));
 
@@ -356,6 +383,14 @@ export const insertInvitationSchema = createInsertSchema(invitations)
     clientIds: z.array(z.number()).optional(),
   });
 
+export const insertConvertedAssetSchema = createInsertSchema(convertedAssets)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
+    fileData: z.string(),
+    mimeType: z.string(),
+  });
+
 export const updateClientOrderSchema = z.object({
   clientOrders: z.array(
     z.object({
@@ -369,6 +404,7 @@ export const updateClientOrderSchema = z.object({
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
 export type BrandAsset = typeof brandAssets.$inferSelect;
+export type ConvertedAsset = typeof convertedAssets.$inferSelect;
 export type UserPersona = typeof userPersonas.$inferSelect;
 export type UserClient = typeof userClients.$inferSelect;
 export type InspirationSection = typeof inspirationSections.$inferSelect;
@@ -381,6 +417,7 @@ export type InsertClient = z.infer<typeof insertClientSchema>;
 export type InsertBrandAsset = z.infer<typeof insertBrandAssetSchema>;
 export type InsertFontAsset = z.infer<typeof insertFontAssetSchema>;
 export type InsertColorAsset = z.infer<typeof insertColorAssetSchema>;
+export type InsertConvertedAsset = z.infer<typeof insertConvertedAssetSchema>;
 export type InsertUserPersona = z.infer<typeof insertUserPersonaSchema>;
 export type InsertUserClient = z.infer<typeof insertUserClientSchema>;
 export type InsertInspirationSection = z.infer<

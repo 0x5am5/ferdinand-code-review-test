@@ -4,8 +4,9 @@ import {
   type InspirationSection, type InspirationImage, type Invitation,
   type InsertInspirationSection, type InsertInspirationImage, type InsertInvitation,
   type InsertFontAsset, type InsertColorAsset, type UserClient,
+  type ConvertedAsset, type InsertConvertedAsset,
   users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations, userClients,
-  UserRole
+  convertedAssets, UserRole
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, inArray } from "drizzle-orm";
@@ -26,6 +27,10 @@ export interface IStorage {
   createAsset(asset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset>;
   updateAsset(id: number, asset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset>;
   deleteAsset(id: number): Promise<void>;
+  // Converted assets methods
+  getConvertedAssets(originalAssetId: number): Promise<ConvertedAsset[]>;
+  createConvertedAsset(convertedAsset: InsertConvertedAsset): Promise<ConvertedAsset>;
+  getConvertedAsset(originalAssetId: number, format: string, isDarkVariant?: boolean): Promise<ConvertedAsset | undefined>;
   // Add persona operations
   getClientPersonas(clientId: number): Promise<UserPersona[]>;
   getPersona(id: number): Promise<UserPersona | undefined>;
@@ -128,7 +133,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAsset(id: number): Promise<void> {
+    // First, delete any converted assets related to this asset
+    await db.delete(convertedAssets).where(eq(convertedAssets.originalAssetId, id));
+    // Then delete the original asset
     await db.delete(brandAssets).where(eq(brandAssets.id, id));
+  }
+  
+  // Converted assets implementations
+  async getConvertedAssets(originalAssetId: number): Promise<ConvertedAsset[]> {
+    return await db
+      .select()
+      .from(convertedAssets)
+      .where(eq(convertedAssets.originalAssetId, originalAssetId));
+  }
+  
+  async createConvertedAsset(convertedAsset: InsertConvertedAsset): Promise<ConvertedAsset> {
+    const [asset] = await db
+      .insert(convertedAssets)
+      .values(convertedAsset)
+      .returning();
+    return asset;
+  }
+  
+  async getConvertedAsset(originalAssetId: number, format: string, isDarkVariant: boolean = false): Promise<ConvertedAsset | undefined> {
+    const [asset] = await db
+      .select()
+      .from(convertedAssets)
+      .where(eq(convertedAssets.originalAssetId, originalAssetId) 
+          && eq(convertedAssets.format, format) 
+          && eq(convertedAssets.isDarkVariant, isDarkVariant));
+    return asset;
   }
 
   // Implement persona operations

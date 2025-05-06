@@ -98,6 +98,18 @@ export default function Dashboard() {
 
   const { toast } = useToast();
 
+  // Define form before any useEffect hooks that use it
+  const form = useForm({
+    resolver: zodResolver(insertClientSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      website: "",
+      address: "",
+      phone: "",
+    },
+  });
+
   const { data: clients, isLoading: clientsIsLoading } = useClientsQuery();
   const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
   const updateClient = useUpdateClientMutation();
@@ -128,17 +140,6 @@ export default function Dashboard() {
       setOrderedClients(clients);
     }
   }, [clients]);
-
-  const form = useForm({
-    resolver: zodResolver(insertClientSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      website: "",
-      address: "",
-      phone: "",
-    },
-  });
 
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
