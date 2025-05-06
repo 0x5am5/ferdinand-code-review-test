@@ -43,6 +43,8 @@ interface FileUploadProps {
   parentLogoId?: number;
   queryClient: any;
   className?: string;
+  buttonOnly?: boolean;
+  children?: React.ReactNode;
 }
 
 // Main detailed writeups for each logo type
@@ -79,7 +81,7 @@ function parseBrandAssetData(logo: BrandAsset) {
 }
 
 // Drag and drop file upload component
-function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, parentLogoId }: FileUploadProps) {
+function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, parentLogoId, buttonOnly = false, children, className }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
@@ -218,6 +220,40 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
     setSelectedFile(file);
   }, [toast]);
 
+  // If in button-only mode, render just a button
+  if (buttonOnly) {
+    return (
+      <label className="cursor-pointer">
+        <Input
+          type="file"
+          accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+          onChange={(e) => {
+            handleFileChange(e);
+            if (e.target.files?.[0]) {
+              createLogo.mutate();
+            }
+          }}
+          className="hidden"
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className={className}
+          type="button"
+          onClick={(e) => {
+            const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file"]');
+            if (fileInput) {
+              (fileInput as HTMLInputElement).click();
+            }
+          }}
+        >
+          {children}
+        </Button>
+      </label>
+    );
+  }
+
+  // Otherwise render the full drag-and-drop interface
   return (
     <div className="col-span-3 flex flex-col">
       <div 
@@ -275,7 +311,12 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
               <Button
                 variant="outline"
                 type="button"
-                onClick={() => document.querySelector('input[type="file"]')?.click()}
+                onClick={(e) => {
+                  const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file"]');
+                  if (fileInput) {
+                    (fileInput as HTMLInputElement).click();
+                  }
+                }}
               >
                 Browse Files
               </Button>
@@ -291,7 +332,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   logo: BrandAsset, 
   imageUrl: string, 
   parsedData: any,
-  onDelete: (logoId: number) => void,
+  onDelete: (logoId: number, variant: 'light' | 'dark') => void,
   clientId: number,
   queryClient: any
 }) {
@@ -376,7 +417,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     Cancel
                   </AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={() => onDelete(logo.id)}
+                    onClick={() => onDelete(logo.id, 'light')}
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     Delete
@@ -432,7 +473,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           ) : (
             <div className="relative">
               <img
-                src={variant === 'dark' && parsedData.darkVariant ? 
+                src={variant === 'dark' && parsedData.hasDarkVariant ? 
                   `/api/assets/${logo.id}/file?variant=dark` : 
                   imageUrl}
                 alt={logo.name}
@@ -493,7 +534,7 @@ function LogoSection({
   type: string, 
   logos: BrandAsset[],
   clientId: number,
-  onDeleteLogo: (logoId: number) => void,
+  onDeleteLogo: (logoId: number, variant: 'light' | 'dark') => void,
   queryClient: any
 }) {
   const { user = null } = useAuth();
@@ -682,7 +723,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
           type={type}
           logos={typeLogos}
           clientId={clientId}
-          onDeleteLogo={(logoId) => deleteLogo.mutate(logoId)}
+          onDeleteLogo={(logoId, variant) => deleteLogo.mutate({ logoId, variant })}
           queryClient={queryClient}
         />
       ))}
