@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 interface ClientSidebarProps {
   clientId: number;
   clientName: string;
-  logos?: any[];
+  logos?: { id: number; data: string }[];
   featureToggles: {
     logoSystem: boolean;
     colorSystem: boolean;
@@ -34,6 +34,7 @@ interface ClientSidebarProps {
 export const ClientSidebar: FC<ClientSidebarProps> = ({
   clientId,
   clientName,
+  logos = [], // Added default value for logos
   featureToggles,
   activeTab = "logos",
   onTabChange,
@@ -75,18 +76,18 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   ];
 
   const enabledTabs = tabs.filter(tab => tab.enabled);
-  
+
   // Handle tab change and dispatch custom event for client page
   const handleTabChange = (tabId: string) => {
     // Call the parent's callback
     onTabChange(tabId);
-    
+
     // Dispatch a custom event that the client page can listen for
     const event = new CustomEvent('client-tab-change', { 
       detail: { tab: tabId } 
     });
     window.dispatchEvent(event);
-    
+
     // Update URL without page reload
     const url = new URL(window.location.href);
     url.searchParams.set('tab', tabId);
@@ -114,7 +115,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           <h2 className="font-bold">{clientName}</h2>
         )}
       </div>
-      
+
       <div className="px-4 py-2">
         <Button
           variant="outline"
@@ -164,11 +165,11 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                 <span>All Brands</span>
               </Button>
             </div>
-            
+
           </div>
-          
+
           <Separator className="mb-2" />
-          
+
           <ScrollArea className="flex-1">
             <div className="px-2 py-2">
               <div className="mb-2 px-3">
@@ -200,7 +201,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           </ScrollArea>
         </div>
       )}
-      
+
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
           <p className="mb-1">Brand last edited:</p>
