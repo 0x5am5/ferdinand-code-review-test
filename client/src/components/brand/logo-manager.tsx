@@ -439,32 +439,15 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 alt={logo.name}
                 className="max-w-full max-h-[250px] object-contain"
                 style={{ 
-                filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
-              }}
-              onError={(e) => {
-                console.error("Error loading image:", imageUrl);
-                e.currentTarget.src =
-                  'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
-              }}
-            />
-            <div className="absolute top-2 right-2 flex gap-2">
-              <FileUpload
-                type={type}
-                clientId={clientId}
-                isDarkVariant={variant === 'dark'}
-                parentLogoId={logo.id}
-                queryClient={queryClient}
-                onSuccess={() => {
-                  queryClient.invalidateQueries({
-                    queryKey: [`/api/clients/${clientId}/assets`],
-                  });
+                  filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
                 }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
-                buttonOnly={true}
-              >
-                <Upload className="h-4 w-4" />
-              </FileUpload>
-              {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
+                onError={(e) => {
+                  console.error("Error loading image:", imageUrl);
+                  e.currentTarget.src =
+                    'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
+                }}
+              />
+              <div className="absolute top-2 right-2 flex gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -473,15 +456,11 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              )}
+              </div>
             </div>
-          </div>
           )}
         </div>
       </div>
-    </div>
-  );
-}
 
 // LogoSection component for each type of logo (used for both empty and populated states)
 function LogoSection({ 
