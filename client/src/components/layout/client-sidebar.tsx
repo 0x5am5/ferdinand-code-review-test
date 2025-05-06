@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 interface ClientSidebarProps {
   clientId: number;
   clientName: string;
+  logos?: any[];
   featureToggles: {
     logoSystem: boolean;
     colorSystem: boolean;
@@ -95,7 +96,23 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
-        <h2 className="font-bold">{clientName}</h2>
+        {logos?.some(logo => {
+          const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+          return data?.type === 'horizontal';
+        }) ? (
+          <div className="h-8">
+            <img 
+              src={`/api/assets/${logos.find(logo => {
+                const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
+                return data?.type === 'horizontal';
+              })?.id}/file`}
+              alt={clientName}
+              className="h-full w-auto object-contain"
+            />
+          </div>
+        ) : (
+          <h2 className="font-bold">{clientName}</h2>
+        )}
       </div>
       
       <div className="px-4 py-2">
