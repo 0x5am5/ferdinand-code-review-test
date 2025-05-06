@@ -340,16 +340,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   const type = parsedData.type;
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
 
-  // Available formats for this logo
-  const availableFormats = [
-    { id: `current-${parsedData.format}`, format: parsedData.format, current: true },
-    { id: "svg", format: "svg", available: parsedData.format === "svg" },
-    { id: "png", format: "png", available: false },
-    { id: "jpg", format: "jpg", available: false },
-    { id: "ai", format: "ai", available: false },
-    { id: "pdf", format: "pdf", available: false }
-  ];
-
   return (
     <div className="grid grid-cols-4 gap-8 mb-8">
       {/* 1/4 column - Logo information */}
@@ -360,79 +350,10 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           </p>
         </div>
 
+        {/* Light/Dark toggle moved here */}
         <div>
-          <h5 className="text-sm font-medium flex items-center">
-            <FileType className="h-4 w-4 mr-2" />
-            Available Formats
-          </h5>
-          <div className="space-y-2 mt-3">
-            {availableFormats.map((item) => (
-              <div key={item.id} className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className={`text-xs uppercase font-medium ${item.current || item.available ? 'text-foreground' : 'text-muted-foreground/60'}`}>
-                    {item.format}
-                  </span>
-                  {item.current && (
-                    <span className="ml-2 px-1.5 py-0.5 rounded-sm bg-primary/10 text-primary text-[10px] uppercase font-medium">Current</span>
-                  )}
-                </div>
-
-                {(item.current || item.available) ? (
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
-                    <a href={imageUrl} download={`${logo.name}.${item.format}`}>
-                      <Download className="h-3.5 w-3.5" />
-                    </a>
-                  </Button>
-                ) : (
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled>
-                    <Download className="h-3.5 w-3.5 text-muted-foreground/30" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {user && user.role !== UserRole.STANDARD && (
-          <div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" className="w-full">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Logo
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Delete Logo
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this logo?
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => onDelete(logo.id, 'light')}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        )}
-      </div>
-
-      {/* 3/4 column - Logo preview with light/dark toggle */}
-      <div className="col-span-3 flex flex-col">
-        <div className="mb-4 self-end">
-          <Tabs value={variant} className="w-[200px]">
+          <h5 className="text-sm font-medium mb-3">Display Mode</h5>
+          <Tabs value={variant} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="light" onClick={() => setVariant('light')}>
                 <Sun className="h-4 w-4 mr-2" />
@@ -445,6 +366,37 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             </TabsList>
           </Tabs>
         </div>
+
+        {/* File name and download section */}
+        <div>
+          <h5 className="text-sm font-medium flex items-center">
+            <FileType className="h-4 w-4 mr-2" />
+            File Details
+          </h5>
+          <div className="space-y-2 mt-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="text-sm font-medium">
+                  {logo.name} {variant === 'dark' ? '- Dark' : ''}
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
+                <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                  `/api/assets/${logo.id}/file?variant=dark` : imageUrl} 
+                  download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.${parsedData.format}`}>
+                  <Download className="h-4 w-4" />
+                </a>
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Format: {parsedData.format.toUpperCase()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3/4 column - Logo preview */}
+      <div className="col-span-3 flex flex-col">
 
         <div 
           className={`rounded-lg pt-[15vh] pb-[15vh] flex items-center justify-center ${
@@ -488,27 +440,58 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
               }}
             />
             <div className="absolute top-2 right-2 flex gap-2">
-              <FileUpload
-                type={type}
-                clientId={clientId}
-                isDarkVariant={variant === 'dark'}
-                parentLogoId={logo.id}
-                queryClient={queryClient}
-                onSuccess={() => {
-                  queryClient.invalidateQueries({
-                    queryKey: [`/api/clients/${clientId}/assets`],
-                  });
-                }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
-                buttonOnly={true}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                asChild
               >
-                <Upload className="h-4 w-4" />
-              </FileUpload>
+                <label className="cursor-pointer">
+                  <Input
+                    type="file"
+                    accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        const createUpload = async () => {
+                          const formData = new FormData();
+                          formData.append("file", e.target.files![0]);
+                          formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+                          formData.append("type", type);
+                          formData.append("category", "logo");
+                          
+                          if (variant === 'dark') {
+                            // Update with dark variant
+                            const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                              method: "PATCH",
+                              body: formData,
+                            });
+                          } else {
+                            // Replace light variant
+                            const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
+                              method: "PATCH",
+                              body: formData,
+                            });
+                          }
+                          
+                          queryClient.invalidateQueries({
+                            queryKey: [`/api/clients/${clientId}/assets`],
+                          });
+                        };
+                        
+                        createUpload();
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <Upload className="h-4 w-4" />
+                </label>
+              </Button>
+              
               {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon"
+                  className="h-8 w-8 bg-background/80 backdrop-blur-sm"
                   onClick={() => onDelete(logo.id, variant)}
                 >
                   <Trash2 className="h-4 w-4" />
