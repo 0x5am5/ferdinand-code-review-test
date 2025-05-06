@@ -209,11 +209,9 @@ export function registerAssetRoutes(app: Express) {
             data: JSON.stringify({
               ...existingData,
               hasDarkVariant: true,
-              darkVariant: {
-                fileData: files[0].buffer.toString('base64'),
-                mimeType: files[0].mimetype,
-                format: files[0].originalname.split('.').pop()?.toLowerCase() || 'png'
-              }
+              darkVariantFileData: files[0].buffer.toString('base64'),
+              darkVariantMimeType: files[0].mimetype,
+              darkVariantFormat: files[0].originalname.split('.').pop()?.toLowerCase() || 'png'
             })
           }};
         } else {
@@ -260,8 +258,10 @@ export function registerAssetRoutes(app: Express) {
 
         if (variant === 'dark' && asset.category === 'logo') {
           // Only remove the dark variant
-          const data = JSON.parse(asset.data);
-          delete data.darkVariant;
+          const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+          delete data.darkVariantFileData;
+          delete data.darkVariantMimeType;
+          delete data.darkVariantFormat;
           data.hasDarkVariant = false;
           
           await storage.updateAsset(assetId, {
@@ -300,12 +300,27 @@ export function registerAssetRoutes(app: Express) {
   app.get("/api/assets/:assetId/file", async (req, res: Response) => {
     try {
       const assetId = parseInt(req.params.assetId);
+      const variant = req.query.variant as string;
       const asset = await storage.getAsset(assetId);
 
       if (!asset || !asset.fileData) {
         return res.status(404).json({ message: "Asset not found" });
       }
 
+      // For logos with dark variants, serve the appropriate file
+      if (variant === 'dark' && asset.category === 'logo') {
+        const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+        if (data.darkVariantFileData) {
+          res.setHeader(
+            "Content-Type",
+            asset.mimeType || "application/octet-stream",
+          );
+          const buffer = Buffer.from(data.darkVariantFileData, "base64");
+          return res.send(buffer);
+        }
+      }
+
+      // Default case - serve the main file
       res.setHeader(
         "Content-Type",
         asset.mimeType || "application/octet-stream",
