@@ -432,7 +432,9 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             </div>
           ) : (
             <img
-              src={imageUrl}
+              src={variant === 'dark' && parsedData.darkVariant ? 
+                `/api/assets/${logo.id}/file?variant=dark` : 
+                imageUrl}
               alt={logo.name}
               className="max-w-full max-h-[250px] object-contain"
               style={{ 

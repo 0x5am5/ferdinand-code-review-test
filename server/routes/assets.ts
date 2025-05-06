@@ -209,11 +209,12 @@ export function registerAssetRoutes(app: Express) {
             data: JSON.stringify({
               ...existingData,
               hasDarkVariant: true,
-              isDarkVariant: true,
-              format: files[0].originalname.split('.').pop()?.toLowerCase() || 'png'
-            }),
-            fileData: files[0].buffer.toString('base64'),
-            mimeType: files[0].mimetype
+              darkVariant: {
+                fileData: files[0].buffer.toString('base64'),
+                mimeType: files[0].mimetype,
+                format: files[0].originalname.split('.').pop()?.toLowerCase() || 'png'
+              }
+            })
           }};
         } else {
           return res.status(400).json({ message: "Invalid asset category" });
