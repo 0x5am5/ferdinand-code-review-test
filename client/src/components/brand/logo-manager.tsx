@@ -99,12 +99,13 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
       const fileFormat = selectedFile.name.split('.').pop()?.toLowerCase();
 
       if (isDarkVariant && parentLogoId) {
-        formData.append("data", JSON.stringify({
+        const logoData = {
           type,
           format: fileFormat,
           hasDarkVariant: true,
           isDarkVariant: true
-        }));
+        };
+        formData.append("data", JSON.stringify(logoData));
         formData.append("category", "logo");
         formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
 

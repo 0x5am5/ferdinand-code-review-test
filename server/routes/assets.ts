@@ -202,7 +202,7 @@ export function registerAssetRoutes(app: Express) {
             return res.status(400).json({ message: "No file uploaded" });
           }
 
-          const existingData = JSON.parse(asset.data);
+          const existingData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
           parsed = { success: true, data: {
             ...asset,
             category: "logo",
