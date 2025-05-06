@@ -166,6 +166,7 @@ export function registerAssetRoutes(app: Express) {
   // Update asset endpoint
   app.patch(
     "/api/clients/:clientId/assets/:assetId",
+    upload.any(),
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {
