@@ -131,7 +131,7 @@ export function registerAssetRoutes(app: Express) {
         }
 
         // Default to logo asset
-        const { name, type } = req.body;
+        const { name, type, isDarkVariant } = req.body;
         const files = req.files as Express.Multer.File[];
 
         if (!files || files.length === 0) {
@@ -143,12 +143,14 @@ export function registerAssetRoutes(app: Express) {
 
         const logoAsset = {
           clientId,
-          name,
+          name: isDarkVariant ? `${name} (Dark)` : name,
           category: "logo" as const,
           data: JSON.stringify({
             type,
             format: fileExtension || "png",
             fileName: file.originalname,
+            hasDarkVariant: false,
+            variant: isDarkVariant ? 'dark' : 'light'
           }),
           fileData: file.buffer.toString("base64"),
           mimeType: file.mimetype,

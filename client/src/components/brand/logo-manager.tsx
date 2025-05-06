@@ -79,7 +79,7 @@ function parseBrandAssetData(logo: BrandAsset) {
 }
 
 // Drag and drop file upload component
-function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, parentLogoId }: FileUploadProps) {
+function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant = false }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
@@ -98,21 +98,14 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 
       const fileFormat = selectedFile.name.split('.').pop()?.toLowerCase();
 
-      if (isDarkVariant && parentLogoId) {
-        const logoData = {
-          type,
-          format: fileFormat,
-          hasDarkVariant: true,
-          isDarkVariant: true
-        };
-        formData.append("data", JSON.stringify(logoData));
-        formData.append("category", "logo");
-        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+      formData.append("isDarkVariant", isDarkVariant.toString());
+      formData.append("category", "logo");
+      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
 
-        const response = await fetch(`/api/clients/${clientId}/assets/${parentLogoId}`, {
-          method: "PATCH",
-          body: formData,
-        });
+      const response = await fetch(`/api/clients/${clientId}/assets`, {
+        method: "POST",
+        body: formData,
+      });
 
         if (!response.ok) {
           const error = await response.json();
@@ -291,13 +284,14 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   logo: BrandAsset, 
   imageUrl: string, 
   parsedData: any,
-  onDelete: (logoId: number) => void,
+  onDelete: (logoId: number, variant: 'light' | 'dark') => void,
   clientId: number,
   queryClient: any
 }) {
   const { user = null } = useAuth();
   const type = parsedData.type;
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
+  const fileName = `${type}-logo${variant === 'dark' ? '-dark' : ''}.${parsedData.format}`;
 
   // Available formats for this logo
   const availableFormats = [
@@ -313,18 +307,38 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
     <div className="grid grid-cols-4 gap-8 mb-8">
       {/* 1/4 column - Logo information */}
       <div className="space-y-6">
-        <div>
-          <p className="text-muted-foreground mb-4">
-            {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
-          </p>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-medium">{fileName}</h3>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+            >
+              <a href={imageUrl} download={fileName}>
+                <Download className="h-4 w-4 mr-2" />
+                Download
+              </a>
+            </Button>
+            {user && user.role !== UserRole.STANDARD && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => onDelete(logo.id, variant)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            )}
+          </div>
         </div>
 
         <div>
-          <h5 className="text-sm font-medium flex items-center">
-            <FileType className="h-4 w-4 mr-2" />
-            Available Formats
-          </h5>
-          <div className="space-y-2 mt-3">
+          <p className="text-muted-foreground">
+            {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
+          </p>
+        </div>
             {availableFormats.map((item) => (
               <div key={item.id} className="flex items-center justify-between">
                 <div className="flex items-center">
