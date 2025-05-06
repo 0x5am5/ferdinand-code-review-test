@@ -7,7 +7,7 @@ import {
   brandAssets,
   convertedAssets 
 } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import multer from "multer";
 import { validateClientId } from "server/middlewares/vaildateClientId";
@@ -332,10 +332,10 @@ export function registerAssetRoutes(app: Express) {
                 // Use proper Drizzle ORM query for deleting light variants
                 // We need to use raw SQL because Drizzle doesn't support complex where clauses
                 // Use SQL to delete light variant converted assets
-                await db.execute(`
+                await db.execute(sql`
                   DELETE FROM "converted_assets"
-                  WHERE "original_asset_id" = $1 AND "is_dark_variant" = false
-                `, [asset.id]);
+                  WHERE "original_asset_id" = ${asset.id} AND "is_dark_variant" = false
+                `);
                 console.log(`Deleted light variant converted assets for asset ID ${asset.id}`);
               } catch (deleteError) {
                 console.error("Error deleting existing light variant converted assets:", deleteError);
@@ -422,10 +422,10 @@ export function registerAssetRoutes(app: Express) {
           // Delete converted assets for dark variant using direct SQL
           try {
             // Use parameterized query for safer SQL execution
-            await db.execute(`
+            await db.execute(sql`
               DELETE FROM "converted_assets"
-              WHERE "original_asset_id" = $1 AND "is_dark_variant" = true
-            `, [assetId]);
+              WHERE "original_asset_id" = ${assetId} AND "is_dark_variant" = true
+            `);
             console.log(`Deleted dark variant converted assets for asset ID ${assetId}`);
           } catch (error) {
             console.error("Error deleting converted assets for dark variant:", error);

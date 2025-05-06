@@ -217,24 +217,32 @@ export default function Dashboard() {
     }
   }, [editingClient, form]);
 
-  const filteredAndSortedClients = orderedClients
-    .filter(
-      (client: Client) =>
-        client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-    )
-    .sort((a, b) => {
-      if (sortOrder === "custom") {
-        // Use the current order for custom sorting
-        return 0;
-      }
-      if (sortOrder === "asc") {
-        return a.name.localeCompare(b.name);
-      }
-      return b.name.localeCompare(a.name);
-    });
-
-  if (clientsIsLoading) {
+  // Calculate filtered and sorted clients list
+  const getFilteredAndSortedClients = () => {
+    return orderedClients
+      .filter(
+        (client: Client) =>
+          client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+      .sort((a, b) => {
+        if (sortOrder === "custom") {
+          // Use the current order for custom sorting
+          return 0;
+        }
+        if (sortOrder === "asc") {
+          return a.name.localeCompare(b.name);
+        }
+        return b.name.localeCompare(a.name);
+      });
+  };
+  
+  // Define the loading and filtered clients outside any conditional returns
+  const isLoading = clientsIsLoading;
+  const filteredAndSortedClients = getFilteredAndSortedClients();
+  
+  // Render loading spinner if data is still loading
+  if (isLoading) {
     return (
       <div className="p-8 flex justify-center items-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
