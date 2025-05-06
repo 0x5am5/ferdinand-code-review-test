@@ -442,6 +442,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
 
       {/* 3/4 column - Logo preview */}
       <div className="col-span-3 flex flex-col">
+
         <div 
           className={`rounded-lg pt-[15vh] pb-[15vh] flex items-center justify-center ${
             variant === 'light' 
@@ -468,30 +469,22 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             </div>
           ) : (
             <div className="relative">
-              {parsedData.format === 'svg' ? (
-                <div className="relative svg-container">
-                  {/* Using iframe for SVG to better isolate and prevent issues */}
-                  <iframe
-                    src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                      `/api/assets/${logo.id}/file?variant=dark` : 
-                      imageUrl}
-                    className="max-w-full max-h-[250px] border-0"
-                    style={{ background: 'transparent' }}
-                    onError={(e) => {
-                      console.error("Error loading SVG:", imageUrl);
-                      // In case the iframe fails, we'll try to fallback to img
-                      const container = e.currentTarget.parentElement;
-                      if (container) {
-                        const fallbackImg = document.createElement('img');
-                        fallbackImg.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
-                        fallbackImg.alt = logo.name || "SVG Logo";
-                        fallbackImg.className = "max-w-full max-h-[250px]";
-                        container.innerHTML = '';
-                        container.appendChild(fallbackImg);
-                      }
-                    }}
+              {/* SVG needs special handling to ensure it displays properly */}
+              {(parsedData.format === 'svg') ? (
+                <object 
+                  data={variant === 'dark' && parsedData.hasDarkVariant ? 
+                    `/api/assets/${logo.id}/file?variant=dark` : 
+                    imageUrl}
+                  type="image/svg+xml"
+                  className="max-w-full max-h-[250px]"
+                >
+                  {/* Fallback for SVG */}
+                  <img 
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9.88 9.88 4.24 4.24'/%3E%3Cpath d='m9.88 14.12 4.24-4.24'/%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E"
+                    alt={logo.name}
+                    className="max-w-full max-h-[250px]"
                   />
-                </div>
+                </object>
               ) : (
                 <img
                   src={variant === 'dark' && parsedData.hasDarkVariant ? 
@@ -509,67 +502,66 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   }}
                 />
               )}
-              
               <div className="absolute top-2 right-2 flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                asChild
+              >
+                <label className="cursor-pointer">
+                  <Input
+                    type="file"
+                    accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        const createUpload = async () => {
+                          const formData = new FormData();
+                          formData.append("file", e.target.files![0]);
+                          formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+                          formData.append("type", type);
+                          formData.append("category", "logo");
+                          
+                          if (variant === 'dark') {
+                            // Update with dark variant
+                            const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                              method: "PATCH",
+                              body: formData,
+                            });
+                          } else {
+                            // Replace light variant
+                            const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
+                              method: "PATCH",
+                              body: formData,
+                            });
+                          }
+                          
+                          queryClient.invalidateQueries({
+                            queryKey: [`/api/clients/${clientId}/assets`],
+                          });
+                        };
+                        
+                        createUpload();
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <Upload className="h-4 w-4" />
+                </label>
+              </Button>
+              
+              {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                 <Button
                   variant="outline"
                   size="icon"
                   className="h-8 w-8 bg-background/80 backdrop-blur-sm"
-                  asChild
+                  onClick={() => onDelete(logo.id, variant)}
                 >
-                  <label className="cursor-pointer">
-                    <Input
-                      type="file"
-                      accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          const createUpload = async () => {
-                            const formData = new FormData();
-                            formData.append("file", e.target.files![0]);
-                            formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-                            formData.append("type", type);
-                            formData.append("category", "logo");
-                            
-                            if (variant === 'dark') {
-                              // Update with dark variant
-                              const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                                method: "PATCH",
-                                body: formData,
-                              });
-                            } else {
-                              // Replace light variant
-                              const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
-                                method: "PATCH",
-                                body: formData,
-                              });
-                            }
-                            
-                            queryClient.invalidateQueries({
-                              queryKey: [`/api/clients/${clientId}/assets`],
-                            });
-                          };
-                          
-                          createUpload();
-                        }
-                      }}
-                      className="hidden"
-                    />
-                    <Upload className="h-4 w-4" />
-                  </label>
+                  <Trash2 className="h-4 w-4" />
                 </Button>
-                
-                {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 bg-background/80 backdrop-blur-sm"
-                    onClick={() => onDelete(logo.id, variant)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
+          </div>
           )}
         </div>
       </div>

@@ -75,7 +75,12 @@ async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, conv
   
   // Convert to JPG if original is not JPG
   if (originalFormat.toLowerCase() !== 'jpg' && originalFormat.toLowerCase() !== 'jpeg') {
-    const jpgBuffer = await sharpImage.jpeg().toBuffer();
+    // For JPG conversion, use white background for transparent PNGs
+    const jpgBuffer = await sharpImage
+      .flatten({ background: { r: 255, g: 255, b: 255 } }) // Add white background
+      .jpeg()
+      .toBuffer();
+    
     convertedFiles.push({
       format: 'jpg',
       data: jpgBuffer,
@@ -85,21 +90,60 @@ async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, conv
   
   // For PDF conversion from raster, we create a PDF with the image embedded
   if (originalFormat.toLowerCase() !== 'pdf') {
-    const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([500, 500]); // Default dimensions
-    
-    // For PDF creation we would need more complex handling,
-    // here we just create a simple PDF with metadata
-    pdfDoc.setTitle('Converted Image');
-    pdfDoc.setAuthor('Ferdinand Brand Manager');
-    
-    const pdfBytes = await pdfDoc.save();
-    
-    convertedFiles.push({
-      format: 'pdf',
-      data: Buffer.from(pdfBytes),
-      mimeType: 'application/pdf'
-    });
+    try {
+      // First convert to PNG if it's not already
+      const pngBuffer = originalFormat.toLowerCase() === 'png' 
+        ? fileBuffer 
+        : await sharpImage.png().toBuffer();
+      
+      // Create a new PDF document
+      const pdfDoc = await PDFDocument.create();
+      
+      // Embed the PNG image
+      const pngImage = await pdfDoc.embedPng(pngBuffer);
+      
+      // Get dimensions to maintain aspect ratio
+      const { width, height } = pngImage;
+      const aspectRatio = width / height;
+      
+      // Add a page with appropriate dimensions
+      const pageWidth = 500;
+      const pageHeight = pageWidth / aspectRatio;
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      
+      // Draw the image on the page, fitting to the page dimensions
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: pageWidth,
+        height: pageHeight,
+      });
+      
+      // Set metadata
+      pdfDoc.setTitle('Converted Image');
+      pdfDoc.setAuthor('Ferdinand Brand Manager');
+      
+      // Save the PDF
+      const pdfBytes = await pdfDoc.save();
+      
+      convertedFiles.push({
+        format: 'pdf',
+        data: Buffer.from(pdfBytes),
+        mimeType: 'application/pdf'
+      });
+    } catch (error) {
+      console.error('Error creating PDF:', error);
+      // Create a simple placeholder PDF if embedding fails
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.addPage([500, 500]);
+      const pdfBytes = await pdfDoc.save();
+      
+      convertedFiles.push({
+        format: 'pdf',
+        data: Buffer.from(pdfBytes),
+        mimeType: 'application/pdf'
+      });
+    }
   }
 }
 
@@ -125,24 +169,68 @@ async function handleVectorFile(
       mimeType: 'image/png'
     });
     
-    // To JPG
-    const jpgBuffer = await sharpImage.jpeg().toBuffer();
+    // To JPG - use white background for transparent areas
+    const jpgBuffer = await sharpImage
+      .flatten({ background: { r: 255, g: 255, b: 255 } }) // Add white background
+      .jpeg()
+      .toBuffer();
+    
     convertedFiles.push({
       format: 'jpg',
       data: jpgBuffer,
       mimeType: 'image/jpeg'
     });
     
-    // To PDF
-    const pdfDoc = await PDFDocument.create();
-    pdfDoc.addPage([500, 500]); // Default dimensions
-    const pdfBytes = await pdfDoc.save();
-    
-    convertedFiles.push({
-      format: 'pdf',
-      data: Buffer.from(pdfBytes),
-      mimeType: 'application/pdf'
-    });
+    // To PDF with embedded image
+    try {
+      // Create a new PDF document
+      const pdfDoc = await PDFDocument.create();
+      
+      // Embed the PNG image (we already converted above)
+      const pngImage = await pdfDoc.embedPng(pngBuffer);
+      
+      // Get dimensions to maintain aspect ratio
+      const { width, height } = pngImage;
+      const aspectRatio = width / height;
+      
+      // Add a page with appropriate dimensions
+      const pageWidth = 500;
+      const pageHeight = pageWidth / aspectRatio;
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      
+      // Draw the image on the page, fitting to the page dimensions
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: pageWidth,
+        height: pageHeight,
+      });
+      
+      // Set metadata
+      pdfDoc.setTitle('Converted SVG Image');
+      pdfDoc.setAuthor('Ferdinand Brand Manager');
+      
+      // Save the PDF
+      const pdfBytes = await pdfDoc.save();
+      
+      convertedFiles.push({
+        format: 'pdf',
+        data: Buffer.from(pdfBytes),
+        mimeType: 'application/pdf'
+      });
+    } catch (error) {
+      console.error('Error creating PDF from SVG:', error);
+      // Create a simple PDF if embedding fails
+      const pdfDoc = await PDFDocument.create();
+      pdfDoc.addPage([500, 500]);
+      const pdfBytes = await pdfDoc.save();
+      
+      convertedFiles.push({
+        format: 'pdf',
+        data: Buffer.from(pdfBytes),
+        mimeType: 'application/pdf'
+      });
+    }
     
     // Note: AI files would need special handling, here we just create a placeholder
     const aiPlaceholder = Buffer.from(`%PDF-1.4\n%AI Vector Graphic\n`);
@@ -174,8 +262,12 @@ async function handleVectorFile(
         mimeType: 'image/png'
       });
       
-      // Convert to JPG
-      const jpgBuffer = await sharp(pngBuffer).jpeg().toBuffer();
+      // Convert to JPG with white background
+      const jpgBuffer = await sharp(pngBuffer)
+        .flatten({ background: { r: 255, g: 255, b: 255 } }) // Add white background
+        .jpeg()
+        .toBuffer();
+        
       convertedFiles.push({
         format: 'jpg',
         data: jpgBuffer,
