@@ -133,7 +133,7 @@ export function registerAssetRoutes(app: Express) {
         // Default to logo asset
         const { name, type } = req.body;
         const files = req.files as Express.Multer.File[];
-        
+
         if (!files || files.length === 0) {
           return res.status(400).json({ message: "No file uploaded" });
         }
@@ -202,15 +202,14 @@ export function registerAssetRoutes(app: Express) {
             return res.status(400).json({ message: "No file uploaded" });
           }
 
+          const existingData = JSON.parse(asset.data);
           parsed = { success: true, data: {
-            name: req.body.name || asset.name,
-            clientId,
-            category: "logo",
+            ...asset,
             data: JSON.stringify({
-              type: req.body.type || JSON.parse(asset.data).type,
-              format: files[0].originalname.split('.').pop()?.toLowerCase() || 'png',
+              ...existingData,
               hasDarkVariant: true,
-              isDarkVariant: req.body.isDarkVariant || false
+              isDarkVariant: true,
+              format: files[0].originalname.split('.').pop()?.toLowerCase() || 'png'
             }),
             fileData: files[0].buffer.toString('base64'),
             mimeType: files[0].mimetype
