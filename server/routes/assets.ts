@@ -196,7 +196,7 @@ export function registerAssetRoutes(app: Express) {
             ...req.body,
             clientId,
           });
-        } else if (req.body.category === "logo") {
+        } else if (req.body.category === "logo" || (req.body.data && JSON.parse(req.body.data).type)) {
           const files = req.files as Express.Multer.File[];
           if (!files || files.length === 0) {
             return res.status(400).json({ message: "No file uploaded" });
@@ -205,6 +205,7 @@ export function registerAssetRoutes(app: Express) {
           const existingData = JSON.parse(asset.data);
           parsed = { success: true, data: {
             ...asset,
+            category: "logo",
             data: JSON.stringify({
               ...existingData,
               hasDarkVariant: true,
