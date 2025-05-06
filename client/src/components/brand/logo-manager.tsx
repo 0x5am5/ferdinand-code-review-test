@@ -389,7 +389,52 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
               </Button>
             </div>
             <div className="text-xs text-muted-foreground">
-              Format: {parsedData.format.toUpperCase()}
+              Filename: {parsedData.fileName || `${logo.name}.${parsedData.format}`}
+            </div>
+            
+            {/* Display available converted formats */}
+            <div className="mt-4">
+              <h6 className="text-xs font-medium mb-2">Available Formats:</h6>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                  <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                    `/api/assets/${logo.id}/file?variant=dark` : 
+                    `/api/assets/${logo.id}/file`} 
+                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.${parsedData.format}`}>
+                    {parsedData.format.toUpperCase()}
+                  </a>
+                </Button>
+                
+                <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                  <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                    `/api/assets/${logo.id}/file?format=jpg&variant=dark` : 
+                    `/api/assets/${logo.id}/file?format=jpg`} 
+                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.jpg`}>
+                    JPG
+                  </a>
+                </Button>
+                
+                <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                  <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                    `/api/assets/${logo.id}/file?format=pdf&variant=dark` : 
+                    `/api/assets/${logo.id}/file?format=pdf`} 
+                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.pdf`}>
+                    PDF
+                  </a>
+                </Button>
+                
+                {/* For vector files, show png option */}
+                {['svg', 'ai'].includes(parsedData.format.toLowerCase()) && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
+                    <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                      `/api/assets/${logo.id}/file?format=png&variant=dark` : 
+                      `/api/assets/${logo.id}/file?format=png`} 
+                      download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.png`}>
+                      PNG
+                    </a>
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
