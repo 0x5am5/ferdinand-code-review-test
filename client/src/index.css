@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --background: #EFF2F4;
+    --background: 0 0% 93.7%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -50,8 +50,7 @@
   }
 
   body {
-    @apply text-foreground font-roc antialiased;
-    background-color: var(--background);
+    @apply bg-background text-foreground font-roc antialiased;
   }
 
   h1 {
