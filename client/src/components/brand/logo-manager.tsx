@@ -79,7 +79,7 @@ function parseBrandAssetData(logo: BrandAsset) {
 }
 
 // Drag and drop file upload component
-function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant = false }: FileUploadProps) {
+function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, parentLogoId }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
@@ -98,27 +98,47 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant = fa
 
       const fileFormat = selectedFile.name.split('.').pop()?.toLowerCase();
 
-      formData.append("isDarkVariant", isDarkVariant.toString());
-      formData.append("category", "logo");
-      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+      if (isDarkVariant && parentLogoId) {
+        const logoData = {
+          type,
+          format: fileFormat,
+          hasDarkVariant: true,
+          isDarkVariant: true
+        };
+        formData.append("data", JSON.stringify(logoData));
+        formData.append("category", "logo");
+        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
 
-      formData.append("data", JSON.stringify({
-        type,
-        format: fileFormat,
-        hasDarkVariant: false
-      }));
+        const response = await fetch(`/api/clients/${clientId}/assets/${parentLogoId}`, {
+          method: "PATCH",
+          body: formData,
+        });
 
-      const response = await fetch(`/api/clients/${clientId}/assets`, {
-        method: "POST",
-        body: formData,
-      });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to update logo");
+        }
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to upload logo");
+        return await response.json();
+      } else {
+        formData.append("data", JSON.stringify({
+          type,
+          format: fileFormat,
+          hasDarkVariant: false
+        }));
+
+        const response = await fetch(`/api/clients/${clientId}/assets`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || "Failed to upload logo");
+        }
+
+        return await response.json();
       }
-
-      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -271,14 +291,13 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   logo: BrandAsset, 
   imageUrl: string, 
   parsedData: any,
-  onDelete: (logoId: number, variant: 'light' | 'dark') => void,
+  onDelete: (logoId: number) => void,
   clientId: number,
   queryClient: any
 }) {
   const { user = null } = useAuth();
   const type = parsedData.type;
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
-  const fileName = `${type}-logo${variant === 'dark' ? '-dark' : ''}.${parsedData.format}`;
 
   // Available formats for this logo
   const availableFormats = [
@@ -294,38 +313,18 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
     <div className="grid grid-cols-4 gap-8 mb-8">
       {/* 1/4 column - Logo information */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-medium">{fileName}</h3>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-            >
-              <a href={imageUrl} download={fileName}>
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </a>
-            </Button>
-            {user && user.role !== UserRole.STANDARD && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={() => onDelete(logo.id, variant)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            )}
-          </div>
-        </div>
-
         <div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
           </p>
         </div>
+
+        <div>
+          <h5 className="text-sm font-medium flex items-center">
+            <FileType className="h-4 w-4 mr-2" />
+            Available Formats
+          </h5>
+          <div className="space-y-2 mt-3">
             {availableFormats.map((item) => (
               <div key={item.id} className="flex items-center justify-between">
                 <div className="flex items-center">
@@ -439,15 +438,32 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 alt={logo.name}
                 className="max-w-full max-h-[250px] object-contain"
                 style={{ 
-                  filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
+                filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
+              }}
+              onError={(e) => {
+                console.error("Error loading image:", imageUrl);
+                e.currentTarget.src =
+                  'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
+              }}
+            />
+            <div className="absolute top-2 right-2 flex gap-2">
+              <FileUpload
+                type={type}
+                clientId={clientId}
+                isDarkVariant={variant === 'dark'}
+                parentLogoId={logo.id}
+                queryClient={queryClient}
+                onSuccess={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: [`/api/clients/${clientId}/assets`],
+                  });
                 }}
-                onError={(e) => {
-                  console.error("Error loading image:", imageUrl);
-                  e.currentTarget.src =
-                    'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
-                }}
-              />
-              <div className="absolute top-2 right-2 flex gap-2">
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
+                buttonOnly={true}
+              >
+                <Upload className="h-4 w-4" />
+              </FileUpload>
+              {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -456,11 +472,15 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </div>
+              )}
             </div>
+          </div>
           )}
         </div>
       </div>
+    </div>
+  );
+}
 
 // LogoSection component for each type of logo (used for both empty and populated states)
 function LogoSection({ 
