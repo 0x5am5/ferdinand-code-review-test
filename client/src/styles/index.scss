@@ -15,8 +15,13 @@
     @apply border-border;
   }
 
+  html, body {
+    min-height: 100vh;
+    background-color: #EFF2F4;
+  }
+
   body {
-    @apply bg-background text-foreground font-roc antialiased;
+    @apply text-foreground font-roc antialiased;
   }
 
   h1, h2, h3, p {
