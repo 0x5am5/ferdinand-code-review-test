@@ -422,7 +422,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 parentLogoId={logo.id}
                 queryClient={queryClient}
                 onSuccess={() => {
-                  // Update the parsedData to show we now have a dark variant
                   parsedData.hasDarkVariant = true;
                   queryClient.invalidateQueries({
                     queryKey: [`/api/clients/${clientId}/assets`],
@@ -431,13 +430,14 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
               />
             </div>
           ) : (
-            <img
-              src={variant === 'dark' && parsedData.darkVariant ? 
-                `/api/assets/${logo.id}/file?variant=dark` : 
-                imageUrl}
-              alt={logo.name}
-              className="max-w-full max-h-[250px] object-contain"
-              style={{ 
+            <div className="relative">
+              <img
+                src={variant === 'dark' && parsedData.darkVariant ? 
+                  `/api/assets/${logo.id}/file?variant=dark` : 
+                  imageUrl}
+                alt={logo.name}
+                className="max-w-full max-h-[250px] object-contain"
+                style={{ 
                 filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
               }}
               onError={(e) => {
@@ -446,6 +446,35 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9.88 9.88 4.24 4.24"/><path d="m9.88 14.12 4.24-4.24"/><circle cx="12" cy="12" r="10"/></svg>';
               }}
             />
+            <div className="absolute top-2 right-2 flex gap-2">
+              <FileUpload
+                type={type}
+                clientId={clientId}
+                isDarkVariant={variant === 'dark'}
+                parentLogoId={logo.id}
+                queryClient={queryClient}
+                onSuccess={() => {
+                  queryClient.invalidateQueries({
+                    queryKey: [`/api/clients/${clientId}/assets`],
+                  });
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-input bg-background text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground"
+                buttonOnly={true}
+              >
+                <Upload className="h-4 w-4" />
+              </FileUpload>
+              {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={() => onDelete(logo.id, variant)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
           )}
         </div>
       </div>
@@ -579,9 +608,9 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const queryClient = useQueryClient();
 
   const deleteLogo = useMutation({
-    mutationFn: async (logoId: number) => {
+    mutationFn: async ({ logoId, variant }: { logoId: number; variant: 'light' | 'dark' }) => {
       const response = await fetch(
-        `/api/clients/${clientId}/assets/${logoId}`,
+        `/api/clients/${clientId}/assets/${logoId}${variant === 'dark' ? '?variant=dark' : ''}`,
         {
           method: "DELETE",
         },

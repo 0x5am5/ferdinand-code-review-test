@@ -244,6 +244,7 @@ export function registerAssetRoutes(app: Express) {
       try {
         const clientId = req.clientId!;
         const assetId = parseInt(req.params.assetId);
+        const variant = req.query.variant as string;
 
         const asset = await storage.getAsset(assetId);
 
@@ -255,6 +256,20 @@ export function registerAssetRoutes(app: Express) {
           return res
             .status(403)
             .json({ message: "Not authorized to delete this asset" });
+        }
+
+        if (variant === 'dark' && asset.category === 'logo') {
+          // Only remove the dark variant
+          const data = JSON.parse(asset.data);
+          delete data.darkVariant;
+          data.hasDarkVariant = false;
+          
+          await storage.updateAsset(assetId, {
+            ...asset,
+            data: JSON.stringify(data)
+          });
+          
+          return res.status(200).json({ message: "Dark variant deleted successfully" });
         }
 
         await storage.deleteAsset(assetId);
