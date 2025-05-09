@@ -501,9 +501,9 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
         >
           <div className="absolute top-2 right-2 flex gap-2">
             <Button
-              variant="outline"
-              size="icon"
-              className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+              variant="ghost"
+              size="sm"
+              className="bg-background/80 backdrop-blur-sm gap-1"
               asChild
             >
               <label className="cursor-pointer">
@@ -543,18 +543,20 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   }}
                   className="hidden"
                 />
-                <Upload className="h-4 w-4" />
+                <Upload className="h-3 w-3" />
+                <span className="text-xs">Replace</span>
               </label>
             </Button>
             
             {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
               <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                variant="ghost"
+                size="sm"
+                className="bg-background/80 backdrop-blur-sm gap-1"
                 onClick={() => onDelete(logo.id, variant)}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3 w-3" />
+                <span className="text-xs">Delete</span>
               </Button>
             )}
           </div>
