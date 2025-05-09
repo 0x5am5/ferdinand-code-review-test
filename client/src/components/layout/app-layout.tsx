@@ -2,6 +2,7 @@ import { ReactNode, FC } from "react";
 import { Sidebar } from "./sidebar";
 import { PageTransition } from "./page-transition";
 import { AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
 
 interface AppLayoutProps {
   children: ReactNode;
