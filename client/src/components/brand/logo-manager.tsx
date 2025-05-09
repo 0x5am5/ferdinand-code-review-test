@@ -422,10 +422,17 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     `/api/assets/${logo.id}/file?format=jpg&variant=dark` : 
                     `/api/assets/${logo.id}/file?format=jpg`} 
                     download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.jpg`}
-                    className="flex items-center text-xs hover:text-primary transition-colors"
+                    className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
                   >
-                    <Download className="h-3 w-3 mr-2" />
-                    JPG
+                    <span className="flex items-center">
+                      <Download className="h-3 w-3 mr-2" />
+                      JPG
+                    </span>
+                    <span className="text-muted-foreground">
+                      {(logo.fileSize || 0) / 1024 < 1000 
+                        ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
+                        : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    </span>
                   </a>
                 </li>
                 
@@ -435,10 +442,17 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     `/api/assets/${logo.id}/file?format=pdf&variant=dark` : 
                     `/api/assets/${logo.id}/file?format=pdf`} 
                     download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.pdf`}
-                    className="flex items-center text-xs hover:text-primary transition-colors"
+                    className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
                   >
-                    <Download className="h-3 w-3 mr-2" />
-                    PDF
+                    <span className="flex items-center">
+                      <Download className="h-3 w-3 mr-2" />
+                      PDF
+                    </span>
+                    <span className="text-muted-foreground">
+                      {(logo.fileSize || 0) / 1024 < 1000 
+                        ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
+                        : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    </span>
                   </a>
                 </li>
                 
@@ -450,10 +464,17 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                       `/api/assets/${logo.id}/file?format=png&variant=dark` : 
                       `/api/assets/${logo.id}/file?format=png`} 
                       download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.png`}
-                      className="flex items-center text-xs hover:text-primary transition-colors"
+                      className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
                     >
-                      <Download className="h-3 w-3 mr-2" />
-                      PNG
+                      <span className="flex items-center">
+                        <Download className="h-3 w-3 mr-2" />
+                        PNG
+                      </span>
+                      <span className="text-muted-foreground">
+                        {(logo.fileSize || 0) / 1024 < 1000 
+                          ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
+                          : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                      </span>
                     </a>
                   </li>
                 )}
