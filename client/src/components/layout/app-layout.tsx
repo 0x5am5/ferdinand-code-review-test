@@ -15,8 +15,11 @@ interface AppLayoutProps {
 export const AppLayout: FC<AppLayoutProps> = ({ children, pageKey }) => {
   return (
     <div className="flex h-screen overflow-hidden">
+      {/* Fixed sidebar that doesn't re-render during page transitions */}
+      <Sidebar />
+      
       {/* Main content area with animated page transitions */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto ml-64">
         <AnimatePresence mode="wait">
           <PageTransition key={pageKey}>
             {children}

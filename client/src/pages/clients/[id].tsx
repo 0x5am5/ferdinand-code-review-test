@@ -295,7 +295,7 @@ export default function ClientDetails() {
 
   // Only display title for non-dashboard views
   return (
-    <div className={activeTab === "dashboard" ? "w-full h-full" : "p-8 pt-4"}>
+    <div className={activeTab === "dashboard" ? "p-0" : "p-8 pt-4"}>
       {activeTab !== "dashboard" && (
         <h1 className="text-3xl font-bold mb-8">{client.name}</h1>
       )}
