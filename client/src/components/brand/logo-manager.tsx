@@ -395,46 +395,62 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             {/* Display available converted formats */}
             <div className="mt-4">
               <h6 className="text-xs font-medium mb-2">Available Formats:</h6>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                  <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+              <ul className="space-y-2">
+                <li>
+                  <a 
+                    href={variant === 'dark' && parsedData.hasDarkVariant ? 
                     `/api/assets/${logo.id}/file?variant=dark` : 
                     `/api/assets/${logo.id}/file`} 
-                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.${parsedData.format}`}>
+                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.${parsedData.format}`}
+                    className="flex items-center text-xs hover:text-primary transition-colors"
+                  >
+                    <Download className="h-3 w-3 mr-2" />
                     {parsedData.format.toUpperCase()}
                   </a>
-                </Button>
+                </li>
                 
-                <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                  <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                <li>
+                  <a 
+                    href={variant === 'dark' && parsedData.hasDarkVariant ? 
                     `/api/assets/${logo.id}/file?format=jpg&variant=dark` : 
                     `/api/assets/${logo.id}/file?format=jpg`} 
-                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.jpg`}>
+                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.jpg`}
+                    className="flex items-center text-xs hover:text-primary transition-colors"
+                  >
+                    <Download className="h-3 w-3 mr-2" />
                     JPG
                   </a>
-                </Button>
+                </li>
                 
-                <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                  <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                <li>
+                  <a 
+                    href={variant === 'dark' && parsedData.hasDarkVariant ? 
                     `/api/assets/${logo.id}/file?format=pdf&variant=dark` : 
                     `/api/assets/${logo.id}/file?format=pdf`} 
-                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.pdf`}>
+                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.pdf`}
+                    className="flex items-center text-xs hover:text-primary transition-colors"
+                  >
+                    <Download className="h-3 w-3 mr-2" />
                     PDF
                   </a>
-                </Button>
+                </li>
                 
                 {/* For vector files, show png option */}
                 {['svg', 'ai'].includes(parsedData.format.toLowerCase()) && (
-                  <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                    <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
+                  <li>
+                    <a 
+                      href={variant === 'dark' && parsedData.hasDarkVariant ? 
                       `/api/assets/${logo.id}/file?format=png&variant=dark` : 
                       `/api/assets/${logo.id}/file?format=png`} 
-                      download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.png`}>
+                      download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.png`}
+                      className="flex items-center text-xs hover:text-primary transition-colors"
+                    >
+                      <Download className="h-3 w-3 mr-2" />
                       PNG
                     </a>
-                  </Button>
+                  </li>
                 )}
-              </div>
+              </ul>
             </div>
           </div>
         </div>
@@ -443,13 +459,72 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
       {/* 3/4 column - Logo preview */}
       <div className="col-span-3 flex flex-col">
         <div 
-          className={`rounded-lg pt-[15vh] pb-[15vh] flex items-center justify-center ${
+          className={`rounded-lg pt-[15vh] pb-[15vh] flex items-center justify-center relative ${
             variant === 'light' 
               ? 'bg-white' 
               : 'bg-slate-900'
           }`}
           style={{ minHeight: '250px' }}
         >
+          <div className="absolute top-2 right-2 flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+              asChild
+            >
+              <label className="cursor-pointer">
+                <Input
+                  type="file"
+                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      const createUpload = async () => {
+                        const formData = new FormData();
+                        formData.append("file", e.target.files![0]);
+                        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+                        formData.append("type", type);
+                        formData.append("category", "logo");
+                        
+                        if (variant === 'dark') {
+                          // Update with dark variant
+                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                            method: "PATCH",
+                            body: formData,
+                          });
+                        } else {
+                          // Replace light variant
+                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
+                            method: "PATCH",
+                            body: formData,
+                          });
+                        }
+                        
+                        queryClient.invalidateQueries({
+                          queryKey: [`/api/clients/${clientId}/assets`],
+                        });
+                      };
+                      
+                      createUpload();
+                    }
+                  }}
+                  className="hidden"
+                />
+                <Upload className="h-4 w-4" />
+              </label>
+            </Button>
+            
+            {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 bg-background/80 backdrop-blur-sm"
+                onClick={() => onDelete(logo.id, variant)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
           {variant === 'dark' && !parsedData.hasDarkVariant ? (
             <div className="w-full h-full flex items-center justify-center">
               <FileUpload
@@ -475,7 +550,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     src={variant === 'dark' && parsedData.hasDarkVariant ? 
                       `/api/assets/${logo.id}/file?variant=dark` : 
                       imageUrl}
-                    className="max-w-full max-h-[250px] border-0"
+                    className="max-w-[60%] max-h-[250px] border-0"
                     style={{ background: 'transparent' }}
                     onError={(e) => {
                       console.error("Error loading SVG:", imageUrl);
@@ -485,7 +560,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         const fallbackImg = document.createElement('img');
                         fallbackImg.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
                         fallbackImg.alt = logo.name || "SVG Logo";
-                        fallbackImg.className = "max-w-full max-h-[250px]";
+                        fallbackImg.className = "max-w-[60%] max-h-[250px]";
                         container.innerHTML = '';
                         container.appendChild(fallbackImg);
                       }
@@ -498,7 +573,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     `/api/assets/${logo.id}/file?variant=dark` : 
                     imageUrl}
                   alt={logo.name}
-                  className="max-w-full max-h-[250px] object-contain"
+                  className="max-w-[60%] max-h-[250px] object-contain"
                   style={{ 
                     filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
                   }}
@@ -510,65 +585,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 />
               )}
               
-              <div className="absolute top-2 right-2 flex gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 bg-background/80 backdrop-blur-sm"
-                  asChild
-                >
-                  <label className="cursor-pointer">
-                    <Input
-                      type="file"
-                      accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          const createUpload = async () => {
-                            const formData = new FormData();
-                            formData.append("file", e.target.files![0]);
-                            formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-                            formData.append("type", type);
-                            formData.append("category", "logo");
-                            
-                            if (variant === 'dark') {
-                              // Update with dark variant
-                              const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                                method: "PATCH",
-                                body: formData,
-                              });
-                            } else {
-                              // Replace light variant
-                              const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
-                                method: "PATCH",
-                                body: formData,
-                              });
-                            }
-                            
-                            queryClient.invalidateQueries({
-                              queryKey: [`/api/clients/${clientId}/assets`],
-                            });
-                          };
-                          
-                          createUpload();
-                        }
-                      }}
-                      className="hidden"
-                    />
-                    <Upload className="h-4 w-4" />
-                  </label>
-                </Button>
-                
-                {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-8 w-8 bg-background/80 backdrop-blur-sm"
-                    onClick={() => onDelete(logo.id, variant)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+
             </div>
           )}
         </div>
@@ -747,7 +764,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   return (
     <div className="space-y-6 pb-12">
-    <div className="client-hero--asset">
+    <div className="client-hero--asset my-[10vh]">
       <h1>Logo System</h1>
       <p className="text-muted-foreground mt-1">Manage and download the official logos for this brand</p>
     </div>
