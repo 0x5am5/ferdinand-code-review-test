@@ -544,13 +544,13 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           ) : (
             <div className="relative">
               {parsedData.format === 'svg' ? (
-                <div className="relative svg-container">
+                <div className="relative max-w-[60%] svg-container">
                   {/* Using iframe for SVG to better isolate and prevent issues */}
                   <iframe
                     src={variant === 'dark' && parsedData.hasDarkVariant ? 
                       `/api/assets/${logo.id}/file?variant=dark` : 
                       imageUrl}
-                    className="max-w-[60%] max-h-[250px] border-0"
+                    className="max-h-[250px] border-0"
                     style={{ background: 'transparent' }}
                     onError={(e) => {
                       console.error("Error loading SVG:", imageUrl);
@@ -568,12 +568,13 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   />
                 </div>
               ) : (
+                <div className="max-w-[60%] flex justify-self-center">
                 <img
                   src={variant === 'dark' && parsedData.hasDarkVariant ? 
                     `/api/assets/${logo.id}/file?variant=dark` : 
                     imageUrl}
                   alt={logo.name}
-                  className="max-w-[60%] max-h-[250px] object-contain"
+                  className="max-h-[250px] object-contain"
                   style={{ 
                     filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
                   }}
@@ -583,6 +584,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                       'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
                   }}
                 />
+                </div>
               )}
               
 
