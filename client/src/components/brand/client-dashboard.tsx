@@ -45,17 +45,20 @@ export function ClientDashboard({
   onTabChange,
 }: ClientDashboardProps) {
   // Find the primary logo (horizontal is usually best for display)
-  const mainLogo = logos.find((logo) => {
-    try {
-      const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
-      return data?.type === "horizontal" || data?.type === "primary";
-    } catch (e) {
-      return false;
-    }
-  });
+  const mainLogo = logos && logos.length > 0 ? 
+    logos.find((logo) => {
+      if (!logo || !logo.data) return false;
+      try {
+        const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+        return data?.type === "horizontal" || data?.type === "primary";
+      } catch (e) {
+        console.log("Error parsing logo data:", e);
+        return false;
+      }
+    }) : null;
 
   // Fallback to any logo if no horizontal/primary found
-  const fallbackLogo = logos.length > 0 ? logos[0] : null;
+  const fallbackLogo = logos && logos.length > 0 ? logos[0] : null;
   const logoToShow = mainLogo || fallbackLogo;
 
   // Feature cards to display
@@ -144,15 +147,20 @@ export function ClientDashboard({
 
       <div className="container mx-auto px-4 py-12 z-10 flex flex-col items-center">
         {/* Logo or Client Name */}
-        <div className="mb-8 text-center">
+        <div className="mt-[12vh] mb-[12vh] text-center">
           {logoToShow ? (
             <div className="max-w-md max-h-40 mx-auto mb-4">
               <img
-                src={`/api/assets/${logoToShow.id}/file`}
+                src={logoToShow?.id ? `/api/assets/${logoToShow.id}/file` : ''}
                 alt={clientName}
                 className="max-h-40 w-auto mx-auto object-contain"
                 style={{ 
                   filter: 'brightness(0) invert(1)' // Make logo white
+                }}
+                onError={(e) => {
+                  // Handle image loading errors
+                  e.currentTarget.style.display = 'none';
+                  console.log("Error loading logo image");
                 }}
               />
             </div>
