@@ -515,9 +515,15 @@ export function registerAssetRoutes(app: Express) {
       );
       const buffer = Buffer.from(asset.fileData, "base64");
       // Update the file size in the database
-      await db.update(brandAssets)
-        .set({ fileSize: buffer.length })
-        .where(eq(brandAssets.id, assetId));
+      try {
+        await db.update(brandAssets)
+          .set({ fileSize: buffer.length })
+          .where(eq(brandAssets.id, assetId))
+          .execute();
+      } catch (err) {
+        console.warn("Failed to update file size:", err);
+        // Continue serving the file even if size update fails
+      }
       res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);
