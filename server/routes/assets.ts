@@ -147,7 +147,7 @@ export function registerAssetRoutes(app: Express) {
 
         const file = files[0];
         const fileExtension = file.originalname.split(".").pop()?.toLowerCase();
-        
+
         // Create proper data object instead of JSON string
         const logoData = {
           type,
@@ -166,21 +166,21 @@ export function registerAssetRoutes(app: Express) {
 
         // Create the main asset
         const asset = await storage.createAsset(logoAsset);
-        
+
         try {
           // Convert the file to multiple formats
           const fileBuffer = file.buffer;
           const originalFormat = fileExtension || "png";
           const isDark = isDarkVariant === "true" || isDarkVariant === true;
-          
+
           console.log(`Converting ${originalFormat} file to multiple formats. Dark variant: ${isDark}`);
           const convertedFiles = await convertToAllFormats(fileBuffer, originalFormat);
-          
+
           // Store all converted versions in the database
           for (const convertedFile of convertedFiles) {
             // Skip the original format since we already stored it
             if (convertedFile.format === originalFormat) continue;
-            
+
             const convertedAssetData = {
               originalAssetId: asset.id,
               format: convertedFile.format,
@@ -188,7 +188,7 @@ export function registerAssetRoutes(app: Express) {
               mimeType: convertedFile.mimeType,
               isDarkVariant: isDark
             };
-            
+
             await storage.createConvertedAsset(convertedAssetData);
             console.log(`Created converted asset: ${convertedFile.format} (Dark: ${isDark})`);
           }
@@ -196,7 +196,7 @@ export function registerAssetRoutes(app: Express) {
           console.error("Error converting asset to other formats:", conversionError);
           // We'll continue even if conversion fails since the original asset was saved
         }
-        
+
         res.status(201).json(asset);
       } catch (error) {
         console.error("Error creating asset:", error);
@@ -241,18 +241,18 @@ export function registerAssetRoutes(app: Express) {
         } else if (req.body.category === "logo" || (req.body.data && JSON.parse(req.body.data).type)) {
           const files = req.files as Express.Multer.File[];
           const isDarkVariant = req.body.isDarkVariant === "true" || req.body.isDarkVariant === true;
-          
+
           if (!files || files.length === 0) {
             return res.status(400).json({ message: "No file uploaded" });
           }
 
           const file = files[0];
           const fileExtension = file.originalname.split('.').pop()?.toLowerCase();
-          
+
           // For backward compatibility, we'll update both the old-style dark variant
           // and also create converted assets for the new system
           const existingData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-          
+
           if (isDarkVariant) {
             parsed = { success: true, data: {
               ...asset,
@@ -265,15 +265,15 @@ export function registerAssetRoutes(app: Express) {
                 darkVariantFormat: fileExtension || 'png'
               }
             }};
-            
+
             // Also store in the new converted assets system
             try {
               const fileBuffer = file.buffer;
               const originalFormat = fileExtension || "png";
-              
+
               console.log(`Converting ${originalFormat} file to multiple formats (dark variant)`);
               const convertedFiles = await convertToAllFormats(fileBuffer, originalFormat);
-              
+
               // Store all converted versions in the database
               for (const convertedFile of convertedFiles) {
                 // First check if this format already exists
@@ -282,13 +282,13 @@ export function registerAssetRoutes(app: Express) {
                   convertedFile.format, 
                   true // isDarkVariant
                 );
-                
+
                 if (existingConverted) {
                   // Delete the existing one using proper Drizzle ORM syntax
                   await db.delete(convertedAssets)
                     .where(eq(convertedAssets.id, existingConverted.id));
                 }
-                
+
                 // Create the new converted asset
                 const convertedAssetData = {
                   originalAssetId: asset.id,
@@ -297,7 +297,7 @@ export function registerAssetRoutes(app: Express) {
                   mimeType: convertedFile.mimeType,
                   isDarkVariant: true
                 };
-                
+
                 await storage.createConvertedAsset(convertedAssetData);
                 console.log(`Updated converted asset: ${convertedFile.format} (Dark)`);
               }
@@ -318,15 +318,15 @@ export function registerAssetRoutes(app: Express) {
                 fileName: file.originalname
               }
             }};
-            
+
             // Also update converted assets
             try {
               const fileBuffer = file.buffer;
               const originalFormat = fileExtension || "png";
-              
+
               console.log(`Converting ${originalFormat} file to multiple formats (light variant update)`);
               const convertedFiles = await convertToAllFormats(fileBuffer, originalFormat);
-              
+
               // Delete any existing light variant converted assets
               try {
                 // Use proper Drizzle ORM query for deleting light variants
@@ -340,12 +340,12 @@ export function registerAssetRoutes(app: Express) {
               } catch (deleteError) {
                 console.error("Error deleting existing light variant converted assets:", deleteError);
               }
-              
+
               // Store all converted versions in the database
               for (const convertedFile of convertedFiles) {
                 // Skip the original format since we already stored it
                 if (convertedFile.format === originalFormat) continue;
-                
+
                 const convertedAssetData = {
                   originalAssetId: asset.id,
                   format: convertedFile.format,
@@ -353,7 +353,7 @@ export function registerAssetRoutes(app: Express) {
                   mimeType: convertedFile.mimeType,
                   isDarkVariant: false
                 };
-                
+
                 await storage.createConvertedAsset(convertedAssetData);
                 console.log(`Updated converted asset: ${convertedFile.format} (Light)`);
               }
@@ -362,7 +362,7 @@ export function registerAssetRoutes(app: Express) {
               // We'll continue even if conversion fails since the original update will succeed
             }
           }
-          
+
         } else {
           return res.status(400).json({ message: "Invalid asset category" });
         }
@@ -412,13 +412,13 @@ export function registerAssetRoutes(app: Express) {
           delete data.darkVariantMimeType;
           delete data.darkVariantFormat;
           data.hasDarkVariant = false;
-          
+
           // Update the asset with old system data removed
           await storage.updateAsset(assetId, {
             ...asset,
             data: typeof data === 'string' ? data : JSON.stringify(data)
           });
-          
+
           // Delete converted assets for dark variant using direct SQL
           try {
             // Use parameterized query for safer SQL execution
@@ -431,7 +431,7 @@ export function registerAssetRoutes(app: Express) {
             console.error("Error deleting converted assets for dark variant:", error);
             // We continue since we've already updated the main asset
           }
-          
+
           return res.status(200).json({ message: "Dark variant deleted successfully" });
         }
 
@@ -475,18 +475,23 @@ export function registerAssetRoutes(app: Express) {
       if (format && asset.category === 'logo') {
         const isDarkVariant = variant === 'dark';
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
-        
+
         if (convertedAsset) {
           console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
           res.setHeader("Content-Type", convertedAsset.mimeType);
           const buffer = Buffer.from(convertedAsset.fileData, "base64");
           // Update the file size in the database
-          await db.update(brandAssets)
-            .set({ fileSize: buffer.length })
-            .where(eq(brandAssets.id, assetId));
+          try {
+            await db.update(brandAssets)
+              .set({ fileSize: buffer.length })
+              .where(eq(brandAssets.id, assetId))
+              .execute();
+          } catch (err) {
+            console.warn("Failed to update file size:", err);
+          }
           return res.send(buffer);
         }
-        
+
         // If the requested format is not found, fallback to the original
         console.log(`Requested format ${format} not found, falling back to original`);
       }
@@ -508,7 +513,7 @@ export function registerAssetRoutes(app: Express) {
       if (!asset.fileData) {
         return res.status(404).json({ message: "Asset file data not found" });
       }
-      
+
       res.setHeader(
         "Content-Type",
         asset.mimeType || "application/octet-stream",
@@ -530,23 +535,23 @@ export function registerAssetRoutes(app: Express) {
       res.status(500).json({ message: "Error serving asset file" });
     }
   });
-  
+
   // Get converted assets for a specific asset
   app.get("/api/assets/:assetId/converted", async (req, res: Response) => {
     try {
       const assetId = parseInt(req.params.assetId);
       const asset = await storage.getAsset(assetId);
-      
+
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
       }
-      
+
       if (asset.category !== 'logo') {
         return res.status(400).json({ message: "Only logo assets have converted formats" });
       }
-      
+
       const convertedAssets = await storage.getConvertedAssets(assetId);
-      
+
       // Group by format and variant
       const result = {
         original: {
@@ -562,7 +567,7 @@ export function registerAssetRoutes(app: Express) {
           isDark: ca.isDarkVariant
         }))
       };
-      
+
       res.json(result);
     } catch (error) {
       console.error("Error fetching converted assets:", error);
