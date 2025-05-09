@@ -402,10 +402,17 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     `/api/assets/${logo.id}/file?variant=dark` : 
                     `/api/assets/${logo.id}/file`} 
                     download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.${parsedData.format}`}
-                    className="flex items-center text-xs hover:text-primary transition-colors"
+                    className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
                   >
-                    <Download className="h-3 w-3 mr-2" />
-                    {parsedData.format.toUpperCase()}
+                    <span className="flex items-center">
+                      <Download className="h-3 w-3 mr-2" />
+                      {parsedData.format.toUpperCase()}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {(logo.fileSize || 0) / 1024 < 1000 
+                        ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
+                        : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                    </span>
                   </a>
                 </li>
                 
