@@ -1,6 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +25,24 @@ import {
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandAsset, LogoType, FILE_FORMATS, UserRole } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 interface LogoManagerProps {
   clientId: number;
@@ -50,16 +64,16 @@ interface FileUploadProps {
 // Main detailed writeups for each logo type
 const logoDescriptions = {
   main: "This is your go-to logo—the one that should appear most often. It's built for versatility and designed to work across digital, print, and product touchpoints. Use this wherever you need to establish brand presence.",
-  horizontal: "Your default logo layout. The horizontal version is built for clarity and legibility in wide spaces—ideal for websites, decks, documents, and anywhere horizontal real estate isn’t an issue.",
+  horizontal: "Your default logo layout. The horizontal version is built for clarity and legibility in wide spaces—ideal for websites, decks, documents, and anywhere horizontal real estate isn't an issue.",
   vertical: "A stacked layout that fits better in tighter spaces. Use the vertical logo when the horizontal version feels cramped—think merch tags, narrow print formats, or content blocks with vertical constraints.",
-  square: "A clean, compact logo focused on your core brand mark. It’s designed for tight or constrained spaces where your full logo won’t fit—like social avatars, internal tools, or platform UI elements.",
-  app_icon: "This version is optimized for app stores and mobile screens. It’s bold, recognizable, and readable even at small sizes. Use this wherever your product needs to stand on its own in a crowded app ecosystem.",
+  square: "A clean, compact logo focused on your core brand mark. It's designed for tight or constrained spaces where your full logo won't fit—like social avatars, internal tools, or platform UI elements.",
+  app_icon: "This version is optimized for app stores and mobile screens. It's bold, recognizable, and readable even at small sizes. Use this wherever your product needs to stand on its own in a crowded app ecosystem.",
   favicon: "The smallest version of your brand mark. Used in browser tabs, bookmarks, and other micro contexts. At this size, clarity is everything—keep it simple, sharp, and undistorted."
 };
 
 const logoUsageGuidance = {
   main: "Use this logo anywhere brand visibility matters—your homepage, pitch decks, marketing campaigns, or press releases. Always give it room to breathe, with padding equal to at least the height of the logo mark.",
-  horizontal: "Best for banners, website headers, email footers, and letterhead. Don’t crowd it—maintain clear space around all sides and avoid scaling below legible size.",
+  horizontal: "Best for banners, website headers, email footers, and letterhead. Don't crowd it—maintain clear space around all sides and avoid scaling below legible size.",
   vertical: "Ideal for square or constrained areas like merch, business cards, and packaging. Keep the layout consistent and never stretch or compress.",
   square: "Use in spaces where simplicity matters: social icons, profile images, or internal dashboards. Stick to its native proportions and avoid visual clutter around it.",
   app_icon: "Use on mobile devices, app marketplaces, and launcher screens. Make sure it renders cleanly at small sizes, and avoid placing it on complex backgrounds.",
@@ -82,6 +96,23 @@ function parseBrandAssetData(logo: BrandAsset) {
   } catch (error) {
     console.error("Error parsing logo data:", error, logo);
     return null;
+  }
+}
+
+// Helper function to get estimated file size display string based on format
+function getFileSizeString(format: string): string {
+  switch(format.toLowerCase()) {
+    case 'svg':
+      return '15 KB';
+    case 'pdf':
+      return '250 KB';
+    case 'png':
+      return '120 KB';
+    case 'jpg':
+    case 'jpeg':
+      return '85 KB';
+    default:
+      return '100 KB';
   }
 }
 
@@ -333,6 +364,309 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
   );
 }
 
+// Logo download button with customization options
+function LogoDownloadButton({ 
+  logo, 
+  imageUrl, 
+  variant, 
+  parsedData 
+}: { 
+  logo: BrandAsset, 
+  imageUrl: string, 
+  variant: 'light' | 'dark',
+  parsedData: any
+}) {
+  const [size, setSize] = useState<number>(100);
+  const [lockRatio, setLockRatio] = useState<boolean>(true);
+  const [width, setWidth] = useState<number>(300); // Default width, will be calculated from image
+  const [height, setHeight] = useState<number>(200); // Default height, will be calculated from image
+  const [selectedFormats, setSelectedFormats] = useState<string[]>([parsedData.format]);
+  
+  // Create download URL with size parameters
+  const getDownloadUrl = (format: string) => {
+    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
+      `/api/assets/${logo.id}/file?variant=dark` : 
+      imageUrl;
+    
+    // Build query params - start with ? if there aren't any params yet
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    // Only add size parameters for image formats that support resizing
+    if (format !== 'svg') {
+      return `${baseUrl}${separator}size=${size}${lockRatio ? '&preserveRatio=true' : ''}${format !== parsedData.format ? `&format=${format}` : ''}`;
+    }
+    
+    // For format conversion with SVG
+    if (format !== parsedData.format) {
+      return `${baseUrl}${separator}format=${format}`;
+    }
+    
+    return baseUrl;
+  };
+
+  // Load dimensions once when component mounts
+  useEffect(() => {
+    // Create a new image to get dimensions
+    const img = new Image();
+    img.onload = () => {
+      setWidth(img.width);
+      setHeight(img.height);
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  // Update width/height when size changes
+  useEffect(() => {
+    const calculatedWidth = Math.round(width * (size / 100));
+    const calculatedHeight = Math.round(height * (size / 100));
+    
+    if (calculatedWidth < 10) setWidth(10);
+    if (calculatedHeight < 10) setHeight(10);
+  }, [size]);
+
+  // Update size or maintain ratio when width/height changes
+  const handleWidthChange = (newWidth: number) => {
+    if (lockRatio && width > 0) {
+      const aspectRatio = height / width;
+      const newHeight = Math.round(newWidth * aspectRatio);
+      setHeight(newHeight);
+      setSize(Math.round((newWidth / width) * 100));
+    } else {
+      setWidth(newWidth);
+    }
+  };
+
+  const handleHeightChange = (newHeight: number) => {
+    if (lockRatio && height > 0) {
+      const aspectRatio = width / height;
+      const newWidth = Math.round(newHeight * aspectRatio);
+      setWidth(newWidth);
+      setSize(Math.round((newHeight / height) * 100));
+    } else {
+      setHeight(newHeight);
+    }
+  };
+
+  // Toggle format selection
+  const toggleFormat = (format: string) => {
+    if (selectedFormats.includes(format)) {
+      setSelectedFormats(selectedFormats.filter(f => f !== format));
+    } else {
+      setSelectedFormats([...selectedFormats, format]);
+    }
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="bg-background/80 backdrop-blur-sm gap-1"
+        >
+          <Download className="h-3 w-3" />
+          <span className="text-xs">Download</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-96">
+        <div className="space-y-4">
+          <h4 className="font-medium">Download Options</h4>
+          
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="size">Dimensions</Label>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setLockRatio(!lockRatio)}
+                  title={lockRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
+                >
+                  {lockRatio ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col space-y-1 flex-grow">
+                <Label htmlFor="width" className="text-xs">Width (px)</Label>
+                <Input
+                  id="width"
+                  type="number"
+                  value={Math.round(width * (size / 100))}
+                  onChange={(e) => handleWidthChange(parseInt(e.target.value) || 10)}
+                  min={10}
+                  className="h-8"
+                />
+              </div>
+              <div className="flex flex-col space-y-1 flex-grow">
+                <Label htmlFor="height" className="text-xs">Height (px)</Label>
+                <Input
+                  id="height"
+                  type="number"
+                  value={Math.round(height * (size / 100))}
+                  onChange={(e) => handleHeightChange(parseInt(e.target.value) || 10)}
+                  min={10}
+                  className="h-8"
+                />
+              </div>
+            </div>
+            
+            <div className="pt-2">
+              <Label htmlFor="size" className="text-xs text-muted-foreground">Size: {size}%</Label>
+              <Slider 
+                id="size"
+                value={[size]} 
+                min={10} 
+                max={400} 
+                step={10}
+                onValueChange={(value) => setSize(value[0])} 
+                className="w-full" 
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="format">File Formats</Label>
+            <p className="text-xs text-muted-foreground mb-2">Select one or more formats to download</p>
+            
+            <div className="space-y-1 max-h-48 overflow-y-auto pr-2 border rounded-md p-2">
+              {/* Original format */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`format-${parsedData.format}`}
+                  checked={selectedFormats.includes(parsedData.format)}
+                  onCheckedChange={() => toggleFormat(parsedData.format)}
+                />
+                <div className="flex items-center justify-between w-full pr-2">
+                  <Label 
+                    htmlFor={`format-${parsedData.format}`}
+                    className="text-xs flex items-center cursor-pointer"
+                  >
+                    {parsedData.format.toUpperCase()}
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {getFileSizeString(parsedData.format)}
+                  </span>
+                </div>
+              </div>
+              
+              {/* JPG format */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="format-jpg"
+                  checked={selectedFormats.includes('jpg')}
+                  onCheckedChange={() => toggleFormat('jpg')}
+                />
+                <div className="flex items-center justify-between w-full pr-2">
+                  <Label 
+                    htmlFor="format-jpg"
+                    className="text-xs flex items-center cursor-pointer"
+                  >
+                    JPG
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {getFileSizeString('jpg')}
+                  </span>
+                </div>
+              </div>
+              
+              {/* PNG format */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="format-png"
+                  checked={selectedFormats.includes('png')}
+                  onCheckedChange={() => toggleFormat('png')}
+                />
+                <div className="flex items-center justify-between w-full pr-2">
+                  <Label 
+                    htmlFor="format-png"
+                    className="text-xs flex items-center cursor-pointer"
+                  >
+                    PNG
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {getFileSizeString('png')}
+                  </span>
+                </div>
+              </div>
+              
+              {/* PDF format */}
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="format-pdf"
+                  checked={selectedFormats.includes('pdf')}
+                  onCheckedChange={() => toggleFormat('pdf')}
+                />
+                <div className="flex items-center justify-between w-full pr-2">
+                  <Label 
+                    htmlFor="format-pdf"
+                    className="text-xs flex items-center cursor-pointer"
+                  >
+                    PDF
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {getFileSizeString('pdf')}
+                  </span>
+                </div>
+              </div>
+              
+              {/* SVG format */}
+              {['png', 'jpg', 'jpeg'].includes(parsedData.format.toLowerCase()) && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="format-svg"
+                    checked={selectedFormats.includes('svg')}
+                    onCheckedChange={() => toggleFormat('svg')}
+                  />
+                  <div className="flex items-center justify-between w-full pr-2">
+                    <Label 
+                      htmlFor="format-svg"
+                      className="text-xs flex items-center cursor-pointer"
+                    >
+                      SVG
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      {getFileSizeString('svg')}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+            {selectedFormats.length > 0 ? (
+              selectedFormats.map(format => (
+                <Button 
+                  key={format}
+                  variant={format === parsedData.format ? "default" : "outline"}
+                  size="sm"
+                  className="text-xs"
+                  asChild
+                >
+                  <a 
+                    href={getDownloadUrl(format)}
+                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}pct.${format}`}
+                  >
+                    <Download className="h-3 w-3 mr-1" />
+                    {format.toUpperCase()}
+                  </a>
+                </Button>
+              ))
+            ) : (
+              <div className="col-span-2 text-center text-xs text-muted-foreground">
+                Please select at least one format
+              </div>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClient }: { 
   logo: BrandAsset, 
   imageUrl: string, 
@@ -414,9 +748,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                       {parsedData.format.toUpperCase()}
                     </span>
                     <span className="text-muted-foreground">
-                      {(logo.fileSize || 0) / 1024 < 1000 
-                        ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
-                        : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                      {getFileSizeString(parsedData.format)}
                     </span>
                   </a>
                 </li>
@@ -434,9 +766,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                       JPG
                     </span>
                     <span className="text-muted-foreground">
-                      {(logo.fileSize || 0) / 1024 < 1000 
-                        ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
-                        : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                      {getFileSizeString('jpg')}
                     </span>
                   </a>
                 </li>
@@ -454,9 +784,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                       PDF
                     </span>
                     <span className="text-muted-foreground">
-                      {(logo.fileSize || 0) / 1024 < 1000 
-                        ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
-                        : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                      {getFileSizeString('pdf')}
                     </span>
                   </a>
                 </li>
@@ -476,9 +804,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         PNG
                       </span>
                       <span className="text-muted-foreground">
-                        {(logo.fileSize || 0) / 1024 < 1000 
-                          ? `${Math.round((logo.fileSize || 0) / 1024)} KB` 
-                          : `${(logo.fileSize / (1024 * 1024)).toFixed(1)} MB`}
+                        {getFileSizeString('png')}
                       </span>
                     </a>
                   </li>
@@ -547,6 +873,14 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 <span className="text-xs">Replace</span>
               </label>
             </Button>
+            
+            {/* Add the new download button here */}
+            <LogoDownloadButton 
+              logo={logo} 
+              imageUrl={imageUrl} 
+              variant={variant}
+              parsedData={parsedData}
+            />
             
             {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
               <Button
