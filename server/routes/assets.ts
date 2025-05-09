@@ -480,6 +480,10 @@ export function registerAssetRoutes(app: Express) {
           console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
           res.setHeader("Content-Type", convertedAsset.mimeType);
           const buffer = Buffer.from(convertedAsset.fileData, "base64");
+          // Update the file size in the database
+          await db.update(brandAssets)
+            .set({ fileSize: buffer.length })
+            .where(eq(brandAssets.id, assetId));
           return res.send(buffer);
         }
         
@@ -510,6 +514,10 @@ export function registerAssetRoutes(app: Express) {
         asset.mimeType || "application/octet-stream",
       );
       const buffer = Buffer.from(asset.fileData, "base64");
+      // Update the file size in the database
+      await db.update(brandAssets)
+        .set({ fileSize: buffer.length })
+        .where(eq(brandAssets.id, assetId));
       res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);
