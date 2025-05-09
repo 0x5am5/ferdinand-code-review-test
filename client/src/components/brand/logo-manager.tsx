@@ -29,21 +29,6 @@ import { BrandAsset, LogoType, FILE_FORMATS, UserRole } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 interface LogoManagerProps {
   clientId: number;
@@ -411,7 +396,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             <div className="text-xs text-muted-foreground">
               Filename: {parsedData.fileName || `${logo.name}.${parsedData.format}`}
             </div>
-
+            
             {/* Display available converted formats */}
             <div className="mt-4">
               <h6 className="text-xs font-medium mb-2">Available Formats:</h6>
@@ -435,7 +420,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     </span>
                   </a>
                 </li>
-
+                
                 <li>
                   <a 
                     href={variant === 'dark' && parsedData.hasDarkVariant ? 
@@ -455,7 +440,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     </span>
                   </a>
                 </li>
-
+                
                 <li>
                   <a 
                     href={variant === 'dark' && parsedData.hasDarkVariant ? 
@@ -475,7 +460,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     </span>
                   </a>
                 </li>
-
+                
                 {/* For vector files, show png option */}
                 {['svg', 'ai'].includes(parsedData.format.toLowerCase()) && (
                   <li>
@@ -515,117 +500,54 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           style={{ minHeight: '250px' }}
         >
           <div className="absolute top-2 right-2 flex gap-2">
-            <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="bg-background/80 backdrop-blur-sm gap-1"
-                  asChild
-                >
-                  <label className="cursor-pointer">
-                    <Input
-                      type="file"
-                      accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          const createUpload = async () => {
-                            const formData = new FormData();
-                            formData.append("file", e.target.files![0]);
-                            formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-                            formData.append("type", type);
-                            formData.append("category", "logo");
-
-                            if (variant === 'dark') {
-                              // Update with dark variant
-                              const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                                method: "PATCH",
-                                body: formData,
-                              });
-                            } else {
-                              // Replace light variant
-                              const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
-                                method: "PATCH",
-                                body: formData,
-                              });
-                            }
-
-                            queryClient.invalidateQueries({
-                              queryKey: [`/api/clients/${clientId}/assets`],
-                            });
-                          };
-
-                          createUpload();
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-background/80 backdrop-blur-sm gap-1"
+              asChild
+            >
+              <label className="cursor-pointer">
+                <Input
+                  type="file"
+                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) {
+                      const createUpload = async () => {
+                        const formData = new FormData();
+                        formData.append("file", e.target.files![0]);
+                        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+                        formData.append("type", type);
+                        formData.append("category", "logo");
+                        
+                        if (variant === 'dark') {
+                          // Update with dark variant
+                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                            method: "PATCH",
+                            body: formData,
+                          });
+                        } else {
+                          // Replace light variant
+                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
+                            method: "PATCH",
+                            body: formData,
+                          });
                         }
-                      }}
-                      className="hidden"
-                    />
-                    <Upload className="h-3 w-3" />
-                    <span className="text-xs">Replace</span>
-                  </label>
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="bg-background/80 backdrop-blur-sm gap-1"
-                    >
-                      <Download className="h-3 w-3" />
-                      <span className="text-xs">Download</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56">
-                    <DropdownMenuLabel>Download Options</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <div className="p-2">
-                      <Label htmlFor="width" className="text-xs mb-1">Size (px)</Label>
-                      <div className="flex gap-2 mb-3">
-                        <Input
-                          id="width"
-                          type="number"
-                          placeholder="Width"
-                          className="h-7 text-xs"
-                          defaultValue="1000"
-                        />
-                        <Input
-                          id="height"
-                          type="number"
-                          placeholder="Height"
-                          className="h-7 text-xs"
-                          defaultValue="1000"
-                        />
-                      </div>
-                      <Label htmlFor="format" className="text-xs mb-1">Format</Label>
-                      <Select id="format" defaultValue="png">
-                        <SelectTrigger className="h-7 text-xs mb-3">
-                          <SelectValue placeholder="Select format" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="png">PNG</SelectItem>
-                          <SelectItem value="jpg">JPG</SelectItem>
-                          <SelectItem value="svg">SVG</SelectItem>
-                          <SelectItem value="pdf">PDF</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button 
-                        className="w-full h-7 text-xs"
-                        onClick={() => {
-                          // Add download logic here
-                          const format = document.querySelector('#format')?.value || 'png';
-                          const width = document.querySelector('#width')?.value;
-                          const height = document.querySelector('#height')?.value;
-                          const url = `/api/assets/${logo.id}/file?format=${format}&width=${width}&height=${height}`;
-                          window.open(url, '_blank');
-                        }}
-                      >
-                        Download
-                      </Button>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
+                        
+                        queryClient.invalidateQueries({
+                          queryKey: [`/api/clients/${clientId}/assets`],
+                        });
+                      };
+                      
+                      createUpload();
+                    }
+                  }}
+                  className="hidden"
+                />
+                <Upload className="h-3 w-3" />
+                <span className="text-xs">Replace</span>
+              </label>
+            </Button>
+            
             {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
               <Button
                 variant="ghost"
@@ -699,7 +621,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 />
                 </div>
               )}
-
+              
 
             </div>
           )}
@@ -830,8 +752,7 @@ function LogoSection({
 }
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
-  const { toast } =```text
-useToast();
+  const { toast } = useToast();
   const { user = null } = useAuth();
   const queryClient = useQueryClient();
 
