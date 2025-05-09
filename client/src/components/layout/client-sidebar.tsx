@@ -39,7 +39,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   onTabChange,
 }) => {
   const [, setLocation] = useLocation();
-  const [internalActiveTab, setInternalActiveTab] = useState("dashboard");
+  const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
   const {
     isOpen: showSearch,
     open: openSearch,
