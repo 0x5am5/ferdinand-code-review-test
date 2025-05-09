@@ -35,11 +35,11 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   clientName,
   logos = [], // Added default value for logos
   featureToggles,
-  activeTab = "dashboard", // Default to dashboard
+  activeTab = "dashboard",
   onTabChange,
 }) => {
   const [, setLocation] = useLocation();
-  const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
+  const [internalActiveTab, setInternalActiveTab] = useState("dashboard");
   const {
     isOpen: showSearch,
     open: openSearch,
