@@ -127,7 +127,7 @@ export function ClientDashboard({
 
   return (
     <div 
-      className="h-full min-h-[calc(100vh-180px)] flex flex-col items-center justify-center relative overflow-hidden" 
+      className="h-screen w-full flex flex-col items-center justify-center relative overflow-hidden" 
       style={{ 
         backgroundColor: primaryColor || 'hsl(var(--primary))',
         color: 'white'
