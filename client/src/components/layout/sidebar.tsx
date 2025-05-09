@@ -41,21 +41,37 @@ export const Sidebar: FC = () => {
   const params = useParams();
   const themeContext = useTheme();
   const { user } = useAuth();
-  const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
+  const {
+    isOpen: showSearch,
+    open: openSearch,
+    close: closeSearch,
+  } = useSpotlight();
   const [activeTab, setActiveTab] = useState<string>("logos");
-  
+
   // Check if we're on a client detail page
-  const isClientDetailPage = location.startsWith("/clients/") && location !== "/clients";
+  const isClientDetailPage =
+    location.startsWith("/clients/") && location !== "/clients";
   let clientId: number | null = null;
-  
+
   if (isClientDetailPage && params?.id) {
     clientId = parseInt(params.id, 10);
   }
-  
+
   // Fetch client data if we're on a client page
   const { data: clients = [] } = useClientsQuery();
-  const currentClient = clients.length ? clients.find(client => client.id === clientId) : null;
-  console.log('Client ID:', clientId, 'Found client?', !!currentClient, 'Total clients:', clients.length);
+  const currentClient = clients.length
+    ? clients.find((client) => client.id === clientId)
+    : null;
+  console.log(
+    "Client ID:",
+    clientId,
+    "Found client?",
+    !!currentClient,
+    "Total clients:",
+    clients.length,
+  );
+
+  const { logout } = useAuth();
 
   // Default feature toggles
   const defaultFeatureToggles = {
@@ -111,8 +127,6 @@ export const Sidebar: FC = () => {
     return location === href;
   };
 
-  const { logout } = useAuth();
-
   const handleLogout = async () => {
     try {
       await logout();
@@ -146,15 +160,30 @@ export const Sidebar: FC = () => {
   if (isClientDetailPage && clientId && currentClient) {
     // Safely handle feature toggles with proper type casting
     const clientToggles = (currentClient.featureToggles || {}) as any;
-    
+
     const featureToggles = {
-      logoSystem: typeof clientToggles.logoSystem === 'boolean' ? clientToggles.logoSystem : defaultFeatureToggles.logoSystem,
-      colorSystem: typeof clientToggles.colorSystem === 'boolean' ? clientToggles.colorSystem : defaultFeatureToggles.colorSystem,
-      typeSystem: typeof clientToggles.typeSystem === 'boolean' ? clientToggles.typeSystem : defaultFeatureToggles.typeSystem,
-      userPersonas: typeof clientToggles.userPersonas === 'boolean' ? clientToggles.userPersonas : defaultFeatureToggles.userPersonas,
-      inspiration: typeof clientToggles.inspiration === 'boolean' ? clientToggles.inspiration : defaultFeatureToggles.inspiration
+      logoSystem:
+        typeof clientToggles.logoSystem === "boolean"
+          ? clientToggles.logoSystem
+          : defaultFeatureToggles.logoSystem,
+      colorSystem:
+        typeof clientToggles.colorSystem === "boolean"
+          ? clientToggles.colorSystem
+          : defaultFeatureToggles.colorSystem,
+      typeSystem:
+        typeof clientToggles.typeSystem === "boolean"
+          ? clientToggles.typeSystem
+          : defaultFeatureToggles.typeSystem,
+      userPersonas:
+        typeof clientToggles.userPersonas === "boolean"
+          ? clientToggles.userPersonas
+          : defaultFeatureToggles.userPersonas,
+      inspiration:
+        typeof clientToggles.inspiration === "boolean"
+          ? clientToggles.inspiration
+          : defaultFeatureToggles.inspiration,
     };
-    
+
     return (
       <ClientSidebar
         clientId={clientId}
@@ -171,9 +200,9 @@ export const Sidebar: FC = () => {
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="h-8 w-8 p-0"
           onClick={openSearch}
         >
@@ -181,7 +210,7 @@ export const Sidebar: FC = () => {
           <span className="sr-only">Search</span>
         </Button>
       </div>
-      
+
       <div className="px-4 py-2">
         <Button
           variant="outline"
@@ -203,9 +232,9 @@ export const Sidebar: FC = () => {
       {showSearch ? (
         <div className="flex-1 flex flex-col">
           <div className="mb-2 px-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="flex items-center text-muted-foreground gap-1"
               onClick={closeSearch}
             >
@@ -213,10 +242,7 @@ export const Sidebar: FC = () => {
               <span>Back</span>
             </Button>
           </div>
-          <SpotlightSearch 
-            className="flex-1" 
-            onClose={closeSearch} 
-          />
+          <SpotlightSearch className="flex-1" onClose={closeSearch} />
         </div>
       ) : (
         <ScrollArea className="flex-1 py-4">
@@ -244,7 +270,10 @@ export const Sidebar: FC = () => {
       <div className="border-t p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 px-3 py-2"
+            >
               <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm m-0 font-medium truncate">

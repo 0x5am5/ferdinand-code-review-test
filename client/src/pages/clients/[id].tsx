@@ -7,6 +7,7 @@ import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
+import { ClientDashboard } from "@/components/brand/client-dashboard";
 import {
   useClientAssetsById,
   useClientsQuery,
@@ -18,7 +19,7 @@ export default function ClientDetails() {
   const { id } = useParams();
   const clientId = id ? parseInt(id) : null;
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<string>("logos");
+  const [activeTab, setActiveTab] = useState<string>("dashboard"); // Default to dashboard
 
   // Get the active tab from the sidebar through URL query params
   useEffect(() => {
@@ -34,22 +35,35 @@ export default function ClientDetails() {
     // This function will be called from the sidebar
     const handleTabChange = (e: CustomEvent) => {
       if (e.detail && e.detail.tab) {
-        console.log('Received tab change event:', e.detail.tab);
+        console.log("Received tab change event:", e.detail.tab);
         setActiveTab(e.detail.tab);
       }
     };
 
-    window.addEventListener('client-tab-change', handleTabChange as EventListener);
+    window.addEventListener(
+      "client-tab-change",
+      handleTabChange as EventListener,
+    );
 
     return () => {
-      window.removeEventListener('client-tab-change', handleTabChange as EventListener);
+      window.removeEventListener(
+        "client-tab-change",
+        handleTabChange as EventListener,
+      );
     };
   }, []);
 
   // Debug logging
   useEffect(() => {
-    console.log('Current active tab:', activeTab);
+    console.log("Current active tab:", activeTab);
   }, [activeTab]);
+
+  const { data: client, isLoading: isLoadingClient } = useClientsQuery();
+  const { isLoading: isLoadingAssets, data: assets = [] } = useClientAssetsById(
+    clientId ?? null,
+  );
+  const { data: personas = [], isLoading: isLoadingPersonas } =
+    useClientPersonasById(clientId ?? null);
 
   if (!clientId || isNaN(clientId)) {
     return (
@@ -74,12 +88,6 @@ export default function ClientDetails() {
     );
   }
 
-  const { data: client, isLoading: isLoadingClient } = useClientsQuery();
-  const { isLoading: isLoadingAssets, data: assets = [] } =
-    useClientAssetsById(clientId);
-  const { data: personas = [], isLoading: isLoadingPersonas } =
-    useClientPersonasById(clientId);
-
   if (isLoadingClient || isLoadingAssets || isLoadingPersonas) {
     return (
       <div className="p-8 flex justify-center items-center">
@@ -88,7 +96,7 @@ export default function ClientDetails() {
     );
   }
 
-  if (!client) {
+  if (!client && !isLoadingClient) {
     return (
       <div className="p-8">
         <Card>
@@ -147,10 +155,59 @@ export default function ClientDetails() {
       </div>
     );
   }
+  
+  // Extract primary color from color assets if available
+  let primaryColor = null;
+  try {
+    if (colorAssets && colorAssets.length > 0) {
+      // Find a color asset with 'primary' in its role or name
+      const primaryColorAsset = colorAssets.find(asset => {
+        if (!asset || !asset.data) return false;
+        
+        let data;
+        try {
+          data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+        } catch (parseErr) {
+          return false;
+        }
+        
+        return (data.role === "primary" || 
+               (data.name && typeof data.name === "string" && 
+                data.name.toLowerCase().includes("primary")));
+      });
+      
+      if (primaryColorAsset && primaryColorAsset.data) {
+        let colorData;
+        try {
+          colorData = typeof primaryColorAsset.data === "string" 
+            ? JSON.parse(primaryColorAsset.data) 
+            : primaryColorAsset.data;
+          
+          primaryColor = colorData.value || colorData.hex || null;
+        } catch (parseErr) {
+          console.error("Error parsing color data:", parseErr);
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Error processing color assets:", e);
+  }
 
   // Render the content based on activeTab
   const renderContent = () => {
     switch (activeTab) {
+      case "dashboard":
+        return (
+          <ClientDashboard 
+            clientId={clientId} 
+            clientName={client.name}
+            logos={logoAssets}
+            primaryColor={primaryColor}
+            featureToggles={featureToggles}
+            onTabChange={setActiveTab}
+          />
+        );
+        
       case "logos":
         return featureToggles.logoSystem ? (
           <LogoManager clientId={clientId} logos={logoAssets} />
@@ -159,7 +216,9 @@ export default function ClientDetails() {
             <CardHeader>
               <CardTitle>Feature Disabled</CardTitle>
             </CardHeader>
-            <CardContent>Logo System feature is disabled for this client.</CardContent>
+            <CardContent>
+              Logo System feature is disabled for this client.
+            </CardContent>
           </Card>
         );
 
@@ -171,7 +230,9 @@ export default function ClientDetails() {
             <CardHeader>
               <CardTitle>Feature Disabled</CardTitle>
             </CardHeader>
-            <CardContent>Color System feature is disabled for this client.</CardContent>
+            <CardContent>
+              Color System feature is disabled for this client.
+            </CardContent>
           </Card>
         );
 
@@ -183,7 +244,9 @@ export default function ClientDetails() {
             <CardHeader>
               <CardTitle>Feature Disabled</CardTitle>
             </CardHeader>
-            <CardContent>Typography System feature is disabled for this client.</CardContent>
+            <CardContent>
+              Typography System feature is disabled for this client.
+            </CardContent>
           </Card>
         );
 
@@ -195,7 +258,9 @@ export default function ClientDetails() {
             <CardHeader>
               <CardTitle>Feature Disabled</CardTitle>
             </CardHeader>
-            <CardContent>User Personas feature is disabled for this client.</CardContent>
+            <CardContent>
+              User Personas feature is disabled for this client.
+            </CardContent>
           </Card>
         );
 
@@ -207,32 +272,33 @@ export default function ClientDetails() {
             <CardHeader>
               <CardTitle>Feature Disabled</CardTitle>
             </CardHeader>
-            <CardContent>Inspiration Board feature is disabled for this client.</CardContent>
+            <CardContent>
+              Inspiration Board feature is disabled for this client.
+            </CardContent>
           </Card>
         );
 
       default:
-        // Find first enabled tab
-        if (featureToggles.logoSystem) return <LogoManager clientId={clientId} logos={logoAssets} />;
-        if (featureToggles.colorSystem) return <ColorManager clientId={clientId} colors={colorAssets} />;
-        if (featureToggles.typeSystem) return <FontManager clientId={clientId} fonts={fontAssets} />;
-        if (featureToggles.userPersonas) return <PersonaManager clientId={clientId} personas={personas} />;
-        if (featureToggles.inspiration) return <InspirationBoard clientId={clientId} />;
-
+        // Show dashboard by default
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>No Active Tab</CardTitle>
-            </CardHeader>
-            <CardContent>Please select a tab from the sidebar.</CardContent>
-          </Card>
+          <ClientDashboard 
+            clientId={clientId} 
+            clientName={client.name}
+            logos={logoAssets}
+            primaryColor={primaryColor}
+            featureToggles={featureToggles}
+            onTabChange={setActiveTab}
+          />
         );
     }
   };
 
+  // Only display title for non-dashboard views
   return (
-    <div className="p-8 pt-4">
-      <h1 className="text-3xl font-bold mb-8">{client.name}</h1>
+    <div className={activeTab === "dashboard" ? "p-0" : "p-8 pt-4"}>
+      {activeTab !== "dashboard" && (
+        <h1 className="text-3xl font-bold mb-8">{client.name}</h1>
+      )}
       {renderContent()}
     </div>
   );

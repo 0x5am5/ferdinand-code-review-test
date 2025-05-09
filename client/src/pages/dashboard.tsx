@@ -253,7 +253,7 @@ export default function Dashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold">Client Instances</h1>
+        <h1 className="font-bold">Dashboard</h1>
       </div>
 
       {/* Search and Sort Controls */}

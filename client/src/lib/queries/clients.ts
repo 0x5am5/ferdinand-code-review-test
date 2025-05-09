@@ -8,31 +8,31 @@ export const useClientsQuery = () =>
     queryKey: ["/api/clients"],
   });
 
-export const useClientsById = (clientId: number) =>
+export const useClientsById = (clientId: number | null) =>
   useQuery<Client>({
     queryKey: [`/api/clients/${clientId}`],
     enabled: !!clientId,
   });
 
-export const useClientAssetsById = (clientId: number) =>
+export const useClientAssetsById = (clientId: number | null) =>
   useQuery<BrandAsset[]>({
     queryKey: [`/api/clients/${clientId}/assets`],
     enabled: !!clientId,
   });
 
-export const useClientPersonasById = (clientId: number) =>
+export const useClientPersonasById = (clientId: number | null) =>
   useQuery<UserPersona[]>({
     queryKey: [`/api/clients/${clientId}/personas`],
     enabled: !!clientId,
   });
 
-export const useClientUsersQuery = (clientId: number) =>
+export const useClientUsersQuery = (clientId: number | null) =>
   useQuery<User[]>({
     queryKey: [`/api/clients/${clientId}/users`],
     queryFn: async () => {
       const response = await fetch(`/api/clients/${clientId}/users`);
       if (!response.ok) {
-        throw new Error('Failed to fetch client users');
+        throw new Error("Failed to fetch client users");
       }
       return response.json();
     },
@@ -135,7 +135,9 @@ export function useClientUserMutations(clientId: number) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/users`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/users`],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       toast({
         title: "User assigned",
@@ -153,10 +155,15 @@ export function useClientUserMutations(clientId: number) {
 
   const removeUser = useMutation({
     mutationFn: async (userId: number) => {
-      return await apiRequest("DELETE", `/api/user-clients/${userId}/${clientId}`);
+      return await apiRequest(
+        "DELETE",
+        `/api/user-clients/${userId}/${clientId}`,
+      );
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/users`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/users`],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
       toast({
         title: "User removed",
@@ -171,18 +178,28 @@ export function useClientUserMutations(clientId: number) {
       });
     },
   });
-  
+
   const inviteUser = useMutation({
-    mutationFn: async ({ email, name, role }: { email: string; name: string; role: string }) => {
+    mutationFn: async ({
+      email,
+      name,
+      role,
+    }: {
+      email: string;
+      name: string;
+      role: string;
+    }) => {
       return await apiRequest("POST", "/api/invitations", {
         email,
-        name: name || email.split('@')[0], // Generate a default name from email if not provided
+        name: name || email.split("@")[0], // Generate a default name from email if not provided
         role: role.toLowerCase(),
-        clientIds: [clientId]
+        clientIds: [clientId],
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/clients/${clientId}/users`] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/users`],
+      });
       toast({
         title: "Invitation sent",
         description: "User invitation has been sent successfully",
@@ -196,6 +213,6 @@ export function useClientUserMutations(clientId: number) {
       });
     },
   });
-  
+
   return { assignUser, removeUser, inviteUser };
 }

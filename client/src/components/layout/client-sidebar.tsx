@@ -1,4 +1,4 @@
-import React, { FC } from "react";
+import React, { FC, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -9,12 +9,12 @@ import {
   Image,
   ArrowLeft,
   Search,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 
 interface ClientSidebarProps {
   clientId: number;
@@ -32,17 +32,58 @@ interface ClientSidebarProps {
 }
 
 export const ClientSidebar: FC<ClientSidebarProps> = ({
-  clientId,
   clientName,
   logos = [], // Added default value for logos
   featureToggles,
-  activeTab = "logos",
+  activeTab = "dashboard", // Default to dashboard
   onTabChange,
 }) => {
   const [, setLocation] = useLocation();
-  const { isOpen: showSearch, open: openSearch, close: closeSearch } = useSpotlight();
+  const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
+  const {
+    isOpen: showSearch,
+    open: openSearch,
+    close: closeSearch,
+  } = useSpotlight();
+  
+  // Keep internal state synced with prop
+  useEffect(() => {
+    setInternalActiveTab(activeTab);
+  }, [activeTab]);
+  
+  // Listen for tab changes from the dashboard or other components
+  useEffect(() => {
+    const handleTabChangeEvent = (e: CustomEvent) => {
+      if (e.detail && e.detail.tab) {
+        console.log("Sidebar received tab change event:", e.detail.tab);
+        setInternalActiveTab(e.detail.tab);
+      }
+    };
+
+    window.addEventListener(
+      "client-tab-change",
+      handleTabChangeEvent as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "client-tab-change",
+        handleTabChangeEvent as EventListener,
+      );
+    };
+  }, []);
+
+  const handleAllBrands = () => {
+    setLocation("/dashboard");
+  };
 
   const tabs = [
+    {
+      id: "dashboard",
+      title: "Dashboard",
+      icon: <LayoutDashboard className="h-4 w-4" />,
+      enabled: true, // Dashboard is always enabled
+    },
     {
       id: "logos",
       title: "Logo System",
@@ -75,7 +116,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     },
   ];
 
-  const enabledTabs = tabs.filter(tab => tab.enabled);
+  const enabledTabs = tabs.filter((tab) => tab.enabled);
 
   // Handle tab change and dispatch custom event for client page
   const handleTabChange = (tabId: string) => {
@@ -83,30 +124,36 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     onTabChange(tabId);
 
     // Dispatch a custom event that the client page can listen for
-    const event = new CustomEvent('client-tab-change', { 
-      detail: { tab: tabId } 
+    const event = new CustomEvent("client-tab-change", {
+      detail: { tab: tabId },
     });
     window.dispatchEvent(event);
 
     // Update URL without page reload
     const url = new URL(window.location.href);
-    url.searchParams.set('tab', tabId);
-    window.history.replaceState({}, '', url.toString());
+    url.searchParams.set("tab", tabId);
+    window.history.replaceState({}, "", url.toString());
   };
 
   return (
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
-        {logos?.some(logo => {
-          const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
-          return data?.type === 'horizontal';
+        {logos?.some((logo) => {
+          const data =
+            typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+          return data?.type === "horizontal";
         }) ? (
           <div className="h-8">
-            <img 
-              src={`/api/assets/${logos.find(logo => {
-                const data = typeof logo.data === 'string' ? JSON.parse(logo.data) : logo.data;
-                return data?.type === 'horizontal';
-              })?.id}/file`}
+            <img
+              src={`/api/assets/${
+                logos.find((logo) => {
+                  const data =
+                    typeof logo.data === "string"
+                      ? JSON.parse(logo.data)
+                      : logo.data;
+                  return data?.type === "horizontal";
+                })?.id
+              }/file`}
               alt={clientName}
               className="h-full w-auto object-contain"
             />
@@ -137,9 +184,9 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       {showSearch ? (
         <div className="flex-1 flex flex-col">
           <div className="mb-2 px-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="flex items-center text-muted-foreground gap-1"
               onClick={closeSearch}
             >
@@ -147,10 +194,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
               <span>Back</span>
             </Button>
           </div>
-          <SpotlightSearch 
-            className="flex-1" 
-            onClose={closeSearch} 
-          />
+          <SpotlightSearch className="flex-1" onClose={closeSearch} />
         </div>
       ) : (
         <div className="flex-1 flex flex-col">
@@ -159,13 +203,12 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
               <Button
                 variant="ghost"
                 className="flex items-center text-muted-foreground gap-1 w-full justify-start"
-                onClick={() => setLocation("/dashboard")}
+                onClick={handleAllBrands}
               >
                 <ArrowLeft className="h-4 w-4" />
                 <span>All Brands</span>
               </Button>
             </div>
-
           </div>
 
           <Separator className="mb-2" />
@@ -184,7 +227,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                       key={tab.id}
                       variant="ghost"
                       className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                        ${activeTab === tab.id ? "bg-muted font-medium" : "hover:bg-muted/50"}`}
+                        ${internalActiveTab === tab.id ? "bg-muted font-medium" : "hover:bg-muted/50"}`}
                       onClick={() => handleTabChange(tab.id)}
                     >
                       {tab.icon}

@@ -747,29 +747,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Logo System</h2>
-          <p className="text-muted-foreground mt-1">Manage and download the official logos for this brand</p>
-        </div>
-      </div>
-
-      <Card className="shadow-sm">
-        <CardHeader className="bg-primary/5">
-          <div className="flex items-start gap-3">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <Info className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-base font-medium">Logo Usage Guidelines</CardTitle>
-              <CardDescription className="mt-1">
-                Always maintain clear space around logos, never alter colors, and avoid distortion when resizing. 
-                Use the SVG format whenever possible for the highest quality. The dark variant should be used on dark backgrounds only.
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="client-hero--asset">
+      <h1>Logo System</h1>
+      <p className="text-muted-foreground mt-1">Manage and download the official logos for this brand</p>
+    </div>
 
       {Object.entries(logosByType).map(([type, typeLogos]) => (
         <LogoSection 
