@@ -843,20 +843,36 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         
                         if (variant === 'dark') {
                           // Update with dark variant
+                          formData.append("isDarkVariant", "true");
                           const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
                             method: "PATCH",
                             body: formData,
                           });
+                          
+                          if (!response.ok) {
+                            console.error("Failed to upload dark variant:", await response.text());
+                          }
                         } else {
                           // Replace light variant
+                          formData.append("isDarkVariant", "false");
                           const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
                             method: "PATCH",
                             body: formData,
                           });
+                          
+                          if (!response.ok) {
+                            console.error("Failed to replace light variant:", await response.text());
+                          }
                         }
                         
-                        queryClient.invalidateQueries({
+                        // Invalidate the cache to show the updated logo immediately
+                        await queryClient.invalidateQueries({
                           queryKey: [`/api/clients/${clientId}/assets`],
+                        });
+                        
+                        // Force a reload of this specific logo to ensure it's updated in the UI
+                        await queryClient.invalidateQueries({
+                          queryKey: [`/api/assets/${logo.id}`],
                         });
                       };
                       
@@ -897,10 +913,14 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 isDarkVariant={true}
                 parentLogoId={logo.id}
                 queryClient={queryClient}
-                onSuccess={() => {
+                onSuccess={async () => {
                   parsedData.hasDarkVariant = true;
-                  queryClient.invalidateQueries({
+                  // Ensure we update both queries to refresh the UI immediately
+                  await queryClient.invalidateQueries({
                     queryKey: [`/api/clients/${clientId}/assets`],
+                  });
+                  await queryClient.invalidateQueries({
+                    queryKey: [`/api/assets/${logo.id}`],
                   });
                 }}
               />

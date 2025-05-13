@@ -482,10 +482,10 @@ export function registerAssetRoutes(app: Express) {
           const buffer = Buffer.from(convertedAsset.fileData, "base64");
           // Update the file size in the database
           try {
-            await db.update(brandAssets)
-              .set({ fileSize: buffer.length })
-              .where(eq(brandAssets.id, assetId))
-              .execute();
+            // Using correct column name fileSize
+            await db.execute(
+              sql`UPDATE brand_assets SET "fileSize" = ${buffer.length} WHERE id = ${assetId}`
+            );
           } catch (err) {
             console.warn("Failed to update file size:", err);
           }
@@ -521,10 +521,10 @@ export function registerAssetRoutes(app: Express) {
       const buffer = Buffer.from(asset.fileData, "base64");
       // Update the file size in the database
       try {
-        await db.update(brandAssets)
-          .set({ fileSize: buffer.length })
-          .where(eq(brandAssets.id, assetId))
-          .execute();
+        // Using correct column name file_size/fileSize
+        await db.execute(
+          sql`UPDATE brand_assets SET "fileSize" = ${buffer.length} WHERE id = ${assetId}`
+        );
       } catch (err) {
         console.warn("Failed to update file size:", err);
         // Continue serving the file even if size update fails
