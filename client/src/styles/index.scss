@@ -1,7 +1,7 @@
 
 // Import mixins first so they're available to all components
-@use '_mixins' as *;
 @use 'variables' as *;
+@use '_mixins' as *;
 @use 'semantic';
 @use 'components/sidebar';
 @use 'components/button';

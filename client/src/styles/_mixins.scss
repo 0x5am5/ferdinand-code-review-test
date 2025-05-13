@@ -1,39 +1,81 @@
-// Responsive breakpoints
-$breakpoint-mobile: 640px;  // Small devices
-$breakpoint-tablet: 768px;  // Medium devices
-$breakpoint-desktop: 1024px; // Large devices
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-// Media query mixins
+@mixin card-hover {
+  transition: var(--transition);
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// ---------------------------
+// Media Queries
+// ---------------------------
+
+// -- Default -------------------------
 @mixin mobile {
-  @media (max-width: #{$breakpoint-mobile}) {
+  @media (max-width: 640px) {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (min-width: #{$breakpoint-mobile + 1px}) and (max-width: #{$breakpoint-tablet}) {
-    @content;
-  }
-}
-
-@mixin tablet-and-below {
-  @media (max-width: #{$breakpoint-tablet}) {
+  @media (max-width: 768px) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: #{$breakpoint-tablet + 1px}) {
+  @media (min-width: 1024px) {
+    @content;
+  }
+}
+// -- End of Default -------------------------
+
+// -- Custom -------------------------
+// Screen Sizes
+$screen-mobile-vertical: 480px;
+$screen-mobile-horizontal: 640px;
+$screen-tablet: 767px;
+$screen-laptop: 1024px;
+$screen-desktop: 1440px;
+$screen-desktop-xl: 1920px;
+
+@mixin mobile-vertical {
+  @media (max-width: $screen-mobile-vertical) {
     @content;
   }
 }
 
-// Card hover effect mixin
-@mixin card-hover {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+@mixin mobile-horizontal {
+  @media (min-width: $screen-mobile-vertical + 1) and (max-width: $screen-mobile-horizontal) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: $screen-mobile-horizontal + 1) and (max-width: $screen-tablet) {
+    @content;
+  }
+}
+
+@mixin laptop {
+  @media (min-width: $screen-tablet + 1) and (max-width: $screen-laptop) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: $screen-laptop + 1) and (max-width: $screen-desktop) {
+    @content;
+  }
+}
+
+@mixin desktop-xl {
+  @media (min-width: $screen-desktop + 1) {
+    @content;
   }
 }
