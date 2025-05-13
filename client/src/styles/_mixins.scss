@@ -1,31 +1,39 @@
+// Responsive breakpoints
+$breakpoint-mobile: 640px;  // Small devices
+$breakpoint-tablet: 768px;  // Medium devices
+$breakpoint-desktop: 1024px; // Large devices
 
+// Media query mixins
 @mixin mobile {
-  @media (max-width: 640px) {
+  @media (max-width: #{$breakpoint-mobile}) {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (max-width: 768px) {
+  @media (min-width: #{$breakpoint-mobile + 1px}) and (max-width: #{$breakpoint-tablet}) {
+    @content;
+  }
+}
+
+@mixin tablet-and-below {
+  @media (max-width: #{$breakpoint-tablet}) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: 1024px) {
+  @media (min-width: #{$breakpoint-tablet + 1px}) {
     @content;
   }
 }
 
-@mixin flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+// Card hover effect mixin
 @mixin card-hover {
-  transition: var(--transition);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 }

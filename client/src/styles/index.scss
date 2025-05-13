@@ -1,10 +1,12 @@
 
+// Import mixins first so they're available to all components
+@use '_mixins' as *;
 @use 'variables' as *;
 @use 'semantic';
-@use 'mixins' as *;
 @use 'components/sidebar';
 @use 'components/button';
 @use 'components/card';
+@use 'components/logoManager';
 
 @tailwind base;
 @tailwind components;

@@ -291,27 +291,24 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 
   // Otherwise render the full drag-and-drop interface
   return (
-    <div className="col-span-3 flex flex-col">
+    <div className="logo-upload">
       <div 
-        className={`flex flex-col items-center justify-center border-2 ${
-          isDragging ? 'border-primary' : 'border-dashed border-muted-foreground/20'
-        } rounded-lg bg-muted/5 hover:bg-muted/10 transition-colors duration-200 h-full w-full min-h-[400px]`}
+        className={`logo-upload__dropzone ${isDragging ? 'logo-upload__dropzone--active' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        style={{ height: '100%' }}
       >
         {selectedFile ? (
           <>
-            <div className="bg-primary/10 p-3 rounded-full mb-4">
-              <CheckCircle className="h-8 w-8 text-primary" />
+            <div className="logo-upload__dropzone-icon logo-upload__dropzone-icon--success">
+              <CheckCircle className="h-8 w-8" />
             </div>
-            <h4 className="text-lg font-medium mb-1">{selectedFile.name}</h4>
-            <p className="text-sm text-muted-foreground mb-6">
-              {Math.round(selectedFile.size / 1024)}KB • {selectedFile.type}
-            </p>
-            <div className="flex gap-3">
+            <div className="logo-upload__dropzone-file-info">
+              <h4>{selectedFile.name}</h4>
+              <p>{Math.round(selectedFile.size / 1024)}KB • {selectedFile.type}</p>
+            </div>
+            <div className="logo-upload__dropzone-actions">
               <Button
                 variant="default"
                 onClick={() => createLogo.mutate()}
@@ -329,34 +326,38 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
           </>
         ) : (
           <>
-            <div className="bg-muted-foreground/10 p-3 rounded-full mb-4">
-              <Upload className="h-8 w-8 text-muted-foreground/70" />
+            <div className="logo-upload__dropzone-icon">
+              <Upload className="h-8 w-8" />
             </div>
-            <h4 className="text-lg font-medium mb-1">Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo</h4>
-            <p className="text-sm text-muted-foreground mb-6 text-center max-w-md">
+            <h4 className="logo-upload__dropzone-heading">
+              Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo
+            </h4>
+            <p className="logo-upload__dropzone-text">
               Drag and drop your logo file here, or click to browse.<br />
               Supported formats: {Object.values(FILE_FORMATS).join(", ")}
             </p>
-            <label className="cursor-pointer">
-              <Input
-                type="file"
-                accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <Button
-                variant="outline"
-                type="button"
-                onClick={(e) => {
-                  const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file"]');
-                  if (fileInput) {
-                    (fileInput as HTMLInputElement).click();
-                  }
-                }}
-              >
-                Browse Files
-              </Button>
-            </label>
+            <div className="logo-upload__dropzone-actions">
+              <label className="cursor-pointer">
+                <Input
+                  type="file"
+                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={(e) => {
+                    const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file"]');
+                    if (fileInput) {
+                      (fileInput as HTMLInputElement).click();
+                    }
+                  }}
+                >
+                  Browse Files
+                </Button>
+              </label>
+            </div>
           </>
         )}
       </div>
@@ -381,6 +382,46 @@ function LogoDownloadButton({
   const [width, setWidth] = useState<number>(300); // Default width, will be calculated from image
   const [height, setHeight] = useState<number>(200); // Default height, will be calculated from image
   const [selectedFormats, setSelectedFormats] = useState<string[]>([parsedData.format]);
+  const [originalWidth, setOriginalWidth] = useState<number>(300);
+  const [originalHeight, setOriginalHeight] = useState<number>(200);
+  const [open, setOpen] = useState<boolean>(false);
+  
+  // Helper function to estimate file size based on dimensions and format
+  const estimateFileSize = (format: string, scaledWidth: number, scaledHeight: number): string => {
+    // Calculate area ratio compared to original
+    const originalArea = originalWidth * originalHeight;
+    const newArea = scaledWidth * scaledHeight;
+    const areaRatio = newArea / originalArea;
+    
+    // Base sizes from getFileSizeString
+    let baseSizeKB = 0;
+    switch(format.toLowerCase()) {
+      case 'svg':
+        return '15 KB'; // SVG size doesn't change with dimensions
+      case 'pdf':
+        baseSizeKB = 250;
+        break;
+      case 'png':
+        baseSizeKB = 120;
+        break;
+      case 'jpg':
+      case 'jpeg':
+        baseSizeKB = 85;
+        break;
+      default:
+        baseSizeKB = 100;
+    }
+    
+    // Scale size by area ratio, but with some compression efficiency for larger sizes
+    let scaledSize = baseSizeKB * Math.sqrt(areaRatio);
+    
+    // Format the result
+    if (scaledSize < 1000) {
+      return `${Math.round(scaledSize)} KB`;
+    } else {
+      return `${(scaledSize / 1024).toFixed(1)} MB`;
+    }
+  };
   
   // Create download URL with size parameters
   const getDownloadUrl = (format: string) => {
@@ -404,6 +445,34 @@ function LogoDownloadButton({
     return baseUrl;
   };
 
+  // Start download of all selected formats
+  const downloadSelected = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    
+    // Create a link for each format and click it
+    selectedFormats.forEach((format, index) => {
+      const link = document.createElement('a');
+      link.href = getDownloadUrl(format);
+      link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}pct.${format}`;
+      
+      // Add a small delay between downloads to avoid browser limitations
+      setTimeout(() => {
+        container.appendChild(link);
+        link.click();
+        container.removeChild(link);
+      }, index * 100);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, selectedFormats.length * 100 + 100);
+  };
+
   // Load dimensions once when component mounts
   useEffect(() => {
     // Create a new image to get dimensions
@@ -411,40 +480,78 @@ function LogoDownloadButton({
     img.onload = () => {
       setWidth(img.width);
       setHeight(img.height);
+      setOriginalWidth(img.width);
+      setOriginalHeight(img.height);
     };
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Update width/height when size changes
-  useEffect(() => {
-    const calculatedWidth = Math.round(width * (size / 100));
-    const calculatedHeight = Math.round(height * (size / 100));
-    
-    if (calculatedWidth < 10) setWidth(10);
-    if (calculatedHeight < 10) setHeight(10);
-  }, [size]);
+  // Calculate the actual pixel dimensions based on size percentage
+  const scaledWidth = Math.max(10, Math.round(originalWidth * (size / 100)));
+  const scaledHeight = Math.max(10, Math.round(originalHeight * (size / 100)));
 
-  // Update size or maintain ratio when width/height changes
-  const handleWidthChange = (newWidth: number) => {
-    if (lockRatio && width > 0) {
-      const aspectRatio = height / width;
+  // Handle width input change with better validation
+  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    // Allow empty input for better editing experience
+    if (inputValue === '') {
+      // Just set width to a temporary empty value, will be corrected on blur
+      setWidth(0);
+      return;
+    }
+    
+    const newWidth = parseInt(inputValue);
+    
+    // Validate the width is a positive number
+    if (isNaN(newWidth) || newWidth <= 0) {
+      return;
+    }
+    
+    if (lockRatio && originalWidth > 0) {
+      const aspectRatio = originalHeight / originalWidth;
       const newHeight = Math.round(newWidth * aspectRatio);
-      setHeight(newHeight);
-      setSize(Math.round((newWidth / width) * 100));
+      const newSizePercentage = (newWidth / originalWidth) * 100;
+      setSize(newSizePercentage);
     } else {
-      setWidth(newWidth);
+      const newSizePercentage = (newWidth / originalWidth) * 100;
+      setSize(newSizePercentage);
     }
   };
 
-  const handleHeightChange = (newHeight: number) => {
-    if (lockRatio && height > 0) {
-      const aspectRatio = width / height;
-      const newWidth = Math.round(newHeight * aspectRatio);
-      setWidth(newWidth);
-      setSize(Math.round((newHeight / height) * 100));
-    } else {
-      setHeight(newHeight);
+  // Handle height input change with better validation
+  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    
+    // Allow empty input for better editing experience
+    if (inputValue === '') {
+      // Just set height to a temporary empty value, will be corrected on blur
+      setHeight(0);
+      return;
     }
+    
+    const newHeight = parseInt(inputValue);
+    
+    // Validate the height is a positive number
+    if (isNaN(newHeight) || newHeight <= 0) {
+      return;
+    }
+    
+    if (lockRatio && originalHeight > 0) {
+      const aspectRatio = originalWidth / originalHeight;
+      const newWidth = Math.round(newHeight * aspectRatio);
+      const newSizePercentage = (newHeight / originalHeight) * 100;
+      setSize(newSizePercentage);
+    } else {
+      const newSizePercentage = (newHeight / originalHeight) * 100;
+      setSize(newSizePercentage);
+    }
+  };
+
+  // Handle input field blur events to ensure valid values
+  const handleInputBlur = () => {
+    // Ensure minimum size is maintained
+    if (size < 10) setSize(10);
   };
 
   // Toggle format selection
@@ -457,178 +564,166 @@ function LogoDownloadButton({
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="bg-background/80 backdrop-blur-sm gap-1"
-        >
+        <button className="logo-display__preview-action-button">
           <Download className="h-3 w-3" />
-          <span className="text-xs">Download</span>
-        </Button>
+          <span>Download</span>
+        </button>
       </PopoverTrigger>
-      <PopoverContent className="w-96">
-        <div className="space-y-4">
-          <h4 className="font-medium">Download Options</h4>
+      <PopoverContent className="logo-download__popover">
+        <div className="logo-download__popover-content">
+          <h4 className="logo-download__popover-heading">Download Options</h4>
           
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="logo-download__popover-dimensions">
+            <div className="logo-download__popover-dimensions-header">
               <Label htmlFor="size">Dimensions</Label>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setLockRatio(!lockRatio)}
-                  title={lockRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
-                >
-                  {lockRatio ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setLockRatio(!lockRatio)}
+                title={lockRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
+              >
+                {lockRatio ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+              </Button>
             </div>
             
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col space-y-1 flex-grow">
+            <div className="logo-download__popover-dimensions-inputs">
+              <div className="logo-download__popover-dimensions-inputs-group">
                 <Label htmlFor="width" className="text-xs">Width (px)</Label>
                 <Input
                   id="width"
-                  type="number"
-                  value={Math.round(width * (size / 100))}
-                  onChange={(e) => handleWidthChange(parseInt(e.target.value) || 10)}
+                  type="text"
+                  value={scaledWidth}
+                  onChange={handleWidthChange}
+                  onBlur={handleInputBlur}
                   min={10}
-                  className="h-8"
                 />
               </div>
-              <div className="flex flex-col space-y-1 flex-grow">
+              <div className="logo-download__popover-dimensions-inputs-group">
                 <Label htmlFor="height" className="text-xs">Height (px)</Label>
                 <Input
                   id="height"
-                  type="number"
-                  value={Math.round(height * (size / 100))}
-                  onChange={(e) => handleHeightChange(parseInt(e.target.value) || 10)}
+                  type="text"
+                  value={scaledHeight}
+                  onChange={handleHeightChange}
+                  onBlur={handleInputBlur}
                   min={10}
-                  className="h-8"
                 />
               </div>
             </div>
             
-            <div className="pt-2">
-              <Label htmlFor="size" className="text-xs text-muted-foreground">Size: {size}%</Label>
+            <div className="logo-download__popover-dimensions-slider">
+              <Label htmlFor="size">Size: {size.toFixed(0)}%</Label>
               <Slider 
                 id="size"
                 value={[size]} 
                 min={10} 
                 max={400} 
-                step={10}
+                step={5}
                 onValueChange={(value) => setSize(value[0])} 
-                className="w-full" 
               />
             </div>
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="format">File Formats</Label>
-            <p className="text-xs text-muted-foreground mb-2">Select one or more formats to download</p>
+          <div className="logo-download__popover-formats">
+            <Label htmlFor="format" className="logo-download__popover-formats-heading">File Formats</Label>
+            <p className="logo-download__popover-formats-hint">Select formats to download</p>
             
-            <div className="space-y-1 max-h-48 overflow-y-auto pr-2 border rounded-md p-2">
+            <div className="logo-download__popover-formats-list">
               {/* Original format */}
-              <div className="flex items-center space-x-2">
+              <div className="logo-download__popover-formats-list-item">
                 <Checkbox 
                   id={`format-${parsedData.format}`}
                   checked={selectedFormats.includes(parsedData.format)}
                   onCheckedChange={() => toggleFormat(parsedData.format)}
                 />
-                <div className="flex items-center justify-between w-full pr-2">
+                <div className="logo-download__popover-formats-list-item-label">
                   <Label 
                     htmlFor={`format-${parsedData.format}`}
-                    className="text-xs flex items-center cursor-pointer"
                   >
                     {parsedData.format.toUpperCase()}
                   </Label>
-                  <span className="text-xs text-muted-foreground">
-                    {getFileSizeString(parsedData.format)}
+                  <span className="logo-download__popover-formats-list-item-label-size">
+                    {estimateFileSize(parsedData.format, scaledWidth, scaledHeight)}
                   </span>
                 </div>
               </div>
               
               {/* JPG format */}
-              <div className="flex items-center space-x-2">
+              <div className="logo-download__popover-formats-list-item">
                 <Checkbox 
                   id="format-jpg"
                   checked={selectedFormats.includes('jpg')}
                   onCheckedChange={() => toggleFormat('jpg')}
                 />
-                <div className="flex items-center justify-between w-full pr-2">
+                <div className="logo-download__popover-formats-list-item-label">
                   <Label 
                     htmlFor="format-jpg"
-                    className="text-xs flex items-center cursor-pointer"
                   >
                     JPG
                   </Label>
-                  <span className="text-xs text-muted-foreground">
-                    {getFileSizeString('jpg')}
+                  <span className="logo-download__popover-formats-list-item-label-size">
+                    {estimateFileSize('jpg', scaledWidth, scaledHeight)}
                   </span>
                 </div>
               </div>
               
               {/* PNG format */}
-              <div className="flex items-center space-x-2">
+              <div className="logo-download__popover-formats-list-item">
                 <Checkbox 
                   id="format-png"
                   checked={selectedFormats.includes('png')}
                   onCheckedChange={() => toggleFormat('png')}
                 />
-                <div className="flex items-center justify-between w-full pr-2">
+                <div className="logo-download__popover-formats-list-item-label">
                   <Label 
                     htmlFor="format-png"
-                    className="text-xs flex items-center cursor-pointer"
                   >
                     PNG
                   </Label>
-                  <span className="text-xs text-muted-foreground">
-                    {getFileSizeString('png')}
+                  <span className="logo-download__popover-formats-list-item-label-size">
+                    {estimateFileSize('png', scaledWidth, scaledHeight)}
                   </span>
                 </div>
               </div>
               
               {/* PDF format */}
-              <div className="flex items-center space-x-2">
+              <div className="logo-download__popover-formats-list-item">
                 <Checkbox 
                   id="format-pdf"
                   checked={selectedFormats.includes('pdf')}
                   onCheckedChange={() => toggleFormat('pdf')}
                 />
-                <div className="flex items-center justify-between w-full pr-2">
+                <div className="logo-download__popover-formats-list-item-label">
                   <Label 
                     htmlFor="format-pdf"
-                    className="text-xs flex items-center cursor-pointer"
                   >
                     PDF
                   </Label>
-                  <span className="text-xs text-muted-foreground">
-                    {getFileSizeString('pdf')}
+                  <span className="logo-download__popover-formats-list-item-label-size">
+                    {estimateFileSize('pdf', scaledWidth, scaledHeight)}
                   </span>
                 </div>
               </div>
               
               {/* SVG format */}
               {['png', 'jpg', 'jpeg'].includes(parsedData.format.toLowerCase()) && (
-                <div className="flex items-center space-x-2">
+                <div className="logo-download__popover-formats-list-item">
                   <Checkbox 
                     id="format-svg"
                     checked={selectedFormats.includes('svg')}
                     onCheckedChange={() => toggleFormat('svg')}
                   />
-                  <div className="flex items-center justify-between w-full pr-2">
+                  <div className="logo-download__popover-formats-list-item-label">
                     <Label 
                       htmlFor="format-svg"
-                      className="text-xs flex items-center cursor-pointer"
                     >
                       SVG
                     </Label>
-                    <span className="text-xs text-muted-foreground">
-                      {getFileSizeString('svg')}
+                    <span className="logo-download__popover-formats-list-item-label-size">
+                      {estimateFileSize('svg', scaledWidth, scaledHeight)}
                     </span>
                   </div>
                 </div>
@@ -636,29 +731,37 @@ function LogoDownloadButton({
             </div>
           </div>
           
-          <div className="grid grid-cols-2 gap-2">
+          <div className="logo-download__popover-actions">
             {selectedFormats.length > 0 ? (
-              selectedFormats.map(format => (
+              <>
                 <Button 
-                  key={format}
-                  variant={format === parsedData.format ? "default" : "outline"}
-                  size="sm"
-                  className="text-xs"
-                  asChild
+                  onClick={downloadSelected}
                 >
-                  <a 
-                    href={getDownloadUrl(format)}
-                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}pct.${format}`}
-                  >
-                    <Download className="h-3 w-3 mr-1" />
-                    {format.toUpperCase()}
-                  </a>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download ({selectedFormats.length})
                 </Button>
-              ))
+                <Button 
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </>
             ) : (
-              <div className="col-span-2 text-center text-xs text-muted-foreground">
-                Please select at least one format
-              </div>
+              <>
+                <Button 
+                  disabled
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Select formats
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -680,158 +783,51 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
 
   return (
-    <div className="grid grid-cols-4 gap-8 mb-8">
-      {/* 1/4 column - Logo information */}
-      <div className="space-y-6">
-        <div>
-          <p className="text-muted-foreground mb-4">
-            {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
-          </p>
-        </div>
-
-        {/* Light/Dark toggle moved here */}
-        <div>
-          <h5 className="text-sm font-medium mb-3">Display Mode</h5>
-          <Tabs value={variant} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="light" onClick={() => setVariant('light')}>
-                <Sun className="h-4 w-4 mr-2" />
-                Light
-              </TabsTrigger>
-              <TabsTrigger value="dark" onClick={() => setVariant('dark')}>
-                <Moon className="h-4 w-4 mr-2" />
-                Dark
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* File name and download section */}
-        <div>
-          <h5 className="text-sm font-medium flex items-center">
-            <FileType className="h-4 w-4 mr-2" />
-            File Details
-          </h5>
-          <div className="space-y-2 mt-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-sm font-medium">
-                  {logo.name} {variant === 'dark' ? '- Dark' : ''}
-                </span>
-              </div>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
-                <a href={variant === 'dark' && parsedData.hasDarkVariant ? 
-                  `/api/assets/${logo.id}/file?variant=dark` : imageUrl} 
-                  download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.${parsedData.format}`}>
-                  <Download className="h-4 w-4" />
-                </a>
-              </Button>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Filename: {parsedData.fileName || `${logo.name}.${parsedData.format}`}
-            </div>
-            
-            {/* Display available converted formats */}
-            <div className="mt-4">
-              <h6 className="text-xs font-medium mb-2">Available Formats:</h6>
-              <ul className="space-y-2">
-                <li>
-                  <a 
-                    href={variant === 'dark' && parsedData.hasDarkVariant ? 
-                    `/api/assets/${logo.id}/file?variant=dark` : 
-                    `/api/assets/${logo.id}/file`} 
-                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.${parsedData.format}`}
-                    className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
-                  >
-                    <span className="flex items-center">
-                      <Download className="h-3 w-3 mr-2" />
-                      {parsedData.format.toUpperCase()}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {getFileSizeString(parsedData.format)}
-                    </span>
-                  </a>
-                </li>
-                
-                <li>
-                  <a 
-                    href={variant === 'dark' && parsedData.hasDarkVariant ? 
-                    `/api/assets/${logo.id}/file?format=jpg&variant=dark` : 
-                    `/api/assets/${logo.id}/file?format=jpg`} 
-                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.jpg`}
-                    className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
-                  >
-                    <span className="flex items-center">
-                      <Download className="h-3 w-3 mr-2" />
-                      JPG
-                    </span>
-                    <span className="text-muted-foreground">
-                      {getFileSizeString('jpg')}
-                    </span>
-                  </a>
-                </li>
-                
-                <li>
-                  <a 
-                    href={variant === 'dark' && parsedData.hasDarkVariant ? 
-                    `/api/assets/${logo.id}/file?format=pdf&variant=dark` : 
-                    `/api/assets/${logo.id}/file?format=pdf`} 
-                    download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.pdf`}
-                    className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
-                  >
-                    <span className="flex items-center">
-                      <Download className="h-3 w-3 mr-2" />
-                      PDF
-                    </span>
-                    <span className="text-muted-foreground">
-                      {getFileSizeString('pdf')}
-                    </span>
-                  </a>
-                </li>
-                
-                {/* For vector files, show png option */}
-                {['svg', 'ai'].includes(parsedData.format.toLowerCase()) && (
-                  <li>
-                    <a 
-                      href={variant === 'dark' && parsedData.hasDarkVariant ? 
-                      `/api/assets/${logo.id}/file?format=png&variant=dark` : 
-                      `/api/assets/${logo.id}/file?format=png`} 
-                      download={`${logo.name}${variant === 'dark' ? '-Dark' : ''}.png`}
-                      className="flex items-center justify-between text-xs hover:text-primary transition-colors w-full pr-2"
-                    >
-                      <span className="flex items-center">
-                        <Download className="h-3 w-3 mr-2" />
-                        PNG
-                      </span>
-                      <span className="text-muted-foreground">
-                        {getFileSizeString('png')}
-                      </span>
-                    </a>
-                  </li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </div>
+    <div className="logo-display">
+      {/* Logo information */}
+      <div className="logo-display__info">
+        <p className="logo-display__info-description">
+          {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
+        </p>
       </div>
 
-      {/* 3/4 column - Logo preview */}
-      <div className="col-span-3 flex flex-col">
+      {/* Logo preview */}
+      <div className="logo-display__preview">
         <div 
-          className={`rounded-lg pt-[15vh] pb-[15vh] flex items-center justify-center relative ${
+          className={`logo-display__preview-container ${
             variant === 'light' 
-              ? 'bg-white' 
-              : 'bg-slate-900'
+              ? 'logo-display__preview-container--light' 
+              : 'logo-display__preview-container--dark'
           }`}
-          style={{ minHeight: '250px' }}
         >
-          <div className="absolute top-2 right-2 flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="bg-background/80 backdrop-blur-sm gap-1"
-              asChild
+          {/* Background toggle at the top left */}
+          <div className="logo-display__preview-background-toggle">
+            <div className="logo-display__preview-background-toggle-tabs">
+              <button 
+                data-state={variant === 'light' ? 'active' : 'inactive'} 
+                onClick={() => setVariant('light')}
+              >
+                <Sun className="h-4 w-4" />
+                Light Background
+              </button>
+              <button 
+                data-state={variant === 'dark' ? 'active' : 'inactive'} 
+                onClick={() => setVariant('dark')}
+              >
+                <Moon className="h-4 w-4" />
+                Dark Background
+              </button>
+            </div>
+          </div>
+          
+          {/* Top right controls */}
+          <div className={`logo-display__preview-controls ${
+              variant === 'light' 
+                ? 'light' 
+                : 'dark'
+            }`}
             >
+            <button className="logo-display__preview-action-button">
               <label className="cursor-pointer">
                 <Input
                   type="file"
@@ -870,11 +866,11 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   className="hidden"
                 />
                 <Upload className="h-3 w-3" />
-                <span className="text-xs">Replace</span>
+                <span>Replace</span>
               </label>
-            </Button>
+            </button>
             
-            {/* Add the new download button here */}
+            {/* Add the download button here */}
             <LogoDownloadButton 
               logo={logo} 
               imageUrl={imageUrl} 
@@ -883,17 +879,16 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             />
             
             {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="bg-background/80 backdrop-blur-sm gap-1"
+              <button 
+                className="logo-display__preview-action-button"
                 onClick={() => onDelete(logo.id, variant)}
               >
                 <Trash2 className="h-3 w-3" />
-                <span className="text-xs">Delete</span>
-              </Button>
+                <span>Delete</span>
+              </button>
             )}
           </div>
+          
           {variant === 'dark' && !parsedData.hasDarkVariant ? (
             <div className="w-full h-full flex items-center justify-center">
               <FileUpload
@@ -911,16 +906,15 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
               />
             </div>
           ) : (
-            <div className="relative">
+            <div className="logo-display__preview-image-container">
               {parsedData.format === 'svg' ? (
-                <div className="relative max-w-[60%] svg-container">
+                <div className="relative">
                   {/* Using iframe for SVG to better isolate and prevent issues */}
                   <iframe
                     src={variant === 'dark' && parsedData.hasDarkVariant ? 
                       `/api/assets/${logo.id}/file?variant=dark` : 
                       imageUrl}
-                    className="max-h-[250px] border-0"
-                    style={{ background: 'transparent' }}
+                    className="logo-display__preview-image--svg"
                     onError={(e) => {
                       console.error("Error loading SVG:", imageUrl);
                       // In case the iframe fails, we'll try to fallback to img
@@ -929,7 +923,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         const fallbackImg = document.createElement('img');
                         fallbackImg.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
                         fallbackImg.alt = logo.name || "SVG Logo";
-                        fallbackImg.className = "max-w-[60%] max-h-[250px]";
+                        fallbackImg.className = "logo-display__preview-image";
                         container.innerHTML = '';
                         container.appendChild(fallbackImg);
                       }
@@ -937,13 +931,12 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   />
                 </div>
               ) : (
-                <div className="max-w-[60%] flex justify-self-center">
                 <img
                   src={variant === 'dark' && parsedData.hasDarkVariant ? 
                     `/api/assets/${logo.id}/file?variant=dark` : 
                     imageUrl}
                   alt={logo.name}
-                  className="max-h-[250px] object-contain"
+                  className="logo-display__preview-image"
                   style={{ 
                     filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
                   }}
@@ -953,10 +946,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                       'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
                   }}
                 />
-                </div>
               )}
-              
-
             </div>
           )}
         </div>
@@ -980,31 +970,19 @@ function LogoSection({
   queryClient: any
 }) {
   const { user = null } = useAuth();
-  const [uploadMode, setUploadMode] = useState(false);
   const hasLogos = logos.length > 0;
 
   return (
-    <div className="pt-4 mb-8">
-      <div className="flex justify-between items-end mb-4">
+    <div className="logo-section">
+      <div className="logo-section__header">
         <div>
-          <h3 className="text-xl font-semibold mb-1">
+          <h3>
             {type.charAt(0).toUpperCase() + type.slice(1)} Logo
           </h3>
         </div>
-
-        {!uploadMode && !hasLogos && user && user.role !== UserRole.STANDARD && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setUploadMode(true)}
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Logo
-          </Button>
-        )}
       </div>
 
-      <Separator className="my-4" />
+      <Separator className="logo-section__separator" />
 
       {/* Display logos if available */}
       {hasLogos ? (
@@ -1027,56 +1005,29 @@ function LogoSection({
           })}
         </div>
       ) : (
-        // Empty state with two-column layout
-        <div className="grid grid-cols-4 gap-8">
-          {/* 1/4 column with description */}
-          <div className="space-y-4">
-            <div className="bg-muted/30 p-3 rounded-lg inline-block">
-              <FileType className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <h4 className="text-lg font-medium">
-              {type.charAt(0).toUpperCase() + type.slice(1)} Logo
-            </h4>
-            <p className="text-sm text-muted-foreground">
+        // Empty state with two-column layout and direct upload interface
+        <div className="logo-section__empty">
+          {/* Info column with description */}
+          <div className="logo-section__empty-info">
+            <p>
               {logoDescriptions[type as keyof typeof logoDescriptions]}
             </p>
-
-            {uploadMode && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="mt-4"
-                onClick={() => setUploadMode(false)}
-              >
-                Cancel Upload
-              </Button>
-            )}
           </div>
 
-          {/* 3/4 column - upload area or placeholder */}
-          {uploadMode ? (
+          {/* Always show upload area for non-standard users */}
+          {user && user.role !== UserRole.STANDARD ? (
             <FileUpload 
               type={type} 
               clientId={clientId}
-              onSuccess={() => setUploadMode(false)}
+              onSuccess={() => {}}
               queryClient={queryClient}
             />
           ) : (
-            <div className="col-span-3 bg-muted/10 rounded-lg flex flex-col items-center justify-center p-8 text-center">
-              <FileType className="h-10 w-10 text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground mb-4">
+            <div className="logo-section__empty-placeholder">
+              <FileType className="logo-section__empty-placeholder-icon h-10 w-10" />
+              <p>
                 No {type.toLowerCase()} logo uploaded yet
               </p>
-              {user && user.role !== UserRole.STANDARD && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setUploadMode(true)}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload Logo
-                </Button>
-              )}
             </div>
           )}
         </div>
@@ -1134,10 +1085,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   );
 
   return (
-    <div className="space-y-6 pb-12">
-    <div className="client-hero--asset my-[10vh]">
+    <div className="logo-manager">
+    <div className="logo-manager__header">
       <h1>Logo System</h1>
-      <p className="text-muted-foreground mt-1">Manage and download the official logos for this brand</p>
+      <p>Manage and download the official logos for this brand</p>
     </div>
 
       {Object.entries(logosByType).map(([type, typeLogos]) => (
