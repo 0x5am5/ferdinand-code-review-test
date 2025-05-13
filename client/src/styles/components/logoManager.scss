@@ -1,35 +1,5 @@
 // Logo Manager Component Styles
 
-// Responsive breakpoints
-$breakpoint-mobile: 640px;  // Small devices
-$breakpoint-tablet: 768px;  // Medium devices
-$breakpoint-desktop: 1024px; // Large devices
-
-// Media query mixins
-@mixin mobile {
-  @media (max-width: #{$breakpoint-mobile}) {
-    @content;
-  }
-}
-
-@mixin tablet {
-  @media (min-width: #{$breakpoint-mobile + 1px}) and (max-width: #{$breakpoint-tablet}) {
-    @content;
-  }
-}
-
-@mixin tablet-and-below {
-  @media (max-width: #{$breakpoint-tablet}) {
-    @content;
-  }
-}
-
-@mixin desktop {
-  @media (min-width: #{$breakpoint-tablet + 1px}) {
-    @content;
-  }
-}
-
 .logo-manager {
   padding-bottom: 3rem;
   
