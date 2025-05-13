@@ -100,7 +100,44 @@ export class DatabaseStorage implements IStorage {
     return client;
   }
   async deleteClient(id: number): Promise<void> {
-    await db.delete(clients).where(eq(clients.id, id));
+    try {
+      // Start a transaction to ensure all related data is deleted or nothing is deleted
+      await db.transaction(async (tx) => {
+        // 1. Delete user-client relationships
+        await tx.delete(userClients).where(eq(userClients.clientId, id));
+        
+        // 2. Get all brand assets for this client
+        const assets = await tx.select().from(brandAssets).where(eq(brandAssets.clientId, id));
+        
+        // 3. For each asset, delete its converted assets
+        for (const asset of assets) {
+          await tx.delete(convertedAssets).where(eq(convertedAssets.originalAssetId, asset.id));
+        }
+        
+        // 4. Delete all brand assets
+        await tx.delete(brandAssets).where(eq(brandAssets.clientId, id));
+        
+        // 5. Get all inspiration sections
+        const sections = await tx.select().from(inspirationSections).where(eq(inspirationSections.clientId, id));
+        
+        // 6. Delete all inspiration images for each section
+        for (const section of sections) {
+          await tx.delete(inspirationImages).where(eq(inspirationImages.sectionId, section.id));
+        }
+        
+        // 7. Delete all inspiration sections
+        await tx.delete(inspirationSections).where(eq(inspirationSections.clientId, id));
+        
+        // 8. Delete all user personas
+        await tx.delete(userPersonas).where(eq(userPersonas.clientId, id));
+        
+        // 9. Finally, delete the client
+        await tx.delete(clients).where(eq(clients.id, id));
+      });
+    } catch (error) {
+      console.error("Error in deleteClient transaction:", error);
+      throw error;
+    }
   }
 
   async getClientAssets(clientId: number): Promise<BrandAsset[]> {
