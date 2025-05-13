@@ -766,7 +766,7 @@ export default function Dashboard() {
                   {activeTab === "client-info" && (
                     <Button
                       type="submit"
-                      disabled={useUpdateClientMutation.isPending}
+                      disabled={updateClient.isPending}
                     >
                       Save Changes
                     </Button>
@@ -777,13 +777,13 @@ export default function Dashboard() {
                       onClick={() => {
                         if (editingClient) {
                           // Save feature toggles to the database
-                          useUpdateClientMutation.mutate({
+                          updateClient.mutate({
                             id: editingClient.id,
                             data: { featureToggles },
                           });
                         }
                       }}
-                      disabled={useUpdateClientMutation.isPending}
+                      disabled={updateClient.isPending}
                     >
                       Save Features
                     </Button>
