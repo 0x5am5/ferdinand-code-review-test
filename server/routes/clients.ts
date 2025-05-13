@@ -2,7 +2,7 @@ import type { Express } from "express";
 import multer from "multer";
 
 import { storage } from "../storage";
-import { updateClientOrderSchema, UserRole } from "@shared/schema";
+import { updateClientOrderSchema, insertClientSchema, UserRole } from "@shared/schema";
 
 export function registerClientRoutes(app: Express) {
   // Client routes
@@ -72,6 +72,33 @@ export function registerClientRoutes(app: Express) {
     } catch (error) {
       console.error("Error deleting client:", error);
       res.status(500).json({ message: "Error deleting client" });
+    }
+  });
+  
+  // Create new client
+  app.post("/api/clients", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Validate client data
+      const parsed = insertClientSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid client data",
+          errors: parsed.error?.errors || "Validation failed",
+        });
+      }
+      
+      // Create client with validated data
+      const clientData = parsed.data;
+      
+      const client = await storage.createClient(clientData);
+      res.status(201).json(client);
+    } catch (error) {
+      console.error("Error creating client:", error);
+      res.status(500).json({ message: "Error creating client" });
     }
   });
 
