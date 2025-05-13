@@ -72,12 +72,14 @@ const logoDescriptions = {
 };
 
 const logoUsageGuidance = {
-  main: "Use this logo anywhere brand visibility matters—your homepage, pitch decks, marketing campaigns, or press releases. Always give it room to breathe, with padding equal to at least the height of the logo mark.",
-  horizontal: "Best for banners, website headers, email footers, and letterhead. Don't crowd it—maintain clear space around all sides and avoid scaling below legible size.",
-  vertical: "Ideal for square or constrained areas like merch, business cards, and packaging. Keep the layout consistent and never stretch or compress.",
-  square: "Use in spaces where simplicity matters: social icons, profile images, or internal dashboards. Stick to its native proportions and avoid visual clutter around it.",
-  app_icon: "Use on mobile devices, app marketplaces, and launcher screens. Make sure it renders cleanly at small sizes, and avoid placing it on complex backgrounds.",
-  favicon: "Use in browsers and tab displays. This should always be the most simplified version of your logo mark—no words, no extras. Stick to a .ico or .svg file where supported for best results."
+  main: "This is the primary logo and should be used whenever possible. It’s the most recognizable and complete version of the brand identity. When in doubt, default to this version.
+",
+  horizontal: "This version is optimized for wide, shallow spaces. It’s typically used where vertical room is limited and may be a simplified or type-focused variation of the main logo.
+",
+  vertical: "The vertical logo is designed for narrow, tall spaces where the main logo doesn’t fit well. It maintains brand recognition while adapting to limited width.",
+  square: "The square logo is built for evenly proportioned placements like social media avatars, favicons, or app tiles. It’s a compact, versatile version that keeps the brand visible in constrained layouts.",
+  app_icon: "The app icon is tailored for mobile screens and app stores. It’s designed to be bold, clean, and readable at small sizes while still representing the brand clearly.",
+  favicon: "The favicon is the smallest logo format, used in browser tabs, bookmarks, and web toolbars. It distills the brand into a tiny but crisp graphic that holds up at low resolution."
 };
 
 function parseBrandAssetData(logo: BrandAsset) {
@@ -970,6 +972,7 @@ function LogoSection({
   queryClient: any
 }) {
   const { user = null } = useAuth();
+  const [uploadMode, setUploadMode] = useState(false);
   const hasLogos = logos.length > 0;
 
   return (
@@ -980,6 +983,17 @@ function LogoSection({
             {type.charAt(0).toUpperCase() + type.slice(1)} Logo
           </h3>
         </div>
+
+        {!uploadMode && !hasLogos && user && user.role !== UserRole.STANDARD && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setUploadMode(true)}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Upload Logo
+          </Button>
+        )}
       </div>
 
       <Separator className="logo-section__separator" />
@@ -1005,21 +1019,31 @@ function LogoSection({
           })}
         </div>
       ) : (
-        // Empty state with two-column layout and direct upload interface
+        // Empty state with two-column layout
         <div className="logo-section__empty">
           {/* Info column with description */}
           <div className="logo-section__empty-info">
             <p>
               {logoDescriptions[type as keyof typeof logoDescriptions]}
             </p>
+
+            {uploadMode && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setUploadMode(false)}
+              >
+                Cancel Upload
+              </Button>
+            )}
           </div>
 
-          {/* Always show upload area for non-standard users */}
-          {user && user.role !== UserRole.STANDARD ? (
+          {/* Upload area or placeholder */}
+          {uploadMode ? (
             <FileUpload 
               type={type} 
               clientId={clientId}
-              onSuccess={() => {}}
+              onSuccess={() => setUploadMode(false)}
               queryClient={queryClient}
             />
           ) : (
@@ -1028,6 +1052,16 @@ function LogoSection({
               <p>
                 No {type.toLowerCase()} logo uploaded yet
               </p>
+              {user && user.role !== UserRole.STANDARD && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setUploadMode(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Logo
+                </Button>
+              )}
             </div>
           )}
         </div>
