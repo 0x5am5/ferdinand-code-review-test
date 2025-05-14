@@ -140,21 +140,26 @@
   
   &__preview {
     display: flex;
-    flex-direction: column;
-    position: relative;
+    flex-direction: row;
+    position: column;
+
+    &-nav {
+      display: flex;
+    }
     
     &-container {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
+      flex-direction: column;
       position: relative;
       min-height: 250px;
-      padding: 15vh 0;
+      padding: 0vh 10vh;
       border-radius: 0.5rem;
       
       @include mobile {
         min-height: 200px;
-        padding: 10vh 0;
+        padding: 0vh 5vh;
       }
       
       &--light {
@@ -167,9 +172,6 @@
     }
     
     &-controls {
-      position: absolute;
-      top: 0.75rem;
-      right: 0.75rem;
       display: flex;
       gap: 0.5rem;
       z-index: 10;
@@ -216,9 +218,6 @@
     }
     
     &-background-toggle {
-      position: absolute;
-      top: 0.75rem;
-      left: 0.75rem;
       display: flex;
       background-color: hsl(var(--background));
       backdrop-filter: blur(4px);
@@ -265,14 +264,14 @@
       object-fit: contain;
       
       &-container {
-        width: 75%;
+        padding:15vh 0;
+        width: 100%;
         height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
         max-height: 250px;
-        overflow: hidden;
       }
       
       &--svg {
