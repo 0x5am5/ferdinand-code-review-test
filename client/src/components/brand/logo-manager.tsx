@@ -236,6 +236,8 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
       }
 
       setSelectedFile(file);
+      // Automatically trigger upload without confirmation
+      setTimeout(() => createLogo.mutate(), 0);
     }
   }, [toast]);
 
@@ -254,6 +256,8 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
     }
 
     setSelectedFile(file);
+    // Automatically trigger upload without confirmation
+    setTimeout(() => createLogo.mutate(), 0);
   }, [toast]);
 
   // If in button-only mode, render just a button
@@ -293,35 +297,20 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
   return (
     <div className="logo-upload">
       <div 
-        className={`logo-upload__dropzone ${isDragging ? 'logo-upload__dropzone--active' : ''}`}
+        className={`logo-upload__dropzone ${isDragging ? 'logo-upload__dropzone--active' : ''} ${createLogo.isPending ? 'logo-upload__dropzone--loading' : ''}`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {selectedFile ? (
+        {createLogo.isPending ? (
           <>
-            <div className="logo-upload__dropzone-icon logo-upload__dropzone-icon--success">
-              <CheckCircle className="h-8 w-8" />
+            <div className="logo-upload__dropzone-icon logo-upload__dropzone-icon--loading">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
             </div>
             <div className="logo-upload__dropzone-file-info">
-              <h4>{selectedFile.name}</h4>
-              <p>{Math.round(selectedFile.size / 1024)}KB • {selectedFile.type}</p>
-            </div>
-            <div className="logo-upload__dropzone-actions">
-              <Button
-                variant="default"
-                onClick={() => createLogo.mutate()}
-                disabled={createLogo.isPending}
-              >
-                {createLogo.isPending ? "Uploading..." : "Upload Logo"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setSelectedFile(null)}
-              >
-                Cancel
-              </Button>
+              <h4>Uploading logo...</h4>
+              <p>Please wait while your file is being processed</p>
             </div>
           </>
         ) : (
