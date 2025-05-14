@@ -141,7 +141,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   };
 
   return (
-    <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
+    <aside className="w-64 border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
         {(() => {
           // Find logo to display in the sidebar
@@ -172,7 +172,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           // If we found a usable logo, display it
           if (logoToUse && logoToUse.id) {
             return (
-              <div className="h-8">
+              <div className="w-[90%]">
                 <img
                   src={`/api/assets/${logoToUse.id}/file`}
                   alt={clientName}

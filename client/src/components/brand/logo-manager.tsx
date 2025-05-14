@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy } from "lucide-react";
+import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -1100,24 +1100,38 @@ function LogoSection({
   logos, 
   clientId, 
   onDeleteLogo,
-  queryClient
+  queryClient,
+  onRemoveSection
 }: { 
   type: string, 
   logos: BrandAsset[],
   clientId: number,
   onDeleteLogo: (logoId: number, variant: 'light' | 'dark') => void,
-  queryClient: any
+  queryClient: any,
+  onRemoveSection?: (type: string) => void
 }) {
   const { user = null } = useAuth();
   const hasLogos = logos.length > 0;
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
   return (
     <div className="logo-section">
       <div className="logo-section__header">
-        <div>
+        <div className="flex items-center justify-between w-full">
           <h3>
             {type.charAt(0).toUpperCase() + type.slice(1)} Logo
           </h3>
+          {isAdmin && onRemoveSection && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => onRemoveSection(type)}
+            >
+              <X className="h-4 w-4 mr-1" />
+              <span>Remove Section</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1179,6 +1193,29 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const { toast } = useToast();
   const { user = null } = useAuth();
   const queryClient = useQueryClient();
+  // State to track which logo types are visible
+  const [visibleSections, setVisibleSections] = useState<string[]>([]);
+  // State to track if add section dialog is open
+  const [showAddSection, setShowAddSection] = useState(false);
+  // State to track available sections to add
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+  
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+
+  // Set up initial visible sections
+  useEffect(() => {
+    // Start with all sections visible by default
+    setVisibleSections(Object.values(LogoType));
+  }, []);
+
+  // When visible sections change, update available sections
+  useEffect(() => {
+    // Available sections are those that exist in LogoType but not in visibleSections
+    const available = Object.values(LogoType).filter(
+      (type) => !visibleSections.includes(type)
+    );
+    setAvailableSections(available);
+  }, [visibleSections]);
 
   const deleteLogo = useMutation({
     mutationFn: async ({ logoId, variant }: { logoId: number; variant: 'light' | 'dark' }) => {
@@ -1223,23 +1260,87 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     {} as Record<string, BrandAsset[]>,
   );
 
+  // Handle removing a section
+  const handleRemoveSection = (type: string) => {
+    setVisibleSections(prev => prev.filter(section => section !== type));
+    toast({
+      title: "Section removed",
+      description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed`,
+    });
+  };
+
+  // Handle adding a section
+  const handleAddSection = (type: string) => {
+    setVisibleSections(prev => [...prev, type]);
+    setShowAddSection(false);
+    toast({
+      title: "Section added",
+      description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been added`,
+    });
+  };
+
   return (
     <div className="logo-manager">
-    <div className="logo-manager__header">
-      <h1>Logo System</h1>
-      <p>Manage and download the official logos for this brand</p>
-    </div>
+      <div className="logo-manager__header flex justify-between items-center">
+        <div>
+          <h1>Logo System</h1>
+          <p>Manage and download the official logos for this brand</p>
+        </div>
+        {isAdmin && availableSections.length > 0 && (
+          <Button 
+            onClick={() => setShowAddSection(true)} 
+            variant="outline"
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Section</span>
+          </Button>
+        )}
+      </div>
 
-      {Object.entries(logosByType).map(([type, typeLogos]) => (
+      {visibleSections.map((type) => (
         <LogoSection 
           key={type}
           type={type}
-          logos={typeLogos}
+          logos={logosByType[type] || []}
           clientId={clientId}
           onDeleteLogo={(logoId, variant) => deleteLogo.mutate({ logoId, variant })}
           queryClient={queryClient}
+          onRemoveSection={isAdmin ? handleRemoveSection : undefined}
         />
       ))}
+
+      {/* Dialog for adding sections */}
+      {isAdmin && (
+        <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Logo Section</DialogTitle>
+              <DialogDescription>
+                Select a logo section to add to the page
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3 py-4">
+              {availableSections.map((section) => (
+                <Button 
+                  key={section} 
+                  variant="outline" 
+                  className="justify-start text-left"
+                  onClick={() => handleAddSection(section)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {section.charAt(0).toUpperCase() + section.slice(1)} Logo
+                </Button>
+              ))}
+              {availableSections.length === 0 && (
+                <p className="text-muted-foreground text-center py-2">
+                  All available sections are already displayed
+                </p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

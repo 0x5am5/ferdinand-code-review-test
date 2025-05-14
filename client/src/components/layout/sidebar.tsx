@@ -197,7 +197,7 @@ export const Sidebar: FC = () => {
 
   // Otherwise, render the standard navigation sidebar
   return (
-    <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
+    <aside className="w-64 h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
         <Button
