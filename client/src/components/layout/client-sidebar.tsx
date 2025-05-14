@@ -15,11 +15,12 @@ import { Button } from "@/components/ui/button";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { Separator } from "@/components/ui/separator";
+import { useClientAssetsById } from "@/lib/queries/clients";
+import { BrandAsset } from "@shared/schema";
 
 interface ClientSidebarProps {
   clientId: number;
   clientName: string;
-  logos?: { id: number; data: string }[];
   featureToggles: {
     logoSystem: boolean;
     colorSystem: boolean;
@@ -32,8 +33,8 @@ interface ClientSidebarProps {
 }
 
 export const ClientSidebar: FC<ClientSidebarProps> = ({
+  clientId,
   clientName,
-  logos = [], // Added default value for logos
   featureToggles,
   activeTab = "dashboard",
   onTabChange,
@@ -45,6 +46,10 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     open: openSearch,
     close: closeSearch,
   } = useSpotlight();
+  
+  // Fetch logos for this client
+  const { data: clientAssets = [] } = useClientAssetsById(clientId);
+  const logoAssets = clientAssets.filter(asset => asset.category === "logo");
   
   // Keep internal state synced with prop
   useEffect(() => {
@@ -139,25 +144,42 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
         {(() => {
-          // Find main logo (prioritize main, then horizontal)
-          const mainLogo = logos?.find(logo => {
-            const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
-            return data?.type === "main";
-          }) || logos?.find(logo => {
-            const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
-            return data?.type === "horizontal";
+          // Find logo to display in the sidebar
+          // First try to find a main logo, then fall back to horizontal logo
+          const mainLogo = logoAssets.find((logo: BrandAsset) => {
+            try {
+              const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+              return data?.type === "main";
+            } catch (e) {
+              console.error("Error parsing logo data:", e);
+              return false;
+            }
           });
+          
+          const horizontalLogo = logoAssets.find((logo: BrandAsset) => {
+            try {
+              const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+              return data?.type === "horizontal";
+            } catch (e) {
+              console.error("Error parsing logo data:", e);
+              return false;
+            }
+          });
+          
+          // Use main logo if available, otherwise try horizontal
+          const logoToUse = mainLogo || horizontalLogo;
 
-          if (mainLogo) {
+          // If we found a usable logo, display it
+          if (logoToUse && logoToUse.id) {
             return (
               <div className="h-8">
                 <img
-                  src={`/api/assets/${mainLogo.id}/file`}
+                  src={`/api/assets/${logoToUse.id}/file`}
                   alt={clientName}
                   className="h-full w-auto object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    // Direct h2 fallback on error
+                    // On error, revert to the client name as fallback
                     e.currentTarget.insertAdjacentHTML('afterend', 
                       `<h2 class="font-bold">${clientName}</h2>`
                     );
@@ -167,6 +189,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             );
           }
 
+          // If no logo is available, display the client name
           return <h2 className="font-bold">{clientName}</h2>;
         })()}
       </div>
