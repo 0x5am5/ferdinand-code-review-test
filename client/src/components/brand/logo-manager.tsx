@@ -1050,7 +1050,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           ) : (
             <div className="logo-display__preview-image-container">
               {parsedData.format === 'svg' ? (
-                <div className="relative">
                   <object
                     data={variant === 'dark' && parsedData.hasDarkVariant ? 
                       `/api/assets/${logo.id}/file?variant=dark` : 
@@ -1070,7 +1069,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                       }}
                     />
                   </object>
-                </div>
               ) : (
                 <img
                   src={variant === 'dark' && parsedData.hasDarkVariant ? 

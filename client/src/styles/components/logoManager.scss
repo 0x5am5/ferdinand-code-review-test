@@ -145,9 +145,14 @@
 
     &-nav {
       display: flex;
-      width:100%;
       justify-content: space-between;
+      flex-wrap: wrap;
+      width:100%;
       padding: 0.125rem;
+
+      > div {
+        margin-bottom: 8px;
+      }
     }
     
     &-container {
@@ -274,6 +279,18 @@
         align-items: center;
         justify-content: center;
         text-align: center;
+
+        @include laptop {
+          padding:10vh 7vh;
+        }
+        
+        @include tablet {
+          padding:12vh 8vh;
+        }
+
+        @include mobile {
+          padding:10vh 5vh;
+        }
       }
       
       
