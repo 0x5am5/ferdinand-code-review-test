@@ -934,24 +934,42 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           </div>
           
           {variant === 'dark' && !parsedData.hasDarkVariant ? (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-              <FileUpload
-                type={type}
-                clientId={clientId}
-                isDarkVariant={true}
-                parentLogoId={logo.id}
-                queryClient={queryClient}
-                onSuccess={async () => {
-                  parsedData.hasDarkVariant = true;
-                  // Ensure we update both queries to refresh the UI immediately
-                  await queryClient.invalidateQueries({
-                    queryKey: [`/api/clients/${clientId}/assets`],
-                  });
-                  await queryClient.invalidateQueries({
-                    queryKey: [`/api/assets/${logo.id}`],
-                  });
-                }}
-              />
+            <div className="w-full h-full flex flex-col items-center justify-center py-12 gap-6">
+              <div className="logo-upload__dropzone logo-upload__dropzone--dark w-[400px] min-h-[200px] flex flex-col items-center justify-center">
+                <div className="logo-upload__dropzone-icon">
+                  <Upload className="h-8 w-8" />
+                </div>
+                <h4 className="logo-upload__dropzone-heading">
+                  Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo for Dark Background
+                </h4>
+                <p className="logo-upload__dropzone-text text-center">
+                  Drag and drop your logo file here, or click to browse.<br />
+                  Supported formats: {Object.values(FILE_FORMATS).join(", ")}
+                </p>
+                <div className="logo-upload__dropzone-actions mt-4">
+                  <FileUpload
+                    type={type}
+                    clientId={clientId}
+                    isDarkVariant={true}
+                    parentLogoId={logo.id}
+                    queryClient={queryClient}
+                    buttonOnly={true}
+                    className="min-w-32"
+                    onSuccess={async () => {
+                      parsedData.hasDarkVariant = true;
+                      // Ensure we update both queries to refresh the UI immediately
+                      await queryClient.invalidateQueries({
+                        queryKey: [`/api/clients/${clientId}/assets`],
+                      });
+                      await queryClient.invalidateQueries({
+                        queryKey: [`/api/assets/${logo.id}`],
+                      });
+                    }}
+                  >
+                    Browse Files
+                  </FileUpload>
+                </div>
+              </div>
               
               {/* Button to copy light variant as dark variant */}
               <div className="flex flex-col items-center gap-2">

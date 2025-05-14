@@ -304,6 +304,7 @@
     height: 100%;
     width: 100%;
     min-height: 400px;
+    padding: 2rem;
     
     @include tablet {
       min-height: 350px;
@@ -322,8 +323,31 @@
       }
     }
     
+    &--dark {
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      color: #fff;
+      
+      .logo-upload__dropzone-icon {
+        background-color: rgba(255, 255, 255, 0.1);
+        
+        svg {
+          color: rgba(255, 255, 255, 0.7);
+        }
+      }
+      
+      .logo-upload__dropzone-text {
+        color: rgba(255, 255, 255, 0.7);
+      }
+    }
+    
     &--active {
       border-color: hsl(var(--primary));
+    }
+    
+    &--loading {
+      border-style: solid;
+      border-color: rgba(var(--primary), 0.3);
+      background-color: rgba(var(--primary), 0.05);
     }
     
     &-icon {
