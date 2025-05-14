@@ -148,6 +148,15 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             return data?.type === "primary";
           });
 
+          // Find main logo (prioritize main, then horizontal)
+          const mainLogo = logos?.find(logo => {
+            const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+            return data?.type === "main";
+          }) || logos?.find(logo => {
+            const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+            return data?.type === "horizontal";
+          });
+
           if (mainLogo) {
             return (
               <div className="h-8">
@@ -157,13 +166,10 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                   className="h-full w-auto object-contain"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
-                    const container = e.currentTarget.parentElement;
-                    if (container) {
-                      const fallback = document.createElement('h2');
-                      fallback.className = 'font-bold';
-                      fallback.textContent = clientName;
-                      container.appendChild(fallback);
-                    }
+                    // Direct h2 fallback on error
+                    e.currentTarget.insertAdjacentHTML('afterend', 
+                      `<h2 class="font-bold">${clientName}</h2>`
+                    );
                   }}
                 />
               </div>
