@@ -214,6 +214,15 @@ export function registerAssetRoutes(app: Express) {
       try {
         const clientId = req.clientId!;
         const assetId = parseInt(req.params.assetId);
+        // Get variant from query params with debugging
+        const variant = req.query.variant as string;
+        console.log(`PATCH request received - assetId: ${assetId}, variant: ${variant}, isDarkVariant: ${req.body.isDarkVariant}`);
+        
+        // Force isDarkVariant to true if variant=dark is in the URL
+        if (variant === 'dark') {
+          req.body.isDarkVariant = "true";
+          console.log("Setting isDarkVariant flag to true based on URL parameter");
+        }
 
         const asset = await storage.getAsset(assetId);
 
@@ -257,6 +266,7 @@ export function registerAssetRoutes(app: Express) {
             parsed = { success: true, data: {
               ...asset,
               category: "logo",
+              // We update the existing data instead of replacing it entirely
               data: {
                 ...existingData,
                 hasDarkVariant: true,
@@ -274,6 +284,18 @@ export function registerAssetRoutes(app: Express) {
               console.log(`Converting ${originalFormat} file to multiple formats (dark variant)`);
               const convertedFiles = await convertToAllFormats(fileBuffer, originalFormat);
 
+              // Delete any existing dark variant converted assets first
+              try {
+                // Use proper SQL to delete existing dark variant converted assets
+                await db.execute(sql`
+                  DELETE FROM "converted_assets"
+                  WHERE "original_asset_id" = ${asset.id} AND "is_dark_variant" = true
+                `);
+                console.log(`Deleted existing dark variant converted assets for asset ID ${asset.id}`);
+              } catch (deleteError) {
+                console.error("Error deleting existing dark variant converted assets:", deleteError);
+              }
+              
               // Store all converted versions in the database
               for (const convertedFile of convertedFiles) {
                 // First check if this format already exists
@@ -480,15 +502,17 @@ export function registerAssetRoutes(app: Express) {
           console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
           res.setHeader("Content-Type", convertedAsset.mimeType);
           const buffer = Buffer.from(convertedAsset.fileData, "base64");
-          // Update the file size in the database
+          // The fileSize column doesn't exist yet, so we'll comment this out for now
+          // to avoid errors in the logs
+          /*
           try {
-            // Using correct column name fileSize
             await db.execute(
-              sql`UPDATE brand_assets SET "fileSize" = ${buffer.length} WHERE id = ${assetId}`
+              sql`UPDATE brand_assets SET "file_size" = ${buffer.length} WHERE id = ${assetId}`
             );
           } catch (err) {
             console.warn("Failed to update file size:", err);
           }
+          */
           return res.send(buffer);
         }
 
@@ -519,16 +543,18 @@ export function registerAssetRoutes(app: Express) {
         asset.mimeType || "application/octet-stream",
       );
       const buffer = Buffer.from(asset.fileData, "base64");
-      // Update the file size in the database
+      // The fileSize column doesn't exist yet, so we'll comment this out for now
+      // to avoid errors in the logs
+      /*
       try {
-        // Using correct column name file_size/fileSize
         await db.execute(
-          sql`UPDATE brand_assets SET "fileSize" = ${buffer.length} WHERE id = ${assetId}`
+          sql`UPDATE brand_assets SET "file_size" = ${buffer.length} WHERE id = ${assetId}`
         );
       } catch (err) {
         console.warn("Failed to update file size:", err);
         // Continue serving the file even if size update fails
       }
+      */
       res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);

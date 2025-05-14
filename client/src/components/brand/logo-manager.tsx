@@ -779,6 +779,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   queryClient: any
 }) {
   const { user = null } = useAuth();
+  const { toast } = useToast();
   const type = parsedData.type;
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
 
@@ -844,6 +845,21 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         if (variant === 'dark') {
                           // Update with dark variant
                           formData.append("isDarkVariant", "true");
+                          
+                          // Add data with hasDarkVariant flag
+                          const fileExtension = e.target.files![0].name.split('.').pop()?.toLowerCase();
+                          formData.append("data", JSON.stringify({
+                            type,
+                            format: fileExtension,
+                            hasDarkVariant: true,
+                            isDarkVariant: true
+                          }));
+                          
+                          // Adding a temp name for debug clarity
+                          formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                          
+                          console.log("Uploading dark variant with isDarkVariant=true");
+                          // IMPORTANT: The ?variant=dark parameter is critical here
                           const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
                             method: "PATCH",
                             body: formData,
@@ -851,10 +867,23 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           
                           if (!response.ok) {
                             console.error("Failed to upload dark variant:", await response.text());
+                          } else {
+                            console.log("Dark variant uploaded successfully");
                           }
                         } else {
                           // Replace light variant
                           formData.append("isDarkVariant", "false");
+                          
+                          // Add data without replacing dark variant data
+                          const fileExtension = e.target.files![0].name.split('.').pop()?.toLowerCase();
+                          formData.append("data", JSON.stringify({
+                            type,
+                            format: fileExtension,
+                            // Preserve dark variant if it exists
+                            hasDarkVariant: parsedData.hasDarkVariant || false
+                          }));
+                          
+                          console.log("Uploading light variant");
                           const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
                             method: "PATCH",
                             body: formData,
@@ -862,6 +891,8 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           
                           if (!response.ok) {
                             console.error("Failed to replace light variant:", await response.text());
+                          } else {
+                            console.log("Light variant uploaded successfully");
                           }
                         }
                         
@@ -873,6 +904,14 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         // Force a reload of this specific logo to ensure it's updated in the UI
                         await queryClient.invalidateQueries({
                           queryKey: [`/api/assets/${logo.id}`],
+                        });
+                        
+                        // Show success message
+                        toast({
+                          title: "Success",
+                          description: variant === 'dark' 
+                            ? `${type.charAt(0).toUpperCase() + type.slice(1)} dark variant uploaded successfully` 
+                            : `${type.charAt(0).toUpperCase() + type.slice(1)} logo updated successfully`,
                         });
                       };
                       
