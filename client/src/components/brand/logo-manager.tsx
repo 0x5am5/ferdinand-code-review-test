@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock } from "lucide-react";
+import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -945,7 +945,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
           </div>
           
           {variant === 'dark' && !parsedData.hasDarkVariant ? (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
               <FileUpload
                 type={type}
                 clientId={clientId}
@@ -963,6 +963,78 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   });
                 }}
               />
+              
+              {/* Button to copy light variant as dark variant */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-sm text-muted-foreground">- or -</div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={async () => {
+                    try {
+                      // Fetch the light variant file data
+                      const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
+                      if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
+                      
+                      const fileBlob = await fileResponse.blob();
+                      const fileName = `${type}_logo_dark.${parsedData.format}`;
+                      const file = new File([fileBlob], fileName, { type: fileResponse.headers.get('content-type') || 'image/svg+xml' });
+                      
+                      // Create FormData with the file and necessary metadata
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                      formData.append("type", type);
+                      formData.append("category", "logo");
+                      formData.append("isDarkVariant", "true");
+                      
+                      // Add data with hasDarkVariant flag
+                      formData.append("data", JSON.stringify({
+                        type,
+                        format: parsedData.format,
+                        hasDarkVariant: true,
+                        isDarkVariant: true
+                      }));
+                      
+                      console.log("Using light variant as dark variant");
+                      // IMPORTANT: The ?variant=dark parameter is critical here
+                      const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                        method: "PATCH",
+                        body: formData,
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error(await response.text());
+                      }
+                      
+                      // Update UI
+                      parsedData.hasDarkVariant = true;
+                      await queryClient.invalidateQueries({
+                        queryKey: [`/api/clients/${clientId}/assets`],
+                      });
+                      await queryClient.invalidateQueries({
+                        queryKey: [`/api/assets/${logo.id}`],
+                      });
+                      
+                      toast({
+                        title: "Success",
+                        description: `Light logo copied as dark variant`,
+                      });
+                    } catch (error) {
+                      console.error("Error copying light variant as dark:", error);
+                      toast({
+                        title: "Error",
+                        description: error instanceof Error ? error.message : "Failed to copy light variant",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                  Use light logo for dark variant
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="logo-display__preview-image-container">
