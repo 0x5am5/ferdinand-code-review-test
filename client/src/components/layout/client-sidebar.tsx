@@ -139,15 +139,6 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     <aside className="w-64 border-r border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
         {(() => {
-          // Find main logo (prioritize horizontal, then primary)
-          const mainLogo = logos?.find(logo => {
-            const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
-            return data?.type === "horizontal";
-          }) || logos?.find(logo => {
-            const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
-            return data?.type === "primary";
-          });
-
           // Find main logo (prioritize main, then horizontal)
           const mainLogo = logos?.find(logo => {
             const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
