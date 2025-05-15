@@ -6,7 +6,7 @@ import {
   RadioGroup, 
   RadioGroupItem 
 } from "@/components/ui/radio-group";
-import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X } from "lucide-react";
+import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X, Folder } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -885,15 +885,6 @@ function FaviconDownloadButton({
     }, formats.length * 100 + 100);
   };
 
-  // Handle download based on selected option
-  const handleDownload = () => {
-    if (downloadOption === 'package') {
-      downloadFaviconPackage();
-    } else if (downloadOption === 'editable') {
-      downloadEditableFiles();
-    }
-  };
-
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -907,79 +898,124 @@ function FaviconDownloadButton({
           <h4 className="logo-download__popover-heading">Favicon Download Options</h4>
           
           <div className="logo-download__popover-favicon-options">
-            <div className="logo-download__popover-favicon-option">
-              <RadioGroup 
-                value={downloadOption || ''} 
-                onValueChange={(value) => setDownloadOption(value as 'package' | 'editable')}
+            {/* Favicon Package Section */}
+            <div className="logo-download__popover-section mb-4">
+              <h5 className="font-semibold text-sm">Favicon Package</h5>
+              <p className="text-xs text-muted-foreground mb-2">
+                Standard favicon sizes (16×16, 32×32, 48×48) in ICO and PNG formats
+              </p>
+              <Button 
+                variant="link" 
+                className="p-0 h-auto flex items-center text-primary text-xs"
+                onClick={downloadFaviconPackage}
               >
-                <div className="flex items-center space-x-2 mb-4">
-                  <RadioGroupItem value="package" id="favicon-package" />
-                  <div>
-                    <Label htmlFor="favicon-package" className="font-semibold">Favicon Package</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Standard favicon sizes (16×16, 32×32, 48×48) in ICO and PNG formats
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="editable" id="editable-files" />
-                  <div>
-                    <Label htmlFor="editable-files" className="font-semibold">Editable Design Files</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Vector formats for editing (SVG, EPS, AI)
-                    </p>
-                    {parsedData.figmaLink && (
-                      <p className="text-xs mt-1">
-                        <a 
-                          href={parsedData.figmaLink} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center"
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          Open in Figma
-                        </a>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </RadioGroup>
+                <Folder className="h-3.5 w-3.5 mr-1" />
+                Download favicon package
+              </Button>
+            </div>
+            
+            {/* Editable Design Files Section */}
+            <div className="logo-download__popover-section">
+              <h5 className="font-semibold text-sm">Editable Design Files</h5>
+              <p className="text-xs text-muted-foreground mb-2">
+                Vector formats for editing (SVG, EPS, AI)
+              </p>
+              <div className="flex flex-col gap-1">
+                {parsedData.figmaLink && (
+                  <a 
+                    href={parsedData.figmaLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center text-xs"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Open in Figma
+                  </a>
+                )}
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto flex items-center text-primary text-xs"
+                  onClick={() => {
+                    // Download SVG
+                    const container = document.createElement('div');
+                    container.style.display = 'none';
+                    document.body.appendChild(container);
+                    
+                    const link = document.createElement('a');
+                    link.href = getDownloadUrl(100, 'svg');
+                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`;
+                    container.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                      document.body.removeChild(container);
+                      setOpen(false);
+                    }, 100);
+                  }}
+                >
+                  <FileType className="h-3.5 w-3.5 mr-1" />
+                  Download SVG logo
+                </Button>
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto flex items-center text-primary text-xs"
+                  onClick={() => {
+                    // Download EPS
+                    const container = document.createElement('div');
+                    container.style.display = 'none';
+                    document.body.appendChild(container);
+                    
+                    const link = document.createElement('a');
+                    link.href = getDownloadUrl(100, 'eps');
+                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
+                    container.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                      document.body.removeChild(container);
+                      setOpen(false);
+                    }, 100);
+                  }}
+                >
+                  <FileType className="h-3.5 w-3.5 mr-1" />
+                  Download EPS logo
+                </Button>
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto flex items-center text-primary text-xs"
+                  onClick={() => {
+                    // Download AI
+                    const container = document.createElement('div');
+                    container.style.display = 'none';
+                    document.body.appendChild(container);
+                    
+                    const link = document.createElement('a');
+                    link.href = getDownloadUrl(100, 'ai');
+                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
+                    container.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                      document.body.removeChild(container);
+                      setOpen(false);
+                    }, 100);
+                  }}
+                >
+                  <FileType className="h-3.5 w-3.5 mr-1" />
+                  Download AI logo
+                </Button>
+              </div>
             </div>
           </div>
           
-          <div className="logo-download__popover-actions mt-6">
-            {downloadOption ? (
-              <>
-                <Button 
-                  onClick={handleDownload}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download {downloadOption === 'package' ? 'Favicon Package' : 'Editable Files'}
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  disabled
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Select an option
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
+          <div className="mt-4 flex justify-end">
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={() => setOpen(false)}
+            >
+              Close
+            </Button>
           </div>
         </div>
       </PopoverContent>
