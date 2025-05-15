@@ -4,9 +4,9 @@ import {
   type InspirationSection, type InspirationImage, type Invitation,
   type InsertInspirationSection, type InsertInspirationImage, type InsertInvitation,
   type InsertFontAsset, type InsertColorAsset, type UserClient,
-  type ConvertedAsset, type InsertConvertedAsset,
+  type ConvertedAsset, type InsertConvertedAsset, type HiddenSection, type InsertHiddenSection,
   users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations, userClients,
-  convertedAssets, UserRole
+  convertedAssets, hiddenSections, UserRole
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, inArray } from "drizzle-orm";
@@ -55,6 +55,10 @@ export interface IStorage {
   markInvitationAsUsed(id: number): Promise<Invitation>;
   // Password management
   updateUserPassword(id: number, password: string): Promise<User>;
+  // Hidden sections methods
+  getClientHiddenSections(clientId: number): Promise<HiddenSection[]>;
+  createHiddenSection(section: InsertHiddenSection): Promise<HiddenSection>;
+  deleteHiddenSection(clientId: number, sectionType: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -405,6 +409,47 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`[PASSWORD RESET] Password updated successfully for user ID: ${id}`);
     return updatedUser;
+  }
+
+  // Hidden sections implementations
+  async getClientHiddenSections(clientId: number): Promise<HiddenSection[]> {
+    return await db
+      .select()
+      .from(hiddenSections)
+      .where(eq(hiddenSections.clientId, clientId));
+  }
+
+  async createHiddenSection(section: InsertHiddenSection): Promise<HiddenSection> {
+    // Check if a record already exists for this client and section type
+    const [existingSection] = await db
+      .select()
+      .from(hiddenSections)
+      .where(
+        eq(hiddenSections.clientId, section.clientId) && 
+        eq(hiddenSections.sectionType, section.sectionType)
+      );
+    
+    if (existingSection) {
+      // If it already exists, return it without creating a duplicate
+      return existingSection;
+    }
+
+    // Otherwise create a new hidden section record
+    const [newSection] = await db
+      .insert(hiddenSections)
+      .values(section)
+      .returning();
+    
+    return newSection;
+  }
+
+  async deleteHiddenSection(clientId: number, sectionType: string): Promise<void> {
+    await db
+      .delete(hiddenSections)
+      .where(
+        eq(hiddenSections.clientId, clientId) && 
+        eq(hiddenSections.sectionType, sectionType)
+      );
   }
 }
 

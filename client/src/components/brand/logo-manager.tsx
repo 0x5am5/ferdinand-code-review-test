@@ -2,6 +2,10 @@ import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  RadioGroup, 
+  RadioGroupItem 
+} from "@/components/ui/radio-group";
 import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X } from "lucide-react";
 import {
   Dialog,
@@ -11,6 +15,7 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useHiddenSections, useAddHiddenSection, useRemoveHiddenSection } from "@/lib/queries/hidden-sections";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -355,6 +360,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 }
 
 // Logo download button with customization options
+// Generic Download Button for most logo types
 function LogoDownloadButton({ 
   logo, 
   imageUrl, 
@@ -366,6 +372,11 @@ function LogoDownloadButton({
   variant: 'light' | 'dark',
   parsedData: any
 }) {
+  // For favicon type, use specialized download button
+  if (parsedData.type === 'favicon') {
+    return <FaviconDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
+  }
+
   const [size, setSize] = useState<number>(100);
   const [lockRatio, setLockRatio] = useState<boolean>(true);
   const [width, setWidth] = useState<number>(300); // Default width, will be calculated from image
@@ -743,6 +754,223 @@ function LogoDownloadButton({
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Select formats
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// Specialized download button for Favicons
+function FaviconDownloadButton({
+  logo,
+  imageUrl,
+  variant,
+  parsedData
+}: {
+  logo: BrandAsset,
+  imageUrl: string,
+  variant: 'light' | 'dark',
+  parsedData: any
+}) {
+  const [open, setOpen] = useState<boolean>(false);
+  const [downloadOption, setDownloadOption] = useState<'package' | 'editable' | null>(null);
+  const [originalWidth, setOriginalWidth] = useState<number>(300);
+  const [originalHeight, setOriginalHeight] = useState<number>(200);
+
+  // Load dimensions once when component mounts
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setOriginalWidth(img.width);
+      setOriginalHeight(img.height);
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  // Function to get download URL for a specific size and format
+  const getDownloadUrl = (size: number, format: string) => {
+    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
+      `/api/assets/${logo.id}/file?variant=dark` : 
+      imageUrl;
+    
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+  };
+
+  // Function to download the favicon package (multiple sizes in ICO and PNG formats)
+  const downloadFaviconPackage = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+
+    // Define favicon sizes to include in the package
+    const sizes = [16, 32, 48];
+    
+    // Download ICO format for all sizes
+    sizes.forEach((faviconSize, index) => {
+      // Calculate size percentage for the API
+      const sizePercentage = (faviconSize / originalWidth) * 100;
+      
+      // Download ICO version
+      const icoLink = document.createElement('a');
+      icoLink.href = getDownloadUrl(sizePercentage, 'ico');
+      icoLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${faviconSize}px.ico`;
+      
+      // Download PNG version
+      const pngLink = document.createElement('a');
+      pngLink.href = getDownloadUrl(sizePercentage, 'png');
+      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${faviconSize}px.png`;
+      
+      // Add a small delay between downloads to avoid browser limitations
+      setTimeout(() => {
+        container.appendChild(icoLink);
+        icoLink.click();
+        container.removeChild(icoLink);
+      }, index * 200);
+      
+      setTimeout(() => {
+        container.appendChild(pngLink);
+        pngLink.click();
+        container.removeChild(pngLink);
+      }, index * 200 + 100);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, sizes.length * 200 + 300);
+  };
+
+  // Function to download editable design files (SVG, EPS, AI)
+  const downloadEditableFiles = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    
+    // List of editable formats
+    const formats = ['svg', 'eps', 'ai'];
+    
+    // Create a link for each format and click it
+    formats.forEach((format, index) => {
+      const link = document.createElement('a');
+      link.href = getDownloadUrl(100, format); // Use original size (100%)
+      link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
+      
+      // Add a small delay between downloads to avoid browser limitations
+      setTimeout(() => {
+        container.appendChild(link);
+        link.click();
+        container.removeChild(link);
+      }, index * 100);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, formats.length * 100 + 100);
+  };
+
+  // Handle download based on selected option
+  const handleDownload = () => {
+    if (downloadOption === 'package') {
+      downloadFaviconPackage();
+    } else if (downloadOption === 'editable') {
+      downloadEditableFiles();
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="logo-display__preview-action-button">
+          <Download className="h-3 w-3" />
+          <span>Download</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="logo-download__popover">
+        <div className="logo-download__popover-content">
+          <h4 className="logo-download__popover-heading">Favicon Download Options</h4>
+          
+          <div className="logo-download__popover-favicon-options">
+            <div className="logo-download__popover-favicon-option">
+              <RadioGroup 
+                value={downloadOption || ''} 
+                onValueChange={(value) => setDownloadOption(value as 'package' | 'editable')}
+              >
+                <div className="flex items-center space-x-2 mb-4">
+                  <RadioGroupItem value="package" id="favicon-package" />
+                  <div>
+                    <Label htmlFor="favicon-package" className="font-semibold">Favicon Package</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Standard favicon sizes (16×16, 32×32, 48×48) in ICO and PNG formats
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="editable" id="editable-files" />
+                  <div>
+                    <Label htmlFor="editable-files" className="font-semibold">Editable Design Files</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Vector formats for editing (SVG, EPS, AI)
+                    </p>
+                    {parsedData.figmaLink && (
+                      <p className="text-xs mt-1">
+                        <a 
+                          href={parsedData.figmaLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline flex items-center"
+                        >
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          Open in Figma
+                        </a>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
+          
+          <div className="logo-download__popover-actions mt-6">
+            {downloadOption ? (
+              <>
+                <Button 
+                  onClick={handleDownload}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download {downloadOption === 'package' ? 'Favicon Package' : 'Editable Files'}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button 
+                  disabled
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Select an option
                 </Button>
                 <Button 
                   variant="outline"
@@ -1200,13 +1428,32 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   // State to track available sections to add
   const [availableSections, setAvailableSections] = useState<string[]>([]);
   
+  // Fetch hidden sections from database
+  const { data: hiddenSections, isLoading: loadingHiddenSections } = useHiddenSections(clientId);
+  
+  // Mutations for adding/removing hidden sections
+  const addHiddenSection = useAddHiddenSection(clientId);
+  const removeHiddenSection = useRemoveHiddenSection(clientId);
+  
   const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
-  // Set up initial visible sections
+  // Set up initial visible sections based on hidden sections from database
   useEffect(() => {
-    // Start with all sections visible by default
-    setVisibleSections(Object.values(LogoType));
-  }, []);
+    if (loadingHiddenSections) return;
+    
+    // Start with all logo types
+    const allLogoTypes = Object.values(LogoType);
+    
+    // If we have hidden sections data, filter them out
+    if (hiddenSections && Array.isArray(hiddenSections)) {
+      const hiddenTypes = hiddenSections.map(section => section.sectionType);
+      const visible = allLogoTypes.filter(type => !hiddenTypes.includes(type));
+      setVisibleSections(visible);
+    } else {
+      // If no hidden sections or error, show all by default
+      setVisibleSections(allLogoTypes);
+    }
+  }, [hiddenSections, loadingHiddenSections]);
 
   // When visible sections change, update available sections
   useEffect(() => {
@@ -1262,20 +1509,52 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   // Handle removing a section
   const handleRemoveSection = (type: string) => {
+    // Update local state immediately for responsiveness
     setVisibleSections(prev => prev.filter(section => section !== type));
-    toast({
-      title: "Section removed",
-      description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed`,
+    
+    // Persist to database
+    addHiddenSection.mutate(type, {
+      onSuccess: () => {
+        toast({
+          title: "Section removed",
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed`,
+        });
+      },
+      onError: (error) => {
+        // Revert local state on error
+        setVisibleSections(prev => [...prev, type]);
+        toast({
+          title: "Error",
+          description: `Failed to remove section: ${error.message}`,
+          variant: "destructive",
+        });
+      }
     });
   };
 
   // Handle adding a section
   const handleAddSection = (type: string) => {
+    // Update local state immediately for responsiveness
     setVisibleSections(prev => [...prev, type]);
     setShowAddSection(false);
-    toast({
-      title: "Section added",
-      description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been added`,
+    
+    // Persist to database
+    removeHiddenSection.mutate(type, {
+      onSuccess: () => {
+        toast({
+          title: "Section added",
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been added`,
+        });
+      },
+      onError: (error) => {
+        // Revert local state on error
+        setVisibleSections(prev => prev.filter(section => section !== type));
+        toast({
+          title: "Error",
+          description: `Failed to add section: ${error.message}`,
+          variant: "destructive",
+        });
+      }
     });
   };
 

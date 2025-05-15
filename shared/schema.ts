@@ -217,12 +217,23 @@ export type InviteUserForm = z.infer<typeof inviteUserSchema>;
 export type UpdateUserRoleForm = z.infer<typeof updateUserRoleSchema>;
 
 // Relations
+// Table to store hidden sections for each client
+export const hiddenSections = pgTable("hidden_sections", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
+  sectionType: text("section_type").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   userClients: many(userClients),
 }));
 
 export const clientsRelations = relations(clients, ({ many }) => ({
   userClients: many(userClients),
+  hiddenSections: many(hiddenSections),
 }));
 
 export const userClientsRelations = relations(userClients, ({ one }) => ({
@@ -390,6 +401,9 @@ export const insertConvertedAssetSchema = createInsertSchema(convertedAssets)
     fileData: z.string(),
     mimeType: z.string(),
   });
+  
+export const insertHiddenSectionSchema = createInsertSchema(hiddenSections)
+  .omit({ id: true, createdAt: true });
 
 export const updateClientOrderSchema = z.object({
   clientOrders: z.array(
@@ -410,6 +424,7 @@ export type UserClient = typeof userClients.$inferSelect;
 export type InspirationSection = typeof inspirationSections.$inferSelect;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
+export type HiddenSection = typeof hiddenSections.$inferSelect;
 
 // Insert Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -427,6 +442,7 @@ export type InsertInspirationImage = z.infer<
   typeof insertInspirationImageSchema
 >;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
+export type InsertHiddenSection = z.infer<typeof insertHiddenSectionSchema>;
 
 // Other Types
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
