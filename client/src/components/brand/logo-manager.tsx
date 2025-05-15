@@ -6,7 +6,7 @@ import {
   RadioGroup, 
   RadioGroupItem 
 } from "@/components/ui/radio-group";
-import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X, Folder } from "lucide-react";
+import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X, Folder, FileImage } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -359,6 +359,202 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
   );
 }
 
+// Specialized download button for App Icons
+function AppIconDownloadButton({
+  logo,
+  imageUrl,
+  variant,
+  parsedData
+}: {
+  logo: BrandAsset,
+  imageUrl: string,
+  variant: 'light' | 'dark',
+  parsedData: any
+}) {
+  const [open, setOpen] = useState<boolean>(false);
+  const [originalWidth, setOriginalWidth] = useState<number>(300);
+  const [originalHeight, setOriginalHeight] = useState<number>(200);
+
+  // Load dimensions once when component mounts
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setOriginalWidth(img.width);
+      setOriginalHeight(img.height);
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  // Function to get download URL for a specific size and format
+  const getDownloadUrl = (size: number, format: string) => {
+    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
+      `/api/assets/${logo.id}/file?variant=dark` : 
+      imageUrl;
+    
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+  };
+
+  // Function to download app icon package (512x512, 1024x1024 PNG)
+  const downloadAppIconPackage = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+
+    // Define app icon sizes to include in the package
+    const sizes = [512, 1024];
+    
+    // Download PNG format for all sizes
+    sizes.forEach((iconSize, index) => {
+      // Calculate size percentage for the API
+      const sizePercentage = (iconSize / originalWidth) * 100;
+      
+      // Download PNG version
+      const pngLink = document.createElement('a');
+      pngLink.href = getDownloadUrl(sizePercentage, 'png');
+      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${iconSize}px.png`;
+      
+      // Add a small delay between downloads to avoid browser limitations
+      setTimeout(() => {
+        container.appendChild(pngLink);
+        pngLink.click();
+        container.removeChild(pngLink);
+      }, index * 200);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, sizes.length * 200 + 100);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="logo-display__preview-action-button">
+          <Download className="h-3 w-3" />
+          <span>Download</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="logo-download__popover">
+        <div className="logo-download__content">
+          <h4 className="logo-download__heading">App Icon Download Options</h4>
+          
+          <div className="logo-download__options">
+            {/* App Icon Package Section */}
+            <div className="logo-download__section">
+              <h5 className="logo-download__section-title">App Icon Package</h5>
+              <p className="logo-download__description">
+                Standard app icon sizes (512×512, 1024×1024) in PNG format
+              </p>
+              <div 
+                className="logo-download__link"
+                onClick={downloadAppIconPackage}
+              >
+                <Folder className="logo-download__icon" />
+                Download app icon package
+              </div>
+            </div>
+            
+            {/* Editable Design Files Section */}
+            <div className="logo-download__section">
+              <h5 className="logo-download__section-title">Editable Design Files</h5>
+              <p className="logo-download__description">
+                Vector formats for editing (SVG, EPS, AI)
+              </p>
+              <div className="logo-download__links">
+                {parsedData.figmaLink && (
+                  <a 
+                    href={parsedData.figmaLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="logo-download__link"
+                  >
+                    <ExternalLink className="logo-download__icon" />
+                    Open in Figma
+                  </a>
+                )}
+                <div 
+                  className="logo-download__link"
+                  onClick={() => {
+                    // Download SVG
+                    const container = document.createElement('div');
+                    container.style.display = 'none';
+                    document.body.appendChild(container);
+                    
+                    const link = document.createElement('a');
+                    link.href = getDownloadUrl(100, 'svg');
+                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`;
+                    container.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                      document.body.removeChild(container);
+                      setOpen(false);
+                    }, 100);
+                  }}
+                >
+                  <FileType className="logo-download__icon" />
+                  Download SVG logo
+                </div>
+                <div 
+                  className="logo-download__link"
+                  onClick={() => {
+                    // Download EPS
+                    const container = document.createElement('div');
+                    container.style.display = 'none';
+                    document.body.appendChild(container);
+                    
+                    const link = document.createElement('a');
+                    link.href = getDownloadUrl(100, 'eps');
+                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
+                    container.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                      document.body.removeChild(container);
+                      setOpen(false);
+                    }, 100);
+                  }}
+                >
+                  <FileType className="logo-download__icon" />
+                  Download EPS logo
+                </div>
+                <div 
+                  className="logo-download__link"
+                  onClick={() => {
+                    // Download AI
+                    const container = document.createElement('div');
+                    container.style.display = 'none';
+                    document.body.appendChild(container);
+                    
+                    const link = document.createElement('a');
+                    link.href = getDownloadUrl(100, 'ai');
+                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
+                    container.appendChild(link);
+                    link.click();
+                    
+                    setTimeout(() => {
+                      document.body.removeChild(container);
+                      setOpen(false);
+                    }, 100);
+                  }}
+                >
+                  <FileType className="logo-download__icon" />
+                  Download AI logo
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // Logo download button with customization options
 // Generic Download Button for most logo types
 function LogoDownloadButton({ 
@@ -376,191 +572,132 @@ function LogoDownloadButton({
   if (parsedData.type === 'favicon') {
     return <FaviconDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
   }
+  
+  // For app-icon type, use specialized download button
+  if (parsedData.type === 'app-icon') {
+    return <AppIconDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
+  }
 
-  const [size, setSize] = useState<number>(100);
-  const [lockRatio, setLockRatio] = useState<boolean>(true);
-  const [width, setWidth] = useState<number>(300); // Default width, will be calculated from image
-  const [height, setHeight] = useState<number>(200); // Default height, will be calculated from image
-  const [selectedFormats, setSelectedFormats] = useState<string[]>([parsedData.format]);
+  // For standard logo types (main, horizontal, vertical, square)
+  return <StandardLogoDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
+}
+
+// Specialized download button for standard logo types (main, horizontal, vertical, square)
+function StandardLogoDownloadButton({
+  logo,
+  imageUrl,
+  variant,
+  parsedData
+}: {
+  logo: BrandAsset,
+  imageUrl: string,
+  variant: 'light' | 'dark',
+  parsedData: any
+}) {
+  const [open, setOpen] = useState<boolean>(false);
   const [originalWidth, setOriginalWidth] = useState<number>(300);
   const [originalHeight, setOriginalHeight] = useState<number>(200);
-  const [open, setOpen] = useState<boolean>(false);
-  
-  // Helper function to estimate file size based on dimensions and format
-  const estimateFileSize = (format: string, scaledWidth: number, scaledHeight: number): string => {
-    // Calculate area ratio compared to original
-    const originalArea = originalWidth * originalHeight;
-    const newArea = scaledWidth * scaledHeight;
-    const areaRatio = newArea / originalArea;
-    
-    // Base sizes from getFileSizeString
-    let baseSizeKB = 0;
-    switch(format.toLowerCase()) {
-      case 'svg':
-        return '15 KB'; // SVG size doesn't change with dimensions
-      case 'pdf':
-        baseSizeKB = 250;
-        break;
-      case 'png':
-        baseSizeKB = 120;
-        break;
-      case 'jpg':
-      case 'jpeg':
-        baseSizeKB = 85;
-        break;
-      default:
-        baseSizeKB = 100;
-    }
-    
-    // Scale size by area ratio, but with some compression efficiency for larger sizes
-    let scaledSize = baseSizeKB * Math.sqrt(areaRatio);
-    
-    // Format the result
-    if (scaledSize < 1000) {
-      return `${Math.round(scaledSize)} KB`;
-    } else {
-      return `${(scaledSize / 1024).toFixed(1)} MB`;
-    }
-  };
-  
-  // Create download URL with size parameters
-  const getDownloadUrl = (format: string) => {
-    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
-      `/api/assets/${logo.id}/file?variant=dark` : 
-      imageUrl;
-    
-    // Build query params - start with ? if there aren't any params yet
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    
-    // Only add size parameters for image formats that support resizing
-    if (format !== 'svg') {
-      return `${baseUrl}${separator}size=${size}${lockRatio ? '&preserveRatio=true' : ''}${format !== parsedData.format ? `&format=${format}` : ''}`;
-    }
-    
-    // For format conversion with SVG
-    if (format !== parsedData.format) {
-      return `${baseUrl}${separator}format=${format}`;
-    }
-    
-    return baseUrl;
-  };
-
-  // Start download of all selected formats
-  const downloadSelected = () => {
-    // Create an invisible container for download links
-    const container = document.createElement('div');
-    container.style.display = 'none';
-    document.body.appendChild(container);
-    
-    // Create a link for each format and click it
-    selectedFormats.forEach((format, index) => {
-      const link = document.createElement('a');
-      link.href = getDownloadUrl(format);
-      link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}pct.${format}`;
-      
-      // Add a small delay between downloads to avoid browser limitations
-      setTimeout(() => {
-        container.appendChild(link);
-        link.click();
-        container.removeChild(link);
-      }, index * 100);
-    });
-    
-    // Clean up the container after all downloads started
-    setTimeout(() => {
-      document.body.removeChild(container);
-      setOpen(false); // Close popover after download
-    }, selectedFormats.length * 100 + 100);
-  };
 
   // Load dimensions once when component mounts
   useEffect(() => {
-    // Create a new image to get dimensions
     const img = new Image();
     img.onload = () => {
-      setWidth(img.width);
-      setHeight(img.height);
       setOriginalWidth(img.width);
       setOriginalHeight(img.height);
     };
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Calculate the actual pixel dimensions based on size percentage
-  const scaledWidth = Math.max(10, Math.round(originalWidth * (size / 100)));
-  const scaledHeight = Math.max(10, Math.round(originalHeight * (size / 100)));
+  // Function to get download URL for a specific size and format
+  const getDownloadUrl = (size: number, format: string) => {
+    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
+      `/api/assets/${logo.id}/file?variant=dark` : 
+      imageUrl;
+    
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+  };
+  
+  // Function to download all logo sizes
+  const downloadAllLogos = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
 
-  // Handle width input change with better validation
-  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
+    // Define logo sizes to include in the package (small, medium, large)
+    const sizes = [300, 800, 2000];
     
-    // Allow empty input for better editing experience
-    if (inputValue === '') {
-      // Just set width to a temporary empty value, will be corrected on blur
-      setWidth(0);
-      return;
-    }
+    // Download PNG format for all sizes
+    sizes.forEach((logoSize, index) => {
+      // Calculate size percentage for the API (based on width)
+      const sizePercentage = (logoSize / originalWidth) * 100;
+      
+      // Download PNG version
+      const pngLink = document.createElement('a');
+      pngLink.href = getDownloadUrl(sizePercentage, 'png');
+      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${logoSize}px.png`;
+      
+      // Add a small delay between downloads to avoid browser limitations
+      setTimeout(() => {
+        container.appendChild(pngLink);
+        pngLink.click();
+        container.removeChild(pngLink);
+      }, index * 200);
+    });
     
-    const newWidth = parseInt(inputValue);
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, sizes.length * 200 + 100);
+  };
+  
+  // Function to download a specific size
+  const downloadSpecificSize = (size: number) => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
     
-    // Validate the width is a positive number
-    if (isNaN(newWidth) || newWidth <= 0) {
-      return;
-    }
+    // Calculate size percentage for the API (based on width)
+    const sizePercentage = (size / originalWidth) * 100;
     
-    if (lockRatio && originalWidth > 0) {
-      const aspectRatio = originalHeight / originalWidth;
-      const newHeight = Math.round(newWidth * aspectRatio);
-      const newSizePercentage = (newWidth / originalWidth) * 100;
-      setSize(newSizePercentage);
-    } else {
-      const newSizePercentage = (newWidth / originalWidth) * 100;
-      setSize(newSizePercentage);
-    }
+    // Download PNG version
+    const pngLink = document.createElement('a');
+    pngLink.href = getDownloadUrl(sizePercentage, 'png');
+    pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
+    
+    container.appendChild(pngLink);
+    pngLink.click();
+    
+    // Clean up the container after download
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, 100);
   };
 
-  // Handle height input change with better validation
-  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
+  // Function to download editable design files (SVG, EPS, AI)
+  const downloadEditableFiles = (format: string) => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
     
-    // Allow empty input for better editing experience
-    if (inputValue === '') {
-      // Just set height to a temporary empty value, will be corrected on blur
-      setHeight(0);
-      return;
-    }
+    // Create download link
+    const link = document.createElement('a');
+    link.href = getDownloadUrl(100, format); // Use original size (100%)
+    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
+    container.appendChild(link);
+    link.click();
     
-    const newHeight = parseInt(inputValue);
-    
-    // Validate the height is a positive number
-    if (isNaN(newHeight) || newHeight <= 0) {
-      return;
-    }
-    
-    if (lockRatio && originalHeight > 0) {
-      const aspectRatio = originalWidth / originalHeight;
-      const newWidth = Math.round(newHeight * aspectRatio);
-      const newSizePercentage = (newHeight / originalHeight) * 100;
-      setSize(newSizePercentage);
-    } else {
-      const newSizePercentage = (newHeight / originalHeight) * 100;
-      setSize(newSizePercentage);
-    }
-  };
-
-  // Handle input field blur events to ensure valid values
-  const handleInputBlur = () => {
-    // Ensure minimum size is maintained
-    if (size < 10) setSize(10);
-  };
-
-  // Toggle format selection
-  const toggleFormat = (format: string) => {
-    if (selectedFormats.includes(format)) {
-      setSelectedFormats(selectedFormats.filter(f => f !== format));
-    } else {
-      setSelectedFormats([...selectedFormats, format]);
-    }
+    // Clean up the container after download
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, 100);
   };
 
   return (
@@ -572,197 +709,89 @@ function LogoDownloadButton({
         </button>
       </PopoverTrigger>
       <PopoverContent className="logo-download__popover">
-        <div className="logo-download__popover-content">
-          <h4 className="logo-download__popover-heading">Download Options</h4>
+        <div className="logo-download__content">
+          <h4 className="logo-download__heading">{parsedData.type.charAt(0).toUpperCase() + parsedData.type.slice(1)} Logo Download Options</h4>
           
-          <div className="logo-download__popover-dimensions">
-            <div className="logo-download__popover-dimensions-header">
-              <Label htmlFor="size">Dimensions</Label>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-6 w-6"
-                onClick={() => setLockRatio(!lockRatio)}
-                title={lockRatio ? "Unlock aspect ratio" : "Lock aspect ratio"}
-              >
-                {lockRatio ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
-              </Button>
+          <div className="logo-download__options">
+            {/* PNG Package Section */}
+            <div className="logo-download__section">
+              <h5 className="logo-download__section-title">PNG File Options</h5>
+              <p className="logo-download__description">
+                Standard PNG formats with transparent background
+              </p>
+              <div className="logo-download__links">
+                <div 
+                  className="logo-download__link"
+                  onClick={downloadAllLogos}
+                >
+                  <Folder className="logo-download__icon" />
+                  Download all logos (small, medium, large)
+                </div>
+                <div 
+                  className="logo-download__link"
+                  onClick={() => downloadSpecificSize(300)}
+                >
+                  <FileType className="logo-download__icon" />
+                  Small (300px wide)
+                </div>
+                <div 
+                  className="logo-download__link"
+                  onClick={() => downloadSpecificSize(800)}
+                >
+                  <FileType className="logo-download__icon" />
+                  Medium (800px wide)
+                </div>
+                <div 
+                  className="logo-download__link"
+                  onClick={() => downloadSpecificSize(2000)}
+                >
+                  <FileType className="logo-download__icon" />
+                  Large (2000px wide)
+                </div>
+              </div>
             </div>
             
-            <div className="logo-download__popover-dimensions-inputs">
-              <div className="logo-download__popover-dimensions-inputs-group">
-                <Label htmlFor="width" className="text-xs">Width (px)</Label>
-                <Input
-                  id="width"
-                  type="text"
-                  value={scaledWidth}
-                  onChange={handleWidthChange}
-                  onBlur={handleInputBlur}
-                  min={10}
-                />
-              </div>
-              <div className="logo-download__popover-dimensions-inputs-group">
-                <Label htmlFor="height" className="text-xs">Height (px)</Label>
-                <Input
-                  id="height"
-                  type="text"
-                  value={scaledHeight}
-                  onChange={handleHeightChange}
-                  onBlur={handleInputBlur}
-                  min={10}
-                />
+            {/* Editable Design Files Section */}
+            <div className="logo-download__section">
+              <h5 className="logo-download__section-title">Editable Design Files</h5>
+              <p className="logo-download__description">
+                Vector formats for editing (SVG, EPS, AI)
+              </p>
+              <div className="logo-download__links">
+                {parsedData.figmaLink && (
+                  <a 
+                    href={parsedData.figmaLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="logo-download__link"
+                  >
+                    <ExternalLink className="logo-download__icon" />
+                    Open in Figma
+                  </a>
+                )}
+                <div 
+                  className="logo-download__link"
+                  onClick={() => downloadEditableFiles('svg')}
+                >
+                  <FileType className="logo-download__icon" />
+                  Download SVG logo
+                </div>
+                <div 
+                  className="logo-download__link"
+                  onClick={() => downloadEditableFiles('eps')}
+                >
+                  <FileType className="logo-download__icon" />
+                  Download EPS logo
+                </div>
+                <div 
+                  className="logo-download__link"
+                  onClick={() => downloadEditableFiles('ai')}
+                >
+                  <FileType className="logo-download__icon" />
+                  Download AI logo
+                </div>
               </div>
             </div>
-            
-            <div className="logo-download__popover-dimensions-slider">
-              <Label htmlFor="size">Size: {size.toFixed(0)}%</Label>
-              <Slider 
-                id="size"
-                value={[size]} 
-                min={10} 
-                max={400} 
-                step={5}
-                onValueChange={(value) => setSize(value[0])} 
-              />
-            </div>
-          </div>
-          
-          <div className="logo-download__popover-formats">
-            <Label htmlFor="format" className="logo-download__popover-formats-heading">File Formats</Label>
-            <p className="logo-download__popover-formats-hint">Select formats to download</p>
-            
-            <div className="logo-download__popover-formats-list">
-              {/* Original format */}
-              <div className="logo-download__popover-formats-list-item">
-                <Checkbox 
-                  id={`format-${parsedData.format}`}
-                  checked={selectedFormats.includes(parsedData.format)}
-                  onCheckedChange={() => toggleFormat(parsedData.format)}
-                />
-                <div className="logo-download__popover-formats-list-item-label">
-                  <Label 
-                    htmlFor={`format-${parsedData.format}`}
-                  >
-                    {parsedData.format.toUpperCase()}
-                  </Label>
-                  <span className="logo-download__popover-formats-list-item-label-size">
-                    {estimateFileSize(parsedData.format, scaledWidth, scaledHeight)}
-                  </span>
-                </div>
-              </div>
-              
-              {/* JPG format */}
-              <div className="logo-download__popover-formats-list-item">
-                <Checkbox 
-                  id="format-jpg"
-                  checked={selectedFormats.includes('jpg')}
-                  onCheckedChange={() => toggleFormat('jpg')}
-                />
-                <div className="logo-download__popover-formats-list-item-label">
-                  <Label 
-                    htmlFor="format-jpg"
-                  >
-                    JPG
-                  </Label>
-                  <span className="logo-download__popover-formats-list-item-label-size">
-                    {estimateFileSize('jpg', scaledWidth, scaledHeight)}
-                  </span>
-                </div>
-              </div>
-              
-              {/* PNG format */}
-              <div className="logo-download__popover-formats-list-item">
-                <Checkbox 
-                  id="format-png"
-                  checked={selectedFormats.includes('png')}
-                  onCheckedChange={() => toggleFormat('png')}
-                />
-                <div className="logo-download__popover-formats-list-item-label">
-                  <Label 
-                    htmlFor="format-png"
-                  >
-                    PNG
-                  </Label>
-                  <span className="logo-download__popover-formats-list-item-label-size">
-                    {estimateFileSize('png', scaledWidth, scaledHeight)}
-                  </span>
-                </div>
-              </div>
-              
-              {/* PDF format */}
-              <div className="logo-download__popover-formats-list-item">
-                <Checkbox 
-                  id="format-pdf"
-                  checked={selectedFormats.includes('pdf')}
-                  onCheckedChange={() => toggleFormat('pdf')}
-                />
-                <div className="logo-download__popover-formats-list-item-label">
-                  <Label 
-                    htmlFor="format-pdf"
-                  >
-                    PDF
-                  </Label>
-                  <span className="logo-download__popover-formats-list-item-label-size">
-                    {estimateFileSize('pdf', scaledWidth, scaledHeight)}
-                  </span>
-                </div>
-              </div>
-              
-              {/* SVG format */}
-              {['png', 'jpg', 'jpeg'].includes(parsedData.format.toLowerCase()) && (
-                <div className="logo-download__popover-formats-list-item">
-                  <Checkbox 
-                    id="format-svg"
-                    checked={selectedFormats.includes('svg')}
-                    onCheckedChange={() => toggleFormat('svg')}
-                  />
-                  <div className="logo-download__popover-formats-list-item-label">
-                    <Label 
-                      htmlFor="format-svg"
-                    >
-                      SVG
-                    </Label>
-                    <span className="logo-download__popover-formats-list-item-label-size">
-                      {estimateFileSize('svg', scaledWidth, scaledHeight)}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="logo-download__popover-actions">
-            {selectedFormats.length > 0 ? (
-              <>
-                <Button 
-                  onClick={downloadSelected}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download ({selectedFormats.length})
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button 
-                  disabled
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Select formats
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </PopoverContent>
@@ -894,47 +923,45 @@ function FaviconDownloadButton({
         </button>
       </PopoverTrigger>
       <PopoverContent className="logo-download__popover">
-        <div className="logo-download__popover-content">
-          <h4 className="logo-download__popover-heading">Favicon Download Options</h4>
+        <div className="logo-download__content">
+          <h4 className="logo-download__heading">Favicon Download Options</h4>
           
-          <div className="logo-download__popover-favicon-options">
+          <div className="logo-download__options">
             {/* Favicon Package Section */}
-            <div className="logo-download__popover-section mb-4">
-              <h5 className="font-semibold text-sm">Favicon Package</h5>
-              <p className="text-xs text-muted-foreground mb-2">
+            <div className="logo-download__section">
+              <h5 className="logo-download__section-title">Favicon Package</h5>
+              <p className="logo-download__description">
                 Standard favicon sizes (16×16, 32×32, 48×48) in ICO and PNG formats
               </p>
-              <Button 
-                variant="link" 
-                className="p-0 h-auto flex items-center text-primary text-xs"
+              <div 
+                className="logo-download__link"
                 onClick={downloadFaviconPackage}
               >
-                <Folder className="h-3.5 w-3.5 mr-1" />
+                <Folder className="logo-download__icon" />
                 Download favicon package
-              </Button>
+              </div>
             </div>
             
             {/* Editable Design Files Section */}
-            <div className="logo-download__popover-section">
-              <h5 className="font-semibold text-sm">Editable Design Files</h5>
-              <p className="text-xs text-muted-foreground mb-2">
+            <div className="logo-download__section">
+              <h5 className="logo-download__section-title">Editable Design Files</h5>
+              <p className="logo-download__description">
                 Vector formats for editing (SVG, EPS, AI)
               </p>
-              <div className="flex flex-col gap-1">
+              <div className="logo-download__links">
                 {parsedData.figmaLink && (
                   <a 
                     href={parsedData.figmaLink} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-primary hover:underline flex items-center text-xs"
+                    className="logo-download__link"
                   >
-                    <ExternalLink className="h-3 w-3 mr-1" />
+                    <ExternalLink className="logo-download__icon" />
                     Open in Figma
                   </a>
                 )}
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto flex items-center text-primary text-xs"
+                <div 
+                  className="logo-download__link"
                   onClick={() => {
                     // Download SVG
                     const container = document.createElement('div');
@@ -953,12 +980,11 @@ function FaviconDownloadButton({
                     }, 100);
                   }}
                 >
-                  <FileType className="h-3.5 w-3.5 mr-1" />
+                  <FileType className="logo-download__icon" />
                   Download SVG logo
-                </Button>
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto flex items-center text-primary text-xs"
+                </div>
+                <div 
+                  className="logo-download__link"
                   onClick={() => {
                     // Download EPS
                     const container = document.createElement('div');
@@ -977,12 +1003,11 @@ function FaviconDownloadButton({
                     }, 100);
                   }}
                 >
-                  <FileType className="h-3.5 w-3.5 mr-1" />
+                  <FileType className="logo-download__icon" />
                   Download EPS logo
-                </Button>
-                <Button 
-                  variant="link" 
-                  className="p-0 h-auto flex items-center text-primary text-xs"
+                </div>
+                <div 
+                  className="logo-download__link"
                   onClick={() => {
                     // Download AI
                     const container = document.createElement('div');
@@ -1001,21 +1026,11 @@ function FaviconDownloadButton({
                     }, 100);
                   }}
                 >
-                  <FileType className="h-3.5 w-3.5 mr-1" />
+                  <FileType className="logo-download__icon" />
                   Download AI logo
-                </Button>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div className="mt-4 flex justify-end">
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={() => setOpen(false)}
-            >
-              Close
-            </Button>
           </div>
         </div>
       </PopoverContent>
