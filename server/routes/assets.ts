@@ -491,6 +491,7 @@ export function registerAssetRoutes(app: Express) {
       const sizeParam = req.query.size as string;
       const preserveRatio = req.query.preserveRatio === 'true';
       const preserveVector = req.query.preserveVector === 'true';
+      const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
       
       // Parse size as percentage or exact pixels
       let size: number | undefined;
@@ -501,7 +502,7 @@ export function registerAssetRoutes(app: Express) {
         }
       }
       
-      console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}, preserveVector: ${preserveVector}`);
+      console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}, preserveVector: ${preserveVector}, clientId param: ${clientIdParam}`);
       
       // CRITICAL FIX: Add query timing for debugging
       console.time('asset-query');
@@ -520,6 +521,12 @@ export function registerAssetRoutes(app: Express) {
       if (asset.id !== assetId) {
         console.error(`ERROR: Requested asset ID ${assetId} but serving ${asset.id} (${asset.name})`);
         return res.status(500).json({ message: "Asset ID mismatch error" });
+      }
+      
+      // CRITICAL FIX: Ensure client ID matches if provided in URL
+      if (clientIdParam && asset.clientId !== clientIdParam) {
+        console.error(`ERROR: Client ID mismatch - Asset belongs to client ${asset.clientId} but clientId=${clientIdParam} specified in URL`);
+        return res.status(403).json({ message: "Client ID mismatch. You don't have permission to access this asset." });
       }
       
       // CRITICAL FIX: Get the client information for verification
@@ -572,7 +579,8 @@ export function registerAssetRoutes(app: Express) {
           
           try {
             // Convert the file
-            const result = await convertToFormat(sourceBuffer, sourceFormat, format);
+            // CRITICAL FIX: Pass the asset ID to the converter for better tracking
+            const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
             fileBuffer = result.data;
             mimeType = result.mimeType;
             
@@ -756,13 +764,19 @@ export function registerAssetRoutes(app: Express) {
   async function convertToFormat(
     buffer: Buffer, 
     sourceFormat: string, 
-    targetFormat: string
+    targetFormat: string,
+    assetId?: number
   ): Promise<{ data: Buffer, mimeType: string }> {
     if (!buffer) {
       throw new Error("Invalid source buffer for conversion");
     }
     
-    console.log(`Converting from ${sourceFormat} to ${targetFormat}`);
+    // CRITICAL FIX: Additional validation to ensure we have the right data
+    if (buffer.length < 100) {
+      console.error(`ERROR: Source buffer suspiciously small (${buffer.length} bytes) for asset ID ${assetId || 'unknown'}`);
+    }
+    
+    console.log(`Converting from ${sourceFormat} to ${targetFormat} for asset ID ${assetId || 'unknown'}`);
     
     try {
       // Use the file converter utility

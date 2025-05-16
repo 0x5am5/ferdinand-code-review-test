@@ -42,12 +42,17 @@ export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: st
     
     // CRITICAL FIX: Add original file to the list if it's not empty
     if (fileBuffer && fileBuffer.length > 0) {
-      console.log(`Adding original file format: ${originalFormat} (size: ${fileBuffer.length} bytes)`);
-      convertedFiles.push({
-        format: originalFormat,
-        data: fileBuffer,
-        mimeType: getMimeType(originalFormat)
-      });
+      // Make sure we're adding the real file data - check it's not empty
+      if (fileBuffer.length < 100) {
+        console.error(`WARNING: Original file buffer suspiciously small (${fileBuffer.length} bytes)`);
+      } else {
+        console.log(`Adding original file format: ${originalFormat} (size: ${fileBuffer.length} bytes)`);
+        convertedFiles.push({
+          format: originalFormat,
+          data: fileBuffer,
+          mimeType: getMimeType(originalFormat)
+        });
+      }
     } else {
       console.error(`ERROR: Empty or invalid original file buffer for format ${originalFormat}`);
     }

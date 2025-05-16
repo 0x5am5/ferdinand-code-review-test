@@ -121,6 +121,39 @@ function getFileSizeString(format: string): string {
   }
 }
 
+// CRITICAL FIX: New helper to ensure we always download the correct client's logos
+// This prevents the issue of downloading Summa logo instead of client-specific logo
+function getSecureAssetUrl(assetId: number, clientId: number, options: {
+  format?: string;
+  size?: number;
+  variant?: 'dark' | 'light';
+  preserveRatio?: boolean;
+  preserveVector?: boolean;
+} = {}) {
+  const { format, size, variant, preserveRatio = true, preserveVector = false } = options;
+  
+  // Start with the base URL
+  let url = `/api/assets/${assetId}/file?`;
+  
+  // Add parameters
+  const params = new URLSearchParams();
+  
+  // Always include client ID to ensure the correct logo is downloaded
+  params.append('clientId', clientId.toString());
+  
+  // Add cache buster to prevent browser caching
+  params.append('t', Date.now().toString());
+  
+  // Add optional parameters if provided
+  if (variant === 'dark') params.append('variant', 'dark');
+  if (format) params.append('format', format);
+  if (size) params.append('size', size.toString());
+  if (preserveRatio) params.append('preserveRatio', 'true');
+  if (preserveVector) params.append('preserveVector', 'true');
+  
+  return url + params.toString();
+}
+
 // Drag and drop file upload component
 function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, parentLogoId, buttonOnly = false, children, className }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -712,10 +745,14 @@ function StandardLogoDownloadButton({
       
       // Add PNG files in different sizes - pass exact pixel dimensions
       for (const size of sizes) {
-        // CRITICAL FIX: Add client ID and timestamp to ensure no caching issues
-        // This prevents browsers from using cached images from other clients
-        const cacheBuster = `t=${Date.now()}&clientId=${logo.clientId}`;
-        const url = `/api/assets/${logo.id}/file?size=${size}&preserveRatio=true&format=png&${cacheBuster}`;
+        // CRITICAL FIX: Use the secure URL helper to ensure we download the correct client's logo
+        // This prevents the issue where clients were downloading the Summa logo instead of their own
+        const url = getSecureAssetUrl(logo.id, logo.clientId, {
+          size,
+          format: 'png',
+          variant: variant === 'dark' ? 'dark' : undefined,
+          preserveRatio: true
+        });
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
         
         console.log(`Fetching ${size}px logo from: ${url}`);
@@ -751,11 +788,13 @@ function StandardLogoDownloadButton({
       // Use a reference to avoid TypeScript null warnings
       const vectorFolderRef = vectorFolder;
       for (const format of vectorFormats) {
-        // CRITICAL FIX: Add client ID and timestamp to ensure no caching issues
-        // This prevents browsers from using cached images from other clients
-        const cacheBuster = `t=${Date.now()}&clientId=${logo.clientId}`;
-        // Create a direct URL with explicit parameters - add preserveVector flag 
-        const url = `/api/assets/${logo.id}/file?format=${format}&preserveVector=true&${cacheBuster}`;
+        // CRITICAL FIX: Use the secure URL helper to ensure we download the correct client's logo
+        // This prevents the issue where clients were downloading the Summa logo instead of their own
+        const url = getSecureAssetUrl(logo.id, logo.clientId, {
+          format,
+          variant: variant === 'dark' ? 'dark' : undefined,
+          preserveVector: true
+        });
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
         
         console.log(`Fetching ${format} logo from: ${url}`);
@@ -828,9 +867,14 @@ function StandardLogoDownloadButton({
       container.style.display = 'none';
       document.body.appendChild(container);
       
-      // FIXED: Use a direct URL with specific size and asset ID to ensure
-      // we download the correct logo at the exact size requested
-      const directUrl = `/api/assets/${logo.id}/file?size=${size}&preserveRatio=true&format=png`;
+      // CRITICAL FIX: Use secure URL helper to ensure we download the correct client's logo
+      // This prevents the issue where clients were downloading the Summa logo instead of their own
+      const directUrl = getSecureAssetUrl(logo.id, logo.clientId, {
+        size,
+        format: 'png',
+        variant: variant === 'dark' ? 'dark' : undefined,
+        preserveRatio: true
+      });
       console.log(`Downloading ${size}px PNG for ID: ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
       
       // Create and trigger the download
