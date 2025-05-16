@@ -487,12 +487,29 @@ export function registerAssetRoutes(app: Express) {
       const assetId = parseInt(req.params.assetId);
       const variant = req.query.variant as string;
       const format = req.query.format as string;
+      const sizeParam = req.query.size as string;
+      const preserveRatio = req.query.preserveRatio === 'true';
+      
+      // Parse size as percentage or exact pixels
+      let size: number | undefined;
+      if (sizeParam) {
+        size = parseFloat(sizeParam);
+        if (isNaN(size)) {
+          size = undefined;
+        }
+      }
+      
+      console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}`);
+      
       const asset = await storage.getAsset(assetId);
 
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
       }
 
+      let fileBuffer: Buffer;
+      let mimeType: string;
+      
       // Check if requesting a specific format conversion
       if (format && asset.category === 'logo') {
         const isDarkVariant = variant === 'dark';
@@ -500,67 +517,162 @@ export function registerAssetRoutes(app: Express) {
 
         if (convertedAsset) {
           console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
-          res.setHeader("Content-Type", convertedAsset.mimeType);
-          const buffer = Buffer.from(convertedAsset.fileData, "base64");
-          // The fileSize column doesn't exist yet, so we'll comment this out for now
-          // to avoid errors in the logs
-          /*
-          try {
-            await db.execute(
-              sql`UPDATE brand_assets SET "file_size" = ${buffer.length} WHERE id = ${assetId}`
-            );
-          } catch (err) {
-            console.warn("Failed to update file size:", err);
+          mimeType = convertedAsset.mimeType;
+          fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
+        } else {
+          // If the requested format is not found, convert on-the-fly
+          console.log(`Requested format ${format} not found, converting on-the-fly`);
+          
+          // Get the source buffer
+          let sourceBuffer: Buffer | null = null;
+          if (isDarkVariant && asset.category === 'logo') {
+            sourceBuffer = getDarkVariantBuffer(asset);
+          } else if (asset.fileData) {
+            sourceBuffer = Buffer.from(asset.fileData, "base64");
           }
-          */
-          return res.send(buffer);
+          
+          if (!sourceBuffer) {
+            return res.status(404).json({ message: "Source file data not found" });
+          }
+
+          // Get the source format
+          const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+          const sourceFormat = isDarkVariant ? (data.darkVariantFormat || data.format) : data.format;
+          
+          try {
+            // Convert the file
+            const result = await convertToFormat(sourceBuffer, sourceFormat, format);
+            fileBuffer = result.data;
+            mimeType = result.mimeType;
+          } catch (conversionError) {
+            console.error("Format conversion failed:", conversionError);
+            return res.status(400).json({ message: "Format conversion failed" });
+          }
         }
-
-        // If the requested format is not found, fallback to the original
-        console.log(`Requested format ${format} not found, falling back to original`);
-      }
-
+      } 
       // For logos with dark variants using the old method (backward compatibility)
-      if (variant === 'dark' && asset.category === 'logo' && !format) {
-        const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-        if (data.darkVariantFileData) {
-          res.setHeader(
-            "Content-Type",
-            data.darkVariantMimeType || asset.mimeType || "application/octet-stream",
-          );
-          const buffer = Buffer.from(data.darkVariantFileData, "base64");
-          return res.send(buffer);
+      else if (variant === 'dark' && asset.category === 'logo' && !format) {
+        const darkBuffer = getDarkVariantBuffer(asset);
+        if (darkBuffer) {
+          const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+          mimeType = data.darkVariantMimeType || asset.mimeType || "application/octet-stream";
+          fileBuffer = darkBuffer;
+        } else {
+          return res.status(404).json({ message: "Dark variant file data not found" });
+        }
+      }
+      // Default case - serve the main file
+      else {
+        if (!asset.fileData) {
+          return res.status(404).json({ message: "Asset file data not found" });
+        }
+        
+        mimeType = asset.mimeType || "application/octet-stream";
+        fileBuffer = Buffer.from(asset.fileData, "base64");
+      }
+
+      // Resize the image if needed (only for raster images)
+      if (size && size > 0 && isImageFormat(mimeType)) {
+        try {
+          // Import sharp dynamically to avoid reference errors
+          const sharp = (await import('sharp')).default;
+          
+          // Create a sharp instance from the buffer
+          const image = sharp(fileBuffer);
+          const metadata = await image.metadata();
+          
+          // Get original dimensions
+          const originalWidth = metadata.width || 500;
+          const originalHeight = metadata.height || 500;
+          
+          // Calculate new dimensions
+          let width: number, height: number;
+          
+          if (size >= 1) {
+            // Treat as exact pixel size for width if >= 1
+            width = size;
+            height = preserveRatio ? Math.round((size / originalWidth) * originalHeight) : size;
+          } else {
+            // Treat as percentage if < 1
+            width = Math.round(originalWidth * (size / 100));
+            height = preserveRatio ? Math.round(originalHeight * (size / 100)) : width;
+          }
+          
+          console.log(`Resizing image from ${originalWidth}x${originalHeight} to ${width}x${height}`);
+          
+          // Perform the resize operation
+          fileBuffer = await image.resize(width, height, {
+            fit: preserveRatio ? 'inside' : 'fill'
+          }).toBuffer();
+          
+          console.log(`Image resized to ${width}x${height}`);
+        } catch (resizeError) {
+          console.error("Image resize failed:", resizeError);
+          // Continue with the original image if resize fails
         }
       }
 
-      // Default case - serve the main file
-      if (!asset.fileData) {
-        return res.status(404).json({ message: "Asset file data not found" });
-      }
-
-      res.setHeader(
-        "Content-Type",
-        asset.mimeType || "application/octet-stream",
-      );
-      const buffer = Buffer.from(asset.fileData, "base64");
-      // The fileSize column doesn't exist yet, so we'll comment this out for now
-      // to avoid errors in the logs
-      /*
-      try {
-        await db.execute(
-          sql`UPDATE brand_assets SET "file_size" = ${buffer.length} WHERE id = ${assetId}`
-        );
-      } catch (err) {
-        console.warn("Failed to update file size:", err);
-        // Continue serving the file even if size update fails
-      }
-      */
-      res.send(buffer);
+      res.setHeader("Content-Type", mimeType);
+      return res.send(fileBuffer);
     } catch (error) {
       console.error("Error serving asset file:", error);
       res.status(500).json({ message: "Error serving asset file" });
     }
   });
+  
+  // Helper function to get dark variant buffer
+  function getDarkVariantBuffer(asset: any): Buffer | null {
+    if (!asset) return null;
+    
+    try {
+      const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+      if (data && data.darkVariantFileData) {
+        return Buffer.from(data.darkVariantFileData, "base64");
+      }
+    } catch (error) {
+      console.error("Error parsing dark variant data:", error);
+    }
+    return null;
+  }
+  
+  // Helper function to check if a mimetype is an image format
+  function isImageFormat(mimeType: string): boolean {
+    return /^image\/(jpeg|png|gif|webp|svg\+xml)/.test(mimeType);
+  }
+  
+  // Helper function to convert a file to another format using the file-converter utility
+  async function convertToFormat(
+    buffer: Buffer, 
+    sourceFormat: string, 
+    targetFormat: string
+  ): Promise<{ data: Buffer, mimeType: string }> {
+    if (!buffer) {
+      throw new Error("Invalid source buffer for conversion");
+    }
+    
+    console.log(`Converting from ${sourceFormat} to ${targetFormat}`);
+    
+    try {
+      // Use the file converter utility
+      const { convertToAllFormats } = await import('../utils/file-converter');
+      const convertedFiles = await convertToAllFormats(buffer, sourceFormat);
+      
+      // Find the target format in the converted files
+      const targetFile = convertedFiles.find(file => file.format.toLowerCase() === targetFormat.toLowerCase());
+      
+      if (!targetFile) {
+        throw new Error(`Conversion to ${targetFormat} failed`);
+      }
+      
+      return {
+        data: targetFile.data,
+        mimeType: targetFile.mimeType
+      };
+    } catch (error) {
+      console.error("Error in format conversion:", error);
+      throw new Error(`Failed to convert ${sourceFormat} to ${targetFormat}: ${error.message}`);
+    }
+  }
 
   // Get converted assets for a specific asset
   app.get("/api/assets/:assetId/converted", async (req, res: Response) => {

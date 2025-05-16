@@ -706,19 +706,30 @@ function StandardLogoDownloadButton({
       // Fetch all the files and add to zip
       const fetchPromises = [];
       
-      // Add PNG files in different sizes
+      // Add PNG files in different sizes - pass exact pixel dimensions
       for (const size of sizes) {
-        const sizePercentage = (size / originalWidth) * 100;
-        const url = getDownloadUrl(sizePercentage, 'png');
+        // Using exact pixel dimensions instead of percentage
+        const url = getDownloadUrl(size, 'png');
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
+        
+        console.log(`Fetching ${size}px logo from: ${url}`);
         
         // Use a reference to avoid TypeScript null warnings
         const pngFolderRef = pngFolder;
         fetchPromises.push(
           fetch(url)
-            .then(response => response.arrayBuffer())
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`Failed to fetch ${size}px PNG: ${response.status} ${response.statusText}`);
+              }
+              return response.arrayBuffer();
+            })
             .then(data => {
               pngFolderRef.file(filename, data);
+            })
+            .catch(err => {
+              console.error(`Error with ${size}px PNG:`, err);
+              // Continue with other files
             })
         );
       }
@@ -728,14 +739,26 @@ function StandardLogoDownloadButton({
       // Use a reference to avoid TypeScript null warnings
       const vectorFolderRef = vectorFolder;
       for (const format of vectorFormats) {
+        // Use the original size (no resizing for vector formats)
         const url = getDownloadUrl(100, format);
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
         
+        console.log(`Fetching ${format} logo from: ${url}`);
+        
         fetchPromises.push(
           fetch(url)
-            .then(response => response.arrayBuffer())
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`Failed to fetch ${format}: ${response.status} ${response.statusText}`);
+              }
+              return response.arrayBuffer();
+            })
             .then(data => {
               vectorFolderRef.file(filename, data);
+            })
+            .catch(err => {
+              console.error(`Error with ${format}:`, err);
+              // Continue with other files
             })
         );
       }
@@ -784,12 +807,11 @@ function StandardLogoDownloadButton({
       container.style.display = 'none';
       document.body.appendChild(container);
       
-      // Calculate size percentage for the API (based on width)
-      const sizePercentage = (size / originalWidth) * 100;
+      // Use the exact pixel size directly - our server now handles exact pixel sizing
       
       // Download PNG version
       const pngLink = document.createElement('a');
-      pngLink.href = getDownloadUrl(sizePercentage, 'png');
+      pngLink.href = getDownloadUrl(size, 'png'); // Use exact pixel size
       pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
       
       container.appendChild(pngLink);
