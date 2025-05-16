@@ -698,7 +698,8 @@ function StandardLogoDownloadButton({
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
       
-      // Create a folder structure in the zip
+      // Create a better folder structure for the zip with client name
+      const clientName = logo.name.replace(/[^a-z0-9]/gi, '-').toLowerCase(); 
       const pngFolder = zip.folder("PNG");
       const vectorFolder = zip.folder("Vector");
       

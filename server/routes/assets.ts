@@ -490,6 +490,7 @@ export function registerAssetRoutes(app: Express) {
       const format = req.query.format as string;
       const sizeParam = req.query.size as string;
       const preserveRatio = req.query.preserveRatio === 'true';
+      const preserveVector = req.query.preserveVector === 'true';
       
       // Parse size as percentage or exact pixels
       let size: number | undefined;
@@ -500,12 +501,25 @@ export function registerAssetRoutes(app: Express) {
         }
       }
       
-      console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}`);
+      console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}, preserveVector: ${preserveVector}`);
       
+      // CRITICAL FIX: Add query timing for debugging
+      console.time('asset-query');
       const asset = await storage.getAsset(assetId);
+      console.timeEnd('asset-query');
 
       if (!asset) {
+        console.error(`ERROR: Asset with ID ${assetId} not found in database`);
         return res.status(404).json({ message: "Asset not found" });
+      }
+      
+      // Add detailed logging about the asset being served
+      console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}, Category: ${asset.category}, MimeType: ${asset.mimeType}`);
+      
+      // CRITICAL FIX: Verify we're serving the correct asset and client
+      if (asset.id !== assetId) {
+        console.error(`ERROR: Requested asset ID ${assetId} but serving ${asset.id} (${asset.name})`);
+        return res.status(500).json({ message: "Asset ID mismatch error" });
       }
 
       let fileBuffer: Buffer;
@@ -573,15 +587,75 @@ export function registerAssetRoutes(app: Express) {
       }
 
       // Skip resizing for vector formats like SVG, AI, EPS, and PDF
-      const preserveVector = req.query.preserveVector === 'true';
+      // preserveVector is already declared above
       const isVectorFormat = ['image/svg+xml', 'application/postscript', 'application/pdf'].some(
         type => mimeType.includes(type)
       ) || ['svg', 'ai', 'eps', 'pdf'].includes(format?.toLowerCase() || '');
       
+      // Fix content type for specific vector formats to ensure proper download
+      if (format === 'eps') {
+        mimeType = 'application/postscript';
+      } else if (format === 'ai') {
+        mimeType = 'application/postscript';
+      } else if (format === 'pdf') {
+        mimeType = 'application/pdf';
+      }
+      
       // Log asset details to help diagnose the wrong logo issue
       console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
       
-      // Resize the image if needed (only for raster images) and not explicitly requesting vector preservation
+      // FIXED VECTOR HANDLING: Special handling for SVG assets that need resizing
+      if (size && size > 0 && isVectorFormat && (format === 'png' || format === 'jpg' || format === 'jpeg')) {
+        try {
+          // For vector-to-raster conversion with resizing, we'll handle SVG specially
+          if (mimeType === 'image/svg+xml' || (asset.fileData && !format)) {
+            console.log(`Converting SVG to ${format} with proper sizing for ID: ${asset.id}, Client: ${asset.clientId}`);
+            
+            // Import sharp directly
+            const sharp = (await import('sharp')).default;
+            
+            // Extract SVG dimensions for accurate aspect ratio
+            const svgString = fileBuffer.toString('utf-8');
+            let svgWidth = 500;
+            let svgHeight = 500;
+            
+            // Try to extract dimensions from SVG viewBox
+            const viewBoxMatch = svgString.match(/viewBox=["']([^"']*)["']/);
+            if (viewBoxMatch && viewBoxMatch[1]) {
+              const viewBoxParts = viewBoxMatch[1].split(/\s+/).map(parseFloat);
+              if (viewBoxParts.length >= 4) {
+                svgWidth = viewBoxParts[2];
+                svgHeight = viewBoxParts[3];
+              }
+            }
+            
+            // Calculate target dimensions with proper aspect ratio
+            const width = Math.round(size); // Target width in pixels
+            const height = preserveRatio ? Math.round((width / svgWidth) * svgHeight) : width;
+            
+            console.log(`Converting SVG (${asset.id}) from ${svgWidth}x${svgHeight} to ${width}x${height}px ${format}`);
+            
+            // Use high-density rendering for SVG to prevent pixelation at larger sizes
+            const sharpInstance = sharp(fileBuffer, { density: Math.min(1200, width * 2) });
+            
+            // Create high-quality raster output
+            if (format === 'png') {
+              fileBuffer = await sharpInstance.resize(width, height).png({ quality: 100 }).toBuffer();
+              mimeType = 'image/png';
+            } else {
+              fileBuffer = await sharpInstance.resize(width, height).jpeg({ quality: 95 }).toBuffer();
+              mimeType = 'image/jpeg';
+            }
+            
+            console.log(`Successfully converted SVG to ${format} at ${width}x${height}px`);
+            return res.set('Content-Type', mimeType).send(fileBuffer);
+          }
+        } catch (vectorError) {
+          console.error("Error handling vector-to-raster conversion:", vectorError);
+        }
+      }
+      
+      // Standard resize for raster images
       if (size && size > 0 && isImageFormat(mimeType) && !isVectorFormat && !preserveVector) {
         try {
           // Import sharp directly to avoid require() issues
@@ -601,11 +675,12 @@ export function registerAssetRoutes(app: Express) {
           
           console.log(`Resizing asset ${asset.id} (${asset.name}, Client: ${asset.clientId}) from ${originalWidth}x${originalHeight} to ${width}x${height}px`);
           
-          // Perform the resize operation with specific dimensions
+          // Perform the resize operation with high quality settings
           fileBuffer = await image.resize({
             width: width,
             height: height,
-            fit: preserveRatio ? 'inside' : 'fill'
+            fit: preserveRatio ? 'inside' : 'fill',
+            kernel: 'lanczos3' // Use high-quality resize algorithm
           }).toBuffer();
           
           console.log(`Successfully resized image to ${width}x${height}px`);

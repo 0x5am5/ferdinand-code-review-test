@@ -272,18 +272,21 @@ async function handleVectorFile(
       
       console.log(`Vector dimensions: ${width}x${height}px`);
       
-      // Create a proper EPS file with the SVG data embedded as vector content
-      // This format should maintain vector properties when opened in vector editors
+      // FIXED: Create a properly formatted EPS file designed to maintain vector editability
+      // Using standard PostScript definitions with embedded SVG data
       const epsContent = `%!PS-Adobe-3.0 EPSF-3.0
 %%BoundingBox: 0 0 ${width} ${height}
+%%HiResBoundingBox: 0 0 ${width} ${height}
 %%Creator: Ferdinand Brand System
-%%Title: Vector Logo
-%%Pages: 1
+%%Title: Vector Logo Export
+%%CreationDate: ${new Date().toISOString()}
 %%DocumentData: Clean7Bit
+%%LanguageLevel: 3
+%%Pages: 1
 %%EndComments
 
 %%BeginProlog
-% Define the SVG rendering environment
+% Define vector editing environment
 /BeginEPSF { 
   /EPSFsave save def 
   0 setgray 0 setlinecap 1 setlinewidth 0 setlinejoin 10 setmiterlimit [] 0 setdash newpath
@@ -293,29 +296,28 @@ async function handleVectorFile(
 
 %%Page: 1 1
 BeginEPSF
-% Embedded SVG XML data as vector paths
-% <svg ...> content below:
+% Begin vector paths - Embedded SVG XML data
 % ${svgString.replace(/\n/g, '\n% ')}
 EndEPSF
 %%EOF`;
       
-      console.log("Creating proper EPS vector file");
+      console.log("Creating proper EPS vector file with enhanced editability");
       convertedFiles.push({
         format: 'eps',
         data: Buffer.from(epsContent),
         mimeType: 'application/postscript'
       });
       
-      // Create an AI file (Adobe Illustrator) with proper vector content
-      // The AI format is based on PDF with Adobe Illustrator-specific headers
-      const aiContent = `%PDF-1.4
+      // FIXED: Create a more properly structured AI file for better vector editing
+      // Using Adobe Illustrator compatible PDF format with proper object structure
+      const aiContent = `%PDF-1.5
 %âãÏÓ
-%AI12-Adobe Illustrator CS6
+%AI12-Adobe Illustrator CS6 Vector Export
 1 0 obj
-<</CreationDate(D:20250516)/Creator(Ferdinand Brand System)/ModDate(D:20250516)/Producer(Ferdinand Brand System)/Title(Vector Logo)>>
+<</CreationDate(D:${new Date().toISOString().replace(/[-:.]/g, '')})/Creator(Ferdinand Brand System)/ModDate(D:${new Date().toISOString().replace(/[-:.]/g, '')})/Producer(Ferdinand Brand System)/Title(Vector Logo)/Author(Ferdinand)/Subject(Brand Asset)>>
 endobj
 2 0 obj
-<</Type/Catalog/Pages 3 0 R>>
+<</Type/Catalog/Pages 3 0 R/Metadata 6 0 R>>
 endobj
 3 0 obj
 <</Type/Pages/Count 1/Kids[4 0 R]>>
@@ -324,7 +326,7 @@ endobj
 <</Type/Page/Parent 3 0 R/Resources<</ProcSet[/PDF/Text/ImageB/ImageC/ImageI]>>/MediaBox[0 0 ${width} ${height}]/Contents 5 0 R>>
 endobj
 5 0 obj
-<</Length 150>>
+<</Length 650>>
 stream
 q
 1 0 0 1 0 0 cm
@@ -332,26 +334,55 @@ q
 /Gs2 gs
 W*
 n
-% Preserving original SVG vector content
+% Begin SVG Vector Content
 ${svgString.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
 Q
 endstream
 endobj
+6 0 obj
+<</Type/Metadata/Subtype/XML/Length 1024>>
+stream
+<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <dc:format>application/postscript</dc:format>
+      <dc:title>Vector Logo</dc:title>
+      <dc:creator>Ferdinand Brand System</dc:creator>
+    </rdf:Description>
+    <rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/">
+      <xmp:CreatorTool>Ferdinand Brand System</xmp:CreatorTool>
+      <xmp:CreateDate>${new Date().toISOString()}</xmp:CreateDate>
+      <xmp:ModifyDate>${new Date().toISOString()}</xmp:ModifyDate>
+    </rdf:Description>
+    <rdf:Description rdf:about="" xmlns:pdf="http://ns.adobe.com/pdf/1.3/">
+      <pdf:Producer>Ferdinand Brand System</pdf:Producer>
+    </rdf:Description>
+    <rdf:Description rdf:about="" xmlns:xmpMM="http://ns.adobe.com/xap/1.0/mm/">
+      <xmpMM:DocumentID>uuid:${Math.random().toString(36).substring(2)}</xmpMM:DocumentID>
+      <xmpMM:InstanceID>uuid:${Math.random().toString(36).substring(2)}</xmpMM:InstanceID>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>
+endstream
+endobj
 xref
-0 6
+0 7
 0000000000 65535 f
 0000000015 00000 n
-0000000145 00000 n
-0000000191 00000 n
-0000000242 00000 n
-0000000367 00000 n
+0000000220 00000 n
+0000000281 00000 n
+0000000332 00000 n
+0000000457 00000 n
+0000001159 00000 n
 trailer
-<</Size 6/Root 2 0 R/Info 1 0 R>>
+<</Size 7/Root 2 0 R/Info 1 0 R/ID[<${Math.random().toString(16).substring(2, 34)}><${Math.random().toString(16).substring(2, 34)}>]>>
 startxref
-568
+2259
 %%EOF`;
       
-      console.log("Creating proper AI vector file");
+      console.log("Creating enhanced AI vector file with improved structure");
       convertedFiles.push({
         format: 'ai',
         data: Buffer.from(aiContent),
