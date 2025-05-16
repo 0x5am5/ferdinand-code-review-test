@@ -548,9 +548,21 @@ export function registerAssetRoutes(app: Express) {
         // CRITICAL FIX: Log the client ID we're checking for
         console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
         
-        // Get the converted asset specifically for this asset ID
-        // CRITICAL FIX: Get converted asset, ensuring it's the right one
+        // CRITICAL FIX: Before checking for converted assets, verify we're working with the correct client's asset
         console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
+        
+        // Get the converted asset specifically for this asset ID, but with strict verification
+        const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
+        if (clientIdParam && clientIdParam !== asset.clientId) {
+          console.error(`MAJOR ISSUE: Client ID mismatch! Asset ${assetId} belongs to client ${asset.clientId} but client ${clientIdParam} is trying to access it`);
+          return res.status(403).json({ 
+            message: "You don't have permission to access this logo",
+            error: "Client ID mismatch",
+            requested: clientIdParam,
+            actual: asset.clientId
+          });
+        }
+        
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
         
         if (convertedAsset) {
@@ -561,11 +573,29 @@ export function registerAssetRoutes(app: Express) {
           // If the requested format is not found, convert on-the-fly
           console.log(`Requested format ${format} not found, converting on-the-fly`);
           
-          // Get the source buffer
+          // CRITICAL FIX: Verify we're creating a converted asset from the correct source file
+          // This addresses the issue of clients downloading the wrong logo (Summa logo)
           let sourceBuffer: Buffer | null = null;
+          
+          // Additional verification of the asset before conversion
+          console.log(`Converting asset ${asset.id} (${asset.name}) for client ${asset.clientId} to format ${format}`);
+          
           if (isDarkVariant && asset.category === 'logo') {
+            // Dark variant handling
             sourceBuffer = getDarkVariantBuffer(asset);
+            
+            // Validate the dark variant buffer
+            if (sourceBuffer && sourceBuffer.length < 200) {
+              console.error(`ERROR: Dark variant buffer for asset ${asset.id} is suspiciously small (${sourceBuffer.length} bytes)`);
+              sourceBuffer = null; // Force it to fail the next check
+            }
           } else if (asset.fileData) {
+            // Standard file handling with validation
+            if (asset.fileData.length < 200) {
+              console.error(`ERROR: File data for asset ${asset.id} is suspiciously small (${asset.fileData.length} bytes)`);
+              return res.status(500).json({ message: "Asset file data appears to be corrupted" });
+            }
+            
             sourceBuffer = Buffer.from(asset.fileData, "base64");
           }
           
