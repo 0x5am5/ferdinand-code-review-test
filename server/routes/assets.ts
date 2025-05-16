@@ -508,6 +508,16 @@ export function registerAssetRoutes(app: Express) {
       console.time('asset-query');
       const asset = await storage.getAsset(assetId);
       console.timeEnd('asset-query');
+      
+      // CRITICAL FIX: Ensure we're serving the asset from the correct client
+      // If clientId is provided in the URL, it MUST match the asset's clientId
+      if (clientIdParam !== null && asset && asset.clientId !== clientIdParam) {
+        console.error(`CRITICAL ERROR: Client ID mismatch - Asset ${assetId} belongs to client ${asset.clientId} but clientId=${clientIdParam} was requested`);
+        return res.status(403).json({ 
+          message: "Client ID mismatch: You don't have permission to access this asset.",
+          error: "wrong_client_id"
+        });
+      }
 
       if (!asset) {
         console.error(`ERROR: Asset with ID ${assetId} not found in database`);
