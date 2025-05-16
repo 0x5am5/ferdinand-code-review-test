@@ -63,6 +63,7 @@
     "framer-motion": "^11.18.2",
     "input-otp": "^1.2.4",
     "jsonwebtoken": "^9.0.2",
+    "jszip": "^3.10.1",
     "kill-port": "^2.0.1",
     "lucide-react": "^0.453.0",
     "memorystore": "^1.6.7",
