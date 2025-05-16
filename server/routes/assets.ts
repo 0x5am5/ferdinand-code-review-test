@@ -482,7 +482,7 @@ export function registerAssetRoutes(app: Express) {
   );
 
   // Serve asset endpoint
-  app.get("/api/assets/:assetId/file", async (req, res: Response) => {
+  app.get("/api/assets/:assetId/file", async (req: RequestWithClientId, res: Response) => {
     // This endpoint handles serving asset files with optional format conversion and resizing
     try {
       const assetId = parseInt(req.params.assetId);
@@ -516,10 +516,19 @@ export function registerAssetRoutes(app: Express) {
       // Add detailed logging about the asset being served
       console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}, Category: ${asset.category}, MimeType: ${asset.mimeType}`);
       
-      // CRITICAL FIX: Verify we're serving the correct asset and client
+      // CRITICAL FIX: Verify we're serving the correct asset
       if (asset.id !== assetId) {
         console.error(`ERROR: Requested asset ID ${assetId} but serving ${asset.id} (${asset.name})`);
         return res.status(500).json({ message: "Asset ID mismatch error" });
+      }
+      
+      // CRITICAL FIX: Get the client information for verification
+      if (req.clientId) {
+        // If client ID from session doesn't match the asset's client ID, log a warning
+        // (We still serve the asset if user has access rights, but log for debugging)
+        if (asset.clientId !== req.clientId) {
+          console.warn(`WARNING: User with client ID ${req.clientId} accessing asset from client ${asset.clientId}`);
+        }
       }
 
       let fileBuffer: Buffer;
@@ -528,8 +537,15 @@ export function registerAssetRoutes(app: Express) {
       // Check if requesting a specific format conversion
       if (format && asset.category === 'logo') {
         const isDarkVariant = variant === 'dark';
+        
+        // CRITICAL FIX: Log the client ID we're checking for
+        console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
+        
+        // Get the converted asset specifically for this asset ID
+        // CRITICAL FIX: Get converted asset, ensuring it's the right one
+        console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
-
+        
         if (convertedAsset) {
           console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
           mimeType = convertedAsset.mimeType;
@@ -559,6 +575,22 @@ export function registerAssetRoutes(app: Express) {
             const result = await convertToFormat(sourceBuffer, sourceFormat, format);
             fileBuffer = result.data;
             mimeType = result.mimeType;
+            
+            // CRITICAL FIX: Store the converted asset for future use
+            // This ensures we associate the converted asset with the correct original asset
+            try {
+              await storage.createConvertedAsset({
+                originalAssetId: assetId,
+                format,
+                fileData: fileBuffer.toString('base64'),
+                mimeType,
+                isDarkVariant
+              });
+              console.log(`Stored converted asset format ${format} for asset ID ${assetId}`);
+            } catch (storeError) {
+              console.error("Failed to store converted asset:", storeError);
+              // Continue serving the file even if storage fails
+            }
           } catch (conversionError) {
             console.error("Format conversion failed:", conversionError);
             return res.status(400).json({ message: "Format conversion failed" });

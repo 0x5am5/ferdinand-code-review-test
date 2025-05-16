@@ -712,8 +712,10 @@ function StandardLogoDownloadButton({
       
       // Add PNG files in different sizes - pass exact pixel dimensions
       for (const size of sizes) {
-        // Create a direct URL with explicit parameters
-        const url = `/api/assets/${logo.id}/file?size=${size}&preserveRatio=true&format=png`;
+        // CRITICAL FIX: Add client ID and timestamp to ensure no caching issues
+        // This prevents browsers from using cached images from other clients
+        const cacheBuster = `t=${Date.now()}&clientId=${logo.clientId}`;
+        const url = `/api/assets/${logo.id}/file?size=${size}&preserveRatio=true&format=png&${cacheBuster}`;
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
         
         console.log(`Fetching ${size}px logo from: ${url}`);
@@ -721,7 +723,13 @@ function StandardLogoDownloadButton({
         // Use a reference to avoid TypeScript null warnings
         const pngFolderRef = pngFolder;
         fetchPromises.push(
-          fetch(url)
+          fetch(url, {
+            // CRITICAL FIX: Add cache control headers
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          })
             .then(response => {
               if (!response.ok) {
                 throw new Error(`Failed to fetch ${size}px PNG: ${response.status} ${response.statusText}`);
@@ -743,14 +751,23 @@ function StandardLogoDownloadButton({
       // Use a reference to avoid TypeScript null warnings
       const vectorFolderRef = vectorFolder;
       for (const format of vectorFormats) {
-        // Create a direct URL with explicit parameters - add preserveVector flag
-        const url = `/api/assets/${logo.id}/file?format=${format}&preserveVector=true`;
+        // CRITICAL FIX: Add client ID and timestamp to ensure no caching issues
+        // This prevents browsers from using cached images from other clients
+        const cacheBuster = `t=${Date.now()}&clientId=${logo.clientId}`;
+        // Create a direct URL with explicit parameters - add preserveVector flag 
+        const url = `/api/assets/${logo.id}/file?format=${format}&preserveVector=true&${cacheBuster}`;
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
         
         console.log(`Fetching ${format} logo from: ${url}`);
         
         fetchPromises.push(
-          fetch(url)
+          fetch(url, {
+            // CRITICAL FIX: Add cache control headers
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          })
             .then(response => {
               if (!response.ok) {
                 throw new Error(`Failed to fetch ${format}: ${response.status} ${response.statusText}`);

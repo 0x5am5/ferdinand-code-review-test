@@ -40,12 +40,17 @@ export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: st
       await handleRasterFile(fileBuffer, originalFormat, convertedFiles);
     }
     
-    // Add original file to the list
-    convertedFiles.push({
-      format: originalFormat,
-      data: fileBuffer,
-      mimeType: getMimeType(originalFormat)
-    });
+    // CRITICAL FIX: Add original file to the list if it's not empty
+    if (fileBuffer && fileBuffer.length > 0) {
+      console.log(`Adding original file format: ${originalFormat} (size: ${fileBuffer.length} bytes)`);
+      convertedFiles.push({
+        format: originalFormat,
+        data: fileBuffer,
+        mimeType: getMimeType(originalFormat)
+      });
+    } else {
+      console.error(`ERROR: Empty or invalid original file buffer for format ${originalFormat}`);
+    }
     
     console.log(`Conversion complete. Generated ${convertedFiles.length} formats.`);
     
