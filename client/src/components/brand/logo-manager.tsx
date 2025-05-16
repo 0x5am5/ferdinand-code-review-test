@@ -6,6 +6,9 @@ import {
   RadioGroup, 
   RadioGroupItem 
 } from "@/components/ui/radio-group";
+// CRITICAL FIX: Import secure logo download utility
+import { downloadLogoFile, downloadLogoSize, downloadLogoPackage } from "@/lib/logo-download";
+
 import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X, Folder, FileImage } from "lucide-react";
 import {
   Dialog,
