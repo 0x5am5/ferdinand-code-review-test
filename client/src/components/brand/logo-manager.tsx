@@ -710,7 +710,7 @@ function StandardLogoDownloadButton({
       </PopoverTrigger>
       <PopoverContent className="logo-download__popover">
         <div className="logo-download__content">
-          <h4 className="logo-download__heading">{parsedData.type.charAt(0).toUpperCase() + parsedData.type.slice(1)} Logo Download Options</h4>
+          <h4 className="logo-download__heading">Download Options</h4>
           
           <div className="logo-download__options">
             {/* PNG Package Section */}
@@ -725,7 +725,7 @@ function StandardLogoDownloadButton({
                   onClick={downloadAllLogos}
                 >
                   <Folder className="logo-download__icon" />
-                  Download all logos (small, medium, large)
+                  Logo Package (small, medium, large)
                 </div>
                 <div 
                   className="logo-download__link"
