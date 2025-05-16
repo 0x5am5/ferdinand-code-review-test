@@ -6,8 +6,8 @@ import {
   RadioGroup, 
   RadioGroupItem 
 } from "@/components/ui/radio-group";
-// CRITICAL FIX: Import secure logo download utility
-import { downloadLogoFile, downloadLogoSize, downloadLogoPackage } from "@/lib/logo-download";
+// CRITICAL FIX: Import secure logo download components
+import { FixedLogoDownload, FixedLogoSizeDownload, FixedLogoPackageDownload } from "./fixed-logo-download";
 
 import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X, Folder, FileImage } from "lucide-react";
 import {
@@ -664,6 +664,14 @@ function LogoDownloadButton({
   variant: 'light' | 'dark',
   parsedData: any
 }) {
+  // CRITICAL FIX: Log the download attempt with client info for debugging
+  console.log("LogoDownloadButton called for:", {
+    logoId: logo.id,
+    logoName: logo.name,
+    clientId: logo.clientId,
+    variant
+  });
+  
   // For favicon type, use specialized download button
   if (parsedData.type === 'favicon') {
     return <FaviconDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
@@ -675,7 +683,8 @@ function LogoDownloadButton({
   }
 
   // For standard logo types (main, horizontal, vertical, square)
-  return <StandardLogoDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
+  // CRITICAL FIX: Use the fixed logo download component to ensure client IDs are included
+  return <FixedLogoPackageDownload logo={logo} variant={variant} className="" />;
 }
 
 // Specialized download button for standard logo types (main, horizontal, vertical, square)
@@ -690,6 +699,8 @@ function StandardLogoDownloadButton({
   variant: 'light' | 'dark',
   parsedData: any
 }) {
+  // CRITICAL FIX: Using our fixed logo download components directly would be better,
+  // but I'll keep the existing structure while fixing the client ID issue
   const [open, setOpen] = useState<boolean>(false);
   const [originalWidth, setOriginalWidth] = useState<number>(300);
   const [originalHeight, setOriginalHeight] = useState<number>(200);

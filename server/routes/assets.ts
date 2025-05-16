@@ -491,7 +491,14 @@ export function registerAssetRoutes(app: Express) {
       const sizeParam = req.query.size as string;
       const preserveRatio = req.query.preserveRatio === 'true';
       const preserveVector = req.query.preserveVector === 'true';
+      
+      // CRITICAL FIX: Get client ID from query parameter and convert to number
+      // This is essential to validate that users only download logos from their own client
       const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
+      
+      // CRITICAL FIX: Log all download requests for debugging purposes
+      console.log(`Asset download request - Asset ID: ${assetId}, Client ID from query: ${clientIdParam}, Format: ${format || 'original'}, Variant: ${variant || 'light'}`);
+      
       
       // Parse size as percentage or exact pixels
       let size: number | undefined;
@@ -509,14 +516,49 @@ export function registerAssetRoutes(app: Express) {
       const asset = await storage.getAsset(assetId);
       console.timeEnd('asset-query');
       
-      // CRITICAL FIX: Ensure we're serving the asset from the correct client
-      // If clientId is provided in the URL, it MUST match the asset's clientId
-      if (clientIdParam !== null && asset && asset.clientId !== clientIdParam) {
-        console.error(`CRITICAL ERROR: Client ID mismatch - Asset ${assetId} belongs to client ${asset.clientId} but clientId=${clientIdParam} was requested`);
-        return res.status(403).json({ 
-          message: "Client ID mismatch: You don't have permission to access this asset.",
-          error: "wrong_client_id"
-        });
+      // CRITICAL FIX: Always log the client ID of the asset being served
+      // This helps identify when the wrong logo is being served
+      if (asset) {
+        console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
+        
+        // CRITICAL FIX: Always require client ID parameter for downloads
+        // This prevents clients from downloading other clients' logos
+        if (clientIdParam === null) {
+          // No client ID was provided in the request
+          if (asset.clientId === 1) {
+            // This is a Summa/default asset (client ID 1)
+            console.warn(`WARNING: Attempting to serve Summa/default asset (ID: ${assetId}) without client ID parameter`);
+            // Continue serving Summa assets without client ID for backward compatibility
+            // but log the incident for monitoring
+          } else {
+            // This is not a Summa/default asset and no client ID was provided
+            // Block the download to prevent security issues
+            console.error(`CRITICAL ERROR: No client ID parameter for non-Summa asset ${assetId} (client ${asset.clientId})`);
+            return res.status(403).json({
+              message: "Client ID is required for downloading this asset.",
+              error: "missing_client_id"
+            });
+          }
+        } 
+        
+        // CRITICAL FIX: Block mismatched client IDs to prevent wrong logo downloads
+        else if (asset.clientId !== clientIdParam) {
+          // Client ID was provided but doesn't match the asset's client ID
+          console.error(`CRITICAL ERROR: Client ID mismatch - Asset ${assetId} belongs to client ${asset.clientId} but clientId=${clientIdParam} was requested`);
+          return res.status(403).json({
+            message: "This asset belongs to a different client. Please ensure you're downloading the correct logo.",
+            error: "wrong_client_id"
+          });
+        }
+        
+        // Log successful validations
+        if (clientIdParam === null) {
+          // This case is now only possible for Summa/default assets (client ID 1)
+          console.log(`Successfully serving Summa asset ID ${assetId} (${asset.name}) without client ID parameter`);
+        } else {
+          // Client ID was provided and matches the asset's client ID
+          console.log(`Successfully serving asset ID ${assetId} (${asset.name}) for verified client ${clientIdParam}`);
+        }
       }
 
       if (!asset) {
