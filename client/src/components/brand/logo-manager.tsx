@@ -419,15 +419,16 @@ function AppIconDownloadButton({
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Function to get download URL for a specific size and format
+  // CRITICAL FIX: Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
-    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
-      `/api/assets/${logo.id}/file?variant=dark` : 
-      `/api/assets/${logo.id}/file`;
-    
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    
-    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+    // Use the secure asset URL helper which properly includes clientId
+    console.log(`Downloading logo: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}, Format: ${format}`);
+    return getSecureAssetUrl(logo.id, logo.clientId, {
+      format: format !== parsedData.format ? format : undefined,
+      size,
+      variant: variant === 'dark' ? 'dark' : 'light',
+      preserveRatio: true
+    });
   };
 
   // Function to download app icon package as a zip file
@@ -701,15 +702,16 @@ function StandardLogoDownloadButton({
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Function to get download URL for a specific size and format
+  // CRITICAL FIX: Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
-    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
-      `/api/assets/${logo.id}/file?variant=dark` : 
-      `/api/assets/${logo.id}/file`;
-    
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    
-    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+    // Use the secure asset URL helper which properly includes clientId
+    console.log(`Downloading logo: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}, Format: ${format}`);
+    return getSecureAssetUrl(logo.id, logo.clientId, {
+      format: format !== parsedData.format ? format : undefined,
+      size,
+      variant: variant === 'dark' ? 'dark' : 'light',
+      preserveRatio: true
+    });
   };
   
   // Function to download a zip package of all logo sizes
@@ -1063,15 +1065,16 @@ function FaviconDownloadButton({
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // Function to get download URL for a specific size and format
+  // CRITICAL FIX: Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
-    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
-      `/api/assets/${logo.id}/file?variant=dark` : 
-      `/api/assets/${logo.id}/file`;
-    
-    const separator = baseUrl.includes('?') ? '&' : '?';
-    
-    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+    // Use the secure asset URL helper which properly includes clientId
+    console.log(`Downloading favicon: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}, Format: ${format}`);
+    return getSecureAssetUrl(logo.id, logo.clientId, {
+      format: format !== parsedData.format ? format : undefined,
+      size,
+      variant: variant === 'dark' ? 'dark' : 'light',
+      preserveRatio: true
+    });
   };
 
   // Function to download the favicon package as a zip file (multiple sizes in ICO and PNG formats)
