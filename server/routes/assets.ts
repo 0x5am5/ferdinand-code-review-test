@@ -483,6 +483,7 @@ export function registerAssetRoutes(app: Express) {
 
   // Serve asset endpoint
   app.get("/api/assets/:assetId/file", async (req, res: Response) => {
+    // This endpoint handles serving asset files with optional format conversion and resizing
     try {
       const assetId = parseInt(req.params.assetId);
       const variant = req.query.variant as string;
@@ -571,10 +572,19 @@ export function registerAssetRoutes(app: Express) {
         fileBuffer = Buffer.from(asset.fileData, "base64");
       }
 
-      // Resize the image if needed (only for raster images)
-      if (size && size > 0 && isImageFormat(mimeType)) {
+      // Skip resizing for vector formats like SVG, AI, EPS, and PDF
+      const preserveVector = req.query.preserveVector === 'true';
+      const isVectorFormat = ['image/svg+xml', 'application/postscript', 'application/pdf'].some(
+        type => mimeType.includes(type)
+      ) || ['svg', 'ai', 'eps', 'pdf'].includes(format?.toLowerCase() || '');
+      
+      // Log asset details to help diagnose the wrong logo issue
+      console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
+      
+      // Resize the image if needed (only for raster images) and not explicitly requesting vector preservation
+      if (size && size > 0 && isImageFormat(mimeType) && !isVectorFormat && !preserveVector) {
         try {
-          // Import sharp dynamically to avoid reference errors
+          // Import sharp directly to avoid require() issues
           const sharp = (await import('sharp')).default;
           
           // Create a sharp instance from the buffer
@@ -585,31 +595,26 @@ export function registerAssetRoutes(app: Express) {
           const originalWidth = metadata.width || 500;
           const originalHeight = metadata.height || 500;
           
-          // Calculate new dimensions
-          let width: number, height: number;
+          // Calculate new dimensions - always interpret size parameter as exact pixel width
+          const width = Math.round(size); // Ensure it's an integer
+          const height = preserveRatio ? Math.round((width / originalWidth) * originalHeight) : width;
           
-          if (size >= 1) {
-            // Treat as exact pixel size for width if >= 1
-            width = size;
-            height = preserveRatio ? Math.round((size / originalWidth) * originalHeight) : size;
-          } else {
-            // Treat as percentage if < 1
-            width = Math.round(originalWidth * (size / 100));
-            height = preserveRatio ? Math.round(originalHeight * (size / 100)) : width;
-          }
+          console.log(`Resizing asset ${asset.id} (${asset.name}, Client: ${asset.clientId}) from ${originalWidth}x${originalHeight} to ${width}x${height}px`);
           
-          console.log(`Resizing image from ${originalWidth}x${originalHeight} to ${width}x${height}`);
-          
-          // Perform the resize operation
-          fileBuffer = await image.resize(width, height, {
+          // Perform the resize operation with specific dimensions
+          fileBuffer = await image.resize({
+            width: width,
+            height: height,
             fit: preserveRatio ? 'inside' : 'fill'
           }).toBuffer();
           
-          console.log(`Image resized to ${width}x${height}`);
+          console.log(`Successfully resized image to ${width}x${height}px`);
         } catch (resizeError) {
           console.error("Image resize failed:", resizeError);
           // Continue with the original image if resize fails
         }
+      } else if (isVectorFormat || preserveVector) {
+        console.log(`Skipping resize for vector format: ${format || mimeType}. Preserving vector properties.`);
       }
 
       res.setHeader("Content-Type", mimeType);

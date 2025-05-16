@@ -691,6 +691,9 @@ function StandardLogoDownloadButton({
       // Define logo sizes to include in the package (small, medium, large)
       const sizes = [300, 800, 2000];
       
+      // Log the logo info we're downloading
+      console.log(`Creating download package for logo: ID ${logo.id}, Name: ${logo.name}, Client ID: ${logo.clientId}`);
+      
       // Create a new JSZip instance
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
@@ -708,8 +711,8 @@ function StandardLogoDownloadButton({
       
       // Add PNG files in different sizes - pass exact pixel dimensions
       for (const size of sizes) {
-        // Using exact pixel dimensions instead of percentage
-        const url = getDownloadUrl(size, 'png');
+        // Create a direct URL with explicit parameters
+        const url = `/api/assets/${logo.id}/file?size=${size}&preserveRatio=true&format=png`;
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
         
         console.log(`Fetching ${size}px logo from: ${url}`);
@@ -739,8 +742,8 @@ function StandardLogoDownloadButton({
       // Use a reference to avoid TypeScript null warnings
       const vectorFolderRef = vectorFolder;
       for (const format of vectorFormats) {
-        // Use the original size (no resizing for vector formats)
-        const url = getDownloadUrl(100, format);
+        // Create a direct URL with explicit parameters - add preserveVector flag
+        const url = `/api/assets/${logo.id}/file?format=${format}&preserveVector=true`;
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
         
         console.log(`Fetching ${format} logo from: ${url}`);
@@ -807,11 +810,14 @@ function StandardLogoDownloadButton({
       container.style.display = 'none';
       document.body.appendChild(container);
       
-      // Use the exact pixel size directly - our server now handles exact pixel sizing
+      // FIXED: Use a direct URL with specific size and asset ID to ensure
+      // we download the correct logo at the exact size requested
+      const directUrl = `/api/assets/${logo.id}/file?size=${size}&preserveRatio=true&format=png`;
+      console.log(`Downloading ${size}px PNG for ID: ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
       
-      // Download PNG version
+      // Create and trigger the download
       const pngLink = document.createElement('a');
-      pngLink.href = getDownloadUrl(size, 'png'); // Use exact pixel size
+      pngLink.href = directUrl;
       pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
       
       container.appendChild(pngLink);
