@@ -6,9 +6,6 @@ import {
   RadioGroup, 
   RadioGroupItem 
 } from "@/components/ui/radio-group";
-// CRITICAL FIX: Import secure logo download components
-import { FixedLogoDownload, FixedLogoSizeDownload, FixedLogoPackageDownload } from "./fixed-logo-download";
-
 import { Plus, Download, Upload, Trash2, FileType, Info, CheckCircle, ExternalLink, Sun, Moon, Lock, Unlock, Copy, X, Folder, FileImage } from "lucide-react";
 import {
   Dialog,
@@ -122,39 +119,6 @@ function getFileSizeString(format: string): string {
     default:
       return '100 KB';
   }
-}
-
-// CRITICAL FIX: New helper to ensure we always download the correct client's logos
-// This prevents the issue of downloading Summa logo instead of client-specific logo
-function getSecureAssetUrl(assetId: number, clientId: number, options: {
-  format?: string;
-  size?: number;
-  variant?: 'dark' | 'light';
-  preserveRatio?: boolean;
-  preserveVector?: boolean;
-} = {}) {
-  const { format, size, variant, preserveRatio = true, preserveVector = false } = options;
-  
-  // Start with the base URL
-  let url = `/api/assets/${assetId}/file?`;
-  
-  // Add parameters
-  const params = new URLSearchParams();
-  
-  // Always include client ID to ensure the correct logo is downloaded
-  params.append('clientId', clientId.toString());
-  
-  // Add cache buster to prevent browser caching
-  params.append('t', Date.now().toString());
-  
-  // Add optional parameters if provided
-  if (variant === 'dark') params.append('variant', 'dark');
-  if (format) params.append('format', format);
-  if (size) params.append('size', size.toString());
-  if (preserveRatio) params.append('preserveRatio', 'true');
-  if (preserveVector) params.append('preserveVector', 'true');
-  
-  return url + params.toString();
 }
 
 // Drag and drop file upload component
@@ -410,7 +374,6 @@ function AppIconDownloadButton({
   const [open, setOpen] = useState<boolean>(false);
   const [originalWidth, setOriginalWidth] = useState<number>(300);
   const [originalHeight, setOriginalHeight] = useState<number>(200);
-  const { toast } = useToast();
 
   // Load dimensions once when component mounts
   useEffect(() => {
@@ -422,109 +385,50 @@ function AppIconDownloadButton({
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // CRITICAL FIX: Function to get download URL for a specific size and format
+  // Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
-    // Use the secure asset URL helper which properly includes clientId
-    console.log(`Downloading logo: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}, Format: ${format}`);
-    return getSecureAssetUrl(logo.id, logo.clientId, {
-      format: format !== parsedData.format ? format : undefined,
-      size,
-      variant: variant === 'dark' ? 'dark' : 'light',
-      preserveRatio: true
-    });
+    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
+      `/api/assets/${logo.id}/file?variant=dark` : 
+      imageUrl;
+    
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
 
-  // Function to download app icon package as a zip file
-  const downloadAppIconPackage = async () => {
-    try {
-      // Show loading toast
-      toast({
-        title: "Preparing app icon package",
-        description: "Creating ZIP file with all app icon sizes...",
-      });
+  // Function to download app icon package (512x512, 1024x1024 PNG)
+  const downloadAppIconPackage = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+
+    // Define app icon sizes to include in the package
+    const sizes = [512, 1024];
+    
+    // Download PNG format for all sizes
+    sizes.forEach((iconSize, index) => {
+      // Calculate size percentage for the API
+      const sizePercentage = (iconSize / originalWidth) * 100;
       
-      // Define app icon sizes to include in the package
-      const sizes = [192, 512, 1024];
+      // Download PNG version
+      const pngLink = document.createElement('a');
+      pngLink.href = getDownloadUrl(sizePercentage, 'png');
+      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${iconSize}px.png`;
       
-      // Create a new JSZip instance
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
-      
-      // Create folders in the zip
-      const pngFolder = zip.folder("PNG");
-      const vectorFolder = zip.folder("Vector");
-      
-      if (!pngFolder || !vectorFolder) {
-        throw new Error("Failed to create folders in zip file");
-      }
-      
-      // Fetch all the files and add to zip
-      const fetchPromises = [];
-      
-      // Add PNG files in different sizes
-      for (const size of sizes) {
-        // Calculate exact pixel size (but don't exceed 100%)
-        const sizePercentage = Math.min(100, (size / originalWidth) * 100);
-        
-        // PNG file
-        fetchPromises.push(
-          fetch(getDownloadUrl(sizePercentage, 'png'))
-            .then(response => response.arrayBuffer())
-            .then(data => {
-              pngFolder.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`, data);
-            })
-            .catch(err => {
-              console.error(`Error fetching PNG for size ${size}:`, err);
-            })
-        );
-      }
-      
-      // Add vector files (SVG)
-      fetchPromises.push(
-        fetch(getDownloadUrl(100, 'svg'))
-          .then(response => response.arrayBuffer())
-          .then(data => {
-            vectorFolder.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`, data);
-          })
-          .catch(err => {
-            console.error('Error fetching SVG:', err);
-          })
-      );
-      
-      // Wait for all fetches to complete
-      await Promise.all(fetchPromises);
-      
-      // Generate the zip file
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
-      // Create download link for the zip
-      const zipUrl = URL.createObjectURL(zipBlob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = zipUrl;
-      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-app-icon-package.zip`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      
-      // Clean up
+      // Add a small delay between downloads to avoid browser limitations
       setTimeout(() => {
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(zipUrl);
-        setOpen(false);
-        
-        // Show success toast
-        toast({
-          title: "Download ready",
-          description: "App icon package has been downloaded successfully.",
-        });
-      }, 100);
-    } catch (error) {
-      console.error("Error creating app icon package:", error);
-      toast({
-        title: "Download failed",
-        description: "There was an error creating the app icon package. Please try downloading individual files instead.",
-        variant: "destructive"
-      });
-    }
+        container.appendChild(pngLink);
+        pngLink.click();
+        container.removeChild(pngLink);
+      }, index * 200);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, sizes.length * 200 + 100);
   };
 
   return (
@@ -664,14 +568,6 @@ function LogoDownloadButton({
   variant: 'light' | 'dark',
   parsedData: any
 }) {
-  // CRITICAL FIX: Log the download attempt with client info for debugging
-  console.log("LogoDownloadButton called for:", {
-    logoId: logo.id,
-    logoName: logo.name,
-    clientId: logo.clientId,
-    variant
-  });
-  
   // For favicon type, use specialized download button
   if (parsedData.type === 'favicon') {
     return <FaviconDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
@@ -683,8 +579,7 @@ function LogoDownloadButton({
   }
 
   // For standard logo types (main, horizontal, vertical, square)
-  // CRITICAL FIX: Use the fixed logo download component to ensure client IDs are included
-  return <FixedLogoPackageDownload logo={logo} variant={variant} className="" />;
+  return <StandardLogoDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
 }
 
 // Specialized download button for standard logo types (main, horizontal, vertical, square)
@@ -699,12 +594,9 @@ function StandardLogoDownloadButton({
   variant: 'light' | 'dark',
   parsedData: any
 }) {
-  // CRITICAL FIX: Using our fixed logo download components directly would be better,
-  // but I'll keep the existing structure while fixing the client ID issue
   const [open, setOpen] = useState<boolean>(false);
   const [originalWidth, setOriginalWidth] = useState<number>(300);
   const [originalHeight, setOriginalHeight] = useState<number>(200);
-  const { toast } = useToast();
 
   // Load dimensions once when component mounts
   useEffect(() => {
@@ -716,234 +608,96 @@ function StandardLogoDownloadButton({
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // CRITICAL FIX: Function to get download URL for a specific size and format
+  // Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
-    // Use the secure asset URL helper which properly includes clientId
-    console.log(`Downloading logo: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}, Format: ${format}`);
-    return getSecureAssetUrl(logo.id, logo.clientId, {
-      format: format !== parsedData.format ? format : undefined,
-      size,
-      variant: variant === 'dark' ? 'dark' : 'light',
-      preserveRatio: true
-    });
+    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
+      `/api/assets/${logo.id}/file?variant=dark` : 
+      imageUrl;
+    
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
   
-  // Function to download a zip package of all logo sizes
-  const downloadAllLogos = async () => {
-    try {
-      // Show loading toast
-      toast({
-        title: "Preparing download package",
-        description: "Creating ZIP file with all logo sizes...",
-      });
+  // Function to download all logo sizes
+  const downloadAllLogos = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+
+    // Define logo sizes to include in the package (small, medium, large)
+    const sizes = [300, 800, 2000];
+    
+    // Download PNG format for all sizes
+    sizes.forEach((logoSize, index) => {
+      // Calculate size percentage for the API (based on width)
+      const sizePercentage = (logoSize / originalWidth) * 100;
       
-      // Define logo sizes to include in the package (small, medium, large)
-      const sizes = [300, 800, 2000];
+      // Download PNG version
+      const pngLink = document.createElement('a');
+      pngLink.href = getDownloadUrl(sizePercentage, 'png');
+      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${logoSize}px.png`;
       
-      // Log the logo info we're downloading
-      console.log(`Creating download package for logo: ID ${logo.id}, Name: ${logo.name}, Client ID: ${logo.clientId}`);
-      
-      // Create a new JSZip instance
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
-      
-      // Create a better folder structure for the zip with client name
-      const clientName = logo.name.replace(/[^a-z0-9]/gi, '-').toLowerCase(); 
-      const pngFolder = zip.folder("PNG");
-      const vectorFolder = zip.folder("Vector");
-      
-      if (!pngFolder || !vectorFolder) {
-        throw new Error("Failed to create folders in zip file");
-      }
-      
-      // Fetch all the files and add to zip
-      const fetchPromises = [];
-      
-      // Add PNG files in different sizes - pass exact pixel dimensions
-      for (const size of sizes) {
-        // CRITICAL FIX: Use the secure URL helper to ensure we download the correct client's logo
-        // This prevents the issue where clients were downloading the Summa logo instead of their own
-        const url = getSecureAssetUrl(logo.id, logo.clientId, {
-          size,
-          format: 'png',
-          variant: variant === 'dark' ? 'dark' : undefined,
-          preserveRatio: true
-        });
-        const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-        
-        console.log(`Fetching ${size}px logo from: ${url}`);
-        
-        // Use a reference to avoid TypeScript null warnings
-        const pngFolderRef = pngFolder;
-        fetchPromises.push(
-          fetch(url, {
-            // CRITICAL FIX: Add cache control headers
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache'
-            }
-          })
-            .then(response => {
-              if (!response.ok) {
-                throw new Error(`Failed to fetch ${size}px PNG: ${response.status} ${response.statusText}`);
-              }
-              return response.arrayBuffer();
-            })
-            .then(data => {
-              pngFolderRef.file(filename, data);
-            })
-            .catch(err => {
-              console.error(`Error with ${size}px PNG:`, err);
-              // Continue with other files
-            })
-        );
-      }
-      
-      // Add vector files (SVG, EPS, AI, PDF)
-      const vectorFormats = ['svg', 'eps', 'ai', 'pdf'];
-      // Use a reference to avoid TypeScript null warnings
-      const vectorFolderRef = vectorFolder;
-      for (const format of vectorFormats) {
-        // CRITICAL FIX: Use the secure URL helper to ensure we download the correct client's logo
-        // This prevents the issue where clients were downloading the Summa logo instead of their own
-        const url = getSecureAssetUrl(logo.id, logo.clientId, {
-          format,
-          variant: variant === 'dark' ? 'dark' : undefined,
-          preserveVector: true
-        });
-        const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
-        
-        console.log(`Fetching ${format} logo from: ${url}`);
-        
-        fetchPromises.push(
-          fetch(url, {
-            // CRITICAL FIX: Add cache control headers
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache'
-            }
-          })
-            .then(response => {
-              if (!response.ok) {
-                throw new Error(`Failed to fetch ${format}: ${response.status} ${response.statusText}`);
-              }
-              return response.arrayBuffer();
-            })
-            .then(data => {
-              vectorFolderRef.file(filename, data);
-            })
-            .catch(err => {
-              console.error(`Error with ${format}:`, err);
-              // Continue with other files
-            })
-        );
-      }
-      
-      // Wait for all fetches to complete
-      await Promise.all(fetchPromises);
-      
-      // Generate the zip file
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
-      // Create download link for the zip
-      const zipUrl = URL.createObjectURL(zipBlob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = zipUrl;
-      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-package.zip`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      
-      // Clean up
+      // Add a small delay between downloads to avoid browser limitations
       setTimeout(() => {
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(zipUrl);
-        setOpen(false);
-        
-        // Show success toast
-        toast({
-          title: "Download ready",
-          description: "Logo package has been downloaded successfully.",
-        });
-      }, 100);
-    } catch (error) {
-      console.error("Error creating download package:", error);
-      toast({
-        title: "Download failed",
-        description: "There was an error creating the logo package. Please try downloading individual files instead.",
-        variant: "destructive"
-      });
-    }
+        container.appendChild(pngLink);
+        pngLink.click();
+        container.removeChild(pngLink);
+      }, index * 200);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, sizes.length * 200 + 100);
   };
   
   // Function to download a specific size
   const downloadSpecificSize = (size: number) => {
-    try {
-      // Create an invisible container for download links
-      const container = document.createElement('div');
-      container.style.display = 'none';
-      document.body.appendChild(container);
-      
-      // CRITICAL FIX: Use secure URL helper to ensure we download the correct client's logo
-      // This prevents the issue where clients were downloading the Summa logo instead of their own
-      const directUrl = getSecureAssetUrl(logo.id, logo.clientId, {
-        size,
-        format: 'png',
-        variant: variant === 'dark' ? 'dark' : undefined,
-        preserveRatio: true
-      });
-      console.log(`Downloading ${size}px PNG for ID: ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
-      
-      // Create and trigger the download
-      const pngLink = document.createElement('a');
-      pngLink.href = directUrl;
-      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-      
-      container.appendChild(pngLink);
-      pngLink.click();
-      
-      // Clean up the container after download
-      setTimeout(() => {
-        document.body.removeChild(container);
-        setOpen(false); // Close popover after download
-      }, 100);
-    } catch (error) {
-      console.error("Error downloading specific size:", error);
-      toast({
-        title: "Download failed",
-        description: "There was an error downloading this file.",
-        variant: "destructive"
-      });
-    }
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    
+    // Calculate size percentage for the API (based on width)
+    const sizePercentage = (size / originalWidth) * 100;
+    
+    // Download PNG version
+    const pngLink = document.createElement('a');
+    pngLink.href = getDownloadUrl(sizePercentage, 'png');
+    pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
+    
+    container.appendChild(pngLink);
+    pngLink.click();
+    
+    // Clean up the container after download
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, 100);
   };
 
   // Function to download editable design files (SVG, EPS, AI)
   const downloadEditableFiles = (format: string) => {
-    try {
-      // Create an invisible container for download links
-      const container = document.createElement('div');
-      container.style.display = 'none';
-      document.body.appendChild(container);
-      
-      // Create download link
-      const link = document.createElement('a');
-      link.href = getDownloadUrl(100, format); // Use original size (100%)
-      link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
-      container.appendChild(link);
-      link.click();
-      
-      // Clean up the container after download
-      setTimeout(() => {
-        document.body.removeChild(container);
-        setOpen(false); // Close popover after download
-      }, 100);
-    } catch (error) {
-      console.error(`Error downloading ${format} file:`, error);
-      toast({
-        title: "Download failed",
-        description: `There was an error downloading the ${format.toUpperCase()} file.`,
-        variant: "destructive"
-      });
-    }
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = getDownloadUrl(100, format); // Use original size (100%)
+    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
+    container.appendChild(link);
+    link.click();
+    
+    // Clean up the container after download
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, 100);
   };
 
   return (
@@ -1036,13 +790,6 @@ function StandardLogoDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download AI logo
                 </div>
-                <div 
-                  className="logo-download__link"
-                  onClick={() => downloadEditableFiles('pdf')}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download PDF logo
-                </div>
               </div>
             </div>
           </div>
@@ -1065,9 +812,9 @@ function FaviconDownloadButton({
   parsedData: any
 }) {
   const [open, setOpen] = useState<boolean>(false);
+  const [downloadOption, setDownloadOption] = useState<'package' | 'editable' | null>(null);
   const [originalWidth, setOriginalWidth] = useState<number>(300);
   const [originalHeight, setOriginalHeight] = useState<number>(200);
-  const { toast } = useToast();
 
   // Load dimensions once when component mounts
   useEffect(() => {
@@ -1079,155 +826,92 @@ function FaviconDownloadButton({
     img.src = imageUrl;
   }, [imageUrl]);
 
-  // CRITICAL FIX: Function to get download URL for a specific size and format
+  // Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
-    // Use the secure asset URL helper which properly includes clientId
-    console.log(`Downloading favicon: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}, Format: ${format}`);
-    return getSecureAssetUrl(logo.id, logo.clientId, {
-      format: format !== parsedData.format ? format : undefined,
-      size,
-      variant: variant === 'dark' ? 'dark' : 'light',
-      preserveRatio: true
-    });
+    const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
+      `/api/assets/${logo.id}/file?variant=dark` : 
+      imageUrl;
+    
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
 
-  // Function to download the favicon package as a zip file (multiple sizes in ICO and PNG formats)
-  const downloadFaviconPackage = async () => {
-    try {
-      // Show loading toast
-      toast({
-        title: "Preparing favicon package",
-        description: "Creating ZIP file with all favicon sizes...",
-      });
+  // Function to download the favicon package (multiple sizes in ICO and PNG formats)
+  const downloadFaviconPackage = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+
+    // Define favicon sizes to include in the package
+    const sizes = [16, 32, 48];
+    
+    // Download ICO format for all sizes
+    sizes.forEach((faviconSize, index) => {
+      // Calculate size percentage for the API
+      const sizePercentage = (faviconSize / originalWidth) * 100;
       
-      // Define favicon sizes to include in the package
-      const sizes = [16, 32, 48, 64];
+      // Download ICO version
+      const icoLink = document.createElement('a');
+      icoLink.href = getDownloadUrl(sizePercentage, 'ico');
+      icoLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${faviconSize}px.ico`;
       
-      // Create a new JSZip instance
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
+      // Download PNG version
+      const pngLink = document.createElement('a');
+      pngLink.href = getDownloadUrl(sizePercentage, 'png');
+      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${faviconSize}px.png`;
       
-      // Create folders in the zip
-      const icoFolder = zip.folder("ICO");
-      const pngFolder = zip.folder("PNG");
-      const vectorFolder = zip.folder("Vector");
-      
-      if (!icoFolder || !pngFolder || !vectorFolder) {
-        throw new Error("Failed to create folders in zip file");
-      }
-      
-      // Fetch all the files and add to zip
-      const fetchPromises = [];
-      
-      // Add ICO and PNG files in different sizes
-      for (const size of sizes) {
-        // Calculate exact pixel size
-        const sizePercentage = Math.min(100, (size / originalWidth) * 100);
-        
-        // ICO file - strongly typed to avoid TypeScript errors
-        const icoFolderRef = icoFolder;
-        fetchPromises.push(
-          fetch(getDownloadUrl(sizePercentage, 'ico'))
-            .then(response => response.arrayBuffer())
-            .then(data => {
-              icoFolderRef.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.ico`, data);
-            })
-            .catch(err => {
-              console.error(`Error fetching ICO for size ${size}:`, err);
-            })
-        );
-        
-        // PNG file - strongly typed to avoid TypeScript errors
-        const pngFolderRef = pngFolder;
-        fetchPromises.push(
-          fetch(getDownloadUrl(sizePercentage, 'png'))
-            .then(response => response.arrayBuffer())
-            .then(data => {
-              pngFolderRef.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`, data);
-            })
-            .catch(err => {
-              console.error(`Error fetching PNG for size ${size}:`, err);
-            })
-        );
-      }
-      
-      // Add vector files (SVG) - strongly typed to avoid TypeScript errors
-      const vectorFolderRef = vectorFolder;
-      fetchPromises.push(
-        fetch(getDownloadUrl(100, 'svg'))
-          .then(response => response.arrayBuffer())
-          .then(data => {
-            vectorFolderRef.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`, data);
-          })
-          .catch(err => {
-            console.error('Error fetching SVG:', err);
-          })
-      );
-      
-      // Wait for all fetches to complete
-      await Promise.all(fetchPromises);
-      
-      // Generate the zip file
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
-      // Create download link for the zip
-      const zipUrl = URL.createObjectURL(zipBlob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = zipUrl;
-      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-favicon-package.zip`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      
-      // Clean up
+      // Add a small delay between downloads to avoid browser limitations
       setTimeout(() => {
-        document.body.removeChild(downloadLink);
-        URL.revokeObjectURL(zipUrl);
-        setOpen(false);
-        
-        // Show success toast
-        toast({
-          title: "Download ready",
-          description: "Favicon package has been downloaded successfully.",
-        });
-      }, 100);
-    } catch (error) {
-      console.error("Error creating favicon package:", error);
-      toast({
-        title: "Download failed",
-        description: "There was an error creating the favicon package. Please try downloading individual files instead.",
-        variant: "destructive"
-      });
-    }
+        container.appendChild(icoLink);
+        icoLink.click();
+        container.removeChild(icoLink);
+      }, index * 200);
+      
+      setTimeout(() => {
+        container.appendChild(pngLink);
+        pngLink.click();
+        container.removeChild(pngLink);
+      }, index * 200 + 100);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, sizes.length * 200 + 300);
   };
 
   // Function to download editable design files (SVG, EPS, AI)
-  const downloadEditableFiles = (format: string) => {
-    try {
-      // Create an invisible container for download links
-      const container = document.createElement('div');
-      container.style.display = 'none';
-      document.body.appendChild(container);
-      
-      // Create download link
+  const downloadEditableFiles = () => {
+    // Create an invisible container for download links
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    document.body.appendChild(container);
+    
+    // List of editable formats
+    const formats = ['svg', 'eps', 'ai'];
+    
+    // Create a link for each format and click it
+    formats.forEach((format, index) => {
       const link = document.createElement('a');
       link.href = getDownloadUrl(100, format); // Use original size (100%)
       link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
-      container.appendChild(link);
-      link.click();
       
-      // Clean up the container after download
+      // Add a small delay between downloads to avoid browser limitations
       setTimeout(() => {
-        document.body.removeChild(container);
-        setOpen(false); // Close popover after download
-      }, 100);
-    } catch (error) {
-      console.error(`Error downloading ${format} file:`, error);
-      toast({
-        title: "Download failed",
-        description: `There was an error downloading the ${format.toUpperCase()} file.`,
-        variant: "destructive"
-      });
-    }
+        container.appendChild(link);
+        link.click();
+        container.removeChild(link);
+      }, index * 100);
+    });
+    
+    // Clean up the container after all downloads started
+    setTimeout(() => {
+      document.body.removeChild(container);
+      setOpen(false); // Close popover after download
+    }, formats.length * 100 + 100);
   };
 
   return (

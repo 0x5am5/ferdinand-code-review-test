@@ -482,427 +482,85 @@ export function registerAssetRoutes(app: Express) {
   );
 
   // Serve asset endpoint
-  app.get("/api/assets/:assetId/file", async (req: RequestWithClientId, res: Response) => {
-    // This endpoint handles serving asset files with optional format conversion and resizing
+  app.get("/api/assets/:assetId/file", async (req, res: Response) => {
     try {
       const assetId = parseInt(req.params.assetId);
       const variant = req.query.variant as string;
       const format = req.query.format as string;
-      const sizeParam = req.query.size as string;
-      const preserveRatio = req.query.preserveRatio === 'true';
-      const preserveVector = req.query.preserveVector === 'true';
-      
-      // CRITICAL FIX: Get client ID from query parameter and convert to number
-      // This is essential to validate that users only download logos from their own client
-      const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
-      
-      // CRITICAL FIX: Log all download requests for debugging purposes
-      console.log(`Asset download request - Asset ID: ${assetId}, Client ID from query: ${clientIdParam}, Format: ${format || 'original'}, Variant: ${variant || 'light'}`);
-      
-      
-      // Parse size as percentage or exact pixels
-      let size: number | undefined;
-      if (sizeParam) {
-        size = parseFloat(sizeParam);
-        if (isNaN(size)) {
-          size = undefined;
-        }
-      }
-      
-      console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}, preserveVector: ${preserveVector}, clientId param: ${clientIdParam}`);
-      
-      // CRITICAL FIX: Add query timing for debugging
-      console.time('asset-query');
       const asset = await storage.getAsset(assetId);
-      console.timeEnd('asset-query');
-      
-      // CRITICAL FIX: Always log the client ID of the asset being served
-      // This helps identify when the wrong logo is being served
-      if (asset) {
-        console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
-        
-        // CRITICAL FIX: Always require client ID parameter for downloads
-        // This prevents clients from downloading other clients' logos
-        if (clientIdParam === null) {
-          // No client ID was provided in the request
-          if (asset.clientId === 1) {
-            // This is a Summa/default asset (client ID 1)
-            console.warn(`WARNING: Attempting to serve Summa/default asset (ID: ${assetId}) without client ID parameter`);
-            // Continue serving Summa assets without client ID for backward compatibility
-            // but log the incident for monitoring
-          } else {
-            // This is not a Summa/default asset and no client ID was provided
-            // Block the download to prevent security issues
-            console.error(`CRITICAL ERROR: No client ID parameter for non-Summa asset ${assetId} (client ${asset.clientId})`);
-            return res.status(403).json({
-              message: "Client ID is required for downloading this asset.",
-              error: "missing_client_id"
-            });
-          }
-        } 
-        
-        // CRITICAL FIX: Block mismatched client IDs to prevent wrong logo downloads
-        else if (asset.clientId !== clientIdParam) {
-          // Client ID was provided but doesn't match the asset's client ID
-          console.error(`CRITICAL ERROR: Client ID mismatch - Asset ${assetId} belongs to client ${asset.clientId} but clientId=${clientIdParam} was requested`);
-          return res.status(403).json({
-            message: "This asset belongs to a different client. Please ensure you're downloading the correct logo.",
-            error: "wrong_client_id"
-          });
-        }
-        
-        // Log successful validations
-        if (clientIdParam === null) {
-          // This case is now only possible for Summa/default assets (client ID 1)
-          console.log(`Successfully serving Summa asset ID ${assetId} (${asset.name}) without client ID parameter`);
-        } else {
-          // Client ID was provided and matches the asset's client ID
-          console.log(`Successfully serving asset ID ${assetId} (${asset.name}) for verified client ${clientIdParam}`);
-        }
-      }
 
       if (!asset) {
-        console.error(`ERROR: Asset with ID ${assetId} not found in database`);
         return res.status(404).json({ message: "Asset not found" });
       }
-      
-      // Add detailed logging about the asset being served
-      console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}, Category: ${asset.category}, MimeType: ${asset.mimeType}`);
-      
-      // CRITICAL FIX: Verify we're serving the correct asset
-      if (asset.id !== assetId) {
-        console.error(`ERROR: Requested asset ID ${assetId} but serving ${asset.id} (${asset.name})`);
-        return res.status(500).json({ message: "Asset ID mismatch error" });
-      }
-      
-      // CRITICAL FIX: Ensure client ID matches if provided in URL
-      if (clientIdParam && asset.clientId !== clientIdParam) {
-        console.error(`ERROR: Client ID mismatch - Asset belongs to client ${asset.clientId} but clientId=${clientIdParam} specified in URL`);
-        return res.status(403).json({ message: "Client ID mismatch. You don't have permission to access this asset." });
-      }
-      
-      // CRITICAL FIX: Get the client information for verification
-      if (req.clientId) {
-        // If client ID from session doesn't match the asset's client ID, log a warning
-        // (We still serve the asset if user has access rights, but log for debugging)
-        if (asset.clientId !== req.clientId) {
-          console.warn(`WARNING: User with client ID ${req.clientId} accessing asset from client ${asset.clientId}`);
-        }
-      }
 
-      let fileBuffer: Buffer;
-      let mimeType: string;
-      
       // Check if requesting a specific format conversion
       if (format && asset.category === 'logo') {
         const isDarkVariant = variant === 'dark';
-        
-        // CRITICAL FIX: Log the client ID we're checking for
-        console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
-        
-        // CRITICAL FIX: Before checking for converted assets, verify we're working with the correct client's asset
-        console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
-        
-        // Get the converted asset specifically for this asset ID, but with strict verification
-        const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
-        if (clientIdParam && clientIdParam !== asset.clientId) {
-          console.error(`MAJOR ISSUE: Client ID mismatch! Asset ${assetId} belongs to client ${asset.clientId} but client ${clientIdParam} is trying to access it`);
-          return res.status(403).json({ 
-            message: "You don't have permission to access this logo",
-            error: "Client ID mismatch",
-            requested: clientIdParam,
-            actual: asset.clientId
-          });
-        }
-        
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
-        
+
         if (convertedAsset) {
           console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
-          mimeType = convertedAsset.mimeType;
-          fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
-        } else {
-          // If the requested format is not found, convert on-the-fly
-          console.log(`Requested format ${format} not found, converting on-the-fly`);
-          
-          // CRITICAL FIX: Verify we're creating a converted asset from the correct source file
-          // This addresses the issue of clients downloading the wrong logo (Summa logo)
-          let sourceBuffer: Buffer | null = null;
-          
-          // Additional verification of the asset before conversion
-          console.log(`Converting asset ${asset.id} (${asset.name}) for client ${asset.clientId} to format ${format}`);
-          
-          if (isDarkVariant && asset.category === 'logo') {
-            // Dark variant handling
-            sourceBuffer = getDarkVariantBuffer(asset);
-            
-            // Validate the dark variant buffer
-            if (sourceBuffer && sourceBuffer.length < 200) {
-              console.error(`ERROR: Dark variant buffer for asset ${asset.id} is suspiciously small (${sourceBuffer.length} bytes)`);
-              sourceBuffer = null; // Force it to fail the next check
-            }
-          } else if (asset.fileData) {
-            // Standard file handling with validation
-            if (asset.fileData.length < 200) {
-              console.error(`ERROR: File data for asset ${asset.id} is suspiciously small (${asset.fileData.length} bytes)`);
-              return res.status(500).json({ message: "Asset file data appears to be corrupted" });
-            }
-            
-            sourceBuffer = Buffer.from(asset.fileData, "base64");
-          }
-          
-          if (!sourceBuffer) {
-            return res.status(404).json({ message: "Source file data not found" });
-          }
-
-          // Get the source format
-          const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-          const sourceFormat = isDarkVariant ? (data.darkVariantFormat || data.format) : data.format;
-          
+          res.setHeader("Content-Type", convertedAsset.mimeType);
+          const buffer = Buffer.from(convertedAsset.fileData, "base64");
+          // The fileSize column doesn't exist yet, so we'll comment this out for now
+          // to avoid errors in the logs
+          /*
           try {
-            // Convert the file
-            // CRITICAL FIX: Pass the asset ID to the converter for better tracking
-            const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
-            fileBuffer = result.data;
-            mimeType = result.mimeType;
-            
-            // CRITICAL FIX: Store the converted asset for future use
-            // This ensures we associate the converted asset with the correct original asset
-            try {
-              await storage.createConvertedAsset({
-                originalAssetId: assetId,
-                format,
-                fileData: fileBuffer.toString('base64'),
-                mimeType,
-                isDarkVariant
-              });
-              console.log(`Stored converted asset format ${format} for asset ID ${assetId}`);
-            } catch (storeError) {
-              console.error("Failed to store converted asset:", storeError);
-              // Continue serving the file even if storage fails
-            }
-          } catch (conversionError) {
-            console.error("Format conversion failed:", conversionError);
-            return res.status(400).json({ message: "Format conversion failed" });
+            await db.execute(
+              sql`UPDATE brand_assets SET "file_size" = ${buffer.length} WHERE id = ${assetId}`
+            );
+          } catch (err) {
+            console.warn("Failed to update file size:", err);
           }
+          */
+          return res.send(buffer);
         }
-      } 
+
+        // If the requested format is not found, fallback to the original
+        console.log(`Requested format ${format} not found, falling back to original`);
+      }
+
       // For logos with dark variants using the old method (backward compatibility)
-      else if (variant === 'dark' && asset.category === 'logo' && !format) {
-        const darkBuffer = getDarkVariantBuffer(asset);
-        if (darkBuffer) {
-          const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-          mimeType = data.darkVariantMimeType || asset.mimeType || "application/octet-stream";
-          fileBuffer = darkBuffer;
-        } else {
-          return res.status(404).json({ message: "Dark variant file data not found" });
+      if (variant === 'dark' && asset.category === 'logo' && !format) {
+        const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+        if (data.darkVariantFileData) {
+          res.setHeader(
+            "Content-Type",
+            data.darkVariantMimeType || asset.mimeType || "application/octet-stream",
+          );
+          const buffer = Buffer.from(data.darkVariantFileData, "base64");
+          return res.send(buffer);
         }
       }
+
       // Default case - serve the main file
-      else {
-        if (!asset.fileData) {
-          return res.status(404).json({ message: "Asset file data not found" });
-        }
-        
-        // CRITICAL FIX: Last validation check before serving the file
-        // If client ID parameter is provided, double check it matches the asset's client ID
-        const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
-        if (clientIdParam && asset.clientId !== clientIdParam) {
-          console.error(`ERROR: Client ID mismatch when serving file. Asset belongs to client ${asset.clientId} but clientId=${clientIdParam} specified in URL`);
-          return res.status(403).json({ 
-            message: "Client ID mismatch error. The requested logo belongs to a different client.",
-            requestedClientId: clientIdParam,
-            actualClientId: asset.clientId
-          });
-        }
-
-        // Check if the asset file data size is suspiciously small
-        const fileData = asset.fileData;
-        if (fileData.length < 100) {
-          console.error(`ERROR: Asset ${asset.id} (${asset.name}) has suspiciously small file data: ${fileData.length} bytes`);
-          return res.status(500).json({ message: "Asset file data appears corrupted or incomplete" });
-        }
-        
-        mimeType = asset.mimeType || "application/octet-stream";
-        fileBuffer = Buffer.from(fileData, "base64");
-        
-        // Log success for debugging
-        console.log(`Successfully serving asset ID ${asset.id} (${asset.name}) for client ${asset.clientId}`);
+      if (!asset.fileData) {
+        return res.status(404).json({ message: "Asset file data not found" });
       }
 
-      // Skip resizing for vector formats like SVG, AI, EPS, and PDF
-      // preserveVector is already declared above
-      const isVectorFormat = ['image/svg+xml', 'application/postscript', 'application/pdf'].some(
-        type => mimeType.includes(type)
-      ) || ['svg', 'ai', 'eps', 'pdf'].includes(format?.toLowerCase() || '');
-      
-      // Fix content type for specific vector formats to ensure proper download
-      if (format === 'eps') {
-        mimeType = 'application/postscript';
-      } else if (format === 'ai') {
-        mimeType = 'application/postscript';
-      } else if (format === 'pdf') {
-        mimeType = 'application/pdf';
+      res.setHeader(
+        "Content-Type",
+        asset.mimeType || "application/octet-stream",
+      );
+      const buffer = Buffer.from(asset.fileData, "base64");
+      // The fileSize column doesn't exist yet, so we'll comment this out for now
+      // to avoid errors in the logs
+      /*
+      try {
+        await db.execute(
+          sql`UPDATE brand_assets SET "file_size" = ${buffer.length} WHERE id = ${assetId}`
+        );
+      } catch (err) {
+        console.warn("Failed to update file size:", err);
+        // Continue serving the file even if size update fails
       }
-      
-      // Log asset details to help diagnose the wrong logo issue
-      console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
-      
-      // FIXED VECTOR HANDLING: Special handling for SVG assets that need resizing
-      if (size && size > 0 && isVectorFormat && (format === 'png' || format === 'jpg' || format === 'jpeg')) {
-        try {
-          // For vector-to-raster conversion with resizing, we'll handle SVG specially
-          if (mimeType === 'image/svg+xml' || (asset.fileData && !format)) {
-            console.log(`Converting SVG to ${format} with proper sizing for ID: ${asset.id}, Client: ${asset.clientId}`);
-            
-            // Import sharp directly
-            const sharp = (await import('sharp')).default;
-            
-            // Extract SVG dimensions for accurate aspect ratio
-            const svgString = fileBuffer.toString('utf-8');
-            let svgWidth = 500;
-            let svgHeight = 500;
-            
-            // Try to extract dimensions from SVG viewBox
-            const viewBoxMatch = svgString.match(/viewBox=["']([^"']*)["']/);
-            if (viewBoxMatch && viewBoxMatch[1]) {
-              const viewBoxParts = viewBoxMatch[1].split(/\s+/).map(parseFloat);
-              if (viewBoxParts.length >= 4) {
-                svgWidth = viewBoxParts[2];
-                svgHeight = viewBoxParts[3];
-              }
-            }
-            
-            // Calculate target dimensions with proper aspect ratio
-            const width = Math.round(size); // Target width in pixels
-            const height = preserveRatio ? Math.round((width / svgWidth) * svgHeight) : width;
-            
-            console.log(`Converting SVG (${asset.id}) from ${svgWidth}x${svgHeight} to ${width}x${height}px ${format}`);
-            
-            // Use high-density rendering for SVG to prevent pixelation at larger sizes
-            const sharpInstance = sharp(fileBuffer, { density: Math.min(1200, width * 2) });
-            
-            // Create high-quality raster output
-            if (format === 'png') {
-              fileBuffer = await sharpInstance.resize(width, height).png({ quality: 100 }).toBuffer();
-              mimeType = 'image/png';
-            } else {
-              fileBuffer = await sharpInstance.resize(width, height).jpeg({ quality: 95 }).toBuffer();
-              mimeType = 'image/jpeg';
-            }
-            
-            console.log(`Successfully converted SVG to ${format} at ${width}x${height}px`);
-            return res.set('Content-Type', mimeType).send(fileBuffer);
-          }
-        } catch (vectorError) {
-          console.error("Error handling vector-to-raster conversion:", vectorError);
-        }
-      }
-      
-      // Standard resize for raster images
-      if (size && size > 0 && isImageFormat(mimeType) && !isVectorFormat && !preserveVector) {
-        try {
-          // Import sharp directly to avoid require() issues
-          const sharp = (await import('sharp')).default;
-          
-          // Create a sharp instance from the buffer
-          const image = sharp(fileBuffer);
-          const metadata = await image.metadata();
-          
-          // Get original dimensions
-          const originalWidth = metadata.width || 500;
-          const originalHeight = metadata.height || 500;
-          
-          // Calculate new dimensions - always interpret size parameter as exact pixel width
-          const width = Math.round(size); // Ensure it's an integer
-          const height = preserveRatio ? Math.round((width / originalWidth) * originalHeight) : width;
-          
-          console.log(`Resizing asset ${asset.id} (${asset.name}, Client: ${asset.clientId}) from ${originalWidth}x${originalHeight} to ${width}x${height}px`);
-          
-          // Perform the resize operation with high quality settings
-          fileBuffer = await image.resize({
-            width: width,
-            height: height,
-            fit: preserveRatio ? 'inside' : 'fill',
-            kernel: 'lanczos3' // Use high-quality resize algorithm
-          }).toBuffer();
-          
-          console.log(`Successfully resized image to ${width}x${height}px`);
-        } catch (resizeError) {
-          console.error("Image resize failed:", resizeError);
-          // Continue with the original image if resize fails
-        }
-      } else if (isVectorFormat || preserveVector) {
-        console.log(`Skipping resize for vector format: ${format || mimeType}. Preserving vector properties.`);
-      }
-
-      res.setHeader("Content-Type", mimeType);
-      return res.send(fileBuffer);
+      */
+      res.send(buffer);
     } catch (error) {
       console.error("Error serving asset file:", error);
       res.status(500).json({ message: "Error serving asset file" });
     }
   });
-  
-  // Helper function to get dark variant buffer
-  function getDarkVariantBuffer(asset: any): Buffer | null {
-    if (!asset) return null;
-    
-    try {
-      const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-      if (data && data.darkVariantFileData) {
-        return Buffer.from(data.darkVariantFileData, "base64");
-      }
-    } catch (error) {
-      console.error("Error parsing dark variant data:", error);
-    }
-    return null;
-  }
-  
-  // Helper function to check if a mimetype is an image format
-  function isImageFormat(mimeType: string): boolean {
-    return /^image\/(jpeg|png|gif|webp|svg\+xml)/.test(mimeType);
-  }
-  
-  // Helper function to convert a file to another format using the file-converter utility
-  async function convertToFormat(
-    buffer: Buffer, 
-    sourceFormat: string, 
-    targetFormat: string,
-    assetId?: number
-  ): Promise<{ data: Buffer, mimeType: string }> {
-    if (!buffer) {
-      throw new Error("Invalid source buffer for conversion");
-    }
-    
-    // CRITICAL FIX: Additional validation to ensure we have the right data
-    if (buffer.length < 100) {
-      console.error(`ERROR: Source buffer suspiciously small (${buffer.length} bytes) for asset ID ${assetId || 'unknown'}`);
-    }
-    
-    console.log(`Converting from ${sourceFormat} to ${targetFormat} for asset ID ${assetId || 'unknown'}`);
-    
-    try {
-      // Use the file converter utility
-      const { convertToAllFormats } = await import('../utils/file-converter');
-      const convertedFiles = await convertToAllFormats(buffer, sourceFormat);
-      
-      // Find the target format in the converted files
-      const targetFile = convertedFiles.find(file => file.format.toLowerCase() === targetFormat.toLowerCase());
-      
-      if (!targetFile) {
-        throw new Error(`Conversion to ${targetFormat} failed`);
-      }
-      
-      return {
-        data: targetFile.data,
-        mimeType: targetFile.mimeType
-      };
-    } catch (error) {
-      console.error("Error in format conversion:", error);
-      throw new Error(`Failed to convert ${sourceFormat} to ${targetFormat}: ${error.message}`);
-    }
-  }
 
   // Get converted assets for a specific asset
   app.get("/api/assets/:assetId/converted", async (req, res: Response) => {
