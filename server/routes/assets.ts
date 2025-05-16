@@ -622,8 +622,30 @@ export function registerAssetRoutes(app: Express) {
           return res.status(404).json({ message: "Asset file data not found" });
         }
         
+        // CRITICAL FIX: Last validation check before serving the file
+        // If client ID parameter is provided, double check it matches the asset's client ID
+        const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
+        if (clientIdParam && asset.clientId !== clientIdParam) {
+          console.error(`ERROR: Client ID mismatch when serving file. Asset belongs to client ${asset.clientId} but clientId=${clientIdParam} specified in URL`);
+          return res.status(403).json({ 
+            message: "Client ID mismatch error. The requested logo belongs to a different client.",
+            requestedClientId: clientIdParam,
+            actualClientId: asset.clientId
+          });
+        }
+
+        // Check if the asset file data size is suspiciously small
+        const fileData = asset.fileData;
+        if (fileData.length < 100) {
+          console.error(`ERROR: Asset ${asset.id} (${asset.name}) has suspiciously small file data: ${fileData.length} bytes`);
+          return res.status(500).json({ message: "Asset file data appears corrupted or incomplete" });
+        }
+        
         mimeType = asset.mimeType || "application/octet-stream";
-        fileBuffer = Buffer.from(asset.fileData, "base64");
+        fileBuffer = Buffer.from(fileData, "base64");
+        
+        // Log success for debugging
+        console.log(`Successfully serving asset ID ${asset.id} (${asset.name}) for client ${asset.clientId}`);
       }
 
       // Skip resizing for vector formats like SVG, AI, EPS, and PDF
