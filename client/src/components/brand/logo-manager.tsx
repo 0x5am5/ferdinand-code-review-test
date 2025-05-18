@@ -855,92 +855,59 @@ function StandardLogoDownloadButton({
   // Function to download a specific size
   const downloadSpecificSize = (size: number) => {
     try {
-      // Create an invisible container for download links
-      const container = document.createElement('div');
-      container.style.display = 'none';
-      document.body.appendChild(container);
+      // Validate required parameters
+      if (!logo.id || !logo.clientId) {
+        throw new Error('Missing required logo data');
+      }
 
-      // CRITICAL FIX: Use secure URL helper to ensure we download the correct client's logo
-      // This prevents the issue where clients were downloading the Summa logo instead of their own
-      const directUrl = getSecureAssetUrl(logo.id, logo.clientId, {
-        size,
-        format: 'png',
-        variant: variant === 'dark' ? 'dark' : undefined,
-        preserveRatio: true
-      });
-      console.log(`Downloading ${size}px PNG for ID: ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
-
-      // Create a fresh URL for each download to prevent caching
-      const timestamp = Date.now();
+      // Build download URL with all parameters set once
       const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
-      
-      // Ensure clientId is properly set and validated
-      if (!logo.clientId) {
-        console.error('Missing clientId for logo:', logo);
-        throw new Error('Invalid logo data: missing clientId');
-      }
-      
-      // Add all necessary parameters
-      downloadUrl.searchParams.append('clientId', logo.clientId.toString());
-      downloadUrl.searchParams.append('size', size.toString());
-      downloadUrl.searchParams.append('format', 'png');
-      downloadUrl.searchParams.append('preserveRatio', 'true');
-      downloadUrl.searchParams.append('t', timestamp.toString()); // Cache buster
-      
-      if (variant === 'dark') {
-        downloadUrl.searchParams.append('variant', 'dark');
-      }
-
-      console.log(`Downloading ${size}px PNG for logo:`, {
-        id: logo.id,
-        name: logo.name,
-        clientId: logo.clientId,
-        url: downloadUrl.toString()
+      const params = new URLSearchParams({
+        clientId: logo.clientId.toString(),
+        size: size.toString(),
+        format: 'png',
+        preserveRatio: 'true',
+        t: Date.now().toString() // Cache buster
       });
 
-      // Use the existing downloadUrl from above
-      downloadUrl.searchParams.append('t', timestamp.toString()); // Add cache buster
-      
-      // Continue with existing parameters
-      downloadUrl.searchParams.append('clientId', logo.clientId.toString());
-      downloadUrl.searchParams.append('size', size.toString());
-      downloadUrl.searchParams.append('format', 'png');
-      downloadUrl.searchParams.append('preserveRatio', 'true');
-      downloadUrl.searchParams.append('t', timestamp.toString()); // Cache buster
-      
       if (variant === 'dark') {
-        downloadUrl.searchParams.append('variant', 'dark');
+        params.append('variant', 'dark');
       }
 
-      console.log(`Downloading logo:`, {
-        id: logo.id,
-        name: logo.name,
+      downloadUrl.search = params.toString();
+
+      console.log('Initiating download:', {
+        logoId: logo.id,
         clientId: logo.clientId,
+        name: logo.name,
         size,
         variant,
         url: downloadUrl.toString()
       });
 
-      // Fix the format parameter to be a single value
-      downloadUrl.searchParams.set('format', 'png');
-      
-      const pngLink = document.createElement('a');
-      pngLink.href = downloadUrl.toString();
-      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-      
-      container.appendChild(pngLink);
-      pngLink.click();
+      // Create temporary download link
+      const container = document.createElement('div');
+      container.style.display = 'none';
+      document.body.appendChild(container);
 
-      // Clean up the container after download
+      const downloadLink = document.createElement('a');
+      downloadLink.href = downloadUrl.toString();
+      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
+      
+      container.appendChild(downloadLink);
+      downloadLink.click();
+
+      // Cleanup
       setTimeout(() => {
         document.body.removeChild(container);
-        setOpen(false); // Close popover after download
+        setOpen(false);
       }, 100);
+
     } catch (error) {
-      console.error("Error downloading specific size:", error);
+      console.error("Download failed:", error);
       toast({
         title: "Download failed",
-        description: "There was an error downloading this file.",
+        description: error instanceof Error ? error.message : "Failed to download logo",
         variant: "destructive"
       });
     }
