@@ -131,26 +131,26 @@ function getSecureAssetUrl(assetId: number, clientId: number, options: {
   preserveVector?: boolean;
 } = {}) {
   const { format, size, variant, preserveRatio = true, preserveVector = false } = options;
-  
+
   // Start with the base URL
   let url = `/api/assets/${assetId}/file?`;
-  
+
   // Add parameters
   const params = new URLSearchParams();
-  
+
   // Always include client ID to ensure the correct logo is downloaded
   params.append('clientId', clientId.toString());
-  
+
   // Add cache buster to prevent browser caching
   params.append('t', Date.now().toString());
-  
+
   // Add optional parameters if provided
   if (variant === 'dark') params.append('variant', 'dark');
   if (format) params.append('format', format);
   if (size) params.append('size', size.toString());
   if (preserveRatio) params.append('preserveRatio', 'true');
   if (preserveVector) params.append('preserveVector', 'true');
-  
+
   return url + params.toString();
 }
 
@@ -424,9 +424,9 @@ function AppIconDownloadButton({
     const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
       `/api/assets/${logo.id}/file?variant=dark` : 
       `/api/assets/${logo.id}/file`;
-    
+
     const separator = baseUrl.includes('?') ? '&' : '?';
-    
+
     return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
 
@@ -438,30 +438,30 @@ function AppIconDownloadButton({
         title: "Preparing app icon package",
         description: "Creating ZIP file with all app icon sizes...",
       });
-      
+
       // Define app icon sizes to include in the package
       const sizes = [192, 512, 1024];
-      
+
       // Create a new JSZip instance
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
-      
+
       // Create folders in the zip
       const pngFolder = zip.folder("PNG");
       const vectorFolder = zip.folder("Vector");
-      
+
       if (!pngFolder || !vectorFolder) {
         throw new Error("Failed to create folders in zip file");
       }
-      
+
       // Fetch all the files and add to zip
       const fetchPromises = [];
-      
+
       // Add PNG files in different sizes
       for (const size of sizes) {
         // Calculate exact pixel size (but don't exceed 100%)
         const sizePercentage = Math.min(100, (size / originalWidth) * 100);
-        
+
         // PNG file
         fetchPromises.push(
           fetch(getDownloadUrl(sizePercentage, 'png'))
@@ -474,7 +474,7 @@ function AppIconDownloadButton({
             })
         );
       }
-      
+
       // Add vector files (SVG)
       fetchPromises.push(
         fetch(getDownloadUrl(100, 'svg'))
@@ -486,13 +486,13 @@ function AppIconDownloadButton({
             console.error('Error fetching SVG:', err);
           })
       );
-      
+
       // Wait for all fetches to complete
       await Promise.all(fetchPromises);
-      
+
       // Generate the zip file
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
+
       // Create download link for the zip
       const zipUrl = URL.createObjectURL(zipBlob);
       const downloadLink = document.createElement('a');
@@ -500,13 +500,13 @@ function AppIconDownloadButton({
       downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-app-icon-package.zip`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
-      
+
       // Clean up
       setTimeout(() => {
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(zipUrl);
         setOpen(false);
-        
+
         // Show success toast
         toast({
           title: "Download ready",
@@ -534,7 +534,7 @@ function AppIconDownloadButton({
       <PopoverContent className="logo-download__popover">
         <div className="logo-download__content">
           <h4 className="logo-download__heading">App Icon Download Options</h4>
-          
+
           <div className="logo-download__options">
             {/* App Icon Package Section */}
             <div className="logo-download__section">
@@ -550,7 +550,7 @@ function AppIconDownloadButton({
                 Download app icon package
               </div>
             </div>
-            
+
             {/* Editable Design Files Section */}
             <div className="logo-download__section">
               <h5 className="logo-download__section-title">Editable Design Files</h5>
@@ -576,13 +576,13 @@ function AppIconDownloadButton({
                     const container = document.createElement('div');
                     container.style.display = 'none';
                     document.body.appendChild(container);
-                    
+
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'svg');
                     link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`;
                     container.appendChild(link);
                     link.click();
-                    
+
                     setTimeout(() => {
                       document.body.removeChild(container);
                       setOpen(false);
@@ -599,13 +599,13 @@ function AppIconDownloadButton({
                     const container = document.createElement('div');
                     container.style.display = 'none';
                     document.body.appendChild(container);
-                    
+
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'eps');
                     link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
                     container.appendChild(link);
                     link.click();
-                    
+
                     setTimeout(() => {
                       document.body.removeChild(container);
                       setOpen(false);
@@ -622,13 +622,13 @@ function AppIconDownloadButton({
                     const container = document.createElement('div');
                     container.style.display = 'none';
                     document.body.appendChild(container);
-                    
+
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'ai');
                     link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
                     container.appendChild(link);
                     link.click();
-                    
+
                     setTimeout(() => {
                       document.body.removeChild(container);
                       setOpen(false);
@@ -664,7 +664,7 @@ function LogoDownloadButton({
   if (parsedData.type === 'favicon') {
     return <FaviconDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
   }
-  
+
   // For app-icon type, use specialized download button
   if (parsedData.type === 'app-icon') {
     return <AppIconDownloadButton logo={logo} imageUrl={imageUrl} variant={variant} parsedData={parsedData} />;
@@ -706,12 +706,12 @@ function StandardLogoDownloadButton({
     const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
       `/api/assets/${logo.id}/file?variant=dark` : 
       `/api/assets/${logo.id}/file`;
-    
+
     const separator = baseUrl.includes('?') ? '&' : '?';
-    
+
     return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
-  
+
   // Function to download a zip package of all logo sizes
   const downloadAllLogos = async () => {
     try {
@@ -720,43 +720,37 @@ function StandardLogoDownloadButton({
         title: "Preparing download package",
         description: "Creating ZIP file with all logo sizes...",
       });
-      
+
       // Define logo sizes to include in the package (small, medium, large)
       const sizes = [300, 800, 2000];
-      
+
       // Log the logo info we're downloading
       console.log(`Creating download package for logo: ID ${logo.id}, Name: ${logo.name}, Client ID: ${logo.clientId}`);
-      
+
       // Create a new JSZip instance
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
-      
+
       // Create a better folder structure for the zip with client name
       const clientName = logo.name.replace(/[^a-z0-9]/gi, '-').toLowerCase(); 
       const pngFolder = zip.folder("PNG");
       const vectorFolder = zip.folder("Vector");
-      
+
       if (!pngFolder || !vectorFolder) {
         throw new Error("Failed to create folders in zip file");
       }
-      
+
       // Fetch all the files and add to zip
       const fetchPromises = [];
-      
+
       // Add PNG files in different sizes - pass exact pixel dimensions
       for (const size of sizes) {
-        // CRITICAL FIX: Use the secure URL helper to ensure we download the correct client's logo
-        // This prevents the issue where clients were downloading the Summa logo instead of their own
-        const url = getSecureAssetUrl(logo.id, logo.clientId, {
-          size,
-          format: 'png',
-          variant: variant === 'dark' ? 'dark' : undefined,
-          preserveRatio: true
-        });
-        const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-        
+        // CRITICAL FIX: Ensure we pass correct client ID for downloads
+        const url = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&size=${size}&format=png${variant === 'dark' ? '&variant=dark' : ''}&preserveRatio=true`;
+        console.log(`Downloading logo: ID ${logo.id}, Client: ${logo.clientId}, Name: ${logo.name}`);
+
         console.log(`Fetching ${size}px logo from: ${url}`);
-        
+
         // Use a reference to avoid TypeScript null warnings
         const pngFolderRef = pngFolder;
         fetchPromises.push(
@@ -782,7 +776,7 @@ function StandardLogoDownloadButton({
             })
         );
       }
-      
+
       // Add vector files (SVG, EPS, AI, PDF)
       const vectorFormats = ['svg', 'eps', 'ai', 'pdf'];
       // Use a reference to avoid TypeScript null warnings
@@ -796,9 +790,9 @@ function StandardLogoDownloadButton({
           preserveVector: true
         });
         const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
-        
+
         console.log(`Fetching ${format} logo from: ${url}`);
-        
+
         fetchPromises.push(
           fetch(url, {
             // CRITICAL FIX: Add cache control headers
@@ -822,13 +816,13 @@ function StandardLogoDownloadButton({
             })
         );
       }
-      
+
       // Wait for all fetches to complete
       await Promise.all(fetchPromises);
-      
+
       // Generate the zip file
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
+
       // Create download link for the zip
       const zipUrl = URL.createObjectURL(zipBlob);
       const downloadLink = document.createElement('a');
@@ -836,13 +830,13 @@ function StandardLogoDownloadButton({
       downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-package.zip`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
-      
+
       // Clean up
       setTimeout(() => {
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(zipUrl);
         setOpen(false);
-        
+
         // Show success toast
         toast({
           title: "Download ready",
@@ -858,7 +852,7 @@ function StandardLogoDownloadButton({
       });
     }
   };
-  
+
   // Function to download a specific size
   const downloadSpecificSize = (size: number) => {
     try {
@@ -866,7 +860,7 @@ function StandardLogoDownloadButton({
       const container = document.createElement('div');
       container.style.display = 'none';
       document.body.appendChild(container);
-      
+
       // CRITICAL FIX: Use secure URL helper to ensure we download the correct client's logo
       // This prevents the issue where clients were downloading the Summa logo instead of their own
       const directUrl = getSecureAssetUrl(logo.id, logo.clientId, {
@@ -876,15 +870,15 @@ function StandardLogoDownloadButton({
         preserveRatio: true
       });
       console.log(`Downloading ${size}px PNG for ID: ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
-      
+
       // Create and trigger the download
       const pngLink = document.createElement('a');
       pngLink.href = directUrl;
       pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-      
+
       container.appendChild(pngLink);
       pngLink.click();
-      
+
       // Clean up the container after download
       setTimeout(() => {
         document.body.removeChild(container);
@@ -907,14 +901,18 @@ function StandardLogoDownloadButton({
       const container = document.createElement('div');
       container.style.display = 'none';
       document.body.appendChild(container);
-      
+
+      // CRITICAL FIX: Add client ID to vector file downloads
+      link.href = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&format=${format}${variant === 'dark' ? '&variant=dark' : ''}&preserveVector=true`;
+      console.log(`Downloading vector format ${format} for logo: ID ${logo.id}, Client: ${logo.clientId}`);
+
       // Create download link
       const link = document.createElement('a');
-      link.href = getDownloadUrl(100, format); // Use original size (100%)
+      link.href = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&format=${format}${variant === 'dark' ? '&variant=dark' : ''}&preserveVector=true`; // Use original size (100%)
       link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
       container.appendChild(link);
       link.click();
-      
+
       // Clean up the container after download
       setTimeout(() => {
         document.body.removeChild(container);
@@ -941,7 +939,7 @@ function StandardLogoDownloadButton({
       <PopoverContent className="logo-download__popover">
         <div className="logo-download__content">
           <h4 className="logo-download__heading">Download Options</h4>
-          
+
           <div className="logo-download__options">
             {/* PNG Package Section */}
             <div className="logo-download__section">
@@ -980,7 +978,7 @@ function StandardLogoDownloadButton({
                 </div>
               </div>
             </div>
-            
+
             {/* Editable Design Files Section */}
             <div className="logo-download__section">
               <h5 className="logo-download__section-title">Editable Design Files</h5>
@@ -1068,9 +1066,9 @@ function FaviconDownloadButton({
     const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
       `/api/assets/${logo.id}/file?variant=dark` : 
       `/api/assets/${logo.id}/file`;
-    
+
     const separator = baseUrl.includes('?') ? '&' : '?';
-    
+
     return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
 
@@ -1082,31 +1080,31 @@ function FaviconDownloadButton({
         title: "Preparing favicon package",
         description: "Creating ZIP file with all favicon sizes...",
       });
-      
+
       // Define favicon sizes to include in the package
       const sizes = [16, 32, 48, 64];
-      
+
       // Create a new JSZip instance
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
-      
+
       // Create folders in the zip
       const icoFolder = zip.folder("ICO");
       const pngFolder = zip.folder("PNG");
       const vectorFolder = zip.folder("Vector");
-      
+
       if (!icoFolder || !pngFolder || !vectorFolder) {
         throw new Error("Failed to create folders in zip file");
       }
-      
+
       // Fetch all the files and add to zip
       const fetchPromises = [];
-      
+
       // Add ICO and PNG files in different sizes
       for (const size of sizes) {
         // Calculate exact pixel size
         const sizePercentage = Math.min(100, (size / originalWidth) * 100);
-        
+
         // ICO file - strongly typed to avoid TypeScript errors
         const icoFolderRef = icoFolder;
         fetchPromises.push(
@@ -1119,7 +1117,7 @@ function FaviconDownloadButton({
               console.error(`Error fetching ICO for size ${size}:`, err);
             })
         );
-        
+
         // PNG file - strongly typed to avoid TypeScript errors
         const pngFolderRef = pngFolder;
         fetchPromises.push(
@@ -1133,7 +1131,7 @@ function FaviconDownloadButton({
             })
         );
       }
-      
+
       // Add vector files (SVG) - strongly typed to avoid TypeScript errors
       const vectorFolderRef = vectorFolder;
       fetchPromises.push(
@@ -1146,13 +1144,13 @@ function FaviconDownloadButton({
             console.error('Error fetching SVG:', err);
           })
       );
-      
+
       // Wait for all fetches to complete
       await Promise.all(fetchPromises);
-      
+
       // Generate the zip file
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      
+
       // Create download link for the zip
       const zipUrl = URL.createObjectURL(zipBlob);
       const downloadLink = document.createElement('a');
@@ -1160,13 +1158,13 @@ function FaviconDownloadButton({
       downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-favicon-package.zip`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
-      
+
       // Clean up
       setTimeout(() => {
         document.body.removeChild(downloadLink);
         URL.revokeObjectURL(zipUrl);
         setOpen(false);
-        
+
         // Show success toast
         toast({
           title: "Download ready",
@@ -1190,14 +1188,14 @@ function FaviconDownloadButton({
       const container = document.createElement('div');
       container.style.display = 'none';
       document.body.appendChild(container);
-      
+
       // Create download link
       const link = document.createElement('a');
       link.href = getDownloadUrl(100, format); // Use original size (100%)
       link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
       container.appendChild(link);
       link.click();
-      
+
       // Clean up the container after download
       setTimeout(() => {
         document.body.removeChild(container);
@@ -1224,7 +1222,7 @@ function FaviconDownloadButton({
       <PopoverContent className="logo-download__popover">
         <div className="logo-download__content">
           <h4 className="logo-download__heading">Favicon Download Options</h4>
-          
+
           <div className="logo-download__options">
             {/* Favicon Package Section */}
             <div className="logo-download__section">
@@ -1240,7 +1238,7 @@ function FaviconDownloadButton({
                 Download favicon package
               </div>
             </div>
-            
+
             {/* Editable Design Files Section */}
             <div className="logo-download__section">
               <h5 className="logo-download__section-title">Editable Design Files</h5>
@@ -1266,13 +1264,13 @@ function FaviconDownloadButton({
                     const container = document.createElement('div');
                     container.style.display = 'none';
                     document.body.appendChild(container);
-                    
+
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'svg');
                     link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`;
                     container.appendChild(link);
                     link.click();
-                    
+
                     setTimeout(() => {
                       document.body.removeChild(container);
                       setOpen(false);
@@ -1289,13 +1287,13 @@ function FaviconDownloadButton({
                     const container = document.createElement('div');
                     container.style.display = 'none';
                     document.body.appendChild(container);
-                    
+
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'eps');
                     link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
                     container.appendChild(link);
                     link.click();
-                    
+
                     setTimeout(() => {
                       document.body.removeChild(container);
                       setOpen(false);
@@ -1312,13 +1310,13 @@ function FaviconDownloadButton({
                     const container = document.createElement('div');
                     container.style.display = 'none';
                     document.body.appendChild(container);
-                    
+
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'ai');
                     link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
                     container.appendChild(link);
                     link.click();
-                    
+
                     setTimeout(() => {
                       document.body.removeChild(container);
                       setOpen(false);
@@ -1388,7 +1386,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 </button>
               </div>
             </div>
-            
+
             {/* Top right controls */}
             <div className={`logo-display__preview-controls ${
                 variant === 'light' 
@@ -1409,11 +1407,11 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
                           formData.append("type", type);
                           formData.append("category", "logo");
-                          
+
                           if (variant === 'dark') {
                             // Update with dark variant
                             formData.append("isDarkVariant", "true");
-                            
+
                             // Add data with hasDarkVariant flag
                             const fileExtension = e.target.files![0].name.split('.').pop()?.toLowerCase();
                             formData.append("data", JSON.stringify({
@@ -1422,17 +1420,17 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                               hasDarkVariant: true,
                               isDarkVariant: true
                             }));
-                            
+
                             // Adding a temp name for debug clarity
                             formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                            
+
                             console.log("Uploading dark variant with isDarkVariant=true");
                             // IMPORTANT: The ?variant=dark parameter is critical here
                             const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
                               method: "PATCH",
                               body: formData,
                             });
-                            
+
                             if (!response.ok) {
                               console.error("Failed to upload dark variant:", await response.text());
                             } else {
@@ -1441,7 +1439,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           } else {
                             // Replace light variant
                             formData.append("isDarkVariant", "false");
-                            
+
                             // Add data without replacing dark variant data
                             const fileExtension = e.target.files![0].name.split('.').pop()?.toLowerCase();
                             formData.append("data", JSON.stringify({
@@ -1450,30 +1448,30 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                               // Preserve dark variant if it exists
                               hasDarkVariant: parsedData.hasDarkVariant || false
                             }));
-                            
+
                             console.log("Uploading light variant");
                             const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
                               method: "PATCH",
                               body: formData,
                             });
-                            
+
                             if (!response.ok) {
                               console.error("Failed to replace light variant:", await response.text());
                             } else {
                               console.log("Light variant uploaded successfully");
                             }
                           }
-                          
+
                           // Invalidate the cache to show the updated logo immediately
                           await queryClient.invalidateQueries({
                             queryKey: [`/api/clients/${clientId}/assets`],
                           });
-                          
+
                           // Force a reload of this specific logo to ensure it's updated in the UI
                           await queryClient.invalidateQueries({
                             queryKey: [`/api/assets/${logo.id}`],
                           });
-                          
+
                           // Show success message
                           toast({
                             title: "Success",
@@ -1482,7 +1480,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                               : `${type.charAt(0).toUpperCase() + type.slice(1)} logo updated successfully`,
                           });
                         };
-                        
+
                         createUpload();
                       }
                     }}
@@ -1492,7 +1490,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   <span>Replace</span>
                 </label>
               </button>
-              
+
               {/* Add the download button here */}
               <LogoDownloadButton 
                 logo={logo} 
@@ -1500,7 +1498,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 variant={variant}
                 parsedData={parsedData}
               />
-              
+
               {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                 <button 
                   className="logo-display__preview-action-button"
@@ -1586,7 +1584,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 </Button>
                 <div className="text-sm text-muted-foreground">- or -</div>
               </div>
-              
+
               <div className="logo-upload__dropzone logo-upload__dropzone--dark flex flex-col items-center justify-center">
                 <div className="logo-upload__dropzone-icon">
                   <Upload className="h-8 w-8" />
@@ -1622,8 +1620,8 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   </FileUpload>
                 </div>
               </div>
-              
-              
+
+
             </div>
           ) : (
             <div className="logo-display__preview-image-container">
@@ -1777,23 +1775,23 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const [showAddSection, setShowAddSection] = useState(false);
   // State to track available sections to add
   const [availableSections, setAvailableSections] = useState<string[]>([]);
-  
+
   // Fetch hidden sections from database
   const { data: hiddenSections, isLoading: loadingHiddenSections } = useHiddenSections(clientId);
-  
+
   // Mutations for adding/removing hidden sections
   const addHiddenSection = useAddHiddenSection(clientId);
   const removeHiddenSection = useRemoveHiddenSection(clientId);
-  
+
   const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
   // Set up initial visible sections based on hidden sections from database
   useEffect(() => {
     if (loadingHiddenSections) return;
-    
+
     // Start with all logo types
     const allLogoTypes = Object.values(LogoType);
-    
+
     // If we have hidden sections data, filter them out
     if (hiddenSections && Array.isArray(hiddenSections)) {
       const hiddenTypes = hiddenSections.map(section => section.sectionType);
@@ -1816,7 +1814,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   const deleteLogo = useMutation({
     mutationFn: async ({ logoId, variant }: { logoId: number; variant: 'light' | 'dark' }) => {
-      const response = await fetch(
+      const response =await fetch(
         `/api/clients/${clientId}/assets/${logoId}${variant === 'dark' ? '?variant=dark' : ''}`,
         {
           method: "DELETE",
@@ -1861,7 +1859,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const handleRemoveSection = (type: string) => {
     // Update local state immediately for responsiveness
     setVisibleSections(prev => prev.filter(section => section !== type));
-    
+
     // Persist to database
     addHiddenSection.mutate(type, {
       onSuccess: () => {
@@ -1887,7 +1885,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     // Update local state immediately for responsiveness
     setVisibleSections(prev => [...prev, type]);
     setShowAddSection(false);
-    
+
     // Persist to database
     removeHiddenSection.mutate(type, {
       onSuccess: () => {
