@@ -871,18 +871,33 @@ function StandardLogoDownloadButton({
       });
       console.log(`Downloading ${size}px PNG for ID: ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
 
-      // Create and trigger the download
+      // Create a fresh URL for each download to prevent caching
+      const timestamp = Date.now();
       const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
+      
+      // Ensure clientId is properly set and validated
+      if (!logo.clientId) {
+        console.error('Missing clientId for logo:', logo);
+        throw new Error('Invalid logo data: missing clientId');
+      }
+      
+      // Add all necessary parameters
       downloadUrl.searchParams.append('clientId', logo.clientId.toString());
       downloadUrl.searchParams.append('size', size.toString());
       downloadUrl.searchParams.append('format', 'png');
       downloadUrl.searchParams.append('preserveRatio', 'true');
+      downloadUrl.searchParams.append('t', timestamp.toString()); // Cache buster
+      
       if (variant === 'dark') {
         downloadUrl.searchParams.append('variant', 'dark');
       }
 
-      console.log(`Downloading ${size}px PNG for logo: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
-      console.log('Download URL:', downloadUrl.toString());
+      console.log(`Downloading ${size}px PNG for logo:`, {
+        id: logo.id,
+        name: logo.name,
+        clientId: logo.clientId,
+        url: downloadUrl.toString()
+      });
 
       const pngLink = document.createElement('a');
       pngLink.href = downloadUrl.toString();
