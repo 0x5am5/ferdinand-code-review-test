@@ -872,11 +872,21 @@ function StandardLogoDownloadButton({
       console.log(`Downloading ${size}px PNG for ID: ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
 
       // Create and trigger the download
-      const pngLink = document.createElement('a');
-      pngLink.href = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&size=${size}&format=png${variant === 'dark' ? '&variant=dark' : ''}&preserveRatio=true`;
-      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-      
+      const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
+      downloadUrl.searchParams.append('clientId', logo.clientId.toString());
+      downloadUrl.searchParams.append('size', size.toString());
+      downloadUrl.searchParams.append('format', 'png');
+      downloadUrl.searchParams.append('preserveRatio', 'true');
+      if (variant === 'dark') {
+        downloadUrl.searchParams.append('variant', 'dark');
+      }
+
       console.log(`Downloading ${size}px PNG for logo: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
+      console.log('Download URL:', downloadUrl.toString());
+
+      const pngLink = document.createElement('a');
+      pngLink.href = downloadUrl.toString();
+      pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
       
       container.appendChild(pngLink);
       pngLink.click();
