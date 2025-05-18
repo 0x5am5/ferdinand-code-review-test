@@ -21,11 +21,14 @@ export interface ConvertedFile {
  * @param originalFormat - The original file format (e.g., 'png', 'jpg', 'svg')
  * @returns Promise with an array of converted files in different formats
  */
-export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: string): Promise<ConvertedFile[]> {
+export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: string, assetId?: number): Promise<ConvertedFile[]> {
   const convertedFiles: ConvertedFile[] = [];
   const tempDir = await mkdtempAsync(path.join(os.tmpdir(), 'logo-conversion-'));
   
-  console.log(`Starting conversion from format: ${originalFormat}`);
+  console.log(`Starting conversion process for asset ID ${assetId}:`);
+  console.log(`- Original format: ${originalFormat}`);
+  console.log(`- Buffer size: ${fileBuffer.length} bytes`);
+  console.log(`- First 50 bytes: ${fileBuffer.slice(0, 50).toString('hex')}`);
   
   try {
     const isVector = ['svg', 'ai', 'eps', 'pdf'].includes(originalFormat.toLowerCase());

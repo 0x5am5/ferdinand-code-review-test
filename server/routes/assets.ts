@@ -217,7 +217,7 @@ export function registerAssetRoutes(app: Express) {
         // Get variant from query params with debugging
         const variant = req.query.variant as string;
         console.log(`PATCH request received - assetId: ${assetId}, variant: ${variant}, isDarkVariant: ${req.body.isDarkVariant}`);
-        
+
         // Force isDarkVariant to true if variant=dark is in the URL
         if (variant === 'dark') {
           req.body.isDarkVariant = "true";
@@ -295,7 +295,7 @@ export function registerAssetRoutes(app: Express) {
               } catch (deleteError) {
                 console.error("Error deleting existing dark variant converted assets:", deleteError);
               }
-              
+
               // Store all converted versions in the database
               for (const convertedFile of convertedFiles) {
                 // First check if this format already exists
@@ -492,7 +492,7 @@ export function registerAssetRoutes(app: Express) {
       const preserveRatio = req.query.preserveRatio === 'true';
       const preserveVector = req.query.preserveVector === 'true';
       const clientIdParam = req.query.clientId ? parseInt(req.query.clientId as string) : null;
-      
+
       // Parse size as percentage or exact pixels
       let size: number | undefined;
       if (sizeParam) {
@@ -501,9 +501,9 @@ export function registerAssetRoutes(app: Express) {
           size = undefined;
         }
       }
-      
+
       console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}, preserveVector: ${preserveVector}, clientId param: ${clientIdParam}`);
-      
+
       // CRITICAL FIX: Add query timing for debugging
       console.time('asset-query');
       const asset = await storage.getAsset(assetId);
@@ -513,22 +513,22 @@ export function registerAssetRoutes(app: Express) {
         console.error(`ERROR: Asset with ID ${assetId} not found in database`);
         return res.status(404).json({ message: "Asset not found" });
       }
-      
+
       // Add detailed logging about the asset being served
       console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}, Category: ${asset.category}, MimeType: ${asset.mimeType}`);
-      
+
       // CRITICAL FIX: Verify we're serving the correct asset
       if (asset.id !== assetId) {
         console.error(`ERROR: Requested asset ID ${assetId} but serving ${asset.id} (${asset.name})`);
         return res.status(500).json({ message: "Asset ID mismatch error" });
       }
-      
+
       // CRITICAL FIX: Ensure client ID matches if provided in URL
       if (clientIdParam && asset.clientId !== clientIdParam) {
         console.error(`ERROR: Client ID mismatch - Asset belongs to client ${asset.clientId} but clientId=${clientIdParam} specified in URL`);
         return res.status(403).json({ message: "Client ID mismatch. You don't have permission to access this asset." });
       }
-      
+
       // CRITICAL FIX: Get the client information for verification
       if (req.clientId) {
         // If client ID from session doesn't match the asset's client ID, log a warning
@@ -540,19 +540,19 @@ export function registerAssetRoutes(app: Express) {
 
       let fileBuffer: Buffer;
       let mimeType: string;
-      
+
       // Check if requesting a specific format conversion
       if (format && asset.category === 'logo') {
         const isDarkVariant = variant === 'dark';
-        
+
         // CRITICAL FIX: Log the client ID we're checking for
         console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
-        
+
         // Get the converted asset specifically for this asset ID
         // CRITICAL FIX: Get converted asset, ensuring it's the right one
         console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
-        
+
         if (convertedAsset) {
           console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
           mimeType = convertedAsset.mimeType;
@@ -560,7 +560,7 @@ export function registerAssetRoutes(app: Express) {
         } else {
           // If the requested format is not found, convert on-the-fly
           console.log(`Requested format ${format} not found, converting on-the-fly`);
-          
+
           // Get the source buffer
           let sourceBuffer: Buffer | null = null;
           if (isDarkVariant && asset.category === 'logo') {
@@ -568,7 +568,7 @@ export function registerAssetRoutes(app: Express) {
           } else if (asset.fileData) {
             sourceBuffer = Buffer.from(asset.fileData, "base64");
           }
-          
+
           if (!sourceBuffer) {
             return res.status(404).json({ message: "Source file data not found" });
           }
@@ -576,14 +576,19 @@ export function registerAssetRoutes(app: Express) {
           // Get the source format
           const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
           const sourceFormat = isDarkVariant ? (data.darkVariantFormat || data.format) : data.format;
-          
+
+          console.log(`Converting asset ${assetId} to ${format}:`);
+          console.log(`- Client ID: ${asset.clientId}`);
+          console.log(`- Asset name: ${asset.name}`);
+          console.log(`- Source format: ${sourceFormat}`);
+          console.log(`- Source buffer size: ${sourceBuffer.length} bytes`);
+
           try {
             // Convert the file
-            // CRITICAL FIX: Pass the asset ID to the converter for better tracking
             const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
             fileBuffer = result.data;
             mimeType = result.mimeType;
-            
+
             // CRITICAL FIX: Store the converted asset for future use
             // This ensures we associate the converted asset with the correct original asset
             try {
@@ -621,7 +626,7 @@ export function registerAssetRoutes(app: Express) {
         if (!asset.fileData) {
           return res.status(404).json({ message: "Asset file data not found" });
         }
-        
+
         mimeType = asset.mimeType || "application/octet-stream";
         fileBuffer = Buffer.from(asset.fileData, "base64");
       }
@@ -631,7 +636,7 @@ export function registerAssetRoutes(app: Express) {
       const isVectorFormat = ['image/svg+xml', 'application/postscript', 'application/pdf'].some(
         type => mimeType.includes(type)
       ) || ['svg', 'ai', 'eps', 'pdf'].includes(format?.toLowerCase() || '');
-      
+
       // Fix content type for specific vector formats to ensure proper download
       if (format === 'eps') {
         mimeType = 'application/postscript';
@@ -640,25 +645,25 @@ export function registerAssetRoutes(app: Express) {
       } else if (format === 'pdf') {
         mimeType = 'application/pdf';
       }
-      
+
       // Log asset details to help diagnose the wrong logo issue
       console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
-      
+
       // FIXED VECTOR HANDLING: Special handling for SVG assets that need resizing
       if (size && size > 0 && isVectorFormat && (format === 'png' || format === 'jpg' || format === 'jpeg')) {
         try {
           // For vector-to-raster conversion with resizing, we'll handle SVG specially
           if (mimeType === 'image/svg+xml' || (asset.fileData && !format)) {
             console.log(`Converting SVG to ${format} with proper sizing for ID: ${asset.id}, Client: ${asset.clientId}`);
-            
+
             // Import sharp directly
             const sharp = (await import('sharp')).default;
-            
+
             // Extract SVG dimensions for accurate aspect ratio
             const svgString = fileBuffer.toString('utf-8');
             let svgWidth = 500;
             let svgHeight = 500;
-            
+
             // Try to extract dimensions from SVG viewBox
             const viewBoxMatch = svgString.match(/viewBox=["']([^"']*)["']/);
             if (viewBoxMatch && viewBoxMatch[1]) {
@@ -668,16 +673,16 @@ export function registerAssetRoutes(app: Express) {
                 svgHeight = viewBoxParts[3];
               }
             }
-            
+
             // Calculate target dimensions with proper aspect ratio
             const width = Math.round(size); // Target width in pixels
             const height = preserveRatio ? Math.round((width / svgWidth) * svgHeight) : width;
-            
+
             console.log(`Converting SVG (${asset.id}) from ${svgWidth}x${svgHeight} to ${width}x${height}px ${format}`);
-            
+
             // Use high-density rendering for SVG to prevent pixelation at larger sizes
             const sharpInstance = sharp(fileBuffer, { density: Math.min(1200, width * 2) });
-            
+
             // Create high-quality raster output
             if (format === 'png') {
               fileBuffer = await sharpInstance.resize(width, height).png({ quality: 100 }).toBuffer();
@@ -686,7 +691,7 @@ export function registerAssetRoutes(app: Express) {
               fileBuffer = await sharpInstance.resize(width, height).jpeg({ quality: 95 }).toBuffer();
               mimeType = 'image/jpeg';
             }
-            
+
             console.log(`Successfully converted SVG to ${format} at ${width}x${height}px`);
             return res.set('Content-Type', mimeType).send(fileBuffer);
           }
@@ -694,27 +699,27 @@ export function registerAssetRoutes(app: Express) {
           console.error("Error handling vector-to-raster conversion:", vectorError);
         }
       }
-      
+
       // Standard resize for raster images
       if (size && size > 0 && isImageFormat(mimeType) && !isVectorFormat && !preserveVector) {
         try {
           // Import sharp directly to avoid require() issues
           const sharp = (await import('sharp')).default;
-          
+
           // Create a sharp instance from the buffer
           const image = sharp(fileBuffer);
           const metadata = await image.metadata();
-          
+
           // Get original dimensions
           const originalWidth = metadata.width || 500;
           const originalHeight = metadata.height || 500;
-          
+
           // Calculate new dimensions - always interpret size parameter as exact pixel width
           const width = Math.round(size); // Ensure it's an integer
           const height = preserveRatio ? Math.round((width / originalWidth) * originalHeight) : width;
-          
+
           console.log(`Resizing asset ${asset.id} (${asset.name}, Client: ${asset.clientId}) from ${originalWidth}x${originalHeight} to ${width}x${height}px`);
-          
+
           // Perform the resize operation with high quality settings
           fileBuffer = await image.resize({
             width: width,
@@ -722,7 +727,7 @@ export function registerAssetRoutes(app: Express) {
             fit: preserveRatio ? 'inside' : 'fill',
             kernel: 'lanczos3' // Use high-quality resize algorithm
           }).toBuffer();
-          
+
           console.log(`Successfully resized image to ${width}x${height}px`);
         } catch (resizeError) {
           console.error("Image resize failed:", resizeError);
@@ -739,11 +744,11 @@ export function registerAssetRoutes(app: Express) {
       res.status(500).json({ message: "Error serving asset file" });
     }
   });
-  
+
   // Helper function to get dark variant buffer
   function getDarkVariantBuffer(asset: any): Buffer | null {
     if (!asset) return null;
-    
+
     try {
       const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
       if (data && data.darkVariantFileData) {
@@ -754,12 +759,12 @@ export function registerAssetRoutes(app: Express) {
     }
     return null;
   }
-  
+
   // Helper function to check if a mimetype is an image format
   function isImageFormat(mimeType: string): boolean {
     return /^image\/(jpeg|png|gif|webp|svg\+xml)/.test(mimeType);
   }
-  
+
   // Helper function to convert a file to another format using the file-converter utility
   async function convertToFormat(
     buffer: Buffer, 
@@ -770,26 +775,26 @@ export function registerAssetRoutes(app: Express) {
     if (!buffer) {
       throw new Error("Invalid source buffer for conversion");
     }
-    
+
     // CRITICAL FIX: Additional validation to ensure we have the right data
     if (buffer.length < 100) {
       console.error(`ERROR: Source buffer suspiciously small (${buffer.length} bytes) for asset ID ${assetId || 'unknown'}`);
     }
-    
+
     console.log(`Converting from ${sourceFormat} to ${targetFormat} for asset ID ${assetId || 'unknown'}`);
-    
+
     try {
       // Use the file converter utility
       const { convertToAllFormats } = await import('../utils/file-converter');
       const convertedFiles = await convertToAllFormats(buffer, sourceFormat);
-      
+
       // Find the target format in the converted files
       const targetFile = convertedFiles.find(file => file.format.toLowerCase() === targetFormat.toLowerCase());
-      
+
       if (!targetFile) {
         throw new Error(`Conversion to ${targetFormat} failed`);
       }
-      
+
       return {
         data: targetFile.data,
         mimeType: targetFile.mimeType
