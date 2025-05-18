@@ -870,27 +870,15 @@ function StandardLogoDownloadButton({
       });
 
       // Build download URL with explicit verification parameters
-      const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
-      const params = new URLSearchParams({
-        clientId: logo.clientId.toString(), // Client ID for verification
-        size: size.toString(),
+      // Use the secure helper function to construct the URL
+      const downloadUrl = getSecureAssetUrl(logo.id, logo.clientId, {
         format: 'png',
-        preserveRatio: 'true',
-        t: Date.now().toString(), // Cache buster
-        verify: 'true' // Additional verification flag
+        size: size,
+        variant: variant === 'dark' ? 'dark' : undefined,
+        preserveRatio: true
       });
 
-      if (variant === 'dark') {
-        params.append('variant', 'dark');
-      }
-
-      // Always verify client ID is included
-      if (!params.has('clientId')) {
-        console.error('Client ID missing from params');
-        throw new Error('Missing client ID parameter');
-      }
-
-      downloadUrl.search = params.toString();
+      console.log(`Downloading logo ${logo.id} for client ${logo.clientId} with URL: ${downloadUrl}`);
 
       console.log('Initiating download:', {
         logoId: logo.id,
