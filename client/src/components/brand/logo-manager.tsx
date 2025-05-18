@@ -132,26 +132,25 @@ function getSecureAssetUrl(assetId: number, clientId: number, options: {
 } = {}) {
   const { format, size, variant, preserveRatio = true, preserveVector = false } = options;
 
-  // Start with the base URL
-  let url = `/api/assets/${assetId}/file?`;
-
-  // Add parameters
-  const params = new URLSearchParams();
-
-  // Always include client ID to ensure the correct logo is downloaded
-  params.append('clientId', clientId.toString());
-
-  // Add cache buster to prevent browser caching
-  params.append('t', Date.now().toString());
-
+  // Create URL with built-in URLSearchParams handling
+  const url = new URL(`/api/assets/${assetId}/file`, window.location.origin);
+  
+  // Add required parameters
+  url.searchParams.append('clientId', clientId.toString());
+  url.searchParams.append('t', Date.now().toString()); // Cache buster
+  
   // Add optional parameters if provided
-  if (variant === 'dark') params.append('variant', 'dark');
-  if (format) params.append('format', format);
-  if (size) params.append('size', size.toString());
-  if (preserveRatio) params.append('preserveRatio', 'true');
-  if (preserveVector) params.append('preserveVector', 'true');
+  if (variant === 'dark') url.searchParams.append('variant', 'dark');
+  if (format) url.searchParams.append('format', format);
+  if (size) {
+    url.searchParams.append('size', size.toString());
+    // Always include preserveRatio for size requests unless explicitly set to false
+    url.searchParams.append('preserveRatio', preserveRatio.toString());
+  }
+  if (preserveVector) url.searchParams.append('preserveVector', 'true');
 
-  return url + params.toString();
+  console.log(`Generated download URL for asset ${assetId}: ${url.toString()}`);
+  return url.toString();
 }
 
 // Drag and drop file upload component
