@@ -925,13 +925,17 @@ function StandardLogoDownloadButton({
       container.style.display = 'none';
       document.body.appendChild(container);
 
-      // CRITICAL FIX: Add client ID to vector file downloads
-      link.href = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&format=${format}${variant === 'dark' ? '&variant=dark' : ''}&preserveVector=true`;
-      console.log(`Downloading vector format ${format} for logo: ID ${logo.id}, Client: ${logo.clientId}`);
+      // Create secure download URL with explicit client ID
+      const downloadUrlWithClientId = getSecureAssetUrl(logo.id, logo.clientId, {
+        format,
+        variant: variant === 'dark' ? 'dark' : undefined,
+        preserveVector: true
+      });
+      console.log(`Downloading vector format ${format} for logo: ID ${logo.id}, Client: ${logo.clientId}, URL: ${downloadUrlWithClientId}`);
 
       // Create download link
       const link = document.createElement('a');
-      link.href = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&format=${format}${variant === 'dark' ? '&variant=dark' : ''}&preserveVector=true`; // Use original size (100%)
+      link.href = downloadUrlWithClientId;
       link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
       container.appendChild(link);
       link.click();
