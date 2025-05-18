@@ -922,6 +922,9 @@ function StandardLogoDownloadButton({
         url: downloadUrl.toString()
       });
 
+      // Fix the format parameter to be a single value
+      downloadUrl.searchParams.set('format', 'png');
+      
       const pngLink = document.createElement('a');
       pngLink.href = downloadUrl.toString();
       pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
