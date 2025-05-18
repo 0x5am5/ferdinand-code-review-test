@@ -873,9 +873,11 @@ function StandardLogoDownloadButton({
 
       // Create and trigger the download
       const pngLink = document.createElement('a');
-      pngLink.href = directUrl;
+      pngLink.href = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&size=${size}&format=png${variant === 'dark' ? '&variant=dark' : ''}&preserveRatio=true`;
       pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-
+      
+      console.log(`Downloading ${size}px PNG for logo: ID ${logo.id}, Name: ${logo.name}, Client: ${logo.clientId}`);
+      
       container.appendChild(pngLink);
       pngLink.click();
 
