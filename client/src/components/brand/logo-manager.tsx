@@ -899,11 +899,10 @@ function StandardLogoDownloadButton({
         url: downloadUrl.toString()
       });
 
-      // CRITICAL FIX: Create a fresh URL for each download with cache busting
-      const timestamp = Date.now();
-      const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
+      // Use the existing downloadUrl from above
+      downloadUrl.searchParams.append('t', timestamp.toString()); // Add cache buster
       
-      // Ensure all necessary parameters are included
+      // Continue with existing parameters
       downloadUrl.searchParams.append('clientId', logo.clientId.toString());
       downloadUrl.searchParams.append('size', size.toString());
       downloadUrl.searchParams.append('format', 'png');
