@@ -899,6 +899,30 @@ function StandardLogoDownloadButton({
         url: downloadUrl.toString()
       });
 
+      // CRITICAL FIX: Create a fresh URL for each download with cache busting
+      const timestamp = Date.now();
+      const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
+      
+      // Ensure all necessary parameters are included
+      downloadUrl.searchParams.append('clientId', logo.clientId.toString());
+      downloadUrl.searchParams.append('size', size.toString());
+      downloadUrl.searchParams.append('format', 'png');
+      downloadUrl.searchParams.append('preserveRatio', 'true');
+      downloadUrl.searchParams.append('t', timestamp.toString()); // Cache buster
+      
+      if (variant === 'dark') {
+        downloadUrl.searchParams.append('variant', 'dark');
+      }
+
+      console.log(`Downloading logo:`, {
+        id: logo.id,
+        name: logo.name,
+        clientId: logo.clientId,
+        size,
+        variant,
+        url: downloadUrl.toString()
+      });
+
       const pngLink = document.createElement('a');
       pngLink.href = downloadUrl.toString();
       pngLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
