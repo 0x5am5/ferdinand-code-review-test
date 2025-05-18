@@ -860,16 +860,24 @@ function StandardLogoDownloadButton({
         throw new Error('Missing required logo data');
       }
 
-      console.log(`Initiating download for logo ID: ${logo.id}, Client ID: ${logo.clientId}`);
+      // Add extensive logging for debugging
+      console.log('Download initiated with details:', {
+        logoId: logo.id,
+        clientId: logo.clientId,
+        logoName: logo.name,
+        variant,
+        size
+      });
 
-      // Build download URL with all parameters set once and explicit client ID
+      // Build download URL with explicit verification parameters
       const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
       const params = new URLSearchParams({
-        clientId: logo.clientId.toString(), // Ensure client ID is always included
+        clientId: logo.clientId.toString(), // Client ID for verification
         size: size.toString(),
         format: 'png',
         preserveRatio: 'true',
-        t: Date.now().toString() // Cache buster
+        t: Date.now().toString(), // Cache buster
+        verify: 'true' // Additional verification flag
       });
 
       if (variant === 'dark') {
