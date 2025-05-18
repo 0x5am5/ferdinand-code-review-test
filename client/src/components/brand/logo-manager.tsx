@@ -860,10 +860,12 @@ function StandardLogoDownloadButton({
         throw new Error('Missing required logo data');
       }
 
-      // Build download URL with all parameters set once
+      console.log(`Initiating download for logo ID: ${logo.id}, Client ID: ${logo.clientId}`);
+
+      // Build download URL with all parameters set once and explicit client ID
       const downloadUrl = new URL(`/api/assets/${logo.id}/file`, window.location.origin);
       const params = new URLSearchParams({
-        clientId: logo.clientId.toString(),
+        clientId: logo.clientId.toString(), // Ensure client ID is always included
         size: size.toString(),
         format: 'png',
         preserveRatio: 'true',
@@ -872,6 +874,12 @@ function StandardLogoDownloadButton({
 
       if (variant === 'dark') {
         params.append('variant', 'dark');
+      }
+
+      // Always verify client ID is included
+      if (!params.has('clientId')) {
+        console.error('Client ID missing from params');
+        throw new Error('Missing client ID parameter');
       }
 
       downloadUrl.search = params.toString();
