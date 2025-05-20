@@ -1,78 +1,61 @@
 @use '../mixins' as *;
 
-// Logo Manager Component Styles
+// Asset Manager Component Styles
 
-.logo-manager {
-  padding-bottom: 3rem;
-  
-  &__header {
-    margin: 10vh 0;
-    
-    h1 {
-      margin-bottom: 0;
-    }
-    
-    p {
-      margin-top: 0.25rem;
-      color: hsl(var(--muted-foreground));
-    }
-  }
-}
-
-.logo-section {
+.asset-section {
   padding-top: 1rem;
   margin-bottom: 2rem;
-  
+
   &__header {
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
     margin-bottom: 1rem;
-    
+
     h3 {
       font-size: 1.25rem;
       font-weight: 600;
       margin-bottom: 0.25rem;
     }
   }
-  
+
   &__separator {
     margin: 1rem 0;
   }
-  
+
   &__empty {
     display: grid;
     grid-template-columns: 1fr 3fr;
     gap: 2rem;
-    
+
     &-info {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      
+
       &-icon {
         display: inline-block;
         padding: 0.75rem;
         border-radius: 0.5rem;
         background-color: hsl(var(--muted));
       }
-      
+
       h4 {
         font-size: 1.125rem;
         font-weight: 500;
         margin: 0;
       }
-      
+
       p {
         font-size: 0.875rem;
         color: hsl(var(--muted-foreground));
       }
-      
+
       @include mobile {
-        order: -1; // Move info above the upload area on mobile
+        order: -1;
       }
     }
-    
+
     &-placeholder {
       display: flex;
       flex-direction: column;
@@ -82,17 +65,17 @@
       border-radius: 0.5rem;
       padding: 2rem;
       text-align: center;
-      
+
       &-icon {
         margin-bottom: 0.75rem;
         color: hsl(var(--muted-foreground));
       }
-      
+
       p {
         color: hsl(var(--muted-foreground));
         margin-bottom: 1rem;
       }
-      
+
       @include mobile {
         padding: 1.5rem;
       }
@@ -100,44 +83,43 @@
   }
 }
 
-.logo-display {
+.asset-display {
   display: grid;
   grid-template-columns: 1fr 3fr;
   gap: 2rem;
   margin-bottom: 2rem;
-  
-  // Responsive adjustments
+
   @include laptop {
     grid-template-columns: 1fr 2fr;
     gap: 1.5rem;
   }
-  
+
   @include tablet {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
+
   @include mobile {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
-  
+
   &__info {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    
+
     &-description {
       color: hsl(var(--muted-foreground));
       margin-bottom: 1rem;
     }
-    
+
     @include mobile {
       gap: 1rem;
       margin-bottom: 1rem;
     }
   }
-  
+
   &__preview {
     display: flex;
     flex-direction: row;
@@ -154,7 +136,7 @@
         margin-bottom: 8px;
       }
     }
-    
+
     &-container {
       display: flex;
       align-items: center;
@@ -164,21 +146,21 @@
       min-height: 250px;
       border-radius: 0.5rem;
       width:100%;
-      
+
       @include mobile {
         min-height: 200px;
         padding: 0vh 5vh;
       }
-      
+
       &--light {
         background-color: white;
       }
-      
+
       &--dark {
-        background-color: #0f172a; // Slate-900
+        background-color: #0f172a;
       }
     }
-    
+
     &-controls {
       display: flex;
       gap: 0.5rem;
@@ -196,7 +178,7 @@
         }
       }
     }
-    
+
     &-action-button {
       border: none;
       padding: 0.25rem 0.5rem;
@@ -214,17 +196,17 @@
         align-items: center;
         gap: 0.25rem;
       }
-      
+
       &:hover {
         background-color: hsl(var(--muted));
       }
-      
+
       svg {
         width: 0.75rem;
         height: 0.75rem;
       }
     }
-    
+
     &-background-toggle {
       display: flex;
       background-color: hsl(var(--background));
@@ -232,11 +214,11 @@
       border-radius: 0.25rem;
       overflow: hidden;
       z-index: 10;
-      
+
       &-tabs {
         display: flex;
         width: 100%;
-        
+
         button {
           display: flex;
           align-items: center;
@@ -248,15 +230,15 @@
           font-size: 0.75rem;
           cursor: pointer;
           transition: background-color 0.15s;
-          
+
           &[data-state="active"] {
             background-color: hsl(var(--muted));
           }
-          
+
           &:hover:not([data-state="active"]) {
             background-color: hsl(var(--muted));
           }
-          
+
           svg {
             width: 0.875rem;
             height: 0.875rem;
@@ -264,13 +246,13 @@
         }
       }
     }
-    
+
     &-image {
       max-width: 100%;
       display: inline-block;
       max-height: 250px;
       object-fit: contain;
-      
+
       &-container {
         padding:15vh 10vh;
         width: 100%;
@@ -283,7 +265,7 @@
         @include laptop {
           padding:10vh 7vh;
         }
-        
+
         @include tablet {
           padding:12vh 8vh;
         }
@@ -292,8 +274,6 @@
           padding:10vh 5vh;
         }
       }
-      
-      
     }
   }
 }
@@ -301,7 +281,7 @@
 .logo-upload {
   display: flex;
   flex-direction: column;
-  
+
   &__dropzone {
     display: flex;
     flex-direction: column;
@@ -315,11 +295,11 @@
     width: 100%;
     min-height: 400px;
     padding: 2rem;
-    
+
     @include tablet {
       min-height: 350px;
     }
-    
+
     @include mobile {
       min-height: 250px;
       padding: 1rem;
@@ -332,34 +312,34 @@
         color: hsl(var(--primary));
       }
     }
-    
+
     &--dark {
       border: 2px dashed rgba(255, 255, 255, 0.3);
       color: #fff;
-      
+
       .logo-upload__dropzone-icon {
         background-color: rgba(255, 255, 255, 0.1);
-        
+
         svg {
           color: rgba(255, 255, 255, 0.7);
         }
       }
-      
+
       .logo-upload__dropzone-text {
         color: rgba(255, 255, 255, 0.7);
       }
     }
-    
+
     &--active {
       border-color: hsl(var(--primary));
     }
-    
+
     &--loading {
       border-style: solid;
       border-color: rgba(var(--primary), 0.3);
       background-color: rgba(var(--primary), 0.05);
     }
-    
+
     &-icon {
       display: flex;
       align-items: center;
@@ -369,88 +349,88 @@
       background-color: rgba(var(--muted-foreground), 0.1);
       border-radius: 50%;
       margin-bottom: 1rem;
-      
+
       @include mobile {
         width: 2.5rem;
         height: 2.5rem;
         margin-bottom: 0.75rem;
       }
-      
+
       svg {
         width: 2rem;
         height: 2rem;
         color: rgba(var(--muted-foreground), 0.7);
-        
+
         @include mobile {
           width: 1.5rem;
           height: 1.5rem;
         }
       }
-      
+
       &--success {
         background-color: rgba(var(--primary), 0.1);
-        
+
         svg {
           color: hsl(var(--primary));
         }
       }
     }
-    
+
     &-heading {
       font-size: 1.125rem;
       font-weight: 500;
       margin-bottom: 0.25rem;
-      
+
       @include mobile {
         font-size: 1rem;
       }
     }
-    
+
     &-text {
       font-size: 0.875rem;
       color: hsl(var(--muted-foreground));
       margin-bottom: 1.5rem;
       text-align: center;
       max-width: 400px;
-      
+
       @include mobile {
         font-size: 0.75rem;
         margin-bottom: 1rem;
         max-width: 100%;
       }
     }
-    
+
     &-file-info {
       margin-bottom: 1.5rem;
-      
+
       @include mobile {
         margin-bottom: 1rem;
       }
-      
+
       h4 {
         font-size: 1.125rem;
         font-weight: 500;
         margin-bottom: 0.25rem;
-        
+
         @include mobile {
           font-size: 1rem;
         }
       }
-      
+
       p {
         font-size: 0.875rem;
         color: hsl(var(--muted-foreground));
-        
+
         @include mobile {
           font-size: 0.75rem;
         }
       }
     }
-    
+
     &-actions {
       display: flex;
       gap: 0.75rem;
-      
+
       @include mobile {
         flex-direction: column;
         gap: 0.5rem;
@@ -464,70 +444,70 @@
 // Download Button Styles
 .logo-download {
   position: relative;
-  
+
   &__popover {
     width: 18rem;
     z-index: 50;
     background: hsl(var(--background));
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     padding: 1rem;
-    
+
     @include tablet {
       width: 100%;
       max-width: 18rem;
     }
-    
+
     @include mobile {
       width: 100%;
       max-width: 100%;
     }
   }
-  
+
   &__content {
     display: flex;
     flex-direction: column;
   }
-  
+
   &__heading {
     font-size: 1rem;
     font-weight: 600;
     margin-bottom: 1rem;
     color: hsl(var(--foreground));
   }
-  
+
   &__options {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
   }
-  
+
   &__section {
     margin-bottom: 1.25rem;
-    
+
     &:last-child {
       margin-bottom: 0;
     }
   }
-  
+
   &__section-title {
     font-weight: 600;
     font-size: 0.875rem;
     margin-bottom: 0.25rem;
     color: hsl(var(--foreground));
   }
-  
+
   &__description {
     font-size: 0.75rem;
     color: hsl(var(--muted-foreground));
     margin-bottom: 0.75rem;
     line-height: 1.4;
   }
-  
+
   &__links {
     display: flex;
     flex-direction: column;
   }
-  
+
   &__link {
     display: flex;
     align-items: center;
@@ -537,36 +517,36 @@
     transition: color 0.15s ease, background-color 0.15s ease;
     padding: 0.375rem 0;
     border-radius: 0.25rem;
-    
+
     &:hover {
       text-decoration: underline;
       background-color: hsl(var(--muted) / 0.5);
     }
   }
-  
+
   &__icon {
     width: 0.875rem;
     height: 0.875rem;
     margin-right: 0.5rem;
     flex-shrink: 0;
   }
-  
+
   // Custom dimensions controls for the old popover that we're replacing
   &__popover-dimensions {
     margin-bottom: 1rem;
-    
+
     &-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.5rem;
     }
-    
+
     &-inputs {
       display: flex;
       gap: 0.5rem;
       margin-bottom: 0.75rem;
-      
+
       &-group {
         flex: 1;
         display: flex;
@@ -574,16 +554,16 @@
         gap: 0.25rem;
       }
     }
-    
+
     &-slider {
       margin-bottom: 0.75rem;
     }
-    
+
     &-size-quick-options {
       display: flex;
       justify-content: space-between;
       gap: 0.5rem;
-      
+
       button {
         flex: 1;
         font-size: 0.75rem;
@@ -592,7 +572,7 @@
         border-radius: 0.25rem;
         border: none;
         cursor: pointer;
-        
+
         &.active,
         &:hover {
           background-color: hsl(var(--primary));
