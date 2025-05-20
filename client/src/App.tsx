@@ -18,7 +18,6 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
 import { UserRole } from "@shared/schema";
 import Clients from "./pages/clients";
-import { ColorTestPage } from "@/pages/color-test";
 
 function Router() {
   const [location] = useLocation();
@@ -86,14 +85,6 @@ function Router() {
         <ProtectedRoute>
           <AppLayout pageKey="client-details">
             <ClientDetails />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/clients/:clientId/color-test">
-        <ProtectedRoute>
-          <AppLayout pageKey="color-test">
-            <ColorTestPage />
           </AppLayout>
         </ProtectedRoute>
       </Route>

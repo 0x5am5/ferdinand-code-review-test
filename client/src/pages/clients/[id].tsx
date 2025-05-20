@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Link, useParams, useLocation } from "wouter";
 import { LogoManager } from "@/components/brand/logo-manager";
 import { ColorManager } from "@/components/brand/color-manager";
-import { ColorManagerRefactored } from "@/components/brand/color-manager-refactored";
 import { FontManager } from "@/components/brand/font-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
@@ -225,28 +224,7 @@ export default function ClientDetails() {
 
       case "colors":
         return featureToggles.colorSystem ? (
-          <div>
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Refactored Color Manager</CardTitle>  
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">
-                  This version uses the new standardized asset components
-                </p>
-                <ColorManagerRefactored clientId={clientId} colors={colorAssets} />
-              </CardContent>
-            </Card>
-            
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Original Color Manager</CardTitle>  
-              </CardHeader>
-              <CardContent>
-                <ColorManager clientId={clientId} colors={colorAssets} />
-              </CardContent>
-            </Card>
-          </div>
+          <ColorManager clientId={clientId} colors={colorAssets} />
         ) : (
           <Card>
             <CardHeader>
