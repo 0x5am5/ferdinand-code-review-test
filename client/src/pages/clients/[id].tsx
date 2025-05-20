@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useParams, useLocation } from "wouter";
 import { LogoManager } from "@/components/brand/logo-manager";
 import { ColorManager } from "@/components/brand/color-manager";
+import { ColorManagerRefactored } from "@/components/brand/color-manager-refactored";
 import { FontManager } from "@/components/brand/font-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";

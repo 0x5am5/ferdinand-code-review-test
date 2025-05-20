@@ -1,0 +1,71 @@
+<div className="logo-section">
+      <div className="logo-section__header">
+        <div className="flex items-center justify-between w-full">
+          <h3>
+            {type.charAt(0).toUpperCase() + type.slice(1)} Logo
+          </h3>
+          {isAdmin && onRemoveSection && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="text-muted-foreground hover:text-destructive"
+              onClick={() => onRemoveSection(type)}
+            >
+              <X className="h-4 w-4 mr-1" />
+              <span>Remove Section</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <Separator className="logo-section__separator" />
+
+      {/* Display logos if available */}
+      {hasLogos ? (
+        <div>
+          {logos.map((logo) => {
+            const parsedData = parseBrandAssetData(logo);
+            if (!parsedData) return null;
+            const imageUrl = `/api/assets/${logo.id}/file`;
+            return (
+              <LogoDisplay 
+                key={logo.id}
+                logo={logo}
+                imageUrl={imageUrl}
+                parsedData={parsedData}
+                onDelete={onDeleteLogo}
+                clientId={clientId}
+                queryClient={queryClient}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        // Empty state with two-column layout and direct upload interface
+        <div className="logo-section__empty">
+          {/* Info column with description */}
+          <div className="logo-section__empty-info">
+            <p>
+              {logoDescriptions[type as keyof typeof logoDescriptions]}
+            </p>
+          </div>
+
+          {/* Always show upload area for non-standard users */}
+          {user && user.role !== UserRole.STANDARD ? (
+            <FileUpload 
+              type={type} 
+              clientId={clientId}
+              onSuccess={() => {}}
+              queryClient={queryClient}
+            />
+          ) : (
+            <div className="logo-section__empty-placeholder">
+              <FileType className="logo-section__empty-placeholder-icon h-10 w-10" />
+              <p>
+                No {type.toLowerCase()} logo uploaded yet
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
