@@ -418,32 +418,33 @@ function ColorSection({
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-semibold">{title}</h3>
+        {user.role !== UserRole.STANDARD && (
+          <Button variant="outline" size="icon" onClick={onAddColor}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       {colors.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <AnimatePresence>
-            {colors.map((color) => (
-              <ColorChip
-                key={`${color.hex}-${color.id || Math.random()}`}
-                color={color}
-                onEdit={() => onEditColor(color)}
-                onDelete={() => color.id && deleteColor(color.id)}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
+        <ScrollArea className="w-full whitespace-nowrap rounded-md">
+          <div className="flex w-max space-x-6">
+            <AnimatePresence>
+              {colors.map((color) => (
+                <ColorChip
+                  key={`${color.hex}-${color.id || Math.random()}`}
+                  color={color}
+                  onEdit={() => onEditColor(color)}
+                  onDelete={() => color.id && deleteColor(color.id)}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
       ) : (
         <div className="rounded-lg border bg-card text-card-foreground p-8 text-center">
           <p className="text-muted-foreground">No colors added yet</p>
-          {user.role !== UserRole.STANDARD && (
-            <Button 
-              variant="outline" 
-              className="mt-4 flex items-center gap-1"
-              onClick={onAddColor}
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add {title}</span>
-            </Button>
-          )}
         </div>
       )}
     </div>
@@ -459,7 +460,6 @@ export function ColorManager({
 }: ColorManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<
     "brand" | "neutral" | "interactive"
@@ -697,97 +697,51 @@ export function ColorManager({
     }
   };
 
-  if (!user) return null;
-  
   return (
-    <div className="color-manager">
-      <div className="color-manager__header flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Color System</h1>
-          <p className="text-muted-foreground">Manage and use the official color palette for this brand</p>
-        </div>
-        {user.role !== UserRole.STANDARD && (
-          <div className="flex gap-2">
-            <Button 
-              onClick={() => {
-                setSelectedCategory("brand");
-                setEditingColor(null);
-                form.reset();
-                setIsAddingColor(true);
-              }} 
-              variant="outline"
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Color</span>
-            </Button>
-          </div>
-        )}
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Color System</h2>
       </div>
 
-      <div className="color-manager__sections space-y-12">
-        <div className="color-section">
-          <div className="color-section__header mb-4">
-            <h2 className="text-xl font-semibold mb-2">Brand Colors</h2>
-            <p className="text-muted-foreground">{colorDescriptions.brand}</p>
-          </div>
-          <div className="color-section__content">
-            <ColorSection
-              title="Brand Colors"
-              colors={brandColorsData}
-              onAddColor={() => {
-                setSelectedCategory("brand");
-                setEditingColor(null);
-                form.reset();
-                setIsAddingColor(true);
-              }}
-              deleteColor={deleteColor.mutate}
-              onEditColor={handleEditColor}
-            />
-          </div>
-        </div>
+      <div className="space-y-8">
+        <ColorSection
+          title="Brand Colors"
+          colors={brandColorsData}
+          onAddColor={() => {
+            setSelectedCategory("brand");
+            setEditingColor(null);
+            form.reset();
+            setIsAddingColor(true);
+          }}
+          deleteColor={deleteColor.mutate}
+          onEditColor={handleEditColor}
+        />
 
-        <div className="color-section">
-          <div className="color-section__header mb-4">
-            <h2 className="text-xl font-semibold mb-2">Neutral Colors</h2>
-            <p className="text-muted-foreground">{colorDescriptions.neutral}</p>
-          </div>
-          <div className="color-section__content">
-            <ColorSection
-              title="Neutral Colors"
-              colors={neutralColorsData}
-              onAddColor={() => {
-                setSelectedCategory("neutral");
-                setEditingColor(null);
-                form.reset();
-                setIsAddingColor(true);
-              }}
-              deleteColor={deleteColor.mutate}
-              onEditColor={handleEditColor}
-            />
-          </div>
-        </div>
+        <ColorSection
+          title="Neutral Colors"
+          colors={neutralColorsData}
+          onAddColor={() => {
+            setSelectedCategory("neutral");
+            setEditingColor(null);
+            form.reset();
+            setIsAddingColor(true);
+          }}
+          deleteColor={deleteColor.mutate}
+          onEditColor={handleEditColor}
+        />
 
-        <div className="color-section">
-          <div className="color-section__header mb-4">
-            <h2 className="text-xl font-semibold mb-2">Interactive Colors</h2>
-            <p className="text-muted-foreground">{colorDescriptions.interactive}</p>
-          </div>
-          <div className="color-section__content">
-            <ColorSection
-              title="Interactive Colors"
-              colors={interactiveColorsData}
-              onAddColor={() => {
-                setSelectedCategory("interactive");
-                setEditingColor(null);
-                form.reset();
-                setIsAddingColor(true);
-              }}
-              deleteColor={deleteColor.mutate}
-              onEditColor={handleEditColor}
-            />
-          </div>
-        </div>
+        <ColorSection
+          title="Interactive Colors"
+          colors={interactiveColorsData}
+          onAddColor={() => {
+            setSelectedCategory("interactive");
+            setEditingColor(null);
+            form.reset();
+            setIsAddingColor(true);
+          }}
+          deleteColor={deleteColor.mutate}
+          onEditColor={handleEditColor}
+        />
       </div>
 
       <Dialog open={isAddingColor} onOpenChange={setIsAddingColor}>
@@ -950,13 +904,6 @@ interface ColorData {
   name: string;
   category: "brand" | "neutral" | "interactive";
 }
-
-// Color category descriptions
-const colorDescriptions = {
-  brand: "Primary colors that define the brand identity and should be used consistently across all materials.",
-  neutral: "Supporting colors for backgrounds, text, and UI elements that provide balance to the color system.",
-  interactive: "Colors used for buttons, links, and interactive elements to guide user actions."
-};
 
 const colorFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
