@@ -225,7 +225,28 @@ export default function ClientDetails() {
 
       case "colors":
         return featureToggles.colorSystem ? (
-          <ColorManager clientId={clientId} colors={colorAssets} />
+          <div>
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Refactored Color Manager</CardTitle>  
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground mb-4">
+                  This version uses the new standardized asset components
+                </p>
+                <ColorManagerRefactored clientId={clientId} colors={colorAssets} />
+              </CardContent>
+            </Card>
+            
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle>Original Color Manager</CardTitle>  
+              </CardHeader>
+              <CardContent>
+                <ColorManager clientId={clientId} colors={colorAssets} />
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           <Card>
             <CardHeader>
