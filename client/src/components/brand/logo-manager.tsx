@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AssetSection } from "./asset-section";
+import { AssetDisplay } from "./asset-display";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   RadioGroup, 
