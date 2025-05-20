@@ -1918,20 +1918,20 @@ function LogoSection({
                   </div>
                 </div>
               ) : (
-                <div className="logo-display__preview-image-container">
+                <div className="asset-display__preview-image-container">
                   {parsedData.format === 'svg' ? (
                     <object
                       data={variant === 'dark' && parsedData.hasDarkVariant ? 
                         `/api/assets/${logo.id}/file?variant=dark` : 
                         imageUrl}
                       type="image/svg+xml"
-                      className="logo-display__preview-image"
+                      className="asset-display__preview-image"
                     >
                       <img
                         src={variant === 'dark' && parsedData.hasDarkVariant ? 
                           `/api/assets/${logo.id}/file?variant=dark` : 
                           imageUrl}
-                        className="logo-display__preview-image"
+                        className="asset-display__preview-image"
                         alt={logo.name || "SVG Logo"}
                         onError={(e) => {
                           console.error("Error loading SVG:", imageUrl);
@@ -1945,7 +1945,7 @@ function LogoSection({
                         `/api/assets/${logo.id}/file?variant=dark` : 
                         imageUrl}
                       alt={logo.name}
-                      className="logo-display__preview-image"
+                      className="asset-display__preview-image"
                       style={{ 
                         filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
                       }}
