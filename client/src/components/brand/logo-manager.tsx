@@ -428,7 +428,7 @@ function AppIconDownloadButton({
 
     const separator = baseUrl.includes('?') ? '&' : '?';
 
-    return '${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? '&format=${format}' : ''}';
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
 
   // Function to download app icon package as a zip file
@@ -710,7 +710,7 @@ function StandardLogoDownloadButton({
 
     const separator = baseUrl.includes('?') ? '&' : '?';
 
-    return '${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? '&format=${format}' : ''}';
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
 
   // Function to download a zip package of all logo sizes
@@ -911,7 +911,6 @@ function StandardLogoDownloadButton({
 
     } catch (error) {
       console.error("Download failed:", error);
-'''python
       toast({
         title: "Download failed",
         description: error instanceof Error ? error.message : "Failed to download logo",
@@ -1099,7 +1098,7 @@ function FaviconDownloadButton({
 
     const separator = baseUrl.includes('?') ? '&' : '?';
 
-    return '${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? '&format=${format}' : ''}';
+    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
   };
 
   // Function to download the favicon package as a zip file (multiple sizes in ICO and PNG formats)
@@ -1440,7 +1439,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   };
 
   return (
-    
+
     <AssetDisplay
       renderActions={(variant) => (
         <>
@@ -1641,8 +1640,7 @@ function LogoSection({
         if (!parsedData) return null;
         const imageUrl = '/api/assets/${logo.id}/file';
         return (
-          
-</previous_generation>          <LogoDisplay
+          <LogoDisplay
             key={logo.id}
             renderActions={(variant) => (
               <>
