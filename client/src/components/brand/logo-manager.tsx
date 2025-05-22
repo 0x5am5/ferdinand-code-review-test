@@ -960,7 +960,7 @@ function StandardLogoDownloadButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="logo-display__preview-action-button">
+        <button className="asset-display__preview-action-button">
           <Download className="h-3 w-3" />
           <span>Download</span>
         </button>
@@ -1243,7 +1243,7 @@ function FaviconDownloadButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="logo-display__preview-action-button">
+        <button className="asset-display__preview-action-button">
           <Download className="h-3 w-3" />
           <span>Download</span>
         </button>
@@ -1525,7 +1525,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
 
               {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                 <button 
-                  className="logo-display__preview-action-button"
+                  className="asset-display__preview-action-button"
                   onClick={() => onDelete(logo.id, variant)}
                 >
                   <Trash2 className="h-3 w-3" />
@@ -1757,21 +1757,19 @@ function LogoSection({
                     }}
                     className="hidden"
                   />
-                  <Button
-                    variant="text"
-                    size="sm"
+                  <button
                     className="asset-display__preview-action-button"
                     type="button"
                     onClick={(e) => {
-                      const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file"]');
+                      const fileInput = e.currentTarget.closest('label')?.querySelector('input[type=\"file\"]');
                       if (fileInput) {
                         fileInput.click();
                       }
                     }}
-                  >
+                    >
                     <Upload className="h-3 w-3" />
                     <span>Replace</span>
-                  </Button>
+                  </button>
                 </label>
                 
                 <LogoDownloadButton 
@@ -1843,8 +1841,8 @@ function LogoSection({
             }}
             renderAsset={(variant) => (
               variant === 'dark' && !parsedData.hasDarkVariant ? (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-6">
-                  <div className="flex flex-col items-center gap-2">
+                <div className="w-full h-full flex flex-col items-center justify-center gap-6 mb-[2rem] pr-[5vh] pl-[5vh]">
+                  <div className="flex flex-col items-center gap-2 mt-[2rem]">
                     <Button
                       variant="outline"
                       size="sm"
