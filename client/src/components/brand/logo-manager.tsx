@@ -1424,20 +1424,19 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
               }`}
               >
 
-              <div className="cursor-pointer">
-                <Input
-                  type="file"
-                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      const createUpload = async () => {
-                        const formData = new FormData();
-                        formData.append("file", e.target.files![0]);
-                        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-                        formData.append("type", type);
-                        formData.append("category", "logo");
+              <Input
+                type="file"
+                accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    const createUpload = async () => {
+                      const formData = new FormData();
+                      formData.append("file", e.target.files![0]);
+                      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+                      formData.append("type", type);
+                      formData.append("category", "logo");
 
-                        if (variant === 'dark') {
+                      if (variant === 'dark') {
                             // Update with dark variant
                             formData.append("isDarkVariant", "true");
 
@@ -1515,20 +1514,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     }}
                     className="hidden"
                   />
-                  <button
-                    className="flex items-center gap-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const fileInput = e.currentTarget.parentElement?.querySelector('input[type="file"]');
-                      if (fileInput) {
-                        fileInput.click();
-                      }
-                    }}
-                  >
-                    <Upload className="h-3 w-3" />
-                    <span>Replace</span>
-                  </button>
-                </div>
 
               {/* Add the download button here */}
               <LogoDownloadButton 
