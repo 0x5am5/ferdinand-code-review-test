@@ -934,7 +934,7 @@ function StandardLogoDownloadButton({
         variant: variant === 'dark' ? 'dark' : undefined,
         preserveVector: true
       });
-      console.log(`Downloading vector format ${format} for logo: ID ${logo.id}, Client: ${logo.clientId}, URL: ${downloadUrlWithClientId}`);
+      console.log(`Downloading vector format ${format} for logo: ID ${logo.id}, Client: ${logo.clientId}, URL: ${downloadUrlWithClientId}`);;
 
       // Create download link
       const link = document.createElement('a');
