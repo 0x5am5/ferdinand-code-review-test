@@ -468,7 +468,7 @@ function AppIconDownloadButton({
           fetch(getDownloadUrl(sizePercentage, 'png'))
             .then(response => response.arrayBuffer())
             .then(data => {
-              pngFolder.file('${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png', data);
+              pngFolder.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`, data);
             })
             .catch(err => {
               console.error('Error fetching PNG for size ${size}:', err);
