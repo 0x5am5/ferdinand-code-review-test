@@ -871,13 +871,13 @@ function StandardLogoDownloadButton({
         size
       });
 
-      // Build download URL with explicit verification parameters
-      // Use the secure helper function to construct the URL
+      // CRITICAL FIX: Use secure URL helper with explicit client ID
       const downloadUrl = getSecureAssetUrl(logo.id, logo.clientId, {
         format: 'png',
-        size: size,
+        size,
         variant: variant === 'dark' ? 'dark' : undefined,
-        preserveRatio: true
+        preserveRatio: true,
+        preserveVector: false
       });
 
       console.log(`Downloading logo ${logo.id} for client ${logo.clientId} with URL: ${downloadUrl}`);
