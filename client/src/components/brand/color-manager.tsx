@@ -78,7 +78,7 @@ function ColorCard({
   };
 
   return (
-    <div className="group relative bg-card rounded-lg border overflow-hidden">
+    <div className="group color-chip">
       <div 
         className="h-24 relative" 
         style={{ backgroundColor: color.hex }}
@@ -111,9 +111,7 @@ function ColorCard({
             </Button>
           </div>
         </div>
-      </div>
       
-      <div className="p-3">
         <h5 className="font-medium text-sm mb-1">{color.name}</h5>
         <code className="text-xs font-mono text-muted-foreground">{color.hex}</code>
         {color.rgb && (
@@ -825,15 +823,20 @@ export function ColorManager({
             </div>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
-            {brandColorsData.map((color) => (
-              <ColorCard
-                key={color.id}
-                color={color}
-                onEdit={handleEditColor}
-                onDelete={deleteColor.mutate}
-              />
-            ))}
+          <div className="asset-display">
+            <div className="asset-display__info">
+              {colorDescriptions.brand}
+            </div>
+            <div className="asset-display__preview">
+              {brandColorsData.map((color) => (
+                <ColorCard
+                  key={color.id}
+                  color={color}
+                  onEdit={handleEditColor}
+                  onDelete={deleteColor.mutate}
+                />
+              ))}
+            </div>
           </div>
         </AssetSection>
 

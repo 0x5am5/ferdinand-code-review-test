@@ -32,18 +32,20 @@ export function ColorCard(props: {
   };
 
   return (
-    <Card className="group w-full">
+    <Card className="color--card">
       <div 
         className="relative h-32 rounded-t-lg" 
         style={{ backgroundColor: displayColor }} 
       >
         <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+          
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 bg-white/90 hover:bg-white"
             onClick={copyHex}
           >
+            
             <Copy className="h-4 w-4" />
           </Button>
         </div>
