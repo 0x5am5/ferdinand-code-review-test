@@ -71,7 +71,7 @@ export function AssetDisplay({
                   className="hidden"
                 />
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   className="asset-display__preview-action-button"
                   type="button"

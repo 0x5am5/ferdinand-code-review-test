@@ -1423,6 +1423,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   : 'dark'
               }`}
               >
+
               <button className="logo-display__preview-action-button">
                 <label className="cursor-pointer">
                   <Input
@@ -1752,7 +1753,7 @@ function LogoSection({
             renderActions={(variant) => (
               <>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   className="asset-display__preview-action-button"
                 >
