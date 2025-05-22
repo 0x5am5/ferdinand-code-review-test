@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sun, Moon, Upload, Download } from "lucide-react";
@@ -62,6 +61,21 @@ export function AssetDisplay({
             <div className={`asset-display__preview-controls ${variant === 'light' ? 'light' : 'dark'}`}>
               <div className="flex gap-2">
                 {renderActions(variant)}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="asset-display__preview-action-button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const fileInput = e.currentTarget.closest('.asset-display')?.querySelector('input[type="file"]');
+                    if (fileInput) {
+                      fileInput.click();
+                    }
+                  }}
+                >
+                  <Upload className="h-3 w-3" />
+                  <span>Replace</span>
+                </Button>
               </div>
             </div>
           </div>
