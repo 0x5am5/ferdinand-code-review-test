@@ -59,9 +59,9 @@ export function AssetDisplay({
             )}
 
             <div className={`asset-display__preview-controls ${variant === 'light' ? 'light' : 'dark'}`}>
-              <div className="flex gap-2">
+              
                 {renderActions(variant)}
-              </div>
+              
             </div>
           </div>
 
