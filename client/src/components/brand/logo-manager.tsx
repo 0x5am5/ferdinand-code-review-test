@@ -1424,7 +1424,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
               }`}
               >
 
-              <label className="cursor-pointer">
+              <div className="cursor-pointer">
                 <Input
                   type="file"
                   accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
@@ -1515,11 +1515,20 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                     }}
                     className="hidden"
                   />
-                  <div className="flex items-center gap-2">
+                  <button
+                    className="flex items-center gap-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const fileInput = e.currentTarget.parentElement?.querySelector('input[type="file"]');
+                      if (fileInput) {
+                        fileInput.click();
+                      }
+                    }}
+                  >
                     <Upload className="h-3 w-3" />
                     <span>Replace</span>
-                  </div>
-                </label>
+                  </button>
+                </div>
 
               {/* Add the download button here */}
               <LogoDownloadButton 
