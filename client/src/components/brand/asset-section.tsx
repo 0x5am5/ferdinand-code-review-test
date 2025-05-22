@@ -50,20 +50,19 @@ export function AssetSection({
 
       <Separator className="asset-section__separator" />
 
-      {isEmpty ? (
-        <div className="asset-section__empty">
-          <div className="asset-section__empty-info">
-            <p>{description}</p>
-          </div>
-          {user && user.role !== UserRole.STANDARD ? (
-            uploadComponent
-          ) : (
+      <div className="asset-section__content">
+        <div className="asset-section__info">
+          <p>{description}</p>
+          {user && user.role !== UserRole.STANDARD && uploadComponent}
+        </div>
+        <div className="asset-section__display">
+          {isEmpty ? (
             emptyPlaceholder
+          ) : (
+            children
           )}
         </div>
-      ) : (
-        <div>{children}</div>
-      )}
+      </div>
     </div>
   );
 }
