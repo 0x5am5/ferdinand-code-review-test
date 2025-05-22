@@ -1746,14 +1746,33 @@ function LogoSection({
             key={logo.id}
             renderActions={(variant) => (
               <>
-                <Button
-                  variant="text"
-                  size="sm"
-                  className="asset-display__preview-action-button"
-                >
-                  <Upload className="h-3 w-3" />
-                  <span>Replace</span>
-                </Button>
+                <label className="cursor-pointer">
+                  <Input
+                    type="file"
+                    accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        onFileUpload(e.target.files[0], variant);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="text"
+                    size="sm"
+                    className="asset-display__preview-action-button"
+                    type="button"
+                    onClick={(e) => {
+                      const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file"]');
+                      if (fileInput) {
+                        fileInput.click();
+                      }
+                    }}
+                  >
+                    <Upload className="h-3 w-3" />
+                    <span>Replace</span>
+                  </Button>
+                </label>
                 
                 <LogoDownloadButton 
                   logo={logo} 
