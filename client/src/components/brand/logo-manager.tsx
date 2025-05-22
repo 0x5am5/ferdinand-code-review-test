@@ -136,11 +136,11 @@ function getSecureAssetUrl(assetId: number, clientId: number, options: {
 
   // Create URL with built-in URLSearchParams handling
   const url = new URL(`/api/assets/${assetId}/file`, window.location.origin);
-  
+
   // Add required parameters
   url.searchParams.append('clientId', clientId.toString());
   url.searchParams.append('t', Date.now().toString()); // Cache buster
-  
+
   // Add optional parameters if provided
   if (variant === 'dark') url.searchParams.append('variant', 'dark');
   if (format) url.searchParams.append('format', format);
@@ -899,7 +899,7 @@ function StandardLogoDownloadButton({
       const downloadLink = document.createElement('a');
       downloadLink.href = downloadUrl.toString();
       downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-      
+
       container.appendChild(downloadLink);
       downloadLink.click();
 
@@ -911,6 +911,7 @@ function StandardLogoDownloadButton({
 
     } catch (error) {
       console.error("Download failed:", error);
+```python
       toast({
         title: "Download failed",
         description: error instanceof Error ? error.message : "Failed to download logo",
@@ -1439,10 +1440,10 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   };
 
   return (
+    
     <AssetDisplay
       renderActions={(variant) => (
         <>
-          
           <LogoDownloadButton 
             logo={logo} 
             imageUrl={imageUrl} 
@@ -1640,7 +1641,8 @@ function LogoSection({
         if (!parsedData) return null;
         const imageUrl = `/api/assets/${logo.id}/file`;
         return (
-          <AssetDisplay
+          
+</previous_generation>          <LogoDisplay
             key={logo.id}
             renderActions={(variant) => (
               <>
@@ -1650,6 +1652,21 @@ function LogoSection({
                   variant={variant}
                   parsedData={parsedData}
                 />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="asset-display__preview-action-button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const fileInput = e.currentTarget.closest('.asset-display')?.querySelector('input[type="file"]');
+                    if (fileInput) {
+                      fileInput.click();
+                    }
+                  }}
+                >
+                  <Upload className="h-3 w-3" />
+                  <span>Replace</span>
+                </Button>
                 {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                   <button 
                     className="asset-display__preview-action-button"
