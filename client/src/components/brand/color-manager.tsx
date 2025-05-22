@@ -55,6 +55,7 @@ import {
 } from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
 import { AssetDisplay } from "./asset-display";
+import { AssetSection } from "./asset-section";
 
 // ColorCard component for the color manager
 function ColorCard({ 
@@ -770,12 +771,12 @@ export function ColorManager({
   
   return (
     <div className="color-manager">
-      <div className="color-manager__header flex justify-between items-center mb-8">
+      <div className="manager__header ">
         <div>
-          <h1 className="text-2xl font-bold mb-1">Color System</h1>
+          <h1>Color System</h1>
           <p className="text-muted-foreground">Manage and use the official color palette for this brand</p>
         </div>
-        {user.role !== UserRole.STANDARD && (
+        {/* {user.role !== UserRole.STANDARD && (
           <div className="flex gap-2">
             <Button 
               onClick={() => {
@@ -791,147 +792,132 @@ export function ColorManager({
               <span>Add Color</span>
             </Button>
           </div>
-        )}
+        )} */}
       </div>
 
       <div className="color-manager__sections space-y-8">
-        <div className="color-section">
-          <div className="color-section__header mb-6">
-            <h2 className="text-xl font-semibold mb-2">Brand Colors</h2>
-          </div>
-          <AssetDisplay
-            description={colorDescriptions.brand}
-            supportsVariants={false}
-            renderActions={() => (
-              <Button
-                onClick={() => {
-                  setSelectedCategory("brand");
-                  setEditingColor(null);
-                  form.reset();
-                  setIsAddingColor(true);
-                }}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Color
-              </Button>
-            )}
-            onFileUpload={() => {}}
-            renderAsset={() => (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
-                {brandColorsData.map((color) => (
-                  <ColorCard
-                    key={color.id}
-                    color={color}
-                    onEdit={handleEditColor}
-                    onDelete={deleteColor.mutate}
-                  />
-                ))}
-                {brandColorsData.length === 0 && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
-                      <Palette className="h-8 w-8" />
-                    </div>
-                    <p>No brand colors yet</p>
-                    <p className="text-sm">Add your first brand color to get started</p>
-                  </div>
-                )}
+        <AssetSection
+          title="Brand Colors"
+          description={colorDescriptions.brand}
+          isEmpty={brandColorsData.length === 0}
+          sectionType="brand-colors"
+          uploadComponent={
+            <Button
+              onClick={() => {
+                setSelectedCategory("brand");
+                setEditingColor(null);
+                form.reset();
+                setIsAddingColor(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Color
+            </Button>
+          }
+          emptyPlaceholder={
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                <Palette className="h-8 w-8" />
               </div>
-            )}
-          />
-        </div>
+              <p>No brand colors yet</p>
+              <p className="text-sm">Contact an admin to add brand colors</p>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
+            {brandColorsData.map((color) => (
+              <ColorCard
+                key={color.id}
+                color={color}
+                onEdit={handleEditColor}
+                onDelete={deleteColor.mutate}
+              />
+            ))}
+          </div>
+        </AssetSection>
 
-        <div className="color-section">
-          <div className="color-section__header mb-6">
-            <h2 className="text-xl font-semibold mb-2">Neutral Colors</h2>
-          </div>
-          <AssetDisplay
-            description={colorDescriptions.neutral}
-            supportsVariants={false}
-            renderActions={() => (
-              <Button
-                onClick={() => {
-                  setSelectedCategory("neutral");
-                  setEditingColor(null);
-                  form.reset();
-                  setIsAddingColor(true);
-                }}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Color
-              </Button>
-            )}
-            onFileUpload={() => {}}
-            renderAsset={() => (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
-                {neutralColorsData.map((color) => (
-                  <ColorCard
-                    key={color.id}
-                    color={color}
-                    onEdit={handleEditColor}
-                    onDelete={deleteColor.mutate}
-                  />
-                ))}
-                {neutralColorsData.length === 0 && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
-                      <Palette className="h-8 w-8" />
-                    </div>
-                    <p>No neutral colors yet</p>
-                    <p className="text-sm">Add your first neutral color to get started</p>
-                  </div>
-                )}
+        <AssetSection
+          title="Neutral Colors"
+          description={colorDescriptions.neutral}
+          isEmpty={neutralColorsData.length === 0}
+          sectionType="neutral-colors"
+          uploadComponent={
+            <Button
+              onClick={() => {
+                setSelectedCategory("neutral");
+                setEditingColor(null);
+                form.reset();
+                setIsAddingColor(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Color
+            </Button>
+          }
+          emptyPlaceholder={
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                <Palette className="h-8 w-8" />
               </div>
-            )}
-          />
-        </div>
+              <p>No neutral colors yet</p>
+              <p className="text-sm">Contact an admin to add neutral colors</p>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
+            {neutralColorsData.map((color) => (
+              <ColorCard
+                key={color.id}
+                color={color}
+                onEdit={handleEditColor}
+                onDelete={deleteColor.mutate}
+              />
+            ))}
+          </div>
+        </AssetSection>
 
-        <div className="color-section">
-          <div className="color-section__header mb-6">
-            <h2 className="text-xl font-semibold mb-2">Interactive Colors</h2>
-          </div>
-          <AssetDisplay
-            description={colorDescriptions.interactive}
-            supportsVariants={false}
-            renderActions={() => (
-              <Button
-                onClick={() => {
-                  setSelectedCategory("interactive");
-                  setEditingColor(null);
-                  form.reset();
-                  setIsAddingColor(true);
-                }}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Color
-              </Button>
-            )}
-            onFileUpload={() => {}}
-            renderAsset={() => (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
-                {interactiveColorsData.map((color) => (
-                  <ColorCard
-                    key={color.id}
-                    color={color}
-                    onEdit={handleEditColor}
-                    onDelete={deleteColor.mutate}
-                  />
-                ))}
-                {interactiveColorsData.length === 0 && (
-                  <div className="col-span-full text-center py-12 text-muted-foreground">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
-                      <Palette className="h-8 w-8" />
-                    </div>
-                    <p>No interactive colors yet</p>
-                    <p className="text-sm">Add your first interactive color to get started</p>
-                  </div>
-                )}
+        <AssetSection
+          title="Interactive Colors"
+          description={colorDescriptions.interactive}
+          isEmpty={interactiveColorsData.length === 0}
+          sectionType="interactive-colors"
+          uploadComponent={
+            <Button
+              onClick={() => {
+                setSelectedCategory("interactive");
+                setEditingColor(null);
+                form.reset();
+                setIsAddingColor(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Color
+            </Button>
+          }
+          emptyPlaceholder={
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                <Palette className="h-8 w-8" />
               </div>
-            )}
-          />
-        </div>
+              <p>No interactive colors yet</p>
+              <p className="text-sm">Contact an admin to add interactive colors</p>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
+            {interactiveColorsData.map((color) => (
+              <ColorCard
+                key={color.id}
+                color={color}
+                onEdit={handleEditColor}
+                onDelete={deleteColor.mutate}
+              />
+            ))}
+          </div>
+        </AssetSection>
       </div>
 
       <Dialog open={isAddingColor} onOpenChange={setIsAddingColor}>

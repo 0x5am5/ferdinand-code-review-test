@@ -9,6 +9,7 @@ interface AssetDisplayProps {
   renderAsset: (variant: 'light' | 'dark') => React.ReactNode;
   supportsVariants?: boolean;
   description: string;
+  className: string;
 }
 
 export function AssetDisplay({
@@ -16,12 +17,13 @@ export function AssetDisplay({
   onFileUpload,
   renderAsset,
   supportsVariants = true,
-  description
+  description,
+  className
 }: AssetDisplayProps) {
   const [variant, setVariant] = useState<'light' | 'dark'>('light');
 
   return (
-    <div className="asset-display">
+    <div className={`asset-display ${className}`}>  
       <div className="asset-display__info">
         <p className="asset-display__info-description">
           {description}

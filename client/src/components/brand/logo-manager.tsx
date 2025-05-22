@@ -2125,7 +2125,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   return (
     <div className="logo-manager">
-      <div className="logo-manager__header flex justify-between items-center">
+      <div className="manager__header">
         <div>
           <h1>Logo System</h1>
           <p>Manage and download the official logos for this brand</p>
