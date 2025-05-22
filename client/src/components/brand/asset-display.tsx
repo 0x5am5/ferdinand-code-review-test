@@ -61,35 +61,6 @@ export function AssetDisplay({
             <div className={`asset-display__preview-controls ${variant === 'light' ? 'light' : 'dark'}`}>
               <div className="flex gap-2">
                 {renderActions(variant)}
-                <label className="cursor-pointer">
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        onFileUpload(file, variant);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="asset-display__preview-action-button"
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file"]');
-                      if (fileInput) {
-                        fileInput.click();
-                      }
-                    }}
-                  >
-                    <Upload className="h-3 w-3" />
-                    <span>Replace</span>
-                  </Button>
-                </label>
               </div>
             </div>
           </div>

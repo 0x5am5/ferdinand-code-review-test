@@ -1449,6 +1449,21 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             variant={variant}
             parsedData={parsedData}
           />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="asset-display__preview-action-button"
+            onClick={(e) => {
+              e.preventDefault();
+              const fileInput = e.currentTarget.closest('.asset-display')?.querySelector('input[type="file"]');
+              if (fileInput) {
+                fileInput.click();
+              }
+            }}
+          >
+            <Upload className="h-3 w-3" />
+            <span>Replace</span>
+          </Button>
           {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
             <button 
               className="asset-display__preview-action-button"
