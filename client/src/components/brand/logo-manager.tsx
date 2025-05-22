@@ -1442,14 +1442,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
     <AssetDisplay
       renderActions={(variant) => (
         <>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="asset-display__preview-action-button"
-          >
-            <Upload className="h-3 w-3" />
-            <span>Replace</span>
-          </Button>
+          
           <LogoDownloadButton 
             logo={logo} 
             imageUrl={imageUrl} 
