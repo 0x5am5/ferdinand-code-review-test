@@ -1,6 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sun, Moon, Upload } from "lucide-react";
+import { Sun, Moon, Upload, Download } from "lucide-react";
 import { useState } from "react";
 
 interface AssetDisplayProps {
@@ -78,11 +79,13 @@ export function AssetDisplay({
                     className="asset-display__preview-action-button"
                     type="button"
                   >
-                    <Upload className="h-3 w-3" />
-                    <span>Replace</span>
+                    <Upload className="h-3 w-3 mr-1" />
+                    Replace
                   </Button>
                 </label>
-                {renderActions(variant)}
+                <div className="flex gap-2">
+                  {renderActions(variant)}
+                </div>
               </div>
             </div>
           </div>
