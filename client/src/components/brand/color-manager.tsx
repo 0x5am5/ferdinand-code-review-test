@@ -78,52 +78,47 @@ function ColorCard({
   };
 
   return (
-    <div className="group relative bg-card rounded-lg border overflow-hidden w-full">
-      <div className="flex items-center">
-        <div 
-          className="w-20 h-16 flex-shrink-0" 
-          style={{ backgroundColor: color.hex }}
-        >
-          <div className="w-full h-full flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+    <div className="group relative bg-card rounded-lg border overflow-hidden">
+      <div 
+        className="h-24 relative" 
+        style={{ backgroundColor: color.hex }}
+      >
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 bg-white/90 hover:bg-white"
+              className="h-8 w-8 bg-white/90 hover:bg-white"
               onClick={copyHex}
             >
               <Copy className="h-3 w-3" />
             </Button>
-          </div>
-        </div>
-        
-        <div className="flex-1 p-4 flex items-center justify-between">
-          <div>
-            <h5 className="font-medium text-base mb-1">{color.name}</h5>
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <code className="font-mono">{color.hex}</code>
-              {color.rgb && <code className="font-mono">{color.rgb}</code>}
-            </div>
-          </div>
-          
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 bg-white/90 hover:bg-white"
               onClick={() => onEdit(color)}
             >
-              <Edit2 className="h-4 w-4" />
+              <Edit2 className="h-3 w-3" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
+              className="h-8 w-8 bg-white/90 hover:bg-white text-destructive"
               onClick={() => onDelete(color.id)}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3 w-3" />
             </Button>
           </div>
         </div>
+      </div>
+      
+      <div className="p-3">
+        <h5 className="font-medium text-sm mb-1">{color.name}</h5>
+        <code className="text-xs font-mono text-muted-foreground">{color.hex}</code>
+        {color.rgb && (
+          <div className="text-xs text-muted-foreground mt-1">{color.rgb}</div>
+        )}
       </div>
     </div>
   );
@@ -830,7 +825,7 @@ export function ColorManager({
             </div>
           }
         >
-          <div className="space-y-4 p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
             {brandColorsData.map((color) => (
               <ColorCard
                 key={color.id}
@@ -871,7 +866,7 @@ export function ColorManager({
             </div>
           }
         >
-          <div className="space-y-4 p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
             {neutralColorsData.map((color) => (
               <ColorCard
                 key={color.id}
@@ -912,7 +907,7 @@ export function ColorManager({
             </div>
           }
         >
-          <div className="space-y-4 p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
             {interactiveColorsData.map((color) => (
               <ColorCard
                 key={color.id}
