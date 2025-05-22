@@ -1372,325 +1372,215 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   clientId: number,
   queryClient: any
 }) {
-  const { user = null } = useAuth();
-  const { toast } = useToast();
   const type = parsedData.type;
-  const [variant, setVariant] = useState<'light' | 'dark'>('light');
+  const { toast } = useToast();
+
+  const handleFileUpload = async (file: File, variant: 'light' | 'dark') => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo${variant === 'dark' ? ' (Dark)' : ''}`);
+    formData.append("type", type);
+    formData.append("category", "logo");
+
+    if (variant === 'dark') {
+      formData.append("isDarkVariant", "true");
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      formData.append("data", JSON.stringify({
+        type,
+        format: fileExtension,
+        hasDarkVariant: true,
+        isDarkVariant: true
+      }));
+    } else {
+      formData.append("isDarkVariant", "false");
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      formData.append("data", JSON.stringify({
+        type,
+        format: fileExtension,
+        hasDarkVariant: parsedData.hasDarkVariant || false
+      }));
+    }
+
+    const endpoint = variant === 'dark' ? 
+      `/api/clients/${clientId}/assets/${logo.id}?variant=dark` :
+      `/api/clients/${clientId}/assets/${logo.id}`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [`/api/assets/${logo.id}`],
+      });
+
+      toast({
+        title: "Success",
+        description: variant === 'dark' 
+          ? `${type.charAt(0).toUpperCase() + type.slice(1)} dark variant uploaded successfully` 
+          : `${type.charAt(0).toUpperCase() + type.slice(1)} logo updated successfully`,
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to upload logo",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
-    <div className="logo-display">
-      {/* Logo information */}
-      <div className="logo-display__info">
-        <p className="logo-display__info-description">
-          {logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
-        </p>
-      </div>
+    <AssetDisplay
+      renderActions={(variant) => (
+        <>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="asset-display__preview-action-button"
+          >
+            <Upload className="h-3 w-3" />
+            <span>Replace</span>
+          </Button>
+          <LogoDownloadButton 
+            logo={logo} 
+            imageUrl={imageUrl} 
+            variant={variant}
+            parsedData={parsedData}
+          />
+          {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
+            <button 
+              className="asset-display__preview-action-button"
+              onClick={() => onDelete(logo.id, variant)}
+            >
+              <Trash2 className="h-3 w-3" />
+              <span>Delete</span>
+            </button>
+          )}
+        </>
+      )}
+      onFileUpload={handleFileUpload}
+      renderAsset={(variant) => (
+        variant === 'dark' && !parsedData.hasDarkVariant ? (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-6">
+            <div className="flex flex-col items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={async () => {
+                  try {
+                    const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
+                    if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
 
-      {/* Logo preview */}
-      <div className="logo-display__preview">
-        <div 
-          className={`logo-display__preview-container ${
-            variant === 'light' 
-              ? 'logo-display__preview-container--light' 
-              : 'logo-display__preview-container--dark'
-          }`}
-        >
-          <div className="logo-display__preview-nav">
-            {/* Background toggle at the top left */}
-            <div className="logo-display__preview-background-toggle">
-              <div className="logo-display__preview-background-toggle-tabs">
-                <button 
-                  data-state={variant === 'light' ? 'active' : 'inactive'} 
-                  onClick={() => setVariant('light')}
-                >
-                  <Sun className="h-4 w-4" />
-                  Light Background
-                </button>
-                <button 
-                  data-state={variant === 'dark' ? 'active' : 'inactive'} 
-                  onClick={() => setVariant('dark')}
-                >
-                  <Moon className="h-4 w-4" />
-                  Dark Background
-                </button>
-              </div>
-            </div>
-
-            {/* Top right controls */}
-            <div className={`logo-display__preview-controls ${
-                variant === 'light' 
-                  ? 'light' 
-                  : 'dark'
-              }`}
+                    const fileBlob = await fileResponse.blob();
+                    const fileName = `${type}_logo_dark.${parsedData.format}`;
+                    const file = new File([fileBlob], fileName, { type: fileResponse.headers.get('content-type') || 'image/svg+xml' });
+                    await handleFileUpload(file, 'dark');
+                  } catch (error) {
+                    console.error("Error copying light variant as dark:", error);
+                    toast({
+                      title: "Error",
+                      description: error instanceof Error ? error.message : "Failed to copy light variant",
+                      variant: "destructive",
+                    });
+                  }
+                }}
               >
-
-              <Input
-                type="file"
-                accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    const createUpload = async () => {
-                      const formData = new FormData();
-                      formData.append("file", e.target.files![0]);
-                      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-                      formData.append("type", type);
-                      formData.append("category", "logo");
-
-                      if (variant === 'dark') {
-                            // Update with dark variant
-                            formData.append("isDarkVariant", "true");
-
-                            // Add data with hasDarkVariant flag
-                            const fileExtension = e.target.files![0].name.split('.').pop()?.toLowerCase();
-                            formData.append("data", JSON.stringify({
-                              type,
-                              format: fileExtension,
-                              hasDarkVariant: true,
-                              isDarkVariant: true
-                            }));
-
-                            // Adding a temp name for debug clarity
-                            formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-
-                            console.log("Uploading dark variant with isDarkVariant=true");
-                            // IMPORTANT: The ?variant=dark parameter is critical here
-                            const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                              method: "PATCH",
-                              body: formData,
-                            });
-
-                            if (!response.ok) {
-                              console.error("Failed to upload dark variant:", await response.text());
-                            } else {
-                              console.log("Dark variant uploaded successfully");
-                            }
-                          } else {
-                            // Replace light variant
-                            formData.append("isDarkVariant", "false");
-
-                            // Add data without replacing dark variant data
-                            const fileExtension = e.target.files![0].name.split('.').pop()?.toLowerCase();
-                            formData.append("data", JSON.stringify({
-                              type,
-                              format: fileExtension,
-                              // Preserve dark variant if it exists
-                              hasDarkVariant: parsedData.hasDarkVariant || false
-                            }));
-
-                            console.log("Uploading light variant");
-                            const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}`, {
-                              method: "PATCH",
-                              body: formData,
-                            });
-
-                            if (!response.ok) {
-                              console.error("Failed to replace light variant:", await response.text());
-                            } else {
-                              console.log("Light variant uploaded successfully");
-                            }
-                          }
-
-                          // Invalidate the cache to show the updated logo immediately
-                          await queryClient.invalidateQueries({
-                            queryKey: [`/api/clients/${clientId}/assets`],
-                          });
-
-                          // Force a reload of this specific logo to ensure it's updated in the UI
-                          await queryClient.invalidateQueries({
-                            queryKey: [`/api/assets/${logo.id}`],
-                          });
-
-                          // Show success message
-                          toast({
-                            title: "Success",
-                            description: variant === 'dark' 
-                              ? `${type.charAt(0).toUpperCase() + type.slice(1)} dark variant uploaded successfully` 
-                              : `${type.charAt(0).toUpperCase() + type.slice(1)} logo updated successfully`,
-                          });
-                        };
-
-                        createUpload();
-                      }
-                    }}
-                    className="hidden"
-                  />
-
-              {/* Add the download button here */}
-              <LogoDownloadButton 
-                logo={logo} 
-                imageUrl={imageUrl} 
-                variant={variant}
-                parsedData={parsedData}
-              />
-
-              {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
-                <button 
-                  className="logo-display__preview-action-button"
-                  onClick={() => onDelete(logo.id, variant)}
-                >
-                  <Trash2 className="h-3 w-3" />
-                  <span>Delete</span>
-                </button>
-              )}
+                <Copy className="h-4 w-4" />
+                Use light logo for dark variant
+              </Button>
+              <div className="text-sm text-muted-foreground">- or -</div>
             </div>
-          </div>
-          {variant === 'dark' && !parsedData.hasDarkVariant ? (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-6">
-              {/* Button to copy light variant as dark variant */}
-              <div className="flex flex-col items-center gap-2">
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  onClick={async () => {
-                    try {
-                      // Fetch the light variant file data
-                      const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
-                      if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
-
-                      const fileBlob = await fileResponse.blob();
-                      const fileName = `${type}_logo_dark.${parsedData.format}`;
-                      const file = new File([fileBlob], fileName, { type: fileResponse.headers.get('content-type') || 'image/svg+xml' });
-
-                      // Create FormData with the file and necessary metadata
-                      const formData = new FormData();
-                      formData.append("file", file);
-                      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                      formData.append("type", type);
-                      formData.append("category", "logo");
-                      formData.append("isDarkVariant", "true");
-
-                      // Add data with hasDarkVariant flag
-                      formData.append("data", JSON.stringify({
-                        type,
-                        format: parsedData.format,
-                        hasDarkVariant: true,
-                        isDarkVariant: true
-                      }));
-
-                      console.log("Using light variant as dark variant");
-                      // IMPORTANT: The ?variant=dark parameter is critical here
-                      const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                        method: "PATCH",
-                        body: formData,
-                      });
-
-                      if (!response.ok) {
-                        throw new Error(await response.text());
-                      }
-
-                      // Update UI
-                      parsedData.hasDarkVariant = true;
-                      await queryClient.invalidateQueries({
-                        queryKey: [`/api/clients/${clientId}/assets`],
-                      });
-                      await queryClient.invalidateQueries({
-                        queryKey: [`/api/assets/${logo.id}`],
-                      });
-
-                      toast({
-                        title: "Success",
-                        description: `Light logo copied as dark variant`,
-                      });
-                    } catch (error) {
-                      console.error("Error copying light variant as dark:", error);
-                      toast({
-                        title: "Error",
-                        description: error instanceof Error ? error.message : "Failed to copy light variant",
-                        variant: "destructive",
-                      });
-                    }
+            <div className="logo-upload__dropzone logo-upload__dropzone--dark flex flex-col items-center justify-center">
+              <div className="logo-upload__dropzone-icon">
+                <Upload className="h-8 w-8" />
+              </div>
+              <h4 className="logo-upload__dropzone-heading">
+                Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo for Dark Background
+              </h4>
+              <p className="logo-upload__dropzone-text text-center">
+                Drag and drop your logo file here, or click to browse.<br />
+                Supported formats: {Object.values(FILE_FORMATS).join(", ")}
+              </p>
+              <div className="logo-upload__dropzone-actions mt-4">
+                <FileUpload
+                  type={type}
+                  clientId={clientId}
+                  isDarkVariant={true}
+                  parentLogoId={logo.id}
+                  queryClient={queryClient}
+                  buttonOnly={true}
+                  className="min-w-32"
+                  onSuccess={async () => {
+                    parsedData.hasDarkVariant = true;
+                    await queryClient.invalidateQueries({
+                      queryKey: [`/api/clients/${clientId}/assets`],
+                    });
+                    await queryClient.invalidateQueries({
+                      queryKey: [`/api/assets/${logo.id}`],
+                    });
                   }}
                 >
-                  <Copy className="h-4 w-4" />
-                  Use light logo for dark variant
-                </Button>
-                <div className="text-sm text-muted-foreground">- or -</div>
+                  Browse Files
+                </FileUpload>
               </div>
-
-              <div className="logo-upload__dropzone logo-upload__dropzone--dark flex flex-col items-center justify-center">
-                <div className="logo-upload__dropzone-icon">
-                  <Upload className="h-8 w-8" />
-                </div>
-                <h4 className="logo-upload__dropzone-heading">
-                  Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo for Dark Background
-                </h4>
-                <p className="logo-upload__dropzone-text text-center">
-                  Drag and drop your logo file here, or click to browse.<br />
-                  Supported formats: {Object.values(FILE_FORMATS).join(", ")}
-                </p>
-                <div className="logo-upload__dropzone-actions mt-4">
-                  <FileUpload
-                    type={type}
-                    clientId={clientId}
-                    isDarkVariant={true}
-                    parentLogoId={logo.id}
-                    queryClient={queryClient}
-                    buttonOnly={true}
-                    className="min-w-32"
-                    onSuccess={async () => {
-                      parsedData.hasDarkVariant = true;
-                      // Ensure we update both queries to refresh the UI immediately
-                      await queryClient.invalidateQueries({
-                        queryKey: [`/api/clients/${clientId}/assets`],
-                      });
-                      await queryClient.invalidateQueries({
-                        queryKey: [`/api/assets/${logo.id}`],
-                      });
-                    }}
-                  >
-                    Browse Files
-                  </FileUpload>
-                </div>
-              </div>
-
-
             </div>
-          ) : (
-            <div className="logo-display__preview-image-container">
-              {parsedData.format === 'svg' ? (
-                  <object
-                    data={variant === 'dark' && parsedData.hasDarkVariant ? 
-                      `/api/assets/${logo.id}/file?variant=dark` : 
-                      imageUrl}
-                    type="image/svg+xml"
-                    className="logo-display__preview-image"
-                  >
-                    <img
-                      src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                        `/api/assets/${logo.id}/file?variant=dark` : 
-                        imageUrl}
-                      className="logo-display__preview-image"
-                      alt={logo.name || "SVG Logo"}
-                      onError={(e) => {
-                        console.error("Error loading SVG:", imageUrl);
-                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
-                      }}
-                    />
-                  </object>
-              ) : (
+          </div>
+        ) : (
+          <div className="asset-display__preview-image-container">
+            {parsedData.format === 'svg' ? (
+              <object
+                data={variant === 'dark' && parsedData.hasDarkVariant ? 
+                  `/api/assets/${logo.id}/file?variant=dark` : 
+                  imageUrl}
+                type="image/svg+xml"
+                className="asset-display__preview-image"
+              >
                 <img
                   src={variant === 'dark' && parsedData.hasDarkVariant ? 
                     `/api/assets/${logo.id}/file?variant=dark` : 
                     imageUrl}
-                  alt={logo.name}
-                  className="logo-display__preview-image"
-                  style={{ 
-                    filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
-                  }}
+                  className="asset-display__preview-image"
+                  alt={logo.name || "SVG Logo"}
                   onError={(e) => {
-                    console.error("Error loading image:", imageUrl);
-                    e.currentTarget.src =
-                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
+                    console.error("Error loading SVG:", imageUrl);
+                    e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
                   }}
                 />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+              </object>
+            ) : (
+              <img
+                src={variant === 'dark' && parsedData.hasDarkVariant ? 
+                  `/api/assets/${logo.id}/file?variant=dark` : 
+                  imageUrl}
+                alt={logo.name}
+                className="asset-display__preview-image"
+                style={{ 
+                  filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
+                }}
+                onError={(e) => {
+                  console.error("Error loading image:", imageUrl);
+                  e.currentTarget.src =
+                    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
+                }}
+              />
+            )}
+          </div>
+        )
+      )}
+      description={logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
+      supportsVariants={true}
+    />
   );
 }
 
