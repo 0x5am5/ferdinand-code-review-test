@@ -135,7 +135,7 @@ function getSecureAssetUrl(assetId: number, clientId: number, options: {
   const { format, size, variant, preserveRatio = true, preserveVector = false } = options;
 
   // Create URL with built-in URLSearchParams handling
-  const url = new URL(`/api/assets/${assetId}/file`, window.location.origin);
+  const url = new URL('/api/assets/${assetId}/file', window.location.origin);
 
   // Add required parameters
   url.searchParams.append('clientId', clientId.toString());
@@ -151,7 +151,7 @@ function getSecureAssetUrl(assetId: number, clientId: number, options: {
   }
   if (preserveVector) url.searchParams.append('preserveVector', 'true');
 
-  console.log(`Generated download URL for asset ${assetId}: ${url.toString()}`);
+  console.log('Generated download URL for asset ${assetId}: ${url.toString()}');
   return url.toString();
 }
 
@@ -169,7 +169,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
 
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+      formData.append("name", '${type.charAt(0).toUpperCase() + type.slice(1)} Logo');
       formData.append("type", type);
       formData.append("category", "logo");
 
@@ -184,9 +184,9 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
         };
         formData.append("data", JSON.stringify(logoData));
         formData.append("category", "logo");
-        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+        formData.append("name", '${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)');
 
-        const response = await fetch(`/api/clients/${clientId}/assets/${parentLogoId}?variant=dark`, {
+        const response = await fetch('/api/clients/${clientId}/assets/${parentLogoId}?variant=dark', {
           method: "PATCH",
           body: formData,
         });
@@ -204,7 +204,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
           hasDarkVariant: false
         }));
 
-        const response = await fetch(`/api/clients/${clientId}/assets`, {
+        const response = await fetch('/api/clients/${clientId}/assets', {
           method: "POST",
           body: formData,
         });
@@ -219,7 +219,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: ['/api/clients/${clientId}/assets'],
       });
       toast({
         title: "Success",
@@ -268,7 +268,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
       if (!fileExtension || !Object.values(FILE_FORMATS).includes(fileExtension as any)) {
         toast({
           title: "Invalid file type",
-          description: `File must be one of: ${Object.values(FILE_FORMATS).join(", ")}`,
+          description: 'File must be one of: ${Object.values(FILE_FORMATS).join(", ")}',
           variant: "destructive",
         });
         return;
@@ -288,7 +288,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
     if (!fileExtension || !Object.values(FILE_FORMATS).includes(fileExtension as any)) {
       toast({
         title: "Invalid file type",
-        description: `File must be one of: ${Object.values(FILE_FORMATS).join(", ")}`,
+        description: 'File must be one of: ${Object.values(FILE_FORMATS).join(", ")}',
         variant: "destructive",
       });
       return;
@@ -305,7 +305,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
       <label className="cursor-pointer">
         <Input
           type="file"
-          accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+          accept={Object.values(FILE_FORMATS).map(format => '.${format}').join(",")}
           onChange={(e) => {
             handleFileChange(e);
             if (e.target.files?.[0]) {
@@ -336,7 +336,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
   return (
     <div className="logo-upload">
       <div 
-        className={`logo-upload__dropzone ${isDragging ? 'logo-upload__dropzone--active' : ''} ${createLogo.isPending ? 'logo-upload__dropzone--loading' : ''}`}
+        className={'logo-upload__dropzone ${isDragging ? 'logo-upload__dropzone--active' : ''} ${createLogo.isPending ? 'logo-upload__dropzone--loading' : ''}'}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -368,7 +368,7 @@ function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, par
               <label className="cursor-pointer">
                 <Input
                   type="file"
-                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                  accept={Object.values(FILE_FORMATS).map(format => '.${format}').join(",")}
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -423,12 +423,12 @@ function AppIconDownloadButton({
   // Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
     const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
-      `/api/assets/${logo.id}/file?variant=dark` : 
-      `/api/assets/${logo.id}/file`;
+      '/api/assets/${logo.id}/file?variant=dark' : 
+      '/api/assets/${logo.id}/file';
 
     const separator = baseUrl.includes('?') ? '&' : '?';
 
-    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+    return '${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? '&format=${format}' : ''}';
   };
 
   // Function to download app icon package as a zip file
@@ -468,10 +468,10 @@ function AppIconDownloadButton({
           fetch(getDownloadUrl(sizePercentage, 'png'))
             .then(response => response.arrayBuffer())
             .then(data => {
-              pngFolder.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`, data);
+              pngFolder.file('${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png', data);
             })
             .catch(err => {
-              console.error(`Error fetching PNG for size ${size}:`, err);
+              console.error('Error fetching PNG for size ${size}:', err);
             })
         );
       }
@@ -481,7 +481,7 @@ function AppIconDownloadButton({
         fetch(getDownloadUrl(100, 'svg'))
           .then(response => response.arrayBuffer())
           .then(data => {
-            vectorFolder.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`, data);
+            vectorFolder.file('${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg', data);
           })
           .catch(err => {
             console.error('Error fetching SVG:', err);
@@ -498,7 +498,7 @@ function AppIconDownloadButton({
       const zipUrl = URL.createObjectURL(zipBlob);
       const downloadLink = document.createElement('a');
       downloadLink.href = zipUrl;
-      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-app-icon-package.zip`;
+      downloadLink.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}-app-icon-package.zip';
       document.body.appendChild(downloadLink);
       downloadLink.click();
 
@@ -580,7 +580,7 @@ function AppIconDownloadButton({
 
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'svg');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`;
+                    link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg';
                     container.appendChild(link);
                     link.click();
 
@@ -603,7 +603,7 @@ function AppIconDownloadButton({
 
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'eps');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
+                    link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps';
                     container.appendChild(link);
                     link.click();
 
@@ -626,7 +626,7 @@ function AppIconDownloadButton({
 
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'ai');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
+                    link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai';
                     container.appendChild(link);
                     link.click();
 
@@ -705,12 +705,12 @@ function StandardLogoDownloadButton({
   // Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
     const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
-      `/api/assets/${logo.id}/file?variant=dark` : 
-      `/api/assets/${logo.id}/file`;
+      '/api/assets/${logo.id}/file?variant=dark' : 
+      '/api/assets/${logo.id}/file';
 
     const separator = baseUrl.includes('?') ? '&' : '?';
 
-    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+    return '${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? '&format=${format}' : ''}';
   };
 
   // Function to download a zip package of all logo sizes
@@ -726,7 +726,7 @@ function StandardLogoDownloadButton({
       const sizes = [300, 800, 2000];
 
       // Log the logo info we're downloading
-      console.log(`Creating download package for logo: ID ${logo.id}, Name: ${logo.name}, Client ID: ${logo.clientId}`);
+      console.log('Creating download package for logo: ID ${logo.id}, Name: ${logo.name}, Client ID: ${logo.clientId}');
 
       // Create a new JSZip instance
       const JSZip = (await import('jszip')).default;
@@ -747,10 +747,10 @@ function StandardLogoDownloadButton({
       // Add PNG files in different sizes - pass exact pixel dimensions
       for (const size of sizes) {
         // CRITICAL FIX: Ensure we pass correct client ID for downloads
-        const url = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&size=${size}&format=png${variant === 'dark' ? '&variant=dark' : ''}&preserveRatio=true`;
-        console.log(`Downloading logo: ID ${logo.id}, Client: ${logo.clientId}, Name: ${logo.name}`);
+        const url = '/api/assets/${logo.id}/file?clientId=${logo.clientId}&size=${size}&format=png${variant === 'dark' ? '&variant=dark' : ''}&preserveRatio=true';
+        console.log('Downloading logo: ID ${logo.id}, Client: ${logo.clientId}, Name: ${logo.name}');
 
-        console.log(`Fetching ${size}px logo from: ${url}`);
+        console.log('Fetching ${size}px logo from: ${url}');
 
         // Use a reference to avoid TypeScript null warnings
         const pngFolderRef = pngFolder;
@@ -764,7 +764,7 @@ function StandardLogoDownloadButton({
           })
             .then(response => {
               if (!response.ok) {
-                throw new Error(`Failed to fetch ${size}px PNG: ${response.status} ${response.statusText}`);
+                throw new Error('Failed to fetch ${size}px PNG: ${response.status} ${response.statusText}');
               }
               return response.arrayBuffer();
             })
@@ -772,7 +772,7 @@ function StandardLogoDownloadButton({
               pngFolderRef.file(filename, data);
             })
             .catch(err => {
-              console.error(`Error with ${size}px PNG:`, err);
+              console.error('Error with ${size}px PNG:', err);
               // Continue with other files
             })
         );
@@ -790,9 +790,9 @@ function StandardLogoDownloadButton({
           variant: variant === 'dark' ? 'dark' : undefined,
           preserveVector: true
         });
-        const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
+        const filename = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}';
 
-        console.log(`Fetching ${format} logo from: ${url}`);
+        console.log('Fetching ${format} logo from: ${url}');
 
         fetchPromises.push(
           fetch(url, {
@@ -804,7 +804,7 @@ function StandardLogoDownloadButton({
           })
             .then(response => {
               if (!response.ok) {
-                throw new Error(`Failed to fetch ${format}: ${response.status} ${response.statusText}`);
+                throw new Error('Failed to fetch ${format}: ${response.status} ${response.statusText}');
               }
               return response.arrayBuffer();
             })
@@ -812,7 +812,7 @@ function StandardLogoDownloadButton({
               vectorFolderRef.file(filename, data);
             })
             .catch(err => {
-              console.error(`Error with ${format}:`, err);
+              console.error('Error with ${format}:', err);
               // Continue with other files
             })
         );
@@ -828,7 +828,7 @@ function StandardLogoDownloadButton({
       const zipUrl = URL.createObjectURL(zipBlob);
       const downloadLink = document.createElement('a');
       downloadLink.href = zipUrl;
-      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-package.zip`;
+      downloadLink.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}-package.zip';
       document.body.appendChild(downloadLink);
       downloadLink.click();
 
@@ -880,7 +880,7 @@ function StandardLogoDownloadButton({
         preserveRatio: true
       });
 
-      console.log(`Downloading logo ${logo.id} for client ${logo.clientId} with URL: ${downloadUrl}`);
+      console.log('Downloading logo ${logo.id} for client ${logo.clientId} with URL: ${downloadUrl}');
 
       console.log('Initiating download:', {
         logoId: logo.id,
@@ -898,7 +898,7 @@ function StandardLogoDownloadButton({
 
       const downloadLink = document.createElement('a');
       downloadLink.href = downloadUrl.toString();
-      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
+      downloadLink.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png';
 
       container.appendChild(downloadLink);
       downloadLink.click();
@@ -911,7 +911,7 @@ function StandardLogoDownloadButton({
 
     } catch (error) {
       console.error("Download failed:", error);
-```python
+'''python
       toast({
         title: "Download failed",
         description: error instanceof Error ? error.message : "Failed to download logo",
@@ -934,12 +934,12 @@ function StandardLogoDownloadButton({
         variant: variant === 'dark' ? 'dark' : undefined,
         preserveVector: true
       });
-      console.log(`Downloading vector format ${format} for logo: ID ${logo.id}, Client: ${logo.clientId}, URL: ${downloadUrlWithClientId}`);;
+      console.log('Downloading vector format ${format} for logo: ID ${logo.id}, Client: ${logo.clientId}, URL: ${downloadUrlWithClientId}');
 
       // Create download link
       const link = document.createElement('a');
       link.href = downloadUrlWithClientId;
-      link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
+      link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}';
       container.appendChild(link);
       link.click();
 
@@ -949,10 +949,10 @@ function StandardLogoDownloadButton({
         setOpen(false); // Close popover after download
       }, 100);
     } catch (error) {
-      console.error(`Error downloading ${format} file:`, error);
+      console.error('Error downloading ${format} file:', error);
       toast({
         title: "Download failed",
-        description: `There was an error downloading the ${format.toUpperCase()} file.`,
+        description: 'There was an error downloading the ${format.toUpperCase()} file.',
         variant: "destructive"
       });
     }
@@ -1094,12 +1094,12 @@ function FaviconDownloadButton({
   // Function to get download URL for a specific size and format
   const getDownloadUrl = (size: number, format: string) => {
     const baseUrl = variant === 'dark' && parsedData.hasDarkVariant ? 
-      `/api/assets/${logo.id}/file?variant=dark` : 
-      `/api/assets/${logo.id}/file`;
+      '/api/assets/${logo.id}/file?variant=dark' : 
+      '/api/assets/${logo.id}/file';
 
     const separator = baseUrl.includes('?') ? '&' : '?';
 
-    return `${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? `&format=${format}` : ''}`;
+    return '${baseUrl}${separator}size=${size}&preserveRatio=true${format !== parsedData.format ? '&format=${format}' : ''}';
   };
 
   // Function to download the favicon package as a zip file (multiple sizes in ICO and PNG formats)
@@ -1141,10 +1141,10 @@ function FaviconDownloadButton({
           fetch(getDownloadUrl(sizePercentage, 'ico'))
             .then(response => response.arrayBuffer())
             .then(data => {
-              icoFolderRef.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.ico`, data);
+              icoFolderRef.file('${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.ico', data);
             })
             .catch(err => {
-              console.error(`Error fetching ICO for size ${size}:`, err);
+              console.error('Error fetching ICO for size ${size}:', err);
             })
         );
 
@@ -1154,10 +1154,10 @@ function FaviconDownloadButton({
           fetch(getDownloadUrl(sizePercentage, 'png'))
             .then(response => response.arrayBuffer())
             .then(data => {
-              pngFolderRef.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`, data);
+              pngFolderRef.file('${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png', data);
             })
             .catch(err => {
-              console.error(`Error fetching PNG for size ${size}:`, err);
+              console.error('Error fetching PNG for size ${size}:', err);
             })
         );
       }
@@ -1168,7 +1168,7 @@ function FaviconDownloadButton({
         fetch(getDownloadUrl(100, 'svg'))
           .then(response => response.arrayBuffer())
           .then(data => {
-            vectorFolderRef.file(`${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`, data);
+            vectorFolderRef.file('${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg', data);
           })
           .catch(err => {
             console.error('Error fetching SVG:', err);
@@ -1185,7 +1185,7 @@ function FaviconDownloadButton({
       const zipUrl = URL.createObjectURL(zipBlob);
       const downloadLink = document.createElement('a');
       downloadLink.href = zipUrl;
-      downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-favicon-package.zip`;
+      downloadLink.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}-favicon-package.zip';
       document.body.appendChild(downloadLink);
       downloadLink.click();
 
@@ -1222,7 +1222,7 @@ function FaviconDownloadButton({
       // Create download link
       const link = document.createElement('a');
       link.href = getDownloadUrl(100, format); // Use original size (100%)
-      link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}`;
+      link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.${format}';
       container.appendChild(link);
       link.click();
 
@@ -1232,10 +1232,10 @@ function FaviconDownloadButton({
         setOpen(false); // Close popover after download
       }, 100);
     } catch (error) {
-      console.error(`Error downloading ${format} file:`, error);
+      console.error('Error downloading ${format} file:', error);
       toast({
         title: "Download failed",
-        description: `There was an error downloading the ${format.toUpperCase()} file.`,
+        description: 'There was an error downloading the ${format.toUpperCase()} file.',
         variant: "destructive"
       });
     }
@@ -1297,7 +1297,7 @@ function FaviconDownloadButton({
 
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'svg');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg`;
+                    link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.svg';
                     container.appendChild(link);
                     link.click();
 
@@ -1320,7 +1320,7 @@ function FaviconDownloadButton({
 
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'eps');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
+                    link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps';
                     container.appendChild(link);
                     link.click();
 
@@ -1343,7 +1343,7 @@ function FaviconDownloadButton({
 
                     const link = document.createElement('a');
                     link.href = getDownloadUrl(100, 'ai');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
+                    link.download = '${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai';
                     container.appendChild(link);
                     link.click();
 
@@ -1379,7 +1379,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
   const handleFileUpload = async (file: File, variant: 'light' | 'dark') => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo${variant === 'dark' ? ' (Dark)' : ''}`);
+    formData.append("name", '${type.charAt(0).toUpperCase() + type.slice(1)} Logo${variant === 'dark' ? ' (Dark)' : ''}');
     formData.append("type", type);
     formData.append("category", "logo");
 
@@ -1403,8 +1403,8 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
     }
 
     const endpoint = variant === 'dark' ? 
-      `/api/clients/${clientId}/assets/${logo.id}?variant=dark` :
-      `/api/clients/${clientId}/assets/${logo.id}`;
+      '/api/clients/${clientId}/assets/${logo.id}?variant=dark' :
+      '/api/clients/${clientId}/assets/${logo.id}';
 
     try {
       const response = await fetch(endpoint, {
@@ -1417,17 +1417,17 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
       }
 
       await queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: ['/api/clients/${clientId}/assets'],
       });
       await queryClient.invalidateQueries({
-        queryKey: [`/api/assets/${logo.id}`],
+        queryKey: ['/api/assets/${logo.id}'],
       });
 
       toast({
         title: "Success",
         description: variant === 'dark' 
-          ? `${type.charAt(0).toUpperCase() + type.slice(1)} dark variant uploaded successfully` 
-          : `${type.charAt(0).toUpperCase() + type.slice(1)} logo updated successfully`,
+          ? '${type.charAt(0).toUpperCase() + type.slice(1)} dark variant uploaded successfully' 
+          : '${type.charAt(0).toUpperCase() + type.slice(1)} logo updated successfully',
       });
     } catch (error) {
       console.error("Upload error:", error);
@@ -1487,11 +1487,11 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 className="gap-2"
                 onClick={async () => {
                   try {
-                    const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
+                    const fileResponse = await fetch('/api/assets/${logo.id}/file');
                     if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
 
                     const fileBlob = await fileResponse.blob();
-                    const fileName = `${type}_logo_dark.${parsedData.format}`;
+                    const fileName = '${type}_logo_dark.${parsedData.format}';
                     const file = new File([fileBlob], fileName, { type: fileResponse.headers.get('content-type') || 'image/svg+xml' });
                     await handleFileUpload(file, 'dark');
                   } catch (error) {
@@ -1533,10 +1533,10 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   onSuccess={async () => {
                     parsedData.hasDarkVariant = true;
                     await queryClient.invalidateQueries({
-                      queryKey: [`/api/clients/${clientId}/assets`],
+                      queryKey: ['/api/clients/${clientId}/assets'],
                     });
                     await queryClient.invalidateQueries({
-                      queryKey: [`/api/assets/${logo.id}`],
+                      queryKey: ['/api/assets/${logo.id}'],
                     });
                   }}
                 >
@@ -1550,14 +1550,14 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             {parsedData.format === 'svg' ? (
               <object
                 data={variant === 'dark' && parsedData.hasDarkVariant ? 
-                  `/api/assets/${logo.id}/file?variant=dark` : 
+                  '/api/assets/${logo.id}/file?variant=dark' : 
                   imageUrl}
                 type="image/svg+xml"
                 className="asset-display__preview-image"
               >
                 <img
                   src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                    `/api/assets/${logo.id}/file?variant=dark` : 
+                    '/api/assets/${logo.id}/file?variant=dark' : 
                     imageUrl}
                   className="asset-display__preview-image"
                   alt={logo.name || "SVG Logo"}
@@ -1570,7 +1570,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
             ) : (
               <img
                 src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                  `/api/assets/${logo.id}/file?variant=dark` : 
+                  '/api/assets/${logo.id}/file?variant=dark' : 
                   imageUrl}
                 alt={logo.name}
                 className="asset-display__preview-image"
@@ -1614,7 +1614,7 @@ function LogoSection({
 
   return (
     <AssetSection
-      title={`${type.charAt(0).toUpperCase() + type.slice(1)} Logo`}
+      title={'${type.charAt(0).toUpperCase() + type.slice(1)} Logo'}
       description={logoDescriptions[type as keyof typeof logoDescriptions]}
       isEmpty={!hasLogos}
       onRemoveSection={onRemoveSection}
@@ -1639,7 +1639,7 @@ function LogoSection({
       {hasLogos && logos.map((logo) => {
         const parsedData = parseBrandAssetData(logo);
         if (!parsedData) return null;
-        const imageUrl = `/api/assets/${logo.id}/file`;
+        const imageUrl = '/api/assets/${logo.id}/file';
         return (
           
 </previous_generation>          <LogoDisplay
@@ -1681,7 +1681,7 @@ function LogoSection({
             onFileUpload={(file, variant) => {
               const formData = new FormData();
               formData.append("file", file);
-              formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+              formData.append("name", '${type.charAt(0).toUpperCase() + type.slice(1)} Logo');
               formData.append("type", type);
               formData.append("category", "logo");
 
@@ -1693,7 +1693,7 @@ function LogoSection({
                   hasDarkVariant: true,
                   isDarkVariant: true
                 }));
-                formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                formData.append("name", '${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)');
               } else {
                 formData.append("isDarkVariant", "false");
                 formData.append("data", JSON.stringify({
@@ -1705,8 +1705,8 @@ function LogoSection({
 
               const createUpload = async () => {
                 const endpoint = variant === 'dark' ? 
-                  `/api/clients/${clientId}/assets/${logo.id}?variant=dark` :
-                  `/api/clients/${clientId}/assets/${logo.id}`;
+                  '/api/clients/${clientId}/assets/${logo.id}?variant=dark' :
+                  '/api/clients/${clientId}/assets/${logo.id}';
 
                 const response = await fetch(endpoint, {
                   method: "PATCH",
@@ -1718,10 +1718,10 @@ function LogoSection({
                 }
 
                 await queryClient.invalidateQueries({
-                  queryKey: [`/api/clients/${clientId}/assets`],
+                  queryKey: ['/api/clients/${clientId}/assets'],
                 });
                 await queryClient.invalidateQueries({
-                  queryKey: [`/api/assets/${logo.id}`],
+                  queryKey: ['/api/assets/${logo.id}'],
                 });
               };
 
@@ -1737,16 +1737,16 @@ function LogoSection({
                       className="gap-2"
                       onClick={async () => {
                         try {
-                          const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
+                          const fileResponse = await fetch('/api/assets/${logo.id}/file');
                           if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
 
                           const fileBlob = await fileResponse.blob();
-                          const fileName = `${type}_logo_dark.${parsedData.format}`;
+                          const fileName = '${type}_logo_dark.${parsedData.format}';
                           const file = new File([fileBlob], fileName, { type: fileResponse.headers.get('content-type') || 'image/svg+xml' });
 
                           const formData = new FormData();
                           formData.append("file", file);
-                          formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                          formData.append("name", '${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)');
                           formData.append("type", type);
                           formData.append("category", "logo");
                           formData.append("isDarkVariant", "true");
@@ -1757,7 +1757,7 @@ function LogoSection({
                             isDarkVariant: true
                           }));
 
-                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                          const response = await fetch('/api/clients/${clientId}/assets/${logo.id}?variant=dark', {
                             method: "PATCH",
                             body: formData,
                           });
@@ -1768,10 +1768,10 @@ function LogoSection({
 
                           parsedData.hasDarkVariant = true;
                           await queryClient.invalidateQueries({
-                            queryKey: [`/api/clients/${clientId}/assets`],
+                            queryKey: ['/api/clients/${clientId}/assets'],
                           });
                           await queryClient.invalidateQueries({
-                            queryKey: [`/api/assets/${logo.id}`],
+                            queryKey: ['/api/assets/${logo.id}'],
                           });
                         } catch (error) {
                           console.error("Error copying light variant as dark:", error);
@@ -1807,10 +1807,10 @@ function LogoSection({
                         onSuccess={async () => {
                           parsedData.hasDarkVariant = true;
                           await queryClient.invalidateQueries({
-                            queryKey: [`/api/clients/${clientId}/assets`],
+                            queryKey: ['/api/clients/${clientId}/assets'],
                           });
                           await queryClient.invalidateQueries({
-                            queryKey: [`/api/assets/${logo.id}`],
+                            queryKey: ['/api/assets/${logo.id}'],
                           });
                         }}
                       >
@@ -1824,14 +1824,14 @@ function LogoSection({
                   {parsedData.format === 'svg' ? (
                     <object
                       data={variant === 'dark' && parsedData.hasDarkVariant ? 
-                        `/api/assets/${logo.id}/file?variant=dark` : 
+                        '/api/assets/${logo.id}/file?variant=dark' : 
                         imageUrl}
                       type="image/svg+xml"
                       className="asset-display__preview-image"
                     >
                       <img
                         src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                          `/api/assets/${logo.id}/file?variant=dark` : 
+                          '/api/assets/${logo.id}/file?variant=dark' : 
                           imageUrl}
                         className="asset-display__preview-image"
                         alt={logo.name || "SVG Logo"}
@@ -1844,7 +1844,7 @@ function LogoSection({
                   ) : (
                     <img
                       src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                        `/api/assets/${logo.id}/file?variant=dark` : 
+                        '/api/assets/${logo.id}/file?variant=dark' : 
                         imageUrl}
                       alt={logo.name}
                       className="asset-display__preview-image"
@@ -1920,7 +1920,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const deleteLogo = useMutation({
     mutationFn: async ({ logoId, variant }: { logoId: number; variant: 'light' | 'dark' }) => {
       const response =await fetch(
-        `/api/clients/${clientId}/assets/${logoId}${variant === 'dark' ? '?variant=dark' : ''}`,
+        '/api/clients/${clientId}/assets/${logoId}${variant === 'dark' ? '?variant=dark' : ''}',
         {
           method: "DELETE",
         },
@@ -1933,7 +1933,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: ['/api/clients/${clientId}/assets'],
       });
       toast({
         title: "Success",
@@ -1970,7 +1970,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       onSuccess: () => {
         toast({
           title: "Section removed",
-          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed`,
+          description: '${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed',
         });
       },
       onError: (error) => {
@@ -1978,7 +1978,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         setVisibleSections(prev => [...prev, type]);
         toast({
           title: "Error",
-          description: `Failed to remove section: ${error.message}`,
+          description: 'Failed to remove section: ${error.message}',
           variant: "destructive",
         });
       }
@@ -1996,7 +1996,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       onSuccess: () => {
         toast({
           title: "Section added",
-          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been added`,
+          description: '${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been added',
         });
       },
       onError: (error) => {
@@ -2004,7 +2004,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         setVisibleSections(prev => prev.filter(section => section !== type));
         toast({
           title: "Error",
-          description: `Failed to add section: ${error.message}`,
+          description: 'Failed to add section: ${error.message}',
           variant: "destructive",
         });
       }
