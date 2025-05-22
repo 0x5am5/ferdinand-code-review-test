@@ -1747,19 +1747,21 @@ function LogoSection({
             renderActions={(variant) => (
               <>
                 <Button
-                  variant="ghost"
+                  variant="text"
                   size="sm"
                   className="asset-display__preview-action-button"
                 >
                   <Upload className="h-3 w-3" />
                   <span>Replace</span>
                 </Button>
+                
                 <LogoDownloadButton 
                   logo={logo} 
                   imageUrl={imageUrl} 
                   variant={variant}
                   parsedData={parsedData}
                 />
+                
                 {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                   <button 
                     className="asset-display__preview-action-button"
