@@ -798,10 +798,9 @@ export function ColorManager({
         <div className="color-section">
           <div className="color-section__header mb-6">
             <h2 className="text-xl font-semibold mb-2">Brand Colors</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">{colorDescriptions.brand}</p>
           </div>
           <AssetDisplay
-            description=""
+            description={colorDescriptions.brand}
             supportsVariants={false}
             renderActions={() => (
               <Button
@@ -845,10 +844,9 @@ export function ColorManager({
         <div className="color-section">
           <div className="color-section__header mb-6">
             <h2 className="text-xl font-semibold mb-2">Neutral Colors</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">{colorDescriptions.neutral}</p>
           </div>
           <AssetDisplay
-            description=""
+            description={colorDescriptions.neutral}
             supportsVariants={false}
             renderActions={() => (
               <Button
@@ -892,10 +890,9 @@ export function ColorManager({
         <div className="color-section">
           <div className="color-section__header mb-6">
             <h2 className="text-xl font-semibold mb-2">Interactive Colors</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">{colorDescriptions.interactive}</p>
           </div>
           <AssetDisplay
-            description=""
+            description={colorDescriptions.interactive}
             supportsVariants={false}
             renderActions={() => (
               <Button
