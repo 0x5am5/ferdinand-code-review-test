@@ -1424,12 +1424,11 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
               }`}
               >
 
-              <button className="logo-display__preview-action-button">
-                <label className="cursor-pointer">
-                  <Input
-                    type="file"
-                    accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                    onChange={(e) => {
+              <label className="cursor-pointer">
+                <Input
+                  type="file"
+                  accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
+                  onChange={(e) => {
                       if (e.target.files?.[0]) {
                         const createUpload = async () => {
                           const formData = new FormData();
