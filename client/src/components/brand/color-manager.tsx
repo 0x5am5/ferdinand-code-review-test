@@ -383,7 +383,7 @@ function extractBrandColorProperties(brandColors: ColorData[], baseGreyHex: stri
   ];
 
   const variation = variations[regenerationCount % variations.length];
-  
+
   const adjustedHue = (baseHue + variation.hueShift + 360) % 360;
   const adjustedSaturation = Math.min(baseSaturation * variation.saturationMultiplier, 0.07);
 
@@ -919,7 +919,7 @@ export function ColorManager({
   const brandColorsData = transformedColors.filter(
     (c) => c.category === "brand",
   );
-  
+
   // Sort neutral colors: manual (base grey) first, then generated shades from light to dark (Grey 11 to Grey 1)
   const neutralColorsData = transformedColors
     .filter((c) => c.category === "neutral")
@@ -927,26 +927,26 @@ export function ColorManager({
       // Check if colors are generated grey shades (names like "Grey 1", "Grey 2", etc.)
       const isAGeneratedGrey = /^Grey \d+$/.test(a.name);
       const isBGeneratedGrey = /^Grey \d+$/.test(b.name);
-      
+
       // Special handling for "Base grey" - always comes first
       if (a.name === "Base grey") return -1;
       if (b.name === "Base grey") return 1;
-      
+
       // If one is generated and one isn't, manual colors come first
       if (isAGeneratedGrey && !isBGeneratedGrey) return 1;
       if (!isAGeneratedGrey && isBGeneratedGrey) return -1;
-      
+
       // If both are generated greys, sort by number (Grey 11 first, Grey 1 last)
       if (isAGeneratedGrey && isBGeneratedGrey) {
         const numA = parseInt(a.name.match(/^Grey (\d+)$/)?.[1] || "0");
         const numB = parseInt(b.name.match(/^Grey (\d+)$/)?.[1] || "0");
         return numB - numA; // Higher numbers first (Grey 11, 10, 9... 2, 1)
       }
-      
+
       // If both are manual, keep original order
       return 0;
     });
-    
+
   const interactiveColorsData = transformedColors.filter(
     (c) => c.category === "interactive",
   );
@@ -1040,11 +1040,11 @@ export function ColorManager({
       // Generate lightness values: Grey 1 = darkest (8%), Grey 11 = lightest (98%)
       const baseLightness = 8 + ((level - 1) / 10) * 90; // 8% to 98%
       const lightness = Math.max(8, Math.min(98, baseLightness + lightnessShift)); // Apply variation with bounds
-      
+
       // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
       const normalizedLightness = lightness / 100; // Convert to 0-1 range
       const saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
-      
+
       // Convert HSL to hex
       const hex = hslToHex(hue, saturation * 100, lightness);
       allShades.push({ level, hex });
@@ -1156,18 +1156,32 @@ export function ColorManager({
           isEmpty={brandColorsData.length === 0}
           sectionType="brand-colors"
           uploadComponent={
-            <Button
-              onClick={() => {
-                setSelectedCategory("brand");
-                setEditingColor(null);
-                form.reset();
-                setIsAddingColor(true);
-              }}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Color
-            </Button>
+            
+              <div className="flex flex-col gap-2 w-full">
+                <Button 
+                  onClick={handleGenerateGreyShades}
+                  variant="outline"
+                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                >
+                  <RotateCcw className="h-12 w-12 text-muted-foreground/50" />
+                  <span className="text-muted-foreground/50">Generate</span>
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    setSelectedCategory("brand");
+                    setEditingColor(null);
+                    form.reset();
+                    setIsAddingColor(true);
+                  }}
+                  variant="outline"
+                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                >
+                  <Plus className="h-12 w-12 text-muted-foreground/50" />
+                  <span className="text-muted-foreground/50">Add Color</span>
+                </Button>
+              </div>
+            
           }
           emptyPlaceholder={
             <div className="text-center py-12 text-muted-foreground">
