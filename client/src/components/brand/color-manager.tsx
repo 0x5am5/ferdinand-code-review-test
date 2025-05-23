@@ -1059,17 +1059,14 @@ export function ColorManager({
                     // Generate missing shades
                     const newShades = ColorUtils.generateGreyShades(neutralColors);
 
-                    // Set category before creating colors
-                    setSelectedCategory("neutral");
-
-                    // Create and add new colors
+                    // Create and add new colors with explicit neutral category
                     newShades.forEach(shade => {
                       const payload = {
                         name: `Grey ${shade.level}`,
                         hex: shade.hex,
                         type: "solid",
+                        category: "neutral"
                       };
-                      setSelectedCategory("neutral");
                       createColor.mutate(payload);
                     });
                   }}
