@@ -1048,44 +1048,34 @@ export function ColorManager({
                   <span className="text-muted-foreground/50">Add New Color</span>
                 </Button>
 
-                {(() => {
-                  // Check if we already have 11 shades (complete set) or if there are no missing shades to generate
-                  const neutralColors = neutralColorsData.map(color => ({
-                    ...color,
-                    brightness: ColorUtils.analyzeBrightness(color.hex)
-                  }));
-                  
-                  const newShades = ColorUtils.generateGreyShades(neutralColors);
-                  const hasCompleteSet = neutralColorsData.length >= 11;
-                  const noMissingShades = newShades.length === 0;
-                  
-                  // Hide button if we have complete set or no missing shades
-                  if (hasCompleteSet || noMissingShades) {
-                    return null;
-                  }
-                  
-                  return (
-                    <Button
-                      onClick={() => {
-                        // Create and add new colors with explicit neutral category
-                        newShades.forEach(shade => {
-                          const payload = {
-                            name: `Grey ${shade.level}`,
-                            hex: shade.hex,
-                            type: "solid" as const,
-                            category: "neutral"
-                          };
-                          createColor.mutate(payload);
-                        });
-                      }}
-                      variant="outline"
-                      className="flex items-center justify-center gap-2 py-2"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                      <span>Generate</span>
-                    </Button>
-                  );
-                })()}
+                <Button
+                  onClick={() => {
+                    // Get neutral colors and analyze brightness
+                    const neutralColors = neutralColorsData.map(color => ({
+                      ...color,
+                      brightness: ColorUtils.analyzeBrightness(color.hex)
+                    }));
+
+                    // Generate missing shades
+                    const newShades = ColorUtils.generateGreyShades(neutralColors);
+
+                    // Create and add new colors with explicit neutral category
+                    newShades.forEach(shade => {
+                      const payload = {
+                        name: `Grey ${shade.level}`,
+                        hex: shade.hex,
+                        type: "solid" as const,
+                        category: "neutral"
+                      };
+                      createColor.mutate(payload);
+                    });
+                  }}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2 py-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Generate</span>
+                </Button>
               </div>
             </div>
           </div>
