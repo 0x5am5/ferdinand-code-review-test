@@ -62,10 +62,14 @@ function ColorCard({
   color, 
   onEdit, 
   onDelete,
+  onGenerate,
+  neutralColorsCount,
 }: { 
   color: any; 
   onEdit: (color: any) => void; 
   onDelete: (id: number) => void; 
+  onGenerate?: () => void;
+  neutralColorsCount?: number;
 }) {
   const { toast } = useToast();
   const [showTints, setShowTints] = useState(false);
@@ -124,6 +128,17 @@ function ColorCard({
           )}
         </div>
         <div className="color-chip__controls">
+          {color.category === "neutral" && onGenerate && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onGenerate}
+              title={neutralColorsCount && neutralColorsCount >= 11 ? "Re-generate grey shades" : "Generate grey shades"}
+            >
+              <RotateCcw className="h-6 w-6" />
+            </Button>
+          )}
           {color.category !== "neutral" && (
             <Button
               variant="ghost"
@@ -868,6 +883,77 @@ export function ColorManager({
     }
   };
 
+  const handleGenerateGreyShades = () => {
+    // First, update any manually added neutral colors to "Base grey" if they don't have that name
+    const manualColors = neutralColorsData.filter(color => !/^Grey \d+$/.test(color.name));
+    manualColors.forEach((color, index) => {
+      if (color.name !== "Base grey" && color.id) {
+        // Update the existing color to "Base grey"
+        fetch(`/api/clients/${clientId}/assets/${color.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "Base grey",
+            category: "color",
+            clientId,
+            data: {
+              type: "solid",
+              category: "neutral",
+              colors: [{
+                hex: color.hex,
+                rgb: color.rgb,
+                cmyk: color.cmyk,
+                pantone: color.pantone,
+              }],
+              tints: generateTintsAndShades(color.hex).tints.map((hex, i) => ({
+                percentage: [60, 40, 20][i],
+                hex,
+              })),
+              shades: generateTintsAndShades(color.hex).shades.map((hex, i) => ({
+                percentage: [20, 40, 60][i],
+                hex,
+              })),
+            },
+          })
+        }).then(() => {
+          queryClient.invalidateQueries({
+            queryKey: [`/api/clients/${clientId}/assets`],
+          });
+        });
+      }
+    });
+
+    // Generate all 11 shades regardless of existing colors
+    const allShades = [];
+    for (let level = 1; level <= 11; level++) {
+      const brightness = ((level - 1) / 10) * 100;
+      const value = Math.round((brightness / 100) * 255);
+      const hex = `#${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}`.toUpperCase();
+      allShades.push({ level, hex });
+    }
+
+    // Check which shades already exist and only create missing ones
+    const existingGeneratedShades = neutralColorsData
+      .filter(color => /^Grey \d+$/.test(color.name))
+      .map(color => {
+        const match = color.name.match(/^Grey (\d+)$/);
+        return match ? parseInt(match[1]) : 0;
+      });
+
+    const missingShades = allShades.filter(shade => !existingGeneratedShades.includes(shade.level));
+
+    // Create missing shades
+    missingShades.forEach(shade => {
+      const payload = {
+        name: `Grey ${shade.level}`,
+        hex: shade.hex,
+        type: "solid" as const,
+        category: "neutral"
+      };
+      createColor.mutate(payload);
+    });
+  };
+
   const handleAddBrandColor = (name: string, hex: string) => {
     const colorKey = name.toLowerCase().replace(/\s+/g, "-");
     handleColorChange(colorKey, hex, true);
@@ -1051,12 +1137,14 @@ export function ColorManager({
                   color={color}
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
+                  onGenerate={handleGenerateGreyShades}
+                  neutralColorsCount={neutralColorsData.length}
                 />
               ))}
 
-              <div className="asset-display__add-generate-buttons">
-                {/* Hide Add New Color button if there are 11 or more neutral colors */}
-                {neutralColorsData.length < 11 && (
+              {/* Only show Add New Color button if there are fewer than 11 neutral colors */}
+              {neutralColorsData.length < 11 && (
+                <div className="asset-display__add-generate-buttons">
                   <Button
                     onClick={() => {
                       setSelectedCategory("neutral");
@@ -1070,96 +1158,8 @@ export function ColorManager({
                     <Plus className="h-12 w-12 text-muted-foreground/50" />
                     <span className="text-muted-foreground/50">Add New Color</span>
                   </Button>
-                )}
-
-                <Button
-                  onClick={() => {
-                    // First, update any manually added neutral colors to "Base grey" if they don't have that name
-                    const manualColors = neutralColorsData.filter(color => !/^Grey \d+$/.test(color.name));
-                    manualColors.forEach((color, index) => {
-                      if (color.name !== "Base grey" && color.id) {
-                        // Update the existing color to "Base grey"
-                        const updatePayload = {
-                          name: "Base grey",
-                          hex: color.hex,
-                          rgb: color.rgb,
-                          cmyk: color.cmyk,
-                          pantone: color.pantone,
-                          type: "solid" as const,
-                          category: "neutral"
-                        };
-                        
-                        fetch(`/api/clients/${clientId}/assets/${color.id}`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            name: "Base grey",
-                            category: "color",
-                            clientId,
-                            data: {
-                              type: "solid",
-                              category: "neutral",
-                              colors: [{
-                                hex: color.hex,
-                                rgb: color.rgb,
-                                cmyk: color.cmyk,
-                                pantone: color.pantone,
-                              }],
-                              tints: generateTintsAndShades(color.hex).tints.map((hex, i) => ({
-                                percentage: [60, 40, 20][i],
-                                hex,
-                              })),
-                              shades: generateTintsAndShades(color.hex).shades.map((hex, i) => ({
-                                percentage: [20, 40, 60][i],
-                                hex,
-                              })),
-                            },
-                          })
-                        }).then(() => {
-                          queryClient.invalidateQueries({
-                            queryKey: [`/api/clients/${clientId}/assets`],
-                          });
-                        });
-                      }
-                    });
-
-                    // Generate all 11 shades regardless of existing colors
-                    const allShades = [];
-                    for (let level = 1; level <= 11; level++) {
-                      const brightness = ((level - 1) / 10) * 100;
-                      const value = Math.round((brightness / 100) * 255);
-                      const hex = `#${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}`.toUpperCase();
-                      allShades.push({ level, hex });
-                    }
-
-                    // Check which shades already exist and only create missing ones
-                    const existingGeneratedShades = neutralColorsData
-                      .filter(color => /^Grey \d+$/.test(color.name))
-                      .map(color => {
-                        const match = color.name.match(/^Grey (\d+)$/);
-                        return match ? parseInt(match[1]) : 0;
-                      });
-
-                    const missingShades = allShades.filter(shade => !existingGeneratedShades.includes(shade.level));
-
-                    // Create missing shades
-                    missingShades.forEach(shade => {
-                      const payload = {
-                        name: `Grey ${shade.level}`,
-                        hex: shade.hex,
-                        type: "solid" as const,
-                        category: "neutral"
-                      };
-                      createColor.mutate(payload);
-                    });
-                  }}
-                  variant="outline"
-                  className="flex items-center justify-center gap-2 py-2"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  <span>{neutralColorsData.length >= 11 ? "Re-generate" : "Generate"}</span>
-                </Button>
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </AssetSection>
