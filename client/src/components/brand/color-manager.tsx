@@ -863,10 +863,11 @@ export function ColorManager({
                   form.reset();
                   setIsAddingColor(true);
                 }}
-                className="flex items-center gap-2"
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors"
               >
-                <Plus className="h-4 w-4" />
-                Add Color
+                <Plus className="h-6 w-6 text-muted-foreground" />
+                <span className="text-muted-foreground">Add New Color</span>
               </Button>
             </div>
           </div>
