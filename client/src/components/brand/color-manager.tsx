@@ -1037,8 +1037,15 @@ export function ColorManager({
     // Generate all 11 shades using new parabolic algorithm
     const allShades = [];
     for (let level = 1; level <= 11; level++) {
-      // Generate lightness values: Grey 1 = darkest (8%), Grey 11 = lightest (98%)
-      const baseLightness = 8 + ((level - 1) / 10) * 90; // 8% to 98%
+      // Generate lightness values with midpoint shifted to Grey 5 for more lighter shades
+      let baseLightness;
+      if (level <= 5) {
+        // Greys 1-5: 8% to 50% (compressed dark range)
+        baseLightness = 8 + ((level - 1) / 4) * 42; // 8% to 50%
+      } else {
+        // Greys 6-11: 50% to 98% (expanded light range)
+        baseLightness = 50 + ((level - 5) / 6) * 48; // 50% to 98%
+      }
       const lightness = Math.max(8, Math.min(98, baseLightness + lightnessShift)); // Apply variation with bounds
 
       // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
