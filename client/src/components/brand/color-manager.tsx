@@ -436,11 +436,33 @@ function hslToHex(h: number, s: number, l: number) {
   return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 }
 
+// Check if a brand color matches a specific color family
+function isColorFamily(hex: string, family: 'green' | 'yellow' | 'red' | 'blue'): boolean {
+  const hsl = hexToHslValues(hex);
+  if (!hsl) return false;
+  
+  const hue = hsl.h * 360;
+  
+  switch (family) {
+    case 'green': return hue >= 90 && hue <= 170;
+    case 'yellow': return hue >= 30 && hue <= 80;
+    case 'red': return (hue >= 0 && hue <= 25) || (hue >= 340 && hue <= 360);
+    case 'blue': return hue >= 190 && hue <= 260;
+    default: return false;
+  }
+}
+
 // Generate interactive colors based on brand colors
 function generateInteractiveColors(brandColors: ColorData[]) {
+  // First, check if any brand colors match our target families
+  const existingGreen = brandColors.find(color => isColorFamily(color.hex, 'green'));
+  const existingYellow = brandColors.find(color => isColorFamily(color.hex, 'yellow'));
+  const existingRed = brandColors.find(color => isColorFamily(color.hex, 'red'));
+  const existingBlue = brandColors.find(color => isColorFamily(color.hex, 'blue'));
+
   // Extract average saturation and lightness from brand colors
-  let avgSaturation = 0.7; // Default fallback
-  let avgLightness = 0.5; // Default fallback
+  let avgSaturation = 0.7;
+  let avgLightness = 0.5;
   
   if (brandColors.length > 0) {
     let totalSat = 0;
@@ -457,24 +479,55 @@ function generateInteractiveColors(brandColors: ColorData[]) {
     });
 
     if (validColors > 0) {
-      avgSaturation = Math.min(totalSat / validColors + 0.1, 0.85); // Slightly increase saturation
-      avgLightness = Math.max(0.45, Math.min(totalLight / validColors, 0.6)); // Adjust for accessibility
+      avgSaturation = Math.min(totalSat / validColors + 0.1, 0.85);
+      avgLightness = Math.max(0.45, Math.min(totalLight / validColors, 0.6));
     }
   }
 
-  // Predefined hue targets for each interactive color
+  // Color specifications in the correct order: Success, Warning, Error, Link
   const colorSpecs = [
-    { name: "Error", hue: 0, saturation: avgSaturation, lightness: avgLightness },
-    { name: "Warning", hue: 40, saturation: avgSaturation, lightness: avgLightness },
-    { name: "Success", hue: 145, saturation: avgSaturation, lightness: avgLightness },
-    { name: "Link", hue: 220, saturation: avgSaturation, lightness: avgLightness }
+    { 
+      name: "Success", 
+      existing: existingGreen,
+      hue: 145, 
+      saturation: avgSaturation, 
+      lightness: avgLightness 
+    },
+    { 
+      name: "Warning", 
+      existing: existingYellow,
+      hue: 40, 
+      saturation: avgSaturation, 
+      lightness: avgLightness 
+    },
+    { 
+      name: "Error", 
+      existing: existingRed,
+      hue: 0, 
+      saturation: avgSaturation, 
+      lightness: avgLightness 
+    },
+    { 
+      name: "Link", 
+      existing: existingBlue,
+      hue: 220, 
+      saturation: avgSaturation, 
+      lightness: avgLightness 
+    }
   ];
 
-  return colorSpecs.map(spec => ({
-    name: spec.name,
-    hex: hslToHex(spec.hue, spec.saturation * 100, spec.lightness * 100),
-    category: "interactive" as const
-  }));
+  return colorSpecs.map(spec => {
+    // Use existing brand color if available, otherwise generate new one
+    const hex = spec.existing 
+      ? spec.existing.hex 
+      : hslToHex(spec.hue, spec.saturation * 100, spec.lightness * 100);
+    
+    return {
+      name: spec.name,
+      hex: hex,
+      category: "interactive" as const
+    };
+  });
 }
 
 function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
@@ -1401,15 +1454,20 @@ export function ColorManager({
             </div>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
-            {interactiveColorsData.map((color) => (
-              <ColorCard
-                key={color.id}
-                color={color}
-                onEdit={handleEditColor}
-                onDelete={deleteColor.mutate}
-              />
-            ))}
+          <div className="asset-display">
+            <div className="asset-display__info">
+              {colorDescriptions.neutral}
+            </div>
+            <div className="asset-display__preview">
+              {interactiveColorsData.map((color) => (
+                <ColorCard
+                  key={color.id}
+                  color={color}
+                  onEdit={handleEditColor}
+                  onDelete={deleteColor.mutate}
+                />
+              ))}
+            </div>
           </div>
         </AssetSection>
       </div>
