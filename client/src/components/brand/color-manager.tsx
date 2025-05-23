@@ -124,15 +124,17 @@ function ColorCard({
           )}
         </div>
         <div className="color-chip__controls">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setShowTints(!showTints)}
-            title={showTints ? "Hide tints/shades" : "Show tints/shades"}
-          >
-            <Palette className="h-6 w-6" />
-          </Button>
+          {color.category !== "neutral" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setShowTints(!showTints)}
+              title={showTints ? "Hide tints/shades" : "Show tints/shades"}
+            >
+              <Palette className="h-6 w-6" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
