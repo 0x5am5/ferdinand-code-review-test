@@ -436,6 +436,47 @@ function hslToHex(h: number, s: number, l: number) {
   return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 }
 
+// Generate interactive colors based on brand colors
+function generateInteractiveColors(brandColors: ColorData[]) {
+  // Extract average saturation and lightness from brand colors
+  let avgSaturation = 0.7; // Default fallback
+  let avgLightness = 0.5; // Default fallback
+  
+  if (brandColors.length > 0) {
+    let totalSat = 0;
+    let totalLight = 0;
+    let validColors = 0;
+
+    brandColors.forEach(color => {
+      const hsl = hexToHslValues(color.hex);
+      if (hsl) {
+        totalSat += hsl.s;
+        totalLight += hsl.l;
+        validColors++;
+      }
+    });
+
+    if (validColors > 0) {
+      avgSaturation = Math.min(totalSat / validColors + 0.1, 0.85); // Slightly increase saturation
+      avgLightness = Math.max(0.45, Math.min(totalLight / validColors, 0.6)); // Adjust for accessibility
+    }
+  }
+
+  // Predefined hue targets for each interactive color
+  const colorSpecs = [
+    { name: "Error", hue: 0, saturation: avgSaturation, lightness: avgLightness },
+    { name: "Warning", hue: 40, saturation: avgSaturation, lightness: avgLightness },
+    { name: "Success", hue: 145, saturation: avgSaturation, lightness: avgLightness },
+    { name: "Link", hue: 220, saturation: avgSaturation, lightness: avgLightness }
+  ];
+
+  return colorSpecs.map(spec => ({
+    name: spec.name,
+    hex: hslToHex(spec.hue, spec.saturation * 100, spec.lightness * 100),
+    category: "interactive" as const
+  }));
+}
+
 function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
   const [copied, setCopied] = useState(false);
 
@@ -984,6 +1025,22 @@ export function ColorManager({
     }
   };
 
+  const handleGenerateInteractiveColors = () => {
+    // Generate the four interactive colors based on brand colors
+    const interactiveColors = generateInteractiveColors(brandColorsData);
+    
+    // Create each color using the existing createColor mutation
+    interactiveColors.forEach(colorData => {
+      const payload = {
+        name: colorData.name,
+        hex: colorData.hex,
+        type: "solid" as const,
+        category: "interactive"
+      };
+      createColor.mutate(payload);
+    });
+  };
+
   const handleGenerateGreyShades = () => {
     // First, update any manually added neutral colors to "Base grey" if they don't have that name
     const manualColors = neutralColorsData.filter(color => !/^Grey \d+$/.test(color.name));
@@ -1309,19 +1366,30 @@ export function ColorManager({
           isEmpty={interactiveColorsData.length === 0}
           sectionType="interactive-colors"
           uploadComponent={
-            <Button
-              onClick={() => {
-                setSelectedCategory("interactive");
-                setEditingColor(null);
-                form.reset();
-                setIsAddingColor(true);
-              }}
-              variant="outline"
-              className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+            <div className="space-y-4 w-full">
+              <Button
+                onClick={handleGenerateInteractiveColors}
+                variant="default"
+                className="flex flex-col items-center justify-center gap-2 p-6 w-full h-[120px] transition-colors"
+                disabled={createColor.isPending}
               >
-              <Plus className="h-4 w-4" />
-              Add Color
-            </Button>
+                <Palette className="h-4 w-4" />
+                {createColor.isPending ? "Generating..." : "Generate Colors"}
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedCategory("interactive");
+                  setEditingColor(null);
+                  form.reset();
+                  setIsAddingColor(true);
+                }}
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                >
+                <Plus className="h-4 w-4" />
+                Add Color
+              </Button>
+            </div>
           }
           emptyPlaceholder={
             <div className="text-center py-12 text-muted-foreground">
