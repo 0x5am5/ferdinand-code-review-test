@@ -684,7 +684,7 @@ export function ColorManager({
         clientId,
         data: {
           type: data.type,
-          category: selectedCategory,
+          category: data.category || selectedCategory,
           colors: [
             {
               hex: data.hex,
@@ -1064,7 +1064,7 @@ export function ColorManager({
                       const payload = {
                         name: `Grey ${shade.level}`,
                         hex: shade.hex,
-                        type: "solid",
+                        type: "solid" as const,
                         category: "neutral"
                       };
                       createColor.mutate(payload);
@@ -1299,6 +1299,7 @@ const colorFormSchema = z.object({
   cmyk: z.string().optional(),
   pantone: z.string().optional(),
   type: z.enum(["solid", "gradient"]),
+  category: z.string().optional(),
 });
 
 type ColorFormData = z.infer<typeof colorFormSchema>;
