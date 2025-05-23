@@ -78,6 +78,8 @@ function ColorCard({
   const [showTints, setShowTints] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [tempColor, setTempColor] = useState(color.hex);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState(color.name);
 
   const copyHex = (hexValue: string) => {
     navigator.clipboard.writeText(hexValue);
@@ -90,6 +92,29 @@ function ColorCard({
   const handleColorChange = (newHex: string) => {
     setTempColor(newHex);
     // Only update the visual display, don't save to database until Save is clicked
+  };
+
+  const handleNameEdit = () => {
+    setIsEditingName(true);
+    setTempName(color.name);
+  };
+
+  const handleNameBlur = () => {
+    setIsEditingName(false);
+    if (tempName.trim() !== color.name && tempName.trim() !== "") {
+      onEdit({ ...color, name: tempName.trim() });
+    } else {
+      setTempName(color.name); // Reset if empty or unchanged
+    }
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      (e.target as HTMLInputElement).blur(); // Trigger blur to save
+    } else if (e.key === 'Escape') {
+      setTempName(color.name);
+      setIsEditingName(false);
+    }
   };
 
   const handleStartEdit = () => {
@@ -180,14 +205,31 @@ function ColorCard({
           </div>
         ) : (
           <div className="color-chip__info">
-            <h5 
-              className="color-chip--title"
-              style={{
-                color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-              }}
-            >
-              {color.name}
-            </h5>
+            {isEditingName ? (
+              <input
+                type="text"
+                value={tempName}
+                onChange={(e) => setTempName(e.target.value)}
+                onBlur={handleNameBlur}
+                onKeyDown={handleNameKeyDown}
+                className="color-chip--title bg-transparent border-none outline-none w-full"
+                style={{
+                  color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                }}
+                autoFocus
+              />
+            ) : (
+              <h5 
+                className="color-chip--title cursor-pointer hover:opacity-80 transition-opacity"
+                style={{
+                  color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                }}
+                onClick={handleNameEdit}
+                title="Click to edit name"
+              >
+                {color.name}
+              </h5>
+            )}
             <p className="text-xs font-mono" 
                style={{
                 color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
