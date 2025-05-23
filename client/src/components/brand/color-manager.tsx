@@ -341,12 +341,19 @@ function generateContainerColors(baseColor: string) {
 }
 
 // Extract hue and saturation from brand colors for neutral generation
-function extractBrandColorProperties(brandColors: ColorData[], regenerationCount = 0) {
+function extractBrandColorProperties(brandColors: ColorData[], baseGreyHex: string | null = null, regenerationCount = 0) {
   let baseHue = 0;
-  let baseSaturation = 0.02; // Very low base saturation to reduce purple/blue tints
+  let baseSaturation = 0.02;
 
-  if (brandColors.length > 0) {
-    // Convert brand colors to HSL and find average hue and max saturation
+  // If we have a base grey, use its properties as the foundation
+  if (baseGreyHex) {
+    const baseGreyHsl = hexToHslValues(baseGreyHex);
+    if (baseGreyHsl) {
+      baseHue = baseGreyHsl.h;
+      baseSaturation = Math.max(baseGreyHsl.s, 0.02); // Use base grey saturation but ensure minimum
+    }
+  } else if (brandColors.length > 0) {
+    // Fallback to brand colors if no base grey
     let totalHue = 0;
     let maxSaturation = 0;
     let validColors = 0;
@@ -361,24 +368,24 @@ function extractBrandColorProperties(brandColors: ColorData[], regenerationCount
     });
 
     baseHue = validColors > 0 ? totalHue / validColors : 0;
-    // Much lower max saturation to reduce color cast
-    baseSaturation = Math.min(maxSaturation * 0.1, 0.05); // Max 5% saturation for neutrals
+    // Increased max saturation for more character
+    baseSaturation = Math.min(maxSaturation * 0.15, 0.07); // Max 7% saturation for neutrals
   }
 
   // Add variation each time regenerate is clicked
   const variations = [
     { hueShift: 0, saturationMultiplier: 1, lightnessShift: 0 }, // Original
-    { hueShift: 15, saturationMultiplier: 0.7, lightnessShift: 5 }, // Warmer, lighter
-    { hueShift: -15, saturationMultiplier: 0.7, lightnessShift: -5 }, // Cooler, darker  
-    { hueShift: 30, saturationMultiplier: 0.5, lightnessShift: 8 }, // Much warmer, much lighter
-    { hueShift: -30, saturationMultiplier: 0.5, lightnessShift: -8 }, // Much cooler, much darker
-    { hueShift: 0, saturationMultiplier: 0.3, lightnessShift: 0 }, // Nearly grayscale
+    { hueShift: 15, saturationMultiplier: 0.8, lightnessShift: 3 }, // Warmer, lighter
+    { hueShift: -15, saturationMultiplier: 0.8, lightnessShift: -3 }, // Cooler, darker  
+    { hueShift: 25, saturationMultiplier: 0.6, lightnessShift: 5 }, // Much warmer, much lighter
+    { hueShift: -25, saturationMultiplier: 0.6, lightnessShift: -5 }, // Much cooler, much darker
+    { hueShift: 0, saturationMultiplier: 0.4, lightnessShift: 0 }, // Nearly grayscale
   ];
 
   const variation = variations[regenerationCount % variations.length];
   
   const adjustedHue = (baseHue + variation.hueShift + 360) % 360;
-  const adjustedSaturation = baseSaturation * variation.saturationMultiplier;
+  const adjustedSaturation = Math.min(baseSaturation * variation.saturationMultiplier, 0.07);
 
   return { 
     hue: adjustedHue, 
@@ -1020,17 +1027,21 @@ export function ColorManager({
     // Increment regeneration counter for variation
     setRegenerationCount(prev => prev + 1);
 
-    // Extract hue and base saturation from brand colors with variation
-    const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(brandColorsData, regenerationCount);
+    // Find the base grey color to use as reference
+    const baseGreyColor = neutralColorsData.find(color => !(/^Grey \d+$/.test(color.name)));
+    const baseGreyHex = baseGreyColor?.hex || null;
+
+    // Extract hue and base saturation from base grey or brand colors with variation
+    const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(brandColorsData, baseGreyHex, regenerationCount);
 
     // Generate all 11 shades using new parabolic algorithm
     const allShades = [];
     for (let level = 1; level <= 11; level++) {
-      // Generate lightness values: Grey 1 = darkest (5%), Grey 11 = lightest (95%)
-      const baseLightness = 5 + ((level - 1) / 10) * 90; // 5% to 95%
-      const lightness = Math.max(5, Math.min(95, baseLightness + lightnessShift)); // Apply variation with bounds
+      // Generate lightness values: Grey 1 = darkest (8%), Grey 11 = lightest (98%)
+      const baseLightness = 8 + ((level - 1) / 10) * 90; // 8% to 98%
+      const lightness = Math.max(8, Math.min(98, baseLightness + lightnessShift)); // Apply variation with bounds
       
-      // Apply parabolic formula with reduced saturation: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
+      // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
       const normalizedLightness = lightness / 100; // Convert to 0-1 range
       const saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
       
