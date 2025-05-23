@@ -340,6 +340,76 @@ function generateContainerColors(baseColor: string) {
   };
 }
 
+// Extract hue and saturation from brand colors for neutral generation
+function extractBrandColorProperties(brandColors: ColorData[]) {
+  if (brandColors.length === 0) {
+    // Default values if no brand colors exist
+    return { hue: 0, maxSaturation: 0.05 }; // Nearly grayscale
+  }
+
+  // Convert brand colors to HSL and find average hue and max saturation
+  let totalHue = 0;
+  let maxSaturation = 0;
+  let validColors = 0;
+
+  brandColors.forEach(color => {
+    const hsl = hexToHslValues(color.hex);
+    if (hsl) {
+      totalHue += hsl.h;
+      maxSaturation = Math.max(maxSaturation, hsl.s);
+      validColors++;
+    }
+  });
+
+  const averageHue = validColors > 0 ? totalHue / validColors : 0;
+  // Limit max saturation for neutrals to create subtle tints
+  const limitedMaxSaturation = Math.min(maxSaturation * 0.3, 0.15); // Max 15% saturation for neutrals
+
+  return { hue: averageHue, maxSaturation: limitedMaxSaturation };
+}
+
+// Convert hex to HSL values (returns object with h, s, l)
+function hexToHslValues(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return null;
+
+  let r = parseInt(result[1], 16) / 255;
+  let g = parseInt(result[2], 16) / 255;
+  let b = parseInt(result[3], 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h = 0, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return { h: h * 360, s, l };
+}
+
+// Convert HSL to hex
+function hslToHex(h: number, s: number, l: number) {
+  l /= 100;
+  const a = s * Math.min(l, 1 - l) / 100;
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color).toString(16).padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+}
+
 function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
   const [copied, setCopied] = useState(false);
 
@@ -927,12 +997,21 @@ export function ColorManager({
       }
     });
 
-    // Generate all 11 shades regardless of existing colors
+    // Extract hue and base saturation from brand colors
+    const { hue, maxSaturation } = extractBrandColorProperties(brandColorsData);
+
+    // Generate all 11 shades using new parabolic algorithm
     const allShades = [];
     for (let level = 1; level <= 11; level++) {
-      const brightness = ((level - 1) / 10) * 100;
-      const value = Math.round((brightness / 100) * 255);
-      const hex = `#${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}`.toUpperCase();
+      // Generate lightness values from 95% (light) to 5% (dark)
+      const lightness = 95 - ((level - 1) / 10) * 90; // 95% to 5%
+      
+      // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
+      const normalizedLightness = lightness / 100; // Convert to 0-1 range
+      const saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
+      
+      // Convert HSL to hex
+      const hex = hslToHex(hue, saturation * 100, lightness);
       allShades.push({ level, hex });
     }
 
