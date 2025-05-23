@@ -378,8 +378,7 @@ function ColorChip({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
-  const { tints, shades } = generateTintsAndShades(color.hex);
-  const { toast } = useToast();
+  const { tints, shades } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState({
     name: color.name,
@@ -1060,15 +1059,17 @@ export function ColorManager({
                     // Generate missing shades
                     const newShades = ColorUtils.generateGreyShades(neutralColors);
 
+                    // Set category before creating colors
+                    setSelectedCategory("neutral");
+
                     // Create and add new colors
                     newShades.forEach(shade => {
-                      const payload = {
+                      createColor.mutate({
                         name: `Grey ${shade.level}`,
                         hex: shade.hex,
-                        type: "solid"
-                      };
-                      setSelectedCategory("neutral");
-                      createColor.mutate(payload);
+                        type: "solid",
+                        category: "neutral" // Explicitly set category in payload
+                      });
                     });
                   }}
                   variant="outline"
