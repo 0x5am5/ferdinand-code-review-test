@@ -131,6 +131,11 @@ function ColorCard({
     setIsEditing(true);
   };
 
+  const handleEditColor = (colorToEdit: ColorData) => {
+    setTempColor(colorToEdit.hex);
+    setIsEditing(true);
+  };
+
   const handleSaveEdit = () => {
     // Make sure the final update is sent to the database
     if (onUpdate && tempColor !== color.hex) {
@@ -252,7 +257,7 @@ function ColorCard({
               style={{
                 color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
               }}
-              onClick={() => handleEditColor(color)}
+              onClick={handleStartEdit}
               title="Click to edit color"
             >
               {displayHex}
