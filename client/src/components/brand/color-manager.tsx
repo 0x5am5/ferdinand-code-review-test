@@ -68,75 +68,134 @@ function ColorCard({
   onDelete: (id: number) => void; 
 }) {
   const { toast } = useToast();
+  const [showTints, setShowTints] = useState(false);
   
-  const copyHex = () => {
-    navigator.clipboard.writeText(color.hex);
+  const copyHex = (hexValue: string) => {
+    navigator.clipboard.writeText(hexValue);
     toast({
       title: "Copied!",
-      description: `${color.hex} has been copied to your clipboard.`,
+      description: `${hexValue} has been copied to your clipboard.`,
     });
   };
 
+  // Generate tints and shades
+  const { tints, shades } = generateTintsAndShades(color.hex);
+
   return (
-    <div 
-      className="color-chip"
-      style={{ backgroundColor: color.hex }}
-    >
-        
-      <div className="color-chip__info">
-        <h5 
-          className="color-chip--title"
-          style={{
-            color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-          }}
-        >
-          {color.name}
-        </h5>
-        <p className="text-xs font-mono text-muted-foreground">{color.hex}</p>
-        {color.rgb && (
-          <p className="text-xs font-mono text-muted-foreground">{color.rgb}</p>
+    <div className="color-chip-container relative">
+      <motion.div 
+        className="color-chip"
+        style={{ backgroundColor: color.hex }}
+        animate={{ 
+          width: showTints ? "60%" : "100%",
+        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
+        <div className="color-chip__info">
+          <h5 
+            className="color-chip--title"
+            style={{
+              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+            }}
+          >
+            {color.name}
+          </h5>
+          <p className="text-xs font-mono text-muted-foreground">{color.hex}</p>
+          {color.rgb && (
+            <p className="text-xs font-mono text-muted-foreground">{color.rgb}</p>
+          )}
+          {color.cmyk && (
+            <p className="text-xs font-mono text-muted-foreground">{color.cmyk}</p>
+          )}
+          {color.pantone && (
+            <p className="text-xs font-mono text-muted-foreground">{color.pantone}</p>
+          )}
+        </div>
+        <div className="color-chip__controls">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={() => setShowTints(!showTints)}
+            title={showTints ? "Hide tints/shades" : "Show tints/shades"}
+          >
+            <Palette className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={() => copyHex(color.hex)}
+          >
+            <Copy className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={() => onEdit(color)}
+          >
+            <Edit2 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white text-destructive"
+            onClick={() => onDelete(color.id)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* Tints and Shades Panel */}
+      <AnimatePresence>
+        {showTints && (
+          <motion.div 
+            className="absolute top-0 right-0 w-[40%] h-full flex flex-col"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 20 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            {/* Tints Row (Lighter) */}
+            <div className="flex h-1/2">
+              {tints.map((tint, index) => (
+                <motion.div
+                  key={`tint-${index}`}
+                  className="flex-1 relative group cursor-pointer"
+                  style={{ backgroundColor: tint }}
+                  onClick={() => copyHex(tint)}
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+                    <Copy className="h-3 w-3 text-white" />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            
+            {/* Shades Row (Darker) */}
+            <div className="flex h-1/2">
+              {shades.map((shade, index) => (
+                <motion.div
+                  key={`shade-${index}`}
+                  className="flex-1 relative group cursor-pointer"
+                  style={{ backgroundColor: shade }}
+                  onClick={() => copyHex(shade)}
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+                    <Copy className="h-3 w-3 text-white" />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         )}
-        {color.cmyk && (
-          <p className="text-xs font-mono text-muted-foreground">{color.cmyk}</p>
-        )}
-        {color.pantone && (
-          <p className="text-xs font-mono text-muted-foreground">{color.pantone}</p>
-        )}
-      </div>
-      <div className="color-chip__controls">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 bg-white/90 hover:bg-white"
-          onClick={() => onEdit(color)}
-        >
-          <Edit2 className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 bg-white/90 hover:bg-white"
-          onClick={copyHex}
-        >
-          <Copy className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 bg-white/90 hover:bg-white"
-          onClick={() => onEdit(color)}
-        >
-          <Edit2 className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 bg-white/90 hover:bg-white text-destructive"
-          onClick={() => onDelete(color.id)}
-        >
-          <Trash2 className="h-3 w-3" />
-        </Button>
-      </div>
+      </AnimatePresence>
     </div>
   );
 }
