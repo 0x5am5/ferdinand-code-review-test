@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -177,43 +178,47 @@ function ColorCard({
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        {/* Streamlined Color Picker Dialog */}
-        <Dialog open={isEditing} onOpenChange={setIsEditing}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Edit Color</DialogTitle>
-              <button
-                onClick={handleCancelEdit}
-                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </DialogHeader>
+        {/* Direct Color Picker - Positioned Absolutely */}
+        {isEditing && (
+          <div className="absolute top-0 right-0 z-50 w-80 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
             <div className="space-y-4">
-              {/* Use the existing ColorPicker component */}
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Edit Color</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* Direct Color Picker */}
               <ColorPicker
                 value={tempColor}
                 onChange={setTempColor}
-                className="w-full"
               />
 
               {/* Action buttons */}
-              <div className="flex gap-2 justify-end pt-2">
+              <div className="flex gap-2 justify-end">
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={handleCancelEdit}
                 >
                   Cancel
                 </Button>
                 <Button
+                  size="sm"
                   onClick={handleSaveEdit}
                 >
                   Save
                 </Button>
               </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
 
         {!isEditing && (
           <div className="color-chip__info">
@@ -242,10 +247,16 @@ function ColorCard({
                 {color.name}
               </h5>
             )}
-            <p className="text-xs font-mono" 
-               style={{
+            <p 
+              className="text-xs font-mono cursor-pointer hover:bg-black/10 hover:bg-white/10 rounded px-1 py-0.5 transition-colors" 
+              style={{
                 color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-              }} >{displayHex}</p>
+              }}
+              onClick={() => handleEditColor(color)}
+              title="Click to edit color"
+            >
+              {displayHex}
+            </p>
           </div>
         )}
         <div className="color-chip__controls">
