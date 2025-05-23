@@ -831,6 +831,10 @@ export function ColorManager({
       const isAGeneratedGrey = /^Grey \d+$/.test(a.name);
       const isBGeneratedGrey = /^Grey \d+$/.test(b.name);
       
+      // Special handling for "Base grey" - always comes first
+      if (a.name === "Base grey") return -1;
+      if (b.name === "Base grey") return 1;
+      
       // If one is generated and one isn't, manual colors come first
       if (isAGeneratedGrey && !isBGeneratedGrey) return 1;
       if (!isAGeneratedGrey && isBGeneratedGrey) return -1;
