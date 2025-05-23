@@ -89,16 +89,7 @@ function ColorCard({
 
   const handleColorChange = (newHex: string) => {
     setTempColor(newHex);
-    if (onUpdate) {
-      // Real-time update of color formats
-      const updates = {
-        hex: newHex,
-        rgb: hexToRgb(newHex) || undefined,
-        hsl: hexToHsl(newHex) || undefined,
-        cmyk: hexToCmyk(newHex) || undefined,
-      };
-      onUpdate(color.id, updates);
-    }
+    // Only update the visual display, don't save to database until Save is clicked
   };
 
   const handleStartEdit = () => {
@@ -107,6 +98,16 @@ function ColorCard({
   };
 
   const handleSaveEdit = () => {
+    // Make sure the final update is sent to the database
+    if (onUpdate && tempColor !== color.hex) {
+      const updates = {
+        hex: tempColor,
+        rgb: hexToRgb(tempColor) || undefined,
+        hsl: hexToHsl(tempColor) || undefined,
+        cmyk: hexToCmyk(tempColor) || undefined,
+      };
+      onUpdate(color.id, updates);
+    }
     setIsEditing(false);
     toast({
       title: "Color updated!",
