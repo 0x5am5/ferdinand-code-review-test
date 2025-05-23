@@ -1069,13 +1069,17 @@ export function ColorManager({
   });
 
   const updateColor = useMutation({
-    mutationFn: async (data: { id: number; name: string; hex: string; rgb?: string; hsl?: string; cmyk?: string; type: string }) => {
+    mutationFn: async (data: { id: number; name: string; category: string; data: any }) => {
       const response = await fetch(`/api/clients/${clientId}/assets/${data.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          name: data.name,
+          category: data.category,
+          data: data.data,
+        }),
       });
 
       if (!response.ok) {
@@ -1102,15 +1106,26 @@ export function ColorManager({
   const handleUpdateColor = (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }) => {
     const currentColor = colors.find(c => c.id === colorId);
     if (currentColor) {
+      // Parse the current data to get the category and preserve other properties
+      const currentData = typeof currentColor.data === 'string' ? JSON.parse(currentColor.data) : currentColor.data;
+      
       updateColor.mutate({
         id: colorId,
         name: currentColor.name,
-        hex: updates.hex,
-        rgb: updates.rgb || "",
-        hsl: updates.hsl || "",
-        cmyk: updates.cmyk || "",
-        type: "solid",
-        category: "color", // Add the required category field
+        category: "color",
+        data: {
+          type: "solid",
+          category: currentData.category || "brand", // Preserve the color category (brand/neutral/interactive)
+          colors: [{
+            hex: updates.hex,
+            rgb: updates.rgb || "",
+            hsl: updates.hsl || "",
+            cmyk: updates.cmyk || "",
+          }],
+          // Preserve tints and shades if they exist
+          ...(currentData.tints && { tints: currentData.tints }),
+          ...(currentData.shades && { shades: currentData.shades }),
+        }
       });
     }
   };
