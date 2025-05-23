@@ -341,31 +341,50 @@ function generateContainerColors(baseColor: string) {
 }
 
 // Extract hue and saturation from brand colors for neutral generation
-function extractBrandColorProperties(brandColors: ColorData[]) {
-  if (brandColors.length === 0) {
-    // Default values if no brand colors exist
-    return { hue: 0, maxSaturation: 0.05 }; // Nearly grayscale
+function extractBrandColorProperties(brandColors: ColorData[], regenerationCount = 0) {
+  let baseHue = 0;
+  let baseSaturation = 0.02; // Very low base saturation to reduce purple/blue tints
+
+  if (brandColors.length > 0) {
+    // Convert brand colors to HSL and find average hue and max saturation
+    let totalHue = 0;
+    let maxSaturation = 0;
+    let validColors = 0;
+
+    brandColors.forEach(color => {
+      const hsl = hexToHslValues(color.hex);
+      if (hsl) {
+        totalHue += hsl.h;
+        maxSaturation = Math.max(maxSaturation, hsl.s);
+        validColors++;
+      }
+    });
+
+    baseHue = validColors > 0 ? totalHue / validColors : 0;
+    // Much lower max saturation to reduce color cast
+    baseSaturation = Math.min(maxSaturation * 0.1, 0.05); // Max 5% saturation for neutrals
   }
 
-  // Convert brand colors to HSL and find average hue and max saturation
-  let totalHue = 0;
-  let maxSaturation = 0;
-  let validColors = 0;
+  // Add variation each time regenerate is clicked
+  const variations = [
+    { hueShift: 0, saturationMultiplier: 1, lightnessShift: 0 }, // Original
+    { hueShift: 15, saturationMultiplier: 0.7, lightnessShift: 5 }, // Warmer, lighter
+    { hueShift: -15, saturationMultiplier: 0.7, lightnessShift: -5 }, // Cooler, darker  
+    { hueShift: 30, saturationMultiplier: 0.5, lightnessShift: 8 }, // Much warmer, much lighter
+    { hueShift: -30, saturationMultiplier: 0.5, lightnessShift: -8 }, // Much cooler, much darker
+    { hueShift: 0, saturationMultiplier: 0.3, lightnessShift: 0 }, // Nearly grayscale
+  ];
 
-  brandColors.forEach(color => {
-    const hsl = hexToHslValues(color.hex);
-    if (hsl) {
-      totalHue += hsl.h;
-      maxSaturation = Math.max(maxSaturation, hsl.s);
-      validColors++;
-    }
-  });
+  const variation = variations[regenerationCount % variations.length];
+  
+  const adjustedHue = (baseHue + variation.hueShift + 360) % 360;
+  const adjustedSaturation = baseSaturation * variation.saturationMultiplier;
 
-  const averageHue = validColors > 0 ? totalHue / validColors : 0;
-  // Limit max saturation for neutrals to create subtle tints
-  const limitedMaxSaturation = Math.min(maxSaturation * 0.3, 0.15); // Max 15% saturation for neutrals
-
-  return { hue: averageHue, maxSaturation: limitedMaxSaturation };
+  return { 
+    hue: adjustedHue, 
+    maxSaturation: adjustedSaturation,
+    lightnessShift: variation.lightnessShift
+  };
 }
 
 // Convert hex to HSL values (returns object with h, s, l)
@@ -709,6 +728,7 @@ export function ColorManager({
     "brand" | "neutral" | "interactive"
   >("brand");
   const [editingColor, setEditingColor] = useState<ColorData | null>(null);
+  const [regenerationCount, setRegenerationCount] = useState(0);
   // We don't need an extra state since colors are derived from props
 
   // Color utility functions
@@ -893,7 +913,7 @@ export function ColorManager({
     (c) => c.category === "brand",
   );
   
-  // Sort neutral colors: manual (base grey) first, then generated shades from dark to light
+  // Sort neutral colors: manual (base grey) first, then generated shades from light to dark (Grey 11 to Grey 1)
   const neutralColorsData = transformedColors
     .filter((c) => c.category === "neutral")
     .sort((a, b) => {
@@ -909,11 +929,11 @@ export function ColorManager({
       if (isAGeneratedGrey && !isBGeneratedGrey) return 1;
       if (!isAGeneratedGrey && isBGeneratedGrey) return -1;
       
-      // If both are generated greys, sort by brightness (dark to light)
+      // If both are generated greys, sort by number (Grey 11 first, Grey 1 last)
       if (isAGeneratedGrey && isBGeneratedGrey) {
-        const brightnessA = ColorUtils.analyzeBrightness(a.hex);
-        const brightnessB = ColorUtils.analyzeBrightness(b.hex);
-        return brightnessA - brightnessB; // Lower brightness (darker) first
+        const numA = parseInt(a.name.match(/^Grey (\d+)$/)?.[1] || "0");
+        const numB = parseInt(b.name.match(/^Grey (\d+)$/)?.[1] || "0");
+        return numB - numA; // Higher numbers first (Grey 11, 10, 9... 2, 1)
       }
       
       // If both are manual, keep original order
@@ -997,16 +1017,20 @@ export function ColorManager({
       }
     });
 
-    // Extract hue and base saturation from brand colors
-    const { hue, maxSaturation } = extractBrandColorProperties(brandColorsData);
+    // Increment regeneration counter for variation
+    setRegenerationCount(prev => prev + 1);
+
+    // Extract hue and base saturation from brand colors with variation
+    const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(brandColorsData, regenerationCount);
 
     // Generate all 11 shades using new parabolic algorithm
     const allShades = [];
     for (let level = 1; level <= 11; level++) {
-      // Generate lightness values from 95% (light) to 5% (dark)
-      const lightness = 95 - ((level - 1) / 10) * 90; // 95% to 5%
+      // Generate lightness values: Grey 1 = darkest (5%), Grey 11 = lightest (95%)
+      const baseLightness = 5 + ((level - 1) / 10) * 90; // 5% to 95%
+      const lightness = Math.max(5, Math.min(95, baseLightness + lightnessShift)); // Apply variation with bounds
       
-      // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
+      // Apply parabolic formula with reduced saturation: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
       const normalizedLightness = lightness / 100; // Convert to 0-1 range
       const saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
       
