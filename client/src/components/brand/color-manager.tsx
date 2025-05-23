@@ -1110,6 +1110,7 @@ export function ColorManager({
         hsl: updates.hsl || "",
         cmyk: updates.cmyk || "",
         type: "solid",
+        category: "color", // Add the required category field
       });
     }
   };
