@@ -807,9 +807,30 @@ export function ColorManager({
   const brandColorsData = transformedColors.filter(
     (c) => c.category === "brand",
   );
-  const neutralColorsData = transformedColors.filter(
-    (c) => c.category === "neutral",
-  );
+  
+  // Sort neutral colors: manual (base grey) first, then generated shades from dark to light
+  const neutralColorsData = transformedColors
+    .filter((c) => c.category === "neutral")
+    .sort((a, b) => {
+      // Check if colors are generated grey shades (names like "Grey 1", "Grey 2", etc.)
+      const isAGeneratedGrey = /^Grey \d+$/.test(a.name);
+      const isBGeneratedGrey = /^Grey \d+$/.test(b.name);
+      
+      // If one is generated and one isn't, manual colors come first
+      if (isAGeneratedGrey && !isBGeneratedGrey) return 1;
+      if (!isAGeneratedGrey && isBGeneratedGrey) return -1;
+      
+      // If both are generated greys, sort by brightness (dark to light)
+      if (isAGeneratedGrey && isBGeneratedGrey) {
+        const brightnessA = ColorUtils.analyzeBrightness(a.hex);
+        const brightnessB = ColorUtils.analyzeBrightness(b.hex);
+        return brightnessA - brightnessB; // Lower brightness (darker) first
+      }
+      
+      // If both are manual, keep original order
+      return 0;
+    });
+    
   const interactiveColorsData = transformedColors.filter(
     (c) => c.category === "interactive",
   );
@@ -1053,17 +1074,76 @@ export function ColorManager({
 
                 <Button
                   onClick={() => {
-                    // Get neutral colors and analyze brightness
-                    const neutralColors = neutralColorsData.map(color => ({
-                      ...color,
-                      brightness: ColorUtils.analyzeBrightness(color.hex)
-                    }));
+                    // First, update any manually added neutral colors to "Base grey" if they don't have that name
+                    const manualColors = neutralColorsData.filter(color => !/^Grey \d+$/.test(color.name));
+                    manualColors.forEach((color, index) => {
+                      if (color.name !== "Base grey" && color.id) {
+                        // Update the existing color to "Base grey"
+                        const updatePayload = {
+                          name: "Base grey",
+                          hex: color.hex,
+                          rgb: color.rgb,
+                          cmyk: color.cmyk,
+                          pantone: color.pantone,
+                          type: "solid" as const,
+                          category: "neutral"
+                        };
+                        
+                        fetch(`/api/clients/${clientId}/assets/${color.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            name: "Base grey",
+                            category: "color",
+                            clientId,
+                            data: {
+                              type: "solid",
+                              category: "neutral",
+                              colors: [{
+                                hex: color.hex,
+                                rgb: color.rgb,
+                                cmyk: color.cmyk,
+                                pantone: color.pantone,
+                              }],
+                              tints: generateTintsAndShades(color.hex).tints.map((hex, i) => ({
+                                percentage: [60, 40, 20][i],
+                                hex,
+                              })),
+                              shades: generateTintsAndShades(color.hex).shades.map((hex, i) => ({
+                                percentage: [20, 40, 60][i],
+                                hex,
+                              })),
+                            },
+                          })
+                        }).then(() => {
+                          queryClient.invalidateQueries({
+                            queryKey: [`/api/clients/${clientId}/assets`],
+                          });
+                        });
+                      }
+                    });
 
-                    // Generate missing shades
-                    const newShades = ColorUtils.generateGreyShades(neutralColors);
+                    // Generate all 11 shades regardless of existing colors
+                    const allShades = [];
+                    for (let level = 1; level <= 11; level++) {
+                      const brightness = ((level - 1) / 10) * 100;
+                      const value = Math.round((brightness / 100) * 255);
+                      const hex = `#${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}`.toUpperCase();
+                      allShades.push({ level, hex });
+                    }
 
-                    // Create and add new colors with explicit neutral category
-                    newShades.forEach(shade => {
+                    // Check which shades already exist and only create missing ones
+                    const existingGeneratedShades = neutralColorsData
+                      .filter(color => /^Grey \d+$/.test(color.name))
+                      .map(color => {
+                        const match = color.name.match(/^Grey (\d+)$/);
+                        return match ? parseInt(match[1]) : 0;
+                      });
+
+                    const missingShades = allShades.filter(shade => !existingGeneratedShades.includes(shade.level));
+
+                    // Create missing shades
+                    missingShades.forEach(shade => {
                       const payload = {
                         name: `Grey ${shade.level}`,
                         hex: shade.hex,
