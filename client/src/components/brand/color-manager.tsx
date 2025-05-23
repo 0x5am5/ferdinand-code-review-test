@@ -128,7 +128,7 @@ function ColorCard({
           )}
         </div>
         <div className="color-chip__controls">
-          {color.category === "neutral" && onGenerate && (
+          {color.category === "neutral" && onGenerate && !(/^Grey \d+$/.test(color.name)) && (
             <Button
               variant="ghost"
               size="icon"
