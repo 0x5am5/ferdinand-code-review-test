@@ -923,9 +923,9 @@ export function ColorManager({
                   setIsAddingColor(true);
                 }}
                 variant="outline"
-                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-transparent"
               >
-                <Plus className="h-6 w-6 text-muted-foreground" />
+                <Plus className="h-12 w-12 text-muted-foreground" />
                 <span className="text-muted-foreground">Add New Color</span>
               </Button>
             </div>
