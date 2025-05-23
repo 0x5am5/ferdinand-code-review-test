@@ -48,43 +48,46 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
 
-// Analyze brightness of a hex color (returns 1-11 scale)
-function analyzeBrightness(hex: string): number {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return 6; // Default middle value
+// Color utility functions
+const ColorUtils = {
+  // Analyze brightness of a hex color (returns 1-11 scale)
+  analyzeBrightness(hex: string): number {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return 6; // Default middle value
 
-  const r = parseInt(result[1], 16);
-  const g = parseInt(result[2], 16);
-  const b = parseInt(result[3], 16);
-  
-  // Calculate perceived brightness using relative luminance formula
-  const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-  
-  // Convert to 1-11 scale
-  return Math.round(brightness * 10) + 1;
-}
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    
+    // Calculate perceived brightness using relative luminance formula
+    const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+    
+    // Convert to 1-11 scale
+    return Math.round(brightness * 10) + 1;
+  },
 
-// Generate missing grey shades based on existing ones
-function generateGreyShades(existingColors: Array<ColorData & { brightness: number }>) {
-  const existingLevels = existingColors.map(c => c.brightness);
-  const newShades: Array<{ level: number; hex: string }> = [];
-  
-  // Generate shades for missing levels (1-11)
-  for (let i = 1; i <= 11; i++) {
-    if (!existingLevels.includes(i)) {
-      // Calculate brightness percentage (0-100)
-      const brightness = ((i - 1) / 10) * 100;
-      
-      // Generate hex color
-      const value = Math.round((brightness / 100) * 255);
-      const hex = `#${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}`;
-      
-      newShades.push({ level: i, hex: hex.toUpperCase() });
+  // Generate missing grey shades based on existing ones
+  generateGreyShades(existingColors: Array<ColorData & { brightness: number }>) {
+    const existingLevels = existingColors.map(c => c.brightness);
+    const newShades: Array<{ level: number; hex: string }> = [];
+    
+    // Generate shades for missing levels (1-11)
+    for (let i = 1; i <= 11; i++) {
+      if (!existingLevels.includes(i)) {
+        // Calculate brightness percentage (0-100)
+        const brightness = ((i - 1) / 10) * 100;
+        
+        // Generate hex color
+        const value = Math.round((brightness / 100) * 255);
+        const hex = `#${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}${value.toString(16).padStart(2, '0')}`;
+        
+        newShades.push({ level: i, hex: hex.toUpperCase() });
+      }
     }
+    
+    return newShades;
   }
-  
-  return newShades;
-}
+};
 
   FormControl,
   FormField,
@@ -1053,11 +1056,11 @@ export function ColorManager({
                     // Get neutral colors and analyze brightness
                     const neutralColors = neutralColorsData.map(color => ({
                       ...color,
-                      brightness: analyzeBrightness(color.hex)
+                      brightness: ColorUtils.analyzeBrightness(color.hex)
                     }));
 
                     // Generate missing shades
-                    const newShades = generateGreyShades(neutralColors);
+                    const newShades = ColorUtils.generateGreyShades(neutralColors);
                     
                     // Create and add new colors
                     newShades.forEach(shade => {
