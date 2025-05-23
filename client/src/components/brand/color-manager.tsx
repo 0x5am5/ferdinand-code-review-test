@@ -930,19 +930,32 @@ export function ColorManager({
                 />
               ))}
 
-              <Button
-                onClick={() => {
-                  setSelectedCategory("brand");
-                  setEditingColor(null);
-                  form.reset();
-                  setIsAddingColor(true);
-                }}
-                variant="outline"
-                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
-              >
-                <Plus className="h-12 w-12 text-muted-foreground/50" />
-                <span className="text-muted-foreground/50">Add New Color</span>
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button
+                  onClick={() => {
+                    setSelectedCategory("brand");
+                    setEditingColor(null);
+                    form.reset();
+                    setIsAddingColor(true);
+                  }}
+                  variant="outline"
+                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                >
+                  <Plus className="h-12 w-12 text-muted-foreground/50" />
+                  <span className="text-muted-foreground/50">Add New Color</span>
+                </Button>
+                <Button
+                  onClick={() => {
+                    // Add generate functionality here
+                    console.log("Generate color");
+                  }}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2 py-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Generate</span>
+                </Button>
+              </div>
             </div>
           </div>
         </AssetSection>
