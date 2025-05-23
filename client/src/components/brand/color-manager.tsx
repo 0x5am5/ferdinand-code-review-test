@@ -115,35 +115,35 @@ function ColorCard({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/90 hover:bg-white"
+            className="h-8 w-8"
             onClick={() => setShowTints(!showTints)}
             title={showTints ? "Hide tints/shades" : "Show tints/shades"}
           >
-            <Palette className="h-3 w-3" />
+            <Palette className="h-6 w-6" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/90 hover:bg-white"
+            className="h-8 w-8"
             onClick={() => copyHex(color.hex)}
           >
-            <Copy className="h-3 w-3" />
+            <Copy className="h-6 w-6" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/90 hover:bg-white"
+            className="h-8 w-8"
             onClick={() => onEdit(color)}
           >
-            <Edit2 className="h-3 w-3" />
+            <Edit2 className="h-6 w-6" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 bg-white/90 hover:bg-white text-destructive"
+            className="h-8 w-8"
             onClick={() => onDelete(color.id)}
           >
-            <Trash2 className="h-3 w-3" />
+            <Trash2 className="h-6 w-6" />
           </Button>
         </div>
       </motion.div>
