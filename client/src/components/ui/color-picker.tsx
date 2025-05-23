@@ -136,6 +136,7 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
   
   // Reference for the color spectrum area
   const spectrumRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   useEffect(() => {
     // Ensure value is a string and has a valid format
@@ -197,16 +198,16 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
     }
   };
   
-  const handleSpectrumClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const updateColorFromPosition = (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
     if (!spectrumRef.current) return;
     
     const rect = spectrumRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
     
-    // Calculate hue and saturation as percentages
-    const newSaturation = Math.max(0, Math.min(100, (x / rect.width) * 100));
-    const newBrightness = Math.max(0, Math.min(100, 100 - (y / rect.height) * 100));
+    // Calculate saturation and brightness as percentages
+    const newSaturation = (x / rect.width) * 100;
+    const newBrightness = 100 - (y / rect.height) * 100;
     
     setSaturation(newSaturation);
     setBrightness(newBrightness);
@@ -222,6 +223,34 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
     setHexValue(newHex);
     onChange(newHex);
   };
+
+  const handleSpectrumMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    updateColorFromPosition(e);
+  };
+
+  const handleSpectrumMouseMove = (e: MouseEvent) => {
+    if (isDragging) {
+      updateColorFromPosition(e);
+    }
+  };
+
+  const handleSpectrumMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Add global mouse event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleSpectrumMouseMove);
+      document.addEventListener('mouseup', handleSpectrumMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleSpectrumMouseMove);
+        document.removeEventListener('mouseup', handleSpectrumMouseUp);
+      };
+    }
+  }, [isDragging]);
   
   const handleHueChange = (value: number[]) => {
     const newHue = value[0];
@@ -247,8 +276,10 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
   // Get the background for the spectrum based on current hue
   const getSpectrumBackground = () => {
     const pureColor = hsvToRgb(hue, 100, 100);
-    return `linear-gradient(to right, white, rgb(${pureColor.r}, ${pureColor.g}, ${pureColor.b})), 
-            linear-gradient(to bottom, rgba(0,0,0,0), black)`;
+    return `
+      linear-gradient(to bottom, transparent, black),
+      linear-gradient(to right, white, rgb(${pureColor.r}, ${pureColor.g}, ${pureColor.b}))
+    `;
   };
   
   // Create a background for the hue slider that shows the spectrum of hues
@@ -274,17 +305,16 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72">
+      <PopoverContent className="w-72 p-4 bg-white shadow-lg">
         <div className="grid gap-4">
           {/* Color spectrum */}
           <div 
             ref={spectrumRef}
-            className="relative w-full h-40 rounded-md cursor-crosshair"
+            className="relative w-full h-48 rounded-lg cursor-crosshair border border-gray-200"
             style={{ 
-              background: getSpectrumBackground(),
-              backgroundBlendMode: "multiply"
+              background: getSpectrumBackground()
             }}
-            onClick={handleSpectrumClick}
+            onMouseDown={handleSpectrumMouseDown}
           >
             {/* Indicator dot for current selection */}
             <div 
@@ -300,32 +330,44 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
           
           {/* Hue slider */}
           <div className="space-y-1.5">
-            <Slider
-              className="h-4 rounded-md"
-              min={0}
-              max={360}
-              step={1}
-              value={[hue]}
-              onValueChange={handleHueChange}
+            <div 
+              className="relative h-6 rounded-md cursor-pointer border border-gray-200"
               style={{ 
                 background: hueGradient,
               }}
-            />
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const newHue = (x / rect.width) * 360;
+                handleHueChange([Math.max(0, Math.min(360, newHue))]);
+              }}
+            >
+              {/* Hue indicator */}
+              <div 
+                className="absolute w-4 h-4 bg-white rounded-full border-2 border-gray-300 transform -translate-x-1/2 -translate-y-1/2 top-1/2 shadow-sm"
+                style={{ 
+                  left: `${(hue / 360) * 100}%`,
+                }}
+              />
+            </div>
           </div>
           
-          {/* Opacity slider (visual only for now) */}
+          {/* Opacity slider */}
           <div className="space-y-1.5">
-            <Slider
-              className="h-4 rounded-md"
-              min={0}
-              max={100}
-              step={1}
-              value={[100]}
-              onValueChange={handleOpacityChange}
+            <div 
+              className="relative h-6 rounded-md border border-gray-200"
               style={{ 
-                background: opacityBackground,
+                background: `${opacityBackground}, linear-gradient(to right, transparent, ${hexValue})`,
               }}
-            />
+            >
+              {/* Opacity indicator */}
+              <div 
+                className="absolute w-4 h-4 bg-white rounded-full border-2 border-gray-300 transform -translate-x-1/2 -translate-y-1/2 top-1/2 shadow-sm"
+                style={{ 
+                  left: '100%',
+                }}
+              />
+            </div>
           </div>
           
           {/* Color value inputs */}
