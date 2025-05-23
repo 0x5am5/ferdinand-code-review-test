@@ -1064,12 +1064,13 @@ export function ColorManager({
 
                     // Create and add new colors
                     newShades.forEach(shade => {
-                      createColor.mutate({
+                      const payload = {
                         name: `Grey ${shade.level}`,
                         hex: shade.hex,
                         type: "solid",
-                        category: "neutral" // Explicitly set category in payload
-                      });
+                      };
+                      setSelectedCategory("neutral");
+                      createColor.mutate(payload);
                     });
                   }}
                   variant="outline"
