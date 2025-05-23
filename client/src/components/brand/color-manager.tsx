@@ -7,17 +7,17 @@ import {
   RotateCcw,
   Download,
   Palette,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -80,6 +80,13 @@ function ColorCard({
   const [tempColor, setTempColor] = useState(color.hex);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(color.name);
+  
+  // Color picker state
+  const [hue, setHue] = useState(0);
+  const [saturation, setSaturation] = useState(100);
+  const [brightness, setBrightness] = useState(50);
+  const spectrumRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const copyHex = (hexValue: string) => {
     navigator.clipboard.writeText(hexValue);
@@ -169,41 +176,45 @@ function ColorCard({
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        {isEditing ? (
-          <div className="color-chip__editing p-4 bg-white/95 backdrop-blur-sm rounded-lg m-2">
+        {/* Streamlined Color Picker Dialog */}
+        <Dialog open={isEditing} onOpenChange={setIsEditing}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Color</DialogTitle>
+              <button
+                onClick={handleCancelEdit}
+                className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-900">Edit Color</label>
-                <ColorPicker
-                  value={tempColor}
-                  onChange={handleColorChange}
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-mono text-gray-900">{tempColor}</p>
-                <p className="text-xs font-mono text-gray-700">{hexToRgb(tempColor)}</p>
-                <p className="text-xs font-mono text-gray-700">{hexToHsl(tempColor)}</p>
-                <p className="text-xs font-mono text-gray-700">{hexToCmyk(tempColor)}</p>
-              </div>
-              <div className="flex gap-2 justify-end">
+              {/* Use the existing ColorPicker component */}
+              <ColorPicker
+                value={tempColor}
+                onChange={setTempColor}
+                className="w-full"
+              />
+
+              {/* Action buttons */}
+              <div className="flex gap-2 justify-end pt-2">
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={handleCancelEdit}
                 >
                   Cancel
                 </Button>
                 <Button
-                  size="sm"
                   onClick={handleSaveEdit}
                 >
                   Save
                 </Button>
               </div>
             </div>
-          </div>
-        ) : (
+          </DialogContent>
+        </Dialog>
+
+        {!isEditing && (
           <div className="color-chip__info">
             {isEditingName ? (
               <input
@@ -234,24 +245,6 @@ function ColorCard({
                style={{
                 color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
               }} >{displayHex}</p>
-            {color.rgb && (
-              <p className="text-xs font-mono" 
-                 style={{
-                color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-              }} >{color.rgb}</p>
-            )}
-            {color.cmyk && (
-              <p className="text-xs font-mono" 
-                 style={{
-                  color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-                }} >{color.cmyk}</p>
-            )}
-            {color.pantone && (
-              <p className="text-xs font-mono" 
-                 style={{
-                  color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-                }} >{color.pantone}</p>
-            )}
           </div>
         )}
         <div className="color-chip__controls">

@@ -48,8 +48,6 @@ export function AssetSection({
         </div>
       </div>
 
-      <Separator className="asset-section__separator" />
-
       {isEmpty ? (
         <div className="asset-section__empty">
           <div className="asset-section__empty-info">
