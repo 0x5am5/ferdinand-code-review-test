@@ -61,7 +61,7 @@ import { AssetSection } from "./asset-section";
 function ColorCard({ 
   color, 
   onEdit, 
-  onDelete 
+  onDelete,
 }: { 
   color: any; 
   onEdit: (color: any) => void; 
@@ -100,15 +100,27 @@ function ColorCard({
           >
             {color.name}
           </h5>
-          <p className="text-xs font-mono text-muted-foreground">{color.hex}</p>
+          <p className="text-xs font-mono" 
+             style={{
+              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+            }} >{color.hex}</p>
           {color.rgb && (
-            <p className="text-xs font-mono text-muted-foreground">{color.rgb}</p>
+            <p className="text-xs font-mono" 
+               style={{
+              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+            }} >{color.rgb}</p>
           )}
           {color.cmyk && (
-            <p className="text-xs font-mono text-muted-foreground">{color.cmyk}</p>
+            <p className="text-xs font-mono" 
+               style={{
+              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+            }} >{color.cmyk}</p>
           )}
           {color.pantone && (
-            <p className="text-xs font-mono text-muted-foreground">{color.pantone}</p>
+            <p className="text-xs font-mono" 
+               style={{
+              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+            }} >{color.pantone}</p>
           )}
         </div>
         <div className="color-chip__controls">
@@ -901,6 +913,7 @@ export function ColorManager({
             </div>
           }
         >
+          {/* This is the layout of the brand colors */}
           <div className="asset-display">
             <div className="asset-display__info">
               {colorDescriptions.brand}
@@ -945,8 +958,9 @@ export function ColorManager({
                 form.reset();
                 setIsAddingColor(true);
               }}
-              className="flex items-center gap-2"
-            >
+              variant="outline"
+              className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+              >
               <Plus className="h-4 w-4" />
               Add Color
             </Button>
@@ -961,15 +975,35 @@ export function ColorManager({
             </div>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6">
-            {neutralColorsData.map((color) => (
-              <ColorCard
-                key={color.id}
-                color={color}
-                onEdit={handleEditColor}
-                onDelete={deleteColor.mutate}
-              />
-            ))}
+          {/* This is the layout of neutral colors */}
+          <div className="asset-display">
+            <div className="asset-display__info">
+              {colorDescriptions.neutral}
+            </div>
+            <div className="asset-display__preview">
+              {neutralColorsData.map((color) => (
+                <ColorCard
+                  key={color.id}
+                  color={color}
+                  onEdit={handleEditColor}
+                  onDelete={deleteColor.mutate}
+                />
+              ))}
+
+              <Button
+                onClick={() => {
+                  setSelectedCategory("neutral");
+                  setEditingColor(null);
+                  form.reset();
+                  setIsAddingColor(true);
+                }}
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+              >
+                <Plus className="h-12 w-12 text-muted-foreground/50" />
+                <span className="text-muted-foreground/50">Add New Color</span>
+              </Button>
+            </div>
           </div>
         </AssetSection>
 
@@ -986,8 +1020,9 @@ export function ColorManager({
                 form.reset();
                 setIsAddingColor(true);
               }}
-              className="flex items-center gap-2"
-            >
+              variant="outline"
+              className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+              >
               <Plus className="h-4 w-4" />
               Add Color
             </Button>
