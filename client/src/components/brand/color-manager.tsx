@@ -1059,14 +1059,11 @@ export function ColorManager({
                     // Generate missing shades
                     const newShades = ColorUtils.generateGreyShades(neutralColors);
 
-                    // Sort shades from dark to light (reverse the array since level 1 is darkest)
-                    const sortedShades = newShades.sort((a, b) => a.level - b.level);
-
                     // Set category before creating colors
                     setSelectedCategory("neutral");
 
                     // Create and add new colors
-                    sortedShades.forEach(shade => {
+                    newShades.forEach(shade => {
                       createColor.mutate({
                         name: `Grey ${shade.level}`,
                         hex: shade.hex,
