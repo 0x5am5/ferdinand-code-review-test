@@ -62,14 +62,10 @@ function ColorCard({
   color, 
   onEdit, 
   onDelete,
-  onGenerate,
-  neutralColorsCount,
 }: { 
   color: any; 
   onEdit: (color: any) => void; 
   onDelete: (id: number) => void; 
-  onGenerate?: () => void;
-  neutralColorsCount?: number;
 }) {
   const { toast } = useToast();
   const [showTints, setShowTints] = useState(false);
@@ -128,17 +124,6 @@ function ColorCard({
           )}
         </div>
         <div className="color-chip__controls">
-          {color.category === "neutral" && onGenerate && !(/^Grey \d+$/.test(color.name)) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onGenerate}
-              title={neutralColorsCount && neutralColorsCount >= 11 ? "Re-generate grey shades" : "Generate grey shades"}
-            >
-              <RotateCcw className="h-6 w-6" />
-            </Button>
-          )}
           {color.category !== "neutral" && (
             <Button
               variant="ghost"
@@ -338,102 +323,6 @@ function generateContainerColors(baseColor: string) {
     container: tints[0],
     onContainer: shades[0],
   };
-}
-
-// Extract hue and saturation from brand colors for neutral generation
-function extractBrandColorProperties(brandColors: ColorData[], baseGreyHex: string | null = null, regenerationCount = 0) {
-  let baseHue = 0;
-  let baseSaturation = 0.02;
-
-  // If we have a base grey, use its properties as the foundation
-  if (baseGreyHex) {
-    const baseGreyHsl = hexToHslValues(baseGreyHex);
-    if (baseGreyHsl) {
-      baseHue = baseGreyHsl.h;
-      baseSaturation = Math.max(baseGreyHsl.s, 0.02); // Use base grey saturation but ensure minimum
-    }
-  } else if (brandColors.length > 0) {
-    // Fallback to brand colors if no base grey
-    let totalHue = 0;
-    let maxSaturation = 0;
-    let validColors = 0;
-
-    brandColors.forEach(color => {
-      const hsl = hexToHslValues(color.hex);
-      if (hsl) {
-        totalHue += hsl.h;
-        maxSaturation = Math.max(maxSaturation, hsl.s);
-        validColors++;
-      }
-    });
-
-    baseHue = validColors > 0 ? totalHue / validColors : 0;
-    // Increased max saturation for more character
-    baseSaturation = Math.min(maxSaturation * 0.15, 0.07); // Max 7% saturation for neutrals
-  }
-
-  // Add variation each time regenerate is clicked
-  const variations = [
-    { hueShift: 0, saturationMultiplier: 1, lightnessShift: 0 }, // Original
-    { hueShift: 15, saturationMultiplier: 0.8, lightnessShift: 3 }, // Warmer, lighter
-    { hueShift: -15, saturationMultiplier: 0.8, lightnessShift: -3 }, // Cooler, darker  
-    { hueShift: 25, saturationMultiplier: 0.6, lightnessShift: 5 }, // Much warmer, much lighter
-    { hueShift: -25, saturationMultiplier: 0.6, lightnessShift: -5 }, // Much cooler, much darker
-    { hueShift: 0, saturationMultiplier: 0.4, lightnessShift: 0 }, // Nearly grayscale
-  ];
-
-  const variation = variations[regenerationCount % variations.length];
-
-  const adjustedHue = (baseHue + variation.hueShift + 360) % 360;
-  const adjustedSaturation = Math.min(baseSaturation * variation.saturationMultiplier, 0.07);
-
-  return { 
-    hue: adjustedHue, 
-    maxSaturation: adjustedSaturation,
-    lightnessShift: variation.lightnessShift
-  };
-}
-
-// Convert hex to HSL values (returns object with h, s, l)
-function hexToHslValues(hex: string) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return null;
-
-  let r = parseInt(result[1], 16) / 255;
-  let g = parseInt(result[2], 16) / 255;
-  let b = parseInt(result[3], 16) / 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h = 0, s, l = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0; // achromatic
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
-
-  return { h: h * 360, s, l };
-}
-
-// Convert HSL to hex
-function hslToHex(h: number, s: number, l: number) {
-  l /= 100;
-  const a = s * Math.min(l, 1 - l) / 100;
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color).toString(16).padStart(2, '0');
-  };
-  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 }
 
 function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
@@ -735,7 +624,6 @@ export function ColorManager({
     "brand" | "neutral" | "interactive"
   >("brand");
   const [editingColor, setEditingColor] = useState<ColorData | null>(null);
-  const [regenerationCount, setRegenerationCount] = useState(0);
   // We don't need an extra state since colors are derived from props
 
   // Color utility functions
@@ -796,7 +684,7 @@ export function ColorManager({
         clientId,
         data: {
           type: data.type,
-          category: data.category || selectedCategory,
+          category: selectedCategory,
           colors: [
             {
               hex: data.hex,
@@ -919,34 +807,9 @@ export function ColorManager({
   const brandColorsData = transformedColors.filter(
     (c) => c.category === "brand",
   );
-
-  // Sort neutral colors: manual (base grey) first, then generated shades from light to dark (Grey 11 to Grey 1)
-  const neutralColorsData = transformedColors
-    .filter((c) => c.category === "neutral")
-    .sort((a, b) => {
-      // Check if colors are generated grey shades (names like "Grey 1", "Grey 2", etc.)
-      const isAGeneratedGrey = /^Grey \d+$/.test(a.name);
-      const isBGeneratedGrey = /^Grey \d+$/.test(b.name);
-
-      // Special handling for "Base grey" - always comes first
-      if (a.name === "Base grey") return -1;
-      if (b.name === "Base grey") return 1;
-
-      // If one is generated and one isn't, manual colors come first
-      if (isAGeneratedGrey && !isBGeneratedGrey) return 1;
-      if (!isAGeneratedGrey && isBGeneratedGrey) return -1;
-
-      // If both are generated greys, sort by number (Grey 11 first, Grey 1 last)
-      if (isAGeneratedGrey && isBGeneratedGrey) {
-        const numA = parseInt(a.name.match(/^Grey (\d+)$/)?.[1] || "0");
-        const numB = parseInt(b.name.match(/^Grey (\d+)$/)?.[1] || "0");
-        return numB - numA; // Higher numbers first (Grey 11, 10, 9... 2, 1)
-      }
-
-      // If both are manual, keep original order
-      return 0;
-    });
-
+  const neutralColorsData = transformedColors.filter(
+    (c) => c.category === "neutral",
+  );
   const interactiveColorsData = transformedColors.filter(
     (c) => c.category === "interactive",
   );
@@ -982,94 +845,6 @@ export function ColorManager({
         form.setValue("pantone", ""); // Clear pantone as it can't be auto-calculated
       }
     }
-  };
-
-  const handleGenerateGreyShades = () => {
-    // First, update any manually added neutral colors to "Base grey" if they don't have that name
-    const manualColors = neutralColorsData.filter(color => !/^Grey \d+$/.test(color.name));
-    manualColors.forEach((color, index) => {
-      if (color.name !== "Base grey" && color.id) {
-        // Update the existing color to "Base grey"
-        fetch(`/api/clients/${clientId}/assets/${color.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: "Base grey",
-            category: "color",
-            clientId,
-            data: {
-              type: "solid",
-              category: "neutral",
-              colors: [{
-                hex: color.hex,
-                rgb: color.rgb,
-                cmyk: color.cmyk,
-                pantone: color.pantone,
-              }],
-              tints: generateTintsAndShades(color.hex).tints.map((hex, i) => ({
-                percentage: [60, 40, 20][i],
-                hex,
-              })),
-              shades: generateTintsAndShades(color.hex).shades.map((hex, i) => ({
-                percentage: [20, 40, 60][i],
-                hex,
-              })),
-            },
-          })
-        }).then(() => {
-          queryClient.invalidateQueries({
-            queryKey: [`/api/clients/${clientId}/assets`],
-          });
-        });
-      }
-    });
-
-    // Increment regeneration counter for variation
-    setRegenerationCount(prev => prev + 1);
-
-    // Find the base grey color to use as reference
-    const baseGreyColor = neutralColorsData.find(color => !(/^Grey \d+$/.test(color.name)));
-    const baseGreyHex = baseGreyColor?.hex || null;
-
-    // Extract hue and base saturation from base grey or brand colors with variation
-    const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(brandColorsData, baseGreyHex, regenerationCount);
-
-    // Generate all 11 shades using new parabolic algorithm
-    const allShades = [];
-    for (let level = 1; level <= 11; level++) {
-      // Generate lightness values: Grey 1 = darkest (8%), Grey 11 = lightest (98%)
-      const baseLightness = 8 + ((level - 1) / 10) * 90; // 8% to 98%
-      const lightness = Math.max(8, Math.min(98, baseLightness + lightnessShift)); // Apply variation with bounds
-
-      // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
-      const normalizedLightness = lightness / 100; // Convert to 0-1 range
-      const saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
-
-      // Convert HSL to hex
-      const hex = hslToHex(hue, saturation * 100, lightness);
-      allShades.push({ level, hex });
-    }
-
-    // Check which shades already exist and only create missing ones
-    const existingGeneratedShades = neutralColorsData
-      .filter(color => /^Grey \d+$/.test(color.name))
-      .map(color => {
-        const match = color.name.match(/^Grey (\d+)$/);
-        return match ? parseInt(match[1]) : 0;
-      });
-
-    const missingShades = allShades.filter(shade => !existingGeneratedShades.includes(shade.level));
-
-    // Create missing shades
-    missingShades.forEach(shade => {
-      const payload = {
-        name: `Grey ${shade.level}`,
-        hex: shade.hex,
-        type: "solid" as const,
-        category: "neutral"
-      };
-      createColor.mutate(payload);
-    });
   };
 
   const handleAddBrandColor = (name: string, hex: string) => {
@@ -1156,32 +931,18 @@ export function ColorManager({
           isEmpty={brandColorsData.length === 0}
           sectionType="brand-colors"
           uploadComponent={
-            
-              <div className="flex flex-col gap-2 w-full">
-                <Button 
-                  onClick={handleGenerateGreyShades}
-                  variant="outline"
-                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
-                >
-                  <RotateCcw className="h-12 w-12 text-muted-foreground/50" />
-                  <span className="text-muted-foreground/50">Generate</span>
-                </Button>
-
-                <Button
-                  onClick={() => {
-                    setSelectedCategory("brand");
-                    setEditingColor(null);
-                    form.reset();
-                    setIsAddingColor(true);
-                  }}
-                  variant="outline"
-                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
-                >
-                  <Plus className="h-12 w-12 text-muted-foreground/50" />
-                  <span className="text-muted-foreground/50">Add Color</span>
-                </Button>
-              </div>
-            
+            <Button
+              onClick={() => {
+                setSelectedCategory("brand");
+                setEditingColor(null);
+                form.reset();
+                setIsAddingColor(true);
+              }}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Color
+            </Button>
           }
           emptyPlaceholder={
             <div className="text-center py-12 text-muted-foreground">
@@ -1269,29 +1030,53 @@ export function ColorManager({
                   color={color}
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
-                  onGenerate={handleGenerateGreyShades}
-                  neutralColorsCount={neutralColorsData.length}
                 />
               ))}
 
-              {/* Only show Add New Color button if there are fewer than 11 neutral colors */}
-              {neutralColorsData.length < 11 && (
-                <div className="asset-display__add-generate-buttons">
-                  <Button
-                    onClick={() => {
-                      setSelectedCategory("neutral");
-                      setEditingColor(null);
-                      form.reset();
-                      setIsAddingColor(true);
-                    }}
-                    variant="outline"
-                    className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
-                  >
-                    <Plus className="h-12 w-12 text-muted-foreground/50" />
-                    <span className="text-muted-foreground/50">Add New Color</span>
-                  </Button>
-                </div>
-              )}
+              <div className="asset-display__add-generate-buttons">
+                <Button
+                  onClick={() => {
+                    setSelectedCategory("neutral");
+                    setEditingColor(null);
+                    form.reset();
+                    setIsAddingColor(true);
+                  }}
+                  variant="outline"
+                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                >
+                  <Plus className="h-12 w-12 text-muted-foreground/50" />
+                  <span className="text-muted-foreground/50">Add New Color</span>
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    // Get neutral colors and analyze brightness
+                    const neutralColors = neutralColorsData.map(color => ({
+                      ...color,
+                      brightness: ColorUtils.analyzeBrightness(color.hex)
+                    }));
+
+                    // Generate missing shades
+                    const newShades = ColorUtils.generateGreyShades(neutralColors);
+
+                    // Create and add new colors with explicit neutral category
+                    newShades.forEach(shade => {
+                      const payload = {
+                        name: `Grey ${shade.level}`,
+                        hex: shade.hex,
+                        type: "solid",
+                        category: "neutral"
+                      };
+                      createColor.mutate(payload);
+                    });
+                  }}
+                  variant="outline"
+                  className="flex items-center justify-center gap-2 py-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Generate</span>
+                </Button>
+              </div>
             </div>
           </div>
         </AssetSection>
@@ -1514,7 +1299,6 @@ const colorFormSchema = z.object({
   cmyk: z.string().optional(),
   pantone: z.string().optional(),
   type: z.enum(["solid", "gradient"]),
-  category: z.string().optional(),
 });
 
 type ColorFormData = z.infer<typeof colorFormSchema>;
