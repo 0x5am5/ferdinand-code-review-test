@@ -56,6 +56,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import { AssetDisplay } from "./asset-display";
 import { AssetSection } from "./asset-section";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 // ColorCard component for the color manager
 function ColorCard({ 
@@ -64,15 +65,19 @@ function ColorCard({
   onDelete,
   onGenerate,
   neutralColorsCount,
+  onUpdate,
 }: { 
   color: any; 
   onEdit: (color: any) => void; 
   onDelete: (id: number) => void; 
   onGenerate?: () => void;
   neutralColorsCount?: number;
+  onUpdate?: (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }) => void;
 }) {
   const { toast } = useToast();
   const [showTints, setShowTints] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempColor, setTempColor] = useState(color.hex);
 
   const copyHex = (hexValue: string) => {
     navigator.clipboard.writeText(hexValue);
@@ -82,51 +87,130 @@ function ColorCard({
     });
   };
 
+  const handleColorChange = (newHex: string) => {
+    setTempColor(newHex);
+    if (onUpdate) {
+      // Real-time update of color formats
+      const updates = {
+        hex: newHex,
+        rgb: hexToRgb(newHex) || undefined,
+        hsl: hexToHsl(newHex) || undefined,
+        cmyk: hexToCmyk(newHex) || undefined,
+      };
+      onUpdate(color.id, updates);
+    }
+  };
+
+  const handleStartEdit = () => {
+    setTempColor(color.hex);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    setIsEditing(false);
+    toast({
+      title: "Color updated!",
+      description: `${color.name} has been updated successfully.`,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setTempColor(color.hex);
+    setIsEditing(false);
+    if (onUpdate) {
+      // Revert to original color
+      const updates = {
+        hex: color.hex,
+        rgb: hexToRgb(color.hex) || undefined,
+        hsl: hexToHsl(color.hex) || undefined,
+        cmyk: hexToCmyk(color.hex) || undefined,
+      };
+      onUpdate(color.id, updates);
+    }
+  };
+
   // Generate tints and shades
-  const { tints, shades } = generateTintsAndShades(color.hex);
+  const displayHex = isEditing ? tempColor : color.hex;
+  const { tints, shades } = generateTintsAndShades(displayHex);
 
   return (
     <div className="color-chip-container relative">
       <motion.div 
         className="color-chip"
-        style={{ backgroundColor: color.hex }}
+        style={{ backgroundColor: displayHex }}
         animate={{ 
           width: showTints ? "60%" : "100%",
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
       >
-        <div className="color-chip__info">
-          <h5 
-            className="color-chip--title"
-            style={{
-              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-            }}
-          >
-            {color.name}
-          </h5>
-          <p className="text-xs font-mono" 
-             style={{
-              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-            }} >{color.hex}</p>
-          {color.rgb && (
+        {isEditing ? (
+          <div className="color-chip__editing p-4 bg-white/95 backdrop-blur-sm rounded-lg m-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-900">Edit Color</label>
+                <ColorPicker
+                  value={tempColor}
+                  onChange={handleColorChange}
+                  className="w-full"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-mono text-gray-900">{tempColor}</p>
+                <p className="text-xs font-mono text-gray-700">{hexToRgb(tempColor)}</p>
+                <p className="text-xs font-mono text-gray-700">{hexToHsl(tempColor)}</p>
+                <p className="text-xs font-mono text-gray-700">{hexToCmyk(tempColor)}</p>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveEdit}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="color-chip__info">
+            <h5 
+              className="color-chip--title"
+              style={{
+                color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+              }}
+            >
+              {color.name}
+            </h5>
             <p className="text-xs font-mono" 
                style={{
-              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-            }} >{color.rgb}</p>
-          )}
-          {color.cmyk && (
-            <p className="text-xs font-mono" 
-               style={{
-              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-            }} >{color.cmyk}</p>
-          )}
-          {color.pantone && (
-            <p className="text-xs font-mono" 
-               style={{
-              color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
-            }} >{color.pantone}</p>
-          )}
-        </div>
+                color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+              }} >{displayHex}</p>
+            {color.rgb && (
+              <p className="text-xs font-mono" 
+                 style={{
+                color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+              }} >{color.rgb}</p>
+            )}
+            {color.cmyk && (
+              <p className="text-xs font-mono" 
+                 style={{
+                  color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                }} >{color.cmyk}</p>
+            )}
+            {color.pantone && (
+              <p className="text-xs font-mono" 
+                 style={{
+                  color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                }} >{color.pantone}</p>
+            )}
+          </div>
+        )}
         <div className="color-chip__controls">
           {color.category === "neutral" && onGenerate && !(/^Grey \d+$/.test(color.name)) && (
             <Button
@@ -162,7 +246,7 @@ function ColorCard({
             variant="ghost"
             size="icon"
             className="h-8 w-8"
-            onClick={() => onEdit(color)}
+            onClick={handleStartEdit}
           >
             <Edit2 className="h-6 w-6" />
           </Button>
