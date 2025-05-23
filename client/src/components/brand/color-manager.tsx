@@ -78,45 +78,64 @@ function ColorCard({
   };
 
   return (
-    <div className="group color-chip">
-      <div 
-        className="h-24 relative" 
-        style={{ backgroundColor: color.hex }}
-      >
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 bg-white/90 hover:bg-white"
-              onClick={copyHex}
-            >
-              <Copy className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 bg-white/90 hover:bg-white"
-              onClick={() => onEdit(color)}
-            >
-              <Edit2 className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 bg-white/90 hover:bg-white text-destructive"
-              onClick={() => onDelete(color.id)}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      
-        <h5 className="font-medium text-sm mb-1">{color.name}</h5>
-        <code className="text-xs font-mono text-muted-foreground">{color.hex}</code>
+    <div 
+      className="color-chip"
+      style={{ backgroundColor: color.hex }}
+    >
+        
+      <div className="color-chip__info">
+        <h5 
+          className="color-chip--title"
+          style={{
+            color: parseInt(color.hex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+          }}
+        >
+          {color.name}
+        </h5>
+        <p className="text-xs font-mono text-muted-foreground">{color.hex}</p>
         {color.rgb && (
-          <div className="text-xs text-muted-foreground mt-1">{color.rgb}</div>
+          <p className="text-xs font-mono text-muted-foreground">{color.rgb}</p>
         )}
+        {color.cmyk && (
+          <p className="text-xs font-mono text-muted-foreground">{color.cmyk}</p>
+        )}
+        {color.pantone && (
+          <p className="text-xs font-mono text-muted-foreground">{color.pantone}</p>
+        )}
+      </div>
+      <div className="color-chip__controls">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 bg-white/90 hover:bg-white"
+          onClick={() => onEdit(color)}
+        >
+          <Edit2 className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 bg-white/90 hover:bg-white"
+          onClick={copyHex}
+        >
+          <Copy className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 bg-white/90 hover:bg-white"
+          onClick={() => onEdit(color)}
+        >
+          <Edit2 className="h-3 w-3" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 bg-white/90 hover:bg-white text-destructive"
+          onClick={() => onDelete(color.id)}
+        >
+          <Trash2 className="h-3 w-3" />
+        </Button>
       </div>
     </div>
   );
@@ -836,6 +855,19 @@ export function ColorManager({
                   onDelete={deleteColor.mutate}
                 />
               ))}
+
+              <Button
+                onClick={() => {
+                  setSelectedCategory("brand");
+                  setEditingColor(null);
+                  form.reset();
+                  setIsAddingColor(true);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Color
+              </Button>
             </div>
           </div>
         </AssetSection>

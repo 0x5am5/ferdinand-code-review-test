@@ -1,4 +1,27 @@
 .color-chip {
   width: 100%;
-  padding: 2rem;
+  padding: 2rem 2rem 2.5rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  
+
+  &__controls {
+    display: flex;
+    flex-direction: row;
+    gap: .25rem;
+    opacity: .1;
+    transition: opacity 0.2s ease-in;
+  }
+
+  &:hover &__controls {
+    opacity: 1;
+  }
+
+  &__info {
+    p {
+      margin-bottom: 0;
+    } 
+  }
 }

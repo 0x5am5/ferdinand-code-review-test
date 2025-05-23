@@ -122,8 +122,8 @@
 
   &__preview {
     display: flex;
-    flex-direction: row;
-    position: column;
+    flex-direction: column;
+    gap: .25rem;
 
     &-nav {
       display: flex;
