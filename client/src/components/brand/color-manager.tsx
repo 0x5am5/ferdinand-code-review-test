@@ -1067,6 +1067,52 @@ export function ColorManager({
     },
   });
 
+  const updateColor = useMutation({
+    mutationFn: async (data: { id: number; name: string; hex: string; rgb?: string; hsl?: string; cmyk?: string; type: string }) => {
+      const response = await fetch(`/api/clients/${clientId}/assets/${data.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update color");
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateColor = (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }) => {
+    const currentColor = colors.find(c => c.id === colorId);
+    if (currentColor) {
+      updateColor.mutate({
+        id: colorId,
+        name: currentColor.name,
+        hex: updates.hex,
+        rgb: updates.rgb || "",
+        hsl: updates.hsl || "",
+        cmyk: updates.cmyk || "",
+        type: "solid",
+      });
+    }
+  };
+
   const parseColorAsset = (asset: BrandAsset): ColorData | null => {
     try {
       const data =
@@ -1472,6 +1518,7 @@ export function ColorManager({
                   onDelete={deleteColor.mutate}
                   onGenerate={handleGenerateGreyShades}
                   neutralColorsCount={neutralColorsData.length}
+                  onUpdate={handleUpdateColor}
                 />
               ))}
 
@@ -1549,6 +1596,7 @@ export function ColorManager({
                   color={color}
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
+                  onUpdate={handleUpdateColor}
                 />
               ))}
             </div>
