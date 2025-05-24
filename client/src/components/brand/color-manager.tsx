@@ -84,6 +84,79 @@ function ColorCard({
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(color.name);
   
+  const handleColorAreaClick = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+    
+    // Simple color calculation for responsive color picker
+    const hue = 200; // Default blue
+    const saturation = Math.round(x * 100);
+    const lightness = Math.round((1 - y) * 100);
+    
+    // Convert HSL to hex
+    const h = hue / 360;
+    const s = saturation / 100;
+    const l = lightness / 100;
+    
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l;
+    } else {
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
+    }
+    
+    const toHex = (c: number) => {
+      const hex = Math.round(c * 255).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    const hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    setTempColor(hexColor);
+  };
+
+  const handleHueSliderClick = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const hue = Math.round(x * 360);
+    
+    // Simple hue change
+    const hexColor = `hsl(${hue}, 80%, 60%)`;
+    // Convert to actual hex - simplified version
+    const tempDiv = document.createElement('div');
+    tempDiv.style.color = hexColor;
+    document.body.appendChild(tempDiv);
+    const computedColor = getComputedStyle(tempDiv).color;
+    document.body.removeChild(tempDiv);
+    
+    // Extract RGB values and convert to hex
+    const rgb = computedColor.match(/\d+/g);
+    if (rgb) {
+      const hex = `#${parseInt(rgb[0]).toString(16).padStart(2, '0')}${parseInt(rgb[1]).toString(16).padStart(2, '0')}${parseInt(rgb[2]).toString(16).padStart(2, '0')}`;
+      setTempColor(hex);
+    }
+  };
+
+  const handleHexInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
+      setTempColor(value);
+    }
+  };
+  
   // Color picker state
   const [hue, setHue] = useState(0);
   const [saturation, setSaturation] = useState(100);
@@ -271,6 +344,53 @@ function ColorCard({
           >
             <Trash2 className="h-6 w-6" />
           </Button>
+          
+          {/* Color Picker Popover - Positioned below controls */}
+          {isEditing && (
+            <div className="color-picker-popover">
+              <div className="color-picker-popover__header">
+                <h4>Edit Color</h4>
+                <button
+                  className="color-picker-popover__close-button"
+                  onClick={handleCancelEdit}
+                >
+                  <X />
+                </button>
+              </div>
+              
+              <div className="color-picker-popover__content">
+                {/* Color picker area */}
+                <input
+                  type="color"
+                  value={tempColor}
+                  onChange={(e) => setTempColor(e.target.value)}
+                  className="color-picker-popover__color-area"
+                />
+                
+                {/* Hex input */}
+                <div className="color-picker-popover__hex-input">
+                  <label>Hex:</label>
+                  <input
+                    type="text"
+                    value={tempColor}
+                    onChange={handleHexInputChange}
+                    placeholder="#000000"
+                  />
+                </div>
+              </div>
+
+              {/* Save button with icon - left aligned */}
+              <div className="color-picker-popover__actions">
+                <button
+                  className="color-picker-popover__save-button"
+                  onClick={handleSaveEdit}
+                >
+                  <Check />
+                  Save
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </motion.div>
 
