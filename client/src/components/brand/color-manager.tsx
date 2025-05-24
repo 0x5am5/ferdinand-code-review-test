@@ -69,6 +69,7 @@ function ColorCard({
   onGenerate,
   neutralColorsCount,
   onUpdate,
+  clientId,
 }: { 
   color: any; 
   onEdit: (color: any) => void; 
@@ -76,9 +77,51 @@ function ColorCard({
   onGenerate?: () => void;
   neutralColorsCount?: number;
   onUpdate?: (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }) => void;
+  clientId: number;
 }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showTints, setShowTints] = useState(false);
+  
+  // Add updateColor mutation to ColorCard component
+  const updateColor = useMutation({
+    mutationFn: async (data: { id: number; name: string; category: string; data: any }) => {
+      const response = await fetch(`/api/clients/${clientId}/assets/${data.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: data.name,
+          category: data.category,
+          data: data.data,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update color");
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
+      });
+      toast({
+        title: "Color updated!",
+        description: `${color.name} has been updated successfully.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [tempColor, setTempColor] = useState(color.hex);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -229,39 +272,56 @@ function ColorCard({
   };
 
   const handleSaveEdit = () => {
-    const updates: any = {};
+    const currentData = typeof color.data === 'string' ? JSON.parse(color.data) : color.data;
     
     if (activeTab === 'color') {
       // Save solid color
-      updates.hex = tempColor;
-      updates.rgb = hexToRgb(tempColor) || undefined;
-      updates.hsl = hexToHsl(tempColor) || undefined;
-      updates.cmyk = hexToCmyk(tempColor) || undefined;
-      // Clear gradient data when switching to solid color
-      updates.data = { ...(color.data || {}), gradient: null };
+      updateColor.mutate({
+        id: color.id,
+        name: color.name,
+        category: "color",
+        data: {
+          type: "solid",
+          category: currentData?.category || "brand",
+          colors: [{
+            hex: tempColor,
+            rgb: hexToRgb(tempColor) || "",
+            hsl: hexToHsl(tempColor) || "",
+            cmyk: hexToCmyk(tempColor) || "",
+          }],
+          // Remove gradient data when switching to solid
+          ...(currentData?.tints && { tints: currentData.tints }),
+          ...(currentData?.shades && { shades: currentData.shades }),
+        }
+      });
     } else if (activeTab === 'gradient') {
       // Save gradient data
       const gradientData = {
         type: gradientType,
         stops: gradientStops.sort((a, b) => a.position - b.position)
       };
-      updates.data = { ...(color.data || {}), gradient: gradientData };
-      // Keep the hex as the first color for backwards compatibility
-      updates.hex = gradientStops[0]?.color || color.hex;
-      updates.rgb = hexToRgb(updates.hex) || undefined;
-      updates.hsl = hexToHsl(updates.hex) || undefined;
-      updates.cmyk = hexToCmyk(updates.hex) || undefined;
-    }
-    
-    if (onUpdate) {
-      onUpdate(color.id, updates);
+      
+      updateColor.mutate({
+        id: color.id,
+        name: color.name,
+        category: "color",
+        data: {
+          type: "gradient",
+          category: currentData?.category || "brand",
+          colors: [{
+            hex: gradientStops[0]?.color || color.hex,
+            rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
+            hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
+            cmyk: hexToCmyk(gradientStops[0]?.color || color.hex) || "",
+          }],
+          gradient: gradientData,
+          ...(currentData?.tints && { tints: currentData.tints }),
+          ...(currentData?.shades && { shades: currentData.shades }),
+        }
+      });
     }
     
     setIsEditing(false);
-    toast({
-      title: "Color updated!",
-      description: `${color.name} has been updated successfully.`,
-    });
   };
 
   const handleCancelEdit = () => {
@@ -1837,6 +1897,7 @@ export function ColorManager({
                   color={color}
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
+                  clientId={clientId}
                 />
               ))}
 

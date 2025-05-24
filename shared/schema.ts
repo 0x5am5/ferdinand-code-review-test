@@ -307,6 +307,17 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
           }),
         )
         .min(1),
+      gradient: z
+        .object({
+          type: z.enum(["linear", "radial"]),
+          stops: z.array(
+            z.object({
+              color: z.string(),
+              position: z.number().min(0).max(100),
+            })
+          ).min(2),
+        })
+        .optional(),
       tints: z
         .array(
           z.object({
