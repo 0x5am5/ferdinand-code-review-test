@@ -1,6 +1,8 @@
 .color-picker-popover {
-  position: absolute;
-  right: 0;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 50;
   width: 320px;
   background: white;
@@ -81,23 +83,34 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-
-    input[type="color"] {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      cursor: pointer;
-    }
   }
 
-  &__color-display {
-    width: 100%;
-    height: 40px;
-    border: 1px solid #d1d5db;
+  &__color-input {
+    width: 100% !important;
+    height: 40px !important;
+    border: 1px solid #d1d5db !important;
     border-radius: 8px;
-    position: relative;
+    cursor: pointer;
+    outline: none;
+    background: none;
+    padding: 0;
+    
+    // Remove default browser styling for color input
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+      border: none;
+      border-radius: 8px;
+    }
+    
+    &::-webkit-color-swatch {
+      border: none;
+      border-radius: 8px;
+    }
+    
+    &::-moz-color-swatch {
+      border: none;
+      border-radius: 8px;
+    }
   }
 
   &__gradient-placeholder {
@@ -190,14 +203,16 @@
 
   &__save-button {
     display: flex;
-    gap: .4rem;
     align-items: center;
-    padding: .5rem 1rem;
+    gap: 6px;
+    padding: 6px 16px;
+    font-size: 14px;
     background-color: #3b82f6;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: 500;
 
     &:hover {
       background-color: #2563eb;

@@ -17,16 +17,16 @@ interface ColorPickerProps {
 function hexToRgb(hex: string) {
   // Remove the # if present
   hex = hex.replace(/^#/, '');
-
+  
   // Validate hex format
   if (!/^([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/.test(hex)) {
     // Return black for invalid hex
     return { r: 0, g: 0, b: 0 };
   }
-
+  
   // Parse the hex values to RGB
   let r = 0, g = 0, b = 0;
-
+  
   try {
     if (hex.length === 3) {
       r = parseInt(hex[0] + hex[0], 16);
@@ -37,17 +37,17 @@ function hexToRgb(hex: string) {
       g = parseInt(hex.substring(2, 4), 16);
       b = parseInt(hex.substring(4, 6), 16);
     }
-
+    
     // Handle NaN values
     r = isNaN(r) ? 0 : r;
     g = isNaN(g) ? 0 : g;
     b = isNaN(b) ? 0 : b;
-
+    
   } catch (error) {
     // Return black for any parsing errors
     return { r: 0, g: 0, b: 0 };
   }
-
+  
   return { r, g, b };
 }
 
@@ -67,7 +67,7 @@ function rgbToHsv(r: number, g: number, b: number) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const d = max - min;
-
+  
   let h = 0;
   const s = max === 0 ? 0 : d / max;
   const v = max;
@@ -127,32 +127,32 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
   const [red, setRed] = useState(r);
   const [green, setGreen] = useState(g);
   const [blue, setBlue] = useState(b);
-
+  
   // Convert to HSV for color spectrum and saturation strip
   const { h, s, v } = rgbToHsv(r, g, b);
   const [hue, setHue] = useState(h);
   const [saturation, setSaturation] = useState(s);
   const [brightness, setBrightness] = useState(v);
-
+  
   // Reference for the color spectrum area
   const spectrumRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-
+  
   useEffect(() => {
     // Ensure value is a string and has a valid format
     const safeValue = typeof value === 'string' ? value : '#000000';
-
+    
     // Only update if the value has changed
     if (safeValue !== hexValue) {
       const formattedValue = safeValue.startsWith("#") ? safeValue : "#000000";
       setHexValue(formattedValue);
-
+      
       try {
         const { r, g, b } = hexToRgb(formattedValue.replace(/^#/, ''));
         setRed(r);
         setGreen(g);
         setBlue(b);
-
+        
         // Update HSV values
         const { h, s, v } = rgbToHsv(r, g, b);
         setHue(h);
@@ -169,55 +169,55 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
       }
     }
   }, [value, hexValue]);
-
+  
   const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let newHex = e.target.value;
-
+    
     // Add # if user started typing without it
     if (newHex.length > 0 && !newHex.startsWith('#')) {
       newHex = '#' + newHex;
     }
-
+    
     // Always update the input field so user can type
     setHexValue(newHex);
-
+    
     // Update RGB and call onChange if it's a valid hex
     if (/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(newHex)) {
       const { r, g, b } = hexToRgb(newHex.replace(/^#/, ''));
       setRed(r);
       setGreen(g);
       setBlue(b);
-
+      
       // Update HSV values
       const { h, s, v } = rgbToHsv(r, g, b);
       setHue(h);
       setSaturation(s);
       setBrightness(v);
-
+      
       onChange(newHex);
     }
   };
-
+  
   const updateColorFromPosition = (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
     if (!spectrumRef.current) return;
-
+    
     const rect = spectrumRef.current.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
     const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-
+    
     // Calculate saturation and brightness as percentages
     const newSaturation = (x / rect.width) * 100;
     const newBrightness = 100 - (y / rect.height) * 100;
-
+    
     setSaturation(newSaturation);
     setBrightness(newBrightness);
-
+    
     // Convert HSV to RGB
     const { r, g, b } = hsvToRgb(hue, newSaturation, newBrightness);
     setRed(r);
     setGreen(g);
     setBlue(b);
-
+    
     // Update hex value
     const newHex = rgbToHex(r, g, b);
     setHexValue(newHex);
@@ -244,35 +244,35 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
     if (isDragging) {
       document.addEventListener('mousemove', handleSpectrumMouseMove);
       document.addEventListener('mouseup', handleSpectrumMouseUp);
-
+      
       return () => {
         document.removeEventListener('mousemove', handleSpectrumMouseMove);
         document.removeEventListener('mouseup', handleSpectrumMouseUp);
       };
     }
   }, [isDragging]);
-
+  
   const handleHueChange = (value: number[]) => {
     const newHue = value[0];
     setHue(newHue);
-
+    
     // Convert HSV to RGB
     const { r, g, b } = hsvToRgb(newHue, saturation, brightness);
     setRed(r);
     setGreen(g);
     setBlue(b);
-
+    
     // Update hex value
     const newHex = rgbToHex(r, g, b);
     setHexValue(newHex);
     onChange(newHex);
   };
-
+  
   const handleOpacityChange = (value: number[]) => {
     // For future implementation of opacity/alpha channel
     // Currently we just show the slider for visual consistency with the example
   };
-
+  
   // Get the background for the spectrum based on current hue
   const getSpectrumBackground = () => {
     const pureColor = hsvToRgb(hue, 100, 100);
@@ -281,13 +281,13 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
       linear-gradient(to right, white, rgb(${pureColor.r}, ${pureColor.g}, ${pureColor.b}))
     `;
   };
-
+  
   // Create a background for the hue slider that shows the spectrum of hues
   const hueGradient = "linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)";
-
+  
   // Create a checkerboard pattern for the opacity slider background
   const opacityBackground = "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAIAAADZF8uwAAAAGUlEQVQYV2M4gwH+YwCGIasIUwhT25BVBADtzYNYrHvv4gAAAABJRU5ErkJggg==')";
-
+  
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -327,7 +327,7 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
               }}
             />
           </div>
-
+          
           {/* Hue slider */}
           <div className="space-y-1.5">
             <div 
@@ -351,7 +351,7 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
               />
             </div>
           </div>
-
+          
           {/* Opacity slider */}
           <div className="space-y-1.5">
             <div 
@@ -369,7 +369,7 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
               />
             </div>
           </div>
-
+          
           {/* Color value inputs */}
           <div className="grid grid-cols-4 gap-2 items-center">
             <Select defaultValue="hex">
@@ -382,7 +382,7 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
                 <SelectItem value="hsl">HSL</SelectItem>
               </SelectContent>
             </Select>
-
+            
             <div className="col-span-2">
               <Input
                 value={hexValue.substring(1)}
@@ -390,7 +390,7 @@ export function ColorPicker({ id, value, onChange, className }: ColorPickerProps
                 className="h-8"
               />
             </div>
-
+            
             <div>
               <Input
                 value="100%"
