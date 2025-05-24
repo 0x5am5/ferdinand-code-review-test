@@ -301,7 +301,9 @@ function ColorCard({
           if (onUpdate) {
             onUpdate(color.id, {
               hex: tempColor,
-              data: newData
+              rgb: hexToRgb(tempColor) || "",
+              hsl: hexToHsl(tempColor) || "",
+              cmyk: hexToCmyk(tempColor) || "",
             });
           }
         }
@@ -338,7 +340,9 @@ function ColorCard({
           if (onUpdate) {
             onUpdate(color.id, {
               hex: gradientStops[0]?.color || color.hex,
-              data: newData
+              rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
+              hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
+              cmyk: hexToCmyk(gradientStops[0]?.color || color.hex) || "",
             });
           }
         }
@@ -1115,12 +1119,14 @@ function ColorChip({
   color,
   onEdit,
   onDelete,
+  onUpdate,
 }: {
   color: ColorData;
   onEdit?: () => void;
   onDelete?: () => void;
+  onUpdate?: (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string; }) => void;
 }) {
-  const { tints, shades } = useToast();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState({
     name: color.name,
@@ -1918,12 +1924,12 @@ export function ColorManager({
             </div>
             <div className="asset-display__preview">
               {brandColorsData.map((color) => (
-                <ColorCard
+                <ColorChip
                   key={color.id}
                   color={color}
-                  onEdit={handleEditColor}
-                  onDelete={deleteColor.mutate}
-                  clientId={clientId}
+                  onEdit={() => handleEditColor(color)}
+                  onDelete={() => deleteColor.mutate(color.id)}
+                  onUpdate={handleUpdateColor}
                 />
               ))}
 
