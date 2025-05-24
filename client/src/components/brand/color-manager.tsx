@@ -355,10 +355,6 @@ function ColorCard({
         <div 
           className="color-picker-popover"
           style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
             zIndex: 1000
           }}
         >
