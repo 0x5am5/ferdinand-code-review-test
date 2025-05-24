@@ -1573,6 +1573,8 @@ export function ColorManager({
         pantone: data.colors[0].pantone,
         name: asset.name,
         category: data.category,
+        // Preserve the full data object including gradient information
+        data: data,
       };
     } catch (error) {
       console.error("Error parsing color asset:", error);
@@ -2209,6 +2211,7 @@ interface ColorData {
   pantone?: string;
   name: string;
   category: "brand" | "neutral" | "interactive";
+  data?: any; // Include data property to preserve gradient information
 }
 
 // Color category descriptions
