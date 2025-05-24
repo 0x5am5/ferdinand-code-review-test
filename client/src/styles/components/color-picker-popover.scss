@@ -86,11 +86,30 @@
 
   &__color-input {
     width: 100% !important;
-    height: 200px !important;
-    border: none !important;
+    height: 40px !important;
+    border: 1px solid #d1d5db !important;
     border-radius: 8px;
     cursor: pointer;
     outline: none;
+    background: none;
+    padding: 0;
+    
+    // Remove default browser styling for color input
+    &::-webkit-color-swatch-wrapper {
+      padding: 0;
+      border: none;
+      border-radius: 8px;
+    }
+    
+    &::-webkit-color-swatch {
+      border: none;
+      border-radius: 8px;
+    }
+    
+    &::-moz-color-swatch {
+      border: none;
+      border-radius: 8px;
+    }
   }
 
   &__gradient-placeholder {
@@ -107,15 +126,7 @@
     }
   }
 
-  &__color-area {
-    width: 100%;
-    height: 192px;
-    border-radius: 8px;
-    border: 1px solid #d1d5db;
-    cursor: crosshair;
-    position: relative;
-    overflow: hidden;
-  }
+
 
   &__color-pointer {
     position: absolute;
@@ -186,7 +197,7 @@
   &__actions {
     display: flex;
     justify-content: flex-start;
-    margin-top: 4px;
+    margin-top: 1rem;
   }
 
   &__save-button {
