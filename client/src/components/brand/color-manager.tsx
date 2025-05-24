@@ -287,7 +287,13 @@ function ColorCard({
     <div className="color-chip-container relative">
       <motion.div 
         className="color-chip"
-        style={{ backgroundColor: displayHex }}
+        style={{
+          background: color.data?.gradient ? 
+            `${color.data.gradient.type === 'radial' ? 'radial' : 'linear'}-gradient(${
+              color.data.gradient.type === 'radial' ? 'circle' : 'to right'
+            }, ${color.data.gradient.stops.map(stop => `${stop.color} ${stop.position}%`).join(', ')})` :
+            displayHex
+        }}
         animate={{ 
           width: showTints ? "60%" : "100%",
         }}
@@ -514,6 +520,10 @@ function ColorCard({
                       <div 
                         className="stop-color-preview"
                         style={{ backgroundColor: stop.color }}
+                        onClick={() => {
+                          const colorInput = document.querySelector(`input[data-stop-index="${index}"]`) as HTMLInputElement;
+                          if (colorInput) colorInput.click();
+                        }}
                       />
                       
                       <input
@@ -525,6 +535,7 @@ function ColorCard({
                           setGradientStops(newStops);
                         }}
                         className="stop-color-input"
+                        data-stop-index={index}
                       />
                       
                       <input
