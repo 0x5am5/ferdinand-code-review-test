@@ -199,158 +199,21 @@ function ColorCard({
                 </Button>
               </div>
               
-              {/* Direct Color Picker - No Input Field */}
-              <div className="space-y-3">
-                {/* Color picker area */}
-                <div 
-                  className="w-full h-48 rounded-lg border cursor-crosshair relative overflow-hidden"
-                  style={{
-                    background: `linear-gradient(to bottom, 
-                      rgba(255,255,255,1) 0%, 
-                      rgba(255,255,255,0) 50%, 
-                      rgba(0,0,0,0) 50%, 
-                      rgba(0,0,0,1) 100%),
-                    linear-gradient(to right, 
-                      hsl(${Math.round(parseInt(tempColor.replace('#', ''), 16) % 360)}, 100%, 50%) 0%,
-                      rgba(128,128,128,0) 100%)`
-                  }}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = (e.clientX - rect.left) / rect.width;
-                    const y = (e.clientY - rect.top) / rect.height;
-                    const hue = Math.round(parseInt(tempColor.replace('#', ''), 16) % 360);
-                    const saturation = Math.round(x * 100);
-                    const lightness = Math.round((1 - y) * 100);
-                    
-                    // Convert HSL to hex
-                    const h = hue / 360;
-                    const s = saturation / 100;
-                    const l = lightness / 100;
-                    
-                    const hue2rgb = (p: number, q: number, t: number) => {
-                      if (t < 0) t += 1;
-                      if (t > 1) t -= 1;
-                      if (t < 1/6) return p + (q - p) * 6 * t;
-                      if (t < 1/2) return q;
-                      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                      return p;
-                    };
-                    
-                    let r, g, b;
-                    if (s === 0) {
-                      r = g = b = l;
-                    } else {
-                      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                      const p = 2 * l - q;
-                      r = hue2rgb(p, q, h + 1/3);
-                      g = hue2rgb(p, q, h);
-                      b = hue2rgb(p, q, h - 1/3);
-                    }
-                    
-                    const toHex = (c: number) => {
-                      const hex = Math.round(c * 255).toString(16);
-                      return hex.length === 1 ? '0' + hex : hex;
-                    };
-                    
-                    const hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-                    setTempColor(hexColor);
-                  }}
-                >
-                  <div 
-                    className="absolute w-3 h-3 border-2 border-white rounded-full shadow-lg transform -translate-x-1/2 -translate-y-1/2"
-                    style={{
-                      left: '50%',
-                      top: '50%',
-                      backgroundColor: tempColor
-                    }}
-                  />
-                </div>
-                
-                {/* Hue slider */}
-                <div 
-                  className="w-full h-6 rounded-lg cursor-pointer"
-                  style={{
-                    background: 'linear-gradient(to right, #ff0000 0%, #ffff00 17%, #00ff00 33%, #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%)'
-                  }}
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = (e.clientX - rect.left) / rect.width;
-                    const hue = Math.round(x * 360);
-                    
-                    // Keep current saturation and lightness, change hue
-                    const currentHex = tempColor.replace('#', '');
-                    const r = parseInt(currentHex.substr(0, 2), 16) / 255;
-                    const g = parseInt(currentHex.substr(2, 2), 16) / 255;
-                    const b = parseInt(currentHex.substr(4, 2), 16) / 255;
-                    
-                    const max = Math.max(r, g, b);
-                    const min = Math.min(r, g, b);
-                    const lightness = (max + min) / 2;
-                    const saturation = max === min ? 0 : lightness > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
-                    
-                    // Convert new HSL to hex
-                    const h = hue / 360;
-                    const s = saturation;
-                    const l = lightness;
-                    
-                    const hue2rgb = (p: number, q: number, t: number) => {
-                      if (t < 0) t += 1;
-                      if (t > 1) t -= 1;
-                      if (t < 1/6) return p + (q - p) * 6 * t;
-                      if (t < 1/2) return q;
-                      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-                      return p;
-                    };
-                    
-                    let newR, newG, newB;
-                    if (s === 0) {
-                      newR = newG = newB = l;
-                    } else {
-                      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-                      const p = 2 * l - q;
-                      newR = hue2rgb(p, q, h + 1/3);
-                      newG = hue2rgb(p, q, h);
-                      newB = hue2rgb(p, q, h - 1/3);
-                    }
-                    
-                    const toHex = (c: number) => {
-                      const hex = Math.round(c * 255).toString(16);
-                      return hex.length === 1 ? '0' + hex : hex;
-                    };
-                    
-                    const hexColor = `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
-                    setTempColor(hexColor);
-                  }}
-                >
-                  <div 
-                    className="absolute w-4 h-6 border-2 border-white rounded shadow-lg transform -translate-x-1/2"
-                    style={{
-                      left: `${(parseInt(tempColor.replace('#', ''), 16) % 360) / 360 * 100}%`,
-                      backgroundColor: tempColor
-                    }}
-                  />
-                </div>
-                
-                {/* Hex input */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Hex:</span>
-                  <input
-                    type="text"
-                    value={tempColor}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
-                        setTempColor(value);
-                      }
-                    }}
-                    className="flex-1 px-2 py-1 text-sm border rounded"
-                    placeholder="#000000"
-                  />
-                </div>
-              </div>
+              {/* Direct Color Picker */}
+              <ColorPicker
+                value={tempColor}
+                onChange={setTempColor}
+              />
 
-              {/* Save button only - left aligned */}
-              <div className="flex justify-start">
+              {/* Action buttons */}
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                >
+                  Cancel
+                </Button>
                 <Button
                   size="sm"
                   onClick={handleSaveEdit}
