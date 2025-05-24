@@ -279,21 +279,37 @@ function ColorCard({
     }
   };
 
-  // Generate tints and shades
+  // Generate tints and shades and handle gradient display
   const displayHex = isEditing ? tempColor : color.hex;
   const { tints, shades } = generateTintsAndShades(displayHex);
+  
+  // Create real-time gradient display
+  const getDisplayStyle = () => {
+    if (isEditing && activeTab === 'gradient') {
+      // Show live gradient while editing
+      return {
+        background: `${gradientType === 'radial' ? 'radial' : 'linear'}-gradient(${
+          gradientType === 'radial' ? 'circle' : 'to right'
+        }, ${gradientStops.map(stop => `${stop.color} ${stop.position}%`).join(', ')})`
+      };
+    } else if (color.data?.gradient) {
+      // Show saved gradient
+      return {
+        background: `${color.data.gradient.type === 'radial' ? 'radial' : 'linear'}-gradient(${
+          color.data.gradient.type === 'radial' ? 'circle' : 'to right'
+        }, ${color.data.gradient.stops.map(stop => `${stop.color} ${stop.position}%`).join(', ')})`
+      };
+    } else {
+      // Show solid color
+      return { backgroundColor: displayHex };
+    }
+  };
 
   return (
     <div className="color-chip-container relative">
       <motion.div 
         className="color-chip"
-        style={{
-          background: color.data?.gradient ? 
-            `${color.data.gradient.type === 'radial' ? 'radial' : 'linear'}-gradient(${
-              color.data.gradient.type === 'radial' ? 'circle' : 'to right'
-            }, ${color.data.gradient.stops.map(stop => `${stop.color} ${stop.position}%`).join(', ')})` :
-            displayHex
-        }}
+        style={getDisplayStyle()}
         animate={{ 
           width: showTints ? "60%" : "100%",
         }}
@@ -469,6 +485,13 @@ function ColorCard({
                   style={{
                     background: `linear-gradient(to right, ${gradientStops.map(stop => `${stop.color} ${stop.position}%`).join(', ')})`
                   }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const position = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+                    const newColor = gradientStops.length > 0 ? gradientStops[0].color : '#000000';
+                    setGradientStops([...gradientStops, { color: newColor, position }]);
+                  }}
                 >
                   {/* Color Stop Handles */}
                   {gradientStops.map((stop, index) => (
@@ -478,6 +501,31 @@ function ColorCard({
                       style={{
                         left: `${stop.position}%`,
                         backgroundColor: stop.color
+                      }}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        
+                        const startPosition = stop.position;
+                        const rect = e.currentTarget.parentElement!.getBoundingClientRect();
+                        
+                        const handleMouseMove = (moveEvent: MouseEvent) => {
+                          const newPosition = Math.max(0, Math.min(100, 
+                            ((moveEvent.clientX - rect.left) / rect.width) * 100
+                          ));
+                          
+                          const newStops = [...gradientStops];
+                          newStops[index].position = Math.round(newPosition);
+                          setGradientStops(newStops);
+                        };
+                        
+                        const handleMouseUp = () => {
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                        };
+                        
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
                       }}
                     />
                   ))}
