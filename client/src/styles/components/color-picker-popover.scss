@@ -1,8 +1,6 @@
 .color-picker-popover {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: absolute;
+  right: 0;
   z-index: 50;
   width: 320px;
   background: white;
@@ -95,7 +93,7 @@
     background: none;
     padding: 0;
     
-    // Remove default browser styling for color input
+    /* Remove default browser styling for color input */
     &::-webkit-color-swatch-wrapper {
       padding: 0;
       border: none;
@@ -113,17 +111,140 @@
     }
   }
 
-  &__gradient-placeholder {
-    padding: 40px 20px;
-    text-align: center;
-    color: #9ca3af;
-    background: #f9fafb;
-    border-radius: 8px;
-    border: 1px dashed #d1d5db;
+  &__gradient-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
 
-    p {
-      margin: 0;
-      font-style: italic;
+  &__gradient-type {
+    .gradient-type-select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      background: white;
+      font-size: 14px;
+    }
+  }
+
+  &__gradient-preview {
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    position: relative;
+    margin: 8px 0;
+
+    .gradient-stop-handle {
+      position: absolute;
+      top: -6px;
+      width: 12px;
+      height: 12px;
+      border: 2px solid white;
+      border-radius: 2px;
+      transform: translateX(-50%);
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+  }
+
+  &__gradient-stops {
+    .gradient-stops-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      
+      span {
+        font-weight: 500;
+        color: #374151;
+      }
+
+      .add-stop-button {
+        width: 24px;
+        height: 24px;
+        border: none;
+        background: #f3f4f6;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          background: #e5e7eb;
+        }
+      }
+    }
+
+    .gradient-stop-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+
+      .stop-position {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        input {
+          width: 50px;
+          padding: 4px 6px;
+          border: 1px solid #d1d5db;
+          border-radius: 4px;
+          font-size: 12px;
+        }
+
+        span {
+          font-size: 12px;
+          color: #6b7280;
+        }
+      }
+
+      .stop-color-preview {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 1px solid #d1d5db;
+      }
+
+      .stop-color-input {
+        width: 0;
+        height: 0;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .color-value-input {
+        width: 50px;
+        padding: 4px 6px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+
+      .remove-stop-button {
+        width: 20px;
+        height: 20px;
+        border: none;
+        background: #fee2e2;
+        color: #dc2626;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        &:hover {
+          background: #fecaca;
+        }
+      }
     }
   }
 

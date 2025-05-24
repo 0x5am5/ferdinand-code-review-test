@@ -84,6 +84,11 @@ function ColorCard({
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(color.name);
   const [activeTab, setActiveTab] = useState<'color' | 'gradient'>('color');
+  const [gradientType, setGradientType] = useState<'linear' | 'radial'>('linear');
+  const [gradientStops, setGradientStops] = useState([
+    { color: '#D9D9D9', position: 0 },
+    { color: '#737373', position: 100 }
+  ]);
   
   const handleColorAreaClick = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -204,6 +209,18 @@ function ColorCard({
   const handleStartEdit = () => {
     setTempColor(color.hex);
     setIsEditing(true);
+    
+    // Load existing gradient data if available
+    if (color.data?.gradient) {
+      setActiveTab('gradient');
+      setGradientType(color.data.gradient.type || 'linear');
+      setGradientStops(color.data.gradient.stops || [
+        { color: '#D9D9D9', position: 0 },
+        { color: '#737373', position: 100 }
+      ]);
+    } else {
+      setActiveTab('color');
+    }
   };
 
   const handleEditColor = (colorToEdit: ColorData) => {
@@ -212,16 +229,34 @@ function ColorCard({
   };
 
   const handleSaveEdit = () => {
-    // Make sure the final update is sent to the database
-    if (onUpdate && tempColor !== color.hex) {
-      const updates = {
-        hex: tempColor,
-        rgb: hexToRgb(tempColor) || undefined,
-        hsl: hexToHsl(tempColor) || undefined,
-        cmyk: hexToCmyk(tempColor) || undefined,
+    const updates: any = {};
+    
+    if (activeTab === 'color') {
+      // Save solid color
+      updates.hex = tempColor;
+      updates.rgb = hexToRgb(tempColor) || undefined;
+      updates.hsl = hexToHsl(tempColor) || undefined;
+      updates.cmyk = hexToCmyk(tempColor) || undefined;
+      // Clear gradient data when switching to solid color
+      updates.data = { ...(color.data || {}), gradient: null };
+    } else if (activeTab === 'gradient') {
+      // Save gradient data
+      const gradientData = {
+        type: gradientType,
+        stops: gradientStops.sort((a, b) => a.position - b.position)
       };
+      updates.data = { ...(color.data || {}), gradient: gradientData };
+      // Keep the hex as the first color for backwards compatibility
+      updates.hex = gradientStops[0]?.color || color.hex;
+      updates.rgb = hexToRgb(updates.hex) || undefined;
+      updates.hsl = hexToHsl(updates.hex) || undefined;
+      updates.cmyk = hexToCmyk(updates.hex) || undefined;
+    }
+    
+    if (onUpdate) {
       onUpdate(color.id, updates);
     }
+    
     setIsEditing(false);
     toast({
       title: "Color updated!",
@@ -409,8 +444,116 @@ function ColorCard({
                 </div>
               </>
             ) : (
-              <div className="color-picker-popover__gradient-placeholder">
-                <p>Gradient functionality coming soon</p>
+              <div className="color-picker-popover__gradient-section">
+                {/* Gradient Type Selector */}
+                <div className="color-picker-popover__gradient-type">
+                  <select
+                    value={gradientType}
+                    onChange={(e) => setGradientType(e.target.value as 'linear' | 'radial')}
+                    className="gradient-type-select"
+                  >
+                    <option value="linear">Linear</option>
+                    <option value="radial">Radial</option>
+                  </select>
+                </div>
+
+                {/* Gradient Preview Bar */}
+                <div 
+                  className="color-picker-popover__gradient-preview"
+                  style={{
+                    background: `linear-gradient(to right, ${gradientStops.map(stop => `${stop.color} ${stop.position}%`).join(', ')})`
+                  }}
+                >
+                  {/* Color Stop Handles */}
+                  {gradientStops.map((stop, index) => (
+                    <div
+                      key={index}
+                      className="gradient-stop-handle"
+                      style={{
+                        left: `${stop.position}%`,
+                        backgroundColor: stop.color
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {/* Stops Section */}
+                <div className="color-picker-popover__gradient-stops">
+                  <div className="gradient-stops-header">
+                    <span>Stops</span>
+                    <button
+                      className="add-stop-button"
+                      onClick={() => {
+                        const newPosition = gradientStops.length > 0 ? 
+                          Math.min(100, Math.max(...gradientStops.map(s => s.position)) + 20) : 50;
+                        setGradientStops([...gradientStops, { color: '#000000', position: newPosition }]);
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Individual Stop Controls */}
+                  {gradientStops.map((stop, index) => (
+                    <div key={index} className="gradient-stop-control">
+                      <div className="stop-position">
+                        <input
+                          type="number"
+                          value={stop.position}
+                          onChange={(e) => {
+                            const newStops = [...gradientStops];
+                            newStops[index].position = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                            setGradientStops(newStops);
+                          }}
+                          min="0"
+                          max="100"
+                        />
+                        <span>%</span>
+                      </div>
+                      
+                      <div 
+                        className="stop-color-preview"
+                        style={{ backgroundColor: stop.color }}
+                      />
+                      
+                      <input
+                        type="color"
+                        value={stop.color}
+                        onChange={(e) => {
+                          const newStops = [...gradientStops];
+                          newStops[index].color = e.target.value;
+                          setGradientStops(newStops);
+                        }}
+                        className="stop-color-input"
+                      />
+                      
+                      <input
+                        type="number"
+                        value={parseInt(stop.color.substring(1, 3), 16)}
+                        onChange={(e) => {
+                          const newStops = [...gradientStops];
+                          const hex = Math.max(0, Math.min(255, parseInt(e.target.value) || 0)).toString(16).padStart(2, '0');
+                          newStops[index].color = `#${hex}${stop.color.substring(3)}`;
+                          setGradientStops(newStops);
+                        }}
+                        min="0"
+                        max="255"
+                        className="color-value-input"
+                      />
+                      
+                      {gradientStops.length > 2 && (
+                        <button
+                          className="remove-stop-button"
+                          onClick={() => {
+                            setGradientStops(gradientStops.filter((_, i) => i !== index));
+                          }}
+                        >
+                          −
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
