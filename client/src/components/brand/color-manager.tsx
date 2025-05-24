@@ -14,7 +14,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import "./color-picker-popover.scss";
+import "../../styles/components/color-picker-popover.scss";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +83,7 @@ function ColorCard({
   const [tempColor, setTempColor] = useState(color.hex);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(color.name);
+  const [activeTab, setActiveTab] = useState<'color' | 'gradient'>('color');
   
   const handleColorAreaClick = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -358,25 +359,52 @@ function ColorCard({
                 </button>
               </div>
               
+              {/* Tabs */}
+              <div className="color-picker-popover__tabs">
+                <button
+                  className={`color-picker-popover__tab ${activeTab === 'color' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('color')}
+                >
+                  Color
+                </button>
+                <button
+                  className={`color-picker-popover__tab ${activeTab === 'gradient' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('gradient')}
+                >
+                  Gradient
+                </button>
+              </div>
+              
               <div className="color-picker-popover__content">
-                {/* Color picker area */}
-                <input
-                  type="color"
-                  value={tempColor}
-                  onChange={(e) => setTempColor(e.target.value)}
-                  className="color-picker-popover__color-area"
-                />
-                
-                {/* Hex input */}
-                <div className="color-picker-popover__hex-input">
-                  <label>Hex:</label>
-                  <input
-                    type="text"
-                    value={tempColor}
-                    onChange={handleHexInputChange}
-                    placeholder="#000000"
-                  />
-                </div>
+                {activeTab === 'color' ? (
+                  <>
+                    {/* Direct Color Picker - No extra click needed */}
+                    <div className="color-picker-popover__color-section">
+                      <input
+                        type="color"
+                        value={tempColor}
+                        onChange={(e) => setTempColor(e.target.value)}
+                        className="color-picker-popover__color-input"
+                        style={{ width: '100%', height: '200px', border: 'none', cursor: 'pointer' }}
+                      />
+                    </div>
+                    
+                    {/* Hex input */}
+                    <div className="color-picker-popover__hex-input">
+                      <label>Hex:</label>
+                      <input
+                        type="text"
+                        value={tempColor}
+                        onChange={handleHexInputChange}
+                        placeholder="#000000"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="color-picker-popover__gradient-placeholder">
+                    <p>Gradient functionality coming soon</p>
+                  </div>
+                )}
               </div>
 
               {/* Save button with icon - left aligned */}
