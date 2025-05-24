@@ -276,22 +276,34 @@ function ColorCard({
     
     if (activeTab === 'color') {
       // Save solid color
+      const newData = {
+        type: "solid",
+        category: currentData?.category || "brand",
+        colors: [{
+          hex: tempColor,
+          rgb: hexToRgb(tempColor) || "",
+          hsl: hexToHsl(tempColor) || "",
+          cmyk: hexToCmyk(tempColor) || "",
+        }],
+        // Remove gradient data when switching to solid
+        ...(currentData?.tints && { tints: currentData.tints }),
+        ...(currentData?.shades && { shades: currentData.shades }),
+      };
+      
       updateColor.mutate({
         id: color.id,
         name: color.name,
         category: "color",
-        data: {
-          type: "solid",
-          category: currentData?.category || "brand",
-          colors: [{
-            hex: tempColor,
-            rgb: hexToRgb(tempColor) || "",
-            hsl: hexToHsl(tempColor) || "",
-            cmyk: hexToCmyk(tempColor) || "",
-          }],
-          // Remove gradient data when switching to solid
-          ...(currentData?.tints && { tints: currentData.tints }),
-          ...(currentData?.shades && { shades: currentData.shades }),
+        data: newData
+      }, {
+        onSuccess: () => {
+          // Update local color data immediately
+          if (onUpdate) {
+            onUpdate(color.id, {
+              hex: tempColor,
+              data: newData
+            });
+          }
         }
       });
     } else if (activeTab === 'gradient') {
@@ -301,22 +313,34 @@ function ColorCard({
         stops: gradientStops.sort((a, b) => a.position - b.position)
       };
       
+      const newData = {
+        type: "gradient",
+        category: currentData?.category || "brand",
+        colors: [{
+          hex: gradientStops[0]?.color || color.hex,
+          rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
+          hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
+          cmyk: hexToCmyk(gradientStops[0]?.color || color.hex) || "",
+        }],
+        gradient: gradientData,
+        ...(currentData?.tints && { tints: currentData.tints }),
+        ...(currentData?.shades && { shades: currentData.shades }),
+      };
+      
       updateColor.mutate({
         id: color.id,
         name: color.name,
         category: "color",
-        data: {
-          type: "gradient",
-          category: currentData?.category || "brand",
-          colors: [{
-            hex: gradientStops[0]?.color || color.hex,
-            rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
-            hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
-            cmyk: hexToCmyk(gradientStops[0]?.color || color.hex) || "",
-          }],
-          gradient: gradientData,
-          ...(currentData?.tints && { tints: currentData.tints }),
-          ...(currentData?.shades && { shades: currentData.shades }),
+        data: newData
+      }, {
+        onSuccess: () => {
+          // Update local color data immediately
+          if (onUpdate) {
+            onUpdate(color.id, {
+              hex: gradientStops[0]?.color || color.hex,
+              data: newData
+            });
+          }
         }
       });
     }
