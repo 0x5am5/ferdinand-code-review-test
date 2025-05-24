@@ -1279,28 +1279,7 @@ function ColorChip({
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Tints</Label>
-          <div className="grid grid-cols-3 gap-1">
-            {tints.map((tint, index) => (
-              <ColorBlock
-                key={`tint-${index}`}
-                hex={tint}
-                onClick={() => handleCopy(tint)}
-              />
-            ))}
-          </div>
-          <Label className="text-xs text-muted-foreground">Shades</Label>
-          <div className="grid grid-cols-3 gap-1">
-            {shades.map((shade, index) => (
-              <ColorBlock
-                key={`shade-${index}`}
-                hex={shade}
-                onClick={() => handleCopy(shade)}
-              />
-            ))}
-          </div>
-        </div>
+        {/* Tints and shades removed for simplicity with gradients */}
       </div>
     </motion.div>
   );
@@ -1924,12 +1903,12 @@ export function ColorManager({
             </div>
             <div className="asset-display__preview">
               {brandColorsData.map((color) => (
-                <ColorChip
+                <ColorCard
                   key={color.id}
                   color={color}
-                  onEdit={() => handleEditColor(color)}
-                  onDelete={() => deleteColor.mutate(color.id)}
-                  onUpdate={handleUpdateColor}
+                  onEdit={handleEditColor}
+                  onDelete={deleteColor.mutate}
+                  clientId={clientId}
                 />
               ))}
 
