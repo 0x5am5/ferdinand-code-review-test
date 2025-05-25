@@ -70,6 +70,7 @@ export function registerAssetRoutes(app: Express) {
           
           // Handle Google Fonts (no file upload needed)
           if (subcategory === "google") {
+            console.log("Creating Google Font asset:", name);
             const fontData = typeof data === 'string' ? JSON.parse(data) : data;
             
             const fontAsset = {
@@ -81,7 +82,9 @@ export function registerAssetRoutes(app: Express) {
               mimeType: null,
             };
 
+            console.log("Font asset data:", fontAsset);
             const asset = await storage.createAsset(fontAsset);
+            console.log("Google Font asset created successfully:", asset.id);
             return res.status(201).json(asset);
           }
 
