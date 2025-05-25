@@ -8,6 +8,8 @@ import {
   ChevronDown,
   Lock,
   Type,
+  Search,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +55,19 @@ import {
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { AssetSection } from "./asset-section";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 
 // Form schemas for different font sources
 const fileUploadSchema = z.object({
@@ -108,6 +123,37 @@ const allWeights = [
   "800",
   "900",
 ];
+
+// Popular Google Fonts list (curated selection of most commonly used fonts)
+const GOOGLE_FONTS = [
+  { name: "Roboto", category: "Sans Serif", weights: ["100", "300", "400", "500", "700", "900"] },
+  { name: "Open Sans", category: "Sans Serif", weights: ["300", "400", "500", "600", "700", "800"] },
+  { name: "Lato", category: "Sans Serif", weights: ["100", "300", "400", "700", "900"] },
+  { name: "Montserrat", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+  { name: "Poppins", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+  { name: "Source Sans Pro", category: "Sans Serif", weights: ["200", "300", "400", "600", "700", "900"] },
+  { name: "Oswald", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700"] },
+  { name: "Raleway", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+  { name: "Nunito", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
+  { name: "Inter", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+  { name: "Playfair Display", category: "Serif", weights: ["400", "500", "600", "700", "800", "900"] },
+  { name: "Merriweather", category: "Serif", weights: ["300", "400", "700", "900"] },
+  { name: "PT Serif", category: "Serif", weights: ["400", "700"] },
+  { name: "Lora", category: "Serif", weights: ["400", "500", "600", "700"] },
+  { name: "Source Serif Pro", category: "Serif", weights: ["200", "300", "400", "600", "700", "900"] },
+  { name: "Crimson Text", category: "Serif", weights: ["400", "600", "700"] },
+  { name: "Dancing Script", category: "Handwriting", weights: ["400", "500", "600", "700"] },
+  { name: "Pacifico", category: "Handwriting", weights: ["400"] },
+  { name: "Lobster", category: "Display", weights: ["400"] },
+  { name: "Comfortaa", category: "Display", weights: ["300", "400", "500", "600", "700"] },
+];
+
+const generateGoogleFontUrl = (fontName: string, weights: string[] = ["400"], styles: string[] = ["normal"]) => {
+  const family = fontName.replace(/\s+/g, '+');
+  const weightStr = weights.join(';');
+  const italicWeights = styles.includes('italic') ? `:ital@0;1` : '';
+  return `https://fonts.googleapis.com/css2?family=${family}:wght@${weightStr}${italicWeights}&display=swap`;
+};
 
 function FontCard({
   font,
@@ -227,24 +273,86 @@ function FontCard({
   );
 }
 
-function AddFontCard({ onClick }: { onClick: () => void }) {
+function GoogleFontPicker({ onFontSelect, isLoading }: { 
+  onFontSelect: (fontName: string) => void; 
+  isLoading: boolean; 
+}) {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+
+  const filteredFonts = GOOGLE_FONTS.filter(font =>
+    font.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+    font.category.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"
-      onClick={onClick}
+      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 transition-colors"
       style={{ minHeight: "300px" }}
     >
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-        <Plus className="h-6 w-6 text-primary" />
+        <Type className="h-6 w-6 text-primary" />
       </div>
-      <div className="text-center">
-        <h3 className="font-medium">Add New Font</h3>
-        <p className="text-sm text-muted-foreground">
-          Upload files or connect to Adobe/Google Fonts
-        </p>
+      <div className="text-center space-y-4">
+        <div>
+          <h3 className="font-medium">Add Google Font</h3>
+          <p className="text-sm text-muted-foreground">
+            Search and select from popular Google Fonts
+          </p>
+        </div>
+        
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-[300px] justify-between"
+              disabled={isLoading}
+            >
+              <Search className="mr-2 h-4 w-4" />
+              {isLoading ? "Adding font..." : "Search Google Fonts..."}
+              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0">
+            <Command>
+              <CommandInput 
+                placeholder="Search fonts..." 
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
+              <CommandList>
+                <CommandEmpty>No fonts found.</CommandEmpty>
+                <CommandGroup>
+                  {filteredFonts.map((font) => (
+                    <CommandItem
+                      key={font.name}
+                      value={font.name}
+                      onSelect={() => {
+                        onFontSelect(font.name);
+                        setOpen(false);
+                        setSearchValue("");
+                      }}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{font.name}</span>
+                        <span className="text-xs text-muted-foreground">{font.category}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {font.weights.length} weights
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
     </motion.div>
   );
@@ -333,10 +441,7 @@ function WeightStyleSelector({
 export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isAddingFont, setIsAddingFont] = useState(false);
-  const [activeTab, setActiveTab] = useState<"file" | "adobe" | "google">(
-    "file",
-  );
+
   const [editingFont, setEditingFont] = useState<FontData | null>(null);
   const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
@@ -512,20 +617,26 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     addFont.mutate(formData);
   };
 
-  const handleGoogleFont = (data: GoogleFontForm) => {
+  // Simplified Google Font handler
+  const handleGoogleFontSelect = (fontName: string) => {
+    const selectedFont = GOOGLE_FONTS.find(f => f.name === fontName);
+    if (!selectedFont) return;
+
     const formData = new FormData();
-    formData.append("name", data.name);
+    formData.append("name", fontName);
     formData.append("category", "font");
-    formData.append("source", FontSource.GOOGLE);
-    formData.append("weights", JSON.stringify(selectedWeights));
-    formData.append("styles", JSON.stringify(selectedStyles));
+    formData.append("subcategory", "google");
     formData.append(
-      "sourceData",
+      "metadata",
       JSON.stringify({
-        url: data.url,
+        source: FontSource.GOOGLE,
+        weights: selectedFont.weights,
+        styles: ["normal", "italic"],
+        sourceData: {
+          url: generateGoogleFontUrl(fontName, selectedFont.weights, ["normal", "italic"]),
+        },
       }),
     );
-
     addFont.mutate(formData);
   };
 
@@ -641,16 +752,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               </AnimatePresence>
               
               {isAbleToEdit && (
-                <div className="flex flex-col gap-2">
-                  <Button
-                    onClick={() => setIsAddingFont(true)}
-                    variant="outline"
-                    className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
-                  >
-                    <Plus className="h-12 w-12 text-muted-foreground/50" />
-                    <span className="text-muted-foreground/50">Add New Font</span>
-                  </Button>
-                </div>
+                <GoogleFontPicker 
+                  onFontSelect={handleGoogleFontSelect}
+                  isLoading={addFont.isPending}
+                />
               )}
             </div>
           </div>
