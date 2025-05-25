@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
@@ -49,29 +49,39 @@ const FontSource = {
   FILE: "file",
 } as const;
 
-// Popular Google Fonts list
-const GOOGLE_FONTS = [
-  { name: "Roboto", category: "Sans Serif", weights: ["100", "300", "400", "500", "700", "900"] },
-  { name: "Open Sans", category: "Sans Serif", weights: ["300", "400", "500", "600", "700", "800"] },
-  { name: "Lato", category: "Sans Serif", weights: ["100", "300", "400", "700", "900"] },
-  { name: "Montserrat", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Poppins", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Source Sans Pro", category: "Sans Serif", weights: ["200", "300", "400", "600", "700", "900"] },
-  { name: "Oswald", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700"] },
-  { name: "Raleway", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Nunito", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Inter", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Playfair Display", category: "Serif", weights: ["400", "500", "600", "700", "800", "900"] },
-  { name: "Merriweather", category: "Serif", weights: ["300", "400", "700", "900"] },
-  { name: "PT Serif", category: "Serif", weights: ["400", "700"] },
-  { name: "Lora", category: "Serif", weights: ["400", "500", "600", "700"] },
-  { name: "Source Serif Pro", category: "Serif", weights: ["200", "300", "400", "600", "700", "900"] },
-  { name: "Crimson Text", category: "Serif", weights: ["400", "600", "700"] },
-  { name: "Dancing Script", category: "Handwriting", weights: ["400", "500", "600", "700"] },
-  { name: "Pacifico", category: "Handwriting", weights: ["400"] },
-  { name: "Lobster", category: "Display", weights: ["400"] },
-  { name: "Comfortaa", category: "Display", weights: ["300", "400", "500", "600", "700"] },
-];
+// Google Fonts interface
+interface GoogleFont {
+  family: string;
+  variants: string[];
+  subsets: string[];
+  category: string;
+}
+
+interface GoogleFontsResponse {
+  kind: string;
+  items: GoogleFont[];
+}
+
+// Convert Google Fonts variant format to readable weights
+const convertGoogleFontVariants = (variants: string[]): string[] => {
+  return variants
+    .filter(variant => !variant.includes('italic'))
+    .map(variant => variant === 'regular' ? '400' : variant)
+    .filter(variant => /^\d+$/.test(variant))
+    .sort((a, b) => parseInt(a) - parseInt(b));
+};
+
+// Convert Google Fonts category to our format
+const convertGoogleFontCategory = (category: string): string => {
+  switch (category.toLowerCase()) {
+    case 'sans-serif': return 'Sans Serif';
+    case 'serif': return 'Serif';
+    case 'display': return 'Display';
+    case 'handwriting': return 'Handwriting';
+    case 'monospace': return 'Monospace';
+    default: return 'Sans Serif';
+  }
+};
 
 const generateGoogleFontUrl = (fontName: string, weights: string[] = ["400"], styles: string[] = ["normal"]) => {
   const family = fontName.replace(/\s+/g, '+');
@@ -183,11 +193,24 @@ function GoogleFontPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  
+  // Fetch Google Fonts from API
+  const { data: googleFontsData, isLoading: isFontsLoading } = useQuery<GoogleFontsResponse>({
+    queryKey: ['/api/google-fonts'],
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  });
 
-  const filteredFonts = GOOGLE_FONTS.filter(font =>
+  // Transform Google Fonts API data to our format
+  const googleFonts = googleFontsData?.items?.map(font => ({
+    name: font.family,
+    category: convertGoogleFontCategory(font.category),
+    weights: convertGoogleFontVariants(font.variants)
+  })) || [];
+
+  const filteredFonts = googleFonts.filter(font =>
     font.name.toLowerCase().includes(searchValue.toLowerCase()) ||
     font.category.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  ).slice(0, 50); // Show first 50 results for performance
 
   return (
     <motion.div
@@ -215,10 +238,10 @@ function GoogleFontPicker({
               role="combobox"
               aria-expanded={open}
               className="w-[300px] justify-between"
-              disabled={isLoading}
+              disabled={isLoading || isFontsLoading}
             >
               <Search className="mr-2 h-4 w-4" />
-              {isLoading ? "Adding font..." : "Search Google Fonts..."}
+              {isLoading ? "Adding font..." : isFontsLoading ? "Loading fonts..." : "Search Google Fonts..."}
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -448,8 +471,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   // Simplified Google Font handler
   const handleGoogleFontSelect = (fontName: string) => {
-    const selectedFont = GOOGLE_FONTS.find(f => f.name === fontName);
-    if (!selectedFont) return;
+    // We'll use the API to get font details when adding
+    // For now, just proceed with the font name
 
     const formData = new FormData();
     formData.append("name", fontName);
