@@ -160,67 +160,72 @@ export function registerAssetRoutes(app: Express) {
           return res.status(201).json(asset);
         }
 
-        // Default to logo asset
-        const { name, type, isDarkVariant } = req.body;
-        const files = req.files as Express.Multer.File[];
+        // Default to logo asset (only for non-font assets)
+        if (category !== "font") {
+          const { name, type, isDarkVariant } = req.body;
+          const files = req.files as Express.Multer.File[];
 
-        if (!files || files.length === 0) {
-          return res.status(400).json({ message: "No file uploaded" });
-        }
-
-        const file = files[0];
-        const fileExtension = file.originalname.split(".").pop()?.toLowerCase();
-
-        // Create proper data object instead of JSON string
-        const logoData = {
-          type,
-          format: fileExtension || "png",
-          fileName: file.originalname,
-        };
-
-        const logoAsset = {
-          clientId,
-          name,
-          category: "logo" as const,
-          data: logoData,
-          fileData: file.buffer.toString("base64"),
-          mimeType: file.mimetype,
-        };
-
-        // Create the main asset
-        const asset = await storage.createAsset(logoAsset);
-
-        try {
-          // Convert the file to multiple formats
-          const fileBuffer = file.buffer;
-          const originalFormat = fileExtension || "png";
-          const isDark = isDarkVariant === "true" || isDarkVariant === true;
-
-          console.log(`Converting ${originalFormat} file to multiple formats. Dark variant: ${isDark}`);
-          const convertedFiles = await convertToAllFormats(fileBuffer, originalFormat);
-
-          // Store all converted versions in the database
-          for (const convertedFile of convertedFiles) {
-            // Skip the original format since we already stored it
-            if (convertedFile.format === originalFormat) continue;
-
-            const convertedAssetData = {
-              originalAssetId: asset.id,
-              format: convertedFile.format,
-              fileData: convertedFile.data.toString("base64"),
-              mimeType: convertedFile.mimeType,
-              isDarkVariant: isDark
-            };
-
-            await storage.createConvertedAsset(convertedAssetData);
-            console.log(`Created converted asset: ${convertedFile.format} (Dark: ${isDark})`);
+          if (!files || files.length === 0) {
+            return res.status(400).json({ message: "No file uploaded" });
           }
-        } catch (conversionError) {
-          console.error("Error converting asset to other formats:", conversionError);
-          // We'll continue even if conversion fails since the original asset was saved
-        }
 
-        res.status(201).json(asset);
+          const file = files[0];
+          const fileExtension = file.originalname.split(".").pop()?.toLowerCase();
+
+          // Create proper data object instead of JSON string
+          const logoData = {
+            type,
+            format: fileExtension || "png",
+            fileName: file.originalname,
+          };
+
+          const logoAsset = {
+            clientId,
+            name,
+            category: "logo" as const,
+            data: logoData,
+            fileData: file.buffer.toString("base64"),
+            mimeType: file.mimetype,
+          };
+
+          // Create the main asset
+          const asset = await storage.createAsset(logoAsset);
+
+          try {
+            // Convert the file to multiple formats
+            const fileBuffer = file.buffer;
+            const originalFormat = fileExtension || "png";
+            const isDark = isDarkVariant === "true" || isDarkVariant === true;
+
+            console.log(`Converting ${originalFormat} file to multiple formats. Dark variant: ${isDark}`);
+            const convertedFiles = await convertToAllFormats(fileBuffer, originalFormat);
+
+            // Store all converted versions in the database
+            for (const convertedFile of convertedFiles) {
+              // Skip the original format since we already stored it
+              if (convertedFile.format === originalFormat) continue;
+
+              const convertedAssetData = {
+                originalAssetId: asset.id,
+                format: convertedFile.format,
+                fileData: convertedFile.data.toString("base64"),
+                mimeType: convertedFile.mimeType,
+                isDarkVariant: isDark
+              };
+
+              await storage.createConvertedAsset(convertedAssetData);
+              console.log(`Created converted asset: ${convertedFile.format} (Dark: ${isDark})`);
+            }
+          } catch (conversionError) {
+            console.error("Error converting asset to other formats:", conversionError);
+            // We'll continue even if conversion fails since the original asset was saved
+          }
+
+          return res.status(201).json(asset);
+        } else {
+          // Font category but not Google - should not happen with current UI
+          return res.status(400).json({ message: "Unsupported font type" });
+        }
       } catch (error) {
         console.error("Error creating asset:", error);
         res.status(500).json({ message: "Error creating asset" });
