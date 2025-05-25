@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -49,29 +50,17 @@ const FontSource = {
   FILE: "file",
 } as const;
 
-// Popular Google Fonts list
-const GOOGLE_FONTS = [
-  { name: "Roboto", category: "Sans Serif", weights: ["100", "300", "400", "500", "700", "900"] },
-  { name: "Open Sans", category: "Sans Serif", weights: ["300", "400", "500", "600", "700", "800"] },
-  { name: "Lato", category: "Sans Serif", weights: ["100", "300", "400", "700", "900"] },
-  { name: "Montserrat", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Poppins", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Source Sans Pro", category: "Sans Serif", weights: ["200", "300", "400", "600", "700", "900"] },
-  { name: "Oswald", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700"] },
-  { name: "Raleway", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Nunito", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Inter", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-  { name: "Playfair Display", category: "Serif", weights: ["400", "500", "600", "700", "800", "900"] },
-  { name: "Merriweather", category: "Serif", weights: ["300", "400", "700", "900"] },
-  { name: "PT Serif", category: "Serif", weights: ["400", "700"] },
-  { name: "Lora", category: "Serif", weights: ["400", "500", "600", "700"] },
-  { name: "Source Serif Pro", category: "Serif", weights: ["200", "300", "400", "600", "700", "900"] },
-  { name: "Crimson Text", category: "Serif", weights: ["400", "600", "700"] },
-  { name: "Dancing Script", category: "Handwriting", weights: ["400", "500", "600", "700"] },
-  { name: "Pacifico", category: "Handwriting", weights: ["400"] },
-  { name: "Lobster", category: "Display", weights: ["400"] },
-  { name: "Comfortaa", category: "Display", weights: ["300", "400", "500", "600", "700"] },
-];
+// Google Fonts API interface
+interface GoogleFont {
+  family: string;
+  variants: string[];
+  category: string;
+  subsets: string[];
+}
+
+interface GoogleFontsResponse {
+  items: GoogleFont[];
+}
 
 const generateGoogleFontUrl = (fontName: string, weights: string[] = ["400"], styles: string[] = ["normal"]) => {
   const family = fontName.replace(/\s+/g, '+');
@@ -176,16 +165,43 @@ function FontCard({
 
 function GoogleFontPicker({ 
   onFontSelect, 
-  isLoading 
+  isLoading,
+  googleFonts,
+  setGoogleFonts
 }: { 
   onFontSelect: (fontName: string) => void; 
-  isLoading: boolean; 
+  isLoading: boolean;
+  googleFonts: GoogleFont[];
+  setGoogleFonts: (fonts: GoogleFont[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [fontsLoading, setFontsLoading] = useState(false);
 
-  const filteredFonts = GOOGLE_FONTS.filter(font =>
-    font.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+  // Fetch Google Fonts when component mounts
+  React.useEffect(() => {
+    const fetchGoogleFonts = async () => {
+      setFontsLoading(true);
+      try {
+        const response = await fetch(`/api/google-fonts`);
+        if (response.ok) {
+          const data: GoogleFontsResponse = await response.json();
+          setGoogleFonts(data.items);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Google Fonts:', error);
+        // Fallback to empty array if API fails
+        setGoogleFonts([]);
+      } finally {
+        setFontsLoading(false);
+      }
+    };
+
+    fetchGoogleFonts();
+  }, []);
+
+  const filteredFonts = googleFonts.filter(font =>
+    font.family.toLowerCase().includes(searchValue.toLowerCase()) ||
     font.category.toLowerCase().includes(searchValue.toLowerCase())
   );
 
@@ -234,21 +250,21 @@ function GoogleFontPicker({
                 <CommandGroup>
                   {filteredFonts.map((font) => (
                     <CommandItem
-                      key={font.name}
-                      value={font.name}
+                      key={font.family}
+                      value={font.family}
                       onSelect={() => {
-                        onFontSelect(font.name);
+                        onFontSelect(font.family);
                         setOpen(false);
                         setSearchValue("");
                       }}
                       className="flex items-center justify-between"
                     >
                       <div className="flex flex-col">
-                        <span className="font-medium">{font.name}</span>
-                        <span className="text-xs text-muted-foreground">{font.category}</span>
+                        <span className="font-medium">{font.family}</span>
+                        <span className="text-xs text-muted-foreground capitalize">{font.category}</span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {font.weights.length} weights
+                        {font.variants.length} variants
                       </div>
                     </CommandItem>
                   ))}
@@ -347,6 +363,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const [editingFont, setEditingFont] = useState<FontData | null>(null);
   const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
+  const [googleFonts, setGoogleFonts] = useState<GoogleFont[]>([]);
   const { user } = useAuth();
 
   if (!user) return null;
@@ -448,8 +465,14 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   // Simplified Google Font handler
   const handleGoogleFontSelect = (fontName: string) => {
-    const selectedFont = GOOGLE_FONTS.find(f => f.name === fontName);
+    const selectedFont = googleFonts.find(f => f.family === fontName);
     if (!selectedFont) return;
+
+    // Convert Google Fonts variants to weight format
+    const weights = selectedFont.variants
+      .filter(variant => !variant.includes('italic'))
+      .map(variant => variant === 'regular' ? '400' : variant)
+      .filter(weight => /^\d+$/.test(weight));
 
     const formData = new FormData();
     formData.append("name", fontName);
@@ -459,10 +482,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       "data",
       JSON.stringify({
         source: FontSource.GOOGLE,
-        weights: selectedFont.weights,
+        weights: weights.length > 0 ? weights : ["400"],
         styles: ["normal", "italic"],
         sourceData: {
-          url: generateGoogleFontUrl(fontName, selectedFont.weights, ["normal", "italic"]),
+          url: generateGoogleFontUrl(fontName, weights.length > 0 ? weights : ["400"], ["normal", "italic"]),
         },
       }),
     );
@@ -536,6 +559,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               <GoogleFontPicker 
                 onFontSelect={handleGoogleFontSelect}
                 isLoading={addFont.isPending}
+                googleFonts={googleFonts}
+                setGoogleFonts={setGoogleFonts}
               />
             </div>
           }
@@ -569,6 +594,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                 <GoogleFontPicker 
                   onFontSelect={handleGoogleFontSelect}
                   isLoading={addFont.isPending}
+                  googleFonts={googleFonts}
+                  setGoogleFonts={setGoogleFonts}
                 />
               )}
             </div>
