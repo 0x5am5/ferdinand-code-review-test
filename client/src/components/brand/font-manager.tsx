@@ -194,20 +194,81 @@ function GoogleFontPicker({
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   
-  // Fetch complete Google Fonts API through our backend endpoint
+  // Comprehensive font list including IBM Plex Sans and all popular Google Fonts
+  const allGoogleFonts = [
+    // IBM Plex Family (what you specifically requested)
+    { name: "IBM Plex Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
+    { name: "IBM Plex Serif", category: "Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
+    { name: "IBM Plex Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700"] },
+    
+    // Popular Sans Serif Fonts
+    { name: "Roboto", category: "Sans Serif", weights: ["100", "300", "400", "500", "700", "900"] },
+    { name: "Open Sans", category: "Sans Serif", weights: ["300", "400", "500", "600", "700", "800"] },
+    { name: "Lato", category: "Sans Serif", weights: ["100", "300", "400", "700", "900"] },
+    { name: "Montserrat", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Poppins", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Inter", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Source Sans Pro", category: "Sans Serif", weights: ["200", "300", "400", "600", "700", "900"] },
+    { name: "Oswald", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700"] },
+    { name: "Raleway", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Nunito", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "PT Sans", category: "Sans Serif", weights: ["400", "700"] },
+    { name: "Ubuntu", category: "Sans Serif", weights: ["300", "400", "500", "700"] },
+    { name: "Mukti", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800"] },
+    { name: "Fira Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Work Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    
+    // Popular Serif Fonts
+    { name: "Playfair Display", category: "Serif", weights: ["400", "500", "600", "700", "800", "900"] },
+    { name: "Merriweather", category: "Serif", weights: ["300", "400", "700", "900"] },
+    { name: "PT Serif", category: "Serif", weights: ["400", "700"] },
+    { name: "Lora", category: "Serif", weights: ["400", "500", "600", "700"] },
+    { name: "Source Serif Pro", category: "Serif", weights: ["200", "300", "400", "600", "700", "900"] },
+    { name: "Crimson Text", category: "Serif", weights: ["400", "600", "700"] },
+    { name: "Libre Baskerville", category: "Serif", weights: ["400", "700"] },
+    { name: "Cormorant Garamond", category: "Serif", weights: ["300", "400", "500", "600", "700"] },
+    { name: "EB Garamond", category: "Serif", weights: ["400", "500", "600", "700", "800"] },
+    
+    // Monospace Fonts
+    { name: "Source Code Pro", category: "Monospace", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "JetBrains Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700", "800"] },
+    { name: "Fira Code", category: "Monospace", weights: ["300", "400", "500", "600", "700"] },
+    { name: "Roboto Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700"] },
+    { name: "Space Mono", category: "Monospace", weights: ["400", "700"] },
+    { name: "Inconsolata", category: "Monospace", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Ubuntu Mono", category: "Monospace", weights: ["400", "700"] },
+    
+    // Display Fonts
+    { name: "Lobster", category: "Display", weights: ["400"] },
+    { name: "Comfortaa", category: "Display", weights: ["300", "400", "500", "600", "700"] },
+    { name: "Righteous", category: "Display", weights: ["400"] },
+    { name: "Fredoka One", category: "Display", weights: ["400"] },
+    { name: "Bebas Neue", category: "Display", weights: ["400"] },
+    { name: "Anton", category: "Display", weights: ["400"] },
+    
+    // Handwriting Fonts
+    { name: "Dancing Script", category: "Handwriting", weights: ["400", "500", "600", "700"] },
+    { name: "Pacifico", category: "Handwriting", weights: ["400"] },
+    { name: "Kaushan Script", category: "Handwriting", weights: ["400"] },
+    { name: "Great Vibes", category: "Handwriting", weights: ["400"] },
+  ];
+
+  // Try to fetch from API, but always have the comprehensive fallback
   const { data: googleFontsData, isLoading: isFontsLoading } = useQuery<GoogleFontsResponse>({
     queryKey: ['/api/google-fonts'],
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
   });
 
-  // Transform ALL Google Fonts API data to our format 
-  const googleFonts = googleFontsData?.items?.map((font: GoogleFont) => ({
-    name: font.family,
-    category: convertGoogleFontCategory(font.category),
-    weights: convertGoogleFontVariants(font.variants)
-  })) || [];
+  // Use API data if available and valid, otherwise use comprehensive fallback
+  const googleFonts = (googleFontsData?.items?.length > 0) 
+    ? googleFontsData.items.map((font: GoogleFont) => ({
+        name: font.family,
+        category: convertGoogleFontCategory(font.category),
+        weights: convertGoogleFontVariants(font.variants)
+      }))
+    : allGoogleFonts;
 
-  console.log(`Google Fonts loaded: ${googleFonts.length} fonts available`);
+  console.log(`Google Fonts loaded: ${googleFonts.length} fonts available (${googleFontsData?.items?.length > 0 ? 'from API' : 'from fallback'})`);
 
   const filteredFonts = googleFonts.filter(font =>
     font.name.toLowerCase().includes(searchValue.toLowerCase()) ||
