@@ -7,6 +7,7 @@ import {
   ChevronUp,
   ChevronDown,
   Lock,
+  Type,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ import {
 } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { AssetSection } from "./asset-section";
 
 // Form schemas for different font sources
 const fileUploadSchema = z.object({
@@ -586,23 +588,73 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Typography System</h2>
+    <div className="font-manager">
+      <div className="manager__header">
+        <div>
+          <h1>Typography System</h1>
+          <p className="text-muted-foreground">Manage fonts and typography for this brand</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {transformedFonts.map((font) => (
-            <FontCard
-              key={font.id}
-              font={font}
-              onEdit={() => handleEditFont(font)}
-              onDelete={() => font.id && deleteFont.mutate(font.id)}
-            />
-          ))}
-        </AnimatePresence>
-        {isAbleToEdit && <AddFontCard onClick={() => setIsAddingFont(true)} />}
+      <div className="font-manager__sections space-y-8">
+        <AssetSection
+          title="Brand Fonts"
+          description="Typography assets that define the brand's visual identity and should be used consistently across all materials."
+          isEmpty={transformedFonts.length === 0}
+          sectionType="brand-fonts"
+          uploadComponent={
+            <div className="flex flex-col gap-2 w-full">
+              <Button
+                onClick={() => setIsAddingFont(true)}
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+              >
+                <Plus className="h-12 w-12 text-muted-foreground/50" />
+                <span className="text-muted-foreground/50">Add Font</span>
+              </Button>
+            </div>
+          }
+          emptyPlaceholder={
+            <div className="text-center py-12 text-muted-foreground">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+                <Type className="h-8 w-8" />
+              </div>
+              <p>No fonts yet</p>
+              <p className="text-sm">Contact an admin to add brand fonts</p>
+            </div>
+          }
+        >
+          <div className="asset-display">
+            <div className="asset-display__info">
+              Typography assets that define the brand's visual identity and should be used consistently across all materials.
+            </div>
+            <div className="asset-display__preview">
+              <AnimatePresence>
+                {transformedFonts.map((font) => (
+                  <FontCard
+                    key={font.id}
+                    font={font}
+                    onEdit={() => handleEditFont(font)}
+                    onDelete={() => font.id && deleteFont.mutate(font.id)}
+                  />
+                ))}
+              </AnimatePresence>
+              
+              {isAbleToEdit && (
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={() => setIsAddingFont(true)}
+                    variant="outline"
+                    className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                  >
+                    <Plus className="h-12 w-12 text-muted-foreground/50" />
+                    <span className="text-muted-foreground/50">Add New Font</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </AssetSection>
       </div>
 
       {/* Add Font Dialog */}
