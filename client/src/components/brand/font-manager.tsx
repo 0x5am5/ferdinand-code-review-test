@@ -608,7 +608,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     const availableWeights = selectedFont?.weights || ["400", "700"];
     const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
 
-    console.log(`Creating Google Font: ${fontName} with weights:`, defaultWeights, "for client:", clientId);
+    console.log(`Creating Google Font: ${fontName} with weights:`, defaultWeights);
 
     // Create proper font data structure
     const fontData = {
@@ -622,7 +622,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       },
     };
 
-    console.log("Font data being sent:", fontData);
+    console.log("Sending font data to server...");
 
     const formData = new FormData();
     formData.append("name", fontName.trim());

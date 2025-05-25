@@ -126,6 +126,7 @@ export function registerAssetRoutes(app: Express) {
           const parsedStyles = JSON.parse(styles || '["normal"]');
           const files = req.files as Express.Multer.File[];
 
+          // Only require files for non-Google font uploads
           if (!files || files.length === 0) {
             return res.status(400).json({ message: "No font files uploaded for custom font" });
           }
