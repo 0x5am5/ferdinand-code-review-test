@@ -622,7 +622,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       },
     };
 
-    console.log("Sending font data to server...");
+    console.log("Sending font data to server for client:", clientId);
+    console.log("Font data structure:", JSON.stringify(fontData, null, 2));
 
     const formData = new FormData();
     formData.append("name", fontName.trim());

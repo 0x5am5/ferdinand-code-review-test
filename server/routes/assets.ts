@@ -17,6 +17,38 @@ import { convertToAllFormats } from "../utils/file-converter";
 const upload = multer({ preservePath: true });
 
 export function registerAssetRoutes(app: Express) {
+  // Google Fonts API endpoint
+  app.get("/api/google-fonts", async (req, res: Response) => {
+    try {
+      console.log("Google Fonts API endpoint called");
+      
+      // Use Google Fonts API key if available, otherwise return empty response
+      const apiKey = process.env.GOOGLE_FONTS_API_KEY;
+      
+      if (!apiKey) {
+        console.log("No Google Fonts API key found, returning empty response");
+        return res.json({ kind: "webfonts#webfontList", items: [] });
+      }
+
+      console.log("Fetching from Google Fonts API...");
+      const response = await fetch(
+        `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&sort=popularity`
+      );
+
+      if (!response.ok) {
+        console.error("Google Fonts API error:", response.status, response.statusText);
+        return res.json({ kind: "webfonts#webfontList", items: [] });
+      }
+
+      const data = await response.json();
+      console.log(`Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`);
+      
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching Google Fonts:", error);
+      res.json({ kind: "webfonts#webfontList", items: [] });
+    }
+  });
   // Get all assets
   app.get("/api/assets", async (req, res: Response) => {
     try {
@@ -91,9 +123,19 @@ export function registerAssetRoutes(app: Express) {
             }
 
             // Validate font data structure
-            if (!fontData || !fontData.source || !fontData.weights || !Array.isArray(fontData.weights)) {
+            if (!fontData || !fontData.source) {
               console.error("Invalid font data structure:", fontData);
               return res.status(400).json({ message: "Invalid font data structure" });
+            }
+
+            // Ensure weights is an array
+            if (!fontData.weights || !Array.isArray(fontData.weights)) {
+              fontData.weights = ["400"];
+            }
+
+            // Ensure styles is an array
+            if (!fontData.styles || !Array.isArray(fontData.styles)) {
+              fontData.styles = ["normal"];
             }
             
             const fontAsset = {
@@ -105,7 +147,7 @@ export function registerAssetRoutes(app: Express) {
               mimeType: null,
             };
 
-            console.log("Creating font asset with data:", JSON.stringify(fontAsset, null, 2));
+            console.log("Creating Google Font asset with data:", JSON.stringify(fontAsset, null, 2));
             
             try {
               const asset = await storage.createAsset(fontAsset);
