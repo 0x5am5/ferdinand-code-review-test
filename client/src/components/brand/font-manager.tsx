@@ -232,7 +232,14 @@ function GoogleFontPicker({
               disabled={isLoading || isFontsLoading}
             >
               <Search className="mr-2 h-4 w-4" />
-              {isLoading ? "Adding font..." : isFontsLoading ? "Loading fonts..." : "Search Google Fonts..."}
+              {isLoading 
+                ? "Adding font..." 
+                : isFontsLoading 
+                ? "Loading fonts..." 
+                : googleFonts.length === 0 
+                ? "No fonts available"
+                : "Search Google Fonts..."
+              }
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </PopoverTrigger>
@@ -374,17 +381,23 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Add font mutation
   const addFont = useMutation({
     mutationFn: async (data: FormData) => {
+      console.log("Sending font data to server...");
       const response = await apiRequest(
         "POST",
         `/api/clients/${clientId}/assets`,
         data,
       );
+      
       if (!response.ok) {
-        throw new Error("Failed to add font");
+        const errorText = await response.text();
+        console.error("Server error:", response.status, errorText);
+        throw new Error(`Failed to add font: ${response.status} ${errorText}`);
       }
+      
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Font added successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
       toast({
         title: "Success",
@@ -393,9 +406,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       });
     },
     onError: (error: Error) => {
+      console.error("Font addition failed:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to add font",
         variant: "destructive",
       });
     },
@@ -536,12 +550,23 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   console.log(`Google Fonts loaded: ${googleFonts?.length || 0} fonts available (${googleFontsData?.items?.length > 0 ? 'from API' : 'from fallback'})`);
 
-  // Simplified Google Font handler
+  // Google Font handler with proper validation
   const handleGoogleFontSelect = (fontName: string) => {
+    if (!fontName?.trim()) {
+      toast({
+        title: "Error",
+        description: "Invalid font name",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Find the font in our Google Fonts list to get available weights
     const selectedFont = googleFonts?.find(font => font.name === fontName);
     const availableWeights = selectedFont?.weights || ["400", "700"];
     const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
+
+    console.log(`Creating Google Font: ${fontName} with weights:`, defaultWeights);
 
     const formData = new FormData();
     formData.append("name", fontName);
@@ -558,6 +583,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         },
       }),
     );
+    
     addFont.mutate(formData);
   };
 

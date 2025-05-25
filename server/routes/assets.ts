@@ -88,14 +88,14 @@ export function registerAssetRoutes(app: Express) {
             return res.status(201).json(asset);
           }
 
-          // Handle uploaded font files
+          // Handle uploaded font files (Adobe fonts, custom uploads, etc.)
           const { source, weights, styles } = req.body;
           const parsedWeights = JSON.parse(weights || '["400"]');
           const parsedStyles = JSON.parse(styles || '["normal"]');
           const files = req.files as Express.Multer.File[];
 
           if (!files || files.length === 0) {
-            return res.status(400).json({ message: "No font files uploaded" });
+            return res.status(400).json({ message: "No font files uploaded for custom font" });
           }
 
           // Create the font asset data for uploaded fonts
