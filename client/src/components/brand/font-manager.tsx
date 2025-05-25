@@ -195,17 +195,34 @@ function GoogleFontPicker({
   const [searchValue, setSearchValue] = useState("");
   
   // Fetch Google Fonts from API
-  const { data: googleFontsData, isLoading: isFontsLoading } = useQuery<GoogleFontsResponse>({
+  const { data: googleFontsData, isLoading: isFontsLoading, error: fontsError } = useQuery<GoogleFontsResponse>({
     queryKey: ['/api/google-fonts'],
     staleTime: 1000 * 60 * 60, // Cache for 1 hour
+    retry: false, // Don't retry if API fails
   });
 
-  // Transform Google Fonts API data to our format
+  // Fallback fonts including IBM Plex Sans and popular choices
+  const fallbackFonts = [
+    { name: "IBM Plex Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
+    { name: "IBM Plex Serif", category: "Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
+    { name: "IBM Plex Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700"] },
+    { name: "Roboto", category: "Sans Serif", weights: ["100", "300", "400", "500", "700", "900"] },
+    { name: "Open Sans", category: "Sans Serif", weights: ["300", "400", "500", "600", "700", "800"] },
+    { name: "Lato", category: "Sans Serif", weights: ["100", "300", "400", "700", "900"] },
+    { name: "Montserrat", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Poppins", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Inter", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "Playfair Display", category: "Serif", weights: ["400", "500", "600", "700", "800", "900"] },
+    { name: "Source Code Pro", category: "Monospace", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
+    { name: "JetBrains Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700", "800"] },
+  ];
+
+  // Transform Google Fonts API data to our format, fallback to curated list
   const googleFonts = googleFontsData?.items?.map(font => ({
     name: font.family,
     category: convertGoogleFontCategory(font.category),
     weights: convertGoogleFontVariants(font.variants)
-  })) || [];
+  })) || fallbackFonts;
 
   const filteredFonts = googleFonts.filter(font =>
     font.name.toLowerCase().includes(searchValue.toLowerCase()) ||

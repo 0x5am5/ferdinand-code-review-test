@@ -23,23 +23,31 @@ export interface RequestWithClientId extends Request {
 }
 
 export function registerRoutes(app: Express) {
-  // Google Fonts API endpoint
+  // Google Fonts API endpoint - must be registered first
   app.get("/api/google-fonts", async (req, res) => {
     try {
+      console.log("Google Fonts API endpoint called");
       const apiKey = process.env.GOOGLE_FONTS_API_KEY;
       if (!apiKey) {
+        console.error("Google Fonts API key not found");
         return res.status(500).json({ error: "Google Fonts API key not configured" });
       }
 
-      const response = await fetch(
-        `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&sort=popularity`
-      );
+      const url = `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&sort=popularity`;
+      console.log("Fetching from Google Fonts API...");
+      
+      const response = await fetch(url);
 
       if (!response.ok) {
+        console.error(`Google Fonts API error: ${response.status}`);
         throw new Error(`Google Fonts API error: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log(`Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`);
+      
+      // Set proper headers
+      res.setHeader('Content-Type', 'application/json');
       res.json(data);
     } catch (error) {
       console.error("Error fetching Google Fonts:", error);
