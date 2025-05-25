@@ -535,7 +535,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Simplified Google Font handler
   const handleGoogleFontSelect = (fontName: string) => {
     // Find the font in our Google Fonts list to get available weights
-    const selectedFont = allGoogleFonts.find(font => font.name === fontName);
+    const selectedFont = googleFonts.find(font => font.name === fontName);
     const availableWeights = selectedFont?.weights || ["400", "700"];
     const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
 
