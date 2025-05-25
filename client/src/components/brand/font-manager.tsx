@@ -221,7 +221,7 @@ function GoogleFontPicker({
             Search and select from popular Google Fonts
           </p>
         </div>
-        
+
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -307,7 +307,7 @@ function WeightStyleSelector({
           {allWeights.map((weight) => {
             const isAvailable = availableWeights.includes(weight);
             const isSelected = selectedWeights.includes(weight);
-            
+
             return (
               <div key={weight} className="flex items-center space-x-2">
                 <Checkbox
@@ -413,7 +413,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         `/api/clients/${clientId}/assets`,
         data,
       );
-      
+
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
         try {
@@ -426,7 +426,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         console.error("Server error:", response.status, errorMessage);
         throw new Error(errorMessage);
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
@@ -519,7 +519,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     { name: "IBM Plex Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
     { name: "IBM Plex Serif", category: "Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
     { name: "IBM Plex Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700"] },
-    
+
     // Popular Sans Serif Fonts
     { name: "Roboto", category: "Sans Serif", weights: ["100", "300", "400", "500", "700", "900"] },
     { name: "Open Sans", category: "Sans Serif", weights: ["300", "400", "500", "600", "700", "800"] },
@@ -536,7 +536,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     { name: "Mukti", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800"] },
     { name: "Fira Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
     { name: "Work Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-    
+
     // Popular Serif Fonts
     { name: "Playfair Display", category: "Serif", weights: ["400", "500", "600", "700", "800", "900"] },
     { name: "Merriweather", category: "Serif", weights: ["300", "400", "700", "900"] },
@@ -547,7 +547,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     { name: "Libre Baskerville", category: "Serif", weights: ["400", "700"] },
     { name: "Cormorant Garamond", category: "Serif", weights: ["300", "400", "500", "600", "700"] },
     { name: "EB Garamond", category: "Serif", weights: ["400", "500", "600", "700", "800"] },
-    
+
     // Monospace Fonts
     { name: "Source Code Pro", category: "Monospace", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
     { name: "JetBrains Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700", "800"] },
@@ -556,7 +556,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     { name: "Space Mono", category: "Monospace", weights: ["400", "700"] },
     { name: "Inconsolata", category: "Monospace", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
     { name: "Ubuntu Mono", category: "Monospace", weights: ["400", "700"] },
-    
+
     // Display Fonts
     { name: "Lobster", category: "Display", weights: ["400"] },
     { name: "Comfortaa", category: "Display", weights: ["300", "400", "500", "600", "700"] },
@@ -564,7 +564,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     { name: "Fredoka One", category: "Display", weights: ["400"] },
     { name: "Bebas Neue", category: "Display", weights: ["400"] },
     { name: "Anton", category: "Display", weights: ["400"] },
-    
+
     // Handwriting Fonts
     { name: "Dancing Script", category: "Handwriting", weights: ["400", "500", "600", "700"] },
     { name: "Pacifico", category: "Handwriting", weights: ["400"] },
@@ -630,7 +630,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append("category", "font");
     formData.append("subcategory", "google");
     formData.append("data", JSON.stringify(fontData));
-    
+
     addFont.mutate(formData);
   };
 
@@ -661,7 +661,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       const data = typeof asset.data === 'string' 
         ? JSON.parse(asset.data) 
         : asset.data;
-      
+
       return {
         id: asset.id,
         name: asset.name,
@@ -731,7 +731,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   />
                 ))}
               </AnimatePresence>
-              
+
               {isAbleToEdit && (
                 <GoogleFontPicker 
                   onFontSelect={handleGoogleFontSelect}
