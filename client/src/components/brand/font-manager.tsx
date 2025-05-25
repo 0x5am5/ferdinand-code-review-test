@@ -1,18 +1,4 @@
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  Download,
-  X,
-  ChevronUp,
-  ChevronDown,
-  Lock,
-  Type,
-  Search,
-  Check,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+export { FontManager } from "./font-manager-clean";
 import {
   Dialog,
   DialogContent,
@@ -762,27 +748,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         </AssetSection>
       </div>
 
-      {/* Add Font Dialog */}
-      {isAbleToEdit && (
-        <Dialog open={isAddingFont} onOpenChange={setIsAddingFont}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add New Font</DialogTitle>
-              <DialogDescription>
-                Add fonts from your computer or connect to Adobe/Google Fonts
-              </DialogDescription>
-            </DialogHeader>
 
-            <Tabs
-              value={activeTab}
-              onValueChange={(value) => setActiveTab(value as typeof activeTab)}
-              className="mt-4"
-            >
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="file">Upload Files</TabsTrigger>
-                <TabsTrigger value="adobe">Adobe Fonts</TabsTrigger>
-                <TabsTrigger value="google">Google Fonts</TabsTrigger>
-              </TabsList>
 
               <TabsContent value="file" className="space-y-4">
                 <Form {...fileForm}>
