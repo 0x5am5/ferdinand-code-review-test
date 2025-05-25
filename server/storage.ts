@@ -156,12 +156,24 @@ export class DatabaseStorage implements IStorage {
     return asset;
   }
 
-  async createAsset(insertAsset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset> {
-    const [asset] = await db
-      .insert(brandAssets)
-      .values(insertAsset)
-      .returning();
-    return asset;
+  async createAsset(asset: any) {
+    try {
+      console.log("Creating asset in database:", {
+        clientId: asset.clientId,
+        name: asset.name,
+        category: asset.category,
+        hasData: !!asset.data,
+        hasFileData: !!asset.fileData
+      });
+
+      const [newAsset] = await db.insert(brandAssets).values(asset).returning();
+      console.log("Asset created successfully with ID:", newAsset.id);
+      return newAsset;
+    } catch (error) {
+      console.error("Database error in createAsset:", error);
+      console.error("Asset data that failed:", JSON.stringify(asset, null, 2));
+      throw error;
+    }
   }
 
   async updateAsset(id: number, updateAsset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Promise<BrandAsset> {

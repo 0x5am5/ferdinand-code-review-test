@@ -372,6 +372,23 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   if (!user) return null;
 
+  // Validate clientId is available
+  if (!clientId) {
+    console.error("FontManager: clientId is missing");
+    return (
+      <div className="font-manager">
+        <div className="manager__header">
+          <div>
+            <h1>Typography System</h1>
+            <p className="text-muted-foreground text-red-500">
+              Error: Client ID is missing. Please refresh the page.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const isAbleToEdit = [
     UserRole.SUPER_ADMIN,
     UserRole.ADMIN,
@@ -381,7 +398,16 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Add font mutation
   const addFont = useMutation({
     mutationFn: async (data: FormData) => {
-      console.log("Sending font data to server...");
+      if (!clientId) {
+        throw new Error("Client ID is required");
+      }
+
+      console.log("Sending font data to server for client:", clientId);
+      console.log("FormData contents:");
+      for (const [key, value] of data.entries()) {
+        console.log(`  ${key}:`, value);
+      }
+
       const response = await apiRequest(
         "POST",
         `/api/clients/${clientId}/assets`,
@@ -389,9 +415,16 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       );
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Server error:", response.status, errorText);
-        throw new Error(`Failed to add font: ${response.status} ${errorText}`);
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          const errorText = await response.text();
+          errorMessage = errorText || errorMessage;
+        }
+        console.error("Server error:", response.status, errorMessage);
+        throw new Error(errorMessage);
       }
       
       return response.json();
@@ -401,15 +434,15 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
       toast({
         title: "Success",
-        description: "Font added successfully",
+        description: `${data.name} font added successfully`,
         variant: "default",
       });
     },
     onError: (error: Error) => {
       console.error("Font addition failed:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to add font",
+        title: "Error adding font",
+        description: error.message || "Failed to add font. Please try again.",
         variant: "destructive",
       });
     },
@@ -561,28 +594,41 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       return;
     }
 
+    if (!clientId) {
+      toast({
+        title: "Error",
+        description: "Client ID is missing. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Find the font in our Google Fonts list to get available weights
     const selectedFont = googleFonts?.find(font => font.name === fontName);
     const availableWeights = selectedFont?.weights || ["400", "700"];
     const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
 
-    console.log(`Creating Google Font: ${fontName} with weights:`, defaultWeights);
+    console.log(`Creating Google Font: ${fontName} with weights:`, defaultWeights, "for client:", clientId);
+
+    // Create proper font data structure
+    const fontData = {
+      source: FontSource.GOOGLE,
+      weights: defaultWeights,
+      styles: ["normal"],
+      sourceData: {
+        url: generateGoogleFontUrl(fontName, defaultWeights, ["normal"]),
+        fontFamily: fontName,
+        category: selectedFont?.category || "Sans Serif"
+      },
+    };
+
+    console.log("Font data being sent:", fontData);
 
     const formData = new FormData();
-    formData.append("name", fontName);
+    formData.append("name", fontName.trim());
     formData.append("category", "font");
     formData.append("subcategory", "google");
-    formData.append(
-      "data",
-      JSON.stringify({
-        source: FontSource.GOOGLE,
-        weights: defaultWeights,
-        styles: ["normal"],
-        sourceData: {
-          url: generateGoogleFontUrl(fontName, defaultWeights, ["normal"]),
-        },
-      }),
-    );
+    formData.append("data", JSON.stringify(fontData));
     
     addFont.mutate(formData);
   };

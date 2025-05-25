@@ -68,24 +68,56 @@ export function registerAssetRoutes(app: Express) {
         if (category === "font") {
           const { name, subcategory, data } = req.body;
           
+          // Validate required fields
+          if (!name || !name.trim()) {
+            return res.status(400).json({ message: "Font name is required" });
+          }
+
+          if (!clientId) {
+            console.error("Client ID missing for font creation");
+            return res.status(400).json({ message: "Client ID is required for font creation" });
+          }
+          
           // Handle Google Fonts (no file upload needed)
           if (subcategory === "google") {
-            console.log("Creating Google Font asset:", name);
-            const fontData = typeof data === 'string' ? JSON.parse(data) : data;
+            console.log("Creating Google Font asset:", name, "for client:", clientId);
+            
+            let fontData;
+            try {
+              fontData = typeof data === 'string' ? JSON.parse(data) : data;
+            } catch (error) {
+              console.error("Error parsing font data:", error);
+              return res.status(400).json({ message: "Invalid font data format" });
+            }
+
+            // Validate font data structure
+            if (!fontData || !fontData.source || !fontData.weights || !Array.isArray(fontData.weights)) {
+              console.error("Invalid font data structure:", fontData);
+              return res.status(400).json({ message: "Invalid font data structure" });
+            }
             
             const fontAsset = {
               clientId,
-              name,
+              name: name.trim(),
               category: "font" as const,
               data: fontData,
               fileData: null, // Google fonts don't need file storage
               mimeType: null,
             };
 
-            console.log("Font asset data:", fontAsset);
-            const asset = await storage.createAsset(fontAsset);
-            console.log("Google Font asset created successfully:", asset.id);
-            return res.status(201).json(asset);
+            console.log("Creating font asset with data:", JSON.stringify(fontAsset, null, 2));
+            
+            try {
+              const asset = await storage.createAsset(fontAsset);
+              console.log("Google Font asset created successfully:", asset.id);
+              return res.status(201).json(asset);
+            } catch (dbError) {
+              console.error("Database error creating Google Font:", dbError);
+              return res.status(500).json({ 
+                message: "Failed to create font asset", 
+                error: dbError.message 
+              });
+            }
           }
 
           // Handle uploaded font files (Adobe fonts, custom uploads, etc.)
