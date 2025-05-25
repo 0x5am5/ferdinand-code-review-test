@@ -482,10 +482,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       "data",
       JSON.stringify({
         source: FontSource.GOOGLE,
-        weights: selectedFont.weights,
+        weights: ["400", "700"], // Default weights, can be customized later
         styles: ["normal", "italic"],
         sourceData: {
-          url: generateGoogleFontUrl(fontName, selectedFont.weights, ["normal", "italic"]),
+          url: generateGoogleFontUrl(fontName, ["400", "700"], ["normal", "italic"]),
         },
       }),
     );
