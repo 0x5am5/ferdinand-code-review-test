@@ -367,6 +367,8 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
           .optional(),
       }),
     }),
+    fileData: z.string().nullable().optional(),
+    mimeType: z.string().nullable().optional(),
   });
 
 export const insertUserPersonaSchema = createInsertSchema(userPersonas)

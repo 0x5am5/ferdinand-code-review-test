@@ -534,8 +534,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   // Simplified Google Font handler
   const handleGoogleFontSelect = (fontName: string) => {
-    // We'll use the API to get font details when adding
-    // For now, just proceed with the font name
+    // Find the font in our Google Fonts list to get available weights
+    const selectedFont = allGoogleFonts.find(font => font.name === fontName);
+    const availableWeights = selectedFont?.weights || ["400", "700"];
+    const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
 
     const formData = new FormData();
     formData.append("name", fontName);
@@ -545,10 +547,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       "data",
       JSON.stringify({
         source: FontSource.GOOGLE,
-        weights: ["400", "700"], // Default weights, can be customized later
-        styles: ["normal", "italic"],
+        weights: defaultWeights,
+        styles: ["normal"],
         sourceData: {
-          url: generateGoogleFontUrl(fontName, ["400", "700"], ["normal", "italic"]),
+          url: generateGoogleFontUrl(fontName, defaultWeights, ["normal"]),
         },
       }),
     );

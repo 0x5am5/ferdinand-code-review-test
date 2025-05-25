@@ -71,7 +71,7 @@ export class DatabaseStorage implements IStorage {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user;
   }
-  
+
   async getUsers(): Promise<User[]> {
     return await db.select().from(users);
   }
@@ -109,32 +109,32 @@ export class DatabaseStorage implements IStorage {
       await db.transaction(async (tx) => {
         // 1. Delete user-client relationships
         await tx.delete(userClients).where(eq(userClients.clientId, id));
-        
+
         // 2. Get all brand assets for this client
         const assets = await tx.select().from(brandAssets).where(eq(brandAssets.clientId, id));
-        
+
         // 3. For each asset, delete its converted assets
         for (const asset of assets) {
           await tx.delete(convertedAssets).where(eq(convertedAssets.originalAssetId, asset.id));
         }
-        
+
         // 4. Delete all brand assets
         await tx.delete(brandAssets).where(eq(brandAssets.clientId, id));
-        
+
         // 5. Get all inspiration sections
         const sections = await tx.select().from(inspirationSections).where(eq(inspirationSections.clientId, id));
-        
+
         // 6. Delete all inspiration images for each section
         for (const section of sections) {
           await tx.delete(inspirationImages).where(eq(inspirationImages.sectionId, section.id));
         }
-        
+
         // 7. Delete all inspiration sections
         await tx.delete(inspirationSections).where(eq(inspirationSections.clientId, id));
-        
+
         // 8. Delete all user personas
         await tx.delete(userPersonas).where(eq(userPersonas.clientId, id));
-        
+
         // 9. Finally, delete the client
         await tx.delete(clients).where(eq(clients.id, id));
       });
@@ -179,7 +179,7 @@ export class DatabaseStorage implements IStorage {
     // Then delete the original asset
     await db.delete(brandAssets).where(eq(brandAssets.id, id));
   }
-  
+
   // Converted assets implementations
   async getConvertedAssets(originalAssetId: number): Promise<ConvertedAsset[]> {
     return await db
@@ -187,7 +187,7 @@ export class DatabaseStorage implements IStorage {
       .from(convertedAssets)
       .where(eq(convertedAssets.originalAssetId, originalAssetId));
   }
-  
+
   async createConvertedAsset(convertedAsset: InsertConvertedAsset): Promise<ConvertedAsset> {
     const [asset] = await db
       .insert(convertedAssets)
@@ -195,7 +195,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return asset;
   }
-  
+
   async getConvertedAsset(originalAssetId: number, format: string, isDarkVariant: boolean = false): Promise<ConvertedAsset | undefined> {
     const [asset] = await db
       .select()
@@ -296,16 +296,16 @@ export class DatabaseStorage implements IStorage {
     if (!["super_admin", "admin", "standard", "guest"].includes(user.role)) {
       throw new Error(`Invalid role: ${user.role}`);
     }
-    
+
     // Use type assertion to tell TypeScript this is a valid role
     const validRole = user.role as "super_admin" | "admin" | "standard" | "guest";
-    
+
     // Create a new user object with the validated role
     const userToInsert = {
       ...user,
       role: validRole
     };
-    
+
     const [newUser] = await db.insert(users).values(userToInsert).returning();
     return newUser;
   }
@@ -314,10 +314,10 @@ export class DatabaseStorage implements IStorage {
     if (!["super_admin", "admin", "standard", "guest"].includes(role)) {
       throw new Error(`Invalid role: ${role}`);
     }
-    
+
     // Use type assertion to tell TypeScript this is a valid role
     const validRole = role as "super_admin" | "admin" | "standard" | "guest";
-    
+
     const [updatedUser] = await db
       .update(users)
       .set({ role: validRole })
@@ -330,30 +330,30 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(userClients)
       .where(eq(userClients.userId, userId));
-    
+
     if (userClientRecords.length === 0) {
       return [];
     }
-    
+
     // Get all client IDs from the user-client relationships
     const clientIds = userClientRecords.map(record => record.clientId);
-    
+
     // Fetch the client records
     return await db
       .select()
       .from(clients)
       .where(inArray(clients.id, clientIds));
   }
-  
+
   // Implement invitation methods
   async createInvitation(invitation: InsertInvitation): Promise<Invitation> {
     // Generate a random token (UUID)
     const token = crypto.randomUUID();
-    
+
     // Set expiration to 7 days from now
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
-    
+
     // Create invitation with token and expiration
     const [newInvitation] = await db
       .insert(invitations)
@@ -364,49 +364,49 @@ export class DatabaseStorage implements IStorage {
         used: false
       })
       .returning();
-    
+
     return newInvitation;
   }
-  
+
   async getInvitation(token: string): Promise<Invitation | undefined> {
     const [invitation] = await db
       .select()
       .from(invitations)
       .where(eq(invitations.token, token));
-    
+
     return invitation;
   }
-  
+
   async markInvitationAsUsed(id: number): Promise<Invitation> {
     const [updatedInvitation] = await db
       .update(invitations)
       .set({ used: true })
       .where(eq(invitations.id, id))
       .returning();
-    
+
     return updatedInvitation;
   }
-  
+
   async updateUserPassword(id: number, password: string): Promise<User> {
     console.log(`[PASSWORD RESET] Updating password for user ID: ${id}`);
-    
+
     // In a real application, we would hash the password before storing
     // For this demo, we'll just update it directly
     const updateData: Record<string, any> = {
       password: password,
     };
-    
+
     // Also update the last login time
     if (users.lastLogin) {
       updateData.lastLogin = new Date();
     }
-    
+
     const [updatedUser] = await db
       .update(users)
       .set(updateData)
       .where(eq(users.id, id))
       .returning();
-    
+
     console.log(`[PASSWORD RESET] Password updated successfully for user ID: ${id}`);
     return updatedUser;
   }
@@ -428,7 +428,7 @@ export class DatabaseStorage implements IStorage {
         eq(hiddenSections.clientId, section.clientId) && 
         eq(hiddenSections.sectionType, section.sectionType)
       );
-    
+
     if (existingSection) {
       // If it already exists, return it without creating a duplicate
       return existingSection;
@@ -439,7 +439,7 @@ export class DatabaseStorage implements IStorage {
       .insert(hiddenSections)
       .values(section)
       .returning();
-    
+
     return newSection;
   }
 
