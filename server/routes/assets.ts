@@ -66,16 +66,36 @@ export function registerAssetRoutes(app: Express) {
 
         // Font asset creation
         if (category === "font") {
-          const { name, source, weights, styles } = req.body;
-          const parsedWeights = JSON.parse(weights);
-          const parsedStyles = JSON.parse(styles);
+          const { name, subcategory, data } = req.body;
+          
+          // Handle Google Fonts (no file upload needed)
+          if (subcategory === "google") {
+            const fontData = typeof data === 'string' ? JSON.parse(data) : data;
+            
+            const fontAsset = {
+              clientId,
+              name,
+              category: "font" as const,
+              data: fontData,
+              fileData: null, // Google fonts don't need file storage
+              mimeType: null,
+            };
+
+            const asset = await storage.createAsset(fontAsset);
+            return res.status(201).json(asset);
+          }
+
+          // Handle uploaded font files
+          const { source, weights, styles } = req.body;
+          const parsedWeights = JSON.parse(weights || '["400"]');
+          const parsedStyles = JSON.parse(styles || '["normal"]');
           const files = req.files as Express.Multer.File[];
 
           if (!files || files.length === 0) {
             return res.status(400).json({ message: "No font files uploaded" });
           }
 
-          // Create the font asset data
+          // Create the font asset data for uploaded fonts
           const fontAsset = {
             clientId,
             name,
