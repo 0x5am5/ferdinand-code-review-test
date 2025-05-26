@@ -1,0 +1,333 @@
+
+.font-manager {
+  &__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  &__header {
+    margin-bottom: 2rem;
+
+    h1 {
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      margin-bottom: 0;
+      color: var(--muted-foreground);
+    }
+  }
+}
+
+.font-card {
+  position: relative;
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: white;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  min-height: 300px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  &__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover &__actions {
+    opacity: 1;
+  }
+
+  &__previews {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  &__weights {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+}
+
+.type-preview {
+  font-size: 0.875rem;
+  line-height: 1.25;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &.uppercase {
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  &.lowercase {
+    text-transform: lowercase;
+    font-weight: 400;
+  }
+
+  &.numbers {
+    font-weight: 400;
+    letter-spacing: 0.025em;
+  }
+}
+
+.font-add-button {
+  position: relative;
+  padding: 1.5rem;
+  border: 2px dashed var(--border);
+  border-radius: 0.5rem;
+  background: white;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: var(--primary);
+  }
+
+  &__icon {
+    height: 3rem;
+    width: 3rem;
+    border-radius: 50%;
+    background: rgba(var(--primary), 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      height: 1.5rem;
+      width: 1.5rem;
+      color: var(--primary);
+    }
+  }
+
+  &__content {
+    text-align: center;
+  }
+
+  &__title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+
+  &__description {
+    font-size: 0.75rem;
+    color: var(--muted-foreground);
+    margin: 0;
+  }
+}
+
+.google-font-picker {
+  position: relative;
+  padding: 1.5rem;
+  border: 2px dashed var(--border);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  transition: all 0.2s ease;
+
+  &__icon {
+    height: 3rem;
+    width: 3rem;
+    border-radius: 50%;
+    background: rgba(var(--primary), 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      height: 1.5rem;
+      width: 1.5rem;
+      color: var(--primary);
+    }
+  }
+
+  &__content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__title {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+  }
+
+  &__description {
+    font-size: 0.875rem;
+    color: var(--muted-foreground);
+    margin: 0;
+  }
+}
+
+.font-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.weight-style-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__label {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  &__weights {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  &__styles {
+    display: flex;
+    gap: 1rem;
+  }
+
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &--disabled {
+      opacity: 0.5;
+    }
+  }
+}
+
+.font-empty-state {
+  text-align: center;
+  padding: 3rem 0;
+  color: var(--muted-foreground);
+
+  &__icon {
+    width: 4rem;
+    height: 4rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: rgba(var(--muted), 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      height: 2rem;
+      width: 2rem;
+    }
+  }
+
+  p {
+    margin-bottom: 0.25rem;
+
+    &:last-child {
+      font-size: 0.875rem;
+      margin-bottom: 0;
+    }
+  }
+}
+
+// Font loading states
+.font-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+// Animation classes for font cards
+.font-card-enter {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.font-card-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.font-card-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.font-card-exit-active {
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .font-picker-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .weight-style-selector__weights {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .font-card {
+    min-height: auto;
+    padding: 1rem;
+  }
+
+  .font-add-button {
+    min-height: 150px;
+    padding: 1rem;
+  }
+}
