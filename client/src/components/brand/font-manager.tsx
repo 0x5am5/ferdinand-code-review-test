@@ -800,4 +800,4 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 interface FontManagerProps {
   clientId: number;
   fonts: BrandAsset[];
-}
+} 
