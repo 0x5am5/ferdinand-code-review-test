@@ -95,7 +95,7 @@ function ColorCard({
           name: data.name,
           category: data.category,
           data: data.data,
-        }),
+        }),e
       });
 
       if (!response.ok) {
