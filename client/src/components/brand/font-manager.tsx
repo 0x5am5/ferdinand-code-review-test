@@ -164,12 +164,10 @@ function FontCard({
       </div>
 
       <div className="space-y-3">
-        <div style={{ fontFamily: font.name, fontSize: "24px", fontWeight: "400" }}>
-          The quick brown fox
-        </div>
-        <div style={{ fontFamily: font.name, fontSize: "16px", fontWeight: "400" }}>
-          jumps over the lazy dog
-        </div>
+        <div className="type-preview uppercase">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+        <div className="type-preview lowercase">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+        <div className="type-preview numbers">1234567890</div>
+        
         <div className="flex flex-wrap gap-1">
           {font.weights.slice(0, 4).map((weight) => (
             <Badge key={weight} variant="outline" className="text-xs">
