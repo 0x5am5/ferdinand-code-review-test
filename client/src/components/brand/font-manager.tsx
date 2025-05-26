@@ -804,7 +804,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     style={{ minHeight: "200px" }}
                   >
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Type className="h-6 w-6 text-primary stroke-1" />
+                      <Type className="h-6 w-6 text-primary" />
                     </div>
                     <div className="text-center">
                       <h3 className="font-medium text-sm">Add Adobe Font</h3>
