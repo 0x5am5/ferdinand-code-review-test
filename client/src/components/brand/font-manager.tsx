@@ -790,7 +790,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       <BookType className="h-5 w-5 text-primary" />
                     </div>
                     <div className="text-center">
-                      <h3className="font-medium text-sm">Add Google Font</h3>
+                      <h3 className="font-medium text-sm">Add Google Font</h3>
                       <p className="text-xs text-muted-foreground mt-1">
                         Browse Google Fonts
                       </p>
