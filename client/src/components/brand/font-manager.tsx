@@ -10,6 +10,8 @@ import {
   Search,
   ChevronDown,
   Lock,
+  Chrome,
+  Palette,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -210,7 +212,7 @@ function GoogleFontPicker({
 
   const loadMore = async () => {
     if (isLoadingMore || !hasMore) return;
-    
+
     setIsLoadingMore(true);
     // Add a small delay to simulate loading and prevent rapid scrolling issues
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -746,42 +748,42 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                 googleFonts={googleFonts}
                 isFontsLoading={isFontsLoading}
               />
-              
+
               {/* Font Source Buttons */}
               <div className="grid grid-cols-3 gap-4">
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
-                  style={{ minHeight: "200px" }}
-                >
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Type className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-medium text-sm">Add Google Font</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Browse Google Fonts
-                    </p>
-                  </div>
-                </motion.div>
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                      style={{ minHeight: "200px" }}
+                    >
+                      <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                        <Chrome className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="font-medium text-sm">Add Google Font</h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Browse Google Fonts
+                        </p>
+                      </div>
+                    </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
-                  style={{ minHeight: "200px" }}
-                >
-                  <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-                    <Type className="h-5 w-5 text-orange-500" />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-medium text-sm">Add Adobe Font</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Browse Adobe Fonts
-                    </p>
-                  </div>
-                </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                      style={{ minHeight: "200px" }}
+                    >
+                      <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <Palette className="h-5 w-5 text-red-500" />
+                      </div>
+                      <div className="text-center">
+                        <h3 className="font-medium text-sm">Add Adobe Font</h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Browse Adobe Fonts
+                        </p>
+                      </div>
+                    </motion.div>
 
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -828,7 +830,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                 ))}
               </AnimatePresence>
 
-              
+
             </div>
           </div>
         </AssetSection>
@@ -889,4 +891,4 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 interface FontManagerProps {
   clientId: number;
   fonts: BrandAsset[];
-} 
+}
