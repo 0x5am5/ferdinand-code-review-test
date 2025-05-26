@@ -782,12 +782,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     googleFonts={googleFonts}
                     isFontsLoading={isFontsLoading}
                   />
-                  
+
                   {/* Font Source Buttons */}
                   <div className="grid grid-cols-3 gap-4 mt-4">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
+                    <div
                       className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
                       style={{ minHeight: "200px" }}
                     >
@@ -800,7 +798,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                           Browse Google Fonts
                         </p>
                       </div>
-                    </motion.div>
+                    </div>
 
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
