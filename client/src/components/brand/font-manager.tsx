@@ -12,6 +12,7 @@ import {
   Lock,
   Chrome,
   Palette,
+  BookType,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -775,24 +776,21 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   />
                 ))}
               </AnimatePresence>
-            </div>
 
-            {/* Font Source Buttons - Always visible at bottom */}
-            {isAbleToEdit && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Add New Font</h3>
-                <div className="grid grid-cols-3 gap-4">
+              {/* Font Source Buttons - Always visible */}
+              {isAbleToEdit && (
+                <div className="grid grid-cols-3 gap-4 mt-6">
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                     style={{ minHeight: "200px" }}
                   >
-                    <div className="h-10 w-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                      <Chrome className="h-5 w-5 text-blue-500" />
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <BookType className="h-5 w-5 text-primary" />
                     </div>
                     <div className="text-center">
-                      <h3 className="font-medium text-sm">Add Google Font</h3>
+                      <h3className="font-medium text-sm">Add Google Font</h3>
                       <p className="text-xs text-muted-foreground mt-1">
                         Browse Google Fonts
                       </p>
@@ -802,11 +800,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                     style={{ minHeight: "200px" }}
                   >
-                    <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center">
-                      <Palette className="h-5 w-5 text-red-500" />
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <BookType className="h-5 w-5 text-primary" />
                     </div>
                     <div className="text-center">
                       <h3 className="font-medium text-sm">Add Adobe Font</h3>
@@ -819,11 +817,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                     style={{ minHeight: "200px" }}
                   >
-                    <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
-                      <Plus className="h-5 w-5 text-purple-500" />
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Plus className="h-5 w-5 text-primary" />
                     </div>
                     <div className="text-center">
                       <h3 className="font-medium text-sm">Add Custom Font</h3>
@@ -833,9 +831,9 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     </div>
                   </motion.div>
                 </div>
-              </div>
-            )}
+              )}
 
+            </div>
           </div>
         </AssetSection>
       </div>
