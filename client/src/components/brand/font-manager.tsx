@@ -808,6 +808,87 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               <p className="text-sm">Contact an admin to add brand fonts</p>
             </div>
           }
+        uploadComponent={
+            isAbleToEdit ? (
+              showGoogleFontPicker ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Add Google Font</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowGoogleFontPicker(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  <GoogleFontPicker 
+                    onFontSelect={(fontName) => {
+                      handleGoogleFontSelect(fontName);
+                      setShowGoogleFontPicker(false);
+                    }}
+                    isLoading={addFont.isPending}
+                    googleFonts={googleFonts}
+                    isFontsLoading={isFontsLoading}
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    onClick={() => setShowGoogleFontPicker(true)}
+                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
+                    style={{ minHeight: "200px" }}
+                  >
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Type className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-medium text-sm">Add Google Font</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Browse Google Fonts
+                      </p>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
+                    style={{ minHeight: "200px" }}
+                  >
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Type className="h-6 w-6 text-primary stroke-1" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-medium text-sm">Add Adobe Font</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Browse Adobe Fonts
+                      </p>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
+                    style={{ minHeight: "200px" }}
+                  >
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Plus className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="font-medium text-sm">Add Custom Font</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Upload font files
+                      </p>
+                    </div>
+                  </motion.div>
+                </div>
+              )
+            ) : null
+          }
         >
           <div className="asset-display">
             <div className="asset-display__info">
@@ -825,8 +906,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                 ))}
               </AnimatePresence>
 
-              {/* Font Source Buttons - Show GoogleFontPicker if selected, otherwise show buttons */}
-              {isAbleToEdit && (
+              {/* Show add font buttons when there are existing fonts */}
+              {isAbleToEdit && transformedFonts.length > 0 && (
                 <div className="mt-6">
                   {showGoogleFontPicker ? (
                     <div className="space-y-4">
