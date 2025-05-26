@@ -197,11 +197,32 @@ function GoogleFontPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [displayCount, setDisplayCount] = useState(50);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const filteredFonts = googleFonts.filter(font =>
     font.name.toLowerCase().includes(searchValue.toLowerCase()) ||
     font.category.toLowerCase().includes(searchValue.toLowerCase())
-  ).slice(0, 50); // Show first 50 results for performance
+  );
+
+  const displayedFonts = filteredFonts.slice(0, displayCount);
+  const hasMore = displayCount < filteredFonts.length;
+
+  const loadMore = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    // Add a small delay to simulate loading and prevent rapid scrolling issues
+    await new Promise(resolve => setTimeout(resolve, 200));
+    setDisplayCount(prev => Math.min(prev + 25, filteredFonts.length));
+    setIsLoadingMore(false);
+  };
+
+  // Reset display count when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setDisplayCount(50);
+  };
 
   return (
     <motion.div
@@ -248,12 +269,20 @@ function GoogleFontPicker({
               <CommandInput 
                 placeholder="Search fonts..." 
                 value={searchValue}
-                onValueChange={setSearchValue}
+                onValueChange={handleSearchChange}
               />
-              <CommandList>
+              <CommandList
+                onScroll={(e) => {
+                  const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+                  // Trigger load more when user scrolls near the bottom (within 100px)
+                  if (scrollHeight - scrollTop - clientHeight < 100 && hasMore && !isLoadingMore) {
+                    loadMore();
+                  }
+                }}
+              >
                 <CommandEmpty>No fonts found.</CommandEmpty>
                 <CommandGroup>
-                  {filteredFonts.map((font) => (
+                  {displayedFonts.map((font) => (
                     <CommandItem
                       key={font.name}
                       value={font.name}
@@ -261,6 +290,7 @@ function GoogleFontPicker({
                         onFontSelect(font.name);
                         setOpen(false);
                         setSearchValue("");
+                        setDisplayCount(50); // Reset display count when closing
                       }}
                       className="flex items-center justify-between"
                     >
@@ -273,6 +303,18 @@ function GoogleFontPicker({
                       </div>
                     </CommandItem>
                   ))}
+                  {isLoadingMore && (
+                    <div className="flex items-center justify-center py-4">
+                      <div className="text-sm text-muted-foreground">Loading more fonts...</div>
+                    </div>
+                  )}
+                  {hasMore && !isLoadingMore && displayedFonts.length > 0 && (
+                    <div className="flex items-center justify-center py-2">
+                      <div className="text-xs text-muted-foreground">
+                        Showing {displayedFonts.length} of {filteredFonts.length} fonts - Scroll for more
+                      </div>
+                    </div>
+                  )}
                 </CommandGroup>
               </CommandList>
             </Command>
