@@ -786,8 +786,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                     style={{ minHeight: "200px" }}
                   >
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <BookType className="h-5 w-5 text-primary" />
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Type className="h-6 w-6 text-primary" />
                     </div>
                     <div className="text-center">
                       <h3 className="font-medium text-sm">Add Google Font</h3>
@@ -803,8 +803,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                     style={{ minHeight: "200px" }}
                   >
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <BookType className="h-5 w-5 text-primary" />
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Type className="h-6 w-6 text-primary stroke-1" />
                     </div>
                     <div className="text-center">
                       <h3 className="font-medium text-sm">Add Adobe Font</h3>
@@ -820,8 +820,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                     style={{ minHeight: "200px" }}
                   >
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Plus className="h-5 w-5 text-primary" />
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Plus className="h-6 w-6 text-primary" />
                     </div>
                     <div className="text-center">
                       <h3 className="font-medium text-sm">Add Custom Font</h3>
