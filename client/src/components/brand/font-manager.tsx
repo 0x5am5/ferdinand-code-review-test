@@ -739,13 +739,67 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
           isEmpty={transformedFonts.length === 0}
           sectionType="brand-fonts"
           uploadComponent={
-            <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-col gap-4 w-full">
               <GoogleFontPicker 
                 onFontSelect={handleGoogleFontSelect}
                 isLoading={addFont.isPending}
                 googleFonts={googleFonts}
                 isFontsLoading={isFontsLoading}
               />
+              
+              {/* Font Source Buttons */}
+              <div className="grid grid-cols-3 gap-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                  style={{ minHeight: "200px" }}
+                >
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Type className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-medium text-sm">Add Google Font</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Browse Google Fonts
+                    </p>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                  style={{ minHeight: "200px" }}
+                >
+                  <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
+                    <Type className="h-5 w-5 text-orange-500" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-medium text-sm">Add Adobe Font</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Browse Adobe Fonts
+                    </p>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
+                  style={{ minHeight: "200px" }}
+                >
+                  <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <Plus className="h-5 w-5 text-purple-500" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-medium text-sm">Add Custom Font</h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Upload font files
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
             </div>
           }
           emptyPlaceholder={
@@ -774,70 +828,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                 ))}
               </AnimatePresence>
 
-              {isAbleToEdit && (
-                <>
-                  <GoogleFontPicker 
-                    onFontSelect={handleGoogleFontSelect}
-                    isLoading={addFont.isPending}
-                    googleFonts={googleFonts}
-                    isFontsLoading={isFontsLoading}
-                  />
-
-                  {/* Font Source Buttons */}
-                  <div className="grid grid-cols-3 gap-4 mt-4">
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
-                      style={{ minHeight: "200px" }}
-                    >
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Type className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="text-center">
-                        <h3 className="font-medium text-sm">Add Google Font</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Browse Google Fonts
-                        </p>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
-                      style={{ minHeight: "200px" }}
-                    >
-                      <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center">
-                        <Type className="h-5 w-5 text-orange-500" />
-                      </div>
-                      <div className="text-center">
-                        <h3 className="font-medium text-sm">Add Adobe Font</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Browse Adobe Fonts
-                        </p>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer"
-                      style={{ minHeight: "200px" }}
-                    >
-                      <div className="h-10 w-10 rounded-full bg-purple-500/10 flex items-center justify-center">
-                        <Plus className="h-5 w-5 text-purple-500" />
-                      </div>
-                      <div className="text-center">
-                        <h3 className="font-medium text-sm">Add Custom Font</h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Upload font files
-                        </p>
-                      </div>
-                    </motion.div>
-                  </div>
-                </>
-              )}
+              
             </div>
           </div>
         </AssetSection>
