@@ -642,6 +642,34 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               <p className="text-sm">Contact an admin to add brand fonts</p>
             </div>
           }
+          uploadComponent={
+            isAbleToEdit ? (
+              showGoogleFontPicker ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Add Google Font</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowGoogleFontPicker(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  <GoogleFontPicker 
+                    onFontSelect={handleGoogleFontSelect}
+                    isLoading={addFont.isPending}
+                    googleFonts={googleFonts}
+                    isFontsLoading={isFontsLoading}
+                  />
+                </div>
+              ) : (
+                <FontPickerButtons
+                  onGoogleFontClick={() => setShowGoogleFontPicker(true)}
+                />
+              )
+            ) : null
+          }
         >
           <div className="asset-display">
             <div className="asset-display__info">
