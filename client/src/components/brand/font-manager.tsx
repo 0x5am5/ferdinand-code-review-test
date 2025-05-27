@@ -773,8 +773,171 @@ function FontPickerButtons({
   );
 }
 
-// Custom Font upload handler
-const handleCustomFontUpload = (files: FileList, fontName: string, weights: string[]) => {
+export function FontManager({ clientId, fonts }: FontManagerProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [editingFont, setEditingFont] = useState<FontData | null>(null);
+  const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
+  const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
+  const [showGoogleFontPicker, setShowGoogleFontPicker] = useState(false);
+  const [showAdobeFontPicker, setShowAdobeFontPicker] = useState(false);
+  const [showCustomFontPicker, setShowCustomFontPicker] = useState(false);
+
+  if (!user) return null;
+
+  const isAbleToEdit = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+  ].includes(user.role);
+
+  // Fetch Google Fonts
+  const { data: googleFontsData, isLoading: isFontsLoading } = useQuery({
+    queryKey: ["google-fonts"],
+    queryFn: async (): Promise<GoogleFontsResponse> => {
+      const response = await apiRequest(`/api/google-fonts`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch Google Fonts");
+      }
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+
+  const googleFonts = googleFontsData?.items || [];
+
+  // Add font mutation
+  const addFont = useMutation({
+    mutationFn: async (formData: FormData) => {
+      formData.append("clientId", clientId.toString());
+      const response = await apiRequest(`/api/clients/${clientId}/assets`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to add font");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets", clientId] });
+      toast({
+        title: "Success",
+        description: "Font added successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Edit font mutation
+  const editFont = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await apiRequest(`/api/clients/${clientId}/assets/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error("Failed to update font");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets", clientId] });
+      setEditingFont(null);
+      toast({
+        title: "Success",
+        description: "Font updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete font mutation
+  const deleteFont = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest(`/api/clients/${clientId}/assets/${id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error("Failed to delete font");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["assets", clientId] });
+      toast({
+        title: "Success",
+        description: "Font deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Font selection handlers
+  const handleGoogleFontSelect = (fontName: string) => {
+    const selectedFont = googleFonts.find(f => f.family === fontName);
+    if (!selectedFont) return;
+
+    const weights = convertGoogleFontVariants(selectedFont.variants);
+    const category = convertGoogleFontCategory(selectedFont.category);
+
+    const formData = new FormData();
+    formData.append("name", fontName);
+    formData.append("category", "font");
+    formData.append("subcategory", category.toLowerCase());
+    formData.append(
+      "data",
+      JSON.stringify({
+        source: FontSource.GOOGLE,
+        weights: weights.length > 0 ? weights : ["400"],
+        styles: ["normal"],
+        sourceData: {
+          url: generateGoogleFontUrl(fontName, weights.length > 0 ? weights : ["400"]),
+        },
+      }),
+    );
+    addFont.mutate(formData);
+  };
+
+  const handleAdobeFontSubmit = (data: { projectId: string; fontFamily: string; weights: string[] }) => {
+    const formData = new FormData();
+    formData.append("name", data.fontFamily);
+    formData.append("category", "font");
+    formData.append("subcategory", "adobe");
+    formData.append(
+      "data",
+      JSON.stringify({
+        source: FontSource.ADOBE,
+        weights: data.weights,
+        styles: ["normal"],
+        sourceData: {
+          projectId: data.projectId,
+          url: `https://use.typekit.net/${data.projectId}.css`,
+        },
+      }),
+    );
+    addFont.mutate(formData);
+  };
+
+  // Custom Font upload handler
+  const handleCustomFontUpload = (files: FileList, fontName: string, weights: string[]) => {
     if (!files || files.length === 0) {
       toast({
         title: "Error",
@@ -921,15 +1084,6 @@ const handleCustomFontUpload = (files: FileList, fontName: string, weights: stri
           description="Typography assets that define the brand's visual identity and should be used consistently across all materials."
           isEmpty={transformedFonts.length === 0}
           sectionType="brand-fonts"
-          uploadComponent={
-            isAbleToEdit ? (
-              <FontPickerButtons
-                onGoogleFontClick={() => setShowGoogleFontPicker(true)}
-                onAdobeFontClick={() => setShowAdobeFontPicker(true)}
-                onCustomFontClick={() => setShowCustomFontPicker(true)}
-              />
-            ) : null
-          }
           emptyPlaceholder={
             <div className="text-center py-12 text-muted-foreground">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
