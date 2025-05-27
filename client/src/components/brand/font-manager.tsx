@@ -405,6 +405,126 @@ function WeightStyleSelector({
   );
 }
 
+// Adobe Font Picker Component
+function AdobeFontPicker({ 
+  onFontSubmit, 
+  isLoading 
+}: { 
+  onFontSubmit: (data: { projectId: string; fontFamily: string; weights: string[] }) => void; 
+  isLoading: boolean;
+}) {
+  const [projectId, setProjectId] = useState("");
+  const [fontFamily, setFontFamily] = useState("");
+  const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
+
+  const handleSubmit = () => {
+    if (!projectId.trim() || !fontFamily.trim()) {
+      return;
+    }
+    onFontSubmit({
+      projectId: projectId.trim(),
+      fontFamily: fontFamily.trim(),
+      weights: selectedWeights
+    });
+    // Reset form
+    setProjectId("");
+    setFontFamily("");
+    setSelectedWeights(["400"]);
+  };
+
+  const allWeights = ["100", "200", "300", "400", "500", "600", "700", "800", "900"];
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="p-6 border rounded-lg bg-white/50 border-dashed space-y-4"
+    >
+      <div className="flex items-center gap-3">
+        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <Type className="h-6 w-6 text-primary stroke-1" />
+        </div>
+        <div>
+          <h3 className="font-medium">Add Adobe Font</h3>
+          <p className="text-sm text-muted-foreground">
+            Connect your Adobe Fonts project
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="projectId" className="text-sm font-medium">
+            Adobe Fonts Project ID
+          </Label>
+          <Input
+            id="projectId"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            placeholder="e.g., abc1234"
+            className="mt-1"
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Find this in your Adobe Fonts project URL or embed code
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="fontFamily" className="text-sm font-medium">
+            Font Family Name
+          </Label>
+          <Input
+            id="fontFamily"
+            value={fontFamily}
+            onChange={(e) => setFontFamily(e.target.value)}
+            placeholder="e.g., source-sans-pro"
+            className="mt-1"
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Use the exact font family name from Adobe Fonts
+          </p>
+        </div>
+
+        <div>
+          <Label className="text-sm font-medium">Font Weights</Label>
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            {allWeights.map((weight) => (
+              <div key={weight} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`adobe-weight-${weight}`}
+                  checked={selectedWeights.includes(weight)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setSelectedWeights([...selectedWeights, weight]);
+                    } else {
+                      setSelectedWeights(selectedWeights.filter(w => w !== weight));
+                    }
+                  }}
+                  disabled={isLoading}
+                />
+                <Label htmlFor={`adobe-weight-${weight}`} className="text-sm">
+                  {weight}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Button 
+          onClick={handleSubmit} 
+          disabled={!projectId.trim() || !fontFamily.trim() || isLoading}
+          className="w-full"
+        >
+          {isLoading ? "Adding Font..." : "Add Adobe Font"}
+        </Button>
+      </div>
+    </motion.div>
+  );
+}
+
 export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -413,6 +533,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
   const { user } = useAuth();
   const [showGoogleFontPicker, setShowGoogleFontPicker] = useState(false); // Added state
+  const [showAdobeFontPicker, setShowAdobeFontPicker] = useState(false); // Added state for Adobe fonts
 
   if (!user) return null;
 
@@ -678,6 +799,52 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     addFont.mutate(formData);
   };
 
+  // Adobe Font handler
+  const handleAdobeFontSubmit = (adobeFontData: { projectId: string; fontFamily: string; weights: string[] }) => {
+    if (!adobeFontData.projectId?.trim() || !adobeFontData.fontFamily?.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide both Project ID and Font Family name",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!clientId) {
+      toast({
+        title: "Error",
+        description: "Client ID is missing. Please refresh the page.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log(`Creating Adobe Font: ${adobeFontData.fontFamily} with weights:`, adobeFontData.weights);
+
+    // Create proper font data structure for Adobe fonts
+    const fontData = {
+      source: FontSource.ADOBE,
+      weights: adobeFontData.weights.length > 0 ? adobeFontData.weights : ["400"],
+      styles: ["normal"],
+      sourceData: {
+        projectId: adobeFontData.projectId.trim(),
+        fontFamily: adobeFontData.fontFamily.trim(),
+        url: `https://use.typekit.net/${adobeFontData.projectId}.css`
+      },
+    };
+
+    console.log("Sending Adobe font data to server for client:", clientId);
+    console.log("Adobe font data structure:", JSON.stringify(fontData, null, 2));
+
+    const formData = new FormData();
+    formData.append("name", adobeFontData.fontFamily.trim());
+    formData.append("category", "font");
+    formData.append("subcategory", "adobe");
+    formData.append("data", JSON.stringify(fontData));
+
+    addFont.mutate(formData);
+  };
+
   const handleEditFont = (font: FontData) => {
     setEditingFont(font);
     setSelectedWeights(font.weights);
@@ -830,6 +997,26 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                     isFontsLoading={isFontsLoading}
                   />
                 </div>
+              ) : showAdobeFontPicker ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Add Adobe Font</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowAdobeFontPicker(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  <AdobeFontPicker 
+                    onFontSubmit={(data) => {
+                      handleAdobeFontSubmit(data);
+                      setShowAdobeFontPicker(false);
+                    }}
+                    isLoading={addFont.isPending}
+                  />
+                </div>
               ) : (
                 <div className="grid grid-cols-3 gap-4">
                   <motion.div
@@ -853,6 +1040,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
+                    onClick={() => setShowAdobeFontPicker(true)}
                     className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                     style={{ minHeight: "200px" }}
                   >
@@ -929,6 +1117,26 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                         isFontsLoading={isFontsLoading}
                       />
                     </div>
+                  ) : showAdobeFontPicker ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Add Adobe Font</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowAdobeFontPicker(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                      <AdobeFontPicker 
+                        onFontSubmit={(data) => {
+                          handleAdobeFontSubmit(data);
+                          setShowAdobeFontPicker(false);
+                        }}
+                        isLoading={addFont.isPending}
+                      />
+                    </div>
                   ) : (
                     <div className="grid grid-cols-3 gap-4">
                       <motion.div
@@ -952,6 +1160,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
+                        onClick={() => setShowAdobeFontPicker(true)}
                         className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
                         style={{ minHeight: "200px" }}
                       >
