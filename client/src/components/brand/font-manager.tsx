@@ -167,7 +167,7 @@ function FontCard({
         <div className="type-preview uppercase">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
         <div className="type-preview lowercase">ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
         <div className="type-preview numbers">1234567890</div>
-        
+
         <div className="flex flex-wrap gap-1">
           {font.weights.slice(0, 4).map((weight) => (
             <Badge key={weight} variant="outline" className="text-xs">
@@ -566,7 +566,7 @@ function CustomFontPicker({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       setSelectedFiles(e.dataTransfer.files);
     }
@@ -653,7 +653,7 @@ function CustomFontPicker({
                 </div>
               </div>
             </label>
-            
+
             {selectedFiles && selectedFiles.length > 0 && (
               <div className="mt-3 text-left">
                 <p className="text-xs font-medium text-gray-600 mb-1">Selected files:</p>
@@ -704,329 +704,77 @@ function CustomFontPicker({
   );
 }
 
-export function FontManager({ clientId, fonts }: FontManagerProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [editingFont, setEditingFont] = useState<FontData | null>(null);
-  const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
-  const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
-  const { user } = useAuth();
-  const [showGoogleFontPicker, setShowGoogleFontPicker] = useState(false); // Added state
-  const [showAdobeFontPicker, setShowAdobeFontPicker] = useState(false); // Added state for Adobe fonts
-  const [showCustomFontPicker, setShowCustomFontPicker] = useState(false); // Added state for custom fonts
-
-  if (!user) return null;
-
-  // Validate clientId is available
-  if (!clientId) {
-    console.error("FontManager: clientId is missing");
-    return (
-      <div className="font-manager">
-        <div className="manager__header">
-          <div>
-            <h1>Typography System</h1>
-            <p className="text-muted-foreground text-red-500">
-              Error: Client ID is missing. Please refresh the page.
-            </p>
-          </div>
+// Font Picker Buttons Component
+function FontPickerButtons({
+  onGoogleFontClick,
+  onAdobeFontClick, 
+  onCustomFontClick
+}: {
+  onGoogleFontClick: () => void;
+  onAdobeFontClick: () => void;
+  onCustomFontClick: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        onClick={onGoogleFontClick}
+        className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
+        style={{ minHeight: "200px" }}
+      >
+        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <Type className="h-6 w-6 text-primary" />
         </div>
-      </div>
-    );
-  }
+        <div className="text-center">
+          <h3 className="font-medium text-sm">Add Google Font</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Browse Google Fonts
+          </p>
+        </div>
+      </motion.div>
 
-  const isAbleToEdit = [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        onClick={onAdobeFontClick}
+        className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
+        style={{ minHeight: "200px" }}
+      >
+        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <Type className="h-6 w-6 text-primary stroke-1" />
+        </div>
+        <div className="text-center">
+          <h3 className="font-medium text-sm">Add Adobe Font</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Browse Adobe Fonts
+          </p>
+        </div>
+      </motion.div>
 
-  // Add font mutation
-  const addFont = useMutation({
-    mutationFn: async (data: FormData) => {
-      if (!clientId) {
-        throw new Error("Client ID is required");
-      }
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        onClick={onCustomFontClick}
+        className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
+        style={{ minHeight: "200px" }}
+      >
+        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <Plus className="h-6 w-6 text-primary" />
+        </div>
+        <div className="text-center">
+          <h3 className="font-medium text-sm">Add Custom Font</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Upload font files
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
 
-      console.log("Sending font data to server for client:", clientId);
-      console.log("FormData contents:");
-      for (const [key, value] of data.entries()) {
-        console.log(`  ${key}:`, value);
-      }
-
-      const response = await apiRequest(
-        "POST",
-        `/api/clients/${clientId}/assets`,
-        data,
-      );
-
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-        } catch {
-          const errorText = await response.text();
-          errorMessage = errorText || errorMessage;
-        }
-        console.error("Server error:", response.status, errorMessage);
-        throw new Error(errorMessage);
-      }
-
-      return response.json();
-    },
-    onSuccess: (data) => {
-      console.log("Font added successfully:", data);
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
-      toast({
-        title: "Success",
-        description: `${data.name} font added successfully`,
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      console.error("Font addition failed:", error);
-      toast({
-        title: "Error adding font",
-        description: error.message || "Failed to add font. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Edit font mutation
-  const editFont = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await apiRequest(
-        "PATCH",
-        `/api/clients/${clientId}/assets/${id}`,
-        data,
-      );
-      if (!response.ok) {
-        throw new Error("Failed to update font");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
-      setEditingFont(null);
-      toast({
-        title: "Success",
-        description: "Font updated successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Delete font mutation
-  const deleteFont = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await apiRequest(
-        "DELETE",
-        `/api/clients/${clientId}/assets/${id}`,
-      );
-      if (!response.ok) {
-        throw new Error("Failed to delete font");
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
-      toast({
-        title: "Success",
-        description: "Font deleted successfully",
-        variant: "default",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Try to fetch from API, but always have the comprehensive fallback
-  const { data: googleFontsData, isLoading: isFontsLoading } = useQuery<GoogleFontsResponse>({
-    queryKey: ['/api/google-fonts'],
-    staleTime: 1000 * 60 * 60, // Cache for 1 hour
-  });
-
-  // Comprehensive font list including IBM Plex Sans and all popular Google Fonts
-  const allGoogleFonts = [
-    // IBM Plex Family (what you specifically requested)
-    { name: "IBM Plex Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
-    { name: "IBM Plex Serif", category: "Serif", weights: ["100", "200", "300", "400", "500", "600", "700"] },
-    { name: "IBM Plex Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700"] },
-
-    // Popular Sans Serif Fonts
-    { name: "Roboto", category: "Sans Serif", weights: ["100", "300", "400", "500", "700", "900"] },
-    { name: "Open Sans", category: "Sans Serif", weights: ["300", "400", "500", "600", "700", "800"] },
-    { name: "Lato", category: "Sans Serif", weights: ["100", "300", "400", "700", "900"] },
-    { name: "Montserrat", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "Poppins", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "Inter", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "Source Sans Pro", category: "Sans Serif", weights: ["200", "300", "400", "600", "700", "900"] },
-    { name: "Oswald", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700"] },
-    { name: "Raleway", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "Nunito", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "PT Sans", category: "Sans Serif", weights: ["400", "700"] },
-    { name: "Ubuntu", category: "Sans Serif", weights: ["300", "400", "500", "700"] },
-    { name: "Mukti", category: "Sans Serif", weights: ["200", "300", "400", "500", "600", "700", "800"] },
-    { name: "Fira Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "Work Sans", category: "Sans Serif", weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },
-
-    // Popular Serif Fonts
-    { name: "Playfair Display", category: "Serif", weights: ["400", "500", "600", "700", "800", "900"] },
-    { name: "Merriweather", category: "Serif", weights: ["300", "400", "700", "900"] },
-    { name: "PT Serif", category: "Serif", weights: ["400", "700"] },
-    { name: "Lora", category: "Serif", weights: ["400", "500", "600", "700"] },
-    { name: "Source Serif Pro", category: "Serif", weights: ["200", "300", "400", "600", "700", "900"] },
-    { name: "Crimson Text", category: "Serif", weights: ["400", "600", "700"] },
-    { name: "Libre Baskerville", category: "Serif", weights: ["400", "700"] },
-    { name: "Cormorant Garamond", category: "Serif", weights: ["300", "400", "500", "600", "700"] },
-    { name: "EB Garamond", category: "Serif", weights: ["400", "500", "600", "700", "800"] },
-
-    // Monospace Fonts
-    { name: "Source Code Pro", category: "Monospace", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "JetBrains Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700", "800"] },
-    { name: "Fira Code", category: "Monospace", weights: ["300", "400", "500", "600", "700"] },
-    { name: "Roboto Mono", category: "Monospace", weights: ["100", "200", "300", "400", "500", "600", "700"] },
-    { name: "Space Mono", category: "Monospace", weights: ["400", "700"] },
-    { name: "Inconsolata", category: "Monospace", weights: ["200", "300", "400", "500", "600", "700", "800", "900"] },
-    { name: "Ubuntu Mono", category: "Monospace", weights: ["400", "700"] },
-
-    // Display Fonts
-    { name: "Lobster", category: "Display", weights: ["400"] },
-    { name: "Comfortaa", category: "Display", weights: ["300", "400", "500", "600", "700"] },
-    { name: "Righteous", category: "Display", weights: ["400"] },
-    { name: "Fredoka One", category: "Display", weights: ["400"] },
-    { name: "Bebas Neue", category: "Display", weights: ["400"] },
-    { name: "Anton", category: "Display", weights: ["400"] },
-
-    // Handwriting Fonts
-    { name: "Dancing Script", category: "Handwriting", weights: ["400", "500", "600", "700"] },
-    { name: "Pacifico", category: "Handwriting", weights: ["400"] },
-    { name: "Kaushan Script", category: "Handwriting", weights: ["400"] },
-    { name: "Great Vibes", category: "Handwriting", weights: ["400"] },
-  ];
-
-  // Use API data if available and valid, otherwise use comprehensive fallback
-  const googleFonts = (googleFontsData?.items?.length > 0) 
-    ? googleFontsData.items.map((font: GoogleFont) => ({
-        name: font.family,
-        category: convertGoogleFontCategory(font.category),
-        weights: convertGoogleFontVariants(font.variants)
-      }))
-    : allGoogleFonts;
-
-  console.log(`Google Fonts loaded: ${googleFonts?.length || 0} fonts available (${googleFontsData?.items?.length > 0 ? 'from API' : 'from fallback'})`);
-
-  // Google Font handler with proper validation
-  const handleGoogleFontSelect = (fontName: string) => {
-    if (!fontName?.trim()) {
-      toast({
-        title: "Error",
-        description: "Invalid font name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!clientId) {
-      toast({
-        title: "Error",
-        description: "Client ID is missing. Please refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Find the font in our Google Fonts list to get available weights
-    const selectedFont = googleFonts?.find(font => font.name === fontName);
-    const availableWeights = selectedFont?.weights || ["400", "700"];
-    const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
-
-    console.log(`Creating Google Font: ${fontName} with weights:`, defaultWeights);
-
-    // Create proper font data structure
-    const fontData = {
-      source: FontSource.GOOGLE,
-      weights: defaultWeights,
-      styles: ["normal"],
-      sourceData: {
-        url: generateGoogleFontUrl(fontName, defaultWeights, ["normal"]),
-        fontFamily: fontName,
-        category: selectedFont?.category || "Sans Serif"
-      },
-    };
-
-    console.log("Sending font data to server for client:", clientId);
-    console.log("Font data structure:", JSON.stringify(fontData, null, 2));
-
-    const formData = new FormData();
-    formData.append("name", fontName.trim());
-    formData.append("category", "font");
-    formData.append("subcategory", "google");
-    formData.append("data", JSON.stringify(fontData));
-
-    addFont.mutate(formData);
-  };
-
-  // Adobe Font handler
-  const handleAdobeFontSubmit = (adobeFontData: { projectId: string; fontFamily: string; weights: string[] }) => {
-    if (!adobeFontData.projectId?.trim() || !adobeFontData.fontFamily?.trim()) {
-      toast({
-        title: "Error",
-        description: "Please provide both Project ID and Font Family name",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!clientId) {
-      toast({
-        title: "Error",
-        description: "Client ID is missing. Please refresh the page.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    console.log(`Creating Adobe Font: ${adobeFontData.fontFamily} with weights:`, adobeFontData.weights);
-
-    // Create proper font data structure for Adobe fonts
-    const fontData = {
-      source: FontSource.ADOBE,
-      weights: adobeFontData.weights.length > 0 ? adobeFontData.weights : ["400"],
-      styles: ["normal"],
-      sourceData: {
-        projectId: adobeFontData.projectId.trim(),
-        fontFamily: adobeFontData.fontFamily.trim(),
-        url: `https://use.typekit.net/${adobeFontData.projectId}.css`
-      },
-    };
-
-    console.log("Sending Adobe font data to server for client:", clientId);
-    console.log("Adobe font data structure:", JSON.stringify(fontData, null, 2));
-
-    const formData = new FormData();
-    formData.append("name", adobeFontData.fontFamily.trim());
-    formData.append("category", "font");
-    formData.append("subcategory", "adobe");
-    formData.append("data", JSON.stringify(fontData));
-
-    addFont.mutate(formData);
-  };
-
-  // Custom Font upload handler
-  const handleCustomFontUpload = (files: FileList, fontName: string, weights: string[]) => {
+// Custom Font upload handler
+const handleCustomFontUpload = (files: FileList, fontName: string, weights: string[]) => {
     if (!files || files.length === 0) {
       toast({
         title: "Error",
@@ -1175,59 +923,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
           sectionType="brand-fonts"
           uploadComponent={
             isAbleToEdit ? (
-              <div className="grid grid-cols-3 gap-4">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  onClick={() => setShowGoogleFontPicker(true)}
-                  className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                  style={{ minHeight: "200px" }}
-                >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Type className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-medium text-sm">Add Google Font</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Browse Google Fonts
-                    </p>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                  style={{ minHeight: "200px" }}
-                >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Type className="h-6 w-6 text-primary stroke-1" />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-medium text-sm">Add Adobe Font</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Browse Adobe Fonts
-                    </p>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                  style={{ minHeight: "200px" }}
-                >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Plus className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-medium text-sm">Add Custom Font</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Upload font files
-                    </p>
-                  </div>
-                </motion.div>
-              </div>
+              <FontPickerButtons
+                onGoogleFontClick={() => setShowGoogleFontPicker(true)}
+                onAdobeFontClick={() => setShowAdobeFontPicker(true)}
+                onCustomFontClick={() => setShowCustomFontPicker(true)}
+              />
             ) : null
           }
           emptyPlaceholder={
@@ -1304,61 +1004,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   />
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-4">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => setShowGoogleFontPicker(true)}
-                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                    style={{ minHeight: "200px" }}
-                  >
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Type className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-medium text-sm">Add Google Font</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Browse Google Fonts
-                      </p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => setShowAdobeFontPicker(true)}
-                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                    style={{ minHeight: "200px" }}
-                  >
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Type className="h-6 w-6 text-primary stroke-1" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-medium text-sm">Add Adobe Font</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Browse Adobe Fonts
-                      </p>
-                    </div>
-                  </motion.div>
-
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => setShowCustomFontPicker(true)}
-                    className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                    style={{ minHeight: "200px" }}
-                  >
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Plus className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-medium text-sm">Add Custom Font</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Upload font files
-                      </p>
-                    </div>
-                  </motion.div>
-                </div>
+                <FontPickerButtons
+                  onGoogleFontClick={() => setShowGoogleFontPicker(true)}
+                  onAdobeFontClick={() => setShowAdobeFontPicker(true)}
+                  onCustomFontClick={() => setShowCustomFontPicker(true)}
+                />
               )
             ) : null
           }
@@ -1424,63 +1074,33 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                         isLoading={addFont.isPending}
                       />
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-4">
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={() => setShowGoogleFontPicker(true)}
-                        className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                        style={{ minHeight: "200px" }}
-                      >
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Type className="h-6 w-6 text-primary" />
+                  ) : showCustomFontPicker ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">Upload Custom Font</h3>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowCustomFontPicker(false)}
+                          >
+                            Cancel
+                          </Button>
                         </div>
-                        <div className="text-center">
-                          <h3 className="font-medium text-sm">Add Google Font</h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Browse Google Fonts
-                          </p>
-                        </div>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={() => setShowAdobeFontPicker(true)}
-                        className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                        style={{ minHeight: "200px" }}
-                      >
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Type className="h-6 w-6 text-primary stroke-1" />
-                        </div>
-                        <div className="text-center">
-                          <h3 className="font-medium text-sm">Add Adobe Font</h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Browse Adobe Fonts
-                          </p>
-                        </div>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        onClick={() => setShowCustomFontPicker(true)}
-                        className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
-                        style={{ minHeight: "200px" }}
-                      >
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Plus className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="text-center">
-                          <h3 className="font-medium text-sm">Add Custom Font</h3>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Upload font files
-                          </p>
-                        </div>
-                      </motion.div>
-                    </div>
-                  )}
+                        <CustomFontPicker
+                          onFontUpload={(files, fontName, weights) => {
+                            handleCustomFontUpload(files, fontName, weights);
+                            setShowCustomFontPicker(false);
+                          }}
+                          isLoading={addFont.isPending}
+                        />
+                      </div>
+                    ) : (
+                      <FontPickerButtons
+                        onGoogleFontClick={() => setShowGoogleFontPicker(true)}
+                        onAdobeFontClick={() => setShowAdobeFontPicker(true)}
+                        onCustomFontClick={() => setShowCustomFontPicker(true)}
+                      />
+                    )}
                 </div>
               )}
 
