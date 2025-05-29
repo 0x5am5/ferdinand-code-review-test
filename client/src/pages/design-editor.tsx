@@ -28,6 +28,7 @@ export default function DesignEditor() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("typography");
+  const clientId = 1;
 
   // Fetch design settings and assets
   const { data: designSettings } = useQuery<DesignSettings>({
@@ -35,7 +36,7 @@ export default function DesignEditor() {
   });
 
   const { data: brandAssets } = useQuery<BrandAsset[]>({
-    queryKey: ["/api/clients/1/assets"], // Assuming we're working with client ID 1
+    queryKey: [`/api/clients/${clientId}/assets`], // Assuming we're working with client ID 1
   });
 
   // Update design settings mutation
@@ -91,9 +92,12 @@ export default function DesignEditor() {
           <TabsContent value="typography">
             <Card>
               <div className="p-6">
-                <FontManager 
-                  clientId={1} 
-                  fonts={brandAssets?.filter(asset => asset.category === 'font') || []} 
+                <FontManager
+                  clientId={1}
+                  fonts={
+                    brandAssets?.filter((asset) => asset.category === "font") ||
+                    []
+                  }
                 />
               </div>
             </Card>
@@ -102,9 +106,13 @@ export default function DesignEditor() {
           <TabsContent value="colors">
             <Card>
               <div className="p-6">
-                <ColorManager 
-                  clientId={1}
-                  colors={brandAssets?.filter(asset => asset.category === 'color') || []}
+                <ColorManager
+                  clientId={clientId}
+                  colors={
+                    brandAssets?.filter(
+                      (asset) => asset.category === "color",
+                    ) || []
+                  }
                 />
               </div>
             </Card>
@@ -123,7 +131,9 @@ export default function DesignEditor() {
                         min="0"
                         max="20"
                         value={designSettings?.radius || 4}
-                        onChange={(e) => handleSettingChange('radius', Number(e.target.value))}
+                        onChange={(e) =>
+                          handleSettingChange("radius", Number(e.target.value))
+                        }
                         className="max-w-xs"
                       />
                       <p className="text-sm text-muted-foreground">
@@ -136,7 +146,9 @@ export default function DesignEditor() {
                       <select
                         className="w-full max-w-xs p-2 border rounded"
                         value={designSettings?.animation || "normal"}
-                        onChange={(e) => handleSettingChange('animation', e.target.value)}
+                        onChange={(e) =>
+                          handleSettingChange("animation", e.target.value)
+                        }
                       >
                         <option value="none">None</option>
                         <option value="fast">Fast</option>
@@ -144,7 +156,8 @@ export default function DesignEditor() {
                         <option value="slow">Slow</option>
                       </select>
                       <p className="text-sm text-muted-foreground">
-                        Control the speed of UI animations throughout the application
+                        Control the speed of UI animations throughout the
+                        application
                       </p>
                     </div>
                   </div>
@@ -158,7 +171,10 @@ export default function DesignEditor() {
                         See how your changes affect various components
                       </p>
                     </div>
-                    <Button variant="outline" onClick={() => updateSettings.mutate(designSettings!)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => updateSettings.mutate(designSettings!)}
+                    >
                       Save Changes
                     </Button>
                   </div>
