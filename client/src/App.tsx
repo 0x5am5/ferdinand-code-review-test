@@ -49,7 +49,7 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
-      <Route path="/design-editor">
+      <Route path="/design-editor/:id">
         <ProtectedRoute>
           <AppLayout pageKey="design-editor">
             <DesignEditor />

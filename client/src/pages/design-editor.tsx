@@ -9,6 +9,7 @@ import { ColorManager } from "@/components/brand/color-manager";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { BrandAsset } from "@shared/schema";
+import { useParams } from "wouter";
 
 interface DesignSettings {
   radius: number;
@@ -27,8 +28,25 @@ interface DesignSettings {
 export default function DesignEditor() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { id } = useParams();
+  const clientId = id ? parseInt(id) : null;
   const [activeTab, setActiveTab] = useState("typography");
-  const clientId = 1;
+
+  // Validate clientId
+  if (!clientId || isNaN(clientId)) {
+    return (
+      <div className="container py-8 max-w-6xl">
+        <Card>
+          <div className="p-6">
+            <h1>Invalid Client ID</h1>
+            <p className="text-muted-foreground">
+              Please provide a valid client ID to access the design editor.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   // Fetch design settings and assets
   const { data: designSettings } = useQuery<DesignSettings>({
@@ -36,7 +54,7 @@ export default function DesignEditor() {
   });
 
   const { data: brandAssets } = useQuery<BrandAsset[]>({
-    queryKey: [`/api/clients/${clientId}/assets`], // Assuming we're working with client ID 1
+    queryKey: [`/api/clients/${clientId}/assets`],
   });
 
   // Update design settings mutation
@@ -93,7 +111,7 @@ export default function DesignEditor() {
             <Card>
               <div className="p-6">
                 <FontManager
-                  clientId={1}
+                  clientId={clientId}
                   fonts={
                     brandAssets?.filter((asset) => asset.category === "font") ||
                     []
