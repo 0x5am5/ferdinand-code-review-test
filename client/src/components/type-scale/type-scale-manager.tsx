@@ -52,9 +52,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const deleteTypeScaleMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/type-scales/${id}`, {
+      const response = await fetch(`/api/type-scales/${id}`, {
         method: "DELETE",
+        credentials: 'include',
       });
+      if (!response.ok) throw new Error('Failed to delete type scale');
+      return response.json();
     },
     onSuccess: () => {
       toast({
