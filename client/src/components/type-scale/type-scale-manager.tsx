@@ -1,43 +1,49 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, Download, Copy, Eye } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Save, Download, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { TypeScaleBuilder } from "./type-scale-builder";
-import { motion, AnimatePresence } from "framer-motion";
-
-interface TypeScale {
-  id: number;
-  clientId: number;
-  name: string;
-  unit: "px" | "rem" | "em";
-  baseSize: number;
-  scaleRatio: number;
-  customRatio?: number;
-  responsiveSizes: {
-    mobile: { baseSize: number; scaleRatio: number };
-    tablet: { baseSize: number; scaleRatio: number };
-    desktop: { baseSize: number; scaleRatio: number };
-  };
-  typeStyles: any[];
-  exports: any[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { TypeScalePreview } from "./type-scale-preview";
+import type { TypeScale } from "@shared/schema";
 
 interface TypeScaleManagerProps {
   clientId: number;
 }
 
+// Default type scale values
+const DEFAULT_TYPE_SCALE = {
+  name: "Brand Type Scale",
+  unit: "px" as const,
+  baseSize: 16,
+  scaleRatio: 1250, // 1.25 * 1000
+  responsiveSizes: {
+    mobile: { baseSize: 14, scaleRatio: 1.125 },
+    tablet: { baseSize: 15, scaleRatio: 1.2 },
+    desktop: { baseSize: 16, scaleRatio: 1.25 }
+  },
+  typeStyles: [
+    { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
+    { level: "h2", name: "Heading 2", size: 2, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
+    { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "body", name: "Body Text", size: -3, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+    { level: "small", name: "Small Text", size: -4, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+  ]
+};
+
 export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
-  const [editingScale, setEditingScale] = useState<TypeScale | undefined>();
+  const [currentScale, setCurrentScale] = useState<TypeScale | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const { data: typeScales = [], isLoading } = useQuery({
     queryKey: ["/api/clients", clientId, "type-scales"],
@@ -47,6 +53,49 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       });
       if (!response.ok) throw new Error('Failed to fetch type scales');
       return response.json();
+    },
+  });
+
+  // Initialize with existing scale or create new one
+  const activeScale = currentScale || (typeScales[0] || {
+    ...DEFAULT_TYPE_SCALE,
+    id: undefined,
+    clientId
+  });
+
+  const saveTypeScaleMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const url = data.id 
+        ? `/api/type-scales/${data.id}` 
+        : `/api/clients/${clientId}/type-scales`;
+      const method = data.id ? "PATCH" : "POST";
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to save type scale');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Type scale saved",
+        description: "Your type scale has been saved successfully.",
+      });
+      setCurrentScale(data);
+      setIsEditing(false);
+      queryClient.invalidateQueries({
+        queryKey: ["/api/clients", clientId, "type-scales"],
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save type scale. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -64,63 +113,121 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         title: "Type scale deleted",
         description: "The type scale has been deleted successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "type-scales"] });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete type scale. Please try again.",
-        variant: "destructive",
+      setCurrentScale(null);
+      queryClient.invalidateQueries({
+        queryKey: ["/api/clients", clientId, "type-scales"],
       });
     },
   });
 
-  const handleEdit = (typeScale: TypeScale) => {
-    setEditingScale(typeScale);
-    setIsBuilderOpen(true);
+  const exportMutation = useMutation({
+    mutationFn: async ({ format }: { format: "css" | "scss" }) => {
+      if (!activeScale.id) throw new Error('Please save the type scale before exporting');
+      const response = await fetch(`/api/type-scales/${activeScale.id}/export/${format}`, {
+        method: "POST",
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to export type scale');
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      const blob = new Blob([data.content], { type: data.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data.fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
+  const updateScale = (updates: Partial<TypeScale>) => {
+    setCurrentScale(prev => ({ ...activeScale, ...updates }));
+    setIsEditing(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this type scale?")) {
-      deleteTypeScaleMutation.mutate(id);
+  const handleSave = () => {
+    saveTypeScaleMutation.mutate(activeScale);
+  };
+
+  const handleDelete = () => {
+    if (activeScale.id && confirm("Are you sure you want to delete this type scale?")) {
+      deleteTypeScaleMutation.mutate(activeScale.id);
     }
   };
 
-  const handleSave = (typeScale: TypeScale) => {
-    setIsBuilderOpen(false);
-    setEditingScale(undefined);
+  const handleNewScale = () => {
+    setCurrentScale({
+      ...DEFAULT_TYPE_SCALE,
+      id: undefined,
+      clientId,
+      name: `Type Scale ${typeScales.length + 1}`
+    });
+    setIsEditing(true);
   };
 
-  const handleCancel = () => {
-    setIsBuilderOpen(false);
-    setEditingScale(undefined);
-  };
+  const generateCodePreview = (format: "css" | "scss") => {
+    const styles = activeScale.typeStyles || DEFAULT_TYPE_SCALE.typeStyles;
+    const baseSize = activeScale.baseSize || 16;
+    const ratio = (activeScale.scaleRatio || 1250) / 1000;
+    const unit = activeScale.unit || "px";
 
-  const formatRatio = (scaleRatio: number) => {
-    return (scaleRatio / 1000).toFixed(3);
-  };
+    const calculateSize = (level: number) => {
+      return Math.round(baseSize * Math.pow(ratio, level) * 100) / 100;
+    };
 
-  const getLastExportDate = (exports: any[]) => {
-    if (!exports || exports.length === 0) return "Never";
-    const lastExport = exports.reduce((latest, exp) => 
-      new Date(exp.exportedAt) > new Date(latest.exportedAt) ? exp : latest
-    );
-    return new Date(lastExport.exportedAt).toLocaleDateString();
+    if (format === "scss") {
+      let scss = `// Type Scale Variables\n`;
+      scss += `$base-font-size: ${baseSize}${unit};\n`;
+      scss += `$type-scale-ratio: ${ratio};\n\n`;
+      
+      styles.forEach(style => {
+        const size = calculateSize(style.size);
+        scss += `$${style.level}-size: ${size}${unit};\n`;
+      });
+      
+      scss += `\n// Type Scale Mixins\n`;
+      styles.forEach(style => {
+        const size = calculateSize(style.size);
+        scss += `@mixin ${style.level} {\n`;
+        scss += `  font-size: ${size}${unit};\n`;
+        scss += `  font-weight: ${style.fontWeight};\n`;
+        scss += `  line-height: ${style.lineHeight};\n`;
+        scss += `  letter-spacing: ${style.letterSpacing}em;\n`;
+        scss += `  color: ${style.color};\n`;
+        scss += `}\n\n`;
+      });
+      
+      return scss;
+    } else {
+      let css = `/* Type Scale CSS */\n`;
+      css += `:root {\n`;
+      css += `  --base-font-size: ${baseSize}${unit};\n`;
+      css += `  --type-scale-ratio: ${ratio};\n`;
+      
+      styles.forEach(style => {
+        const size = calculateSize(style.size);
+        css += `  --${style.level}-size: ${size}${unit};\n`;
+      });
+      css += `}\n\n`;
+      
+      styles.forEach(style => {
+        const size = calculateSize(style.size);
+        css += `.${style.level} {\n`;
+        css += `  font-size: ${size}${unit};\n`;
+        css += `  font-weight: ${style.fontWeight};\n`;
+        css += `  line-height: ${style.lineHeight};\n`;
+        css += `  letter-spacing: ${style.letterSpacing}em;\n`;
+        css += `  color: ${style.color};\n`;
+        css += `}\n\n`;
+      });
+      
+      return css;
+    }
   };
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Type Scales</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <div className="text-muted-foreground">Loading type scales...</div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <div>Loading type scales...</div>;
   }
 
   return (
@@ -129,195 +236,162 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         <div>
           <h3 className="text-lg font-semibold">Type Scales</h3>
           <p className="text-sm text-muted-foreground">
-            Create and manage responsive typography scales for consistent text hierarchy
+            Create and manage consistent typography scales for your brand.
           </p>
         </div>
-        <Dialog open={isBuilderOpen} onOpenChange={setIsBuilderOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingScale(undefined)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Type Scale
+        <div className="flex items-center space-x-2">
+          {activeScale.id && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleteTypeScaleMutation.isPending}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingScale ? "Edit Type Scale" : "Create Type Scale"}
-              </DialogTitle>
-            </DialogHeader>
-            <TypeScaleBuilder
-              clientId={clientId}
-              typeScale={editingScale}
-              onSave={handleSave}
-              onCancel={handleCancel}
-            />
-          </DialogContent>
-        </Dialog>
+          )}
+          <Button onClick={handleNewScale}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Scale
+          </Button>
+        </div>
       </div>
 
-      {typeScales.length === 0 ? (
-        <Card>
-          <CardContent className="py-12">
-            <div className="text-center space-y-4">
-              <div className="text-muted-foreground">
-                <div className="text-6xl mb-4">📐</div>
-                <h3 className="text-lg font-medium">No type scales yet</h3>
-                <p className="text-sm">
-                  Create your first type scale to establish consistent typography hierarchy
-                </p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Settings Panel */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Scale Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="scale-name">Name</Label>
+                <Input
+                  id="scale-name"
+                  value={activeScale.name || ""}
+                  onChange={(e) => updateScale({ name: e.target.value })}
+                  placeholder="Type scale name"
+                />
               </div>
-              <Button onClick={() => setIsBuilderOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Your First Type Scale
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <AnimatePresence>
-            {typeScales.map((typeScale: TypeScale) => (
-              <motion.div
-                key={typeScale.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Card className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg">{typeScale.name}</CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline">
-                            {typeScale.baseSize}{typeScale.unit}
-                          </Badge>
-                          <Badge variant="outline">
-                            Ratio: {formatRatio(typeScale.scaleRatio)}
-                          </Badge>
-                          <Badge variant="secondary">
-                            {typeScale.typeStyles.length} styles
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          onClick={() => handleEdit(typeScale)}
-                          size="sm"
-                          variant="ghost"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => handleDelete(typeScale.id)}
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Type Styles Preview */}
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Style Preview</h4>
-                      <div className="space-y-1">
-                        {typeScale.typeStyles.slice(0, 3).map((style: any, index: number) => {
-                          const ratio = typeScale.scaleRatio / 1000;
-                          const fontSize = Math.round(typeScale.baseSize * Math.pow(ratio, style.size) * 100) / 100;
-                          return (
-                            <div
-                              key={style.level}
-                              className="flex items-center justify-between text-sm"
-                            >
-                              <span className="text-muted-foreground">{style.name}</span>
-                              <Badge variant="outline">
-                                {fontSize}{typeScale.unit}
-                              </Badge>
-                            </div>
-                          );
-                        })}
-                        {typeScale.typeStyles.length > 3 && (
-                          <div className="text-xs text-muted-foreground text-center">
-                            +{typeScale.typeStyles.length - 3} more styles
-                          </div>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Responsive Breakpoints */}
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Responsive Settings</h4>
-                      <div className="grid grid-cols-3 gap-2 text-xs">
-                        <div className="text-center">
-                          <div className="font-medium">Mobile</div>
-                          <div className="text-muted-foreground">
-                            {typeScale.responsiveSizes.mobile.baseSize}{typeScale.unit}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">Tablet</div>
-                          <div className="text-muted-foreground">
-                            {typeScale.responsiveSizes.tablet.baseSize}{typeScale.unit}
-                          </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-medium">Desktop</div>
-                          <div className="text-muted-foreground">
-                            {typeScale.responsiveSizes.desktop.baseSize}{typeScale.unit}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label htmlFor="base-size">Base Size</Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="base-size"
+                    type="number"
+                    value={activeScale.baseSize || 16}
+                    onChange={(e) => updateScale({ baseSize: parseInt(e.target.value) || 16 })}
+                    className="flex-1"
+                  />
+                  <Select
+                    value={activeScale.unit || "px"}
+                    onValueChange={(value) => updateScale({ unit: value as "px" | "rem" | "em" })}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="px">px</SelectItem>
+                      <SelectItem value="rem">rem</SelectItem>
+                      <SelectItem value="em">em</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-                    {/* Export Info */}
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Export Information</h4>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          Last exported: {getLastExportDate(typeScale.exports)}
-                        </span>
-                        <div className="flex gap-1">
-                          {typeScale.exports.map((exp: any) => (
-                            <Badge key={exp.format} variant="outline" className="text-xs">
-                              {exp.format.toUpperCase()}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+              <div className="space-y-2">
+                <Label>Scale Ratio: {((activeScale.scaleRatio || 1250) / 1000).toFixed(3)}</Label>
+                <Slider
+                  value={[(activeScale.scaleRatio || 1250)]}
+                  onValueChange={([value]) => updateScale({ scaleRatio: value })}
+                  min={1000}
+                  max={2000}
+                  step={10}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>1.000</span>
+                  <span>2.000</span>
+                </div>
+              </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2 border-t">
-                      <Button
-                        onClick={() => handleEdit(typeScale)}
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Preview
-                      </Button>
-                      <Button
-                        onClick={() => handleEdit(typeScale)}
-                        size="sm"
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </AnimatePresence>
+              {isEditing && (
+                <Button
+                  onClick={handleSave}
+                  disabled={saveTypeScaleMutation.isPending}
+                  className="w-full"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Changes
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      )}
+
+        {/* Preview Panel */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Type Scale Preview</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportMutation.mutate({ format: "css" })}
+                    disabled={!activeScale.id || exportMutation.isPending}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    CSS
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => exportMutation.mutate({ format: "scss" })}
+                    disabled={!activeScale.id || exportMutation.isPending}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    SCSS
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="preview" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="preview">Preview</TabsTrigger>
+                  <TabsTrigger value="code">Code</TabsTrigger>
+                </TabsList>
+                <TabsContent value="preview" className="mt-4">
+                  <TypeScalePreview typeScale={activeScale} />
+                </TabsContent>
+                <TabsContent value="code" className="mt-4">
+                  <Tabs defaultValue="css" className="w-full">
+                    <TabsList>
+                      <TabsTrigger value="css">CSS</TabsTrigger>
+                      <TabsTrigger value="scss">SCSS</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="css" className="mt-4">
+                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
+                        <code>{generateCodePreview("css")}</code>
+                      </pre>
+                    </TabsContent>
+                    <TabsContent value="scss" className="mt-4">
+                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
+                        <code>{generateCodePreview("scss")}</code>
+                      </pre>
+                    </TabsContent>
+                  </Tabs>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

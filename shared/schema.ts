@@ -255,7 +255,7 @@ export const typeScales = pgTable("type_scales", {
   name: text("name").notNull(),
   unit: text("unit", {
     enum: ["px", "rem", "em"],
-  }).notNull().default("rem"),
+  }).notNull().default("px"),
   baseSize: integer("base_size").notNull().default(16),
   scaleRatio: integer("scale_ratio").notNull().default(1250), // stored as integer (1.25 * 1000)
   customRatio: integer("custom_ratio"), // for custom ratios

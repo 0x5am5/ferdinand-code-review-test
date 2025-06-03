@@ -17,11 +17,24 @@ interface TypeStyle {
 }
 
 interface TypeScalePreviewProps {
-  typeStyles: TypeStyle[];
-  calculateFontSize: (step: number) => string;
+  typeScale: {
+    typeStyles?: TypeStyle[];
+    baseSize?: number;
+    scaleRatio?: number;
+    unit?: string;
+  };
 }
 
-export function TypeScalePreview({ typeStyles, calculateFontSize }: TypeScalePreviewProps) {
+export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
+  const typeStyles = typeScale.typeStyles || [];
+  const baseSize = typeScale.baseSize || 16;
+  const ratio = (typeScale.scaleRatio || 1250) / 1000;
+  const unit = typeScale.unit || "px";
+
+  const calculateFontSize = (step: number) => {
+    const size = Math.round(baseSize * Math.pow(ratio, step) * 100) / 100;
+    return `${size}${unit}`;
+  };
   const getStyleForLevel = (style: TypeStyle) => ({
     fontSize: calculateFontSize(style.size),
     fontWeight: style.fontWeight,
