@@ -63,11 +63,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
-  // Fetch brand fonts for this client
-  const { data: brandFonts = [] } = useQuery({
-    queryKey: ["/api/clients", clientId, "fonts"],
+  // Fetch brand fonts for this client from brand assets
+  const { data: brandAssets = [] } = useQuery({
+    queryKey: ["/api/clients", clientId, "assets"],
     queryFn: async () => {
-      const response = await fetch(`/api/clients/${clientId}/fonts`, {
+      const response = await fetch(`/api/clients/${clientId}/assets`, {
         credentials: 'include',
       });
       if (!response.ok) return [];
@@ -75,11 +75,36 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
+  // Extract and parse font assets
+  const brandFonts = brandAssets
+    .filter((asset: any) => asset.category === "font")
+    .map((asset: any) => {
+      try {
+        const fontData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+        return {
+          id: asset.id,
+          name: asset.name,
+          fontFamily: fontData.sourceData?.fontFamily || asset.name,
+          source: fontData.source || 'google',
+          weights: fontData.weights || ['400'],
+          styles: fontData.styles || ['normal']
+        };
+      } catch (error) {
+        console.error("Error parsing font asset:", error);
+        return null;
+      }
+    })
+    .filter(Boolean);
+
   // Initialize with existing scale or create new one
+  const defaultFontFamily = brandFonts.length === 1 ? brandFonts[0].fontFamily : undefined;
   const activeScale = currentScale || (typeScales[0] || {
     ...DEFAULT_TYPE_SCALE,
     id: undefined,
-    clientId
+    clientId,
+    baseSize: 16, // Ensure base size is in pixels, not rem
+    bodyFontFamily: defaultFontFamily || DEFAULT_TYPE_SCALE.bodyFontFamily,
+    headerFontFamily: defaultFontFamily || DEFAULT_TYPE_SCALE.headerFontFamily,
   });
 
   const saveTypeScaleMutation = useMutation({
@@ -359,7 +384,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="body-font-family">Font Family</Label>
-                  {brandFonts.length > 0 ? (
+                  {brandFonts.length === 1 ? (
+                    <div className="text-sm p-2 bg-muted rounded">
+                      {brandFonts[0].fontFamily}
+                    </div>
+                  ) : brandFonts.length > 1 ? (
                     <Select
                       value={activeScale.bodyFontFamily || ""}
                       onValueChange={(value) => updateScale({ bodyFontFamily: value })}
@@ -435,7 +464,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="header-font-family">Font Family</Label>
-                  {brandFonts.length > 0 ? (
+                  {brandFonts.length === 1 ? (
+                    <div className="text-sm p-2 bg-muted rounded">
+                      {brandFonts[0].fontFamily}
+                    </div>
+                  ) : brandFonts.length > 1 ? (
                     <Select
                       value={activeScale.headerFontFamily || ""}
                       onValueChange={(value) => updateScale({ headerFontFamily: value })}
