@@ -17,6 +17,7 @@ import { useSpotlight } from "@/hooks/use-spotlight";
 import { Separator } from "@/components/ui/separator";
 import { useClientAssetsById } from "@/lib/queries/clients";
 import { BrandAsset } from "@shared/schema";
+import { queryClient } from "@/lib/queryClient";
 
 interface ClientSidebarProps {
   clientId: number;
@@ -79,6 +80,8 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   }, []);
 
   const handleAllBrands = () => {
+    // Invalidate clients cache to ensure fresh data when returning to dashboard
+    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
     setLocation("/dashboard");
   };
 

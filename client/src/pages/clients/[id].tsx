@@ -10,10 +10,11 @@ import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { ClientDashboard } from "@/components/brand/client-dashboard";
 import {
   useClientAssetsById,
-  useClientsQuery,
+  useClientsById,
   useClientPersonasById,
 } from "@/lib/queries/clients";
 import { useEffect, useState } from "react";
+import { queryClient } from "@/lib/queryClient";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -58,7 +59,7 @@ export default function ClientDetails() {
     console.log("Current active tab:", activeTab);
   }, [activeTab]);
 
-  const { data: client, isLoading: isLoadingClient } = useClientsQuery();
+  const { data: client, isLoading: isLoadingClient } = useClientsById(clientId);
   const { isLoading: isLoadingAssets, data: assets = [] } = useClientAssetsById(
     clientId ?? null,
   );
@@ -77,7 +78,12 @@ export default function ClientDetails() {
           </CardHeader>
           <CardContent>
             <Link href="/dashboard">
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+                }}
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
