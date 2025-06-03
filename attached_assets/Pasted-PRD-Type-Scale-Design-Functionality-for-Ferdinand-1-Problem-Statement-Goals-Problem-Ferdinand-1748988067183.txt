@@ -1,0 +1,126 @@
+PRD: Type Scale Design Functionality for Ferdinand
+
+1. Problem Statement & Goals
+
+Problem:
+Ferdinand users (primarily Nan users and design teams) currently lack an integrated, brand-specific way to generate and manage responsive type scales. They’re forced to manually build scales in tools like Figma or CSS frameworks, duplicating effort and risking inconsistency.
+
+Goal:
+Introduce a Type Scale module in Ferdinand that allows users to:
+	•	Generate, preview, and adjust type hierarchies in real-time
+	•	Export styles as tokens and helper files (CSS, SCSS, Adobe Paragraph Styles, Figma files)
+	•	Integrate type tokens with client-specific builders inside Ferdinand
+
+Target Users:
+	•	Brand designers
+	•	Developers
+	•	Internal marketing teams using client brand spaces
+
+Success Metrics:
+	•	Measured usage of the Type Scale tool
+	•	Reduction in Figma dependency for typography
+	•	Number of style exports or integrations into client deliverables
+
+⸻
+
+2. User Stories & Use Cases
+
+Primary User Workflows
+	•	As a user, I want to create a new type scale using a base font size and scale ratio.
+	•	As a user, I want to preview how this scale looks on headings, paragraphs, and UI elements.
+	•	As a user, I want to download/export this scale as CSS, SCSS, Figma styles, or Adobe Paragraph Styles.
+	•	As a user, I want to input a custom ratio if the presets don’t match our brand system.
+	•	As a user, I want to view and reuse my type scales later when editing brand guidelines.
+
+Edge Cases
+	•	Invalid custom ratio input
+	•	Mobile device view with limited preview space
+	•	Export failure or loss of session before saving
+
+Permissions & Access
+	•	Only users with editor or admin permissions should be able to create or edit type scales.
+	•	Viewers can only preview and export.
+
+⸻
+
+3. Functional Requirements
+
+Core Features
+	•	Type Scale Builder UI with input for:
+	•	Base font size
+	•	Scale ratio (preset or custom)
+	•	Units (px, rem, em)
+	•	Responsive sizes (mobile, tablet, desktop)
+	•	Font weight, line height, color, letter spacing, background, underline, style
+	•	Real-time preview panel with tabbed view (e.g., Type Hierarchy / Landing Page Simulation)
+	•	Export tool for downloading:
+	•	CSS/SCSS tokens
+	•	Google/Adobe Fonts integration
+	•	Figma or Adobe Paragraph Styles
+	•	Save and auto-save functionality for persistence
+
+API / Data Model
+	•	typeScales collection tied to each client space
+	•	Fields:
+	•	unit, baseSize, scaleRatio, responsiveSizes, typeStyles[], exports[], clientId
+
+Integration
+	•	Tokens sync into client-specific builder tools
+	•	Not shared globally across Ferdinand
+
+⸻
+
+4. Technical Requirements
+
+Frontend
+	•	React 18 (with hooks)
+	•	TailwindCSS + SCSS
+	•	Shadcn/ui components
+	•	State: Local (form), Context (theme), React Query (persistence)
+
+Backend
+	•	Express.js API
+	•	PostgreSQL (Drizzle ORM)
+	•	Real-time updates via existing theme system
+
+Persistence
+	•	Autosave to DB on change
+	•	Manual save option with export triggers
+
+Performance
+	•	Optimized for large preview rendering
+	•	Debounced updates for scale changes
+
+Security
+	•	Role validation for scale creation/editing
+
+⸻
+
+5. UI/UX Requirements
+	•	Preview panel with tabbed layout:
+	•	Tab 1: Type Hierarchy
+	•	Tab 2: Landing Page preview (using user’s styles)
+	•	Builder lives inside Typography section below font definitions
+	•	Responsive layout for mobile, tablet, desktop
+	•	Maintain existing Ferdinand design system: Lucide icons, Framer Motion for animation, consistent spacing/typography
+
+⸻
+
+6. Success Criteria
+
+Acceptance Criteria
+	•	User can create a scale with a preset or custom ratio
+	•	Changes are reflected in real-time preview tabs
+	•	Scale can be exported as CSS, SCSS, Adobe Styles, or Figma
+	•	Data persists per client workspace
+	•	User can view/edit saved scales later
+
+Testing Requirements
+	•	Unit tests for scale calculation logic
+	•	Integration tests for export flow
+	•	Visual QA for preview rendering on all breakpoints
+
+Launch Criteria
+	•	Feature enabled via toggle for select client spaces
+	•	Internal QA completed
+	•	One pilot client using the feature successfully
