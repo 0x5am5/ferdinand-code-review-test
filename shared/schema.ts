@@ -259,20 +259,28 @@ export const typeScales = pgTable("type_scales", {
   baseSize: integer("base_size").notNull().default(16),
   scaleRatio: integer("scale_ratio").notNull().default(1250), // stored as integer (1.25 * 1000)
   customRatio: integer("custom_ratio"), // for custom ratios
+  bodyFontFamily: text("body_font_family").default(""),
+  bodyFontWeight: text("body_font_weight").default("400"),
+  bodyLetterSpacing: integer("body_letter_spacing").default(0), // stored as integer (em * 1000)
+  bodyColor: text("body_color").default("#000000"),
+  headerFontFamily: text("header_font_family").default(""),
+  headerFontWeight: text("header_font_weight").default("700"),
+  headerLetterSpacing: integer("header_letter_spacing").default(0), // stored as integer (em * 1000)
+  headerColor: text("header_color").default("#000000"),
   responsiveSizes: json("responsive_sizes").default({
     mobile: { baseSize: 14, scaleRatio: 1.125 },
     tablet: { baseSize: 15, scaleRatio: 1.2 },
     desktop: { baseSize: 16, scaleRatio: 1.25 }
   }),
   typeStyles: json("type_styles").default([
-    { level: "h1", name: "Heading 1", size: 0, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
-    { level: "h2", name: "Heading 2", size: -1, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
-    { level: "h3", name: "Heading 3", size: -2, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h4", name: "Heading 4", size: -3, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h5", name: "Heading 5", size: -4, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "h6", name: "Heading 6", size: -5, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "body", name: "Body Text", size: -6, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-    { level: "small", name: "Small Text", size: -7, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+    { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
+    { level: "h2", name: "Heading 2", size: 2, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
+    { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "body", name: "Body Text", size: -3, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+    { level: "small", name: "Small Text", size: -4, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
   ]),
   exports: json("exports").default([]),
   createdAt: timestamp("created_at").defaultNow(),

@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +21,14 @@ const DEFAULT_TYPE_SCALE = {
   unit: "px" as const,
   baseSize: 16,
   scaleRatio: 1250, // 1.25 * 1000
+  bodyFontFamily: "",
+  bodyFontWeight: "400",
+  bodyLetterSpacing: 0,
+  bodyColor: "#000000",
+  headerFontFamily: "",
+  headerFontWeight: "700",
+  headerLetterSpacing: 0,
+  headerColor: "#000000",
   responsiveSizes: {
     mobile: { baseSize: 14, scaleRatio: 1.125 },
     tablet: { baseSize: 15, scaleRatio: 1.2 },
@@ -76,7 +83,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         body: JSON.stringify(data),
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to save type scale');
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to save type scale: ${error}`);
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -90,10 +100,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         queryKey: ["/api/clients", clientId, "type-scales"],
       });
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to save type scale. Please try again.",
+        description: error.message || "Failed to save type scale. Please try again.",
         variant: "destructive",
       });
     },
@@ -141,7 +151,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
-  const updateScale = (updates: Partial<TypeScale>) => {
+  const updateScale = (updates: Partial<any>) => {
     setCurrentScale(prev => ({ ...activeScale, ...updates }));
     setIsEditing(true);
   };
@@ -181,13 +191,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       scss += `$base-font-size: ${baseSize}${unit};\n`;
       scss += `$type-scale-ratio: ${ratio};\n\n`;
       
-      styles.forEach(style => {
+      styles.forEach((style: any) => {
         const size = calculateSize(style.size);
         scss += `$${style.level}-size: ${size}${unit};\n`;
       });
       
       scss += `\n// Type Scale Mixins\n`;
-      styles.forEach(style => {
+      styles.forEach((style: any) => {
         const size = calculateSize(style.size);
         scss += `@mixin ${style.level} {\n`;
         scss += `  font-size: ${size}${unit};\n`;
@@ -205,13 +215,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       css += `  --base-font-size: ${baseSize}${unit};\n`;
       css += `  --type-scale-ratio: ${ratio};\n`;
       
-      styles.forEach(style => {
+      styles.forEach((style: any) => {
         const size = calculateSize(style.size);
         css += `  --${style.level}-size: ${size}${unit};\n`;
       });
       css += `}\n\n`;
       
-      styles.forEach(style => {
+      styles.forEach((style: any) => {
         const size = calculateSize(style.size);
         css += `.${style.level} {\n`;
         css += `  font-size: ${size}${unit};\n`;
@@ -261,135 +271,254 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Settings Panel */}
         <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Scale Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="scale-name">Name</Label>
-                <Input
-                  id="scale-name"
-                  value={activeScale.name || ""}
-                  onChange={(e) => updateScale({ name: e.target.value })}
-                  placeholder="Type scale name"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="base-size">Base Size</Label>
-                <div className="flex space-x-2">
+          <div className="space-y-6">
+            {/* Scale Settings */}
+            <div>
+              <h4 className="text-base font-semibold mb-4">Scale Settings</h4>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="scale-name">Name</Label>
                   <Input
-                    id="base-size"
-                    type="number"
-                    value={activeScale.baseSize || 16}
-                    onChange={(e) => updateScale({ baseSize: parseInt(e.target.value) || 16 })}
-                    className="flex-1"
+                    id="scale-name"
+                    value={activeScale.name || ""}
+                    onChange={(e) => updateScale({ name: e.target.value })}
+                    placeholder="Type scale name"
                   />
-                  <Select
-                    value={activeScale.unit || "px"}
-                    onValueChange={(value) => updateScale({ unit: value as "px" | "rem" | "em" })}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="base-size">Base Size</Label>
+                  <div className="flex space-x-2">
+                    <Input
+                      id="base-size"
+                      type="number"
+                      value={activeScale.baseSize || 16}
+                      onChange={(e) => updateScale({ baseSize: parseInt(e.target.value) || 16 })}
+                      className="flex-1"
+                    />
+                    <Select
+                      value={activeScale.unit || "px"}
+                      onValueChange={(value) => updateScale({ unit: value })}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="px">px</SelectItem>
+                        <SelectItem value="rem">rem</SelectItem>
+                        <SelectItem value="em">em</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Scale Ratio: {((activeScale.scaleRatio || 1250) / 1000).toFixed(3)}</Label>
+                  <Slider
+                    value={[(activeScale.scaleRatio || 1250)]}
+                    onValueChange={([value]) => updateScale({ scaleRatio: value })}
+                    min={1000}
+                    max={2000}
+                    step={10}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>1.000</span>
+                    <span>2.000</span>
+                  </div>
+                </div>
+
+                {isEditing && (
+                  <Button
+                    onClick={handleSave}
+                    disabled={saveTypeScaleMutation.isPending}
+                    className="w-full"
                   >
-                    <SelectTrigger className="w-20">
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Changes
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Body Type Styles Section */}
+            <div>
+              <h4 className="text-base font-semibold mb-4">Body Type Styles</h4>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="body-font-family">Font Family</Label>
+                  <Input
+                    id="body-font-family"
+                    value={activeScale.bodyFontFamily || ""}
+                    onChange={(e) => updateScale({ bodyFontFamily: e.target.value })}
+                    placeholder="e.g., Inter, Arial, sans-serif"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="body-font-weight">Font Weight</Label>
+                  <Select
+                    value={activeScale.bodyFontWeight || "400"}
+                    onValueChange={(value) => updateScale({ bodyFontWeight: value })}
+                  >
+                    <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="px">px</SelectItem>
-                      <SelectItem value="rem">rem</SelectItem>
-                      <SelectItem value="em">em</SelectItem>
+                      <SelectItem value="100">100 - Thin</SelectItem>
+                      <SelectItem value="200">200 - Extra Light</SelectItem>
+                      <SelectItem value="300">300 - Light</SelectItem>
+                      <SelectItem value="400">400 - Regular</SelectItem>
+                      <SelectItem value="500">500 - Medium</SelectItem>
+                      <SelectItem value="600">600 - Semi Bold</SelectItem>
+                      <SelectItem value="700">700 - Bold</SelectItem>
+                      <SelectItem value="800">800 - Extra Bold</SelectItem>
+                      <SelectItem value="900">900 - Black</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>Scale Ratio: {((activeScale.scaleRatio || 1250) / 1000).toFixed(3)}</Label>
-                <Slider
-                  value={[(activeScale.scaleRatio || 1250)]}
-                  onValueChange={([value]) => updateScale({ scaleRatio: value })}
-                  min={1000}
-                  max={2000}
-                  step={10}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>1.000</span>
-                  <span>2.000</span>
+                <div className="space-y-2">
+                  <Label htmlFor="body-letter-spacing">Letter Spacing (em)</Label>
+                  <Input
+                    id="body-letter-spacing"
+                    type="number"
+                    step="0.01"
+                    value={activeScale.bodyLetterSpacing || 0}
+                    onChange={(e) => updateScale({ bodyLetterSpacing: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="body-color">Color</Label>
+                  <Input
+                    id="body-color"
+                    type="color"
+                    value={activeScale.bodyColor || "#000000"}
+                    onChange={(e) => updateScale({ bodyColor: e.target.value })}
+                  />
                 </div>
               </div>
+            </div>
 
-              {isEditing && (
-                <Button
-                  onClick={handleSave}
-                  disabled={saveTypeScaleMutation.isPending}
-                  className="w-full"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+            {/* Header Type Styles Section */}
+            <div>
+              <h4 className="text-base font-semibold mb-4">Header Type Styles</h4>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="header-font-family">Font Family</Label>
+                  <Input
+                    id="header-font-family"
+                    value={activeScale.headerFontFamily || ""}
+                    onChange={(e) => updateScale({ headerFontFamily: e.target.value })}
+                    placeholder="e.g., Inter, Arial, sans-serif"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="header-font-weight">Font Weight</Label>
+                  <Select
+                    value={activeScale.headerFontWeight || "700"}
+                    onValueChange={(value) => updateScale({ headerFontWeight: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="100">100 - Thin</SelectItem>
+                      <SelectItem value="200">200 - Extra Light</SelectItem>
+                      <SelectItem value="300">300 - Light</SelectItem>
+                      <SelectItem value="400">400 - Regular</SelectItem>
+                      <SelectItem value="500">500 - Medium</SelectItem>
+                      <SelectItem value="600">600 - Semi Bold</SelectItem>
+                      <SelectItem value="700">700 - Bold</SelectItem>
+                      <SelectItem value="800">800 - Extra Bold</SelectItem>
+                      <SelectItem value="900">900 - Black</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="header-letter-spacing">Letter Spacing (em)</Label>
+                  <Input
+                    id="header-letter-spacing"
+                    type="number"
+                    step="0.01"
+                    value={activeScale.headerLetterSpacing || 0}
+                    onChange={(e) => updateScale({ headerLetterSpacing: parseFloat(e.target.value) || 0 })}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="header-color">Color</Label>
+                  <Input
+                    id="header-color"
+                    type="color"
+                    value={activeScale.headerColor || "#000000"}
+                    onChange={(e) => updateScale({ headerColor: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Preview Panel */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Type Scale Preview</CardTitle>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => exportMutation.mutate({ format: "css" })}
-                    disabled={!activeScale.id || exportMutation.isPending}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    CSS
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => exportMutation.mutate({ format: "scss" })}
-                    disabled={!activeScale.id || exportMutation.isPending}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    SCSS
-                  </Button>
-                </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-base font-semibold">Type Scale Preview</h4>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportMutation.mutate({ format: "css" })}
+                  disabled={!activeScale.id || exportMutation.isPending}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  CSS
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportMutation.mutate({ format: "scss" })}
+                  disabled={!activeScale.id || exportMutation.isPending}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  SCSS
+                </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="preview" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="preview">Preview</TabsTrigger>
-                  <TabsTrigger value="code">Code</TabsTrigger>
-                </TabsList>
-                <TabsContent value="preview" className="mt-4">
-                  <TypeScalePreview typeScale={activeScale} />
-                </TabsContent>
-                <TabsContent value="code" className="mt-4">
-                  <Tabs defaultValue="css" className="w-full">
-                    <TabsList>
-                      <TabsTrigger value="css">CSS</TabsTrigger>
-                      <TabsTrigger value="scss">SCSS</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="css" className="mt-4">
-                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
-                        <code>{generateCodePreview("css")}</code>
-                      </pre>
-                    </TabsContent>
-                    <TabsContent value="scss" className="mt-4">
-                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
-                        <code>{generateCodePreview("scss")}</code>
-                      </pre>
-                    </TabsContent>
-                  </Tabs>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+            </div>
+            <Tabs defaultValue="preview" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="preview">Preview</TabsTrigger>
+                <TabsTrigger value="code">Code</TabsTrigger>
+              </TabsList>
+              <TabsContent value="preview" className="mt-4">
+                <TypeScalePreview typeScale={activeScale} />
+              </TabsContent>
+              <TabsContent value="code" className="mt-4">
+                <Tabs defaultValue="css" className="w-full">
+                  <TabsList>
+                    <TabsTrigger value="css">CSS</TabsTrigger>
+                    <TabsTrigger value="scss">SCSS</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="css" className="mt-4">
+                    <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
+                      <code>{generateCodePreview("css")}</code>
+                    </pre>
+                  </TabsContent>
+                  <TabsContent value="scss" className="mt-4">
+                    <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
+                      <code>{generateCodePreview("scss")}</code>
+                    </pre>
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>
