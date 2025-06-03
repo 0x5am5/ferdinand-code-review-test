@@ -63,6 +63,18 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
+  // Fetch brand fonts for this client
+  const { data: brandFonts = [] } = useQuery({
+    queryKey: ["/api/clients", clientId, "fonts"],
+    queryFn: async () => {
+      const response = await fetch(`/api/clients/${clientId}/fonts`, {
+        credentials: 'include',
+      });
+      if (!response.ok) return [];
+      return response.json();
+    },
+  });
+
   // Initialize with existing scale or create new one
   const activeScale = currentScale || (typeScales[0] || {
     ...DEFAULT_TYPE_SCALE,
@@ -347,12 +359,27 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="body-font-family">Font Family</Label>
-                  <Input
-                    id="body-font-family"
-                    value={activeScale.bodyFontFamily || ""}
-                    onChange={(e) => updateScale({ bodyFontFamily: e.target.value })}
-                    placeholder="e.g., Inter, Arial, sans-serif"
-                  />
+                  {brandFonts.length > 0 ? (
+                    <Select
+                      value={activeScale.bodyFontFamily || ""}
+                      onValueChange={(value) => updateScale({ bodyFontFamily: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a font family" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brandFonts.map((font: any) => (
+                          <SelectItem key={font.id} value={font.fontFamily}>
+                            {font.fontFamily}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="text-sm text-muted-foreground p-2 border rounded">
+                      No brand fonts defined. Add fonts in the typography section above.
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -408,12 +435,27 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="header-font-family">Font Family</Label>
-                  <Input
-                    id="header-font-family"
-                    value={activeScale.headerFontFamily || ""}
-                    onChange={(e) => updateScale({ headerFontFamily: e.target.value })}
-                    placeholder="e.g., Inter, Arial, sans-serif"
-                  />
+                  {brandFonts.length > 0 ? (
+                    <Select
+                      value={activeScale.headerFontFamily || ""}
+                      onValueChange={(value) => updateScale({ headerFontFamily: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a font family" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {brandFonts.map((font: any) => (
+                          <SelectItem key={font.id} value={font.fontFamily}>
+                            {font.fontFamily}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <div className="text-sm text-muted-foreground p-2 border rounded">
+                      No brand fonts defined. Add fonts in the typography section above.
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
