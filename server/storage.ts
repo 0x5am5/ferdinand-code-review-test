@@ -5,8 +5,9 @@ import {
   type InsertInspirationSection, type InsertInspirationImage, type InsertInvitation,
   type InsertFontAsset, type InsertColorAsset, type UserClient,
   type ConvertedAsset, type InsertConvertedAsset, type HiddenSection, type InsertHiddenSection,
+  type TypeScale, type InsertTypeScale,
   users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations, userClients,
-  convertedAssets, hiddenSections, UserRole
+  convertedAssets, hiddenSections, typeScales, UserRole
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, inArray } from "drizzle-orm";
@@ -59,6 +60,12 @@ export interface IStorage {
   getClientHiddenSections(clientId: number): Promise<HiddenSection[]>;
   createHiddenSection(section: InsertHiddenSection): Promise<HiddenSection>;
   deleteHiddenSection(clientId: number, sectionType: string): Promise<void>;
+  // Type scale methods
+  getClientTypeScales(clientId: number): Promise<TypeScale[]>;
+  getTypeScale(id: number): Promise<TypeScale | undefined>;
+  createTypeScale(typeScale: InsertTypeScale): Promise<TypeScale>;
+  updateTypeScale(id: number, typeScale: Partial<InsertTypeScale>): Promise<TypeScale>;
+  deleteTypeScale(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -462,6 +469,44 @@ export class DatabaseStorage implements IStorage {
         eq(hiddenSections.clientId, clientId) && 
         eq(hiddenSections.sectionType, sectionType)
       );
+  }
+
+  // Type scale implementations
+  async getClientTypeScales(clientId: number): Promise<TypeScale[]> {
+    return await db
+      .select()
+      .from(typeScales)
+      .where(eq(typeScales.clientId, clientId))
+      .orderBy(asc(typeScales.createdAt));
+  }
+
+  async getTypeScale(id: number): Promise<TypeScale | undefined> {
+    const [typeScale] = await db
+      .select()
+      .from(typeScales)
+      .where(eq(typeScales.id, id));
+    return typeScale;
+  }
+
+  async createTypeScale(insertTypeScale: InsertTypeScale): Promise<TypeScale> {
+    const [typeScale] = await db
+      .insert(typeScales)
+      .values(insertTypeScale)
+      .returning();
+    return typeScale;
+  }
+
+  async updateTypeScale(id: number, updateTypeScale: Partial<InsertTypeScale>): Promise<TypeScale> {
+    const [typeScale] = await db
+      .update(typeScales)
+      .set({ ...updateTypeScale, updatedAt: new Date() })
+      .where(eq(typeScales.id, id))
+      .returning();
+    return typeScale;
+  }
+
+  async deleteTypeScale(id: number): Promise<void> {
+    await db.delete(typeScales).where(eq(typeScales.id, id));
   }
 }
 
