@@ -22,6 +22,14 @@ interface TypeScalePreviewProps {
     baseSize?: number;
     scaleRatio?: number;
     unit?: string;
+    bodyFontFamily?: string;
+    bodyFontWeight?: string;
+    bodyLetterSpacing?: number;
+    bodyColor?: string;
+    headerFontFamily?: string;
+    headerFontWeight?: string;
+    headerLetterSpacing?: number;
+    headerColor?: string;
   };
 }
 
@@ -35,16 +43,30 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     const size = Math.round(baseSize * Math.pow(ratio, step) * 100) / 100;
     return `${size}${unit}`;
   };
-  const getStyleForLevel = (style: TypeStyle) => ({
-    fontSize: calculateFontSize(style.size),
-    fontWeight: style.fontWeight,
-    lineHeight: style.lineHeight,
-    letterSpacing: `${style.letterSpacing}px`,
-    color: style.color,
-    backgroundColor: style.backgroundColor || 'transparent',
-    textDecoration: style.textDecoration || 'none',
-    fontStyle: style.fontStyle || 'normal',
-  });
+  const getStyleForLevel = (style: TypeStyle) => {
+    const isHeader = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(style.level);
+    const isBody = ['body', 'small'].includes(style.level);
+    
+    return {
+      fontSize: calculateFontSize(style.size),
+      fontWeight: isHeader ? (typeScale.headerFontWeight || style.fontWeight) : 
+                  isBody ? (typeScale.bodyFontWeight || style.fontWeight) : 
+                  style.fontWeight,
+      lineHeight: style.lineHeight,
+      letterSpacing: `${isHeader ? (typeScale.headerLetterSpacing || style.letterSpacing) : 
+                       isBody ? (typeScale.bodyLetterSpacing || style.letterSpacing) : 
+                       style.letterSpacing}em`,
+      color: isHeader ? (typeScale.headerColor || style.color) : 
+             isBody ? (typeScale.bodyColor || style.color) : 
+             style.color,
+      fontFamily: isHeader ? (typeScale.headerFontFamily || 'inherit') : 
+                  isBody ? (typeScale.bodyFontFamily || 'inherit') : 
+                  'inherit',
+      backgroundColor: style.backgroundColor || 'transparent',
+      textDecoration: style.textDecoration || 'none',
+      fontStyle: style.fontStyle || 'normal',
+    };
+  };
 
   const sampleText = {
     h1: "The quick brown fox jumps over the lazy dog",
