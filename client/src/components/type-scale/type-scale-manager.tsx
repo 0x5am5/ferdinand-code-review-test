@@ -35,14 +35,14 @@ const DEFAULT_TYPE_SCALE = {
     desktop: { baseSize: 16, scaleRatio: 1.25 }
   },
   typeStyles: [
-    { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
-    { level: "h2", name: "Heading 2", size: 2, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
-    { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "body", name: "Body Text", size: -3, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-    { level: "small", name: "Small Text", size: -4, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+    { level: "h1", name: "Heading 1", size: 4, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
+    { level: "h2", name: "Heading 2", size: 3, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
+    { level: "h3", name: "Heading 3", size: 2, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h4", name: "Heading 4", size: 1, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h5", name: "Heading 5", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "h6", name: "Heading 6", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "body", name: "Body Text", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+    { level: "small", name: "Small Text", size: -1, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
   ]
 };
 
@@ -114,15 +114,48 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         : `/api/clients/${clientId}/type-scales`;
       const method = data.id ? "PATCH" : "POST";
       
+      // Transform data to match schema expectations
+      const transformedData = {
+        ...data,
+        // Ensure scaleRatio is stored as integer (ratio * 1000)
+        scaleRatio: Math.round((data.scaleRatio || 1250)),
+        // Ensure customRatio is stored as integer if provided
+        customRatio: data.customRatio ? Math.round(data.customRatio) : undefined,
+        // Ensure letter spacing is stored as integer (em * 1000)
+        bodyLetterSpacing: Math.round((data.bodyLetterSpacing || 0)),
+        headerLetterSpacing: Math.round((data.headerLetterSpacing || 0)),
+        // Ensure all required fields are present
+        clientId: data.clientId || clientId,
+        name: data.name || "Brand Type Scale",
+        unit: data.unit || "px",
+        baseSize: data.baseSize || 16,
+        bodyFontFamily: data.bodyFontFamily || "",
+        bodyFontWeight: data.bodyFontWeight || "400",
+        bodyColor: data.bodyColor || "#000000",
+        headerFontFamily: data.headerFontFamily || "",
+        headerFontWeight: data.headerFontWeight || "700",
+        headerColor: data.headerColor || "#000000"
+      };
+      
+      console.log("Saving type scale with data:", transformedData);
+      
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(transformedData),
         credentials: 'include',
       });
+      
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to save type scale: ${error}`);
+        const errorText = await response.text();
+        console.error("Save error response:", errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
+        throw new Error(`Failed to save type scale: ${errorData.error || errorText}`);
       }
       return response.json();
     },

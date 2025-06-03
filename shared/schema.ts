@@ -273,14 +273,14 @@ export const typeScales = pgTable("type_scales", {
     desktop: { baseSize: 16, scaleRatio: 1.25 }
   }),
   typeStyles: json("type_styles").default([
-    { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
-    { level: "h2", name: "Heading 2", size: 2, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
-    { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "body", name: "Body Text", size: -3, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-    { level: "small", name: "Small Text", size: -4, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+    { level: "h1", name: "Heading 1", size: 4, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
+    { level: "h2", name: "Heading 2", size: 3, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
+    { level: "h3", name: "Heading 3", size: 2, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h4", name: "Heading 4", size: 1, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h5", name: "Heading 5", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "h6", name: "Heading 6", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "body", name: "Body Text", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+    { level: "small", name: "Small Text", size: -1, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
   ]),
   exports: json("exports").default([]),
   createdAt: timestamp("created_at").defaultNow(),
@@ -493,6 +493,8 @@ export const insertTypeScaleSchema = createInsertSchema(typeScales)
     baseSize: z.number().min(8).max(72),
     scaleRatio: z.number().min(1000).max(3000), // 1.0 to 3.0 stored as integers
     customRatio: z.number().min(1000).max(3000).optional(),
+    bodyLetterSpacing: z.number().min(-1000).max(1000), // stored as integer (em * 1000)
+    headerLetterSpacing: z.number().min(-1000).max(1000), // stored as integer (em * 1000)
     responsiveSizes: z.object({
       mobile: z.object({
         baseSize: z.number().min(8).max(72),
@@ -506,7 +508,7 @@ export const insertTypeScaleSchema = createInsertSchema(typeScales)
         baseSize: z.number().min(8).max(72),
         scaleRatio: z.number().min(1.0).max(3.0)
       })
-    }),
+    }).optional(),
     typeStyles: z.array(z.object({
       level: z.string(),
       name: z.string(),
@@ -518,13 +520,13 @@ export const insertTypeScaleSchema = createInsertSchema(typeScales)
       backgroundColor: z.string().optional(),
       textDecoration: z.string().optional(),
       fontStyle: z.string().optional()
-    })),
+    })).optional(),
     exports: z.array(z.object({
       format: z.enum(["css", "scss", "figma", "adobe"]),
       content: z.string(),
       fileName: z.string(),
       exportedAt: z.string()
-    }))
+    })).optional()
   });
 
 export const updateClientOrderSchema = z.object({
