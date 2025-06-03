@@ -114,7 +114,12 @@ export default function ClientDetails() {
           </CardHeader>
           <CardContent>
             <Link href="/dashboard">
-              <Button variant="outline">
+              <Button 
+                variant="outline"
+                onClick={() => {
+                  queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+                }}
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
