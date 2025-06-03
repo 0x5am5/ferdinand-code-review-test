@@ -76,6 +76,26 @@ export const UserRole = {
   GUEST: "guest",
 } as const;
 
+export const TypeScaleUnit = {
+  PX: "px",
+  REM: "rem",
+  EM: "em",
+} as const;
+
+export const TypeScaleRatio = {
+  MAJOR_SECOND: 1.125,
+  MINOR_THIRD: 1.2,
+  MAJOR_THIRD: 1.25,
+  PERFECT_FOURTH: 1.333,
+  AUGMENTED_FOURTH: 1.414,
+  PERFECT_FIFTH: 1.5,
+  GOLDEN_RATIO: 1.618,
+  MAJOR_SIXTH: 1.667,
+  MINOR_SEVENTH: 1.778,
+  MAJOR_SEVENTH: 1.875,
+  OCTAVE: 2,
+} as const;
+
 // Database Tables
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -227,6 +247,38 @@ export const hiddenSections = pgTable("hidden_sections", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const typeScales = pgTable("type_scales", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
+  name: text("name").notNull(),
+  unit: text("unit", {
+    enum: ["px", "rem", "em"],
+  }).notNull().default("rem"),
+  baseSize: integer("base_size").notNull().default(16),
+  scaleRatio: integer("scale_ratio").notNull().default(1250), // stored as integer (1.25 * 1000)
+  customRatio: integer("custom_ratio"), // for custom ratios
+  responsiveSizes: json("responsive_sizes").default({
+    mobile: { baseSize: 14, scaleRatio: 1.125 },
+    tablet: { baseSize: 15, scaleRatio: 1.2 },
+    desktop: { baseSize: 16, scaleRatio: 1.25 }
+  }),
+  typeStyles: json("type_styles").default([
+    { level: "h1", name: "Heading 1", size: 0, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
+    { level: "h2", name: "Heading 2", size: -1, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
+    { level: "h3", name: "Heading 3", size: -2, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h4", name: "Heading 4", size: -3, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    { level: "h5", name: "Heading 5", size: -4, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "h6", name: "Heading 6", size: -5, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "body", name: "Body Text", size: -6, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+    { level: "small", name: "Small Text", size: -7, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+  ]),
+  exports: json("exports").default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   userClients: many(userClients),
 }));
@@ -234,6 +286,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 export const clientsRelations = relations(clients, ({ many }) => ({
   userClients: many(userClients),
   hiddenSections: many(hiddenSections),
+  typeScales: many(typeScales),
 }));
 
 export const userClientsRelations = relations(userClients, ({ one }) => ({
@@ -255,6 +308,13 @@ export const convertedAssetsRelations = relations(convertedAssets, ({ one }) => 
   originalAsset: one(brandAssets, {
     fields: [convertedAssets.originalAssetId],
     references: [brandAssets.id],
+  }),
+}));
+
+export const typeScalesRelations = relations(typeScales, ({ one }) => ({
+  client: one(clients, {
+    fields: [typeScales.clientId],
+    references: [clients.id],
   }),
 }));
 
@@ -418,6 +478,47 @@ export const insertConvertedAssetSchema = createInsertSchema(convertedAssets)
 export const insertHiddenSectionSchema = createInsertSchema(hiddenSections)
   .omit({ id: true, createdAt: true });
 
+export const insertTypeScaleSchema = createInsertSchema(typeScales)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    unit: z.enum(["px", "rem", "em"]),
+    baseSize: z.number().min(8).max(72),
+    scaleRatio: z.number().min(1000).max(3000), // 1.0 to 3.0 stored as integers
+    customRatio: z.number().min(1000).max(3000).optional(),
+    responsiveSizes: z.object({
+      mobile: z.object({
+        baseSize: z.number().min(8).max(72),
+        scaleRatio: z.number().min(1.0).max(3.0)
+      }),
+      tablet: z.object({
+        baseSize: z.number().min(8).max(72),
+        scaleRatio: z.number().min(1.0).max(3.0)
+      }),
+      desktop: z.object({
+        baseSize: z.number().min(8).max(72),
+        scaleRatio: z.number().min(1.0).max(3.0)
+      })
+    }),
+    typeStyles: z.array(z.object({
+      level: z.string(),
+      name: z.string(),
+      size: z.number(),
+      fontWeight: z.string(),
+      lineHeight: z.number(),
+      letterSpacing: z.number(),
+      color: z.string(),
+      backgroundColor: z.string().optional(),
+      textDecoration: z.string().optional(),
+      fontStyle: z.string().optional()
+    })),
+    exports: z.array(z.object({
+      format: z.enum(["css", "scss", "figma", "adobe"]),
+      content: z.string(),
+      fileName: z.string(),
+      exportedAt: z.string()
+    }))
+  });
+
 export const updateClientOrderSchema = z.object({
   clientOrders: z.array(
     z.object({
@@ -438,6 +539,7 @@ export type InspirationSection = typeof inspirationSections.$inferSelect;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
 export type HiddenSection = typeof hiddenSections.$inferSelect;
+export type TypeScale = typeof typeScales.$inferSelect;
 
 // Insert Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -456,6 +558,7 @@ export type InsertInspirationImage = z.infer<
 >;
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type InsertHiddenSection = z.infer<typeof insertHiddenSectionSchema>;
+export type InsertTypeScale = z.infer<typeof insertTypeScaleSchema>;
 
 // Other Types
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
