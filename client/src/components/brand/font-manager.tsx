@@ -28,6 +28,7 @@ import { BrandAsset, UserRole } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { AssetSection } from "./asset-section";
+import { TypeScaleManager } from "../type-scale/type-scale-manager";
 import {
   Popover,
   PopoverContent,
@@ -1431,6 +1432,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
             </div>
           </div>
         </AssetSection>
+
+        {/* Type Scale Manager - as specified in PRD, below font definitions */}
+        <div className="mt-12 pt-8 border-t">
+          <TypeScaleManager clientId={clientId} />
+        </div>
       </div>
 
       {/* Edit Font Dialog */}

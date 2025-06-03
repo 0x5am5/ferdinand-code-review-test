@@ -117,10 +117,16 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
   const createTypeScaleMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/clients/${clientId}/type-scales`, {
+      const response = await fetch(`/api/clients/${clientId}/type-scales`, {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
+        credentials: 'include',
       });
+      if (!response.ok) throw new Error('Failed to create type scale');
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
@@ -141,10 +147,16 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
   const updateTypeScaleMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/type-scales/${typeScale?.id}`, {
+      const response = await fetch(`/api/type-scales/${typeScale?.id}`, {
         method: "PATCH",
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
+        credentials: 'include',
       });
+      if (!response.ok) throw new Error('Failed to update type scale');
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
@@ -165,9 +177,12 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
   const exportMutation = useMutation({
     mutationFn: async ({ format }: { format: "css" | "scss" }) => {
-      return apiRequest(`/api/type-scales/${typeScale?.id}/export/${format}`, {
+      const response = await fetch(`/api/type-scales/${typeScale?.id}/export/${format}`, {
         method: "POST",
+        credentials: 'include',
       });
+      if (!response.ok) throw new Error('Failed to export type scale');
+      return response.json();
     },
     onSuccess: (data, variables) => {
       const blob = new Blob([data.content], { type: data.mimeType });
