@@ -819,7 +819,7 @@ function FontCard({
           {/* Font Preview Section */}
             <div className="text-left mb-4">
               <div style={{ 
-                fontFamily: `'${font.name}', monospace`, 
+                fontFamily: `'${font.name}'`, 
                 fontSize: '1.75rem',
                 lineHeight: '1.4'
               }}>
