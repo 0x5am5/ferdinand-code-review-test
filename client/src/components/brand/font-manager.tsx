@@ -200,18 +200,18 @@ function GoogleFontPicker({
   // Load font for preview
   const loadFontForPreview = (fontName: string) => {
     if (!fontName) return;
-
+    
     const link = document.createElement('link');
     link.href = generateGoogleFontUrl(fontName, ['400'], ['normal']);
     link.rel = 'stylesheet';
     link.id = `preview-font-${fontName.replace(/\s+/g, '-')}`;
-
+    
     // Remove existing preview font
     const existingLink = document.head.querySelector('[id^="preview-font-"]');
     if (existingLink) {
       document.head.removeChild(existingLink);
     }
-
+    
     document.head.appendChild(link);
     setPreviewFont(fontName);
   };
@@ -774,8 +774,6 @@ function FontCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const [selectedWeight, setSelectedWeight] = useState(font.weights[0] || '400');
-
   // Load font for preview
   React.useEffect(() => {
     if (font.source === FontSource.GOOGLE && font.sourceData?.url) {
@@ -783,7 +781,7 @@ function FontCard({
       link.href = font.sourceData.url;
       link.rel = 'stylesheet';
       link.id = `font-${font.name.replace(/\s+/g, '-')}`;
-
+      
       // Remove existing font link if it exists
       const existingLink = document.head.querySelector(`#font-${font.name.replace(/\s+/g, '-')}`);
       if (!existingLink) {
@@ -794,7 +792,7 @@ function FontCard({
       link.href = font.sourceData.url;
       link.rel = 'stylesheet';
       link.id = `font-${font.name.replace(/\s+/g, '-')}`;
-
+      
       // Remove existing font link if it exists
       const existingLink = document.head.querySelector(`#font-${font.name.replace(/\s+/g, '-')}`);
       if (!existingLink) {
@@ -817,31 +815,30 @@ function FontCard({
           <p className="text-xs text-muted-foreground capitalize">
             {font.source} Font
           </p>
-
+          
           {/* Font Preview Section */}
             <div className="text-left mb-4">
               <div style={{ 
                 fontFamily: `'${font.name}', monospace`, 
                 fontSize: '1.75rem',
-                lineHeight: '1.4',
-                fontWeight: selectedWeight
+                lineHeight: '1.4'
               }}>
                 ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
                 abcdefghijklmnopqrstuvwxyz 1234567890
               </div>
             </div>
-
+        
           <div className="flex flex-wrap gap-1 mt-2">
-            {font.weights.map((weight) => (
-              <Badge 
-                key={weight} 
-                variant={selectedWeight === weight ? "default" : "secondary"} 
-                className="text-xs cursor-pointer hover:bg-primary/20 transition-colors"
-                onClick={() => setSelectedWeight(weight)}
-              >
+            {font.weights.slice(0, 3).map((weight) => (
+              <Badge key={weight} variant="secondary" className="text-xs">
                 {weight}
               </Badge>
             ))}
+            {font.weights.length > 3 && (
+              <Badge variant="outline" className="text-xs">
+                +{font.weights.length - 3} more
+              </Badge>
+            )}
           </div>
         </div>
         <div className="flex gap-1 ml-2">
@@ -961,7 +958,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
         try {
-          ```text
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
