@@ -227,16 +227,24 @@ function GoogleFontPicker({
       className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 transition-colors"
       style={{ minHeight: "300px" }}
     >
+      {/* Font Preview Section */}
+      <div className="text-center mb-4">
+        <p style={{ fontFamily: 'YourChosenFont, sans-serif', fontSize: '16px' }}>
+          ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
+          abcdefghijklmnopqrstuvwxyz 1234567890
+        </p>
+      </div>
+
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
         <Type className="h-6 w-6 text-primary" />
       </div>
       <div className="text-center space-y-4">
-        <div>
-          <h3 className="font-medium">Add Google Font</h3>
-          <p className="text-sm text-muted-foreground">
-            Search and select from popular Google Fonts
-          </p>
-        </div>
+        <div className="text-center">
+            <h3 className="font-medium">Add Google Font</h3>
+            <p className="text-sm text-muted-foreground">
+              Search and select from popular Google Fonts
+            </p>
+          </div>
 
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
