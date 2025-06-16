@@ -723,10 +723,10 @@ function ColorCard({
         {showTints && (
           <motion.div 
             className="absolute top-0 right-0 w-[40%] h-full flex flex-col"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
           >
             {/* Tints Row (Lighter) */}
             <div className="flex h-1/2">
@@ -736,8 +736,6 @@ function ColorCard({
                   className="flex-1 relative group cursor-pointer"
                   style={{ backgroundColor: tint }}
                   onClick={() => copyHex(tint)}
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
                 >
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
                     <Copy className="h-3 w-3 text-white" />
@@ -754,8 +752,6 @@ function ColorCard({
                   className="flex-1 relative group cursor-pointer"
                   style={{ backgroundColor: shade }}
                   onClick={() => copyHex(shade)}
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
                 >
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
                     <Copy className="h-3 w-3 text-white" />
@@ -1154,9 +1150,6 @@ function ColorChip({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
       className="relative min-w-[280px] border rounded-lg bg-white overflow-hidden group"
     >
       {/* Quick edit hover menu */}
