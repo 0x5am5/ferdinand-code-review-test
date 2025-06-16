@@ -18,6 +18,8 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
 import { UserRole } from "@shared/schema";
 import Clients from "./pages/clients";
+import { useEffect } from "react"; // Import useEffect
+import FontLoader from "@/lib/font-loader"; // Import FontLoader
 
 function Router() {
   const [location] = useLocation();
@@ -107,6 +109,49 @@ function Router() {
 }
 
 function App() {
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    const loadUserFonts = async () => {
+      if (!user?.client_id) return;
+
+      try {
+        console.log('Loading fonts for client:', user.client_id);
+        const response = await fetch(`/api/clients/${user.client_id}/assets`);
+        if (response.ok) {
+          const assets = await response.json();
+          const fontAssets = assets.filter((asset: any) => asset.category === 'font');
+
+          const fonts = fontAssets.map((asset: any) => {
+            try {
+              const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+              return {
+                name: asset.name,
+                source: data.source || 'google',
+                sourceData: data.sourceData || {}
+              };
+            } catch (error) {
+              console.warn('Failed to parse font asset:', asset.name, error);
+              return null;
+            }
+          }).filter(Boolean);
+
+          if (fonts.length > 0) {
+            await FontLoader.loadFonts(fonts);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load user fonts:', error);
+      }
+    };
+
+    loadUserFonts();
+  }, [user?.client_id]);
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
