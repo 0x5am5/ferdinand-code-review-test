@@ -774,6 +774,33 @@ function FontCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  // Load font for preview
+  React.useEffect(() => {
+    if (font.source === FontSource.GOOGLE && font.sourceData?.url) {
+      const link = document.createElement('link');
+      link.href = font.sourceData.url;
+      link.rel = 'stylesheet';
+      link.id = `font-${font.name.replace(/\s+/g, '-')}`;
+      
+      // Remove existing font link if it exists
+      const existingLink = document.head.querySelector(`#font-${font.name.replace(/\s+/g, '-')}`);
+      if (!existingLink) {
+        document.head.appendChild(link);
+      }
+    } else if (font.source === FontSource.ADOBE && font.sourceData?.url) {
+      const link = document.createElement('link');
+      link.href = font.sourceData.url;
+      link.rel = 'stylesheet';
+      link.id = `font-${font.name.replace(/\s+/g, '-')}`;
+      
+      // Remove existing font link if it exists
+      const existingLink = document.head.querySelector(`#font-${font.name.replace(/\s+/g, '-')}`);
+      if (!existingLink) {
+        document.head.appendChild(link);
+      }
+    }
+  }, [font.name, font.source, font.sourceData]);
+
   return (
     <motion.div
       layout
@@ -792,7 +819,7 @@ function FontCard({
           {/* Font Preview Section */}
             <div className="text-left mb-4">
               <div style={{ 
-                fontFamily: `'${font.name}'`, 
+                fontFamily: `'${font.name}', monospace`, 
                 fontSize: '1.75rem',
                 lineHeight: '1.4'
               }}>
