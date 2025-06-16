@@ -97,18 +97,13 @@
 }
 
 .design-builder--preview {
-  position: relative;
+  postion: relative;
   padding: 1rem;
   
   .component-preview--title {
     width: 100%;
-    margin: -1rem;
+    marign: -1rem;
     padding: 1rem;
     font-size: 12px;
   }
-}
-
-// Dynamic font styles container
-#dynamic-fonts {
-  /* This container will hold dynamically loaded font stylesheets */
 }
