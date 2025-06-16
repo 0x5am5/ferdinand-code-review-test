@@ -254,23 +254,6 @@ function GoogleFontPicker({
       className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 transition-colors"
       style={{ minHeight: "300px" }}
     >
-      {/* Font Preview Section */}
-      {previewFont && (
-        <div className="text-center mb-4">
-          <div style={{ 
-            fontFamily: `'${previewFont}', sans-serif`, 
-            fontSize: '16px',
-            lineHeight: '1.4'
-          }}>
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
-            abcdefghijklmnopqrstuvwxyz 1234567890
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Preview: {previewFont}
-          </p>
-        </div>
-      )}
-
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
         <Type className="h-6 w-6 text-primary" />
       </div>
@@ -801,10 +784,23 @@ function FontCard({
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h3 className="font-medium text-sm">{font.name}</h3>
-          <p className="text-xs text-muted-foreground capitalize mt-1">
+          <h3 className="font-medium text-sm mb-0">{font.name}</h3>
+          <p className="text-xs text-muted-foreground capitalize">
             {font.source} Font
           </p>
+          
+          {/* Font Preview Section */}
+            <div className="text-left mb-4">
+              <div style={{ 
+                fontFamily: `'${font.name}'`, 
+                fontSize: '1.75rem',
+                lineHeight: '1.4'
+              }}>
+                ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
+                abcdefghijklmnopqrstuvwxyz 1234567890
+              </div>
+            </div>
+        
           <div className="flex flex-wrap gap-1 mt-2">
             {font.weights.slice(0, 3).map((weight) => (
               <Badge key={weight} variant="secondary" className="text-xs">
