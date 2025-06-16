@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -195,6 +195,33 @@ function GoogleFontPicker({
   const [searchValue, setSearchValue] = useState("");
   const [displayCount, setDisplayCount] = useState(50);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [previewFont, setPreviewFont] = useState<string | null>(null);
+
+  // Load font for preview
+  const loadFontForPreview = (fontName: string) => {
+    if (!fontName) return;
+    
+    const link = document.createElement('link');
+    link.href = generateGoogleFontUrl(fontName, ['400'], ['normal']);
+    link.rel = 'stylesheet';
+    link.id = `preview-font-${fontName.replace(/\s+/g, '-')}`;
+    
+    // Remove existing preview font
+    const existingLink = document.head.querySelector('[id^="preview-font-"]');
+    if (existingLink) {
+      document.head.removeChild(existingLink);
+    }
+    
+    document.head.appendChild(link);
+    setPreviewFont(fontName);
+  };
+
+  // Load first font for preview when fonts are available
+  React.useEffect(() => {
+    if (googleFonts.length > 0 && !previewFont) {
+      loadFontForPreview(googleFonts[0].name);
+    }
+  }, [googleFonts, previewFont]);
 
   const filteredFonts = googleFonts.filter(
     (font: any) =>
@@ -228,12 +255,21 @@ function GoogleFontPicker({
       style={{ minHeight: "300px" }}
     >
       {/* Font Preview Section */}
-      <div className="text-center mb-4">
-        <p style={{ fontFamily: 'YourChosenFont, sans-serif', fontSize: '16px' }}>
-          ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
-          abcdefghijklmnopqrstuvwxyz 1234567890
-        </p>
-      </div>
+      {previewFont && (
+        <div className="text-center mb-4">
+          <div style={{ 
+            fontFamily: `'${previewFont}', sans-serif`, 
+            fontSize: '16px',
+            lineHeight: '1.4'
+          }}>
+            ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
+            abcdefghijklmnopqrstuvwxyz 1234567890
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Preview: {previewFont}
+          </p>
+        </div>
+      )}
 
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
         <Type className="h-6 w-6 text-primary" />
