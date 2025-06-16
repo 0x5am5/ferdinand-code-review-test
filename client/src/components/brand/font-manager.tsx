@@ -978,7 +978,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       console.log("Font added successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`]
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
       toast({
         title: "Success",
