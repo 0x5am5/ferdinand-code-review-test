@@ -19,7 +19,7 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { UserRole } from "@shared/schema";
 import Clients from "./pages/clients";
 import { useEffect } from "react"; // Import useEffect
-import FontLoader from "@/lib/font-loader"; // Import FontLoader
+import { FontLoader } from "@/lib/font-loader"; // Import FontLoader
 
 function Router() {
   const [location] = useLocation();
