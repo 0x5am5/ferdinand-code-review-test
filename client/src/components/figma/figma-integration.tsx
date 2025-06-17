@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Figma, Plus, Sync, Trash2, AlertTriangle, CheckCircle, Clock, X } from "lucide-react";
+import { Figma, Plus, RefreshCw, Trash2, AlertTriangle, CheckCircle, Clock, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -70,7 +70,7 @@ export default function FigmaIntegration({ clientId }: FigmaIntegrationProps) {
   });
 
   // Fetch Figma connections
-  const { data: connections = [], isLoading } = useQuery({
+  const { data: connections = [], isLoading } = useQuery<FigmaConnection[]>({
     queryKey: ["/api/figma/connections", clientId],
     enabled: !!clientId,
   });
@@ -78,20 +78,26 @@ export default function FigmaIntegration({ clientId }: FigmaIntegrationProps) {
   // Test connection mutation
   const testConnectionMutation = useMutation({
     mutationFn: async (accessToken: string) => {
-      return apiRequest(`/api/figma/test-connection`, {
+      const response = await fetch(`/api/figma/test-connection`, {
         method: "POST",
-        body: { accessToken },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken }),
       });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
     },
   });
 
   // Create connection mutation
   const createConnectionMutation = useMutation({
-    mutationFn: async (data: FigmaConnectionForm & { clientId: number }) => {
-      return apiRequest(`/api/figma/connections`, {
+    mutationFn: async (data: FigmaConnectionForm & { clientId: number; figmaFileId: string }) => {
+      const response = await fetch(`/api/figma/connections`, {
         method: "POST",
-        body: data,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/figma/connections", clientId] });
@@ -114,9 +120,12 @@ export default function FigmaIntegration({ clientId }: FigmaIntegrationProps) {
   // Sync from Figma mutation
   const syncFromFigmaMutation = useMutation({
     mutationFn: async (connectionId: number) => {
-      return apiRequest(`/api/figma/connections/${connectionId}/sync-from-figma`, {
+      const response = await fetch(`/api/figma/connections/${connectionId}/sync-from-figma`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
       });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/figma/connections", clientId] });
@@ -137,9 +146,12 @@ export default function FigmaIntegration({ clientId }: FigmaIntegrationProps) {
   // Delete connection mutation
   const deleteConnectionMutation = useMutation({
     mutationFn: async (connectionId: number) => {
-      return apiRequest(`/api/figma/connections/${connectionId}`, {
+      const response = await fetch(`/api/figma/connections/${connectionId}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
       });
+      if (!response.ok) throw new Error(await response.text());
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/figma/connections", clientId] });
@@ -166,7 +178,7 @@ export default function FigmaIntegration({ clientId }: FigmaIntegrationProps) {
       await createConnectionMutation.mutateAsync({
         ...data,
         clientId,
-        figmaFileId: data.figmaFileKey, // Use file key as ID for now
+        figmaFileId: data.figmaFileKey,
       });
     } catch (error) {
       // Error handling is done in the mutation
@@ -404,7 +416,7 @@ export default function FigmaIntegration({ clientId }: FigmaIntegrationProps) {
                       onClick={() => syncFromFigmaMutation.mutate(connection.id)}
                       disabled={syncFromFigmaMutation.isPending || connection.syncStatus === "syncing"}
                     >
-                      <Sync className="h-4 w-4 mr-2" />
+                      <RefreshCw className="h-4 w-4 mr-2" />
                       {connection.syncStatus === "syncing" ? "Syncing..." : "Sync Now"}
                     </Button>
                     

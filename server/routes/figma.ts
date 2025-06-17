@@ -399,8 +399,12 @@ export function registerFigmaRoutes(app: Express) {
         // Update sync log as completed
         await storage.updateFigmaSyncLog(syncLog.id, {
           status: "completed",
-          elementsChanged,
-          duration: Date.now() - new Date(syncLog.createdAt).getTime(),
+          elementsChanged: elementsChanged.map(el => ({
+            name: el.name,
+            type: el.type,
+            action: el.action as "created" | "updated" | "deleted"
+          })),
+          duration: syncLog.createdAt ? Date.now() - new Date(syncLog.createdAt).getTime() : null,
         });
 
         // Update connection sync status
@@ -420,7 +424,7 @@ export function registerFigmaRoutes(app: Express) {
         await storage.updateFigmaSyncLog(syncLog.id, {
           status: "failed",
           errorMessage: syncError instanceof Error ? syncError.message : "Unknown error",
-          duration: Date.now() - new Date(syncLog.createdAt).getTime(),
+          duration: syncLog.createdAt ? Date.now() - new Date(syncLog.createdAt).getTime() : null,
         });
 
         // Update connection sync status

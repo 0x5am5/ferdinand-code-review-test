@@ -8,6 +8,7 @@ import { FontManager } from "@/components/brand/font-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { ClientDashboard } from "@/components/brand/client-dashboard";
+import FigmaIntegration from "@/components/figma/figma-integration";
 import {
   useClientAssetsById,
   useClientsById,
