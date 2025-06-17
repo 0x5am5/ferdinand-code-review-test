@@ -605,12 +605,14 @@ export function registerAssetRoutes(app: Express) {
         }
       }
 
-      console.log(`Serving asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}, preserveVector: ${preserveVector}, clientId param: ${clientIdParam}`);
+      console.log(`=== SERVING ASSET REQUEST ===`);
+      console.log(`Requested asset ID: ${assetId}, variant: ${variant}, format: ${format}, size: ${size}, preserveRatio: ${preserveRatio}, preserveVector: ${preserveVector}, clientId param: ${clientIdParam}`);
 
-      // CRITICAL FIX: Add query timing for debugging
-      console.time('asset-query');
+      // CRITICAL FIX: Add query timing for debugging with unique identifier
+      const queryLabel = `asset-query-${assetId}-${Date.now()}`;
+      console.time(queryLabel);
       const asset = await storage.getAsset(assetId);
-      console.timeEnd('asset-query');
+      console.timeEnd(queryLabel);
 
       if (!asset) {
         console.error(`ERROR: Asset with ID ${assetId} not found in database`);
@@ -619,6 +621,7 @@ export function registerAssetRoutes(app: Express) {
 
       // Add detailed logging about the asset being served
       console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}, Category: ${asset.category}, MimeType: ${asset.mimeType}`);
+      console.log(`Request details - Requested ID: ${assetId}, Variant: ${variant}, Format: ${format}, Size: ${size}, Client ID param: ${clientIdParam}`);
 
       // CRITICAL FIX: Verify we're serving the correct asset
       if (asset.id !== assetId) {
@@ -653,11 +656,11 @@ export function registerAssetRoutes(app: Express) {
 
         // Get the converted asset specifically for this asset ID
         // CRITICAL FIX: Get converted asset, ensuring it's the right one
-        console.log(`Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`);
+        console.log(`Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`);
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
 
         if (convertedAsset) {
-          console.log(`Serving converted asset format: ${format}, dark: ${isDarkVariant}`);
+          console.log(`Serving converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`);
           mimeType = convertedAsset.mimeType;
           fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
         } else {
@@ -695,6 +698,7 @@ export function registerAssetRoutes(app: Express) {
             // CRITICAL FIX: Store the converted asset for future use
             // This ensures we associate the converted asset with the correct original asset
             try {
+              console.log(`Storing converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}, Client: ${asset.clientId}`);
               await storage.createConvertedAsset({
                 originalAssetId: assetId,
                 format,
@@ -702,7 +706,7 @@ export function registerAssetRoutes(app: Express) {
                 mimeType,
                 isDarkVariant
               });
-              console.log(`Stored converted asset format ${format} for asset ID ${assetId}`);
+              console.log(`Successfully stored converted asset format ${format} for asset ID ${assetId} (Client: ${asset.clientId})`);
             } catch (storeError) {
               console.error("Failed to store converted asset:", storeError);
               // Continue serving the file even if storage fails

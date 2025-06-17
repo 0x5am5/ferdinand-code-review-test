@@ -136,11 +136,11 @@ function getSecureAssetUrl(assetId: number, clientId: number, options: {
 
   // Create URL with built-in URLSearchParams handling
   const url = new URL(`/api/assets/${assetId}/file`, window.location.origin);
-  
+
   // Add required parameters
   url.searchParams.append('clientId', clientId.toString());
   url.searchParams.append('t', Date.now().toString()); // Cache buster
-  
+
   // Add optional parameters if provided
   if (variant === 'dark') url.searchParams.append('variant', 'dark');
   if (format) url.searchParams.append('format', format);
@@ -744,13 +744,16 @@ function StandardLogoDownloadButton({
       // Fetch all the files and add to zip
       const fetchPromises = [];
 
-      // Add PNG files in different sizes - pass exact pixel dimensions
+      // Add PNG files in different sizes
       for (const size of sizes) {
         // CRITICAL FIX: Ensure we pass correct client ID for downloads
         const url = `/api/assets/${logo.id}/file?clientId=${logo.clientId}&size=${size}&format=png${variant === 'dark' ? '&variant=dark' : ''}&preserveRatio=true`;
         console.log(`Downloading logo: ID ${logo.id}, Client: ${logo.clientId}, Name: ${logo.name}`);
 
         console.log(`Fetching ${size}px logo from: ${url}`);
+
+        // CRITICAL FIX: Define filename variable properly for each size
+        const filename = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
 
         // Use a reference to avoid TypeScript null warnings
         const pngFolderRef = pngFolder;
@@ -899,13 +902,12 @@ function StandardLogoDownloadButton({
       const downloadLink = document.createElement('a');
       downloadLink.href = downloadUrl.toString();
       downloadLink.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}-${size}px.png`;
-      
+
       container.appendChild(downloadLink);
       downloadLink.click();
 
       // Cleanup
-      setTimeout(() => {
-        document.body.removeChild(container);
+      setTimeout(() => {        document.body.removeChild(container);
         setOpen(false);
       }, 100);
 
@@ -1771,14 +1773,14 @@ function LogoSection({
                     <span>Replace</span>
                   </button>
                 </label>
-                
+
                 <LogoDownloadButton 
                   logo={logo} 
                   imageUrl={imageUrl} 
                   variant={variant}
                   parsedData={parsedData}
                 />
-                
+
                 {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
                   <button 
                     className="asset-display__preview-action-button"
