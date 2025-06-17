@@ -288,6 +288,73 @@ export const typeScales = pgTable("type_scales", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Figma Integration Tables
+export const figmaConnections = pgTable("figma_connections", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  figmaFileId: text("figma_file_id").notNull(),
+  figmaFileKey: text("figma_file_key").notNull(),
+  figmaFileName: text("figma_file_name").notNull(),
+  figmaTeamId: text("figma_team_id"),
+  accessToken: text("access_token").notNull(), // Encrypted Figma access token
+  refreshToken: text("refresh_token"), // OAuth refresh token if using OAuth
+  isActive: boolean("is_active").default(true),
+  lastSyncAt: timestamp("last_sync_at"),
+  syncStatus: text("sync_status", {
+    enum: ["idle", "syncing", "success", "error"],
+  }).default("idle"),
+  syncError: text("sync_error"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const figmaSyncLogs = pgTable("figma_sync_logs", {
+  id: serial("id").primaryKey(),
+  connectionId: integer("connection_id")
+    .notNull()
+    .references(() => figmaConnections.id),
+  syncType: text("sync_type", {
+    enum: ["pull_from_figma", "push_to_figma", "bidirectional"],
+  }).notNull(),
+  syncDirection: text("sync_direction", {
+    enum: ["figma_to_ferdinand", "ferdinand_to_figma"],
+  }).notNull(),
+  elementsChanged: json("elements_changed"), // Array of changed design tokens/styles
+  conflictsDetected: json("conflicts_detected"), // Array of conflicts found
+  conflictsResolved: json("conflicts_resolved"), // How conflicts were resolved
+  status: text("status", {
+    enum: ["started", "completed", "failed"],
+  }).notNull(),
+  errorMessage: text("error_message"),
+  duration: integer("duration"), // Sync duration in milliseconds
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const figmaDesignTokens = pgTable("figma_design_tokens", {
+  id: serial("id").primaryKey(),
+  connectionId: integer("connection_id")
+    .notNull()
+    .references(() => figmaConnections.id),
+  tokenType: text("token_type", {
+    enum: ["color", "typography", "spacing", "border_radius", "shadow"],
+  }).notNull(),
+  tokenName: text("token_name").notNull(),
+  figmaId: text("figma_id"), // Figma style ID
+  ferdinandValue: json("ferdinand_value").notNull(), // Value stored in Ferdinand
+  figmaValue: json("figma_value"), // Last known value from Figma
+  lastSyncAt: timestamp("last_sync_at"),
+  syncStatus: text("sync_status", {
+    enum: ["in_sync", "ferdinand_newer", "figma_newer", "conflict"],
+  }).default("in_sync"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const usersRelations = relations(users, ({ many }) => ({
   userClients: many(userClients),
 }));
@@ -296,6 +363,7 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   userClients: many(userClients),
   hiddenSections: many(hiddenSections),
   typeScales: many(typeScales),
+  figmaConnections: many(figmaConnections),
 }));
 
 export const userClientsRelations = relations(userClients, ({ one }) => ({
@@ -324,6 +392,33 @@ export const typeScalesRelations = relations(typeScales, ({ one }) => ({
   client: one(clients, {
     fields: [typeScales.clientId],
     references: [clients.id],
+  }),
+}));
+
+export const figmaConnectionsRelations = relations(figmaConnections, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [figmaConnections.clientId],
+    references: [clients.id],
+  }),
+  user: one(users, {
+    fields: [figmaConnections.userId],
+    references: [users.id],
+  }),
+  syncLogs: many(figmaSyncLogs),
+  designTokens: many(figmaDesignTokens),
+}));
+
+export const figmaSyncLogsRelations = relations(figmaSyncLogs, ({ one }) => ({
+  connection: one(figmaConnections, {
+    fields: [figmaSyncLogs.connectionId],
+    references: [figmaConnections.id],
+  }),
+}));
+
+export const figmaDesignTokensRelations = relations(figmaDesignTokens, ({ one }) => ({
+  connection: one(figmaConnections, {
+    fields: [figmaDesignTokens.connectionId],
+    references: [figmaConnections.id],
   }),
 }));
 
@@ -570,6 +665,61 @@ export type InsertInspirationImage = z.infer<
 export type InsertInvitation = z.infer<typeof insertInvitationSchema>;
 export type InsertHiddenSection = z.infer<typeof insertHiddenSectionSchema>;
 export type InsertTypeScale = z.infer<typeof insertTypeScaleSchema>;
+
+// Figma Integration Insert Schemas
+export const insertFigmaConnectionSchema = createInsertSchema(figmaConnections)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    figmaFileId: z.string().min(1),
+    figmaFileKey: z.string().min(1),
+    figmaFileName: z.string().min(1),
+    figmaTeamId: z.string().optional(),
+    accessToken: z.string().min(1),
+    refreshToken: z.string().optional(),
+  });
+
+export const insertFigmaSyncLogSchema = createInsertSchema(figmaSyncLogs)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    syncType: z.enum(["pull_from_figma", "push_to_figma", "bidirectional"]),
+    syncDirection: z.enum(["figma_to_ferdinand", "ferdinand_to_figma"]),
+    status: z.enum(["started", "completed", "failed"]),
+    elementsChanged: z.array(z.object({
+      type: z.string(),
+      name: z.string(),
+      action: z.enum(["created", "updated", "deleted"])
+    })).optional(),
+    conflictsDetected: z.array(z.object({
+      tokenType: z.string(),
+      tokenName: z.string(),
+      ferdinandValue: z.any(),
+      figmaValue: z.any()
+    })).optional(),
+    conflictsResolved: z.array(z.object({
+      tokenType: z.string(),
+      tokenName: z.string(),
+      resolution: z.enum(["ferdinand_wins", "figma_wins", "manual"])
+    })).optional(),
+  });
+
+export const insertFigmaDesignTokenSchema = createInsertSchema(figmaDesignTokens)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    tokenType: z.enum(["color", "typography", "spacing", "border_radius", "shadow"]),
+    tokenName: z.string().min(1),
+    figmaId: z.string().optional(),
+    ferdinandValue: z.any(),
+    figmaValue: z.any().optional(),
+    syncStatus: z.enum(["in_sync", "ferdinand_newer", "figma_newer", "conflict"]).default("in_sync"),
+  });
+
+// Figma Integration Types
+export type FigmaConnection = typeof figmaConnections.$inferSelect;
+export type FigmaSyncLog = typeof figmaSyncLogs.$inferSelect;
+export type FigmaDesignToken = typeof figmaDesignTokens.$inferSelect;
+export type InsertFigmaConnection = z.infer<typeof insertFigmaConnectionSchema>;
+export type InsertFigmaSyncLog = z.infer<typeof insertFigmaSyncLogSchema>;
+export type InsertFigmaDesignToken = z.infer<typeof insertFigmaDesignTokenSchema>;
 
 // Other Types
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;

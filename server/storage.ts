@@ -6,8 +6,10 @@ import {
   type InsertFontAsset, type InsertColorAsset, type UserClient,
   type ConvertedAsset, type InsertConvertedAsset, type HiddenSection, type InsertHiddenSection,
   type TypeScale, type InsertTypeScale,
+  type FigmaConnection, type FigmaSyncLog, type FigmaDesignToken,
+  type InsertFigmaConnection, type InsertFigmaSyncLog, type InsertFigmaDesignToken,
   users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations, userClients,
-  convertedAssets, hiddenSections, typeScales, UserRole
+  convertedAssets, hiddenSections, typeScales, figmaConnections, figmaSyncLogs, figmaDesignTokens, UserRole
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, asc, inArray, and } from "drizzle-orm";
@@ -66,6 +68,17 @@ export interface IStorage {
   createTypeScale(typeScale: InsertTypeScale): Promise<TypeScale>;
   updateTypeScale(id: number, typeScale: Partial<InsertTypeScale>): Promise<TypeScale>;
   deleteTypeScale(id: number): Promise<void>;
+  // Figma integration methods
+  getFigmaConnections(clientId: number): Promise<FigmaConnection[]>;
+  getFigmaConnection(id: number): Promise<FigmaConnection | undefined>;
+  createFigmaConnection(connection: InsertFigmaConnection): Promise<FigmaConnection>;
+  updateFigmaConnection(id: number, data: Partial<InsertFigmaConnection>): Promise<FigmaConnection>;
+  deleteFigmaConnection(id: number): Promise<void>;
+  createFigmaSyncLog(log: InsertFigmaSyncLog): Promise<FigmaSyncLog>;
+  updateFigmaSyncLog(id: number, data: Partial<InsertFigmaSyncLog>): Promise<FigmaSyncLog>;
+  getFigmaSyncLogs(connectionId: number, limit: number, offset: number): Promise<FigmaSyncLog[]>;
+  upsertFigmaDesignToken(token: InsertFigmaDesignToken): Promise<FigmaDesignToken>;
+  getFigmaDesignTokens(connectionId: number): Promise<FigmaDesignToken[]>;
 }
 
 export class DatabaseStorage implements IStorage {
