@@ -619,7 +619,7 @@ export class DatabaseStorage implements IStorage {
       // Create new token
       const [newToken] = await db
         .insert(figmaDesignTokens)
-        .values(insertToken)
+        .values([insertToken])
         .returning();
       return newToken;
     }
