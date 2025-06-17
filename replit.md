@@ -123,6 +123,7 @@ The application follows a full-stack architecture with clear separation between 
 
 ```
 Changelog:
+- June 17, 2025. Added Figma Integration feature toggle system
 - June 16, 2025. Initial setup
 ```
 

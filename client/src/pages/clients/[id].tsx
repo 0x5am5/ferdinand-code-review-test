@@ -290,6 +290,41 @@ export default function ClientDetails() {
           </Card>
         );
 
+      case "figma":
+        return featureToggles.figmaIntegration ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Figma Integration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Sync design tokens and styles with Figma design files. This feature allows seamless two-way synchronization of your brand guidelines with your Figma projects.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Coming Soon</h4>
+                <p className="text-blue-800 text-sm">
+                  Figma Integration features are currently in development. This will include:
+                </p>
+                <ul className="list-disc list-inside text-blue-800 text-sm mt-2 space-y-1">
+                  <li>Two-way sync of color palettes</li>
+                  <li>Typography system synchronization</li>
+                  <li>Component token management</li>
+                  <li>Design system validation</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Disabled</CardTitle>
+            </CardHeader>
+            <CardContent>
+              Figma Integration feature is disabled for this client.
+            </CardContent>
+          </Card>
+        );
+
       default:
         // Show dashboard by default
         return (
