@@ -94,6 +94,7 @@ export default function Dashboard() {
     typeSystem: true,
     userPersonas: true,
     inspiration: true,
+    figmaIntegration: false,
   });
 
   const { toast } = useToast();

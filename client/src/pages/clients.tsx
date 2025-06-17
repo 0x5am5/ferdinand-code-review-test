@@ -40,6 +40,7 @@ import {
   Mail,
   Search,
   Check,
+  Figma,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -95,6 +96,7 @@ export default function Clients() {
     typeSystem: true,
     userPersonas: true,
     inspiration: true,
+    figmaIntegration: false,
   });
   const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>({});
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -200,6 +202,7 @@ export default function Clients() {
           typeSystem: Boolean(featureTogglesObj.typeSystem ?? true),
           userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
           inspiration: Boolean(featureTogglesObj.inspiration ?? true),
+          figmaIntegration: Boolean(featureTogglesObj.figmaIntegration ?? false),
         };
         setFeatureToggles(toggles);
       } else {
@@ -210,6 +213,7 @@ export default function Clients() {
           typeSystem: true,
           userPersonas: true,
           inspiration: true,
+          figmaIntegration: false,
         });
       }
     } else {
@@ -220,6 +224,7 @@ export default function Clients() {
         typeSystem: true,
         userPersonas: true,
         inspiration: true,
+        figmaIntegration: false,
       });
     }
   }, [editingClient]);
@@ -846,6 +851,27 @@ export default function Clients() {
                         setFeatureToggles((prev) => ({
                           ...prev,
                           inspiration: checked,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center">
+                        <Figma className="h-4 w-4 mr-2" />
+                        <div className="font-medium">Figma Integration</div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Sync design tokens and styles with Figma design files
+                      </div>
+                    </div>
+                    <Switch
+                      checked={featureToggles.figmaIntegration}
+                      onCheckedChange={(checked) =>
+                        setFeatureToggles((prev) => ({
+                          ...prev,
+                          figmaIntegration: checked,
                         }))
                       }
                     />
