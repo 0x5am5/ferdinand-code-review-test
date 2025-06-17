@@ -1,0 +1,125 @@
+Prompt for AI Developers: Next Steps for
+Figma Integration
+1. Overview
+This document outlines the next phase of development for the Figma integration within
+Ferdinand. We have a solid foundation in place, and the focus for this iteration is to
+implement the core Figma REST API integration and develop the Figma Plugin to enable
+two-way synchronization of design system elements.
+2. Current Implementation Status
+We have successfully implemented the following foundational elements:
+Feature Toggle System: A figma_integration feature toggle is in place,
+controlling the visibility of design system features in both the dashboard and client
+management pages.
+Design System Tab Framework: A
+Design System" tab appears in the client sidebar when Figma integration is enabled,
+currently showing placeholder UI. * Existing Infrastructure Ready for Integration: *
+Design System API ( /api/design-system ) for theme.json and raw token
+management. * Fully implemented Color System with palette management. * Complete
+Typography System with font management and type scales. * Logo System with Figma
+link support in logo metadata. * File Conversion System handling SVG, AI, EPS, PDF
+formats. * Figma-Ready Components: * Logo manager supports Figma links in
+"Editable Design Files" section. * Design system builder can export CSS/SCSS tokens. *
+Raw design tokens system for spacing, colors, typography, etc.
+3. Next Steps: Core Figma Integration Features (Not Yet
+Implemented)
+The primary objective for this phase is to implement the following core Figma
+integration features:
+•
+• 
+3.1. Figma REST API Integration
+Objective: Establish robust communication between Ferdinand's backend and the
+Figma REST API.
+Key Tasks:
+Authentication: Implement secure authentication with Figma (e.g., OAuth,
+Personal Access Tokens – prioritize user-friendly options).
+Data Retrieval: Develop functionality to read and extract design data (colors,
+typography, spacing, component properties, interactive states) from specified
+Figma files.
+Data Sync (Figma to Ferdinand): Implement logic to pull design tokens and
+styles from Figma into Ferdinand's design system. This should update the
+existing theme.json and raw tokens.
+Data Sync (Ferdinand to Figma): Implement logic to push design tokens and
+styles from Ferdinand to a connected Figma library. This will involve updating
+existing styles/components in Figma or creating new ones if they don't exist.
+Library Analytics (Future Consideration): Explore the Figma Library
+Analytics API for potential future insights into design system usage.
+3.2. Figma Plugin Development
+Objective: Create a user-friendly Figma plugin that facilitates seamless interaction
+between designers in Figma and the Ferdinand design system.
+Key Tasks:
+Plugin UI: Design and develop the plugin's user interface within Figma.
+Authentication: Integrate the plugin with Ferdinand's authentication system
+to ensure secure access.
+Two-Way Synchronization: Implement the core logic for two-way
+synchronization of design tokens and styles (colors, typography, spacing,
+components, interactive states) between the active Figma file and Ferdinand.
+Design System Generator (Pull): Allow designers to pull existing design
+tokens and styles from Ferdinand into their Figma file, applying them to
+selected layers or creating new styles.
+Push New Styles/Components: Enable designers to push new styles or
+components created within Figma to Ferdinand's design system, updating the
+backend and theme.json .
+Conflict Notification: Implement a mechanism within the plugin to notify
+users of synchronization conflicts and indicate that Ferdinand's version will
+be the source of truth.
+•
+•
+◦
+◦
+◦
+◦
+◦
+•
+•
+◦
+◦
+◦
+◦
+◦
+◦ 
+3.3. Conflict Resolution
+Objective: Ensure data integrity and consistency during two-way synchronization.
+Mechanism: In the event of a conflict (e.g., a token/style is updated in both Figma
+and Ferdinand simultaneously), the system should:
+Trigger a notification to the user (both in Ferdinand and potentially via the
+Figma plugin).
+Automatically revert to the version present in the Ferdinand application
+(Ferdinand is the source of truth).
+3.4. Synchronization Trigger
+Initial Implementation: For the initial phase, implement a manual
+synchronization trigger (e.g., a
+"Sync Now" button in both Ferdinand and the Figma plugin). Consider future iterations
+for real-time synchronization.
+4. Deliverables
+A functional Figma REST API integration within Ferdinand, enabling data exchange.
+A fully developed Figma plugin with the specified synchronization and generation
+functionalities.
+Updated Ferdinand UI to reflect the integrated design system builder, replacing
+placeholder content.
+Comprehensive documentation for the Figma integration, including API usage,
+authentication setup, and plugin usage instructions.
+5. Success Metrics
+Successful two-way synchronization of colors, typography, spacing, components,
+and interactive states between Ferdinand and Figma.
+Designers can effectively use the Figma plugin to pull and push design system
+elements.
+Conflict resolution mechanism functions as expected, with appropriate user
+notifications.
+Positive feedback from designers on the ease of use and efficiency of the
+integration.
+•
+•
+◦
+◦
+•
+•
+•
+•
+•
+•
+•
+•
+• 
+This phase is critical for delivering a powerful and seamless design system management
+experience to our users. Your expertise in implementing robust API integrations and
+developing intuitive user experiences will be key to its success.
