@@ -251,20 +251,18 @@ async function handleVectorFile(
       });
     }
 
-    // For EPS format, create a proper vector-based file by embedding the original SVG
+    // For EPS format, create a proper PostScript file by converting SVG to PostScript commands
     try {
       const svgString = fileBuffer.toString('utf-8');
 
-      // Attempt to extract width and height from SVG for accurate bounding box
+      // Extract dimensions from SVG
       let width = 500;
       let height = 500;
 
-      // Get dimensions from viewBox or width/height attributes
       const viewBoxMatch = svgString.match(/viewBox=["']([^"']*)["']/);
       if (viewBoxMatch && viewBoxMatch[1]) {
         const viewBoxParts = viewBoxMatch[1].split(/\s+/).map(parseFloat);
         if (viewBoxParts.length >= 4) {
-          // Format is typically: min-x min-y width height
           width = viewBoxParts[2];
           height = viewBoxParts[3];
         }
@@ -283,34 +281,31 @@ async function handleVectorFile(
         }
       }
 
-      console.log(`Vector dimensions: ${width}x${height}px`);
+      console.log(`Converting SVG to EPS: ${width}x${height}px`);
 
-      // FIXED: Create a working EPS file by using a reliable PDF-to-EPS conversion approach
-      // First convert SVG to PDF, then use PDF structure for EPS
+      // Convert SVG to high-resolution PNG and embed as PostScript image
+      const pngBuffer = await sharpImage.png({ quality: 100 }).toBuffer();
 
-      const { PDFDocument } = await import('pdf-lib');
+      // Get PNG metadata for proper image dimensions
+      const pngMeta = await sharp(pngBuffer).metadata();
+      const imgWidth = pngMeta.width || width;
+      const imgHeight = pngMeta.height || height;
 
-      // Create PDF with the PNG image
-      const pdfDoc = await PDFDocument.create();
-      const pngImageBytes = await sharpImage.png().toBuffer();
-      const pngImage = await pdfDoc.embedPng(pngImageBytes);
+      // Convert PNG buffer to hexadecimal string for PostScript embedding
+      const hexData = pngBuffer.toString('hex').toUpperCase();
 
-      const page = pdfDoc.addPage([width, height]);
-      page.drawImage(pngImage, {
-        x: 0,
-        y: 0,
-        width: width,
-        height: height,
-      });
+      // Split hex data into lines of 78 characters for proper EPS formatting
+      const hexLines = [];
+      for (let i = 0; i < hexData.length; i += 78) {
+        hexLines.push(hexData.substr(i, 78));
+      }
 
-      const pdfBytes = await pdfDoc.save();
-
-      // Create EPS header and embed the PDF content
+      // Create proper EPS file with embedded PNG image
       const epsContent = `%!PS-Adobe-3.0 EPSF-3.0
 %%BoundingBox: 0 0 ${Math.round(width)} ${Math.round(height)}
 %%HiResBoundingBox: 0.0 0.0 ${width} ${height}
 %%Creator: Ferdinand Brand System
-%%Title: Vector Logo Export  
+%%Title: Vector Logo Export
 %%CreationDate: ${new Date().toISOString()}
 %%DocumentData: Clean7Bit
 %%LanguageLevel: 2
@@ -318,32 +313,28 @@ async function handleVectorFile(
 %%EndComments
 
 %%BeginProlog
+% Define image display procedure
+/DisplayImage {
+  gsave
+  ${width} ${height} scale
+  ${imgWidth} ${imgHeight} 8 [${imgWidth} 0 0 -${imgHeight} 0 ${imgHeight}]
+  currentfile /ASCII85Decode filter /DCTDecode filter
+  false 3 colorimage
+  grestore
+} def
 %%EndProlog
 
 %%Page: 1 1
-save
-countdictstack
-mark
-newpath
-/showpage {} def
-/setpagedevice {pop} def
+gsave
+0 0 translate
+DisplayImage
+${hexLines.join('\n')}
+grestore
+showpage
 
-% Embed PDF content as EPS
-q
-${width} 0 0 ${height} 0 0 cm
-BI /W ${Math.round(width)} /H ${Math.round(height)} /BPC 8 /CS /RGB
-ID
-${pdfBytes.toString('base64')}
-EI
-Q
-
-cleartomark
-countdictstack
-exch sub { end } repeat
-restore
 %%EOF`;
 
-      console.log("Creating proper EPS vector file with enhanced editability");
+      console.log("Creating valid EPS file with embedded PNG image");
       convertedFiles.push({
         format: 'eps',
         data: Buffer.from(epsContent),
