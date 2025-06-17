@@ -8,6 +8,7 @@ export async function runMigrations() {
     // Run all migrations in sequence
     await migrateFeatureToggles();
     await migrateLastEditedBy();
+    await migrateFigmaTables();
     
     console.log('All migrations completed successfully!');
   } catch (error) {
@@ -54,5 +55,77 @@ async function migrateLastEditedBy() {
     console.log('last_edited_by migration completed successfully!');
   } else {
     console.log('last_edited_by column already exists.');
+  }
+}
+
+async function migrateFigmaTables() {
+  // Check if figma_connections table exists
+  const checkFigmaConnections = await db.execute(sql`
+    SELECT table_name 
+    FROM information_schema.tables 
+    WHERE table_name = 'figma_connections'
+  `);
+  
+  if (checkFigmaConnections.rows.length === 0) {
+    console.log('Creating Figma integration tables...');
+    
+    // Create figma_connections table
+    await db.execute(sql`
+      CREATE TABLE figma_connections (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER NOT NULL REFERENCES clients(id),
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        figma_file_id TEXT NOT NULL,
+        figma_file_key TEXT NOT NULL,
+        figma_file_name TEXT NOT NULL,
+        figma_team_id TEXT,
+        access_token TEXT NOT NULL,
+        refresh_token TEXT,
+        is_active BOOLEAN DEFAULT true,
+        last_sync_at TIMESTAMP,
+        sync_status TEXT DEFAULT 'idle' CHECK (sync_status IN ('idle', 'syncing', 'success', 'error')),
+        sync_error TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    // Create figma_sync_logs table
+    await db.execute(sql`
+      CREATE TABLE figma_sync_logs (
+        id SERIAL PRIMARY KEY,
+        connection_id INTEGER NOT NULL REFERENCES figma_connections(id),
+        sync_type TEXT NOT NULL CHECK (sync_type IN ('pull_from_figma', 'push_to_figma', 'bidirectional')),
+        sync_direction TEXT NOT NULL CHECK (sync_direction IN ('figma_to_ferdinand', 'ferdinand_to_figma')),
+        elements_changed JSONB,
+        conflicts_detected JSONB,
+        conflicts_resolved JSONB,
+        status TEXT NOT NULL CHECK (status IN ('started', 'completed', 'failed')),
+        error_message TEXT,
+        duration INTEGER,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    // Create figma_design_tokens table
+    await db.execute(sql`
+      CREATE TABLE figma_design_tokens (
+        id SERIAL PRIMARY KEY,
+        connection_id INTEGER NOT NULL REFERENCES figma_connections(id),
+        token_type TEXT NOT NULL CHECK (token_type IN ('color', 'typography', 'spacing', 'border_radius', 'shadow')),
+        token_name TEXT NOT NULL,
+        figma_id TEXT,
+        ferdinand_value JSONB NOT NULL,
+        figma_value JSONB,
+        last_sync_at TIMESTAMP,
+        sync_status TEXT DEFAULT 'in_sync' CHECK (sync_status IN ('in_sync', 'ferdinand_newer', 'figma_newer', 'conflict')),
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    
+    console.log('Figma tables migration completed successfully!');
+  } else {
+    console.log('Figma tables already exist.');
   }
 }

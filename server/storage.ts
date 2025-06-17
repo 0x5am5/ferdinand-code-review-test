@@ -525,6 +525,113 @@ export class DatabaseStorage implements IStorage {
   async deleteTypeScale(id: number): Promise<void> {
     await db.delete(typeScales).where(eq(typeScales.id, id));
   }
+
+  // Figma integration methods
+  async getFigmaConnections(clientId: number): Promise<FigmaConnection[]> {
+    return await db
+      .select()
+      .from(figmaConnections)
+      .where(eq(figmaConnections.clientId, clientId))
+      .orderBy(asc(figmaConnections.createdAt));
+  }
+
+  async getFigmaConnection(id: number): Promise<FigmaConnection | undefined> {
+    const [connection] = await db
+      .select()
+      .from(figmaConnections)
+      .where(eq(figmaConnections.id, id));
+    return connection;
+  }
+
+  async createFigmaConnection(insertConnection: InsertFigmaConnection): Promise<FigmaConnection> {
+    const [connection] = await db
+      .insert(figmaConnections)
+      .values(insertConnection)
+      .returning();
+    return connection;
+  }
+
+  async updateFigmaConnection(id: number, updateData: Partial<InsertFigmaConnection>): Promise<FigmaConnection> {
+    const [connection] = await db
+      .update(figmaConnections)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(figmaConnections.id, id))
+      .returning();
+    return connection;
+  }
+
+  async deleteFigmaConnection(id: number): Promise<void> {
+    // Delete related sync logs and design tokens first
+    await db.delete(figmaSyncLogs).where(eq(figmaSyncLogs.connectionId, id));
+    await db.delete(figmaDesignTokens).where(eq(figmaDesignTokens.connectionId, id));
+    await db.delete(figmaConnections).where(eq(figmaConnections.id, id));
+  }
+
+  async createFigmaSyncLog(insertLog: InsertFigmaSyncLog): Promise<FigmaSyncLog> {
+    const [log] = await db
+      .insert(figmaSyncLogs)
+      .values(insertLog)
+      .returning();
+    return log;
+  }
+
+  async updateFigmaSyncLog(id: number, updateData: Partial<InsertFigmaSyncLog>): Promise<FigmaSyncLog> {
+    const [log] = await db
+      .update(figmaSyncLogs)
+      .set(updateData)
+      .where(eq(figmaSyncLogs.id, id))
+      .returning();
+    return log;
+  }
+
+  async getFigmaSyncLogs(connectionId: number, limit: number, offset: number): Promise<FigmaSyncLog[]> {
+    return await db
+      .select()
+      .from(figmaSyncLogs)
+      .where(eq(figmaSyncLogs.connectionId, connectionId))
+      .orderBy(asc(figmaSyncLogs.createdAt))
+      .limit(limit)
+      .offset(offset);
+  }
+
+  async upsertFigmaDesignToken(insertToken: InsertFigmaDesignToken): Promise<FigmaDesignToken> {
+    // Try to find existing token
+    const [existingToken] = await db
+      .select()
+      .from(figmaDesignTokens)
+      .where(
+        and(
+          eq(figmaDesignTokens.connectionId, insertToken.connectionId),
+          eq(figmaDesignTokens.tokenName, insertToken.tokenName),
+          eq(figmaDesignTokens.tokenType, insertToken.tokenType)
+        )
+      );
+
+    if (existingToken) {
+      // Update existing token
+      const [updatedToken] = await db
+        .update(figmaDesignTokens)
+        .set({ ...insertToken, updatedAt: new Date() })
+        .where(eq(figmaDesignTokens.id, existingToken.id))
+        .returning();
+      return updatedToken;
+    } else {
+      // Create new token
+      const [newToken] = await db
+        .insert(figmaDesignTokens)
+        .values(insertToken)
+        .returning();
+      return newToken;
+    }
+  }
+
+  async getFigmaDesignTokens(connectionId: number): Promise<FigmaDesignToken[]> {
+    return await db
+      .select()
+      .from(figmaDesignTokens)
+      .where(eq(figmaDesignTokens.connectionId, connectionId))
+      .orderBy(asc(figmaDesignTokens.tokenType), asc(figmaDesignTokens.tokenName));
+  }
 }
 
 export const storage = new DatabaseStorage();

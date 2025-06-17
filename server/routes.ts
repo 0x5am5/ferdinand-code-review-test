@@ -10,6 +10,7 @@ import { registerPersonasRoutes } from "./routes/personas";
 import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
 import { registerHiddenSectionsRoutes } from "./routes/hidden-sections";
 import { registerTypeScalesRoutes } from "./routes/type-scales";
+import { registerFigmaRoutes } from "./routes/figma";
 
 // Add session augmentation for TypeScript
 declare module "express-session" {
@@ -71,4 +72,5 @@ export function registerRoutes(app: Express) {
   registerInspirationBoardsRoutes(app);
   registerHiddenSectionsRoutes(app);
   registerTypeScalesRoutes(app);
+  registerFigmaRoutes(app);
 }
