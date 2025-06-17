@@ -774,6 +774,22 @@ function FontCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const [selectedWeight, setSelectedWeight] = useState("400");
+  const { user } = useAuth();
+  const isAbleToEdit = user && [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+  ].includes(user.role);
+
+  // Set default weight to the first available weight or 400
+  React.useEffect(() => {
+    if (font.weights.length > 0) {
+      const defaultWeight = font.weights.includes("400") ? "400" : font.weights[0];
+      setSelectedWeight(defaultWeight);
+    }
+  }, [font.weights]);
+
   // Load font for preview
   React.useEffect(() => {
     if (font.source === FontSource.GOOGLE && font.sourceData?.url) {
@@ -817,48 +833,51 @@ function FontCard({
           </p>
           
           {/* Font Preview Section */}
-            <div className="text-left mb-4">
-              <div style={{ 
-                fontFamily: `'${font.name}', monospace`, 
-                fontSize: '1.75rem',
-                lineHeight: '1.4'
-              }}>
-                ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
-                abcdefghijklmnopqrstuvwxyz 1234567890
-              </div>
+          <div className="text-left mb-4 mt-3">
+            <div style={{ 
+              fontFamily: `'${font.name}', monospace`, 
+              fontSize: '1.75rem',
+              lineHeight: '1.4',
+              fontWeight: selectedWeight
+            }}>
+              ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
+              abcdefghijklmnopqrstuvwxyz 1234567890
             </div>
+          </div>
         
           <div className="flex flex-wrap gap-1 mt-2">
-            {font.weights.slice(0, 3).map((weight) => (
-              <Badge key={weight} variant="secondary" className="text-xs">
+            {font.weights.map((weight) => (
+              <Badge 
+                key={weight} 
+                variant={selectedWeight === weight ? "default" : "outline"}
+                className="text-xs cursor-pointer hover:bg-primary/20 transition-colors"
+                onClick={() => setSelectedWeight(weight)}
+              >
                 {weight}
               </Badge>
             ))}
-            {font.weights.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{font.weights.length - 3} more
-              </Badge>
-            )}
           </div>
         </div>
-        <div className="flex gap-1 ml-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onEdit}
-            className="h-8 w-8 p-0"
-          >
-            <Edit2 className="h-3 w-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onDelete}
-            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
-        </div>
+        {isAbleToEdit && (
+          <div className="flex gap-1 ml-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onEdit}
+              className="h-8 w-8 p-0"
+            >
+              <Edit2 className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDelete}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
       </div>
     </motion.div>
   );
