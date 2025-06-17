@@ -182,6 +182,10 @@ export const Sidebar: FC = () => {
         typeof clientToggles.inspiration === "boolean"
           ? clientToggles.inspiration
           : defaultFeatureToggles.inspiration,
+      figmaIntegration:
+        typeof clientToggles.figmaIntegration === "boolean"
+          ? clientToggles.figmaIntegration
+          : false,
     };
 
     return (

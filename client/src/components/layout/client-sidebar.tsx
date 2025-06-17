@@ -134,6 +134,8 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
   const enabledTabs = tabs.filter((tab) => tab.enabled);
 
+
+
   // Handle tab change and dispatch custom event for client page
   const handleTabChange = (tabId: string) => {
     // Call the parent's callback

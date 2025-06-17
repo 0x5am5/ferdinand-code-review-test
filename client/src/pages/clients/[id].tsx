@@ -146,6 +146,8 @@ export default function ClientDetails() {
     figmaIntegration: false,
   };
 
+
+
   const anyFeatureEnabled = Object.values(featureToggles).some(
     (value) => value === true,
   );
