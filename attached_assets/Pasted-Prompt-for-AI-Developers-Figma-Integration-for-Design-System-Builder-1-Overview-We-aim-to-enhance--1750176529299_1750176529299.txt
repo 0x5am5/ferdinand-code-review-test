@@ -1,0 +1,159 @@
+Prompt for AI Developers: Figma
+Integration for Design System Builder
+1. Overview
+We aim to enhance our brand management platform, Ferdinand, by integrating a design
+system builder that can synchronize with Figma. This feature will allow our users to
+manage their design tokens and styles within Ferdinand and seamlessly sync them with
+their Figma design files. The primary goal is to establish a two-way synchronization for
+core design system elements, ensuring consistency between design and development.
+2. Application Context: Ferdinand
+Ferdinand is a comprehensive brand management platform built as a multi-tenant SaaS
+application. It centralizes and manages brand assets, design systems, and guidelines for
+various clients. It's a web application with the following tech stack:
+Frontend: React 18 with TypeScript, built with Vite
+Backend: Node.js with Express.js
+Database: PostgreSQL with Drizzle ORM
+Authentication: Firebase Authentication with Google OAuth
+UI Framework: Tailwind CSS + Radix UI primitives (shadcn/ui)
+State Management: TanStack React Query for server state, React Context for
+theme management
+Routing: Wouter for client-side routing
+Forms: React Hook Form with Zod validation
+3. Current Design System State (Work-in-Progress)
+Our current design system, "Green Bull Creative Design System," is modular and
+scalable. It includes:
+Color System:
+Core structure: Base color, 2 lighter shades, 2 darker shades for each palette.
+Brand Palette: brand.primary , brand.primaryLight ,
+brand.primaryDark , brand.secondary , brand.accent .
+•
+•
+•
+•
+•
+•
+•
+•
+•
+◦
+◦ 
+Neutral Palette (Gray Scale): 11 steps ( neutral.0 to neutral.1000 ) with
+curved saturation-lightness logic.
+Interactive Palette: interactive.success , interactive.error ,
+interactive.warning , interactive.link (with light/dark variations).
+Typography System:
+Font Families: body (Rock Grotesque), heading (IDpresso Display).
+Type Scale (Responsive): Defined by modular scale and base size, with raw
+tokens ( --font-size-base , --font-size-sm , etc.) and semantic tokens
+( --type-h1 , --type-body , etc.).
+Line Height: Ratio-based ( --line-height-base , --line-heightheading ).
+Letter Spacing: Tokenized ( --letter-spacing-xs , etc.).
+Spacing & Layout:
+Spacing unit: 4px.
+Tokenized scale: --space-xs to --space-2xl .
+Grid Breakpoints: mobile , tablet , desktop , wide .
+Interactive States: hover , active , clicked , visited , inactive
+(tokenized, e.g., --btn-bg-hover ).
+Components (Initial List): Buttons, Form inputs, Cards, Alerts, Overlays + modals,
+Tabs.
+All tokens are currently synced with Ferdinand and can be programmatically output.
+4. Figma Integration Requirements
+4.1. Synchronization Direction & Scope
+Two-way Synchronization: The system should support two-way synchronization
+between Ferdinand and Figma. Changes made in either platform should be
+reflected in the other.
+Initial Scope: The initial focus for synchronization should include:
+Color System
+Typography System
+Spacing & Layout
+Components (definitions and properties)
+Interactive States
+Future Scope (Icons): While not in the first pass, the integration should be
+designed to easily accommodate icon synchronization in the future.
+◦
+◦
+•
+◦
+◦
+◦
+◦
+•
+◦
+◦
+◦
+•
+•
+•
+•
+◦
+◦
+◦
+◦
+◦
+• 
+4.2. Conflict Resolution
+In the event of a two-way synchronization conflict (e.g., a token/style is updated in
+both Figma and Ferdinand simultaneously), the system should:
+Throw a notification to the user indicating a conflict.
+Revert to the version present in the Ferdinand application (Ferdinand is the
+source of truth in case of conflict).
+4.3. User Experience for Connection
+The connection process between Figma and Ferdinand should be as simple and
+user-friendly as possible. Developers should explore options like:
+Figma OAuth for secure authentication.
+Allowing users to input Personal Access Tokens.
+Manually inputting Figma file URLs for specific file synchronization.
+4.4. Figma Plugin Functionality
+A dedicated Figma plugin will be crucial for this integration. The plugin should enable
+designers to:
+Sync Design System: Facilitate the two-way synchronization of design tokens and
+styles between Ferdinand and the active Figma file.
+Design System Generator: Allow designers to pull existing design tokens and
+styles from Ferdinand into their Figma file.
+Push New Styles/Components: Enable designers to push new styles or
+components created within Figma to Ferdinand's design system.
+Validation (Future Consideration): The plugin could potentially include
+functionality to validate that designs in Figma are using approved tokens from the
+Ferdinand system (this can be a later enhancement).
+4.5. Synchronization Trigger
+The synchronization can be either real-time or manually triggered. Developers
+should implement the easiest approach for the initial version, with consideration
+for potential real-time updates in future iterations.
+•
+◦
+◦
+•
+◦
+◦
+◦
+•
+•
+•
+•
+• 
+5. Technical Considerations & API Usage
+Figma REST API: This API will be primarily used for programmatic access to Figma
+files, allowing Ferdinand to:
+Read and extract design data (colors, typography, spacing, component
+properties) from Figma files.
+Automate syncing of Figma libraries to and from the Ferdinand codebase.
+Potentially access details of other Figma files from within the Ferdinand
+application.
+Figma Plugin API: This API will be used to build the interactive Figma plugin,
+enabling:
+Real-time changes to the contents of a Figma design or FigJam file.
+Editing almost any aspect of a Figma design or FigJam file.
+Interaction with the user within the Figma environment.
+6. Deliverables
+A functional design system builder feature within Ferdinand that integrates with
+Figma.
+A working Figma plugin that facilitates the described synchronization and
+generation functionalities.
+Clear documentation for both the Ferdinand integration and the Figma plugin,
+including API usage and setup instructions.
+7. Success Metrics
+Successful two-way synchronization of colors, typography, spacing, components,
+and interactive states between Ferdinand and Figma.
+Positive user feedback on the ease of connecting Figma and using the plugin.
+Reduced manual effort for designers and developers in maintaining design
+consistency.
