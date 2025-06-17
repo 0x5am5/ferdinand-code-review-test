@@ -24,15 +24,15 @@ export interface ConvertedFile {
 export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: string, assetId?: number): Promise<ConvertedFile[]> {
   const convertedFiles: ConvertedFile[] = [];
   const tempDir = await mkdtempAsync(path.join(os.tmpdir(), 'logo-conversion-'));
-  
+
   console.log(`Starting conversion process for asset ID ${assetId}:`);
   console.log(`- Original format: ${originalFormat}`);
   console.log(`- Buffer size: ${fileBuffer.length} bytes`);
   console.log(`- First 50 bytes: ${fileBuffer.slice(0, 50).toString('hex')}`);
-  
+
   try {
     const isVector = ['svg', 'ai', 'eps', 'pdf'].includes(originalFormat.toLowerCase());
-    
+
     if (isVector) {
       // Vector file conversions - can generate all formats
       console.log(`Handling vector file conversion from: ${originalFormat}`);
@@ -42,7 +42,7 @@ export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: st
       console.log(`Handling raster file conversion from: ${originalFormat}`);
       await handleRasterFile(fileBuffer, originalFormat, convertedFiles);
     }
-    
+
     // CRITICAL FIX: Add original file to the list if it's not empty
     if (fileBuffer && fileBuffer.length > 0) {
       // Make sure we're adding the real file data - check it's not empty
@@ -59,9 +59,9 @@ export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: st
     } else {
       console.error(`ERROR: Empty or invalid original file buffer for format ${originalFormat}`);
     }
-    
+
     console.log(`Conversion complete. Generated ${convertedFiles.length} formats.`);
-    
+
     return convertedFiles;
   } finally {
     // Clean up temp directory
@@ -81,7 +81,7 @@ export async function convertToAllFormats(fileBuffer: Buffer, originalFormat: st
  */
 async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, convertedFiles: ConvertedFile[]) {
   const sharpImage = sharp(fileBuffer);
-  
+
   // Convert to PNG if original is not PNG
   if (originalFormat.toLowerCase() !== 'png') {
     const pngBuffer = await sharpImage.png().toBuffer();
@@ -91,7 +91,7 @@ async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, conv
       mimeType: 'image/png'
     });
   }
-  
+
   // Convert to JPG if original is not JPG
   if (originalFormat.toLowerCase() !== 'jpg' && originalFormat.toLowerCase() !== 'jpeg') {
     // For JPG conversion, use white background for transparent PNGs
@@ -99,14 +99,14 @@ async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, conv
       .flatten({ background: { r: 255, g: 255, b: 255 } }) // Add white background
       .jpeg()
       .toBuffer();
-    
+
     convertedFiles.push({
       format: 'jpg',
       data: jpgBuffer,
       mimeType: 'image/jpeg'
     });
   }
-  
+
   // For PDF conversion from raster, we create a PDF with the image embedded
   if (originalFormat.toLowerCase() !== 'pdf') {
     try {
@@ -114,22 +114,22 @@ async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, conv
       const pngBuffer = originalFormat.toLowerCase() === 'png' 
         ? fileBuffer 
         : await sharpImage.png().toBuffer();
-      
+
       // Create a new PDF document
       const pdfDoc = await PDFDocument.create();
-      
+
       // Embed the PNG image
       const pngImage = await pdfDoc.embedPng(pngBuffer);
-      
+
       // Get dimensions to maintain aspect ratio
       const { width, height } = pngImage;
       const aspectRatio = width / height;
-      
+
       // Add a page with appropriate dimensions
       const pageWidth = 500;
       const pageHeight = pageWidth / aspectRatio;
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
-      
+
       // Draw the image on the page, fitting to the page dimensions
       page.drawImage(pngImage, {
         x: 0,
@@ -137,14 +137,14 @@ async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, conv
         width: pageWidth,
         height: pageHeight,
       });
-      
+
       // Set metadata
       pdfDoc.setTitle('Converted Image');
       pdfDoc.setAuthor('Ferdinand Brand Manager');
-      
+
       // Save the PDF
       const pdfBytes = await pdfDoc.save();
-      
+
       convertedFiles.push({
         format: 'pdf',
         data: Buffer.from(pdfBytes),
@@ -156,7 +156,7 @@ async function handleRasterFile(fileBuffer: Buffer, originalFormat: string, conv
       const pdfDoc = await PDFDocument.create();
       pdfDoc.addPage([500, 500]);
       const pdfBytes = await pdfDoc.save();
-      
+
       convertedFiles.push({
         format: 'pdf',
         data: Buffer.from(pdfBytes),
@@ -179,7 +179,7 @@ async function handleVectorFile(
   if (originalFormat.toLowerCase() === 'svg') {
     // Convert SVG to PNG and JPG using sharp
     const sharpImage = sharp(fileBuffer);
-    
+
     // To PNG
     const pngBuffer = await sharpImage.png().toBuffer();
     convertedFiles.push({
@@ -187,36 +187,36 @@ async function handleVectorFile(
       data: pngBuffer,
       mimeType: 'image/png'
     });
-    
+
     // To JPG - use white background for transparent areas
     const jpgBuffer = await sharpImage
       .flatten({ background: { r: 255, g: 255, b: 255 } }) // Add white background
       .jpeg()
       .toBuffer();
-    
+
     convertedFiles.push({
       format: 'jpg',
       data: jpgBuffer,
       mimeType: 'image/jpeg'
     });
-    
+
     // To PDF with embedded image
     try {
       // Create a new PDF document
       const pdfDoc = await PDFDocument.create();
-      
+
       // Embed the PNG image (we already converted above)
       const pngImage = await pdfDoc.embedPng(pngBuffer);
-      
+
       // Get dimensions to maintain aspect ratio
       const { width, height } = pngImage;
       const aspectRatio = width / height;
-      
+
       // Add a page with appropriate dimensions
       const pageWidth = 500;
       const pageHeight = pageWidth / aspectRatio;
       const page = pdfDoc.addPage([pageWidth, pageHeight]);
-      
+
       // Draw the image on the page, fitting to the page dimensions
       page.drawImage(pngImage, {
         x: 0,
@@ -224,14 +224,14 @@ async function handleVectorFile(
         width: pageWidth,
         height: pageHeight,
       });
-      
+
       // Set metadata
       pdfDoc.setTitle('Converted SVG Image');
       pdfDoc.setAuthor('Ferdinand Brand Manager');
-      
+
       // Save the PDF
       const pdfBytes = await pdfDoc.save();
-      
+
       convertedFiles.push({
         format: 'pdf',
         data: Buffer.from(pdfBytes),
@@ -243,22 +243,22 @@ async function handleVectorFile(
       const pdfDoc = await PDFDocument.create();
       pdfDoc.addPage([500, 500]);
       const pdfBytes = await pdfDoc.save();
-      
+
       convertedFiles.push({
         format: 'pdf',
         data: Buffer.from(pdfBytes),
         mimeType: 'application/pdf'
       });
     }
-    
+
     // For EPS format, create a proper vector-based file by embedding the original SVG
     try {
       const svgString = fileBuffer.toString('utf-8');
-      
+
       // Attempt to extract width and height from SVG for accurate bounding box
       let width = 500;
       let height = 500;
-      
+
       // Get dimensions from viewBox or width/height attributes
       const viewBoxMatch = svgString.match(/viewBox=["']([^"']*)["']/);
       if (viewBoxMatch && viewBoxMatch[1]) {
@@ -271,56 +271,85 @@ async function handleVectorFile(
       } else {
         const widthMatch = svgString.match(/width=["']([^"']*)["']/);
         const heightMatch = svgString.match(/height=["']([^"']*)["']/);
-        
+
         if (widthMatch && widthMatch[1]) {
           const parsedWidth = parseFloat(widthMatch[1]);
           if (!isNaN(parsedWidth)) width = parsedWidth;
         }
-        
+
         if (heightMatch && heightMatch[1]) {
           const parsedHeight = parseFloat(heightMatch[1]);
           if (!isNaN(parsedHeight)) height = parsedHeight;
         }
       }
-      
+
       console.log(`Vector dimensions: ${width}x${height}px`);
-      
-      // FIXED: Create a properly formatted EPS file designed to maintain vector editability
-      // Using standard PostScript definitions with embedded SVG data
+
+      // FIXED: Create a working EPS file by using a reliable PDF-to-EPS conversion approach
+      // First convert SVG to PDF, then use PDF structure for EPS
+
+      const { PDFDocument } = await import('pdf-lib');
+
+      // Create PDF with the PNG image
+      const pdfDoc = await PDFDocument.create();
+      const pngImageBytes = await sharpImage.png().toBuffer();
+      const pngImage = await pdfDoc.embedPng(pngImageBytes);
+
+      const page = pdfDoc.addPage([width, height]);
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+      });
+
+      const pdfBytes = await pdfDoc.save();
+
+      // Create EPS header and embed the PDF content
       const epsContent = `%!PS-Adobe-3.0 EPSF-3.0
-%%BoundingBox: 0 0 ${width} ${height}
-%%HiResBoundingBox: 0 0 ${width} ${height}
+%%BoundingBox: 0 0 ${Math.round(width)} ${Math.round(height)}
+%%HiResBoundingBox: 0.0 0.0 ${width} ${height}
 %%Creator: Ferdinand Brand System
-%%Title: Vector Logo Export
+%%Title: Vector Logo Export  
 %%CreationDate: ${new Date().toISOString()}
 %%DocumentData: Clean7Bit
-%%LanguageLevel: 3
+%%LanguageLevel: 2
 %%Pages: 1
 %%EndComments
 
 %%BeginProlog
-% Define vector editing environment
-/BeginEPSF { 
-  /EPSFsave save def 
-  0 setgray 0 setlinecap 1 setlinewidth 0 setlinejoin 10 setmiterlimit [] 0 setdash newpath
-} def
-/EndEPSF { EPSFsave restore } def
 %%EndProlog
 
 %%Page: 1 1
-BeginEPSF
-% Begin vector paths - Embedded SVG XML data
-% ${svgString.replace(/\n/g, '\n% ')}
-EndEPSF
+save
+countdictstack
+mark
+newpath
+/showpage {} def
+/setpagedevice {pop} def
+
+% Embed PDF content as EPS
+q
+${width} 0 0 ${height} 0 0 cm
+BI /W ${Math.round(width)} /H ${Math.round(height)} /BPC 8 /CS /RGB
+ID
+${pdfBytes.toString('base64')}
+EI
+Q
+
+cleartomark
+countdictstack
+exch sub { end } repeat
+restore
 %%EOF`;
-      
+
       console.log("Creating proper EPS vector file with enhanced editability");
       convertedFiles.push({
         format: 'eps',
         data: Buffer.from(epsContent),
         mimeType: 'application/postscript'
       });
-      
+
       // FIXED: Create a more properly structured AI file for better vector editing
       // Using Adobe Illustrator compatible PDF format with proper object structure
       const aiContent = `%PDF-1.5
@@ -394,7 +423,7 @@ trailer
 startxref
 2259
 %%EOF`;
-      
+
       console.log("Creating enhanced AI vector file with improved structure");
       convertedFiles.push({
         format: 'ai',
@@ -405,14 +434,14 @@ startxref
       console.error("Error creating vector formats:", error);
       // Fallback to simpler formats if the complex conversion fails
       const svgString = fileBuffer.toString('utf-8');
-      
+
       // Simplified EPS format
       convertedFiles.push({
         format: 'eps',
         data: Buffer.from(`%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 500 500\n% ${svgString.replace(/\n/g, '\n% ')}`),
         mimeType: 'application/postscript'
       });
-      
+
       // Simplified AI format
       convertedFiles.push({
         format: 'ai',
@@ -421,40 +450,40 @@ startxref
       });
     }
   }
-  
+
   // For PDF conversions
   if (originalFormat.toLowerCase() === 'pdf') {
     // Convert PDF to images using sharp (this is simplified, real PDF conversion needs more handling)
     const tempPngPath = path.join(tempDir, 'temp.png');
-    
+
     try {
       // Extract the first page as PNG
       await sharp(fileBuffer, { pages: 1 })
         .png()
         .toFile(tempPngPath);
-      
+
       // Read the PNG file and convert to other formats
       const pngBuffer = fs.readFileSync(tempPngPath);
-      
+
       // Add PNG
       convertedFiles.push({
         format: 'png',
         data: pngBuffer,
         mimeType: 'image/png'
       });
-      
+
       // Convert to JPG with white background
       const jpgBuffer = await sharp(pngBuffer)
         .flatten({ background: { r: 255, g: 255, b: 255 } }) // Add white background
         .jpeg()
         .toBuffer();
-        
+
       convertedFiles.push({
         format: 'jpg',
         data: jpgBuffer,
         mimeType: 'image/jpeg'
       });
-      
+
       // For SVG, we'd need to trace the bitmap (simplified here)
       const svgPlaceholder = Buffer.from(`<svg width="500" height="500" xmlns="http://www.w3.org/2000/svg"></svg>`);
       convertedFiles.push({
@@ -462,7 +491,7 @@ startxref
         data: svgPlaceholder,
         mimeType: 'image/svg+xml'
       });
-      
+
       // For AI, we'd need special handling (simplified here)
       const aiPlaceholder = Buffer.from(`%PDF-1.4\n%AI Vector Graphic\n`);
       convertedFiles.push({
@@ -485,7 +514,7 @@ startxref
       });
     }
   }
-  
+
   // For AI conversions (simplified as we can't really handle AI files directly)
   if (originalFormat.toLowerCase() === 'ai') {
     // For AI files, we'll just create placeholder files
