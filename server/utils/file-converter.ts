@@ -283,24 +283,24 @@ async function handleVectorFile(
 
       console.log(`Converting SVG to EPS: ${width}x${height}px`);
 
-      // Convert SVG to high-resolution PNG and embed as PostScript image
-      const pngBuffer = await sharpImage.png({ quality: 100 }).toBuffer();
+      // Convert SVG to high-quality PNG with 90% quality to avoid issues
+      const pngBuffer = await sharpImage.png({ quality: 90 }).toBuffer();
 
       // Get PNG metadata for proper image dimensions
       const pngMeta = await sharp(pngBuffer).metadata();
       const imgWidth = pngMeta.width || width;
       const imgHeight = pngMeta.height || height;
 
-      // Convert PNG buffer to hexadecimal string for PostScript embedding
-      const hexData = pngBuffer.toString('hex').toUpperCase();
+      // Convert PNG to base64 for PostScript embedding
+      const base64Data = pngBuffer.toString('base64');
 
-      // Split hex data into lines of 78 characters for proper EPS formatting
-      const hexLines = [];
-      for (let i = 0; i < hexData.length; i += 78) {
-        hexLines.push(hexData.substr(i, 78));
+      // Split base64 data into lines of 72 characters for proper EPS formatting
+      const base64Lines = [];
+      for (let i = 0; i < base64Data.length; i += 72) {
+        base64Lines.push(base64Data.substr(i, 72));
       }
 
-      // Create proper EPS file with embedded PNG image
+      // Create proper EPS file with corrected PostScript syntax
       const epsContent = `%!PS-Adobe-3.0 EPSF-3.0
 %%BoundingBox: 0 0 ${Math.round(width)} ${Math.round(height)}
 %%HiResBoundingBox: 0.0 0.0 ${width} ${height}
@@ -313,22 +313,28 @@ async function handleVectorFile(
 %%EndComments
 
 %%BeginProlog
-% Define image display procedure
-/DisplayImage {
-  gsave
-  ${width} ${height} scale
-  ${imgWidth} ${imgHeight} 8 [${imgWidth} 0 0 -${imgHeight} 0 ${imgHeight}]
-  currentfile /ASCII85Decode filter /DCTDecode filter
-  false 3 colorimage
-  grestore
-} def
 %%EndProlog
 
 %%Page: 1 1
 gsave
+% Set up coordinate system - flip Y axis for proper image orientation
+0 ${height} translate
+1 -1 scale
+
+% Define image dimensions and position
 0 0 translate
-DisplayImage
-${hexLines.join('\n')}
+${width} ${height} scale
+
+% Display the image
+${imgWidth} ${imgHeight} 8 
+[${imgWidth} 0 0 ${imgHeight} 0 0]
+{ currentfile /ASCII85Decode filter /DCTDecode filter }
+false 3
+colorimage
+
+% Base64 encoded PNG data
+<~${base64Lines.join('\n')}~>
+
 grestore
 showpage
 
