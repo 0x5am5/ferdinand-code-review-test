@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   Search,
   LayoutDashboard,
+  Figma,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
@@ -28,6 +29,7 @@ interface ClientSidebarProps {
     typeSystem: boolean;
     userPersonas: boolean;
     inspiration: boolean;
+    figmaIntegration: boolean;
   };
   activeTab?: string;
   onTabChange: (tab: string) => void;
@@ -121,6 +123,12 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       title: "Inspiration",
       icon: <Image className="h-4 w-4" />,
       enabled: featureToggles.inspiration,
+    },
+    {
+      id: "figma",
+      title: "Figma Integration",
+      icon: <Figma className="h-4 w-4" />,
+      enabled: featureToggles.figmaIntegration,
     },
   ];
 

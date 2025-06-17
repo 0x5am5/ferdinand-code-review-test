@@ -143,6 +143,7 @@ export default function ClientDetails() {
     typeSystem: true,
     userPersonas: true,
     inspiration: true,
+    figmaIntegration: false,
   };
 
   const anyFeatureEnabled = Object.values(featureToggles).some(

@@ -32,6 +32,7 @@ import {
   Clock,
   UserCircle,
   Plus,
+  Figma,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
@@ -186,6 +187,7 @@ export default function Dashboard() {
           typeSystem: Boolean(featureTogglesObj.typeSystem ?? true),
           userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
           inspiration: Boolean(featureTogglesObj.inspiration ?? true),
+          figmaIntegration: Boolean(featureTogglesObj.figmaIntegration ?? false),
         };
         setFeatureToggles(toggles);
       } else {
@@ -196,6 +198,7 @@ export default function Dashboard() {
           typeSystem: true,
           userPersonas: true,
           inspiration: true,
+          figmaIntegration: false,
         });
       }
     } else {
@@ -214,6 +217,7 @@ export default function Dashboard() {
         typeSystem: true,
         userPersonas: true,
         inspiration: true,
+        figmaIntegration: false,
       });
     }
   }, [editingClient, form]);
@@ -750,6 +754,27 @@ export default function Dashboard() {
                             setFeatureToggles((prev) => ({
                               ...prev,
                               inspiration: checked,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <Figma className="h-4 w-4 mr-2" />
+                            <div className="font-medium">Figma Integration</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Sync design tokens and styles with Figma design files
+                          </div>
+                        </div>
+                        <Switch
+                          checked={featureToggles.figmaIntegration}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              figmaIntegration: checked,
                             }))
                           }
                         />
