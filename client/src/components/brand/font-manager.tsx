@@ -942,16 +942,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       category: "Sans Serif",
       weights: ["300", "400", "500", "600", "700", "800"],
     },
-    {
-      name: "IBM Plex Sans",
-      category: "Sans Serif",
-      weights: ["100", "200", "300", "400", "500", "600", "700"],
-    },
-    {
-      name: "IBM Plex Mono",
-      category: "Monospace",
-      weights: ["100", "200", "300", "400", "500", "600", "700"],
-    },
     // Add more fallback fonts as needed
   ];
 
@@ -1104,20 +1094,20 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       (font: any) => font.name === fontName,
     );
     const availableWeights = selectedFont?.weights || ["400", "700"];
-    const allWeights = availableWeights; // Use all available weights
+    const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
 
     console.log(
       `Creating Google Font: ${fontName} with weights:`,
-      allWeights,
+      defaultWeights,
     );
 
     // Create proper font data structure
     const fontData = {
       source: FontSource.GOOGLE,
-      weights: allWeights,
+      weights: defaultWeights,
       styles: ["normal"],
       sourceData: {
-        url: generateGoogleFontUrl(fontName, allWeights, ["normal"]),
+        url: generateGoogleFontUrl(fontName, defaultWeights, ["normal"]),
         fontFamily: fontName,
         category: selectedFont?.category || "Sans Serif",
       },
