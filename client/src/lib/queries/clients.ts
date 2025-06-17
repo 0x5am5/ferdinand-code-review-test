@@ -72,8 +72,9 @@ export function useUpdateClientMutation() {
     mutationFn: async ({ id, data }: { id: number; data: Partial<Client> }) => {
       await apiRequest("PATCH", `/api/clients/${id}`, data);
     },
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
+      queryClient.invalidateQueries({ queryKey: [`/api/clients/${id}`] });
       toast({
         title: "Success",
         description: "Client updated successfully",

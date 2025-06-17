@@ -290,11 +290,11 @@ export default function ClientDetails() {
           </Card>
         );
 
-      case "figma":
+      case "design-system":
         return featureToggles.figmaIntegration ? (
           <Card>
             <CardHeader>
-              <CardTitle>Figma Integration</CardTitle>
+              <CardTitle>Design System</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
@@ -320,7 +320,7 @@ export default function ClientDetails() {
               <CardTitle>Feature Disabled</CardTitle>
             </CardHeader>
             <CardContent>
-              Figma Integration feature is disabled for this client.
+              Design System feature is disabled for this client.
             </CardContent>
           </Card>
         );

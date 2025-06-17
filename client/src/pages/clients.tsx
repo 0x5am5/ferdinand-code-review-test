@@ -895,6 +895,10 @@ export default function Clients() {
                     description: editingClient.description,
                     featureToggles: featureToggles,
                   },
+                }, {
+                  onSuccess: () => {
+                    setEditingClient(null);
+                  }
                 })
               }
               disabled={updateClient.isPending}

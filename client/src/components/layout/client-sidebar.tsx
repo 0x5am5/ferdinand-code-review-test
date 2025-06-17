@@ -125,8 +125,8 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       enabled: featureToggles.inspiration,
     },
     {
-      id: "figma",
-      title: "Figma Integration",
+      id: "design-system",
+      title: "Design System",
       icon: <Figma className="h-4 w-4" />,
       enabled: featureToggles.figmaIntegration,
     },

@@ -806,6 +806,10 @@ export default function Dashboard() {
                           updateClient.mutate({
                             id: editingClient.id,
                             data: { featureToggles },
+                          }, {
+                            onSuccess: () => {
+                              setEditingClient(null);
+                            }
                           });
                         }
                       }}
@@ -843,9 +847,9 @@ export default function Dashboard() {
               variant="destructive"
               onClick={() =>
                 deletingClient &&
-                useDeleteClientMutation.mutate(deletingClient.id)
+                deleteClient.mutate(deletingClient.id)
               }
-              disabled={useDeleteClientMutation.isPending}
+              disabled={deleteClient.isPending}
             >
               Delete
             </Button>
