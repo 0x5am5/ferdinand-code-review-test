@@ -758,9 +758,7 @@ export function registerAssetRoutes(app: Express) {
       ) || ['svg', 'ai', 'eps', 'pdf'].includes(format?.toLowerCase() || '');
 
       // Fix content type for specific vector formats to ensure proper download
-      if (format === 'eps') {
-        mimeType = 'application/postscript';
-      } else if (format === 'ai') {
+      if (format === 'ai') {
         mimeType = 'application/postscript';
       } else if (format === 'pdf') {
         mimeType = 'application/pdf';
