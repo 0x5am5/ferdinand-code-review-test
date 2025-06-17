@@ -10,7 +10,7 @@ import {
   convertedAssets, hiddenSections, typeScales, UserRole
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, asc, inArray } from "drizzle-orm";
+import { eq, asc, inArray, and } from "drizzle-orm";
 import * as crypto from "crypto";
 
 export interface IStorage {
@@ -219,9 +219,13 @@ export class DatabaseStorage implements IStorage {
     const [asset] = await db
       .select()
       .from(convertedAssets)
-      .where(eq(convertedAssets.originalAssetId, originalAssetId) 
-          && eq(convertedAssets.format, format) 
-          && eq(convertedAssets.isDarkVariant, isDarkVariant));
+      .where(
+        and(
+          eq(convertedAssets.originalAssetId, originalAssetId),
+          eq(convertedAssets.format, format),
+          eq(convertedAssets.isDarkVariant, isDarkVariant)
+        )
+      );
     return asset;
   }
 

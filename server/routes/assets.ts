@@ -658,8 +658,21 @@ export function registerAssetRoutes(app: Express) {
         // CRITICAL FIX: Get converted asset, ensuring it's the right one
         console.log(`Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`);
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
-
+        
         if (convertedAsset) {
+          console.log(`Found converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`);
+          // CRITICAL: Verify this converted asset actually belongs to the requested asset
+          if (convertedAsset.originalAssetId !== assetId) {
+            console.error(`ERROR: Converted asset ${convertedAsset.id} belongs to original asset ${convertedAsset.originalAssetId}, but we requested ${assetId}`);
+            // Don't use this converted asset, fall back to on-the-fly conversion
+          } else {
+            console.log(`✓ Converted asset correctly belongs to requested asset ${assetId}`);
+          }
+        } else {
+          console.log(`No converted asset found for Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`);
+        }
+
+        if (convertedAsset && convertedAsset.originalAssetId === assetId) {
           console.log(`Serving converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`);
           mimeType = convertedAsset.mimeType;
           fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
