@@ -751,16 +751,14 @@ export function registerAssetRoutes(app: Express) {
         fileBuffer = Buffer.from(asset.fileData, "base64");
       }
 
-      // Skip resizing for vector formats like SVG, AI, EPS, and PDF
+      // Skip resizing for vector formats like SVG, AI, and PDF
       // preserveVector is already declared above
       const isVectorFormat = ['image/svg+xml', 'application/postscript', 'application/pdf'].some(
         type => mimeType.includes(type)
-      ) || ['svg', 'ai', 'eps', 'pdf'].includes(format?.toLowerCase() || '');
+      ) || ['svg', 'ai', 'pdf'].includes(format?.toLowerCase() || '');
 
       // Fix content type for specific vector formats to ensure proper download
-      if (format === 'eps') {
-        mimeType = 'application/postscript';
-      } else if (format === 'ai') {
+      if (format === 'ai') {
         mimeType = 'application/postscript';
       } else if (format === 'pdf') {
         mimeType = 'application/pdf';

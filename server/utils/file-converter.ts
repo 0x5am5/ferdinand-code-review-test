@@ -251,7 +251,8 @@ async function handleVectorFile(
       });
     }
 
-    // For EPS format, create a proper PostScript file by converting SVG to PostScript commands
+    // FIXED: Create a more properly structured AI file for better vector editing
+    // Using Adobe Illustrator compatible PDF format with proper object structure
     try {
       const svgString = fileBuffer.toString('utf-8');
 
@@ -281,74 +282,6 @@ async function handleVectorFile(
         }
       }
 
-      console.log(`Converting SVG to EPS: ${width}x${height}px`);
-
-      // Convert SVG to high-quality PNG with 90% quality to avoid issues
-      const pngBuffer = await sharpImage.png({ quality: 90 }).toBuffer();
-
-      // Get PNG metadata for proper image dimensions
-      const pngMeta = await sharp(pngBuffer).metadata();
-      const imgWidth = pngMeta.width || width;
-      const imgHeight = pngMeta.height || height;
-
-      // Convert PNG to base64 for PostScript embedding
-      const base64Data = pngBuffer.toString('base64');
-
-      // Split base64 data into lines of 72 characters for proper EPS formatting
-      const base64Lines = [];
-      for (let i = 0; i < base64Data.length; i += 72) {
-        base64Lines.push(base64Data.substr(i, 72));
-      }
-
-      // Create proper EPS file with corrected PostScript syntax
-      const epsContent = `%!PS-Adobe-3.0 EPSF-3.0
-%%BoundingBox: 0 0 ${Math.round(width)} ${Math.round(height)}
-%%HiResBoundingBox: 0.0 0.0 ${width} ${height}
-%%Creator: Ferdinand Brand System
-%%Title: Vector Logo Export
-%%CreationDate: ${new Date().toISOString()}
-%%DocumentData: Clean7Bit
-%%LanguageLevel: 2
-%%Pages: 1
-%%EndComments
-
-%%BeginProlog
-%%EndProlog
-
-%%Page: 1 1
-gsave
-% Set up coordinate system - flip Y axis for proper image orientation
-0 ${height} translate
-1 -1 scale
-
-% Define image dimensions and position
-0 0 translate
-${width} ${height} scale
-
-% Display the image
-${imgWidth} ${imgHeight} 8 
-[${imgWidth} 0 0 ${imgHeight} 0 0]
-{ currentfile /ASCII85Decode filter /DCTDecode filter }
-false 3
-colorimage
-
-% Base64 encoded PNG data
-<~${base64Lines.join('\n')}~>
-
-grestore
-showpage
-
-%%EOF`;
-
-      console.log("Creating valid EPS file with embedded PNG image");
-      convertedFiles.push({
-        format: 'eps',
-        data: Buffer.from(epsContent),
-        mimeType: 'application/postscript'
-      });
-
-      // FIXED: Create a more properly structured AI file for better vector editing
-      // Using Adobe Illustrator compatible PDF format with proper object structure
       const aiContent = `%PDF-1.5
 %âãÏÓ
 %AI12-Adobe Illustrator CS6 Vector Export
@@ -428,16 +361,9 @@ startxref
         mimeType: 'application/postscript'
       });
     } catch (error) {
-      console.error("Error creating vector formats:", error);
-      // Fallback to simpler formats if the complex conversion fails
+      console.error("Error creating AI format:", error);
+      // Fallback to simpler AI format if the complex conversion fails
       const svgString = fileBuffer.toString('utf-8');
-
-      // Simplified EPS format
-      convertedFiles.push({
-        format: 'eps',
-        data: Buffer.from(`%!PS-Adobe-3.0 EPSF-3.0\n%%BoundingBox: 0 0 500 500\n% ${svgString.replace(/\n/g, '\n% ')}`),
-        mimeType: 'application/postscript'
-      });
 
       // Simplified AI format
       convertedFiles.push({

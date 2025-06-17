@@ -593,29 +593,7 @@ function AppIconDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                <div 
-                  className="logo-download__link"
-                  onClick={() => {
-                    // Download EPS
-                    const container = document.createElement('div');
-                    container.style.display = 'none';
-                    document.body.appendChild(container);
-
-                    const link = document.createElement('a');
-                    link.href = getDownloadUrl(100, 'eps');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
-                    container.appendChild(link);
-                    link.click();
-
-                    setTimeout(() => {
-                      document.body.removeChild(container);
-                      setOpen(false);
-                    }, 100);
-                  }}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download EPS logo
-                </div>
+                
                 <div 
                   className="logo-download__link"
                   onClick={() => {
@@ -781,11 +759,11 @@ function StandardLogoDownloadButton({
         );
       }
 
-      // Add vector files (SVG, EPS, AI, PDF)
-      const vectorFormats = ['svg', 'eps', 'ai', 'pdf'];
+      // Get all the different formats
+      const formats = ['svg', 'ai', 'pdf'];
       // Use a reference to avoid TypeScript null warnings
       const vectorFolderRef = vectorFolder;
-      for (const format of vectorFormats) {
+      for (const format of formats) {
         // CRITICAL FIX: Use the secure URL helper to ensure we download the correct client's logo
         // This prevents the issue where clients were downloading the Summa logo instead of their own
         const url = getSecureAssetUrl(logo.id, logo.clientId, {
@@ -931,7 +909,8 @@ function StandardLogoDownloadButton({
 
       // Create secure download URL with explicit client ID
       const downloadUrlWithClientId = getSecureAssetUrl(logo.id, logo.clientId, {
-        format,
+        ```
+      format,
         variant: variant === 'dark' ? 'dark' : undefined,
         preserveVector: true
       });
@@ -1035,13 +1014,7 @@ function StandardLogoDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                <div 
-                  className="logo-download__link"
-                  onClick={() => downloadEditableFiles('eps')}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download EPS logo
-                </div>
+                
                 <div 
                   className="logo-download__link"
                   onClick={() => downloadEditableFiles('ai')}
@@ -1311,29 +1284,7 @@ function FaviconDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                <div 
-                  className="logo-download__link"
-                  onClick={() => {
-                    // Download EPS
-                    const container = document.createElement('div');
-                    container.style.display = 'none';
-                    document.body.appendChild(container);
-
-                    const link = document.createElement('a');
-                    link.href = getDownloadUrl(100, 'eps');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
-                    container.appendChild(link);
-                    link.click();
-
-                    setTimeout(() => {
-                      document.body.removeChild(container);
-                      setOpen(false);
-                    }, 100);
-                  }}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download EPS logo
-                </div>
+                
                 <div 
                   className="logo-download__link"
                   onClick={() => {
@@ -1763,7 +1714,7 @@ function LogoSection({
                     className="asset-display__preview-action-button"
                     type="button"
                     onClick={(e) => {
-                      const fileInput = e.currentTarget.closest('label')?.querySelector('input[type=\"file\"]');
+                      const fileInput = e.currentTarget.closest('label')?.querySelector('input[type="file\"]');
                       if (fileInput) {
                         fileInput.click();
                       }
@@ -1871,7 +1822,8 @@ function LogoSection({
                             isDarkVariant: true
                           }));
 
-                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {This code removes EPS download options from the logo manager component.
+```javascript
                             method: "PATCH",
                             body: formData,
                           });
