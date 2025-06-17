@@ -593,29 +593,7 @@ function AppIconDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                <div 
-                  className="logo-download__link"
-                  onClick={() => {
-                    // Download EPS
-                    const container = document.createElement('div');
-                    container.style.display = 'none';
-                    document.body.appendChild(container);
-
-                    const link = document.createElement('a');
-                    link.href = getDownloadUrl(100, 'eps');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
-                    container.appendChild(link);
-                    link.click();
-
-                    setTimeout(() => {
-                      document.body.removeChild(container);
-                      setOpen(false);
-                    }, 100);
-                  }}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download EPS logo
-                </div>
+                
                 <div 
                   className="logo-download__link"
                   onClick={() => {
@@ -1035,13 +1013,7 @@ function StandardLogoDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                <div 
-                  className="logo-download__link"
-                  onClick={() => downloadEditableFiles('eps')}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download EPS logo
-                </div>
+                
                 <div 
                   className="logo-download__link"
                   onClick={() => downloadEditableFiles('ai')}
@@ -1311,29 +1283,7 @@ function FaviconDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                <div 
-                  className="logo-download__link"
-                  onClick={() => {
-                    // Download EPS
-                    const container = document.createElement('div');
-                    container.style.display = 'none';
-                    document.body.appendChild(container);
-
-                    const link = document.createElement('a');
-                    link.href = getDownloadUrl(100, 'eps');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.eps`;
-                    container.appendChild(link);
-                    link.click();
-
-                    setTimeout(() => {
-                      document.body.removeChild(container);
-                      setOpen(false);
-                    }, 100);
-                  }}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download EPS logo
-                </div>
+                
                 <div 
                   className="logo-download__link"
                   onClick={() => {
