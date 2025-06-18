@@ -200,18 +200,22 @@ async function handleVectorFile(
       console.error('Error creating PDF from SVG:', error);
     }
 
-    // Create proper Adobe Illustrator AI file
+    // Create Adobe Illustrator AI file with simplified approach
     try {
+      console.log('Creating Adobe Illustrator file...');
       const svgString = fileBuffer.toString('utf-8');
-      const aiContent = await createProperAiFile(svgString, pngBuffer);
+      const aiContent = await createSimplifiedAiFile(svgString, pngBuffer);
 
-      convertedFiles.push({
-        format: 'ai',
-        data: Buffer.from(aiContent),
-        mimeType: 'application/postscript'
-      });
-
-      console.log('Successfully created Adobe Illustrator file with embedded content');
+      if (aiContent && aiContent.length > 1000) { // Ensure we have substantial content
+        convertedFiles.push({
+          format: 'ai',
+          data: Buffer.from(aiContent),
+          mimeType: 'application/postscript'
+        });
+        console.log(`Successfully created Adobe Illustrator file (${aiContent.length} bytes)`);
+      } else {
+        console.error('AI file content too small, likely failed generation');
+      }
     } catch (error) {
       console.error("Error creating AI file:", error);
     }
@@ -219,21 +223,21 @@ async function handleVectorFile(
 }
 
 /**
- * Create a proper Adobe Illustrator file with embedded content
+ * Create a simplified but robust Adobe Illustrator file
  */
-async function createProperAiFile(svgString: string, pngBuffer: Buffer): Promise<string> {
-  // Extract dimensions from SVG with better parsing
+async function createSimplifiedAiFile(svgString: string, pngBuffer: Buffer): Promise<string> {
+  // Extract dimensions from SVG
   let width = 500;
   let height = 500;
 
   try {
-    // Try viewBox first (most reliable)
+    // Try viewBox first
     const viewBoxMatch = svgString.match(/viewBox=["']([^"']*)["']/i);
     if (viewBoxMatch && viewBoxMatch[1]) {
-      const viewBoxParts = viewBoxMatch[1].trim().split(/[\s,]+/).map(parseFloat);
-      if (viewBoxParts.length >= 4 && !isNaN(viewBoxParts[2]) && !isNaN(viewBoxParts[3])) {
-        width = Math.max(viewBoxParts[2], 100);
-        height = Math.max(viewBoxParts[3], 100);
+      const parts = viewBoxMatch[1].trim().split(/[\s,]+/).map(parseFloat);
+      if (parts.length >= 4 && !isNaN(parts[2]) && !isNaN(parts[3])) {
+        width = Math.max(parts[2], 100);
+        height = Math.max(parts[3], 100);
       }
     } else {
       // Fallback to width/height attributes
@@ -252,32 +256,35 @@ async function createProperAiFile(svgString: string, pngBuffer: Buffer): Promise
     }
   } catch (error) {
     console.error("Error parsing SVG dimensions:", error);
-    width = 500;
-    height = 500;
   }
 
   console.log(`Creating AI file with dimensions: ${width}x${height}px`);
 
-  // Generate current timestamp for file metadata
+  // Generate timestamp
   const now = new Date();
   const timestamp = now.toISOString().replace(/[-T:.Z]/g, '').slice(0, 14);
 
-  // Extract and convert SVG content to PostScript paths
-  const vectorPaths = await extractSvgVectorPaths(svgString, width, height);
+  // Convert PNG to hex for embedding
+  const hexData = pngBuffer.toString('hex').toUpperCase();
+  let hexString = '';
+  for (let i = 0; i < hexData.length; i += 78) { // 78 chars per line for proper formatting
+    hexString += hexData.slice(i, i + 78) + '\n';
+  }
 
-  // Create Adobe Illustrator file with proper structure
+  // Extract basic SVG elements for simple vector representation
+  const basicVectorContent = extractBasicSvgElements(svgString, width, height);
+
+  // Create the AI file content with embedded raster image
   const aiContent = `%!PS-Adobe-3.0 EPSF-3.0
-%%Creator: Ferdinand Brand System v2.0
-%%Title: Vector Logo
+%%Creator: Ferdinand Brand System
+%%Title: Logo Vector File
 %%CreationDate: ${timestamp}
 %%BoundingBox: 0 0 ${Math.ceil(width)} ${Math.ceil(height)}
 %%HiResBoundingBox: 0.0 0.0 ${width.toFixed(1)} ${height.toFixed(1)}
 %%DocumentData: Clean7Bit
-%%LanguageLevel: 3
+%%LanguageLevel: 2
 %%Pages: 1
 %%DocumentSuppliedResources: procset Adobe_level2_AI5 1.2 0
-%%+ procset Adobe_IllustratorA_AI5 1.0 0
-%%+ procset Adobe_ColorImage_AI6 1.1 0
 %AI5_FileFormat: AI9
 %AI5_TargetResolution: 800
 %AI12_BuildNumber: 681
@@ -295,88 +302,38 @@ async function createProperAiFile(svgString: string, pngBuffer: Buffer): Promise
 %%EndComments
 
 %%BeginProlog
-%%BeginResource: procset Adobe_level2_AI5 1.2 0
 userdict /Adobe_level2_AI5 85 dict dup begin put
 /bd{bind def}bind def
-/incompound false def
 /m{moveto}bd
 /l{lineto}bd
 /c{curveto}bd
-/v{currentpoint 6 2 roll curveto}bd
-/y{2 copy curveto}bd
 /re{4 2 roll moveto 1 index 0 rlineto 0 exch rlineto neg 0 rlineto closepath}bd
-/f{eofill}bd
-/F{fill}bd
-/s{closepath stroke}bd
-/S{stroke}bd
-/W{clip}bd
+/f{fill}bd
+/s{stroke}bd
 /w{setlinewidth}bd
-/j{setlinejoin}bd
-/J{setlinecap}bd
-/M{setmiterlimit}bd
-/d{setdash}bd
+/g{setgray}bd
+/rg{setrgbcolor}bd
 /q{gsave}bd
 /Q{grestore}bd
 /h{closepath}bd
-/H{setflat}bd
-/i{setcolor}bd
-/rg{setrgbcolor}bd
-/k{setcmykcolor}bd
-/g{setgray}bd
-/G{setgray}bd
-/sc{setcolor}bd
-/SC{setcolor}bd
-%%EndResource
-
-%%BeginResource: procset Adobe_IllustratorA_AI5 1.0 0
-userdict /Adobe_IllustratorA_AI5 95 dict dup begin put
-/initialize{
-  Adobe_level2_AI5 begin
-  Adobe_IllustratorA_AI5 begin
-}bd
-/terminate{
-  currentdict Adobe_IllustratorA_AI5 eq{end}if
-  currentdict Adobe_level2_AI5 eq{end}if
-}bd
-/Lb{6 -2 roll 4 -2 roll exch 4 2 roll 6 2 roll}bd
-/Ln{pop}bd
-/XR{pop}bd
-%%EndResource
-
-%%BeginResource: procset Adobe_ColorImage_AI6 1.1 0
-userdict /Adobe_ColorImage_AI6 112 dict dup begin put
-/initialize{
-  Adobe_ColorImage_AI6 begin
-  Adobe_IllustratorA_AI5 begin
-  Adobe_level2_AI5 begin
-}bd
-/terminate{
-  currentdict Adobe_level2_AI5 eq{end}if
-  currentdict Adobe_IllustratorA_AI5 eq{end}if
-  currentdict Adobe_ColorImage_AI6 eq{end}if
-}bd
-%%EndResource
 %%EndProlog
 
 %%BeginSetup
-Adobe_IllustratorA_AI5 /initialize get exec
-1 XR
-0 0 ${width} ${height} rectclip
 %%EndSetup
 
 %AI5_BeginLayer
-1 1 1 1 0 0 0 79 128 255 0 50 Lb
-(Logo Vector Layer) Ln
-0 A
+1 1 1 1 0 0 0 79 128 255 0 50 
+(Logo Layer) 
+0 
 q
 
-% Set up coordinate system
+% Set clipping path
 0 0 ${width} ${height} rectclip
 
-% Vector content from SVG
-${vectorPaths}
+% Basic vector content (simplified)
+${basicVectorContent}
 
-% Fallback raster image for complex elements
+% Embedded raster image as fallback/background
 q
 ${width} 0 0 ${height} 0 0 cm
 /DeviceRGB setcolorspace
@@ -389,427 +346,107 @@ ${width} 0 0 ${height} 0 0 cm
   /DataSource currentfile /ASCIIHexDecode filter
   /ImageMatrix [${Math.ceil(width)} 0 0 -${Math.ceil(height)} 0 ${Math.ceil(height)}]
 >> image
-${convertToASCIIHex(pngBuffer)}
->
+${hexString}>
 Q
 
 Q
-LB
 %AI5_EndLayer--
 
 %%PageTrailer
 %%Trailer
-Adobe_IllustratorA_AI5 /terminate get exec
 %%EOF`;
 
   return aiContent;
 }
 
 /**
- * Convert PNG buffer to ASCIIHex encoding for PostScript (more reliable than ASCII85)
+ * Extract basic SVG elements and convert to simple PostScript
  */
-function convertToASCIIHex(buffer: Buffer): string {
-  const hexString = buffer.toString('hex').toUpperCase();
-  let result = '';
-  
-  // Add line breaks every 80 characters for readability
-  for (let i = 0; i < hexString.length; i += 80) {
-    result += hexString.slice(i, i + 80) + '\n';
-  }
-  
-  return result;
-}
-
-/**
- * Extract and convert SVG content to PostScript vector paths
- */
-async function extractSvgVectorPaths(svgString: string, width: number, height: number): Promise<string> {
-  let pathContent = '% Vector content extracted from SVG\n';
-  let hasVectorContent = false;
+function extractBasicSvgElements(svgString: string, width: number, height: number): string {
+  let content = '% Basic vector elements from SVG\n';
 
   try {
-    // Set default styling
-    pathContent += '% Default styling\n';
-    pathContent += '1 setlinewidth\n';
-    pathContent += '1 setlinejoin\n';
-    pathContent += '1 setlinecap\n';
-    pathContent += '\n';
+    // Look for rect elements
+    const rects = svgString.match(/<rect[^>]*>/gi) || [];
+    rects.forEach((rect, index) => {
+      if (index >= 5) return; // Limit to prevent bloat
 
-    // Extract and convert path elements with better regex
-    const pathRegex = /<path[^>]*d=["']([^"']*?)["'][^>]*(?:fill=["']([^"']*)["'])?[^>]*(?:stroke=["']([^"']*)["'])?[^>]*>/gi;
-    let pathMatch;
-    let pathIndex = 0;
-
-    while ((pathMatch = pathRegex.exec(svgString)) !== null && pathIndex < 20) {
-      const pathData = pathMatch[1];
-      const fillColor = pathMatch[2];
-      const strokeColor = pathMatch[3];
-
-      if (pathData && pathData.trim()) {
-        pathContent += `\n% Path ${pathIndex + 1}\n`;
-        pathContent += 'newpath\n';
-        
-        const psPath = convertSvgPathToPostScript(pathData, height);
-        if (psPath.trim()) {
-          pathContent += psPath;
-          
-          // Apply colors if specified
-          if (fillColor && fillColor !== 'none') {
-            const rgb = parseColor(fillColor);
-            pathContent += `${rgb.r} ${rgb.g} ${rgb.b} setrgbcolor\n`;
-            pathContent += 'fill\n';
-          } else if (strokeColor && strokeColor !== 'none') {
-            const rgb = parseColor(strokeColor);
-            pathContent += `${rgb.r} ${rgb.g} ${rgb.b} setrgbcolor\n`;
-            pathContent += 'stroke\n';
-          } else {
-            // Default black fill
-            pathContent += '0 0 0 setrgbcolor\n';
-            pathContent += 'fill\n';
-          }
-          
-          hasVectorContent = true;
-          pathIndex++;
-        }
-      }
-    }
-
-    // Extract rectangle elements
-    const rectRegex = /<rect[^>]*x=["']([^"']*)["'][^>]*y=["']([^"']*)["'][^>]*width=["']([^"']*)["'][^>]*height=["']([^"']*)["'][^>]*(?:fill=["']([^"']*)["'])?[^>]*>/gi;
-    let rectMatch;
-    
-    while ((rectMatch = rectRegex.exec(svgString)) !== null) {
-      const x = parseFloat(rectMatch[1]) || 0;
-      const y = parseFloat(rectMatch[2]) || 0;
-      const w = parseFloat(rectMatch[3]) || 0;
-      const h = parseFloat(rectMatch[4]) || 0;
-      const fill = rectMatch[5];
+      const x = parseFloat((rect.match(/x=["']([^"']*)["']/i)?.[1] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const y = parseFloat((rect.match(/y=["']([^"']*)["']/i)?.[1] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const w = parseFloat((rect.match(/width=["']([^"']*)["']/i)?.[1] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const h = parseFloat((rect.match(/height=["']([^"']*)["']/i)?.[1] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const fill = rect.match(/fill=["']([^"']*)["']/i)?.[1] || '#000000';
 
       if (w > 0 && h > 0) {
-        pathContent += `\n% Rectangle at (${x}, ${y}) size ${w}x${h}\n`;
-        pathContent += 'newpath\n';
-        pathContent += `${x} ${height - y - h} ${w} ${h} re\n`;
-        
-        if (fill && fill !== 'none') {
-          const rgb = parseColor(fill);
-          pathContent += `${rgb.r} ${rgb.g} ${rgb.b} setrgbcolor\n`;
-        } else {
-          pathContent += '0 0 0 setrgbcolor\n';
-        }
-        pathContent += 'fill\n';
-        hasVectorContent = true;
+        const color = parseHexColor(fill);
+        content += `${color.r} ${color.g} ${color.b} rg\n`;
+        content += `${x} ${height - y - h} ${w} ${h} re f\n`;
       }
-    }
+    });
 
-    // Extract circle elements
-    const circleRegex = /<circle[^>]*cx=["']([^"']*)["'][^>]*cy=["']([^"']*)["'][^>]*r=["']([^"']*)["'][^>]*(?:fill=["']([^"']*)["'])?[^>]*>/gi;
-    let circleMatch;
-    
-    while ((circleMatch = circleRegex.exec(svgString)) !== null) {
-      const cx = parseFloat(circleMatch[1]) || 0;
-      const cy = parseFloat(circleMatch[2]) || 0;
-      const r = parseFloat(circleMatch[3]) || 0;
-      const fill = circleMatch[4];
+    // Look for circle elements
+    const circles = svgString.match(/<circle[^>]*>/gi) || [];
+    circles.forEach((circle, index) => {
+      if (index >= 5) return; // Limit to prevent bloat
+
+      const cx = parseFloat((circle.match(/cx=["']([^"']*)["']/i)?.[1] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const cy = parseFloat((circle.match(/cy=["']([^"']*)["']/i)?.[1] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const r = parseFloat((circle.match(/r=["']([^"']*)["']/i)?.[1] || '0').replace(/[^\d.-]/g, '')) || 0;
+      const fill = circle.match(/fill=["']([^"']*)["']/i)?.[1] || '#000000';
 
       if (r > 0) {
-        pathContent += `\n% Circle at (${cx}, ${cy}) radius ${r}\n`;
-        pathContent += 'newpath\n';
-        pathContent += `${cx} ${height - cy} ${r} 0 360 arc\n`;
-        
-        if (fill && fill !== 'none') {
-          const rgb = parseColor(fill);
-          pathContent += `${rgb.r} ${rgb.g} ${rgb.b} setrgbcolor\n`;
-        } else {
-          pathContent += '0 0 0 setrgbcolor\n';
-        }
-        pathContent += 'fill\n';
-        hasVectorContent = true;
+        const color = parseHexColor(fill);
+        content += `${color.r} ${color.g} ${color.b} rg\n`;
+        content += `${cx} ${height - cy} ${r} 0 360 arc f\n`;
       }
-    }
+    });
 
-    // If no vector content found, create a placeholder
-    if (!hasVectorContent) {
-      pathContent += `\n% No vector content extracted - creating placeholder\n`;
-      pathContent += 'newpath\n';
-      pathContent += `${width * 0.1} ${height * 0.1} ${width * 0.8} ${height * 0.8} re\n`;
-      pathContent += '0.8 0.8 0.8 setrgbcolor\n';
-      pathContent += 'fill\n';
-      pathContent += 'newpath\n';
-      pathContent += `${width * 0.1} ${height * 0.1} ${width * 0.8} ${height * 0.8} re\n`;
-      pathContent += '0.2 0.2 0.2 setrgbcolor\n';
-      pathContent += '2 setlinewidth\n';
-      pathContent += 'stroke\n';
-      
-      // Add text
-      pathContent += '/Helvetica-Bold findfont\n';
-      pathContent += `${Math.min(width, height) * 0.08} scalefont\n`;
-      pathContent += 'setfont\n';
-      pathContent += '0.2 0.2 0.2 setrgbcolor\n';
-      pathContent += `${width * 0.5} ${height * 0.5} moveto\n`;
-      pathContent += '(LOGO) dup stringwidth pop 2 div neg 0 rmoveto show\n';
+    // If no basic elements found, create a simple placeholder
+    if (!rects.length && !circles.length) {
+      content += `% No basic elements found - creating placeholder\n`;
+      content += `0.8 0.8 0.8 rg\n`;
+      content += `${width * 0.1} ${height * 0.1} ${width * 0.8} ${height * 0.8} re f\n`;
+      content += `0.2 0.2 0.2 rg\n`;
+      content += `2 w\n`;
+      content += `${width * 0.1} ${height * 0.1} ${width * 0.8} ${height * 0.8} re s\n`;
     }
 
   } catch (error) {
-    console.error('Error extracting SVG vector paths:', error);
-    pathContent += '\n% Error extracting paths - using error placeholder\n';
-    pathContent += 'newpath\n';
-    pathContent += `0 0 ${width} ${height} re\n`;
-    pathContent += '1 0.9 0.9 setrgbcolor\n';
-    pathContent += 'fill\n';
+    console.error('Error extracting SVG elements:', error);
+    content += `% Error extracting elements\n`;
+    content += `0.9 0.9 0.9 rg\n`;
+    content += `0 0 ${width} ${height} re f\n`;
   }
 
-  return pathContent;
+  return content;
 }
 
 /**
- * Parse color string to RGB values (0-1 range)
+ * Parse hex color to RGB (0-1 range)
  */
-function parseColor(colorStr: string): { r: number; g: number; b: number } {
-  if (!colorStr || colorStr === 'none') {
+function parseHexColor(hex: string): { r: number; g: number; b: number } {
+  if (!hex || !hex.startsWith('#')) {
     return { r: 0, g: 0, b: 0 };
   }
 
-  // Handle hex colors
-  if (colorStr.startsWith('#')) {
-    const hex = colorStr.slice(1);
-    let r = 0, g = 0, b = 0;
-    
-    if (hex.length === 3) {
-      r = parseInt(hex[0] + hex[0], 16);
-      g = parseInt(hex[1] + hex[1], 16);
-      b = parseInt(hex[2] + hex[2], 16);
-    } else if (hex.length === 6) {
-      r = parseInt(hex.slice(0, 2), 16);
-      g = parseInt(hex.slice(2, 4), 16);
-      b = parseInt(hex.slice(4, 6), 16);
-    }
-    
-    return {
-      r: r / 255,
-      g: g / 255,
-      b: b / 255
-    };
+  const color = hex.slice(1);
+  let r = 0, g = 0, b = 0;
+
+  if (color.length === 3) {
+    r = parseInt(color[0] + color[0], 16);
+    g = parseInt(color[1] + color[1], 16);
+    b = parseInt(color[2] + color[2], 16);
+  } else if (color.length === 6) {
+    r = parseInt(color.slice(0, 2), 16);
+    g = parseInt(color.slice(2, 4), 16);
+    b = parseInt(color.slice(4, 6), 16);
   }
 
-  // Handle named colors
-  const namedColors: { [key: string]: { r: number; g: number; b: number } } = {
-    'black': { r: 0, g: 0, b: 0 },
-    'white': { r: 1, g: 1, b: 1 },
-    'red': { r: 1, g: 0, b: 0 },
-    'green': { r: 0, g: 1, b: 0 },
-    'blue': { r: 0, g: 0, b: 1 },
-    'gray': { r: 0.5, g: 0.5, b: 0.5 },
-    'grey': { r: 0.5, g: 0.5, b: 0.5 }
+  return {
+    r: r / 255,
+    g: g / 255,
+    b: b / 255
   };
-
-  return namedColors[colorStr.toLowerCase()] || { r: 0, g: 0, b: 0 };
-}
-
-/**
- * Convert SVG path data to PostScript commands with improved parsing
- */
-function convertSvgPathToPostScript(pathData: string, height: number): string {
-  let psPath = '';
-  let currentX = 0;
-  let currentY = 0;
-  let lastControlX = 0;
-  let lastControlY = 0;
-
-  try {
-    // Clean and normalize the path data
-    const cleanPath = pathData
-      .replace(/,/g, ' ')
-      .replace(/([MmLlHhVvCcSsQqTtAaZz])/g, ' $1 ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    // Split into commands with their parameters
-    const tokens = cleanPath.split(/\s+/);
-    let i = 0;
-
-    while (i < tokens.length) {
-      const command = tokens[i];
-      if (!command || !/[MmLlHhVvCcSsQqTtAaZz]/.test(command)) {
-        i++;
-        continue;
-      }
-
-      const isRelative = command === command.toLowerCase();
-      const cmdType = command.toUpperCase();
-      i++;
-
-      switch (cmdType) {
-        case 'M': // Move to
-          while (i + 1 < tokens.length && !/[MmLlHhVvCcSsQqTtAaZz]/.test(tokens[i])) {
-            const x = parseFloat(tokens[i]);
-            const y = parseFloat(tokens[i + 1]);
-            
-            if (!isNaN(x) && !isNaN(y)) {
-              currentX = isRelative ? currentX + x : x;
-              currentY = isRelative ? currentY + y : y;
-              const psY = height - currentY;
-              psPath += `${currentX.toFixed(2)} ${psY.toFixed(2)} moveto\n`;
-            }
-            i += 2;
-          }
-          break;
-
-        case 'L': // Line to
-          while (i + 1 < tokens.length && !/[MmLlHhVvCcSsQqTtAaZz]/.test(tokens[i])) {
-            const x = parseFloat(tokens[i]);
-            const y = parseFloat(tokens[i + 1]);
-            
-            if (!isNaN(x) && !isNaN(y)) {
-              currentX = isRelative ? currentX + x : x;
-              currentY = isRelative ? currentY + y : y;
-              const psY = height - currentY;
-              psPath += `${currentX.toFixed(2)} ${psY.toFixed(2)} lineto\n`;
-            }
-            i += 2;
-          }
-          break;
-
-        case 'H': // Horizontal line
-          while (i < tokens.length && !/[MmLlHhVvCcSsQqTtAaZz]/.test(tokens[i])) {
-            const x = parseFloat(tokens[i]);
-            
-            if (!isNaN(x)) {
-              currentX = isRelative ? currentX + x : x;
-              const psY = height - currentY;
-              psPath += `${currentX.toFixed(2)} ${psY.toFixed(2)} lineto\n`;
-            }
-            i++;
-          }
-          break;
-
-        case 'V': // Vertical line
-          while (i < tokens.length && !/[MmLlHhVvCcSsQqTtAaZz]/.test(tokens[i])) {
-            const y = parseFloat(tokens[i]);
-            
-            if (!isNaN(y)) {
-              currentY = isRelative ? currentY + y : y;
-              const psY = height - currentY;
-              psPath += `${currentX.toFixed(2)} ${psY.toFixed(2)} lineto\n`;
-            }
-            i++;
-          }
-          break;
-
-        case 'C': // Cubic Bezier curve
-          while (i + 5 < tokens.length && !/[MmLlHhVvCcSsQqTtAaZz]/.test(tokens[i])) {
-            const x1 = parseFloat(tokens[i]);
-            const y1 = parseFloat(tokens[i + 1]);
-            const x2 = parseFloat(tokens[i + 2]);
-            const y2 = parseFloat(tokens[i + 3]);
-            const x3 = parseFloat(tokens[i + 4]);
-            const y3 = parseFloat(tokens[i + 5]);
-            
-            if (!isNaN(x1) && !isNaN(y1) && !isNaN(x2) && !isNaN(y2) && !isNaN(x3) && !isNaN(y3)) {
-              const cp1X = isRelative ? currentX + x1 : x1;
-              const cp1Y = isRelative ? currentY + y1 : y1;
-              const cp2X = isRelative ? currentX + x2 : x2;
-              const cp2Y = isRelative ? currentY + y2 : y2;
-              const endX = isRelative ? currentX + x3 : x3;
-              const endY = isRelative ? currentY + y3 : y3;
-
-              const psCP1Y = height - cp1Y;
-              const psCP2Y = height - cp2Y;
-              const psEndY = height - endY;
-
-              psPath += `${cp1X.toFixed(2)} ${psCP1Y.toFixed(2)} ${cp2X.toFixed(2)} ${psCP2Y.toFixed(2)} ${endX.toFixed(2)} ${psEndY.toFixed(2)} curveto\n`;
-              
-              currentX = endX;
-              currentY = endY;
-              lastControlX = cp2X;
-              lastControlY = cp2Y;
-            }
-            i += 6;
-          }
-          break;
-
-        case 'S': // Smooth cubic Bezier curve
-          while (i + 3 < tokens.length && !/[MmLlHhVvCcSsQqTtAaZz]/.test(tokens[i])) {
-            const x2 = parseFloat(tokens[i]);
-            const y2 = parseFloat(tokens[i + 1]);
-            const x3 = parseFloat(tokens[i + 2]);
-            const y3 = parseFloat(tokens[i + 3]);
-            
-            if (!isNaN(x2) && !isNaN(y2) && !isNaN(x3) && !isNaN(y3)) {
-              // First control point is reflection of last control point
-              const cp1X = 2 * currentX - lastControlX;
-              const cp1Y = 2 * currentY - lastControlY;
-              
-              const cp2X = isRelative ? currentX + x2 : x2;
-              const cp2Y = isRelative ? currentY + y2 : y2;
-              const endX = isRelative ? currentX + x3 : x3;
-              const endY = isRelative ? currentY + y3 : y3;
-
-              const psCP1Y = height - cp1Y;
-              const psCP2Y = height - cp2Y;
-              const psEndY = height - endY;
-
-              psPath += `${cp1X.toFixed(2)} ${psCP1Y.toFixed(2)} ${cp2X.toFixed(2)} ${psCP2Y.toFixed(2)} ${endX.toFixed(2)} ${psEndY.toFixed(2)} curveto\n`;
-              
-              currentX = endX;
-              currentY = endY;
-              lastControlX = cp2X;
-              lastControlY = cp2Y;
-            }
-            i += 4;
-          }
-          break;
-
-        case 'Q': // Quadratic Bezier curve (convert to cubic)
-          while (i + 3 < tokens.length && !/[MmLlHhVvCcSsQqTtAaZz]/.test(tokens[i])) {
-            const qx = parseFloat(tokens[i]);
-            const qy = parseFloat(tokens[i + 1]);
-            const x3 = parseFloat(tokens[i + 2]);
-            const y3 = parseFloat(tokens[i + 3]);
-            
-            if (!isNaN(qx) && !isNaN(qy) && !isNaN(x3) && !isNaN(y3)) {
-              const quadX = isRelative ? currentX + qx : qx;
-              const quadY = isRelative ? currentY + qy : qy;
-              const endX = isRelative ? currentX + x3 : x3;
-              const endY = isRelative ? currentY + y3 : y3;
-
-              // Convert quadratic to cubic Bezier
-              const cp1X = currentX + (2/3) * (quadX - currentX);
-              const cp1Y = currentY + (2/3) * (quadY - currentY);
-              const cp2X = endX + (2/3) * (quadX - endX);
-              const cp2Y = endY + (2/3) * (quadY - endY);
-
-              const psCP1Y = height - cp1Y;
-              const psCP2Y = height - cp2Y;
-              const psEndY = height - endY;
-
-              psPath += `${cp1X.toFixed(2)} ${psCP1Y.toFixed(2)} ${cp2X.toFixed(2)} ${psCP2Y.toFixed(2)} ${endX.toFixed(2)} ${psEndY.toFixed(2)} curveto\n`;
-              
-              currentX = endX;
-              currentY = endY;
-              lastControlX = quadX;
-              lastControlY = quadY;
-            }
-            i += 4;
-          }
-          break;
-
-        case 'Z': // Close path
-          psPath += 'closepath\n';
-          break;
-
-        default:
-          // Skip unknown commands
-          i++;
-          break;
-      }
-    }
-
-  } catch (error) {
-    console.error('Error converting SVG path to PostScript:', error);
-    psPath += '% Error in path conversion\n';
-  }
-
-  return psPath;
 }
 
 /**
