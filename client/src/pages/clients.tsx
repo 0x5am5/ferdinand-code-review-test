@@ -81,6 +81,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Layers, Download } from "lucide-react";
 
 export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,6 +98,7 @@ export default function Clients() {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
+    aiDownloads: true,
   });
   const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>({});
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -110,14 +112,14 @@ export default function Clients() {
   const { data: allUsers = [] } = useUsersQuery();
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
-  
+
   // Load client users for active client
   const { data: activeClientUsers = [] } = useClientUsersQuery(activeClientId || 0);
   const { assignUser, removeUser, inviteUser } = useClientUserMutations(activeClientId || 0);
-  
+
   // Create a map to store client users with a default empty array for each client
   const [clientUsersMap, setClientUsersMap] = useState<Map<number, User[]>>(new Map());
-  
+
   // When activeClientId changes, update the map with fetched users
   useEffect(() => {
     if (activeClientId && activeClientUsers.length > 0) {
@@ -128,12 +130,12 @@ export default function Clients() {
       });
     }
   }, [activeClientId, activeClientUsers]);
-  
+
   // Filter users that are not already assigned to the active client
   const availableUsers = allUsers.filter(user => 
     !activeClientUsers.some(clientUser => clientUser.id === user.id)
   );
-  
+
   // Filter users based on search query
   const filteredAvailableUsers = availableUsers.filter(user => 
     user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
@@ -151,7 +153,7 @@ export default function Clients() {
       setClientUsersMap(initialMap);
     }
   }, [clients]);
-  
+
   // Load users for all clients after the map is initialized
   useEffect(() => {
     const loadAllClientUsers = async () => {
@@ -176,7 +178,7 @@ export default function Clients() {
         }
       }
     };
-    
+
     loadAllClientUsers();
   }, [clients, clientUsersMap.size]);
 
@@ -203,6 +205,7 @@ export default function Clients() {
           userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
           inspiration: Boolean(featureTogglesObj.inspiration ?? true),
           figmaIntegration: Boolean(featureTogglesObj.figmaIntegration ?? false),
+          aiDownloads: Boolean(featureTogglesObj.aiDownloads ?? true),
         };
         setFeatureToggles(toggles);
       } else {
@@ -214,6 +217,7 @@ export default function Clients() {
           userPersonas: true,
           inspiration: true,
           figmaIntegration: false,
+          aiDownloads: true,
         });
       }
     } else {
@@ -225,6 +229,7 @@ export default function Clients() {
         userPersonas: true,
         inspiration: true,
         figmaIntegration: false,
+        aiDownloads: true,
       });
     }
   }, [editingClient]);
@@ -548,7 +553,7 @@ export default function Clients() {
                             </Button>
                           </Badge>
                         ))}
-                        
+
                         {/* User management dropdown */}
                         <Popover
                           onOpenChange={(open) => {
@@ -576,7 +581,7 @@ export default function Clients() {
                                 value={userSearchQuery}
                                 onValueChange={setUserSearchQuery}
                               />
-                              
+
                               <CommandList>
                                 <CommandEmpty>
                                   {userSearchQuery ? (
@@ -601,7 +606,7 @@ export default function Clients() {
                                     </div>
                                   )}
                                 </CommandEmpty>
-                                
+
                                 {filteredAvailableUsers.length > 0 && (
                                   <CommandGroup heading="Select a user">
                                     {filteredAvailableUsers.map((user) => (
@@ -622,7 +627,7 @@ export default function Clients() {
                                     ))}
                                   </CommandGroup>
                                 )}
-                                
+
                                 <CommandGroup>
                                   <CommandItem
                                     onSelect={() => {
@@ -859,7 +864,7 @@ export default function Clients() {
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <div className="flex items-center">
-                        <Figma className="h-4 w-4 mr-2" />
+                        <Layers className="h-4 w-4 mr-2" />
                         <div className="font-medium">Figma Integration</div>
                       </div>
                       <div className="text-sm text-muted-foreground">
@@ -872,6 +877,27 @@ export default function Clients() {
                         setFeatureToggles((prev) => ({
                           ...prev,
                           figmaIntegration: checked,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center">
+                        <Download className="h-4 w-4 mr-2" />
+                        <div className="font-medium">AI Downloads</div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Enable Adobe Illustrator file downloads
+                      </div>
+                    </div>
+                    <Switch
+                      checked={featureToggles.aiDownloads}
+                      onCheckedChange={(checked) =>
+                        setFeatureToggles((prev) => ({
+                          ...prev,
+                          aiDownloads: checked,
                         }))
                       }
                     />
@@ -1008,13 +1034,13 @@ export default function Clients() {
             <Button 
               onClick={() => {
                 if (!activeClientId) return;
-                
+
                 inviteUser.mutate({
                   email: inviteEmail, 
                   name: inviteName, 
                   role: inviteRole
                 });
-                
+
                 setInviteDialogOpen(false);
                 setInviteEmail('');
                 setInviteName('');

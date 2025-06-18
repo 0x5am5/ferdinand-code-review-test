@@ -33,6 +33,8 @@ import {
   UserCircle,
   Plus,
   Figma,
+  Download,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
@@ -96,6 +98,7 @@ export default function Dashboard() {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
+    aiDownloads: false,
   });
 
   const { toast } = useToast();
@@ -188,6 +191,7 @@ export default function Dashboard() {
           userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
           inspiration: Boolean(featureTogglesObj.inspiration ?? true),
           figmaIntegration: Boolean(featureTogglesObj.figmaIntegration ?? false),
+          aiDownloads: Boolean(featureTogglesObj.aiDownloads ?? false),
         };
         setFeatureToggles(toggles);
       } else {
@@ -199,6 +203,7 @@ export default function Dashboard() {
           userPersonas: true,
           inspiration: true,
           figmaIntegration: false,
+          aiDownloads: false,
         });
       }
     } else {
@@ -218,6 +223,7 @@ export default function Dashboard() {
         userPersonas: true,
         inspiration: true,
         figmaIntegration: false,
+        aiDownloads: false,
       });
     }
   }, [editingClient, form]);
@@ -241,11 +247,11 @@ export default function Dashboard() {
         return b.name.localeCompare(a.name);
       });
   };
-  
+
   // Define the loading and filtered clients outside any conditional returns
   const isLoading = clientsIsLoading;
   const filteredAndSortedClients = getFilteredAndSortedClients();
-  
+
   // Render loading spinner if data is still loading
   if (isLoading) {
     return (
@@ -762,7 +768,7 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <div className="flex items-center">
-                            <Figma className="h-4 w-4 mr-2" />
+                            <Layers className="h-4 w-4 mr-2" />
                             <div className="font-medium">Figma Integration</div>
                           </div>
                           <div className="text-sm text-muted-foreground">
@@ -775,6 +781,27 @@ export default function Dashboard() {
                             setFeatureToggles((prev) => ({
                               ...prev,
                               figmaIntegration: checked,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <Download className="h-4 w-4 mr-2" />
+                            <div className="font-medium">AI Downloads</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Enable Adobe Illustrator file downloads
+                          </div>
+                        </div>
+                        <Switch
+                          checked={featureToggles.aiDownloads}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              aiDownloads: checked,
                             }))
                           }
                         />
