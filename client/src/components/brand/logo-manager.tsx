@@ -1695,8 +1695,6 @@ function LogoSection({
         if (!parsedData) return null;
         const imageUrl = `/api/assets/${logo.id}/file`;
         const handleFileUpload = async (file: File, variant: 'light' | 'dark') => {
-          const { toast } = useToast();
-          
           try {
             const formData = new FormData();
             formData.append("file", file);
