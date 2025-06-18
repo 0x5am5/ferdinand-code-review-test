@@ -673,55 +673,6 @@ function LogoSection({
             }}
             description={`Format: ${parsedData.format?.toUpperCase()}`}
             supportsVariants={true}
-            onFileUpload={async (file, variant) => {
-              // Handle file upload for variant updates
-              try {
-                const formData = new FormData();
-                formData.append("file", file);
-                formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-                formData.append("type", type);
-                formData.append("category", "logo");
-
-                if (variant === 'dark') {
-                  formData.append("isDarkVariant", "true");
-                  formData.append("data", JSON.stringify({
-                    type,
-                    format: file.name.split('.').pop()?.toLowerCase(),
-                    hasDarkVariant: true,
-                    isDarkVariant: true
-                  }));
-                  formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                } else {
-                  formData.append("isDarkVariant", "false");
-                  formData.append("data", JSON.stringify({
-                    type,
-                    format: file.name.split('.').pop()?.toLowerCase(),
-                    hasDarkVariant: parsedData.hasDarkVariant || false
-                  }));
-                }
-
-                const endpoint = variant === 'dark' ? 
-                  `/api/clients/${clientId}/assets/${logo.id}?variant=dark` :
-                  `/api/clients/${clientId}/assets/${logo.id}`;
-
-                const response = await fetch(endpoint, {
-                  method: "PATCH",
-                  body: formData,
-                });
-
-                if (!response.ok) {
-                  throw new Error(await response.text());
-                }
-
-                await queryClient.invalidateQueries({
-                  queryKey: [`/api/clients/${clientId}/assets`],
-                });
-              } catch (error) {
-                console.error("Error updating logo:", error);
-                throw error;
-              }
-            }}
-            className="logo-asset-display"
           />
         );
       })}
