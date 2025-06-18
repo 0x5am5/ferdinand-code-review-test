@@ -1663,6 +1663,7 @@ function LogoSection({
   onRemoveSection?: (type: string) => void
 }) {
   const { user = null } = useAuth();
+  const { toast } = useToast();
   const hasLogos = logos.length > 0;
 
   return (
@@ -1693,6 +1694,68 @@ function LogoSection({
         const parsedData = parseBrandAssetData(logo);
         if (!parsedData) return null;
         const imageUrl = `/api/assets/${logo.id}/file`;
+        const handleFileUpload = async (file: File, variant: 'light' | 'dark') => {
+          const { toast } = useToast();
+          
+          try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
+            formData.append("type", type);
+            formData.append("category", "logo");
+
+            if (variant === 'dark') {
+              formData.append("isDarkVariant", "true");
+              formData.append("data", JSON.stringify({
+                type,
+                format: file.name.split('.').pop()?.toLowerCase(),
+                hasDarkVariant: true,
+                isDarkVariant: true
+              }));
+              formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+            } else {
+              formData.append("isDarkVariant", "false");
+              formData.append("data", JSON.stringify({
+                type,
+                format: file.name.split('.').pop()?.toLowerCase(),
+                hasDarkVariant: parsedData.hasDarkVariant || false
+              }));
+            }
+
+            const endpoint = variant === 'dark' ? 
+              `/api/clients/${clientId}/assets/${logo.id}?variant=dark` :
+              `/api/clients/${clientId}/assets/${logo.id}`;
+
+            const response = await fetch(endpoint, {
+              method: "PATCH",
+              body: formData,
+            });
+
+            if (!response.ok) {
+              throw new Error(await response.text());
+            }
+
+            await queryClient.invalidateQueries({
+              queryKey: [`/api/clients/${clientId}/assets`],
+            });
+            await queryClient.invalidateQueries({
+              queryKey: [`/api/assets/${logo.id}`],
+            });
+
+            toast({
+              title: "Success",
+              description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo ${variant === 'dark' ? 'dark variant' : ''} updated successfully`,
+            });
+          } catch (error) {
+            console.error("Error updating logo:", error);
+            toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "Failed to update logo",
+              variant: "destructive",
+            });
+          }
+        };
+
         return (
           <AssetDisplay
             key={logo.id}
@@ -1704,7 +1767,7 @@ function LogoSection({
                     accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
                     onChange={(e) => {
                       if (e.target.files?.[0]) {
-                        onFileUpload(e.target.files[0], variant);
+                        handleFileUpload(e.target.files[0], variant);
                       }
                     }}
                     className="hidden"
@@ -1715,7 +1778,7 @@ function LogoSection({
                     onClick={(e) => {
                       const fileInput = e.currentTarget.closest('label')?.querySelector('input[type=\"file\"]');
                       if (fileInput) {
-                        fileInput.click();
+                        (fileInput as HTMLInputElement).click();
                       }
                     }}
                     >
@@ -1742,55 +1805,6 @@ function LogoSection({
                 )}
               </>
             )}
-            onFileUpload={(file, variant) => {
-              const formData = new FormData();
-              formData.append("file", file);
-              formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-              formData.append("type", type);
-              formData.append("category", "logo");
-
-              if (variant === 'dark') {
-                formData.append("isDarkVariant", "true");
-                formData.append("data", JSON.stringify({
-                  type,
-                  format: file.name.split('.').pop()?.toLowerCase(),
-                  hasDarkVariant: true,
-                  isDarkVariant: true
-                }));
-                formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-              } else {
-                formData.append("isDarkVariant", "false");
-                formData.append("data", JSON.stringify({
-                  type,
-                  format: file.name.split('.').pop()?.toLowerCase(),
-                  hasDarkVariant: parsedData.hasDarkVariant || false
-                }));
-              }
-
-              const createUpload = async () => {
-                const endpoint = variant === 'dark' ? 
-                  `/api/clients/${clientId}/assets/${logo.id}?variant=dark` :
-                  `/api/clients/${clientId}/assets/${logo.id}`;
-
-                const response = await fetch(endpoint, {
-                  method: "PATCH",
-                  body: formData,
-                });
-
-                if (!response.ok) {
-                  throw new Error(await response.text());
-                }
-
-                await queryClient.invalidateQueries({
-                  queryKey: [`/api/clients/${clientId}/assets`],
-                });
-                await queryClient.invalidateQueries({
-                  queryKey: [`/api/assets/${logo.id}`],
-                });
-              };
-
-              createUpload();
-            }}
             renderAsset={(variant) => (
               variant === 'dark' && !parsedData.hasDarkVariant ? (
                 <div className="w-full h-full flex flex-col items-center justify-center gap-6 mb-[2rem] pr-[5vh] pl-[5vh]">
