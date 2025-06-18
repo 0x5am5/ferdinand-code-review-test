@@ -904,8 +904,7 @@ function StandardLogoDownloadButton({
       setTimeout(() => {
         document.body.removeChild(container);
         setOpen(false); // Close popover after download
-      },```text
-100);
+      }, 100);
     } catch (error) {
       console.error(`Error downloading ${format} file:`, error);
       toast({
@@ -1815,7 +1814,7 @@ function LogoSection({
                     </div>
                     <h4 className="logo-upload__dropzone-heading">
                       Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo for Dark Background
-                                        </h4>
+                    </h4>
                     <p className="logo-upload__dropzone-text text-center">
                       Drag and drop your logo file here, or click to browse.<br />
                       Supported formats: {Object.values(FILE_FORMATS).join(", ")}
