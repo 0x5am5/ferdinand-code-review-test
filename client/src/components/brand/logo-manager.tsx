@@ -556,7 +556,7 @@ function AppIconDownloadButton({
             <div className="logo-download__section">
               <h5 className="logo-download__section-title">Editable Design Files</h5>
               <p className="logo-download__description">
-                Vector formats for editing (SVG, EPS, AI)
+                Vector formats for editing (SVG)
               </p>
               <div className="logo-download__links">
                 {parsedData.figmaLink && (
@@ -594,29 +594,7 @@ function AppIconDownloadButton({
                   Download SVG logo
                 </div>
 
-                <div 
-                  className="logo-download__link"
-                  onClick={() => {
-                    // Download AI
-                    const container = document.createElement('div');
-                    container.style.display = 'none';
-                    document.body.appendChild(container);
 
-                    const link = document.createElement('a');
-                    link.href = getDownloadUrl(100, 'ai');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
-                    container.appendChild(link);
-                    link.click();
-
-                    setTimeout(() => {
-                      document.body.removeChild(container);
-                      setOpen(false);
-                    }, 100);
-                  }}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download AI logo
-                </div>
               </div>
             </div>
           </div>
@@ -926,7 +904,8 @@ function StandardLogoDownloadButton({
       setTimeout(() => {
         document.body.removeChild(container);
         setOpen(false); // Close popover after download
-      }, 100);
+      },```text
+100);
     } catch (error) {
       console.error(`Error downloading ${format} file:`, error);
       toast({
@@ -992,7 +971,7 @@ function StandardLogoDownloadButton({
             <div className="logo-download__section">
               <h5 className="logo-download__section-title">Editable Design Files</h5>
               <p className="logo-download__description">
-                Vector formats for editing (SVG, EPS, AI)
+                Vector formats for editing (SVG, PDF)
               </p>
               <div className="logo-download__links">
                 {parsedData.figmaLink && (
@@ -1014,13 +993,6 @@ function StandardLogoDownloadButton({
                   Download SVG logo
                 </div>
 
-                <div 
-                  className="logo-download__link"
-                  onClick={() => downloadEditableFiles('ai')}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download AI logo
-                </div>
                 <div 
                   className="logo-download__link"
                   onClick={() => downloadEditableFiles('pdf')}
@@ -1246,7 +1218,7 @@ function FaviconDownloadButton({
             <div className="logo-download__section">
               <h5 className="logo-download__section-title">Editable Design Files</h5>
               <p className="logo-download__description">
-                Vector formats for editing (SVG, EPS, AI)
+                Vector formats for editing (SVG)
               </p>
               <div className="logo-download__links">
                 {parsedData.figmaLink && (
@@ -1284,29 +1256,6 @@ function FaviconDownloadButton({
                   Download SVG logo
                 </div>
 
-                <div 
-                  className="logo-download__link"
-                  onClick={() => {
-                    // Download AI
-                    const container = document.createElement('div');
-                    container.style.display = 'none';
-                    document.body.appendChild(container);
-
-                    const link = document.createElement('a');
-                    link.href = getDownloadUrl(100, 'ai');
-                    link.download = `${logo.name}${variant === 'dark' ? '-Dark' : ''}.ai`;
-                    container.appendChild(link);
-                    link.click();
-
-                    setTimeout(() => {
-                      document.body.removeChild(container);
-                      setOpen(false);
-                    }, 100);
-                  }}
-                >
-                  <FileType className="logo-download__icon" />
-                  Download AI logo
-                </div>
               </div>
             </div>
           </div>
@@ -1866,7 +1815,7 @@ function LogoSection({
                     </div>
                     <h4 className="logo-upload__dropzone-heading">
                       Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo for Dark Background
-                    </h4>
+                                        </h4>
                     <p className="logo-upload__dropzone-text text-center">
                       Drag and drop your logo file here, or click to browse.<br />
                       Supported formats: {Object.values(FILE_FORMATS).join(", ")}
