@@ -15,6 +15,7 @@ import { Palette, Type, Grid3X3, Download, Save, RefreshCw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { useClientAssetsById } from "@/lib/queries/clients";
 import { generateSemanticTokens, type RawTokens, type SemanticTokens } from "./token-generator";
+import { BrandAsset } from "@shared/schema";
 
 // Design System Schema
 const designSystemSchema = z.object({
@@ -467,17 +468,67 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
   );
 };
 
+// Helper function to parse color assets
+const parseColorAsset = (asset: BrandAsset) => {
+  try {
+    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    if (!data?.colors?.[0]) return null;
+    
+    return {
+      id: asset.id,
+      hex: data.colors[0].hex,
+      name: asset.name,
+      category: data.category,
+    };
+  } catch (error) {
+    console.error("Error parsing color asset:", error);
+    return null;
+  }
+};
+
 export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("colors");
 
-  // Fetch client assets to get the logo for preview
+  // Fetch client assets to get the logo for preview and colors
   const { data: clientAssets = [] } = useClientAssetsById(clientId);
   const logoAsset = clientAssets.find(asset => asset.category === "logo");
   const clientLogo = logoAsset ? `/api/assets/${logoAsset.id}/file` : undefined;
 
-  // Default form values based on provided raw tokens
+  // Parse existing colors from the color system
+  const existingColors = clientAssets
+    .filter((asset) => asset.category === "color")
+    .map(parseColorAsset)
+    .filter((color): color is NonNullable<typeof color> => color !== null);
+
+  const brandColors = existingColors.filter(c => c.category === "brand");
+  const neutralColors = existingColors.filter(c => c.category === "neutral");
+  const interactiveColors = existingColors.filter(c => c.category === "interactive");
+
+  // Default form values - use existing brand colors if available
+  const getDefaultColors = () => {
+    const primary = brandColors.find(c => c.name.toLowerCase().includes('primary')) || brandColors[0];
+    const secondary = brandColors.find(c => c.name.toLowerCase().includes('secondary')) || brandColors[1];
+    const neutral = neutralColors.find(c => c.name.toLowerCase().includes('base') || c.name.toLowerCase().includes('grey')) || neutralColors[0];
+    
+    // Find interactive colors by name
+    const success = interactiveColors.find(c => c.name.toLowerCase().includes('success'));
+    const warning = interactiveColors.find(c => c.name.toLowerCase().includes('warning'));
+    const error = interactiveColors.find(c => c.name.toLowerCase().includes('error'));
+    const info = interactiveColors.find(c => c.name.toLowerCase().includes('link') || c.name.toLowerCase().includes('info'));
+
+    return {
+      brandPrimaryBase: primary?.hex || '#0052CC',
+      brandSecondaryBase: secondary?.hex || '#172B4D',
+      neutralBase: neutral?.hex ? `hsl(0, 0%, ${Math.round((parseInt(neutral.hex.slice(1), 16) / 16777215) * 100)}%)` : 'hsl(0, 0%, 60%)',
+      interactiveSuccessBase: success?.hex || '#28a745',
+      interactiveWarningBase: warning?.hex || '#ffc107',
+      interactiveErrorBase: error?.hex || '#dc3545',
+      interactiveInfoBase: info?.hex || '#17a2b8',
+    };
+  };
+
   const defaultValues: DesignSystemForm = {
     typography: {
       fontSizeBase: 1,
@@ -488,15 +539,7 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
       fontFamily2Base: 'Rock Grotesque Wide',
       fontFamilyMonoBase: 'monospace',
     },
-    colors: {
-      brandPrimaryBase: '#0052CC',
-      brandSecondaryBase: '#172B4D',
-      neutralBase: 'hsl(0, 0%, 60%)',
-      interactiveSuccessBase: '#28a745',
-      interactiveWarningBase: '#ffc107',
-      interactiveErrorBase: '#dc3545',
-      interactiveInfoBase: '#17a2b8',
-    },
+    colors: getDefaultColors(),
     spacing: {
       spacingUnitBase: 1,
       spacingScaleBase: 1.5,
@@ -531,6 +574,14 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
     resolver: zodResolver(designSystemSchema),
     defaultValues,
   });
+
+  // Update form values when existing colors change
+  useEffect(() => {
+    if (existingColors.length > 0) {
+      const newColors = getDefaultColors();
+      form.setValue('colors', newColors);
+    }
+  }, [existingColors.length, form]);
 
   const formData = form.watch();
 
@@ -649,7 +700,14 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                 <Card>
                   <CardHeader>
                     <CardTitle>Brand Colors</CardTitle>
-                    <CardDescription>Define your primary brand color palette</CardDescription>
+                    <CardDescription>
+                      Define your primary brand color palette
+                      {brandColors.length > 0 && (
+                        <span className="block text-sm text-muted-foreground mt-1">
+                          ✓ Inherited {brandColors.length} color(s) from your Color System
+                        </span>
+                      )}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -686,7 +744,14 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                 <Card>
                   <CardHeader>
                     <CardTitle>Interactive Colors</CardTitle>
-                    <CardDescription>Colors for interactive elements and states</CardDescription>
+                    <CardDescription>
+                      Colors for interactive elements and states
+                      {interactiveColors.length > 0 && (
+                        <span className="block text-sm text-muted-foreground mt-1">
+                          ✓ Inherited {interactiveColors.length} color(s) from your Color System
+                        </span>
+                      )}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
