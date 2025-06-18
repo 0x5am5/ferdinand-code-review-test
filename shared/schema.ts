@@ -129,7 +129,6 @@ export const clients = pgTable("clients", {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
-    aiDownloads: false,
   }),
   lastEditedBy: integer("last_edited_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
