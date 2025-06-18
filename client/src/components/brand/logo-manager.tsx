@@ -735,8 +735,8 @@ function StandardLogoDownloadButton({
         );
       }
 
-      // Add vector files (SVG, AI, PDF)
-      const vectorFormats = ['svg', 'ai', 'pdf'];
+      // Add vector files (SVG, PDF) - AI format removed
+      const vectorFormats = ['svg', 'pdf'];
       // Use a reference to avoid TypeScript null warnings
       const vectorFolderRef = vectorFolder;
       for (const format of vectorFormats) {
