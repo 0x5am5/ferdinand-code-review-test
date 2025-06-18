@@ -234,7 +234,8 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
 
   // Fetch client assets to get the logo for preview
   const { data: clientAssets = [] } = useClientAssetsById(clientId);
-  const clientLogo = clientAssets.find(asset => asset.category === "logo")?.file_path;
+  const logoAsset = clientAssets.find(asset => asset.category === "logo");
+  const clientLogo = logoAsset ? `/api/assets/${logoAsset.id}/file` : undefined;
 
   // Default form values based on provided raw tokens
   const defaultValues: DesignSystemForm = {
