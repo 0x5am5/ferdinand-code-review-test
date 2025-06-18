@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useHiddenSections, useAddHiddenSection, useRemoveHiddenSection } from "@/lib/queries/hidden-sections";
@@ -159,6 +158,7 @@ function getSecureAssetUrl(assetId: number, clientId: number, options: {
 function FileUpload({ type, clientId, onSuccess, queryClient, isDarkVariant, parentLogoId, buttonOnly = false, children, className }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  // Move useToast hook outside of component to fix React hooks rules
   const { toast } = useToast();
 
   const createLogo = useMutation({
@@ -593,7 +593,7 @@ function AppIconDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                
+
                 <div 
                   className="logo-download__link"
                   onClick={() => {
@@ -1013,7 +1013,7 @@ function StandardLogoDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                
+
                 <div 
                   className="logo-download__link"
                   onClick={() => downloadEditableFiles('ai')}
@@ -1283,7 +1283,7 @@ function FaviconDownloadButton({
                   <FileType className="logo-download__icon" />
                   Download SVG logo
                 </div>
-                
+
                 <div 
                   className="logo-download__link"
                   onClick={() => {
