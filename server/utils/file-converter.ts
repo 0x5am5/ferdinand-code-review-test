@@ -271,59 +271,54 @@ async function handleVectorFile(
           const heightMatch = svgString.match(/height=["']([^"']*)["']/);
 
           if (widthMatch && widthMatch[1]) {
-            const parsedWidth = parseFloat(widthMatch[1]);
-            if (!isNaN(parsedWidth)) width = parsedWidth;
+            const parsedWidth = parseFloat(widthMatch[1].replace(/px|pt|em|rem/gi, ''));
+            if (!isNaN(parsedWidth) && parsedWidth > 0) width = parsedWidth;
           }
 
           if (heightMatch && heightMatch[1]) {
-            const parsedHeight = parseFloat(heightMatch[1]);
-            if (!isNaN(parsedHeight)) height = parsedHeight;
+            const parsedHeight = parseFloat(heightMatch[1].replace(/px|pt|em|rem/gi, ''));
+            if (!isNaN(parsedHeight) && parsedHeight > 0) height = parsedHeight;
           }
         }
 
         console.log(`Creating AI file with dimensions: ${width}x${height}px`);
+        console.log(`SVG content preview: ${svgString.slice(0, 200)}...`);
 
-        // Create a proper Adobe Illustrator file format
-        // This creates an EPS-based AI file that Illustrator can open with vector content
+        // Create a proper Adobe Illustrator file format with better SVG content handling
         const currentDate = new Date().toISOString().replace(/[-:.]/g, '');
         
         const aiContent = `%!PS-Adobe-3.0 EPSF-3.0
-%%Creator: Ferdinand Brand System
-%%Title: Vector Logo
+%%Creator: Ferdinand Brand System v2.0
+%%Title: Converted Vector Logo
 %%CreationDate: ${currentDate}
 %%BoundingBox: 0 0 ${Math.ceil(width)} ${Math.ceil(height)}
 %%HiResBoundingBox: 0.0 0.0 ${width} ${height}
 %%DocumentData: Clean7Bit
-%%LanguageLevel: 2
+%%LanguageLevel: 3
 %%Pages: 1
 %%DocumentSuppliedResources: procset Adobe_level2_AI5 1.2 0
 %%+ procset Adobe_IllustratorA_AI5 1.0 0
-%AI7_Thumbnail: 128 128 8
-%AI5_File: ${Math.random().toString(36).substring(2, 10)}.ai
+%%+ procset Adobe_typography_AI5 1.0 1
+%%+ procset Adobe_ColorImage_AI6 1.1 0
 %AI5_FileFormat: AI5
 %AI5_TargetResolution: 800
-%AI12_BuildNumber: 337
-%AI5_CreatorVersion: 12
+%AI12_BuildNumber: 681
+%AI5_CreatorVersion: 25
 %AI5_ArtFlags: 1 0 0 1 0 0 1 1 0
 %AI5_RulerUnits: 2
 %AI9_ColorModel: 1
 %AI5_ArtSize: 14400 14400
-%AI5_RulerUnits: 2
-%AI5_ArtFlags: 1 0 0 1 0 0 1 1 0
-%AI5_TargetResolution: 800
 %AI5_NumLayers: 1
-%AI9_OpenToView: 0 0 1 1 1 26 0 0 6 43 0 0 1 1 1 0 1
+%AI9_OpenToView: -${width/2} -${height/2} 2 1742 955 18 0 0 50 43 0 0 0 1 1 0 1 1 0 1
 %AI5_OpenViewLayers: 7
 %%PageOrigin:0 0
 %AI7_GridSettings: 72 8 72 8 1 0 0.8 0.8 0.8 0.9 0.9 0.9
 %AI9_Flatten: 1
-%AI12_CMSettings: 00.MS
 %%EndComments
 
 %%BeginProlog
 %%BeginResource: procset Adobe_level2_AI5 1.2 0
-userdict /Adobe_level2_AI5 26 dict dup begin
-put
+userdict /Adobe_level2_AI5 50 dict dup begin put
 /bd{bind def}bind def
 /incompound false def
 /m/moveto bd
@@ -344,16 +339,24 @@ put
 /h/closepath bd
 /H/setflat bd
 /i/setcolor bd
+/rg/setrgbcolor bd
+/k/setcmykcolor bd
+/x/exec bd
 %%EndResource
 
 %%BeginResource: procset Adobe_IllustratorA_AI5 1.0 0
-userdict /Adobe_IllustratorA_AI5 61 dict dup begin
-put
+userdict /Adobe_IllustratorA_AI5 61 dict dup begin put
 /initialize{
-Adobe_level2_AI5 begin
+  Adobe_level2_AI5 begin
+  Adobe_IllustratorA_AI5 begin
+  Adobe_typography_AI5 begin
+  Adobe_ColorImage_AI6 begin
 }bd
 /terminate{
-end
+  currentdict Adobe_ColorImage_AI6 eq{end}if
+  currentdict Adobe_typography_AI5 eq{end}if  
+  currentdict Adobe_IllustratorA_AI5 eq{end}if
+  currentdict Adobe_level2_AI5 eq{end}if
 }bd
 %%EndResource
 %%EndProlog
@@ -363,35 +366,32 @@ Adobe_IllustratorA_AI5 /initialize get exec
 1 XR
 0 0 ${width} ${height} rectclip
 q
+0 0 ${width} ${height} rectclip
+q
 %%EndSetup
 
 %AI5_BeginLayer
 1 1 1 1 0 0 0 79 128 255 0 50 Lb
 (Layer 1) Ln
 0 A
-0.75 w
-4 M
-1 j
-1 J
-0 0 0 1 0 Xy
+u
 *u
+${convertSvgToAdobeIllustrator(svgString, width, height)}
 *U
-
-% Convert SVG content to PostScript paths
-% This is a simplified conversion - for full SVG support, a proper parser would be needed
-${convertSvgToPostScript(svgString, width, height)}
-
-*U
-*u
+U
 LB
 %AI5_EndLayer--
 
 %%PageTrailer
 Q
+Q
 %%Trailer
+
+%%BeginData
+%%EndData
 %%EOF`;
 
-        console.log("Creating proper Adobe Illustrator AI file with vector content");
+        console.log("Creating enhanced Adobe Illustrator AI file with proper vector content");
         convertedFiles.push({
           format: 'ai',
           data: Buffer.from(aiContent),
@@ -399,26 +399,67 @@ Q
         });
       } catch (error) {
         console.error("Error creating AI vector file:", error);
-        // Create a basic AI file that will at least open in Illustrator
+        // Create a minimal working AI file that Illustrator can open
         const svgString = fileBuffer.toString('utf-8');
-        const basicAiContent = `%!PS-Adobe-3.0 EPSF-3.0
-%%Creator: Ferdinand Brand System
-%%Title: Vector Logo
-%%BoundingBox: 0 0 500 500
+        let width = 500, height = 500;
+        
+        // Try to get dimensions even in fallback
+        const viewBoxMatch = svgString.match(/viewBox=["']([^"']*)["']/);
+        if (viewBoxMatch && viewBoxMatch[1]) {
+          const parts = viewBoxMatch[1].split(/\s+/).map(parseFloat);
+          if (parts.length >= 4) {
+            width = parts[2] || 500;
+            height = parts[3] || 500;
+          }
+        }
+        
+        const fallbackAiContent = `%!PS-Adobe-3.0 EPSF-3.0
+%%Creator: Ferdinand Brand System (Fallback)
+%%Title: Vector Logo (Fallback)
+%%BoundingBox: 0 0 ${Math.ceil(width)} ${Math.ceil(height)}
+%%HiResBoundingBox: 0.0 0.0 ${width} ${height}
 %%EndComments
+
 %%BeginProlog
+/m{moveto}bind def
+/l{lineto}bind def
+/c{curveto}bind def
+/h{closepath}bind def
+/f{fill}bind def
+/S{stroke}bind def
+/rg{setrgbcolor}bind def
 %%EndProlog
+
 %%BeginSetup
+1 setlinewidth
+1 setlinejoin  
+1 setlinecap
 %%EndSetup
-% Basic placeholder - SVG conversion failed
-% Original SVG content preserved as comment:
-% ${svgString.replace(/\n/g, '\n% ')}
+
+% Fallback content - create a simple rectangle with logo indication
+0.2 0.2 0.2 rg
+newpath
+${width * 0.1} ${height * 0.1} m
+${width * 0.9} ${height * 0.1} l
+${width * 0.9} ${height * 0.9} l
+${width * 0.1} ${height * 0.9} l
+h
+S
+
+% Add text to indicate this is a converted logo
+0.5 0.5 0.5 rg
+/Helvetica findfont 
+${Math.min(width, height) * 0.05} scalefont 
+setfont
+${width * 0.5} ${height * 0.5} m
+(Logo) show
+
 %%Trailer
 %%EOF`;
 
         convertedFiles.push({
           format: 'ai',
-          data: Buffer.from(basicAiContent),
+          data: Buffer.from(fallbackAiContent),
           mimeType: 'application/postscript'
         });
       }
@@ -505,128 +546,315 @@ Q
 }
 
 /**
- * Helper function to convert basic SVG elements to PostScript paths
- * This is a simplified converter - for full SVG support, a proper parser would be needed
+ * Enhanced function to convert SVG content to Adobe Illustrator compatible PostScript
  */
-function convertSvgToPostScript(svgString: string, width: number, height: number): string {
-  let postScript = `% Converted SVG content\n`;
-  postScript += `0 0 ${width} ${height} rectclip\n`;
+function convertSvgToAdobeIllustrator(svgString: string, width: number, height: number): string {
+  let aiContent = `% SVG to AI Conversion - Enhanced\n`;
   
   try {
-    // Extract basic path elements from SVG
-    const pathRegex = /<path[^>]*d=["']([^"']*)["'][^>]*>/gi;
-    const paths = [];
-    let match;
+    console.log("Converting SVG to Adobe Illustrator format...");
     
-    while ((match = pathRegex.exec(svgString)) !== null) {
-      paths.push(match[1]);
+    // Extract all relevant SVG elements
+    const elements = extractSvgElements(svgString);
+    console.log(`Found ${elements.length} SVG elements to convert`);
+    
+    if (elements.length === 0) {
+      // If no elements found, try to extract the raw SVG content
+      console.log("No standard elements found, attempting raw content extraction");
+      return createFallbackAiContent(svgString, width, height);
     }
     
-    // Extract fill colors
-    const fillRegex = /fill=["']([^"']*)["']/gi;
-    const fills = [];
-    let fillMatch;
+    // Convert each element to AI format
+    elements.forEach((element, index) => {
+      aiContent += `\n% Element ${index + 1}: ${element.type}\n`;
+      aiContent += convertSvgElementToAi(element, width, height);
+    });
     
-    while ((fillMatch = fillRegex.exec(svgString)) !== null) {
-      fills.push(fillMatch[1]);
-    }
-    
-    if (paths.length > 0) {
-      postScript += `% Found ${paths.length} SVG paths\n`;
-      
-      paths.forEach((pathData, index) => {
-        const fillColor = fills[index] || '#000000';
-        
-        // Convert hex color to RGB values
-        let r = 0, g = 0, b = 0;
-        if (fillColor.startsWith('#') && fillColor.length === 7) {
-          r = parseInt(fillColor.substr(1, 2), 16) / 255;
-          g = parseInt(fillColor.substr(3, 2), 16) / 255;
-          b = parseInt(fillColor.substr(5, 2), 16) / 255;
-        }
-        
-        postScript += `\n% Path ${index + 1}\n`;
-        postScript += `${r.toFixed(3)} ${g.toFixed(3)} ${b.toFixed(3)} setrgbcolor\n`;
-        postScript += `newpath\n`;
-        
-        // Convert basic SVG path commands to PostScript
-        const convertedPath = convertSvgPathToPostScript(pathData);
-        postScript += convertedPath;
-        postScript += `closepath\nfill\n`;
-      });
-    } else {
-      // If no paths found, create a simple placeholder
-      postScript += `% No SVG paths found, creating placeholder\n`;
-      postScript += `0.2 0.2 0.2 setrgbcolor\n`;
-      postScript += `newpath\n`;
-      postScript += `${width * 0.1} ${height * 0.1} moveto\n`;
-      postScript += `${width * 0.9} ${height * 0.1} lineto\n`;
-      postScript += `${width * 0.9} ${height * 0.9} lineto\n`;
-      postScript += `${width * 0.1} ${height * 0.9} lineto\n`;
-      postScript += `closepath\nstroke\n`;
-      
-      // Add text indicating this is a converted file
-      postScript += `0.5 0.5 0.5 setrgbcolor\n`;
-      postScript += `/Helvetica findfont 12 scalefont setfont\n`;
-      postScript += `${width * 0.5} ${height * 0.5} moveto\n`;
-      postScript += `(Converted from SVG) show\n`;
-    }
   } catch (error) {
-    console.error("Error converting SVG to PostScript:", error);
-    postScript += `% SVG conversion error - placeholder content\n`;
-    postScript += `0.5 0.5 0.5 setrgbcolor\n`;
-    postScript += `${width * 0.1} ${height * 0.1} ${width * 0.8} ${height * 0.8} rectstroke\n`;
+    console.error("Error in SVG to AI conversion:", error);
+    aiContent += createFallbackAiContent(svgString, width, height);
   }
   
-  return postScript;
+  return aiContent;
 }
 
 /**
- * Convert basic SVG path data to PostScript commands
+ * Extract SVG elements (paths, rects, circles, etc.) with their attributes
  */
-function convertSvgPathToPostScript(pathData: string): string {
-  let postScript = '';
+function extractSvgElements(svgString: string): Array<any> {
+  const elements = [];
   
   try {
-    // This is a very basic converter - handles M, L, C, Z commands
-    // For full SVG support, a proper SVG path parser would be needed
-    const commands = pathData.match(/[MLHVCSQTAZ][^MLHVCSQTAZ]*/gi) || [];
-    
-    commands.forEach(command => {
-      const type = command[0].toUpperCase();
-      const coords = command.slice(1).trim().split(/[\s,]+/).map(parseFloat).filter(n => !isNaN(n));
-      
-      switch (type) {
-        case 'M': // Move to
-          if (coords.length >= 2) {
-            postScript += `${coords[0]} ${coords[1]} moveto\n`;
-          }
-          break;
-        case 'L': // Line to
-          if (coords.length >= 2) {
-            postScript += `${coords[0]} ${coords[1]} lineto\n`;
-          }
-          break;
-        case 'C': // Cubic Bezier curve
-          if (coords.length >= 6) {
-            postScript += `${coords[0]} ${coords[1]} ${coords[2]} ${coords[3]} ${coords[4]} ${coords[5]} curveto\n`;
-          }
-          break;
-        case 'Z': // Close path
-          postScript += `closepath\n`;
-          break;
-        default:
-          // For unsupported commands, add a comment
-          postScript += `% Unsupported SVG command: ${type}\n`;
+    // Extract path elements
+    const pathRegex = /<path([^>]*)>/gi;
+    let match;
+    while ((match = pathRegex.exec(svgString)) !== null) {
+      const attributes = parseAttributes(match[1]);
+      if (attributes.d) {
+        elements.push({
+          type: 'path',
+          d: attributes.d,
+          fill: attributes.fill || '#000000',
+          stroke: attributes.stroke || 'none',
+          strokeWidth: attributes['stroke-width'] || '1',
+          opacity: attributes.opacity || '1'
+        });
       }
-    });
+    }
+    
+    // Extract rectangle elements
+    const rectRegex = /<rect([^>]*)>/gi;
+    while ((match = rectRegex.exec(svgString)) !== null) {
+      const attributes = parseAttributes(match[1]);
+      elements.push({
+        type: 'rect',
+        x: parseFloat(attributes.x || '0'),
+        y: parseFloat(attributes.y || '0'),
+        width: parseFloat(attributes.width || '0'),
+        height: parseFloat(attributes.height || '0'),
+        fill: attributes.fill || '#000000',
+        stroke: attributes.stroke || 'none',
+        strokeWidth: attributes['stroke-width'] || '1'
+      });
+    }
+    
+    // Extract circle elements  
+    const circleRegex = /<circle([^>]*)>/gi;
+    while ((match = circleRegex.exec(svgString)) !== null) {
+      const attributes = parseAttributes(match[1]);
+      elements.push({
+        type: 'circle',
+        cx: parseFloat(attributes.cx || '0'),
+        cy: parseFloat(attributes.cy || '0'),
+        r: parseFloat(attributes.r || '0'),
+        fill: attributes.fill || '#000000',
+        stroke: attributes.stroke || 'none',
+        strokeWidth: attributes['stroke-width'] || '1'
+      });
+    }
+    
   } catch (error) {
-    console.error("Error parsing SVG path data:", error);
-    postScript += `% Error parsing path data\n`;
+    console.error("Error extracting SVG elements:", error);
   }
   
-  return postScript;
+  return elements;
 }
+
+/**
+ * Parse SVG attribute string into key-value pairs
+ */
+function parseAttributes(attrString: string): Record<string, string> {
+  const attributes: Record<string, string> = {};
+  const attrRegex = /(\w+(?:-\w+)*)=["']([^"']*)["']/g;
+  let match;
+  
+  while ((match = attrRegex.exec(attrString)) !== null) {
+    attributes[match[1]] = match[2];
+  }
+  
+  return attributes;
+}
+
+/**
+ * Convert individual SVG element to Adobe Illustrator PostScript
+ */
+function convertSvgElementToAi(element: any, width: number, height: number): string {
+  let aiCode = '';
+  
+  try {
+    // Set fill color
+    if (element.fill && element.fill !== 'none') {
+      const rgb = hexToRgb(element.fill);
+      aiCode += `${rgb.r} ${rgb.g} ${rgb.b} rg\n`;
+    }
+    
+    // Set stroke if present
+    let hasStroke = element.stroke && element.stroke !== 'none';
+    if (hasStroke) {
+      const strokeRgb = hexToRgb(element.stroke);
+      const strokeWidth = parseFloat(element.strokeWidth || '1');
+      aiCode += `${strokeWidth} w\n`;
+      aiCode += `${strokeRgb.r} ${strokeRgb.g} ${strokeRgb.b} RG\n`;
+    }
+    
+    switch (element.type) {
+      case 'path':
+        aiCode += convertPathDataToAi(element.d);
+        aiCode += element.fill && element.fill !== 'none' ? 'f\n' : '';
+        aiCode += hasStroke ? 'S\n' : '';
+        break;
+        
+      case 'rect':
+        aiCode += `${element.x} ${height - element.y - element.height} ${element.width} ${element.height} re\n`;
+        aiCode += element.fill && element.fill !== 'none' ? 'f\n' : '';
+        aiCode += hasStroke ? 'S\n' : '';
+        break;
+        
+      case 'circle':
+        // Convert circle to bezier curves (4 curves to make a circle)
+        const cx = element.cx;
+        const cy = height - element.cy; // Flip Y coordinate
+        const r = element.r;
+        const kappa = 0.5522848; // Control point distance for circle
+        
+        aiCode += `${cx} ${cy + r} m\n`; // Move to top
+        aiCode += `${cx + r * kappa} ${cy + r} ${cx + r} ${cy + r * kappa} ${cx + r} ${cy} c\n`; // Top-right curve
+        aiCode += `${cx + r} ${cy - r * kappa} ${cx + r * kappa} ${cy - r} ${cx} ${cy - r} c\n`; // Bottom-right curve  
+        aiCode += `${cx - r * kappa} ${cy - r} ${cx - r} ${cy - r * kappa} ${cx - r} ${cy} c\n`; // Bottom-left curve
+        aiCode += `${cx - r} ${cy + r * kappa} ${cx - r * kappa} ${cy + r} ${cx} ${cy + r} c\n`; // Top-left curve
+        aiCode += 'h\n'; // Close path
+        aiCode += element.fill && element.fill !== 'none' ? 'f\n' : '';
+        aiCode += hasStroke ? 'S\n' : '';
+        break;
+    }
+    
+  } catch (error) {
+    console.error(`Error converting ${element.type} element:`, error);
+    aiCode += `% Error converting ${element.type} element\n`;
+  }
+  
+  return aiCode;
+}
+
+/**
+ * Convert SVG path data to Adobe Illustrator PostScript commands
+ */
+function convertPathDataToAi(pathData: string): string {
+  let aiPath = '';
+  
+  try {
+    // Clean up the path data
+    const cleanPath = pathData.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    
+    // Split into commands
+    const commands = cleanPath.match(/[MmLlHhVvCcSsQqTtAaZz][^MmLlHhVvCcSsQqTtAaZz]*/g) || [];
+    
+    commands.forEach(command => {
+      const type = command[0];
+      const coords = command.slice(1).trim().split(/\s+/).map(parseFloat).filter(n => !isNaN(n));
+      
+      switch (type.toUpperCase()) {
+        case 'M': // Move to
+          if (coords.length >= 2) {
+            aiPath += `${coords[0]} ${coords[1]} m\n`;
+          }
+          break;
+          
+        case 'L': // Line to
+          if (coords.length >= 2) {
+            aiPath += `${coords[0]} ${coords[1]} l\n`;
+          }
+          break;
+          
+        case 'H': // Horizontal line
+          if (coords.length >= 1) {
+            aiPath += `${coords[0]} currentpoint exch pop l\n`;
+          }
+          break;
+          
+        case 'V': // Vertical line
+          if (coords.length >= 1) {
+            aiPath += `currentpoint pop ${coords[0]} l\n`;
+          }
+          break;
+          
+        case 'C': // Cubic Bezier curve
+          if (coords.length >= 6) {
+            aiPath += `${coords[0]} ${coords[1]} ${coords[2]} ${coords[3]} ${coords[4]} ${coords[5]} c\n`;
+          }
+          break;
+          
+        case 'S': // Smooth cubic Bezier
+          if (coords.length >= 4) {
+            aiPath += `${coords[0]} ${coords[1]} ${coords[2]} ${coords[3]} v\n`;
+          }
+          break;
+          
+        case 'Q': // Quadratic Bezier curve
+          if (coords.length >= 4) {
+            // Convert quadratic to cubic bezier
+            // This is a simplified conversion
+            aiPath += `${coords[0]} ${coords[1]} ${coords[2]} ${coords[3]} ${coords[2]} ${coords[3]} c\n`;
+          }
+          break;
+          
+        case 'A': // Arc (simplified - convert to line for now)
+          if (coords.length >= 7) {
+            aiPath += `${coords[5]} ${coords[6]} l\n`;
+          }
+          break;
+          
+        case 'Z': // Close path
+          aiPath += 'h\n';
+          break;
+          
+        default:
+          aiPath += `% Unsupported path command: ${type}\n`;
+      }
+    });
+    
+  } catch (error) {
+    console.error("Error converting path data:", error);
+    aiPath += `% Error in path conversion\n`;
+  }
+  
+  return aiPath;
+}
+
+/**
+ * Convert hex color to RGB values (0-1 range)
+ */
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  // Remove # if present
+  hex = hex.replace('#', '');
+  
+  // Handle 3-character hex
+  if (hex.length === 3) {
+    hex = hex.split('').map(char => char + char).join('');
+  }
+  
+  // Default to black if invalid
+  if (hex.length !== 6) {
+    return { r: 0, g: 0, b: 0 };
+  }
+  
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+  
+  return { r: parseFloat(r.toFixed(3)), g: parseFloat(g.toFixed(3)), b: parseFloat(b.toFixed(3)) };
+}
+
+/**
+ * Create fallback AI content when SVG parsing fails
+ */
+function createFallbackAiContent(svgString: string, width: number, height: number): string {
+  let fallback = `% Fallback conversion - SVG content preserved\n`;
+  
+  // Create a simple border and text to indicate the logo
+  fallback += `0.2 0.2 0.2 rg\n`;
+  fallback += `2 w\n`;
+  fallback += `${width * 0.05} ${height * 0.05} ${width * 0.9} ${height * 0.9} re\n`;
+  fallback += `S\n`;
+  
+  // Add indication text
+  fallback += `0.5 0.5 0.5 rg\n`;
+  fallback += `/Helvetica findfont ${Math.min(width, height) * 0.08} scalefont setfont\n`;
+  fallback += `${width * 0.5} ${height * 0.5} moveto\n`;
+  fallback += `(Vector Logo) show\n`;
+  
+  // Add the original SVG as comments for reference
+  const svgLines = svgString.split('\n');
+  svgLines.forEach(line => {
+    if (line.trim()) {
+      fallback += `% ${line.trim()}\n`;
+    }
+  });
+  
+  return fallback;
+}
+
+
 
 /**
  * Helper to get MIME type from file extension
