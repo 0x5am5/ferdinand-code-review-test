@@ -14,6 +14,7 @@ import { z } from "zod";
 import { Palette, Type, Grid3X3, Download, Save, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useClientAssetsById } from "@/lib/queries/clients";
+import { generateSemanticTokens, type RawTokens, type SemanticTokens } from "./token-generator";
 
 // Design System Schema
 const designSystemSchema = z.object({
@@ -32,7 +33,7 @@ const designSystemSchema = z.object({
   colors: z.object({
     brandPrimaryBase: z.string().regex(/^#[0-9A-F]{6}$/i),
     brandSecondaryBase: z.string().regex(/^#[0-9A-F]{6}$/i),
-    neutralBase: z.string(),
+    neutralBase: z.string().regex(/^hsl\(\d+,\s*\d+%,\s*\d+%\)$/),
     interactiveSuccessBase: z.string().regex(/^#[0-9A-F]{6}$/i),
     interactiveWarningBase: z.string().regex(/^#[0-9A-F]{6}$/i),
     interactiveErrorBase: z.string().regex(/^#[0-9A-F]{6}$/i),
@@ -81,170 +82,387 @@ interface DesignSystemBuilderProps {
 }
 
 const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemForm; clientLogo?: string }) => {
-  // Generate CSS custom properties from form data
+  // Generate semantic tokens from raw tokens
+  const semanticTokens = generateSemanticTokens(formData as RawTokens);
+  
+  // Generate CSS custom properties from semantic tokens
   const cssVars = {
-    '--font-size-base': `${formData.typography.fontSizeBase}rem`,
-    '--line-height-base': formData.typography.lineHeightBase,
-    '--type-scale': formData.typography.typeScaleBase,
-    '--font-family-primary': formData.typography.fontFamily1Base,
-    '--font-family-secondary': formData.typography.fontFamily2Base,
-    '--color-brand-primary': formData.colors.brandPrimaryBase,
-    '--color-brand-secondary': formData.colors.brandSecondaryBase,
-    '--color-success': formData.colors.interactiveSuccessBase,
-    '--color-error': formData.colors.interactiveErrorBase,
-    '--spacing-base': `${formData.spacing.spacingUnitBase}rem`,
-    '--border-radius': `${formData.borders.borderRadiusBase}px`,
+    // Typography
+    '--font-family-heading': semanticTokens.typography.fontFamilyHeading,
+    '--font-family-body': semanticTokens.typography.fontFamilyBody,
+    '--font-size-h1': semanticTokens.typography.fontSizeH1,
+    '--font-size-h2': semanticTokens.typography.fontSizeH2,
+    '--font-size-body': semanticTokens.typography.fontSizeBody,
+    '--line-height-heading': semanticTokens.typography.lineHeightHeading,
+    '--line-height-body': semanticTokens.typography.lineHeightBody,
+    
+    // Colors
+    '--color-brand-primary': semanticTokens.colors.brandPrimary,
+    '--color-brand-secondary': semanticTokens.colors.brandSecondary,
+    '--color-text-heading': semanticTokens.colors.textHeading,
+    '--color-text-body': semanticTokens.colors.textBody,
+    '--color-text-link': semanticTokens.colors.textLink,
+    '--color-background-page': semanticTokens.colors.backgroundPage,
+    '--color-background-surface': semanticTokens.colors.backgroundSurface,
+    '--color-button-primary-bg': semanticTokens.colors.buttonPrimaryBg,
+    '--color-button-primary-text': semanticTokens.colors.buttonPrimaryText,
+    '--color-success': semanticTokens.colors.successDark,
+    '--color-error': semanticTokens.colors.errorDark,
+    
+    // Spacing
+    '--spacing-s': semanticTokens.spacing.s,
+    '--spacing-m': semanticTokens.spacing.m,
+    '--spacing-l': semanticTokens.spacing.l,
+    '--spacing-xl': semanticTokens.spacing.xl,
+    
+    // Borders & Radius
+    '--border-radius-button': semanticTokens.borders.radiusButton,
+    '--border-radius-card': semanticTokens.borders.radiusCard,
+    
+    // Shadows
+    '--elevation-card': semanticTokens.shadows.elevationCard,
+    '--elevation-button-hover': semanticTokens.shadows.elevationButtonHover,
+    
+    // Transitions
+    '--transition-button': semanticTokens.transitions.button,
   } as React.CSSProperties;
 
   return (
-    <div className="space-y-6 p-6 border rounded-lg bg-white" style={cssVars}>
-      {/* Header with Logo */}
-      <header className="flex items-center justify-between pb-4 border-b" style={{ borderColor: 'var(--color-brand-primary)' }}>
-        {clientLogo && (
-          <img 
-            src={clientLogo} 
-            alt="Client Logo" 
-            className="h-12 w-auto object-contain"
-          />
-        )}
-        <nav className="flex space-x-4">
-          <a href="#" style={{ color: 'var(--color-brand-primary)' }}>Home</a>
-          <a href="#" style={{ color: 'var(--color-brand-secondary)' }}>About</a>
-          <a href="#" style={{ color: 'var(--color-brand-secondary)' }}>Contact</a>
-        </nav>
-      </header>
+    <div className="space-y-6">
+      {/* Main Preview */}
+      <div className="p-6 border rounded-lg" style={{...cssVars, backgroundColor: 'var(--color-background-page)'}}>
+        {/* Header with Logo */}
+        <header className="flex items-center justify-between pb-4 border-b" style={{ borderColor: 'var(--color-brand-primary)' }}>
+          {clientLogo && (
+            <img 
+              src={clientLogo} 
+              alt="Client Logo" 
+              className="h-12 w-auto object-contain"
+            />
+          )}
+          <nav className="flex space-x-4">
+            <a href="#" style={{ color: 'var(--color-text-link)' }}>Home</a>
+            <a href="#" style={{ color: 'var(--color-text-body)' }}>About</a>
+            <a href="#" style={{ color: 'var(--color-text-body)' }}>Contact</a>
+          </nav>
+        </header>
 
-      {/* Typography Showcase */}
-      <section className="space-y-4">
-        <h1 
-          style={{ 
-            fontSize: `calc(var(--font-size-base) * var(--type-scale) * var(--type-scale) * var(--type-scale))`,
-            fontFamily: 'var(--font-family-primary)',
-            lineHeight: 'var(--line-height-base)',
-            color: 'var(--color-brand-secondary)',
-            margin: `var(--spacing-base) 0`
-          }}
-        >
-          Welcome to Our Brand
-        </h1>
-        
-        <h2 
-          style={{ 
-            fontSize: `calc(var(--font-size-base) * var(--type-scale) * var(--type-scale))`,
-            fontFamily: 'var(--font-family-primary)',
-            color: 'var(--color-brand-secondary)',
-            margin: `calc(var(--spacing-base) * 0.75) 0`
-          }}
-        >
-          Design System Preview
-        </h2>
-        
-        <p 
-          style={{ 
-            fontSize: 'var(--font-size-base)',
-            fontFamily: 'var(--font-family-secondary)',
-            lineHeight: 'var(--line-height-base)',
-            margin: `var(--spacing-base) 0`
-          }}
-        >
-          This is a preview of how your design system tokens will look when applied to content. 
-          Typography, colors, spacing, and other design elements are automatically generated 
-          from your token definitions.
-        </p>
-      </section>
-
-      {/* Button Examples */}
-      <section className="space-y-4">
-        <h3 
-          style={{ 
-            fontSize: `calc(var(--font-size-base) * var(--type-scale))`,
-            fontFamily: 'var(--font-family-primary)',
-            color: 'var(--color-brand-secondary)'
-          }}
-        >
-          Interactive Elements
-        </h3>
-        
-        <div className="flex space-x-4">
-          <button 
+        {/* Typography Showcase */}
+        <section className="space-y-4 mt-6">
+          <h1 
             style={{ 
-              backgroundColor: 'var(--color-brand-primary)',
-              color: 'white',
-              padding: `calc(var(--spacing-base) * 0.5) var(--spacing-base)`,
-              borderRadius: 'var(--border-radius)',
-              border: 'none',
-              fontFamily: 'var(--font-family-secondary)',
-              fontSize: 'var(--font-size-base)',
-              cursor: 'pointer'
+              fontSize: 'var(--font-size-h1)',
+              fontFamily: 'var(--font-family-heading)',
+              lineHeight: 'var(--line-height-heading)',
+              color: 'var(--color-text-heading)',
+              margin: 'var(--spacing-l) 0 var(--spacing-m) 0'
             }}
           >
-            Primary Button
-          </button>
+            Welcome to Our Brand
+          </h1>
           
-          <button 
+          <h2 
             style={{ 
-              backgroundColor: 'transparent',
-              color: 'var(--color-brand-primary)',
-              padding: `calc(var(--spacing-base) * 0.5) var(--spacing-base)`,
-              borderRadius: 'var(--border-radius)',
-              border: `2px solid var(--color-brand-primary)`,
-              fontFamily: 'var(--font-family-secondary)',
-              fontSize: 'var(--font-size-base)',
-              cursor: 'pointer'
+              fontSize: 'var(--font-size-h2)',
+              fontFamily: 'var(--font-family-heading)',
+              color: 'var(--color-text-heading)',
+              margin: 'var(--spacing-m) 0'
             }}
           >
-            Secondary Button
-          </button>
+            Design System Preview
+          </h2>
           
-          <button 
-            style={{ 
-              backgroundColor: 'var(--color-success)',
-              color: 'white',
-              padding: `calc(var(--spacing-base) * 0.5) var(--spacing-base)`,
-              borderRadius: 'var(--border-radius)',
-              border: 'none',
-              fontFamily: 'var(--font-family-secondary)',
-              fontSize: 'var(--font-size-base)',
-              cursor: 'pointer'
-            }}
-          >
-            Success Button
-          </button>
-        </div>
-      </section>
-
-      {/* Card Example */}
-      <section>
-        <div 
-          style={{ 
-            padding: `calc(var(--spacing-base) * 1.5)`,
-            borderRadius: 'var(--border-radius)',
-            border: '1px solid #e5e7eb',
-            backgroundColor: '#f9fafb'
-          }}
-        >
-          <h4 
-            style={{ 
-              fontSize: `calc(var(--font-size-base) * var(--type-scale))`,
-              fontFamily: 'var(--font-family-primary)',
-              color: 'var(--color-brand-secondary)',
-              margin: `0 0 var(--spacing-base) 0`
-            }}
-          >
-            Card Component
-          </h4>
           <p 
             style={{ 
-              fontSize: 'var(--font-size-base)',
-              fontFamily: 'var(--font-family-secondary)',
-              lineHeight: 'var(--line-height-base)',
-              margin: '0'
+              fontSize: 'var(--font-size-body)',
+              fontFamily: 'var(--font-family-body)',
+              lineHeight: 'var(--line-height-body)',
+              color: 'var(--color-text-body)',
+              margin: 'var(--spacing-m) 0'
             }}
           >
-            This card demonstrates how spacing and typography tokens work together to create consistent layouts.
+            This comprehensive preview shows your design system tokens in action. Typography scales, semantic colors, 
+            and spacing relationships are automatically generated from your base token definitions.
           </p>
+        </section>
+
+        {/* Interactive Elements */}
+        <section className="space-y-4 mt-6">
+          <h3 
+            style={{ 
+              fontSize: 'var(--font-size-h2)',
+              fontFamily: 'var(--font-family-heading)',
+              color: 'var(--color-text-heading)'
+            }}
+          >
+            Interactive Components
+          </h3>
+          
+          <div className="flex flex-wrap gap-4">
+            <button 
+              style={{ 
+                backgroundColor: 'var(--color-button-primary-bg)',
+                color: 'var(--color-button-primary-text)',
+                padding: 'var(--spacing-s) var(--spacing-m)',
+                borderRadius: 'var(--border-radius-button)',
+                border: 'none',
+                fontFamily: 'var(--font-family-body)',
+                fontSize: 'var(--font-size-body)',
+                cursor: 'pointer',
+                transition: 'var(--transition-button)',
+                boxShadow: 'var(--elevation-card)'
+              }}
+            >
+              Primary Button
+            </button>
+            
+            <button 
+              style={{ 
+                backgroundColor: 'transparent',
+                color: 'var(--color-brand-primary)',
+                padding: 'var(--spacing-s) var(--spacing-m)',
+                borderRadius: 'var(--border-radius-button)',
+                border: `2px solid var(--color-brand-primary)`,
+                fontFamily: 'var(--font-family-body)',
+                fontSize: 'var(--font-size-body)',
+                cursor: 'pointer',
+                transition: 'var(--transition-button)'
+              }}
+            >
+              Secondary Button
+            </button>
+            
+            <button 
+              style={{ 
+                backgroundColor: 'var(--color-success)',
+                color: 'white',
+                padding: 'var(--spacing-s) var(--spacing-m)',
+                borderRadius: 'var(--border-radius-button)',
+                border: 'none',
+                fontFamily: 'var(--font-family-body)',
+                fontSize: 'var(--font-size-body)',
+                cursor: 'pointer'
+              }}
+            >
+              Success Button
+            </button>
+            
+            <button 
+              style={{ 
+                backgroundColor: 'var(--color-error)',
+                color: 'white',
+                padding: 'var(--spacing-s) var(--spacing-m)',
+                borderRadius: 'var(--border-radius-button)',
+                border: 'none',
+                fontFamily: 'var(--font-family-body)',
+                fontSize: 'var(--font-size-body)',
+                cursor: 'pointer'
+              }}
+            >
+              Error Button
+            </button>
+          </div>
+        </section>
+
+        {/* Form Elements */}
+        <section className="space-y-4 mt-6">
+          <h3 
+            style={{ 
+              fontSize: 'var(--font-size-h2)',
+              fontFamily: 'var(--font-family-heading)',
+              color: 'var(--color-text-heading)'
+            }}
+          >
+            Form Elements
+          </h3>
+          
+          <div className="space-y-4">
+            <input 
+              type="text" 
+              placeholder="Example input field"
+              style={{ 
+                padding: 'var(--spacing-s)',
+                borderRadius: 'var(--border-radius-button)',
+                border: '1px solid #e5e7eb',
+                fontFamily: 'var(--font-family-body)',
+                fontSize: 'var(--font-size-body)',
+                width: '100%',
+                maxWidth: '300px'
+              }}
+            />
+            
+            <textarea 
+              placeholder="Example textarea"
+              style={{ 
+                padding: 'var(--spacing-s)',
+                borderRadius: 'var(--border-radius-button)',
+                border: '1px solid #e5e7eb',
+                fontFamily: 'var(--font-family-body)',
+                fontSize: 'var(--font-size-body)',
+                width: '100%',
+                maxWidth: '300px',
+                minHeight: '80px',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+        </section>
+
+        {/* Card Examples */}
+        <section className="space-y-4 mt-6">
+          <h3 
+            style={{ 
+              fontSize: 'var(--font-size-h2)',
+              fontFamily: 'var(--font-family-heading)',
+              color: 'var(--color-text-heading)'
+            }}
+          >
+            Card Components
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div 
+              style={{ 
+                padding: 'var(--spacing-l)',
+                borderRadius: 'var(--border-radius-card)',
+                backgroundColor: 'var(--color-background-surface)',
+                boxShadow: 'var(--elevation-card)',
+                border: '1px solid #e5e7eb'
+              }}
+            >
+              <h4 
+                style={{ 
+                  fontSize: 'var(--font-size-body)',
+                  fontFamily: 'var(--font-family-heading)',
+                  color: 'var(--color-text-heading)',
+                  margin: '0 0 var(--spacing-s) 0',
+                  fontWeight: '600'
+                }}
+              >
+                Card Title
+              </h4>
+              <p 
+                style={{ 
+                  fontSize: 'var(--font-size-body)',
+                  fontFamily: 'var(--font-family-body)',
+                  lineHeight: 'var(--line-height-body)',
+                  color: 'var(--color-text-body)',
+                  margin: '0'
+                }}
+              >
+                This card demonstrates how spacing, typography, and elevation tokens work together.
+              </p>
+            </div>
+            
+            <div 
+              style={{ 
+                padding: 'var(--spacing-l)',
+                borderRadius: 'var(--border-radius-card)',
+                backgroundColor: 'var(--color-background-surface)',
+                boxShadow: 'var(--elevation-card)',
+                border: '1px solid #e5e7eb'
+              }}
+            >
+              <h4 
+                style={{ 
+                  fontSize: 'var(--font-size-body)',
+                  fontFamily: 'var(--font-family-heading)',
+                  color: 'var(--color-text-heading)',
+                  margin: '0 0 var(--spacing-s) 0',
+                  fontWeight: '600'
+                }}
+              >
+                Second Card
+              </h4>
+              <p 
+                style={{ 
+                  fontSize: 'var(--font-size-body)',
+                  fontFamily: 'var(--font-family-body)',
+                  lineHeight: 'var(--line-height-body)',
+                  color: 'var(--color-text-body)',
+                  margin: '0'
+                }}
+              >
+                Multiple cards show consistency across your design system implementation.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* Neutral Color Scale Visualization */}
+      <div className="p-4 border rounded-lg bg-white">
+        <h4 className="text-sm font-medium mb-3">Generated Neutral Color Scale</h4>
+        <div className="flex flex-wrap gap-2">
+          {[0,1,2,3,4,5,6,7,8,9,10].map(step => (
+            <div key={step} className="text-center">
+              <div 
+                className="w-8 h-8 rounded border border-gray-200"
+                style={{ backgroundColor: semanticTokens.colors[`neutral${step}` as keyof typeof semanticTokens.colors] }}
+              />
+              <span className="text-xs text-gray-600 mt-1 block">{step}</span>
+            </div>
+          ))}
         </div>
-      </section>
+      </div>
+
+      {/* Brand Color Variations */}
+      <div className="p-4 border rounded-lg bg-white">
+        <h4 className="text-sm font-medium mb-3">Brand Color Variations</h4>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs w-20">Primary:</span>
+            <div className="flex gap-1">
+              {['brandPrimaryXLight', 'brandPrimaryLight', 'brandPrimary', 'brandPrimaryDark', 'brandPrimaryXDark'].map(variant => (
+                <div 
+                  key={variant}
+                  className="w-6 h-6 rounded border border-gray-200"
+                  style={{ backgroundColor: semanticTokens.colors[variant as keyof typeof semanticTokens.colors] }}
+                  title={variant}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs w-20">Secondary:</span>
+            <div className="flex gap-1">
+              {['brandSecondaryXLight', 'brandSecondaryLight', 'brandSecondary', 'brandSecondaryDark', 'brandSecondaryXDark'].map(variant => (
+                <div 
+                  key={variant}
+                  className="w-6 h-6 rounded border border-gray-200"
+                  style={{ backgroundColor: semanticTokens.colors[variant as keyof typeof semanticTokens.colors] }}
+                  title={variant}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Typography Scale */}
+      <div className="p-4 border rounded-lg bg-white" style={cssVars}>
+        <h4 className="text-sm font-medium mb-3">Generated Typography Scale</h4>
+        <div className="space-y-2">
+          {[
+            { label: 'H1', value: 'var(--font-size-h1)' },
+            { label: 'H2', value: 'var(--font-size-h2)' },
+            { label: 'Body', value: 'var(--font-size-body)' },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex items-center gap-4">
+              <span className="text-xs w-8">{label}:</span>
+              <span 
+                style={{ 
+                  fontSize: value,
+                  fontFamily: 'var(--font-family-heading)',
+                  lineHeight: 1
+                }}
+              >
+                Sample Text ({value})
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
