@@ -123,6 +123,7 @@ The application follows a full-stack architecture with clear separation between 
 
 ```
 Changelog:
+- June 18, 2025. Implemented Code-Based Design System Builder V1 - Replaced Figma integration with comprehensive token management system
 - June 17, 2025. Fixed Figma Integration feature toggle - Design System tab now appears correctly when enabled
 - June 17, 2025. Added Figma Integration feature toggle system with database schema and UI components
 - June 16, 2025. Initial setup
