@@ -1,0 +1,177 @@
+# Developer Checklist: Code-Only Design System Builder (V1) for Junior Developer
+
+This checklist provides a detailed, step-by-step breakdown of tasks for implementing the Code-Only Design System Builder (V1) in Ferdinand, based on the accompanying Product Requirements Document (PRD). The provided raw and semantic tokens are the exact starting point for integration. Each task is designed to be manageable for a junior developer, with clear objectives and sub-tasks.
+
+## Phase 1: Frontend Development - Design System Builder UI
+
+### Task 1.1: Set up the Design System Tab and Basic Routing
+
+*   **Objective:** Ensure the "Design System" tab correctly appears and leads to a new page for the builder.
+*   **Estimated Time:** 2-4 hours
+*   **Sub-tasks:**
+    *   1.1.1: Locate the existing code that controls the visibility of the "Design System" tab in the client sidebar. Confirm it is linked to the `figma_integration` feature toggle.
+    *   1.1.2: Create a new React component file (e.g., `DesignSystemBuilderPage.tsx`) for the main builder interface. This file should initially contain a simple heading like `<h1>Design System Builder</h1>`.
+    *   1.1.3: Implement client-side routing using `Wouter` to connect the "Design System" tab to this new `DesignSystemBuilderPage` component. The route should be something like `/client/:clientId/design-system`.
+    *   1.1.4: Replace any existing placeholder UI in the "Design System" tab with the newly created `DesignSystemBuilderPage` component.
+    *   1.1.5: Test: Ensure the tab appears/disappears correctly with the feature toggle and navigates to the new page.
+
+### Task 1.2: Develop Design Token Input Forms - Colors
+
+*   **Objective:** Create forms for users to change color tokens.
+*   **Estimated Time:** 8-12 hours
+*   **Sub-tasks:**
+    *   1.2.1: In `DesignSystemBuilderPage.tsx`, create a section for "Color System Forms".
+    *   1.2.2: For the **Brand Palette**, add input fields for `brand.primary`, `brand.primaryLight`, `brand.primaryDark`, `brand.secondary`, and `brand.accent`. Use a color picker component (e.g., from `shadcn/ui` or a simple HTML5 color input `<input type="color">`) for each.
+    *   1.2.3: For the **Neutral Palette**, add 11 input fields for `neutral.0` to `neutral.1000`. Use color pickers. Consider a simple text input for HSL values if a direct color picker for 11 shades is too complex initially.
+    *   1.2.4: For the **Interactive Palette**, add input fields for `interactive.success`, `interactive.error`, `interactive.warning`, `interactive.link`, and their light/dark variations. Use color pickers.
+    *   1.2.5: Integrate `React Hook Form` to manage the state of these input fields. Define a schema for color tokens using `Zod`.
+    *   1.2.6: Test: Ensure all color input fields are visible and can be interacted with. Changes should be reflected in the form's internal state.
+
+### Task 1.3: Develop Design Token Input Forms - Typography
+
+*   **Objective:** Create forms for users to change typography tokens.
+*   **Estimated Time:** 6-10 hours
+*   **Sub-tasks:**
+    *   1.3.1: In `DesignSystemBuilderPage.tsx`, create a section for "Typography System Forms".
+    *   1.3.2: Add input fields for **Font Families**: `body` (e.g., text input for font name) and `heading`.
+    *   1.3.3: Add input fields for **Raw Type Scale**: `font-size-base`, `font-size-sm`, `font-size-lg`, `font-size-xl`, `font-size-2xl`, `font-size-3xl`. Use number inputs (e.g., `type="number"`).
+    *   1.3.4: Add input fields for **Semantic Type Tokens**: `type-h1`, `type-h2`, `type-body`, `type-caption`. These should ideally reference the raw tokens (e.g., a dropdown to select `font-size-3xl`).
+    *   1.3.5: Add input fields for **Line Height**: `line-height-base`, `line-height-heading`. Use number inputs.
+    *   1.3.6: Add input fields for **Letter Spacing**: `letter-spacing-xs`, `letter-spacing-sm`, `letter-spacing-md`, `letter-spacing-lg`, `letter-spacing-xl`. Use number inputs.
+    *   1.3.7: Extend the `React Hook Form` and `Zod` schema to include typography tokens.
+    *   1.3.8: Test: Ensure all typography input fields are visible and can be interacted with.
+
+### Task 1.4: Develop Design Token Input Forms - Spacing & Interactive States
+
+*   **Objective:** Create forms for users to change spacing and interactive state tokens.
+*   **Estimated Time:** 4-6 hours
+*   **Sub-tasks:**
+    *   1.4.1: In `DesignSystemBuilderPage.tsx`, create a section for "Spacing & Layout Forms".
+    *   1.4.2: Add input fields for **Spacing Units**: `space-xs`, `space-sm`, `space-md`, `space-lg`, `space-xl`, `space-2xl`. Use number inputs.
+    *   1.4.3: Add input fields for **Grid Breakpoints**: `mobile`, `tablet`, `desktop`, `wide`. Use number inputs for pixel values.
+    *   1.4.4: Create a section for "Interactive States Forms".
+    *   1.4.5: Add input fields for interactive state tokens: `hover`, `active`, `clicked`, `visited`, `inactive`. These will likely be color inputs or references to existing color tokens.
+    *   1.4.6: Extend the `React Hook Form` and `Zod` schema to include spacing and interactive state tokens.
+    *   1.4.7: Test: Ensure all new input fields are visible and functional.
+
+### Task 1.5: Implement Basic Component Property Forms
+
+*   **Objective:** Allow linking basic component properties to existing design tokens.
+*   **Estimated Time:** 4-8 hours
+*   **Sub-tasks:**
+    *   1.5.1: Create a section for "Component Properties (Basic)".
+    *   1.5.2: For each initial component (Buttons, Form inputs, Cards, Alerts, Overlays + modals, Tabs), add a simple form that allows users to select existing design tokens for properties like background color, text color, border color, etc.
+    *   Example (Button): An input field for "Button Background Color" that is a dropdown populated with `brand.primary`, `brand.secondary`, etc., from the color tokens.
+    *   1.5.3: Extend the `React Hook Form` and `Zod` schema to include these basic component property mappings.
+    *   1.5.4: Test: Ensure component property forms are visible and allow selection of existing tokens.
+
+### Task 1.6: Implement Real-time Preview Display
+
+*   **Objective:** Show a dynamic preview of design system changes.
+*   **Estimated Time:** 10-16 hours
+*   **Sub-tasks:**
+    *   1.6.1: Create a new React component (e.g., `DesignSystemPreview.tsx`) that will display the dummy content.
+    *   1.6.2: Inside `DesignSystemPreview.tsx`, build a simple HTML structure for a dummy landing page. This should include:
+        *   A header with a placeholder for the client's logo.
+        *   Headings (H1, H2, etc.) to showcase typography.
+        *   Paragraphs with different text sizes.
+        *   Buttons (primary, secondary, etc.) to show component styling and interactive states.
+        *   Basic form elements (input field, checkbox, radio) to show form styling.
+        *   Sections with padding/margin to demonstrate spacing tokens.
+    *   1.6.3: Fetch the client's logo from the existing logo manager API and display it in the preview.
+    *   1.6.4: Connect the `DesignSystemPreview` component to the `React Hook Form` state from the input forms. As the form values change, dynamically apply the corresponding CSS variables or Tailwind classes to the dummy content elements.
+    *   1.6.5: Implement a debouncing mechanism to ensure the preview updates smoothly without excessive re-renders (e.g., update every 500ms after user stops typing).
+    *   1.6.6: Test: Verify that changes in the input forms (colors, typography, spacing, interactive states) are immediately and accurately reflected in the preview. Ensure the client's logo is displayed.
+
+### Task 1.7: Implement Save Button and Basic Frontend-Backend Connection
+
+*   **Objective:** Allow users to save their design system changes.
+*   **Estimated Time:** 4-6 hours
+*   **Sub-tasks:**
+    *   1.7.1: Add a "Save" button to the `DesignSystemBuilderPage` component.
+    *   1.7.2: When the "Save" button is clicked, gather all the current design token values from the `React Hook Form`.
+    *   1.7.3: Use `TanStack React Query` to send these values to a new backend API endpoint (e.g., `POST /api/design-system/save`). (This will require coordination with backend development).
+    *   1.7.4: Display a simple success message (e.g., a toast notification) upon successful saving.
+    *   1.7.5: Test: Click the save button and verify that a request is sent to the backend. (Full verification will happen after backend is implemented).
+
+## Phase 2: Backend Development - API & Data Management
+
+### Task 2.1: Extend Design System API for Saving
+
+*   **Objective:** Create or extend the backend API to save the complete design system configuration.
+*   **Estimated Time:** 8-12 hours
+*   **Sub-tasks:**
+    *   2.1.1: Identify or create a new endpoint (e.g., `POST /api/design-system/save`) in your Node.js/Express.js backend.
+    *   2.1.2: Define the data structure for the incoming design system configuration. This should match the structure of the data sent from the frontend forms and align with the existing `theme.json` and raw tokens structure.
+    *   2.1.3: Implement logic to store this design system configuration in your PostgreSQL database using Drizzle ORM. This might involve updating an existing table or creating a new one.
+    *   2.1.4: Implement basic validation for the incoming data to ensure it's in the expected format.
+    *   2.1.5: Develop logic to retrieve the stored design system configuration for a given client when the frontend requests it (e.g., `GET /api/design-system/:clientId`).
+    *   2.1.6: Test: Use a tool like Postman or a simple `curl` command to send sample data to the new save endpoint and verify it's stored correctly. Also, verify that the GET endpoint returns the saved data.
+
+### Task 2.2: Implement Design System Export Endpoints
+
+*   **Objective:** Create API endpoints to generate and provide design system exports in different code formats.
+*   **Estimated Time:** 12-20 hours
+*   **Sub-tasks:**
+    *   2.2.1: Tailwind CSS Export Endpoint:
+        *   Create a new API endpoint (e.g., `GET /api/design-system/export/tailwind/:clientId`).
+        *   Retrieve the client's saved design system configuration from the database.
+        *   Develop logic to transform this data into a valid `tailwind.config.js` file. This will involve mapping your semantic tokens to Tailwind's `theme` and `extend` properties.
+        *   Return the generated file content as a response with the correct content type.
+    *   2.2.2: General CSS Export Endpoint:
+        *   Create a new API endpoint (e.g., `GET /api/design-system/export/css/:clientId`).
+        *   Retrieve the client's saved design system configuration.
+        *   Develop logic to generate a `.css` file containing CSS custom properties (variables) for all defined tokens (colors, typography, spacing, interactive states).
+        *   Ensure a consistent naming convention (e.g., `--brand-primary`, `--font-size-base`).
+        *   Return the generated file content.
+    *   2.2.3: SCSS Export Endpoint:
+        *   Create a new API endpoint (e.g., `GET /api/design-system/export/scss/:clientId`).
+        *   Retrieve the client's saved design system configuration.
+        *   Develop logic to generate an `.scss` file containing SCSS variables for all defined tokens.
+        *   Ensure a consistent naming convention (e.g., `$brand-primary`, `$font-size-base`).
+        *   Return the generated file content.
+    *   2.2.4: Test: Use Postman or `curl` to call each export endpoint and verify that the generated file content is correct and well-formatted.
+
+## Phase 3: Integration & Testing
+
+### Task 3.1: Connect Frontend to Backend APIs
+
+*   **Objective:** Link the frontend UI with the new backend APIs.
+*   **Estimated Time:** 6-10 hours
+*   **Sub-tasks:**
+    *   3.1.1: In `DesignSystemBuilderPage.tsx`, use `TanStack React Query` to fetch the initial design system configuration from `GET /api/design-system/:clientId` when the component mounts. Populate the `React Hook Form` with this data.
+    *   3.1.2: Update the "Save" button's `onClick` handler to correctly send the form data to `POST /api/design-system/save` using `TanStack React Query`'s mutation hooks.
+    *   3.1.3: Add buttons/links for each export type (Tailwind, CSS, SCSS) in the frontend UI. When clicked, trigger a download of the file by navigating to the corresponding backend export endpoint (e.g., `window.open('/api/design-system/export/tailwind/:clientId')`).
+    *   3.1.4: Test: Verify that the page loads with existing data, saving updates the data, and export buttons trigger file downloads.
+
+### Task 3.2: Comprehensive Testing and Refinement
+
+*   **Objective:** Ensure the feature works as expected, is performant, and is user-friendly.
+*   **Estimated Time:** 16-24 hours
+*   **Sub-tasks:**
+    *   3.2.1: Unit Testing: Write unit tests for new React components, custom hooks, and backend utility functions.
+    *   3.2.2: Integration Testing: Perform end-to-end tests:
+        *   Change a color in the form, see it update in the preview, save, refresh the page, and confirm the change persists.
+        *   Change typography, save, export to all formats, and verify the exported files reflect the changes.
+        *   Test all input fields and ensure they correctly update the preview.
+    *   3.2.3: Performance Testing: Monitor the real-time preview's responsiveness. Ensure it updates within 1-2 seconds. Optimize if necessary (e.g., further debouncing, memoization).
+    *   3.2.4: User Experience Review: Have someone else (e.g., a designer or another developer) test the UI for intuitiveness and ease of use. Gather feedback and make adjustments.
+    *   3.2.5: Error Handling: Implement basic error handling for API calls (e.g., display an error message if saving fails).
+
+## Phase 4: Documentation & Deployment Preparation
+
+### Task 4.1: Update Internal Documentation
+
+*   **Objective:** Document the new feature for future development and maintenance.
+*   **Estimated Time:** 4-6 hours
+*   **Sub-tasks:**
+    *   4.1.1: Update Ferdinand's internal developer documentation with details on the Design System Builder's frontend components, backend API endpoints, and data models.
+    *   4.1.2: Document how the raw and semantic tokens are used and transformed for the preview and exports.
+
+### Task 4.2: Prepare for Deployment
+
+*   **Objective:** Get the feature ready for release.
+*   **Estimated Time:** 2-4 hours
+*   **Sub-tasks:**
+    *   4.2.1: Ensure the `figma_integration` feature toggle is correctly configured for deployment environments.
+    *   4.2.2: Coordinate with the lead developer or DevOps team for release planning and deployment procedures.

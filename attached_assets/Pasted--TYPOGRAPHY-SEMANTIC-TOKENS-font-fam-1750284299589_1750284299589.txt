@@ -1,0 +1,167 @@
+// =========================
+// TYPOGRAPHY — SEMANTIC TOKENS
+// =========================
+
+$font-family--heading:         $font-family--headers;
+$font-family--body:            $font-family--body;
+$font-family--code:            $font-family--mono;
+
+$font-size--h1:                $font-size--xxxl;
+$font-size--h2:                $font-size--xxl;
+$font-size--h3:                $font-size--xl;
+$font-size--h4:                $font-size--l;
+$font-size--h5:                $font-size--m;
+$font-size--h6:                $font-size--s;
+$font-size--body:              $font-size--m;
+$font-size--caption:           $font-size--xs;
+$font-size--code:              $font-size--s;
+
+$line-height--heading:         $line-height--l;
+$line-height--body:            $line-height--m;
+$line-height--caption:         $line-height--s;
+$line-height--code:            $line-height--s;
+
+$font-weight--heading:         $font-weight--bold;
+$font-weight--body:            $font-weight--regular;
+$font-weight--caption:         $font-weight--medium;
+$font-weight--code:            $font-weight--regular;
+
+$letter-spacing--heading:      $letter-spacing--s;
+$letter-spacing--body:         $letter-spacing--m;
+$letter-spacing--caption:      $letter-spacing--l;
+$letter-spacing--code:         $letter-spacing--m;
+
+
+// =========================
+// COLOR — SEMANTIC TOKENS
+// =========================
+
+$color--text-heading:          $color-brand-secondary;
+$color--text-body:             $color-neutral-9;
+$color--text-muted:            $color-neutral-5;
+$color--text-inverted:         #ffffff;
+$color--text-link:             $color-brand-primary;
+$color--text-link-hover:       $color-brand-primary-dark;
+$color--text-error:            $color-error-dark;
+$color--text-success:          $color-success-dark;
+
+$color--background-page:       $color-neutral-0;
+$color--background-surface:    $color-neutral-1;
+$color--background-muted:      $color-neutral-2;
+$color--background-overlay:    rgba(0, 0, 0, 0.6);
+$color--background-inverted:   $color-brand-primary-dark;
+
+$color--border-default:        $border-color--base;
+$color--border-muted:          $color-neutral-3;
+$color--border-active:         $color-brand-primary;
+$color--border-error:          $color-error-dark;
+$color--border-success:        $color-success-dark;
+
+$color--button-primary-bg:     $color-brand-primary;
+$color--button-primary-text:   #ffffff;
+$color--button-secondary-bg:   $color-neutral-2;
+$color--button-secondary-text: $color-brand-secondary;
+
+
+// =========================
+// SPACING — SEMANTIC TOKENS
+// =========================
+
+$spacing--padding-body:        $spacing--m;
+$spacing--padding-section:     $spacing--xl;
+$spacing--padding-card:        $spacing--l;
+$spacing--padding-button:      $spacing--s $spacing--m;
+
+$spacing--margin-heading:      $spacing--l 0 $spacing--m 0;
+$spacing--margin-paragraph:    $spacing--m 0;
+$spacing--gap-ui:              $spacing--s;
+
+
+// =========================
+// BORDERS & RADIUS — SEMANTIC TOKENS
+// =========================
+
+$border--input:                $border--default;
+$border--button:               $border--default;
+$border--card:                 $border--default;
+
+$border-radius--button:        $border-radius--s;
+$border-radius--input:         $border-radius--s;
+$border-radius--card:          $border-radius--m;
+
+
+// =========================
+// SHADOWS / ELEVATION — SEMANTIC TOKENS
+// =========================
+
+$elevation--card:              $elevation--2;
+$elevation--modal:             $elevation--5;
+$elevation--button-hover:      $elevation--1;
+
+
+// =========================
+// MOTION — SEMANTIC TOKENS
+// =========================
+
+$transition--ui:               $transition--default;
+$transition--button:           background-color $duration--medium $transition--base;
+$transition--input:            border-color $duration--medium $transition--base;
+
+
+// =========================
+// HTML ELEMENTS — SEMANTIC TOKENS
+// =========================
+
+// Sectioning Elements
+$background--aside:            $color--background-muted;
+$background--section:          $color--background-surface;
+$background--article:          $color--background-page;
+$background--header:           $color--background-page;
+$background--footer:           $color--background-muted;
+$background--main:             $color--background-page;
+$background--nav:              $color--background-muted;
+$background--summary:          $color--background-surface;
+
+$spacing--section-padding:     $spacing--xl;
+$spacing--article-padding:     $spacing--xl;
+$spacing--header-padding:      $spacing--l $spacing--xl;
+$spacing--footer-padding:      $spacing--l $spacing--xl;
+$spacing--nav-padding:         $spacing--m $spacing--xl;
+
+// Text Elements
+$font-weight--b:               $font-weight--bold;
+$font-style--cite:             italic;
+$font-style--address:          normal;
+$font-size--figcaption:        $font-size--caption;
+$color--figcaption:            $color--text-muted;
+
+$color--blockquote-text:       $color--text-muted;
+$border--blockquote:           2px solid $color--border-muted;
+$padding--blockquote:          $spacing--m $spacing--l;
+
+// Code + Mono
+$font-family--code-block:      $font-family--code;
+$font-size--code-block:        $font-size--code;
+$color--code-bg:               $color-neutral-1;
+$padding--code-block:          $spacing--xs $spacing--s;
+$border-radius--code:          $border-radius--s;
+
+// Images & Media
+$border-radius--img:           $border-radius--s;
+$margin--figure:               $spacing--l 0;
+$border--canvas:               $border--default;
+
+// Forms & Inputs
+$background--button:           $color--button-primary-bg;
+$color--button-text:           $color--button-primary-text;
+$padding--button:              $spacing--s $spacing--m;
+$border-radius--button:        $border-radius--button;
+
+$border--input:                $border--input;
+$border-radius--input:         $border-radius--input;
+$font-size--datalist:          $font-size--body;
+
+// Miscellaneous Elements
+$direction--bdi:               inherit;
+$background--audio:            $color--background-surface;
+$background--content-sectioning: $color--background-muted;

@@ -1,0 +1,199 @@
+// =========================
+// TYPOGRAPHY
+// =========================
+
+// Editable in builder
+$font-size--base:        1rem;
+$line-height--base:      1.4;
+$type-scale--base:       1.4; 
+$letter-spacing--base:   0;
+
+$font-family-1--base:    'Rock Grotesque';
+$font-family-2--base:    'Rock Grotesque Wide';
+$font-family-mono--base: monospace;
+
+// Auto-generated based on inputs or hardcoded
+$font-family--headers:   $font-family-1--base;
+$font-family--body:      $font-family-2--base;
+$font-family--mono:      $font-family-mono--base;
+
+$font-size--xs:          $font-size--base / ($type-scale--base * $type-scale--base);
+$font-size--s:           $font-size--base / $type-scale--base;
+$font-size--m:           $font-size--base;
+$font-size--l:           $font-size--m * $type-scale--base;
+$font-size--xl:          $font-size--l * $type-scale--base;
+$font-size--xxl:         $font-size--xl * $type-scale--base;
+$font-size--xxxl:        $font-size--xxl * $type-scale--base;
+
+$font-weight--thin:      100;
+$font-weight--light:     300;
+$font-weight--regular:   400;
+$font-weight--medium:    500;
+$font-weight--semibold:  600;
+$font-weight--bold:      700;
+$font-weight--black:     900;
+
+$line-height--xs:        $line-height--base * 0.5;
+$line-height--s:         $line-height--base * 0.75;
+$line-height--m:         $line-height--base;
+$line-height--l:         $line-height--base * 1.5;
+$line-height--xl:        $line-height--base * 2;
+
+$letter-spacing--xs:     $letter-spacing--base * 0.5;
+$letter-spacing--s:      $letter-spacing--base * 0.75;
+$letter-spacing--m:      $letter-spacing--base;
+$letter-spacing--l:      $letter-spacing--base * 1.2;
+$letter-spacing--xl:     $letter-spacing--base * 1.8;
+
+
+// =========================
+// COLORS
+// =========================
+
+// Editable in builder
+$color-brand-primary--base:   #0052CC;
+$color-brand-secondary--base: #172B4D;
+$color-neutral--base:         hsl(0, 0%, 60%);
+
+$color-interactive-success--base: #28a745;
+$color-interactive-warning--base: #ffc107;
+$color-interactive-error--base:   #dc3545;
+$color-interactive-info--base:    #17a2b8;
+
+// Auto-generated
+$color-brand-primary-x-light:    lighten($color-brand-primary--base, 60%);
+$color-brand-primary-light:      lighten($color-brand-primary--base, 30%);
+$color-brand-primary:            $color-brand-primary--base;
+$color-brand-primary-dark:       darken($color-brand-primary--base, 30%);
+$color-brand-primary-x-dark:     darken($color-brand-primary--base, 60%);
+
+$color-brand-secondary-x-light:  lighten($color-secondary-primary--base, 60%);
+$color-brand-secondary-light:    lighten($color-secondary-primary--base, 30%);
+$color-brand-secondary:          $color-brand-secondary--base;
+$color-brand-secondary-dark:     darken($color-secondary-primary--base, 30%);
+$color-brand-secondary-x-dark:   darken($color-secondary-primary--base, 60%);
+
+@function gray-shade($step) {
+  $base-hue: 0;
+  $base-sat: 0%;
+  $lightness: (100 - pow(($step - 5) / 5, 2) * 2) * 1%;
+  @return hsl($base-hue, $base-sat, $lightness);
+}
+
+$color-neutral-0:  gray-shade(0);
+$color-neutral-1:  gray-shade(1);
+$color-neutral-2:  gray-shade(2);
+$color-neutral-3:  gray-shade(3);
+$color-neutral-4:  gray-shade(4);
+$color-neutral-5:  gray-shade(5);
+$color-neutral-6:  gray-shade(6);
+$color-neutral-7:  gray-shade(7);
+$color-neutral-8:  gray-shade(8);
+$color-neutral-9:  gray-shade(9);
+$color-neutral-10: gray-shade(10);
+
+$color-success-light: lighten($color-interactive-success--base, 20%);
+$color-success-dark:  darken($color-interactive-success--base, 20%);
+
+$color-warning-light: lighten($color-interactive-warning--base, 20%);
+$color-warning-dark:  darken($color-interactive-warning--base, 20%);
+
+$color-error-light:   lighten($color-interactive-error--base, 20%);
+$color-error-dark:    darken($color-interactive-error--base, 20%);
+
+$color-info-light:    lighten($color-interactive-info--base, 20%);
+$color-info-dark:     darken($color-interactive-info--base, 20%);
+
+
+// =========================
+// SPACING / SIZING
+// =========================
+
+$spacing-unit--base:    1rem;
+$spacing-scale--base:   1.5;
+
+$spacing--0:            0;
+$spacing--xs:           $spacing-unit--base / ($spacing-scale--base * $spacing-scale--base);
+$spacing--s:            $spacing-unit--base / $spacing-scale--base;
+$spacing--m:            $spacing-unit--base;
+$spacing--l:            $spacing--m * $spacing-scale--base;
+$spacing--xl:           $spacing--l * $spacing-scale--base;
+$spacing--xxl:          $spacing--xl * $spacing-scale--base;
+$spacing--xxxl:         $spacing--xxl * $spacing-scale--base;
+$spacing--xxxxl:        $spacing--xxxl * $spacing-scale--base;
+
+$size--xs:              $spacing--xs;
+$size--s:               $spacing--s;
+$size--m:               $spacing--m;
+$size--l:               $spacing--l;
+$size--xl:              $spacing--xl;
+$size--xxl:             $spacing--xxl;
+$size--xxxl:            $spacing--xxxl;
+$size--xxxxl:           $spacing--xxxxl;
+
+
+// =========================
+// SHADOWS & ELEVATION
+// =========================
+
+$shadow-color--base:    rgba(0, 0, 0, 0.15);
+$elevation-height--base: 12px;
+
+@function shadow-offset($level) {
+  $elevation: $elevation-height--base * ($level / 5);
+  @return 0 ($elevation * 0.5) ($elevation);
+}
+
+@function shadow($level, $color: $shadow-color--base) {
+  $offsets: shadow-offset($level);
+  @return nth($offsets, 1) nth($offsets, 2) nth($offsets, 3) $color;
+}
+
+$elevation--0:          none;
+$elevation--1:          shadow(1);
+$elevation--2:          shadow(2);
+$elevation--3:          shadow(3);
+$elevation--4:          shadow(4);
+$elevation--5:          shadow(5);
+
+$z-index--0:            0;
+$z-index--1:            100;
+$z-index--2:            200;
+$z-index--3:            300;
+$z-index--4:            400;
+$z-index--5:            500;
+
+
+// =========================
+// BORDERS & RADIUS
+// =========================
+
+$border-width--base:    1px;
+$border-width--thin:    0.5px;
+$border-width--thick:   2px;
+
+$border-style--base:    solid;
+$border-color--base:    rgba(0, 0, 0, 0.1);
+$border-radius--base:   8px;
+
+$border--default:       $border-width--base $border-style--base $border-color--base;
+
+$border-radius--xs:     $border-radius--base * 0.25;
+$border-radius--s:      $border-radius--base * 0.5;
+$border-radius--m:      $border-radius--base;
+$border-radius--l:      $border-radius--base * 1.5;
+$border-radius--xl:     $border-radius--base * 2;
+
+
+// =========================
+// MOTION / TRANSITIONS
+// =========================
+
+$duration--base:        200ms;
+$transition--base:      ease-in-out;
+
+$duration--fast:        $duration--base * 0.5;
+$duration--medium:      $duration--base;
+$duration--slow:        $duration--base * 1.5;
+
+$transition--default:   all $duration--base $transition--base;
