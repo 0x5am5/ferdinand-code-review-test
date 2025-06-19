@@ -11,15 +11,18 @@ export async function runMigrations() {
     await migrateFigmaTables();
 
     // Add sortOrder column to brand_assets table
-    try {
+    const checkSortOrder = await db.execute(sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'brand_assets' AND column_name = 'sort_order'
+    `);
+
+    if (checkSortOrder.rows.length === 0) {
+      console.log('Adding sort_order column to brand_assets table...');
       await db.execute(sql`ALTER TABLE brand_assets ADD COLUMN sort_order INTEGER DEFAULT 0`);
-      console.log("✓ Added sort_order column to brand_assets table");
-    } catch (error: any) {
-      if (error.message?.includes("duplicate column name")) {
-        console.log("sort_order column already exists.");
-      } else {
-        throw error;
-      }
+      console.log('✓ Added sort_order column to brand_assets table');
+    } else {
+      console.log('sort_order column already exists.');
     }
 
     console.log("All migrations completed successfully!");
