@@ -70,13 +70,6 @@ function ColorCard({
   neutralColorsCount,
   onUpdate,
   clientId,
-  isBeingDragged,
-  isDraggedOver,
-  onDragStart,
-  onDragEnd,
-  onDragOver,
-  dragIndex,
-  dragConstraints,
 }: { 
   color: any; 
   onEdit: (color: any) => void; 
@@ -85,13 +78,6 @@ function ColorCard({
   neutralColorsCount?: number;
   onUpdate?: (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }) => void;
   clientId: number;
-  isBeingDragged?: boolean;
-  isDraggedOver?: boolean;
-  onDragStart?: () => void;
-  onDragEnd?: () => void;
-  onDragOver?: () => void;
-  dragIndex?: number;
-  dragConstraints?: any;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -255,8 +241,7 @@ function ColorCard({
           id: color.id,
           name: tempName.trim(),
           category: "color",
-          data: currentData,
-          sortOrder: color.sortOrder
+          data: currentData
         });
       }
     } else {
@@ -420,55 +405,12 @@ function ColorCard({
   return (
     <div className="color-chip-container relative">
       <motion.div 
-        className={`color-chip ${isDraggedOver ? 'color-chip--drag-over' : ''}`}
+        className="color-chip"
         style={getDisplayStyle()}
         animate={{ 
           width: showTints ? "60%" : "100%",
-          scale: isBeingDragged ? 1.05 : 1,
-          zIndex: isBeingDragged ? 1000 : isDraggedOver ? 2 : 1,
-          x: isDraggedOver ? 10 : 0,
         }}
-        transition={{ duration: 0.2, ease: "easeInOut" }}
-        drag={color.category !== "neutral" || !(/^Grey \d+$/.test(color.name))}
-        dragConstraints={{ left: 0, right: 0, top: -50, bottom: 50 }}
-        dragElastic={0}
-        dragMomentum={false}
-        onDragStart={(event, info) => {
-          if (onDragStart) onDragStart();
-        }}
-        onDrag={(event, info) => {
-          // Detect which card we're hovering over during drag
-          if (onDragOver && dragConstraints?.current) {
-            try {
-              const cards = Array.from(dragConstraints.current.querySelectorAll('.color-chip'));
-              const draggedElement = event.currentTarget as HTMLElement;
-              if (draggedElement) {
-                const rect = draggedElement.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                
-                cards.forEach((card, index) => {
-                  if (card !== draggedElement) {
-                    const cardRect = card.getBoundingClientRect();
-                    if (centerX >= cardRect.left && centerX <= cardRect.right) {
-                      onDragOver();
-                    }
-                  }
-                });
-              }
-            } catch (error) {
-              console.warn('Drag detection error:', error);
-            }
-          }
-        }}
-        onDragEnd={(event, info) => {
-          if (onDragEnd) onDragEnd();
-        }}
-        whileDrag={{ 
-          scale: 1.05,
-          zIndex: 1000,
-          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-          rotate: 2,
-        }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
       >
 
 
@@ -1407,82 +1349,12 @@ export function ColorManager({
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isAddingColor, setIsAddingColor] = useState(false);
-  const dragConstraints = useRef(null);
   const [selectedCategory, setSelectedCategory] = useState<
     "brand" | "neutral" | "interactive"
   >("brand");
   const [editingColor, setEditingColor] = useState<ColorData | null>(null);
   const [regenerationCount, setRegenerationCount] = useState(0);
-  const [draggedColorId, setDraggedColorId] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  
-  // Function to reorder colors
-  const reorderColors = useMutation({
-    mutationFn: async (reorderedColors: ColorData[]) => {
-      const updatePromises = reorderedColors.map((color, index) => 
-        fetch(`/api/clients/${clientId}/assets/${color.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: color.name,
-            category: "color",
-            data: color.data,
-            sortOrder: index,
-          }),
-        })
-      );
-      
-      await Promise.all(updatePromises);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
-      });
-      toast({
-        title: "Success",
-        description: "Colors reordered successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: "Failed to reorder colors",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Handle drag start
-  const handleDragStart = (colorId: number) => {
-    setDraggedColorId(colorId);
-  };
-
-  // Handle drag end
-  const handleDragEnd = () => {
-    if (draggedColorId !== null && dragOverIndex !== null) {
-      const draggedIndex = brandColorsData.findIndex(c => c.id === draggedColorId);
-      
-      if (draggedIndex !== -1 && draggedIndex !== dragOverIndex) {
-        const newColors = [...brandColorsData];
-        const [draggedColor] = newColors.splice(draggedIndex, 1);
-        newColors.splice(dragOverIndex, 0, draggedColor);
-        
-        reorderColors.mutate(newColors);
-      }
-    }
-    
-    setDraggedColorId(null);
-    setDragOverIndex(null);
-  };
-
-  // Handle drag over
-  const handleDragOver = (index: number) => {
-    if (draggedColorId !== null) {
-      setDragOverIndex(index);
-    }
-  };
+  // We don't need an extra state since colors are derived from props
 
   // Color utility functions
   const ColorUtils = {
@@ -1530,11 +1402,7 @@ export function ColorManager({
     defaultValues: {
       name: "",
       hex: "#000000",
-      rgb: "",
-      cmyk: "",
-      pantone: "",
       type: "solid",
-      category: "brand",
     },
   });
 
@@ -1640,7 +1508,7 @@ export function ColorManager({
   });
 
   const updateColor = useMutation({
-    mutationFn: async (data: { id: number; name: string; category: string; data: any; sortOrder?: number }) => {
+    mutationFn: async (data: { id: number; name: string; category: string; data: any }) => {
       const response = await fetch(`/api/clients/${clientId}/assets/${data.id}`, {
         method: "PATCH",
         headers: {
@@ -1650,7 +1518,6 @@ export function ColorManager({
           name: data.name,
           category: data.category,
           data: data.data,
-          sortOrder: data.sortOrder,
         }),
       });
 
@@ -1719,7 +1586,6 @@ export function ColorManager({
         category: data.category,
         // Preserve the full data object including gradient information
         data: data,
-        sortOrder: asset.sortOrder,
       };
     } catch (error) {
       console.error("Error parsing color asset:", error);
@@ -1732,9 +1598,9 @@ export function ColorManager({
     .map(parseColorAsset)
     .filter((color): color is ColorData => color !== null);
 
-  const brandColorsData = transformedColors
-    .filter((c) => c.category === "brand")
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const brandColorsData = transformedColors.filter(
+    (c) => c.category === "brand",
+  );
 
   // Sort neutral colors: manual (base grey) first, then generated shades from light to dark (Grey 11 to Grey 1)
   const neutralColorsData = transformedColors
@@ -1763,9 +1629,9 @@ export function ColorManager({
       return 0;
     });
 
-  const interactiveColorsData = transformedColors
-    .filter((c) => c.category === "interactive")
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const interactiveColorsData = transformedColors.filter(
+    (c) => c.category === "interactive",
+  );
 
   const handleEditColor = (color: ColorData) => {
     setEditingColor(color);
@@ -2037,21 +1903,14 @@ export function ColorManager({
             <div className="asset-display__info">
               {colorDescriptions.brand}
             </div>
-            <div className="asset-display__preview" ref={(ref) => { if (ref) dragConstraints.current = ref; }}>
-              {brandColorsData.map((color, index) => (
+            <div className="asset-display__preview">
+              {brandColorsData.map((color) => (
                 <ColorCard
                   key={color.id}
                   color={color}
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
                   clientId={clientId}
-                  isBeingDragged={draggedColorId === color.id}
-                  isDraggedOver={dragOverIndex === index}
-                  onDragStart={() => handleDragStart(color.id || 0)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={() => handleDragOver(index)}
-                  dragIndex={index}
-                  dragConstraints={dragConstraints}
                 />
               ))}
 
@@ -2189,22 +2048,14 @@ export function ColorManager({
             <div className="asset-display__info">
               {colorDescriptions.neutral}
             </div>
-            <div className="asset-display__preview" ref={(ref) => { if (ref && interactiveColorsData.length > 0) dragConstraints.current = ref; }}>
-              {interactiveColorsData.map((color, index) => (
+            <div className="asset-display__preview">
+              {interactiveColorsData.map((color) => (
                 <ColorCard
                   key={color.id}
                   color={color}
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
                   onUpdate={handleUpdateColor}
-                  clientId={clientId}
-                  isBeingDragged={draggedColorId === color.id}
-                  isDraggedOver={dragOverIndex === index}
-                  onDragStart={() => handleDragStart(color.id || 0)}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={() => handleDragOver(index)}
-                  dragIndex={index}
-                  dragConstraints={dragConstraints}
                 />
               ))}
             </div>
@@ -2372,7 +2223,6 @@ interface ColorData {
   name: string;
   category: "brand" | "neutral" | "interactive";
   data?: any; // Include data property to preserve gradient information
-  sortOrder?: number;
 }
 
 // Color category descriptions

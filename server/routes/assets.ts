@@ -21,10 +21,10 @@ export function registerAssetRoutes(app: Express) {
   app.get("/api/google-fonts", async (req, res: Response) => {
     try {
       console.log("Google Fonts API endpoint called");
-
+      
       // Use Google Fonts API key if available, otherwise return empty response
       const apiKey = process.env.GOOGLE_FONTS_API_KEY;
-
+      
       if (!apiKey) {
         console.log("No Google Fonts API key found, returning empty response");
         return res.json({ kind: "webfonts#webfontList", items: [] });
@@ -42,7 +42,7 @@ export function registerAssetRoutes(app: Express) {
 
       const data = await response.json();
       console.log(`Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`);
-
+      
       res.json(data);
     } catch (error) {
       console.error("Error fetching Google Fonts:", error);
@@ -95,12 +95,11 @@ export function registerAssetRoutes(app: Express) {
       try {
         const clientId = req.clientId!;
         const { category } = req.body;
-        const { name,  data, sortOrder } = req.body;
 
         // Font asset creation
         if (category === "font") {
-          const { subcategory } = req.body;
-
+          const { name, subcategory, data } = req.body;
+          
           // Validate required fields
           if (!name || !name.trim()) {
             return res.status(400).json({ message: "Font name is required" });
@@ -110,11 +109,11 @@ export function registerAssetRoutes(app: Express) {
             console.error("Client ID missing for font creation");
             return res.status(400).json({ message: "Client ID is required for font creation" });
           }
-
+          
           // Handle Google Fonts (no file upload needed)
           if (subcategory === "google") {
             console.log("Creating Google Font asset:", name, "for client:", clientId);
-
+            
             let fontData;
             try {
               fontData = typeof data === 'string' ? JSON.parse(data) : data;
@@ -138,7 +137,7 @@ export function registerAssetRoutes(app: Express) {
             if (!fontData.styles || !Array.isArray(fontData.styles)) {
               fontData.styles = ["normal"];
             }
-
+            
             const fontAsset = {
               clientId,
               name: name.trim(),
@@ -149,7 +148,7 @@ export function registerAssetRoutes(app: Express) {
             };
 
             console.log("Creating Google Font asset with data:", JSON.stringify(fontAsset, null, 2));
-
+            
             try {
               const asset = await storage.createAsset(fontAsset);
               console.log("Google Font asset created successfully:", asset.id);
@@ -238,7 +237,7 @@ export function registerAssetRoutes(app: Express) {
 
         // Default to logo asset (only for non-font assets)
         if (category !== "font") {
-          const { type, isDarkVariant } = req.body;
+          const { name, type, isDarkVariant } = req.body;
           const files = req.files as Express.Multer.File[];
 
           if (!files || files.length === 0) {
@@ -641,7 +640,7 @@ export function registerAssetRoutes(app: Express) {
         // If client ID from session doesn't match the asset's client ID, log a warning
         // (We still serve the asset if user has access rights, but log for debugging)
         if (asset.clientId !== req.clientId) {
-          console.warn(`WARNING: User with client ID ${req.clientId} accessing asset from client from ${asset.clientId}`);
+          console.warn(`WARNING: User with client ID ${req.clientId} accessing asset from client ${asset.clientId}`);
         }
       }
 
@@ -659,7 +658,7 @@ export function registerAssetRoutes(app: Express) {
         // CRITICAL FIX: Get converted asset, ensuring it's the right one
         console.log(`Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`);
         const convertedAsset = await storage.getConvertedAsset(assetId, format, isDarkVariant);
-
+        
         if (convertedAsset) {
           console.log(`Found converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`);
           // CRITICAL: Verify this converted asset actually belongs to the requested asset
