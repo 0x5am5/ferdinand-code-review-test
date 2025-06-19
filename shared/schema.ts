@@ -158,6 +158,7 @@ export const brandAssets = pgTable("brand_assets", {
   data: json("data"),
   fileData: text("file_data"),
   mimeType: text("mime_type"),
+  sortOrder: integer("sort_order"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -578,7 +579,7 @@ export const insertConvertedAssetSchema = createInsertSchema(convertedAssets)
     fileData: z.string(),
     mimeType: z.string(),
   });
-  
+
 export const insertHiddenSectionSchema = createInsertSchema(hiddenSections)
   .omit({ id: true, createdAt: true });
 
@@ -637,7 +638,17 @@ export const updateClientOrderSchema = z.object({
 // Base Types
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
-export type BrandAsset = typeof brandAssets.$inferSelect;
+export type BrandAsset = {
+  id: number;
+  name: string;
+  category: string;
+  data: string | Record<string, any>;
+  clientId: number;
+  createdAt: Date;
+  updatedAt: Date;
+  lastEditedBy?: number | null;
+  sortOrder?: number;
+};
 export type ConvertedAsset = typeof convertedAssets.$inferSelect;
 export type UserPersona = typeof userPersonas.$inferSelect;
 export type UserClient = typeof userClients.$inferSelect;

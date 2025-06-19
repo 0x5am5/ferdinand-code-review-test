@@ -13,3 +13,6 @@ if (!process.env.DATABASE_URL) {
 
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle({ client: pool, schema });
+lastEditedBy: integer("last_edited_by").references(() => users.id),
+  sortOrder: integer("sort_order").default(0),
+});
