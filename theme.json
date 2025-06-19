@@ -24,34 +24,50 @@
     "ring": "hsl(205, 100%, 50%)"
   },
   "raw_tokens": {
+    "typography": {
+      "fontSizeBase": 1,
+      "lineHeightBase": 1.4,
+      "typeScaleBase": 1.4,
+      "letterSpacingBase": 0,
+      "fontFamily1Base": "Rock Grotesque",
+      "fontFamily2Base": "Rock Grotesque Wide",
+      "fontFamilyMonoBase": "monospace"
+    },
     "colors": {
-      "brand": {
-        "primary_base": "#22c0d9",
-        "primary_container": "#a6e5ef",
-        "primary_on_container": "#0d4c56",
-        "secondary_base": "#2563eb",
-        "secondary_container": "#a7c0f7",
-        "secondary_on_container": "#0e275e",
-        "tertiary_base": "#de25eb",
-        "tertiary_container": "#f1a7f7",
-        "tertiary_on_container": "#580e5e",
-        "color4_base": "#b7f454",
-        "color4_container": "#e2faba",
-        "color4_on_container": "#496121"
+      "brandPrimaryBase": "#08192B",
+      "brandSecondaryBase": "#4563AE",
+      "neutralBase": "hsl(0, 0%, 69%)",
+      "interactiveSuccessBase": "#4BBB84",
+      "interactiveWarningBase": "#e2bf6c",
+      "interactiveErrorBase": "#e33b3b",
+      "interactiveInfoBase": "#458FCD"
+    },
+    "spacing": {
+      "spacingUnitBase": 1,
+      "spacingScaleBase": 1.5
+    },
+    "borders": {
+      "borderWidthBase": 1,
+      "borderRadiusBase": 8
+    },
+    "components": {
+      "button": {
+        "primaryBackgroundColor": "brandPrimaryBase",
+        "primaryTextColor": "#ffffff",
+        "secondaryBackgroundColor": "transparent",
+        "secondaryTextColor": "brandPrimaryBase",
+        "borderRadius": "borderRadiusBase"
       },
-      "interactive": {
-        "success_base": "#00ff00"
+      "input": {
+        "backgroundColor": "#854747",
+        "borderColor": "#e5e7eb",
+        "textColor": "#374151",
+        "borderRadius": "borderRadiusBase"
       },
-      "neutral": {
-        "neutral_0": "#f0f1f2",
-        "neutral_100": "#e1e3e6",
-        "neutral_200": "#d3d5d9",
-        "neutral_300": "#c4c7cc",
-        "neutral_400": "#b5b9c0",
-        "neutral_500": "#6b7280",
-        "neutral_600": "#565b66",
-        "neutral_700": "#40444d",
-        "neutral_800": "#2b2e33"
+      "card": {
+        "backgroundColor": "#ffffff",
+        "borderColor": "#e5e7eb",
+        "borderRadius": "borderRadiusBase"
       }
     }
   },

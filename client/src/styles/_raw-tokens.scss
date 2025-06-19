@@ -3,32 +3,8 @@
 // Default Unit
 $default-unit: rem;
 
+// Spacing Tokens
+$spacingUnitBase: 1#{$default-unit};
+$spacingScaleBase: 1.5#{$default-unit};
+
 // Color Tokens
-// Brand Colors
-$color-brand-primary-base: #22c0d9;
-$color-brand-primary-container: #a6e5ef;
-$color-brand-primary-on-container: #0d4c56;
-$color-brand-secondary-base: #2563eb;
-$color-brand-secondary-container: #a7c0f7;
-$color-brand-secondary-on-container: #0e275e;
-$color-brand-tertiary-base: #de25eb;
-$color-brand-tertiary-container: #f1a7f7;
-$color-brand-tertiary-on-container: #580e5e;
-$color-brand-color4-base: #b7f454;
-$color-brand-color4-container: #e2faba;
-$color-brand-color4-on-container: #496121;
-
-// Neutral Colors
-$color-neutral-neutral-0: #f0f1f2;
-$color-neutral-neutral-100: #e1e3e6;
-$color-neutral-neutral-200: #d3d5d9;
-$color-neutral-neutral-300: #c4c7cc;
-$color-neutral-neutral-400: #b5b9c0;
-$color-neutral-neutral-500: #6b7280;
-$color-neutral-neutral-600: #565b66;
-$color-neutral-neutral-700: #40444d;
-$color-neutral-neutral-800: #2b2e33;
-
-// Interactive Colors
-$color-interactive-success-base: #00ff00;
-
