@@ -10,10 +10,10 @@ export async function runMigrations() {
     await migrateLastEditedBy();
     await migrateFigmaTables();
 
-    // Add sortOrder column to assets table
+    // Add sortOrder column to brand_assets table
     try {
-      await db.execute(sql`ALTER TABLE assets ADD COLUMN sort_order INTEGER DEFAULT 0`);
-      console.log("✓ Added sort_order column to assets table");
+      await db.execute(sql`ALTER TABLE brand_assets ADD COLUMN sort_order INTEGER DEFAULT 0`);
+      console.log("✓ Added sort_order column to brand_assets table");
     } catch (error: any) {
       if (error.message?.includes("duplicate column name")) {
         console.log("sort_order column already exists.");
