@@ -70,7 +70,7 @@ function ColorCard({
   neutralColorsCount,
   onUpdate,
   clientId,
-  isDragging,
+  isBeingDragged,
   onDragStart,
   onDragEnd,
   dragConstraints,
@@ -82,7 +82,7 @@ function ColorCard({
   neutralColorsCount?: number;
   onUpdate?: (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }) => void;
   clientId: number;
-  isDragging?: boolean;
+  isBeingDragged?: boolean;
   onDragStart?: () => void;
   onDragEnd?: (event: any, info: any) => void;
   dragConstraints?: any;
@@ -418,8 +418,8 @@ function ColorCard({
         style={getDisplayStyle()}
         animate={{ 
           width: showTints ? "60%" : "100%",
-          scale: isDragging ? 1.05 : 1,
-          zIndex: isDragging ? 1000 : 1,
+          scale: isBeingDragged ? 1.05 : 1,
+          zIndex: isBeingDragged ? 1000 : 1,
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         drag={color.category !== "neutral" || !(/^Grey \d+$/.test(color.name))}
@@ -1463,7 +1463,11 @@ export function ColorManager({
     defaultValues: {
       name: "",
       hex: "#000000",
+      rgb: "",
+      cmyk: "",
+      pantone: "",
       type: "solid",
+      category: "brand",
     },
   });
 
@@ -1974,7 +1978,7 @@ export function ColorManager({
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
                   clientId={clientId}
-                  isDragging={draggedColorId === color.id}
+                  isBeingDragged={draggedColorId === color.id}
                   onDragStart={() => setDraggedColorId(color.id || null)}
                   onDragEnd={(event, info) => {
                     setDraggedColorId(null);
@@ -2143,7 +2147,7 @@ export function ColorManager({
                   onDelete={deleteColor.mutate}
                   onUpdate={handleUpdateColor}
                   clientId={clientId}
-                  isDragging={draggedColorId === color.id}
+                  isBeingDragged={draggedColorId === color.id}
                   onDragStart={() => setDraggedColorId(color.id || null)}
                   onDragEnd={(event, info) => {
                     setDraggedColorId(null);
