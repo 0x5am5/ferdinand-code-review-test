@@ -1,7 +1,7 @@
 .color-chip-container {
   position: relative;
   height: 120px;
-  min-width: 200px;
+  min-width: 280px;
   margin-bottom: 1rem;
 
   .color-chip {
@@ -11,8 +11,7 @@
     border-radius: 8px;
     overflow: hidden;
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    flex-direction: row;
     cursor: grab;
     transition: all 0.2s ease;
 
@@ -36,23 +35,52 @@
         z-index: 10;
       }
     }
+
+    &__info {
+      flex: 1;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      .color-chip--title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.25rem 0;
+        line-height: 1.2;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.75rem;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        opacity: 0.8;
+      }
+    }
+
+    &__controls {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 0.5rem;
+      opacity: 0.1;
+      transition: opacity 0.2s ease-in;
+      justify-content: center;
+      align-items: center;
+
+      .h-8 {
+        height: 1.5rem;
+        width: 1.5rem;
+      }
+
+      .h-6 {
+        height: 1rem;
+        width: 1rem;
+      }
+    }
   }
 
-  &__controls {
-    display: flex;
-    flex-direction: row;
-    gap: .5rem;
-    opacity: .1;
-    transition: opacity 0.2s ease-in;
-  }
-
-  &:hover &__controls {
+  &:hover .color-chip__controls {
     opacity: 1;
-  }
-
-  &__info {
-    p {
-      margin-bottom: 0;
-    } 
   }
 }

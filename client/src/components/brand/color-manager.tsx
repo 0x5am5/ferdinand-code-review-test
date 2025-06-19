@@ -439,19 +439,25 @@ function ColorCard({
         onDrag={(event, info) => {
           // Detect which card we're hovering over during drag
           if (onDragOver && dragConstraints?.current) {
-            const cards = Array.from(dragConstraints.current.querySelectorAll('.color-chip'));
-            const draggedElement = event.currentTarget;
-            const rect = draggedElement.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            
-            cards.forEach((card, index) => {
-              if (card !== draggedElement) {
-                const cardRect = card.getBoundingClientRect();
-                if (centerX >= cardRect.left && centerX <= cardRect.right) {
-                  onDragOver();
-                }
+            try {
+              const cards = Array.from(dragConstraints.current.querySelectorAll('.color-chip'));
+              const draggedElement = event.currentTarget as HTMLElement;
+              if (draggedElement) {
+                const rect = draggedElement.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                
+                cards.forEach((card, index) => {
+                  if (card !== draggedElement) {
+                    const cardRect = card.getBoundingClientRect();
+                    if (centerX >= cardRect.left && centerX <= cardRect.right) {
+                      onDragOver();
+                    }
+                  }
+                });
               }
-            });
+            } catch (error) {
+              console.warn('Drag detection error:', error);
+            }
           }
         }}
         onDragEnd={(event, info) => {
