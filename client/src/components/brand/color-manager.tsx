@@ -95,7 +95,7 @@ function ColorCard({
           name: data.name,
           category: data.category,
           data: data.data,
-        }),e
+        }),
       });
 
       if (!response.ok) {
@@ -234,7 +234,16 @@ function ColorCard({
   const handleNameBlur = () => {
     setIsEditingName(false);
     if (tempName.trim() !== color.name && tempName.trim() !== "") {
-      onEdit({ ...color, name: tempName.trim() });
+      // Update the color name using the updateColor mutation
+      if (color.id) {
+        const currentData = typeof color.data === 'string' ? JSON.parse(color.data) : color.data;
+        updateColor.mutate({
+          id: color.id,
+          name: tempName.trim(),
+          category: "color",
+          data: currentData
+        });
+      }
     } else {
       setTempName(color.name); // Reset if empty or unchanged
     }
