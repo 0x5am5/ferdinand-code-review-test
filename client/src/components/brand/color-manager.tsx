@@ -71,8 +71,11 @@ function ColorCard({
   onUpdate,
   clientId,
   isBeingDragged,
+  isDraggedOver,
   onDragStart,
   onDragEnd,
+  onDragOver,
+  dragIndex,
   dragConstraints,
 }: { 
   color: any; 
@@ -83,8 +86,11 @@ function ColorCard({
   onUpdate?: (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }) => void;
   clientId: number;
   isBeingDragged?: boolean;
+  isDraggedOver?: boolean;
   onDragStart?: () => void;
-  onDragEnd?: (event: any, info: any) => void;
+  onDragEnd?: () => void;
+  onDragOver?: () => void;
+  dragIndex?: number;
   dragConstraints?: any;
 }) {
   const { toast } = useToast();
@@ -414,24 +420,48 @@ function ColorCard({
   return (
     <div className="color-chip-container relative">
       <motion.div 
-        className="color-chip"
+        className={`color-chip ${isDraggedOver ? 'color-chip--drag-over' : ''}`}
         style={getDisplayStyle()}
         animate={{ 
           width: showTints ? "60%" : "100%",
           scale: isBeingDragged ? 1.05 : 1,
-          zIndex: isBeingDragged ? 1000 : 1,
+          zIndex: isBeingDragged ? 1000 : isDraggedOver ? 2 : 1,
+          x: isDraggedOver ? 10 : 0,
         }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
+        transition={{ duration: 0.2, ease: "easeInOut" }}
         drag={color.category !== "neutral" || !(/^Grey \d+$/.test(color.name))}
-        dragConstraints={dragConstraints}
-        dragElastic={0.1}
+        dragConstraints={{ left: 0, right: 0, top: -50, bottom: 50 }}
+        dragElastic={0}
         dragMomentum={false}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
+        onDragStart={(event, info) => {
+          if (onDragStart) onDragStart();
+        }}
+        onDrag={(event, info) => {
+          // Detect which card we're hovering over during drag
+          if (onDragOver && dragConstraints?.current) {
+            const cards = Array.from(dragConstraints.current.querySelectorAll('.color-chip'));
+            const draggedElement = event.currentTarget;
+            const rect = draggedElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            
+            cards.forEach((card, index) => {
+              if (card !== draggedElement) {
+                const cardRect = card.getBoundingClientRect();
+                if (centerX >= cardRect.left && centerX <= cardRect.right) {
+                  onDragOver();
+                }
+              }
+            });
+          }
+        }}
+        onDragEnd={(event, info) => {
+          if (onDragEnd) onDragEnd();
+        }}
         whileDrag={{ 
           scale: 1.05,
           zIndex: 1000,
-          boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+          boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+          rotate: 2,
         }}
       >
 
@@ -1378,6 +1408,7 @@ export function ColorManager({
   const [editingColor, setEditingColor] = useState<ColorData | null>(null);
   const [regenerationCount, setRegenerationCount] = useState(0);
   const [draggedColorId, setDraggedColorId] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   
   // Function to reorder colors
   const reorderColors = useMutation({
@@ -1416,6 +1447,36 @@ export function ColorManager({
       });
     },
   });
+
+  // Handle drag start
+  const handleDragStart = (colorId: number) => {
+    setDraggedColorId(colorId);
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    if (draggedColorId !== null && dragOverIndex !== null) {
+      const draggedIndex = brandColorsData.findIndex(c => c.id === draggedColorId);
+      
+      if (draggedIndex !== -1 && draggedIndex !== dragOverIndex) {
+        const newColors = [...brandColorsData];
+        const [draggedColor] = newColors.splice(draggedIndex, 1);
+        newColors.splice(dragOverIndex, 0, draggedColor);
+        
+        reorderColors.mutate(newColors);
+      }
+    }
+    
+    setDraggedColorId(null);
+    setDragOverIndex(null);
+  };
+
+  // Handle drag over
+  const handleDragOver = (index: number) => {
+    if (draggedColorId !== null) {
+      setDragOverIndex(index);
+    }
+  };
 
   // Color utility functions
   const ColorUtils = {
@@ -1979,27 +2040,11 @@ export function ColorManager({
                   onDelete={deleteColor.mutate}
                   clientId={clientId}
                   isBeingDragged={draggedColorId === color.id}
-                  onDragStart={() => setDraggedColorId(color.id || null)}
-                  onDragEnd={(event, info) => {
-                    setDraggedColorId(null);
-                    
-                    // Calculate new position based on drag distance
-                    const dragDistance = info.offset.x;
-                    const cardWidth = 200; // Approximate card width
-                    const positionChange = Math.round(dragDistance / cardWidth);
-                    
-                    if (Math.abs(positionChange) >= 1) {
-                      const newIndex = Math.max(0, Math.min(brandColorsData.length - 1, index + positionChange));
-                      
-                      if (newIndex !== index) {
-                        const reorderedColors = [...brandColorsData];
-                        const [movedColor] = reorderedColors.splice(index, 1);
-                        reorderedColors.splice(newIndex, 0, movedColor);
-                        
-                        reorderColors.mutate(reorderedColors);
-                      }
-                    }
-                  }}
+                  isDraggedOver={dragOverIndex === index}
+                  onDragStart={() => handleDragStart(color.id || 0)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={() => handleDragOver(index)}
+                  dragIndex={index}
                   dragConstraints={dragConstraints}
                 />
               ))}
@@ -2148,27 +2193,11 @@ export function ColorManager({
                   onUpdate={handleUpdateColor}
                   clientId={clientId}
                   isBeingDragged={draggedColorId === color.id}
-                  onDragStart={() => setDraggedColorId(color.id || null)}
-                  onDragEnd={(event, info) => {
-                    setDraggedColorId(null);
-                    
-                    // Calculate new position based on drag distance
-                    const dragDistance = info.offset.x;
-                    const cardWidth = 200; // Approximate card width
-                    const positionChange = Math.round(dragDistance / cardWidth);
-                    
-                    if (Math.abs(positionChange) >= 1) {
-                      const newIndex = Math.max(0, Math.min(interactiveColorsData.length - 1, index + positionChange));
-                      
-                      if (newIndex !== index) {
-                        const reorderedColors = [...interactiveColorsData];
-                        const [movedColor] = reorderedColors.splice(index, 1);
-                        reorderedColors.splice(newIndex, 0, movedColor);
-                        
-                        reorderColors.mutate(reorderedColors);
-                      }
-                    }
-                  }}
+                  isDraggedOver={dragOverIndex === index}
+                  onDragStart={() => handleDragStart(color.id || 0)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={() => handleDragOver(index)}
+                  dragIndex={index}
                   dragConstraints={dragConstraints}
                 />
               ))}
