@@ -1,0 +1,196 @@
+> tsx server/index.ts
+
+SendGrid API key detected. Using SendGrid for email delivery.
+Initiating server startup...
+Starting server (attempt 1/3)...
+Starting port cleanup process...
+Cleaning up port 5000...
+✓ Port 5000 is now available
+Cleaning up port 5001...
+✓ Port 5001 is now available
+Cleaning up port 3000...
+✓ Port 3000 is now available
+Cleaning up port 3001...
+✓ Port 3001 is now available
+Waiting for ports to be fully released...
+Port cleanup completed successfully
+Running database migrations...
+Starting database migrations...
+feature_toggles column already exists.
+last_edited_by column already exists.
+Figma tables already exist.
+Migration failed: error: relation "assets" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async runMigrations (/home/runner/workspace/server/migrations.ts:15:7)
+    at async startServer (/home/runner/workspace/server/index.ts:100:7) {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'namespace.c',
+  line: '434',
+  routine: 'RangeVarGetRelidExtended'
+}
+Attempt 1 failed: error: relation "assets" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async runMigrations (/home/runner/workspace/server/migrations.ts:15:7)
+    at async startServer (/home/runner/workspace/server/index.ts:100:7) {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'namespace.c',
+  line: '434',
+  routine: 'RangeVarGetRelidExtended'
+}
+Starting server (attempt 2/3)...
+Starting port cleanup process...
+Cleaning up port 5000...
+✓ Port 5000 is now available
+Cleaning up port 5001...
+✓ Port 5001 is now available
+Cleaning up port 3000...
+✓ Port 3000 is now available
+Cleaning up port 3001...
+✓ Port 3001 is now available
+Waiting for ports to be fully released...
+Port cleanup completed successfully
+Running database migrations...
+Starting database migrations...
+feature_toggles column already exists.
+last_edited_by column already exists.
+Figma tables already exist.
+Migration failed: error: relation "assets" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async runMigrations (/home/runner/workspace/server/migrations.ts:15:7)
+    at async startServer (/home/runner/workspace/server/index.ts:100:7) {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'namespace.c',
+  line: '434',
+  routine: 'RangeVarGetRelidExtended'
+}
+Attempt 2 failed: error: relation "assets" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async runMigrations (/home/runner/workspace/server/migrations.ts:15:7)
+    at async startServer (/home/runner/workspace/server/index.ts:100:7) {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'namespace.c',
+  line: '434',
+  routine: 'RangeVarGetRelidExtended'
+}
+Starting server (attempt 3/3)...
+Starting port cleanup process...
+Cleaning up port 5000...
+✓ Port 5000 is now available
+Cleaning up port 5001...
+✓ Port 5001 is now available
+Cleaning up port 3000...
+✓ Port 3000 is now available
+Cleaning up port 3001...
+✓ Port 3001 is now available
+Waiting for ports to be fully released...
+Port cleanup completed successfully
+Running database migrations...
+Starting database migrations...
+feature_toggles column already exists.
+last_edited_by column already exists.
+Figma tables already exist.
+Migration failed: error: relation "assets" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async runMigrations (/home/runner/workspace/server/migrations.ts:15:7)
+    at async startServer (/home/runner/workspace/server/index.ts:100:7) {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'namespace.c',
+  line: '434',
+  routine: 'RangeVarGetRelidExtended'
+}
+Attempt 3 failed: error: relation "assets" does not exist
+    at file:///home/runner/workspace/node_modules/@neondatabase/serverless/index.mjs:1345:74
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async runMigrations (/home/runner/workspace/server/migrations.ts:15:7)
+    at async startServer (/home/runner/workspace/server/index.ts:100:7) {
+  length: 104,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'namespace.c',
+  line: '434',
+  routine: 'RangeVarGetRelidExtended'
+}
+Fatal server error: Error: Failed to start server after 3 attempts
+    at startServer (/home/runner/workspace/server/index.ts:177:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
