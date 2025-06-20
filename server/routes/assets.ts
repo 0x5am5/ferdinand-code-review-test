@@ -75,11 +75,13 @@ export function registerAssetRoutes(app: Express) {
 
       const data = await response.json();
       console.log(`Successfully fetched Adobe Fonts data for project ${projectId}`);
+      console.log('Adobe Fonts API Response:', JSON.stringify(data, null, 2));
       
       // Transform the Adobe Fonts API response to our expected format
       const transformedData = {
         projectId,
         fonts: data.kit?.families?.map((family: any) => {
+          console.log(`Processing family: ${family.name}`, JSON.stringify(family.variations, null, 2));
           // Convert Adobe font variations (fvd format) to weights and styles
           const weights: string[] = [];
           const styles: string[] = [];
@@ -87,14 +89,32 @@ export function registerAssetRoutes(app: Express) {
           if (family.variations && Array.isArray(family.variations)) {
             family.variations.forEach((variation: any) => {
               if (variation.fvd) {
-                // FVD format: [n|i][1-9][weight]
-                // Examples: n4 = normal 400, i7 = italic 700
+                // FVD format: [n|i][weight_class]
+                // Examples: n4 = normal 400, i7 = italic 700, n3 = normal 300
                 const fvd = variation.fvd;
                 const isItalic = fvd.startsWith('i');
-                const weight = fvd.substring(1) + '00'; // Convert single digit to hundreds
                 
-                if (!weights.includes(weight)) {
-                  weights.push(weight);
+                // Extract weight - the number after the style indicator
+                const weightMatch = fvd.match(/[ni](\d)/);
+                if (weightMatch) {
+                  const weightClass = parseInt(weightMatch[1]);
+                  // Convert weight class to actual weight
+                  const weightMap: { [key: number]: string } = {
+                    1: '100', // Thin
+                    2: '200', // Extra Light
+                    3: '300', // Light
+                    4: '400', // Normal/Regular
+                    5: '500', // Medium
+                    6: '600', // Semi Bold
+                    7: '700', // Bold
+                    8: '800', // Extra Bold
+                    9: '900'  // Black
+                  };
+                  
+                  const weight = weightMap[weightClass] || '400';
+                  if (!weights.includes(weight)) {
+                    weights.push(weight);
+                  }
                 }
                 
                 const style = isItalic ? 'italic' : 'normal';
