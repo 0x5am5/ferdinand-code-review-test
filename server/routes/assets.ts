@@ -17,6 +17,72 @@ import { convertToAllFormats } from "../utils/file-converter";
 const upload = multer({ preservePath: true });
 
 export function registerAssetRoutes(app: Express) {
+  // Adobe Fonts API endpoint
+  app.get("/api/adobe-fonts/:projectId", async (req, res: Response) => {
+    try {
+      const { projectId } = req.params;
+      
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      console.log(`Adobe Fonts API endpoint called for project: ${projectId}`);
+      
+      // Validate project ID format (Adobe project IDs are typically alphanumeric)
+      if (!/^[a-zA-Z0-9]+$/.test(projectId)) {
+        return res.status(400).json({ 
+          message: "Invalid project ID format. Project ID should contain only letters and numbers." 
+        });
+      }
+
+      // Adobe Fonts Web API endpoint
+      const apiUrl = `https://typekit.com/api/v1/json/kits/${projectId}`;
+      
+      console.log(`Fetching from Adobe Fonts API: ${apiUrl}`);
+      const response = await fetch(apiUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      if (!response.ok) {
+        console.error("Adobe Fonts API error:", response.status, response.statusText);
+        if (response.status === 404) {
+          return res.status(404).json({ 
+            message: "Project not found. Please check your Adobe Fonts Project ID." 
+          });
+        }
+        return res.status(response.status).json({ 
+          message: "Failed to fetch fonts from Adobe Fonts API" 
+        });
+      }
+
+      const data = await response.json();
+      console.log(`Successfully fetched Adobe Fonts data for project ${projectId}`);
+      
+      // Transform the Adobe Fonts API response to our expected format
+      const transformedData = {
+        projectId,
+        fonts: data.kit?.families?.map((family: any) => ({
+          family: family.slug || family.name,
+          displayName: family.name,
+          weights: family.variations?.map((v: any) => v.fvd?.substring(1, 4) || '400') || ['400'],
+          styles: family.variations?.map((v: any) => v.fvd?.startsWith('i') ? 'italic' : 'normal') || ['normal'],
+          cssUrl: `https://use.typekit.net/${projectId}.css`,
+          category: family.classification || 'sans-serif',
+          foundry: family.foundry?.name || 'Adobe'
+        })) || []
+      };
+      
+      res.json(transformedData);
+    } catch (error) {
+      console.error("Error fetching Adobe Fonts:", error);
+      res.status(500).json({ 
+        message: "Error connecting to Adobe Fonts API. Please try again later." 
+      });
+    }
+  });
+
   // Google Fonts API endpoint
   app.get("/api/google-fonts", async (req, res: Response) => {
     try {
@@ -155,6 +221,58 @@ export function registerAssetRoutes(app: Express) {
               return res.status(201).json(asset);
             } catch (dbError) {
               console.error("Database error creating Google Font:", dbError);
+              return res.status(500).json({ 
+                message: "Failed to create font asset", 
+                error: dbError.message 
+              });
+            }
+          }
+
+          // Handle Adobe Fonts (no file upload needed)
+          if (subcategory === "adobe") {
+            console.log("Creating Adobe Font asset:", name, "for client:", clientId);
+            
+            let fontData;
+            try {
+              fontData = typeof data === 'string' ? JSON.parse(data) : data;
+            } catch (error) {
+              console.error("Error parsing Adobe font data:", error);
+              return res.status(400).json({ message: "Invalid font data format" });
+            }
+
+            // Validate font data structure
+            if (!fontData || !fontData.source) {
+              console.error("Invalid Adobe font data structure:", fontData);
+              return res.status(400).json({ message: "Invalid font data structure" });
+            }
+
+            // Ensure weights is an array
+            if (!fontData.weights || !Array.isArray(fontData.weights)) {
+              fontData.weights = ["400"];
+            }
+
+            // Ensure styles is an array
+            if (!fontData.styles || !Array.isArray(fontData.styles)) {
+              fontData.styles = ["normal"];
+            }
+            
+            const fontAsset = {
+              clientId,
+              name: name.trim(),
+              category: "font" as const,
+              data: fontData,
+              fileData: null, // Adobe fonts don't need file storage
+              mimeType: null,
+            };
+
+            console.log("Creating Adobe Font asset with data:", JSON.stringify(fontAsset, null, 2));
+            
+            try {
+              const asset = await storage.createAsset(fontAsset);
+              console.log("Adobe Font asset created successfully:", asset.id);
+              return res.status(201).json(asset);
+            } catch (dbError) {
+              console.error("Database error creating Adobe Font:", dbError);
               return res.status(500).json({ 
                 message: "Failed to create font asset", 
                 error: dbError.message 

@@ -341,6 +341,21 @@ function GoogleFontPicker({
 }
 
 // Adobe Font Picker Component
+interface AdobeFontData {
+  family: string;
+  displayName: string;
+  weights: string[];
+  styles: string[];
+  cssUrl: string;
+  category: string;
+  foundry: string;
+}
+
+interface AdobeFontsResponse {
+  projectId: string;
+  fonts: AdobeFontData[];
+}
+
 function AdobeFontPicker({
   onFontSubmit,
   isLoading,
@@ -353,34 +368,95 @@ function AdobeFontPicker({
   isLoading: boolean;
 }) {
   const [projectId, setProjectId] = useState("");
-  const [fontFamily, setFontFamily] = useState("");
-  const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
+  const [isLoadingFonts, setIsLoadingFonts] = useState(false);
+  const [availableFonts, setAvailableFonts] = useState<AdobeFontData[]>([]);
+  const [selectedFonts, setSelectedFonts] = useState<AdobeFontData[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const handleSubmit = () => {
-    if (!projectId.trim() || !fontFamily.trim()) {
+  const { toast } = useToast();
+
+  const loadProjectFonts = async () => {
+    if (!projectId.trim()) {
+      setError("Please enter a Project ID");
       return;
     }
-    onFontSubmit({
-      projectId: projectId.trim(),
-      fontFamily: fontFamily.trim(),
-      weights: selectedWeights,
-    });
-    setProjectId("");
-    setFontFamily("");
-    setSelectedWeights(["400"]);
+
+    setIsLoadingFonts(true);
+    setError(null);
+    setAvailableFonts([]);
+    setSelectedFonts([]);
+
+    try {
+      const response = await fetch(`/api/adobe-fonts/${projectId.trim()}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to load fonts");
+      }
+
+      const data: AdobeFontsResponse = await response.json();
+      setAvailableFonts(data.fonts);
+      
+      if (data.fonts.length === 0) {
+        setError("No fonts found in this project. Please check your Project ID.");
+      } else {
+        toast({
+          title: "Success",
+          description: `Found ${data.fonts.length} fonts in your Adobe Fonts project`,
+        });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load fonts";
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingFonts(false);
+    }
   };
 
-  const allWeights = [
-    "100",
-    "200",
-    "300",
-    "400",
-    "500",
-    "600",
-    "700",
-    "800",
-    "900",
-  ];
+  const handleFontSelection = (font: AdobeFontData, selected: boolean) => {
+    if (selected) {
+      setSelectedFonts([...selectedFonts, font]);
+    } else {
+      setSelectedFonts(selectedFonts.filter(f => f.family !== font.family));
+    }
+  };
+
+  const handleSubmitSelected = () => {
+    if (selectedFonts.length === 0) {
+      toast({
+        title: "No fonts selected",
+        description: "Please select at least one font to add",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Submit each selected font
+    selectedFonts.forEach(font => {
+      onFontSubmit({
+        projectId: projectId.trim(),
+        fontFamily: font.family,
+        weights: font.weights,
+      });
+    });
+
+    // Reset form
+    setProjectId("");
+    setAvailableFonts([]);
+    setSelectedFonts([]);
+    setError(null);
+  };
+
+  const filteredFonts = availableFonts.filter(font =>
+    font.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    font.family.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <motion.div
@@ -402,74 +478,126 @@ function AdobeFontPicker({
       </div>
 
       <div className="space-y-4">
+        {/* Project ID Input */}
         <div>
           <Label htmlFor="projectId" className="text-sm font-medium">
             Adobe Fonts Project ID
           </Label>
-          <Input
-            id="projectId"
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            placeholder="e.g., abc1234"
-            className="mt-1"
-            disabled={isLoading}
-          />
+          <div className="flex gap-2 mt-1">
+            <Input
+              id="projectId"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              placeholder="e.g., abc1234"
+              disabled={isLoading || isLoadingFonts}
+              onKeyDown={(e) => e.key === 'Enter' && loadProjectFonts()}
+            />
+            <Button
+              onClick={loadProjectFonts}
+              disabled={!projectId.trim() || isLoading || isLoadingFonts}
+              size="sm"
+              className="px-4"
+            >
+              {isLoadingFonts ? "Loading..." : "Load"}
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground mt-1">
             Find this in your Adobe Fonts project URL or embed code
           </p>
         </div>
 
-        <div>
-          <Label htmlFor="fontFamily" className="text-sm font-medium">
-            Font Family Name
-          </Label>
-          <Input
-            id="fontFamily"
-            value={fontFamily}
-            onChange={(e) => setFontFamily(e.target.value)}
-            placeholder="e.g., source-sans-pro"
-            className="mt-1"
-            disabled={isLoading}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Use the exact font family name from Adobe Fonts
-          </p>
-        </div>
-
-        <div>
-          <Label className="text-sm font-medium">Font Weights</Label>
-          <div className="grid grid-cols-3 gap-2 mt-2">
-            {allWeights.map((weight) => (
-              <div key={weight} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`adobe-weight-${weight}`}
-                  checked={selectedWeights.includes(weight)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setSelectedWeights([...selectedWeights, weight]);
-                    } else {
-                      setSelectedWeights(
-                        selectedWeights.filter((w) => w !== weight),
-                      );
-                    }
-                  }}
-                  disabled={isLoading}
-                />
-                <Label htmlFor={`adobe-weight-${weight}`} className="text-sm">
-                  {weight}
-                </Label>
-              </div>
-            ))}
+        {/* Error Display */}
+        {error && (
+          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
-        </div>
+        )}
 
-        <Button
-          onClick={handleSubmit}
-          disabled={!projectId.trim() || !fontFamily.trim() || isLoading}
-          className="w-full"
-        >
-          {isLoading ? "Adding Font..." : "Add Adobe Font"}
-        </Button>
+        {/* Font Selection */}
+        {availableFonts.length > 0 && (
+          <>
+            <div>
+              <Label className="text-sm font-medium">
+                Available Fonts ({availableFonts.length})
+              </Label>
+              {availableFonts.length > 5 && (
+                <Input
+                  placeholder="Search fonts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="mt-2"
+                />
+              )}
+            </div>
+
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {filteredFonts.map((font) => (
+                <div
+                  key={font.family}
+                  className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50"
+                >
+                  <Checkbox
+                    checked={selectedFonts.some(f => f.family === font.family)}
+                    onCheckedChange={(checked) => handleFontSelection(font, !!checked)}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium text-sm">{font.displayName}</h4>
+                      <span className="text-xs text-muted-foreground">{font.category}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {font.weights.length} weights • {font.foundry}
+                    </p>
+                    <div className="flex gap-1 mt-1">
+                      {font.weights.slice(0, 5).map(weight => (
+                        <Badge key={weight} variant="outline" className="text-xs">
+                          {weight}
+                        </Badge>
+                      ))}
+                      {font.weights.length > 5 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{font.weights.length - 5}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {selectedFonts.length > 0 && (
+              <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
+                <p className="text-sm font-medium">
+                  {selectedFonts.length} font{selectedFonts.length > 1 ? 's' : ''} selected
+                </p>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {selectedFonts.map(font => (
+                    <Badge key={font.family} variant="default" className="text-xs">
+                      {font.displayName}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Button
+              onClick={handleSubmitSelected}
+              disabled={selectedFonts.length === 0 || isLoading}
+              className="w-full"
+            >
+              {isLoading ? "Adding Fonts..." : `Add ${selectedFonts.length || ''} Font${selectedFonts.length !== 1 ? 's' : ''}`}
+            </Button>
+          </>
+        )}
+
+        {/* Initial Load Button */}
+        {availableFonts.length === 0 && !error && !isLoadingFonts && projectId.trim() && (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">
+              Enter your Project ID and click Load to see available fonts
+            </p>
+          </div>
+        )}
       </div>
     </motion.div>
   );
