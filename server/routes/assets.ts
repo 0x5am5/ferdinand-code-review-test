@@ -35,43 +35,77 @@ export function registerAssetRoutes(app: Express) {
         });
       }
 
-      // Adobe Fonts Web API endpoint
-      const apiUrl = `https://typekit.com/api/v1/json/kits/${projectId}`;
+      // Adobe Fonts now uses a different approach - we'll extract font information from the CSS file directly
+      // This is more reliable and doesn't require authentication
+      const cssUrl = `https://use.typekit.net/${projectId}.css`;
       
-      console.log(`Fetching from Adobe Fonts API: ${apiUrl}`);
-      const response = await fetch(apiUrl, {
+      console.log(`Fetching Adobe Fonts CSS from: ${cssUrl}`);
+      const response = await fetch(cssUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       });
 
       if (!response.ok) {
-        console.error("Adobe Fonts API error:", response.status, response.statusText);
+        console.error("Adobe Fonts CSS error:", response.status, response.statusText);
         if (response.status === 404) {
           return res.status(404).json({ 
-            message: "Project not found. Please check your Adobe Fonts Project ID." 
+            message: "Adobe Fonts project not found. Please check your Project ID and ensure the project is published." 
           });
         }
         return res.status(response.status).json({ 
-          message: "Failed to fetch fonts from Adobe Fonts API" 
+          message: "Failed to load Adobe Fonts project. Please ensure the project ID is correct and published." 
         });
       }
 
-      const data = await response.json();
-      console.log(`Successfully fetched Adobe Fonts data for project ${projectId}`);
+      const cssContent = await response.text();
+      console.log(`Successfully fetched Adobe Fonts CSS for project ${projectId}`);
       
-      // Transform the Adobe Fonts API response to our expected format
+      // Parse font families from CSS content
+      const fontFamilyRegex = /font-family:\s*"([^"]+)"/g;
+      const fontWeightRegex = /font-weight:\s*(\d+)/g;
+      const fontStyleRegex = /font-style:\s*(normal|italic)/g;
+      
+      const fontFamilies = new Set<string>();
+      const fontWeights = new Set<string>();
+      const fontStyles = new Set<string>();
+      
+      let match;
+      while ((match = fontFamilyRegex.exec(cssContent)) !== null) {
+        fontFamilies.add(match[1]);
+      }
+      
+      while ((match = fontWeightRegex.exec(cssContent)) !== null) {
+        fontWeights.add(match[1]);
+      }
+      
+      while ((match = fontStyleRegex.exec(cssContent)) !== null) {
+        fontStyles.add(match[1]);
+      }
+      
+      // If no specific weights found, add common defaults
+      if (fontWeights.size === 0) {
+        fontWeights.add('400');
+        fontWeights.add('700');
+      }
+      
+      // If no styles found, add normal
+      if (fontStyles.size === 0) {
+        fontStyles.add('normal');
+      }
+      
+      // Transform the parsed data to our expected format
       const transformedData = {
         projectId,
-        fonts: data.kit?.families?.map((family: any) => ({
-          family: family.slug || family.name,
-          displayName: family.name,
-          weights: family.variations?.map((v: any) => v.fvd?.substring(1, 4) || '400') || ['400'],
-          styles: family.variations?.map((v: any) => v.fvd?.startsWith('i') ? 'italic' : 'normal') || ['normal'],
-          cssUrl: `https://use.typekit.net/${projectId}.css`,
-          category: family.classification || 'sans-serif',
-          foundry: family.foundry?.name || 'Adobe'
-        })) || []
+        fonts: Array.from(fontFamilies).map((familyName) => ({
+          family: familyName.toLowerCase().replace(/\s+/g, '-'),
+          displayName: familyName,
+          weights: Array.from(fontWeights).sort((a, b) => parseInt(a) - parseInt(b)),
+          styles: Array.from(fontStyles),
+          cssUrl: cssUrl,
+          category: 'sans-serif', // Default category since we can't determine from CSS
+          foundry: 'Adobe'
+        }))
       };
       
       res.json(transformedData);
