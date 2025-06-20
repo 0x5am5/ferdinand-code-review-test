@@ -35,77 +35,90 @@ export function registerAssetRoutes(app: Express) {
         });
       }
 
-      // Adobe Fonts now uses a different approach - we'll extract font information from the CSS file directly
-      // This is more reliable and doesn't require authentication
-      const cssUrl = `https://use.typekit.net/${projectId}.css`;
+      // Use Adobe Fonts API with authentication
+      const apiKey = process.env.ADOBE_FONTS_API_KEY;
       
-      console.log(`Fetching Adobe Fonts CSS from: ${cssUrl}`);
-      const response = await fetch(cssUrl, {
+      if (!apiKey) {
+        console.error("Adobe Fonts API key not found");
+        return res.status(500).json({ 
+          message: "Adobe Fonts API key not configured. Please contact support." 
+        });
+      }
+
+      // Adobe Fonts API endpoint for getting kit information
+      const apiUrl = `https://typekit.com/api/v1/json/kits/${projectId}`;
+      
+      console.log(`Fetching from Adobe Fonts API: ${apiUrl}`);
+      const response = await fetch(apiUrl, {
         headers: {
+          'X-Typekit-Token': apiKey,
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       });
 
       if (!response.ok) {
-        console.error("Adobe Fonts CSS error:", response.status, response.statusText);
+        console.error("Adobe Fonts API error:", response.status, response.statusText);
+        if (response.status === 401) {
+          return res.status(401).json({ 
+            message: "Invalid Adobe Fonts API key. Please check your API credentials." 
+          });
+        }
         if (response.status === 404) {
           return res.status(404).json({ 
-            message: "Adobe Fonts project not found. Please check your Project ID and ensure the project is published." 
+            message: "Adobe Fonts project not found. Please check your Project ID." 
           });
         }
         return res.status(response.status).json({ 
-          message: "Failed to load Adobe Fonts project. Please ensure the project ID is correct and published." 
+          message: "Failed to fetch fonts from Adobe Fonts API" 
         });
       }
 
-      const cssContent = await response.text();
-      console.log(`Successfully fetched Adobe Fonts CSS for project ${projectId}`);
+      const data = await response.json();
+      console.log(`Successfully fetched Adobe Fonts data for project ${projectId}`);
       
-      // Parse font families from CSS content
-      const fontFamilyRegex = /font-family:\s*"([^"]+)"/g;
-      const fontWeightRegex = /font-weight:\s*(\d+)/g;
-      const fontStyleRegex = /font-style:\s*(normal|italic)/g;
-      
-      const fontFamilies = new Set<string>();
-      const fontWeights = new Set<string>();
-      const fontStyles = new Set<string>();
-      
-      let match;
-      while ((match = fontFamilyRegex.exec(cssContent)) !== null) {
-        fontFamilies.add(match[1]);
-      }
-      
-      while ((match = fontWeightRegex.exec(cssContent)) !== null) {
-        fontWeights.add(match[1]);
-      }
-      
-      while ((match = fontStyleRegex.exec(cssContent)) !== null) {
-        fontStyles.add(match[1]);
-      }
-      
-      // If no specific weights found, add common defaults
-      if (fontWeights.size === 0) {
-        fontWeights.add('400');
-        fontWeights.add('700');
-      }
-      
-      // If no styles found, add normal
-      if (fontStyles.size === 0) {
-        fontStyles.add('normal');
-      }
-      
-      // Transform the parsed data to our expected format
+      // Transform the Adobe Fonts API response to our expected format
       const transformedData = {
         projectId,
-        fonts: Array.from(fontFamilies).map((familyName) => ({
-          family: familyName.toLowerCase().replace(/\s+/g, '-'),
-          displayName: familyName,
-          weights: Array.from(fontWeights).sort((a, b) => parseInt(a) - parseInt(b)),
-          styles: Array.from(fontStyles),
-          cssUrl: cssUrl,
-          category: 'sans-serif', // Default category since we can't determine from CSS
-          foundry: 'Adobe'
-        }))
+        fonts: data.kit?.families?.map((family: any) => {
+          // Convert Adobe font variations (fvd format) to weights and styles
+          const weights: string[] = [];
+          const styles: string[] = [];
+          
+          if (family.variations && Array.isArray(family.variations)) {
+            family.variations.forEach((variation: any) => {
+              if (variation.fvd) {
+                // FVD format: [n|i][1-9][weight]
+                // Examples: n4 = normal 400, i7 = italic 700
+                const fvd = variation.fvd;
+                const isItalic = fvd.startsWith('i');
+                const weight = fvd.substring(1) + '00'; // Convert single digit to hundreds
+                
+                if (!weights.includes(weight)) {
+                  weights.push(weight);
+                }
+                
+                const style = isItalic ? 'italic' : 'normal';
+                if (!styles.includes(style)) {
+                  styles.push(style);
+                }
+              }
+            });
+          }
+          
+          // Fallback to defaults if no variations found
+          if (weights.length === 0) weights.push('400');
+          if (styles.length === 0) styles.push('normal');
+          
+          return {
+            family: family.slug || family.name?.toLowerCase().replace(/\s+/g, '-'),
+            displayName: family.name,
+            weights: weights.sort((a, b) => parseInt(a) - parseInt(b)),
+            styles: styles,
+            cssUrl: `https://use.typekit.net/${projectId}.css`,
+            category: family.css_names?.[0]?.includes('serif') ? 'serif' : 'sans-serif',
+            foundry: family.foundry?.name || 'Adobe'
+          };
+        }).filter(Boolean) || []
       };
       
       res.json(transformedData);
