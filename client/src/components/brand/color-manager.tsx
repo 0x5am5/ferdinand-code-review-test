@@ -1978,6 +1978,7 @@ export function ColorManager({
                   onGenerate={handleGenerateGreyShades}
                   neutralColorsCount={neutralColorsData.length}
                   onUpdate={handleUpdateColor}
+                  clientId={clientId}
                 />
               ))}
 
@@ -2056,6 +2057,7 @@ export function ColorManager({
                   onEdit={handleEditColor}
                   onDelete={deleteColor.mutate}
                   onUpdate={handleUpdateColor}
+                  clientId={clientId}
                 />
               ))}
             </div>
