@@ -87,40 +87,38 @@ export function registerAssetRoutes(app: Express) {
           const styles: string[] = [];
           
           if (family.variations && Array.isArray(family.variations)) {
-            family.variations.forEach((variation: any) => {
-              if (variation.fvd) {
-                // FVD format: [n|i][weight_class]
-                // Examples: n4 = normal 400, i7 = italic 700, n3 = normal 300
-                const fvd = variation.fvd;
-                const isItalic = fvd.startsWith('i');
+            family.variations.forEach((variation: string) => {
+              // Variations are strings like "n3", "n4", "i6", "n7"
+              // Format: [n|i][weight_class]
+              // Examples: n4 = normal 400, i7 = italic 700, n3 = normal 300
+              const isItalic = variation.startsWith('i');
+              
+              // Extract weight - the number after the style indicator
+              const weightMatch = variation.match(/[ni](\d)/);
+              if (weightMatch) {
+                const weightClass = parseInt(weightMatch[1]);
+                // Convert weight class to actual weight
+                const weightMap: { [key: number]: string } = {
+                  1: '100', // Thin
+                  2: '200', // Extra Light
+                  3: '300', // Light
+                  4: '400', // Normal/Regular
+                  5: '500', // Medium
+                  6: '600', // Semi Bold
+                  7: '700', // Bold
+                  8: '800', // Extra Bold
+                  9: '900'  // Black
+                };
                 
-                // Extract weight - the number after the style indicator
-                const weightMatch = fvd.match(/[ni](\d)/);
-                if (weightMatch) {
-                  const weightClass = parseInt(weightMatch[1]);
-                  // Convert weight class to actual weight
-                  const weightMap: { [key: number]: string } = {
-                    1: '100', // Thin
-                    2: '200', // Extra Light
-                    3: '300', // Light
-                    4: '400', // Normal/Regular
-                    5: '500', // Medium
-                    6: '600', // Semi Bold
-                    7: '700', // Bold
-                    8: '800', // Extra Bold
-                    9: '900'  // Black
-                  };
-                  
-                  const weight = weightMap[weightClass] || '400';
-                  if (!weights.includes(weight)) {
-                    weights.push(weight);
-                  }
+                const weight = weightMap[weightClass] || '400';
+                if (!weights.includes(weight)) {
+                  weights.push(weight);
                 }
-                
-                const style = isItalic ? 'italic' : 'normal';
-                if (!styles.includes(style)) {
-                  styles.push(style);
-                }
+              }
+              
+              const style = isItalic ? 'italic' : 'normal';
+              if (!styles.includes(style)) {
+                styles.push(style);
               }
             });
           }
