@@ -130,9 +130,51 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
   const ratio = (typeScale.scaleRatio || 1250) / 1000;
   const unit = typeScale.unit || "px";
 
-  const calculateFontSize = (step: number) => {
-    const size = Math.round(baseSize * Math.pow(ratio, step) * 100) / 100;
-    return `${size}${unit}`;
+  const calculateFontSize = (level: string) => {
+    let size: number;
+    
+    switch(level) {
+      case 'h6':
+        size = baseSize * 0.8;
+        break;
+      case 'h5':
+        size = baseSize;
+        break;
+      case 'h4':
+        size = baseSize * ratio;
+        break;
+      case 'h3':
+        size = baseSize * ratio * ratio;
+        break;
+      case 'h2':
+        size = baseSize * ratio * ratio * ratio;
+        break;
+      case 'h1':
+        size = baseSize * ratio * ratio * ratio * ratio;
+        break;
+      case 'body-large':
+        size = baseSize * 1.125;
+        break;
+      case 'body':
+        size = baseSize;
+        break;
+      case 'body-small':
+        size = baseSize * 0.875;
+        break;
+      case 'caption':
+        size = baseSize * 0.75;
+        break;
+      case 'quote':
+        size = baseSize * 1.25;
+        break;
+      case 'code':
+        size = baseSize * 0.875;
+        break;
+      default:
+        size = baseSize;
+    }
+    
+    return `${Math.round(size * 100) / 100}${unit}`;
   };
 
   const getStyleForLevel = (style: TypeStyle): React.CSSProperties => {
@@ -144,7 +186,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     const individualBodyStyle = isBody ? typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles] : undefined;
 
     const baseStyle: React.CSSProperties = {
-      fontSize: calculateFontSize(style.size),
+      fontSize: calculateFontSize(style.level),
       fontWeight: style.fontWeight || (isHeader ? typeScale.headerFontWeight : typeScale.bodyFontWeight) || "400",
       lineHeight: style.lineHeight,
       letterSpacing: `${style.letterSpacing || (isHeader ? typeScale.headerLetterSpacing : typeScale.bodyLetterSpacing) || 0}em`,
@@ -218,7 +260,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
                   )}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {calculateFontSize(style.size)}
+                  {calculateFontSize(style.level)}
                 </div>
               </div>
               <div

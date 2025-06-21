@@ -474,6 +474,94 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               {/* Scale Settings */}
               <div>
                 <h4 className="text-base font-semibold mb-4">Scale Settings</h4>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="scale-name">Scale Name</Label>
+                    <Input
+                      id="scale-name"
+                      value={activeScale.name || "Brand Type Scale"}
+                      onChange={(e) => updateScale({ name: e.target.value })}
+                      placeholder="Enter scale name"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="base-size">Base Size</Label>
+                      <Input
+                        id="base-size"
+                        type="number"
+                        value={activeScale.baseSize || 16}
+                        onChange={(e) => updateScale({ baseSize: parseInt(e.target.value) || 16 })}
+                        min="8"
+                        max="72"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="unit">Unit</Label>
+                      <Select 
+                        value={activeScale.unit || "px"} 
+                        onValueChange={(value: "px" | "rem" | "em") => updateScale({ unit: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="px">px</SelectItem>
+                          <SelectItem value="rem">rem</SelectItem>
+                          <SelectItem value="em">em</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="scale-ratio">Scale Ratio: {((activeScale.scaleRatio || 1250) / 1000).toFixed(3)}</Label>
+                    <Slider
+                      value={[activeScale.scaleRatio || 1250]}
+                      onValueChange={([value]) => updateScale({ scaleRatio: value })}
+                      min={1000}
+                      max={2000}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>1.000</span>
+                      <span>2.000</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Preview Scale</Label>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span>H1:</span>
+                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * Math.pow((activeScale.scaleRatio || 1250) / 1000, 4) * 100) / 100}px</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>H2:</span>
+                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * Math.pow((activeScale.scaleRatio || 1250) / 1000, 3) * 100) / 100}px</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>H3:</span>
+                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * Math.pow((activeScale.scaleRatio || 1250) / 1000, 2) * 100) / 100}px</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>H4:</span>
+                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * ((activeScale.scaleRatio || 1250) / 1000) * 100) / 100}px</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>H5:</span>
+                        <Badge variant="outline">{activeScale.baseSize || 16}px</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>H6:</span>
+                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * 0.8 * 100) / 100}px</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Body Type Styles Section */}
@@ -757,14 +845,20 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 }
                               }}
                               placeholder={`Inherits: ${(() => {
-                                const style = activeScale.typeStyles?.find(s => s.level === bodyLevel);
-                                if (style) {
-                                  const baseSize = activeScale.baseSize || 16;
-                                  const ratio = (activeScale.scaleRatio || 1250) / 1000;
-                                  const calculatedSize = Math.round(baseSize * Math.pow(ratio, style.size) * 100) / 100;
-                                  return `${calculatedSize}px`;
+                                const baseSize = activeScale.baseSize || 16;
+                                let size: number;
+                                
+                                switch(bodyLevel) {
+                                  case 'body-large': size = baseSize * 1.125; break;
+                                  case 'body': size = baseSize; break;
+                                  case 'body-small': size = baseSize * 0.875; break;
+                                  case 'caption': size = baseSize * 0.75; break;
+                                  case 'quote': size = baseSize * 1.25; break;
+                                  case 'code': size = baseSize * 0.875; break;
+                                  default: size = baseSize;
                                 }
-                                return '16px';
+                                
+                                return `${Math.round(size * 100) / 100}px`;
                               })()}`}
                             />
                           </div>
@@ -1055,14 +1149,21 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 }
                               }}
                               placeholder={`Inherits: ${(() => {
-                                const style = activeScale.typeStyles?.find(s => s.level === headerLevel);
-                                if (style) {
-                                  const baseSize = activeScale.baseSize || 16;
-                                  const ratio = (activeScale.scaleRatio || 1250) / 1000;
-                                  const calculatedSize = Math.round(baseSize * Math.pow(ratio, style.size) * 100) / 100;
-                                  return `${calculatedSize}px`;
+                                const baseSize = activeScale.baseSize || 16;
+                                const ratio = (activeScale.scaleRatio || 1250) / 1000;
+                                let size: number;
+                                
+                                switch(headerLevel) {
+                                  case 'h6': size = baseSize * 0.8; break;
+                                  case 'h5': size = baseSize; break;
+                                  case 'h4': size = baseSize * ratio; break;
+                                  case 'h3': size = baseSize * ratio * ratio; break;
+                                  case 'h2': size = baseSize * ratio * ratio * ratio; break;
+                                  case 'h1': size = baseSize * ratio * ratio * ratio * ratio; break;
+                                  default: size = baseSize;
                                 }
-                                return '16px';
+                                
+                                return `${Math.round(size * 100) / 100}px`;
                               })()}`}
                             />
                           </div>
