@@ -51,6 +51,20 @@
     --line-height: 1.5;
     --heading-weight: 700;
     --body-weight: 400;
+    
+    /* Additional typography element sizes for type scale */
+    --font-size-h1: var(--heading-1-size);
+    --font-size-h2: var(--heading-2-size);
+    --font-size-h3: var(--heading-3-size);
+    --font-size-h4: var(--heading-4-size);
+    --font-size-h5: var(--heading-5-size);
+    --font-size-h6: var(--heading-6-size);
+    --font-size-body-large: var(--body-large-size);
+    --font-size-body: var(--body-size);
+    --font-size-body-small: var(--body-small-size);
+    --font-size-caption: var(--caption-size);
+    --font-size-quote: var(--quote-size);
+    --font-size-code: var(--code-size);
   }
 
   * {

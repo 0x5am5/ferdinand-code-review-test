@@ -1,5 +1,6 @@
-import { db } from './db';
-import { sql } from 'drizzle-orm';
+import { db } from "./db.js";
+import { sql, eq } from "drizzle-orm";
+import { clients, figmaConnections, figmaSyncLogs, figmaDesignTokens, typeScales as typeScalesTable } from "@shared/schema";
 
 export async function runMigrations() {
   console.log('Starting database migrations...');
@@ -10,6 +11,7 @@ export async function runMigrations() {
     await migrateLastEditedBy();
     await migrateFigmaTables();
     await migrateIndividualHeaderStyles();
+    await migrateTypeScaleHierarchy();
 
     console.log('All migrations completed successfully!');
   } catch (error) {
@@ -134,14 +136,58 @@ async function migrateFigmaTables() {
 async function migrateIndividualHeaderStyles() {
   try {
     await db.execute(sql`
-      ALTER TABLE type_scales ADD COLUMN individual_header_styles TEXT;
+      ALTER TABLE type_scales 
+      ADD COLUMN IF NOT EXISTS individual_header_styles jsonb DEFAULT '{}'::jsonb
     `);
-    console.log("individual_header_styles column added to type_scales table");
+    console.log("✓ individual_header_styles column ensured");
   } catch (error: any) {
-    if (error.message.includes("duplicate column name")) {
+    if (error.code === '42701') {
       console.log("individual_header_styles column already exists.");
     } else {
       console.error("Error adding individual_header_styles column:", error);
+      throw error;
     }
+  }
+}
+
+async function migrateTypeScaleHierarchy() {
+  try {
+    // Get all type scales
+    const typeScales = await db.select().from(typeScalesTable);
+
+    const newTypeStyles = [
+      { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
+      { level: "h2", name: "Heading 2", size: 2, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
+      { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+      { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+      { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+      { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+      { level: "body-large", name: "Body Large", size: 0.5, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+      { level: "body", name: "Body", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+      { level: "body-small", name: "Body Small", size: -0.5, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+      { level: "caption", name: "Caption", size: -1, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#666666" },
+      { level: "quote", name: "Quote", size: 1, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+      { level: "code", name: "Code", size: -0.5, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    ];
+
+    for (const typeScale of typeScales) {
+      const currentTypeStyles = typeScale.typeStyles as any[] || [];
+      const hasNewStructure = currentTypeStyles.some(style => 
+        ['body-large', 'body-small', 'caption', 'quote', 'code'].includes(style.level)
+      );
+
+      if (!hasNewStructure) {
+        console.log(`Migrating type scale ${typeScale.id} to new hierarchy`);
+        await db
+          .update(typeScalesTable)
+          .set({ typeStyles: newTypeStyles })
+          .where(eq(typeScalesTable.id, typeScale.id));
+      }
+    }
+
+    console.log("✓ Type scale hierarchy migration completed");
+  } catch (error) {
+    console.error("Error migrating type scale hierarchy:", error);
+    throw error;
   }
 }

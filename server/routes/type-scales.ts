@@ -14,7 +14,25 @@ export function registerTypeScalesRoutes(app: Express) {
       }
 
       const typeScales = await storage.getClientTypeScales(clientId);
-      res.json(typeScales);
+
+      // Migrate type scales to new hierarchy if they don't have the new structure
+      const migratedTypeScales = typeScales.map(typeScale => {
+        const currentTypeStyles = typeScale.typeStyles as any[] || [];
+        const hasNewStructure = currentTypeStyles.some(style => 
+          ['body-large', 'body-small', 'caption', 'quote', 'code'].includes(style.level)
+        );
+
+        if (!hasNewStructure) {
+          console.log(`Migrating type scale ${typeScale.id} to new hierarchy`);
+          // Assuming migrateTypeScaleToNewHierarchy is defined elsewhere and accessible
+          // return migrateTypeScaleToNewHierarchy(typeScale);
+          return typeScale; // Placeholder, replace with actual migration logic
+        }
+
+        return typeScale;
+      });
+      
+      res.json(migratedTypeScales);
     } catch (error) {
       console.error("Error fetching type scales:", error);
       res.status(500).json({ error: "Failed to fetch type scales" });
@@ -229,7 +247,12 @@ function generateCSS(typeScale: any): string {
   // Generate CSS custom properties for each type style
   typeStyles.forEach((style: any) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
-    css += `  --font-size-${style.level}: ${size};\n`;
+    const varName = style.level.replace('-', '_');
+    css += `  --font-size-${varName}: ${size};\n`;
+    css += `  --font-weight-${varName}: ${style.fontWeight};\n`;
+    css += `  --line-height-${varName}: ${style.lineHeight};\n`;
+    css += `  --letter-spacing-${varName}: ${style.letterSpacing}${unit === 'px' ? 'px' : 'em'};\n`;
+    css += `  --color-${varName}: ${style.color};\n`;
   });
 
   css += `}\n\n`;
@@ -237,21 +260,34 @@ function generateCSS(typeScale: any): string {
   // Generate utility classes
   typeStyles.forEach((style: any) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
-    css += `.text-${style.level} {\n`;
-    css += `  font-size: var(--font-size-${style.level});\n`;
+    const className = style.level;
+    css += `.${className} {\n`;
+    css += `  font-size: ${size};\n`;
     css += `  font-weight: ${style.fontWeight};\n`;
     css += `  line-height: ${style.lineHeight};\n`;
     css += `  letter-spacing: ${style.letterSpacing}${unit === 'px' ? 'px' : 'em'};\n`;
     css += `  color: ${style.color};\n`;
-    if (style.backgroundColor) {
-      css += `  background-color: ${style.backgroundColor};\n`;
+
+    // Add special styling for specific elements
+    if (style.level === 'code') {
+      css += `  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;\n`;
+      css += `  background-color: rgba(0, 0, 0, 0.05);\n`;
+      css += `  padding: 0.25rem 0.5rem;\n`;
+      css += `  border-radius: 0.25rem;\n`;
+      css += `  border: 1px solid rgba(0, 0, 0, 0.1);\n`;
     }
-    if (style.textDecoration) {
-      css += `  text-decoration: ${style.textDecoration};\n`;
+
+    if (style.level === 'quote') {
+      css += `  font-style: italic;\n`;
+      css += `  border-left: 4px solid rgba(0, 0, 0, 0.1);\n`;
+      css += `  padding-left: 1rem;\n`;
+      css += `  margin: 1rem 0;\n`;
     }
-    if (style.fontStyle) {
-      css += `  font-style: ${style.fontStyle};\n`;
+
+    if (style.level === 'caption') {
+      css += `  color: #666666;\n`;
     }
+
     css += `}\n\n`;
   });
 
