@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -268,28 +269,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
-  const updateScale = (updates: Partial<TypeScale>) => {
-    if (currentScale) {
-      setCurrentScale({ 
-        ...currentScale, 
-        ...updates,
-        // Preserve existing individual styles when updating
-        individualHeaderStyles: updates.individualHeaderStyles || currentScale.individualHeaderStyles,
-        individualBodyStyles: updates.individualBodyStyles || currentScale.individualBodyStyles
-      });
-    } else {
-      setCurrentScale({ 
-        id: 0, 
-        clientId, 
-        name: "New Type Scale",
-        baseSize: 16,
-        scaleRatio: 1250,
-        unit: "rem",
-        individualHeaderStyles: {},
-        individualBodyStyles: {},
-        ...updates 
-      } as TypeScale);
-    }
+  const updateScale = (updates: Partial<any>) => {
+    setCurrentScale(prev => ({ ...activeScale, ...updates }));
     setIsEditing(true);
   };
 
@@ -748,7 +729,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               )}
                             </div>
                             <Select
-                              value{bodyStyle?.fontWeight || ""}
+                              value={bodyStyle?.fontWeight || ""}
                               onValueChange={(value) => updateIndividualBodyStyle(bodyLevel, { fontWeight: value })}
                             >
                               <SelectTrigger>
