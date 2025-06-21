@@ -504,7 +504,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(typeScales.id, id));
 
     if (!typeScale) {
-      return null;
+      return undefined;
     }
 
     // Map the database fields to the expected format
@@ -524,12 +524,38 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateTypeScale(id: number, updateTypeScale: Partial<InsertTypeScale>): Promise<TypeScale> {
+    // Clean the data to remove any conflicting fields and ensure proper format
+    const cleanedData = { ...updateTypeScale };
+    
+    // Remove any camelCase versions that conflict with database snake_case fields
+    delete cleanedData['individualHeaderStyles' as keyof typeof cleanedData];
+    delete cleanedData['individualBodyStyles' as keyof typeof cleanedData];
+    
+    // Map individual styles to correct database fields if they exist in the update
+    if (updateTypeScale.individualHeaderStyles) {
+      cleanedData.individual_header_styles = updateTypeScale.individualHeaderStyles;
+    }
+    if (updateTypeScale.individualBodyStyles) {
+      cleanedData.individual_body_styles = updateTypeScale.individualBodyStyles;
+    }
+    
+    // Ensure updatedAt is a proper Date object
+    cleanedData.updatedAt = new Date();
+    
+    console.log("Cleaned data for database update:", JSON.stringify(cleanedData, null, 2));
+    
     const [typeScale] = await db
       .update(typeScales)
-      .set({ ...updateTypeScale, updatedAt: new Date() })
+      .set(cleanedData)
       .where(eq(typeScales.id, id))
       .returning();
-    return typeScale;
+      
+    // Map the database fields back to the expected format
+    return {
+      ...typeScale,
+      individualHeaderStyles: typeScale.individual_header_styles || {},
+      individualBodyStyles: typeScale.individual_body_styles || {},
+    };
   }
 
   async deleteTypeScale(id: number): Promise<void> {
