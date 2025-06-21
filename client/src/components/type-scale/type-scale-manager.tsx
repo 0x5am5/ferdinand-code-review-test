@@ -159,11 +159,15 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   useEffect(() => {
     if (currentScale?.individualHeaderStyles) {
       setActiveHeaderCustomizations(new Set(Object.keys(currentScale.individualHeaderStyles)));
+    } else {
+      setActiveHeaderCustomizations(new Set());
     }
     if (currentScale?.individualBodyStyles) {
       setActiveBodyCustomizations(new Set(Object.keys(currentScale.individualBodyStyles)));
+    } else {
+      setActiveBodyCustomizations(new Set());
     }
-  }, [currentScale?.id]); // Only depend on the ID to avoid infinite loops
+  }, [currentScale?.id, currentScale?.individualHeaderStyles, currentScale?.individualBodyStyles]);
 
   const saveTypeScaleMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -280,7 +284,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   });
 
   const updateScale = (updates: Partial<any>) => {
-    setCurrentScale(prev => ({ ...activeScale, ...updates }));
+    setCurrentScale(prev => prev ? { ...prev, ...updates } : { ...activeScale, ...updates });
     setIsEditing(true);
   };
 
@@ -453,8 +457,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     }
   };
 
-  // Remove the problematic useEffect hooks that were causing infinite re-renders
-  // The individual styles are already handled by the state management above
+  
 
   if (isLoading) {
     return <div>Loading type scales...</div>;
