@@ -3,13 +3,14 @@ import { sql } from 'drizzle-orm';
 
 export async function runMigrations() {
   console.log('Starting database migrations...');
-  
+
   try {
     // Run all migrations in sequence
     await migrateFeatureToggles();
     await migrateLastEditedBy();
     await migrateFigmaTables();
-    
+    await migrateIndividualHeaderStyles();
+
     console.log('All migrations completed successfully!');
   } catch (error) {
     console.error('Migration failed:', error);
@@ -23,7 +24,7 @@ async function migrateFeatureToggles() {
     FROM information_schema.columns 
     WHERE table_name = 'clients' AND column_name = 'feature_toggles'
   `);
-  
+
   if (checkFeatureToggles.rows.length === 0) {
     console.log('Adding feature_toggles column to clients table...');
     // Add the feature_toggles column
@@ -44,7 +45,7 @@ async function migrateLastEditedBy() {
     FROM information_schema.columns 
     WHERE table_name = 'clients' AND column_name = 'last_edited_by'
   `);
-  
+
   if (checkLastEditedBy.rows.length === 0) {
     console.log('Adding last_edited_by column to clients table...');
     // Add the last_edited_by column
@@ -65,10 +66,10 @@ async function migrateFigmaTables() {
     FROM information_schema.tables 
     WHERE table_name = 'figma_connections'
   `);
-  
+
   if (checkFigmaConnections.rows.length === 0) {
     console.log('Creating Figma integration tables...');
-    
+
     // Create figma_connections table
     await db.execute(sql`
       CREATE TABLE figma_connections (
@@ -89,7 +90,7 @@ async function migrateFigmaTables() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    
+
     // Create figma_sync_logs table
     await db.execute(sql`
       CREATE TABLE figma_sync_logs (
@@ -106,7 +107,7 @@ async function migrateFigmaTables() {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    
+
     // Create figma_design_tokens table
     await db.execute(sql`
       CREATE TABLE figma_design_tokens (
@@ -123,9 +124,24 @@ async function migrateFigmaTables() {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `);
-    
+
     console.log('Figma tables migration completed successfully!');
   } else {
     console.log('Figma tables already exist.');
+  }
+}
+
+async function migrateIndividualHeaderStyles() {
+  try {
+    await db.execute(sql`
+      ALTER TABLE type_scales ADD COLUMN individual_header_styles TEXT;
+    `);
+    console.log("individual_header_styles column added to type_scales table");
+  } catch (error: any) {
+    if (error.message.includes("duplicate column name")) {
+      console.log("individual_header_styles column already exists.");
+    } else {
+      console.error("Error adding individual_header_styles column:", error);
+    }
   }
 }

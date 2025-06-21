@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Save, Download, Trash2 } from "lucide-react";
+import { Plus, Save, Download, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TypeScalePreview } from "./type-scale-preview";
-import type { TypeScale } from "@shared/schema";
+import type { TypeScale, IndividualHeaderStyle } from "@shared/schema";
 
 interface TypeScaleManagerProps {
   clientId: number;
@@ -51,6 +51,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const queryClient = useQueryClient();
   const [currentScale, setCurrentScale] = useState<TypeScale | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeHeaderCustomizations, setActiveHeaderCustomizations] = useState<Set<string>>(new Set());
 
   const { data: typeScales = [], isLoading } = useQuery({
     queryKey: ["/api/clients", clientId, "type-scales"],
@@ -224,6 +225,47 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const updateScale = (updates: Partial<any>) => {
     setCurrentScale(prev => ({ ...activeScale, ...updates }));
     setIsEditing(true);
+  };
+
+  const toggleHeaderCustomization = (headerLevel: string) => {
+    const newActiveHeaders = new Set(activeHeaderCustomizations);
+    if (newActiveHeaders.has(headerLevel)) {
+      newActiveHeaders.delete(headerLevel);
+      // Remove the individual styling when deactivating
+      const individualStyles = { ...activeScale.individualHeaderStyles };
+      delete individualStyles[headerLevel as keyof typeof individualStyles];
+      updateScale({ individualHeaderStyles: individualStyles });
+    } else {
+      newActiveHeaders.add(headerLevel);
+    }
+    setActiveHeaderCustomizations(newActiveHeaders);
+  };
+
+  const updateIndividualHeaderStyle = (headerLevel: string, styleUpdates: Partial<IndividualHeaderStyle>) => {
+    const currentIndividualStyles = activeScale.individualHeaderStyles || {};
+    const updatedStyles = {
+      ...currentIndividualStyles,
+      [headerLevel]: {
+        ...currentIndividualStyles[headerLevel as keyof typeof currentIndividualStyles],
+        ...styleUpdates
+      }
+    };
+    updateScale({ individualHeaderStyles: updatedStyles });
+  };
+
+  const resetIndividualHeaderStyle = (headerLevel: string, property: keyof IndividualHeaderStyle) => {
+    const currentIndividualStyles = activeScale.individualHeaderStyles || {};
+    const headerStyle = currentIndividualStyles[headerLevel as keyof typeof currentIndividualStyles];
+    if (headerStyle) {
+      const updatedHeaderStyle = { ...headerStyle };
+      delete updatedHeaderStyle[property];
+      
+      const updatedStyles = {
+        ...currentIndividualStyles,
+        [headerLevel]: updatedHeaderStyle
+      };
+      updateScale({ individualHeaderStyles: updatedStyles });
+    }
   };
 
   const handleSave = () => {
@@ -571,15 +613,181 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   </div>
                 </div>
 
-                <div className="mt-4">
-                  <h5>Custom Header Styling</h5>
+                <div className="mt-6">
+                  <h5 className="text-sm font-medium mb-3">Custom Header Styling</h5>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Click header chips below to customize individual header levels
+                  </p>
 
-                  <div className="chip">H1</div>
-                  <div className="chip">H2</div>
-                  <div className="chip">H3</div>
-                  <div className="chip">H4</div>
-                  <div className="chip">H5</div>
-                  <div className="chip">H6</div>
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].map((headerLevel) => (
+                      <button
+                        key={headerLevel}
+                        onClick={() => toggleHeaderCustomization(headerLevel)}
+                        className={`
+                          px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200
+                          ${activeHeaderCustomizations.has(headerLevel)
+                            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                            : 'bg-background text-foreground border-border hover:bg-muted'
+                          }
+                        `}
+                      >
+                        {headerLevel.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Individual Header Customization Panels */}
+                  {Array.from(activeHeaderCustomizations).map((headerLevel) => {
+                    const headerStyle = activeScale.individualHeaderStyles?.[headerLevel as keyof typeof activeScale.individualHeaderStyles];
+                    return (
+                      <div key={headerLevel} className="border rounded-lg p-4 mb-4 bg-muted/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <h6 className="text-sm font-medium">
+                            {headerLevel.toUpperCase()} Custom Styling
+                          </h6>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleHeaderCustomization(headerLevel)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${headerLevel}-font-family`}>Font Family</Label>
+                              {headerStyle?.fontFamily && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'fontFamily')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            {brandFonts.length === 1 ? (
+                              <div className="text-sm p-2 bg-muted rounded">
+                                {brandFonts[0].fontFamily} {headerStyle?.fontFamily && headerStyle.fontFamily !== brandFonts[0].fontFamily ? `→ ${headerStyle.fontFamily}` : ''}
+                              </div>
+                            ) : brandFonts.length > 1 ? (
+                              <Select
+                                value={headerStyle?.fontFamily || ""}
+                                onValueChange={(value) => updateIndividualHeaderStyle(headerLevel, { fontFamily: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder={`Inherits: ${activeScale.headerFontFamily || 'Default'}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {brandFonts.map((font: any) => (
+                                    <SelectItem key={font.id} value={font.fontFamily}>
+                                      {font.fontFamily}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="text-sm text-muted-foreground p-2 border rounded">
+                                No brand fonts defined. Add fonts in the typography section above.
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${headerLevel}-font-weight`}>Font Weight</Label>
+                              {headerStyle?.fontWeight && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'fontWeight')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <Select
+                              value={headerStyle?.fontWeight || ""}
+                              onValueChange={(value) => updateIndividualHeaderStyle(headerLevel, { fontWeight: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Inherits: ${activeScale.headerFontWeight || '700'}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="100">100 - Thin</SelectItem>
+                                <SelectItem value="200">200 - Extra Light</SelectItem>
+                                <SelectItem value="300">300 - Light</SelectItem>
+                                <SelectItem value="400">400 - Regular</SelectItem>
+                                <SelectItem value="500">500 - Medium</SelectItem>
+                                <SelectItem value="600">600 - Semi Bold</SelectItem>
+                                <SelectItem value="700">700 - Bold</SelectItem>
+                                <SelectItem value="800">800 - Extra Bold</SelectItem>
+                                <SelectItem value="900">900 - Black</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${headerLevel}-letter-spacing`}>Letter Spacing (em)</Label>
+                              {headerStyle?.letterSpacing !== undefined && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'letterSpacing')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <Input
+                              id={`${headerLevel}-letter-spacing`}
+                              type="number"
+                              step="0.01"
+                              value={headerStyle?.letterSpacing !== undefined ? headerStyle.letterSpacing : ""}
+                              onChange={(e) => updateIndividualHeaderStyle(headerLevel, { letterSpacing: parseFloat(e.target.value) || 0 })}
+                              placeholder={`Inherits: ${activeScale.headerLetterSpacing || 0}`}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${headerLevel}-color`}>Color</Label>
+                              {headerStyle?.color && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'color')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                id={`${headerLevel}-color`}
+                                type="color"
+                                value={headerStyle?.color || activeScale.headerColor || "#000000"}
+                                onChange={(e) => updateIndividualHeaderStyle(headerLevel, { color: e.target.value })}
+                                className="w-16 h-8"
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {headerStyle?.color ? headerStyle.color : `Inherits: ${activeScale.headerColor || '#000000'}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
           </div>

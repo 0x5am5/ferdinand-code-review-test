@@ -30,6 +30,44 @@ interface TypeScalePreviewProps {
     headerFontWeight?: string;
     headerLetterSpacing?: number;
     headerColor?: string;
+    individualHeaderStyles?: {
+      h1?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      h2?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      h3?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      h4?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      h5?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      h6?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+    };
   };
 }
 
@@ -43,28 +81,25 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     const size = Math.round(baseSize * Math.pow(ratio, step) * 100) / 100;
     return `${size}${unit}`;
   };
+
   const getStyleForLevel = (style: TypeStyle) => {
-    const isHeader = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(style.level);
-    const isBody = ['body', 'small'].includes(style.level);
-    
+    const size = calculateFontSize(style.size);
+    const isHeader = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(style.level);
+
+    // Check for individual header styles
+    const individualStyle = typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles];
+
     return {
-      fontSize: calculateFontSize(style.size),
-      fontWeight: isHeader ? (typeScale.headerFontWeight || style.fontWeight) : 
-                  isBody ? (typeScale.bodyFontWeight || style.fontWeight) : 
-                  style.fontWeight,
+      fontSize: size,
+      fontWeight: individualStyle?.fontWeight || style.fontWeight,
       lineHeight: style.lineHeight,
-      letterSpacing: `${isHeader ? (typeScale.headerLetterSpacing || style.letterSpacing) : 
-                       isBody ? (typeScale.bodyLetterSpacing || style.letterSpacing) : 
-                       style.letterSpacing}em`,
-      color: isHeader ? (typeScale.headerColor || style.color) : 
-             isBody ? (typeScale.bodyColor || style.color) : 
-             style.color,
-      fontFamily: isHeader ? (typeScale.headerFontFamily || 'inherit') : 
-                  isBody ? (typeScale.bodyFontFamily || 'inherit') : 
-                  'inherit',
-      backgroundColor: style.backgroundColor || 'transparent',
-      textDecoration: style.textDecoration || 'none',
-      fontStyle: style.fontStyle || 'normal',
+      letterSpacing: `${individualStyle?.letterSpacing !== undefined ? individualStyle.letterSpacing : style.letterSpacing}em`,
+      color: individualStyle?.color || style.color,
+      fontFamily: individualStyle?.fontFamily || (isHeader 
+        ? (typeScale.headerFontFamily || 'inherit')
+        : (typeScale.bodyFontFamily || 'inherit')),
+      margin: 0,
+      padding: 0
     };
   };
 
@@ -83,10 +118,10 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     <h1>Welcome to Our Brand</h1>
     <h2>Discover the Power of Typography</h2>
     <p>Our carefully crafted type scale ensures perfect hierarchy and readability across all devices. Every element works in harmony to create an exceptional user experience.</p>
-    
+
     <h3>Why Typography Matters</h3>
     <p>Typography is more than just choosing fonts - it's about creating meaningful connections between your brand and your audience. A well-designed type scale provides consistency and professionalism.</p>
-    
+
     <h4>Key Benefits</h4>
     <ul>
       <li>Improved readability and user experience</li>
@@ -94,10 +129,10 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
       <li>Better accessibility and inclusivity</li>
       <li>Professional appearance across all platforms</li>
     </ul>
-    
+
     <h5>Getting Started</h5>
     <p>Start implementing your type scale today by downloading the CSS or SCSS files. Our generated code is ready to use in your projects.</p>
-    
+
     <h6>Additional Resources</h6>
     <small>For more information about typography best practices, visit our documentation.</small>
   `;
@@ -109,7 +144,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
           <TabsTrigger value="hierarchy">Type Hierarchy</TabsTrigger>
           <TabsTrigger value="landing">Landing Page Preview</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="hierarchy" className="space-y-4">
           <Card>
             <CardHeader>
@@ -141,7 +176,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="landing" className="space-y-4">
           <Card>
             <CardHeader>
@@ -158,42 +193,42 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
                 >
                   Welcome to Our Brand
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'h2') || typeStyles[1])}
                   className="mb-4"
                 >
                   Discover the Power of Typography
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'body') || typeStyles[6])}
                   className="mb-6"
                 >
                   Our carefully crafted type scale ensures perfect hierarchy and readability across all devices. Every element works in harmony to create an exceptional user experience.
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'h3') || typeStyles[2])}
                   className="mb-3"
                 >
                   Why Typography Matters
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'body') || typeStyles[6])}
                   className="mb-6"
                 >
                   Typography is more than just choosing fonts - it's about creating meaningful connections between your brand and your audience. A well-designed type scale provides consistency and professionalism.
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'h4') || typeStyles[3])}
                   className="mb-3"
                 >
                   Key Benefits
                 </div>
-                
+
                 <ul className="mb-6 space-y-2">
                   {[
                     "Improved readability and user experience",
@@ -209,28 +244,28 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
                     </li>
                   ))}
                 </ul>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'h5') || typeStyles[4])}
                   className="mb-3"
                 >
                   Getting Started
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'body') || typeStyles[6])}
                   className="mb-6"
                 >
                   Start implementing your type scale today by downloading the CSS or SCSS files. Our generated code is ready to use in your projects.
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'h6') || typeStyles[5])}
                   className="mb-2"
                 >
                   Additional Resources
                 </div>
-                
+
                 <div
                   style={getStyleForLevel(typeStyles.find(s => s.level === 'small') || typeStyles[7])}
                 >

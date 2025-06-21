@@ -8,7 +8,7 @@ export function registerTypeScalesRoutes(app: Express) {
   app.get("/api/clients/:clientId/type-scales", async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
-      
+
       if (isNaN(clientId)) {
         return res.status(400).json({ error: "Invalid client ID" });
       }
@@ -25,13 +25,13 @@ export function registerTypeScalesRoutes(app: Express) {
   app.get("/api/type-scales/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
 
       const typeScale = await storage.getTypeScale(id);
-      
+
       if (!typeScale) {
         return res.status(404).json({ error: "Type scale not found" });
       }
@@ -47,7 +47,7 @@ export function registerTypeScalesRoutes(app: Express) {
   app.post("/api/clients/:clientId/type-scales", async (req, res) => {
     try {
       const clientId = parseInt(req.params.clientId);
-      
+
       if (isNaN(clientId)) {
         return res.status(400).json({ error: "Invalid client ID" });
       }
@@ -77,7 +77,7 @@ export function registerTypeScalesRoutes(app: Express) {
   app.patch("/api/type-scales/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
@@ -111,7 +111,7 @@ export function registerTypeScalesRoutes(app: Express) {
   app.delete("/api/type-scales/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
@@ -134,7 +134,7 @@ export function registerTypeScalesRoutes(app: Express) {
   app.post("/api/type-scales/:id/export/css", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
@@ -146,7 +146,7 @@ export function registerTypeScalesRoutes(app: Express) {
 
       // Generate CSS from type scale
       const css = generateCSS(typeScale);
-      
+
       // Update exports array
       const newExport = {
         format: "css" as const,
@@ -173,7 +173,7 @@ export function registerTypeScalesRoutes(app: Express) {
   app.post("/api/type-scales/:id/export/scss", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      
+
       if (isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
@@ -185,7 +185,7 @@ export function registerTypeScalesRoutes(app: Express) {
 
       // Generate SCSS from type scale
       const scss = generateSCSS(typeScale);
-      
+
       // Update exports array
       const newExport = {
         format: "scss" as const,
@@ -220,20 +220,20 @@ function calculateFontSize(baseSize: number, ratio: number, step: number, unit: 
 function generateCSS(typeScale: any): string {
   const { baseSize, scaleRatio, unit, typeStyles } = typeScale;
   const actualRatio = scaleRatio / 1000;
-  
+
   let css = `/* ${typeScale.name} Type Scale */\n\n`;
   css += `:root {\n`;
   css += `  --type-scale-base: ${baseSize}${unit};\n`;
   css += `  --type-scale-ratio: ${actualRatio};\n\n`;
-  
+
   // Generate CSS custom properties for each type style
   typeStyles.forEach((style: any) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     css += `  --font-size-${style.level}: ${size};\n`;
   });
-  
+
   css += `}\n\n`;
-  
+
   // Generate utility classes
   typeStyles.forEach((style: any) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
@@ -254,7 +254,7 @@ function generateCSS(typeScale: any): string {
     }
     css += `}\n\n`;
   });
-  
+
   return css;
 }
 
@@ -262,17 +262,17 @@ function generateCSS(typeScale: any): string {
 function generateSCSS(typeScale: any): string {
   const { baseSize, scaleRatio, unit, typeStyles } = typeScale;
   const actualRatio = scaleRatio / 1000;
-  
+
   let scss = `// ${typeScale.name} Type Scale\n\n`;
   scss += `$type-scale-base: ${baseSize}${unit};\n`;
   scss += `$type-scale-ratio: ${actualRatio};\n\n`;
-  
+
   // Generate SCSS variables for each type style
   typeStyles.forEach((style: any) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     scss += `$font-size-${style.level}: ${size};\n`;
   });
-  
+
   scss += `\n// Type scale map\n`;
   scss += `$type-scale: (\n`;
   typeStyles.forEach((style: any, index: number) => {
@@ -282,13 +282,13 @@ function generateSCSS(typeScale: any): string {
     scss += `\n`;
   });
   scss += `);\n\n`;
-  
+
   // Generate mixins
   scss += `// Type scale mixin\n`;
   scss += `@mixin type-scale($level) {\n`;
   scss += `  font-size: map-get($type-scale, $level);\n`;
   scss += `}\n\n`;
-  
+
   // Generate utility classes
   typeStyles.forEach((style: any) => {
     scss += `.text-${style.level} {\n`;
@@ -308,6 +308,6 @@ function generateSCSS(typeScale: any): string {
     }
     scss += `}\n\n`;
   });
-  
+
   return scss;
 }

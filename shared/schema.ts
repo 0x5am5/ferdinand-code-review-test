@@ -578,7 +578,7 @@ export const insertConvertedAssetSchema = createInsertSchema(convertedAssets)
     fileData: z.string(),
     mimeType: z.string(),
   });
-  
+
 export const insertHiddenSectionSchema = createInsertSchema(hiddenSections)
   .omit({ id: true, createdAt: true });
 
@@ -746,3 +746,45 @@ export const updateUserRoleSchema = z.object({
   id: z.number(),
   role: z.enum(USER_ROLES as [string, ...string[]]),
 });
+
+export interface IndividualHeaderStyle {
+  fontFamily?: string;
+  fontWeight?: string;
+  letterSpacing?: number;
+  color?: string;
+  sizeOverride?: number; // Optional deviation from calculated scale size
+}
+
+export interface TypeScale {
+  id?: number;
+  clientId: number;
+  name: string;
+  unit: "px" | "rem" | "em";
+  baseSize: number;
+  scaleRatio: number;
+  customRatio?: number;
+  bodyFontFamily: string;
+  bodyFontWeight: string;
+  bodyLetterSpacing: number;
+  bodyColor: string;
+  headerFontFamily: string;
+  headerFontWeight: string;
+  headerLetterSpacing: number;
+  headerColor: string;
+  individualHeaderStyles?: {
+    h1?: IndividualHeaderStyle;
+    h2?: IndividualHeaderStyle;
+    h3?: IndividualHeaderStyle;
+    h4?: IndividualHeaderStyle;
+    h5?: IndividualHeaderStyle;
+    h6?: IndividualHeaderStyle;
+  };
+  responsiveSizes?: {
+    mobile: { baseSize: number; scaleRatio: number };
+    tablet: { baseSize: number; scaleRatio: number };
+    desktop: { baseSize: number; scaleRatio: number };
+  };
+  typeStyles?: TypeStyle[];
+  createdAt?: string;
+  updatedAt?: string;
+}
