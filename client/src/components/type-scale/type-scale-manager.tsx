@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -41,8 +42,12 @@ const DEFAULT_TYPE_SCALE = {
     { level: "h4", name: "Heading 4", size: 1, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
     { level: "h5", name: "Heading 5", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
     { level: "h6", name: "Heading 6", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "body-large", name: "Body Large", size: 0.5, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
     { level: "body", name: "Body Text", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-    { level: "small", name: "Small Text", size: -1, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+    { level: "body-small", name: "Body Small", size: -0.5, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+    { level: "caption", name: "Caption", size: -1, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#666666" },
+    { level: "quote", name: "Quote", size: 1, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000", fontStyle: "italic" },
+    { level: "code", name: "Code", size: -0.5, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
   ]
 };
 
@@ -74,6 +79,7 @@ const createDefaultTypeScale = (): Omit<TypeScale, 'id' | 'clientId' | 'createdA
       { level: "code", name: "Code", size: -0.5, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
     ],
     individualHeaderStyles: {},
+    individualBodyStyles: {},
     exports: []
   });
 
@@ -82,13 +88,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const queryClient = useQueryClient();
   const [currentScale, setCurrentScale] = useState<TypeScale | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeHeaderCustomizations, setActiveHeaderCustomizations] = useState<Set<string>>(
-    new Set(Object.keys(activeScale.individualHeaderStyles || {}))
-  );
-
-  const [activeBodyCustomizations, setActiveBodyCustomizations] = useState<Set<string>>(
-    new Set(Object.keys(activeScale.individualBodyStyles || {}))
-  );
 
   const { data: typeScales = [], isLoading } = useQuery({
     queryKey: ["/api/clients", clientId, "type-scales"],
@@ -143,7 +142,18 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     baseSize: 16, // Ensure base size is in pixels, not rem
     bodyFontFamily: defaultFontFamily || DEFAULT_TYPE_SCALE.bodyFontFamily,
     headerFontFamily: defaultFontFamily || DEFAULT_TYPE_SCALE.headerFontFamily,
+    individualHeaderStyles: {},
+    individualBodyStyles: {},
   });
+
+  // Initialize state after activeScale is defined
+  const [activeHeaderCustomizations, setActiveHeaderCustomizations] = useState<Set<string>>(
+    new Set(Object.keys(activeScale.individualHeaderStyles || {}))
+  );
+
+  const [activeBodyCustomizations, setActiveBodyCustomizations] = useState<Set<string>>(
+    new Set(Object.keys(activeScale.individualBodyStyles || {}))
+  );
 
   const saveTypeScaleMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -285,10 +295,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       // Remove the style from the scale
       const updatedIndividualStyles = { ...activeScale.individualBodyStyles };
       delete updatedIndividualStyles[bodyLevel];
-      updateScale(prev => ({
-        ...prev,
-        individualBodyStyles: updatedIndividualStyles
-      }));
+      updateScale({ individualBodyStyles: updatedIndividualStyles });
     } else {
       newActiveCustomizations.add(bodyLevel);
       // Add default style
@@ -296,10 +303,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         ...activeScale.individualBodyStyles,
         [bodyLevel]: {}
       };
-      updateScale(prev => ({
-        ...prev,
-        individualBodyStyles: updatedIndividualStyles
-      }));
+      updateScale({ individualBodyStyles: updatedIndividualStyles });
     }
     setActiveBodyCustomizations(newActiveCustomizations);
   };
@@ -623,6 +627,184 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     />
                   </div>
                 </div>
+
+                {/* Custom Body Styling Section - NEW */}
+                <div className="mt-6">
+                  <h5 className="text-sm font-medium mb-3">Custom Body Styling</h5>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Click body type chips below to customize individual body elements
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {['body-large', 'body', 'body-small', 'caption', 'quote', 'code'].map((bodyLevel) => (
+                      <button
+                        key={bodyLevel}
+                        onClick={() => toggleBodyCustomization(bodyLevel)}
+                        className={`
+                          px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200
+                          ${activeBodyCustomizations.has(bodyLevel)
+                            ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                            : 'bg-background text-foreground border-border hover:bg-muted'
+                          }
+                        `}
+                      >
+                        {bodyLevel.toUpperCase().replace('-', ' ')}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Individual Body Customization Panels */}
+                  {Array.from(activeBodyCustomizations).map((bodyLevel) => {
+                    const bodyStyle = activeScale.individualBodyStyles?.[bodyLevel as keyof typeof activeScale.individualBodyStyles];
+                    return (
+                      <div key={bodyLevel} className="border rounded-lg p-4 mb-4 bg-muted/20">
+                        <div className="flex items-center justify-between mb-4">
+                          <h6 className="text-sm font-medium">
+                            {bodyLevel.toUpperCase().replace('-', ' ')} Custom Styling
+                          </h6>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleBodyCustomization(bodyLevel)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${bodyLevel}-font-family`}>Font Family</Label>
+                              {bodyStyle?.fontFamily && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'fontFamily')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            {brandFonts.length === 1 ? (
+                              <div className="text-sm p-2 bg-muted rounded">
+                                {brandFonts[0].fontFamily} {bodyStyle?.fontFamily && bodyStyle.fontFamily !== brandFonts[0].fontFamily ? `→ ${bodyStyle.fontFamily}` : ''}
+                              </div>
+                            ) : brandFonts.length > 1 ? (
+                              <Select
+                                value={bodyStyle?.fontFamily || ""}
+                                onValueChange={(value) => updateIndividualBodyStyle(bodyLevel, { fontFamily: value })}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder={`Inherits: ${activeScale.bodyFontFamily || 'Default'}`} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {brandFonts.map((font: any) => (
+                                    <SelectItem key={font.id} value={font.fontFamily}>
+                                      {font.fontFamily}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="text-sm text-muted-foreground p-2 border rounded">
+                                No brand fonts defined. Add fonts in the typography section above.
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${bodyLevel}-font-weight`}>Font Weight</Label>
+                              {bodyStyle?.fontWeight && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'fontWeight')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <Select
+                              value={bodyStyle?.fontWeight || ""}
+                              onValueChange={(value) => updateIndividualBodyStyle(bodyLevel, { fontWeight: value })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder={`Inherits: ${activeScale.bodyFontWeight || '400'}`} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="100">100 - Thin</SelectItem>
+                                <SelectItem value="200">200 - Extra Light</SelectItem>
+                                <SelectItem value="300">300 - Light</SelectItem>
+                                <SelectItem value="400">400 - Regular</SelectItem>
+                                <SelectItem value="500">500 - Medium</SelectItem>
+                                <SelectItem value="600">600 - Semi Bold</SelectItem>
+                                <SelectItem value="700">700 - Bold</SelectItem>
+                                <SelectItem value="800">800 - Extra Bold</SelectItem>
+                                <SelectItem value="900">900 - Black</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${bodyLevel}-letter-spacing`}>Letter Spacing (em)</Label>
+                              {bodyStyle?.letterSpacing !== undefined && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'letterSpacing')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <Input
+                              id={`${bodyLevel}-letter-spacing`}
+                              type="number"
+                              step="0.01"
+                              value={bodyStyle?.letterSpacing !== undefined ? bodyStyle.letterSpacing : ""}
+                              onChange={(e) => updateIndividualBodyStyle(bodyLevel, { letterSpacing: parseFloat(e.target.value) || 0 })}
+                              placeholder={`Inherits: ${activeScale.bodyLetterSpacing || 0}`}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${bodyLevel}-color`}>Color</Label>
+                              {bodyStyle?.color && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'color')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                id={`${bodyLevel}-color`}
+                                type="color"
+                                value={bodyStyle?.color || activeScale.bodyColor || "#000000"}
+                                onChange={(e) => updateIndividualBodyStyle(bodyLevel, { color: e.target.value })}
+                                className="w-16 h-8"
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {bodyStyle?.color ? bodyStyle.color : `Inherits: ${activeScale.bodyColor || '#000000'}`}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Header Type Styles Section */}
@@ -763,7 +945,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               )}
                             </div>
                             {brandFonts.length === 1 ? (
-                              <div className="textsm p-2 bg-muted rounded">
+                              <div className="text-sm p-2 bg-muted rounded">
                                 {brandFonts[0].fontFamily} {headerStyle?.fontFamily && headerStyle.fontFamily !== brandFonts[0].fontFamily ? `→ ${headerStyle.fontFamily}` : ''}
                               </div>
                             ) : brandFonts.length > 1 ? (

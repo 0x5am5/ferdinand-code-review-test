@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Monitor } from "lucide-react";
@@ -71,6 +72,44 @@ interface TypeScalePreviewProps {
         fontFamily?: string;
       };
     };
+    individualBodyStyles?: {
+      "body-large"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      "body"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      "body-small"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      "caption"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      "quote"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+      "code"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+      };
+    };
   };
 }
 
@@ -88,19 +127,29 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
   const getStyleForLevel = (style: TypeStyle) => {
     const size = calculateFontSize(style.size);
     const isHeader = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(style.level);
+    const isBodyType = ["body-large", "body", "body-small", "caption", "quote", "code"].includes(style.level);
     const isCode = style.level === "code";
     const isQuote = style.level === "quote";
 
     // Check for individual header styles
-    const individualStyle = typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles];
+    const individualHeaderStyle = typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles];
+    
+    // Check for individual body styles
+    const individualBodyStyle = typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles];
 
     const baseStyle = {
       fontSize: size,
-      fontWeight: individualStyle?.fontWeight || style.fontWeight,
+      fontWeight: individualHeaderStyle?.fontWeight || individualBodyStyle?.fontWeight || style.fontWeight,
       lineHeight: style.lineHeight,
-      letterSpacing: `${individualStyle?.letterSpacing !== undefined ? individualStyle.letterSpacing : style.letterSpacing}em`,
-      color: individualStyle?.color || style.color,
-      fontFamily: individualStyle?.fontFamily || (isHeader 
+      letterSpacing: `${
+        individualHeaderStyle?.letterSpacing !== undefined 
+          ? individualHeaderStyle.letterSpacing 
+          : individualBodyStyle?.letterSpacing !== undefined
+          ? individualBodyStyle.letterSpacing
+          : style.letterSpacing
+      }em`,
+      color: individualHeaderStyle?.color || individualBodyStyle?.color || style.color,
+      fontFamily: individualHeaderStyle?.fontFamily || individualBodyStyle?.fontFamily || (isHeader 
         ? (typeScale.headerFontFamily || 'inherit')
         : (typeScale.bodyFontFamily || 'inherit')),
       margin: 0,
@@ -148,8 +197,6 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     small: "Additional information and fine print details"
   };
 
-
-
   return (
     <div className="space-y-6">
       <Card>
@@ -164,8 +211,13 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
             <div key={style.level} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">{style.level.toUpperCase()}</Badge>
+                  <Badge variant="outline">{style.level.toUpperCase().replace('-', ' ')}</Badge>
                   <span className="text-sm text-muted-foreground">{style.name}</span>
+                  {/* Show individual customization indicator */}
+                  {(typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles] ||
+                    typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles]) && (
+                    <Badge variant="secondary" className="text-xs">Custom</Badge>
+                  )}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {calculateFontSize(style.size)}
