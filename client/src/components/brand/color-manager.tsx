@@ -105,20 +105,52 @@ function ColorCard({
 
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+    onMutate: async (newData) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: [`/api/clients/${clientId}/assets`] });
+
+      // Snapshot the previous value
+      const previousAssets = queryClient.getQueryData([`/api/clients/${clientId}/assets`]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: any) => {
+        if (!old) return old;
+        
+        return old.map((asset: any) => {
+          if (asset.id === newData.id) {
+            return {
+              ...asset,
+              name: newData.name,
+              data: newData.data,
+            };
+          }
+          return asset;
+        });
       });
+
+      // Return a context object with the snapshotted value
+      return { previousAssets };
+    },
+    onError: (err, newData, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData([`/api/clients/${clientId}/assets`], context?.previousAssets);
+      
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
       toast({
         title: "Color updated!",
         description: `${color.name} has been updated successfully.`,
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the latest data
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
     },
   });
@@ -1528,16 +1560,46 @@ export function ColorManager({
 
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+    onMutate: async (newData) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: [`/api/clients/${clientId}/assets`] });
+
+      // Snapshot the previous value
+      const previousAssets = queryClient.getQueryData([`/api/clients/${clientId}/assets`]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: any) => {
+        if (!old) return old;
+        
+        return old.map((asset: any) => {
+          if (asset.id === newData.id) {
+            return {
+              ...asset,
+              name: newData.name,
+              data: newData.data,
+            };
+          }
+          return asset;
+        });
       });
+
+      // Return a context object with the snapshotted value
+      return { previousAssets };
     },
-    onError: (error: Error) => {
+    onError: (err, newData, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData([`/api/clients/${clientId}/assets`], context?.previousAssets);
+      
       toast({
         title: "Error",
-        description: error.message,
+        description: err.message,
         variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure we have the latest data
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
       });
     },
   });
