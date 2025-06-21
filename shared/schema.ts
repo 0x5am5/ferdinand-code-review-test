@@ -755,6 +755,7 @@ export interface IndividualHeaderStyle {
   fontWeight?: string;
   letterSpacing?: number;
   color?: string;
+  fontSize?: string;
 }
 
 export interface IndividualBodyStyle {
@@ -762,6 +763,7 @@ export interface IndividualBodyStyle {
   fontWeight?: string;
   letterSpacing?: number;
   color?: string;
+  fontSize?: string;
 }
 
 export interface TypeScale {

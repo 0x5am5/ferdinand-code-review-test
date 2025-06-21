@@ -138,7 +138,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     const individualBodyStyle = typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles];
 
     const baseStyle = {
-      fontSize: size,
+      fontSize: individualHeaderStyle?.fontSize || individualBodyStyle?.fontSize || size,
       fontWeight: individualHeaderStyle?.fontWeight || individualBodyStyle?.fontWeight || style.fontWeight,
       lineHeight: style.lineHeight,
       letterSpacing: `${

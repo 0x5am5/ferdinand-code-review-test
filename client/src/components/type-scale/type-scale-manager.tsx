@@ -800,6 +800,47 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               </span>
                             </div>
                           </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${bodyLevel}-font-size`}>Font Size (px)</Label>
+                              {bodyStyle?.fontSize && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'fontSize')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <Input
+                              id={`${bodyLevel}-font-size`}
+                              type="number"
+                              min="8"
+                              max="200"
+                              value={bodyStyle?.fontSize ? parseFloat(bodyStyle.fontSize.replace('px', '')) : ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value) {
+                                  updateIndividualBodyStyle(bodyLevel, { fontSize: `${value}px` });
+                                } else {
+                                  resetIndividualBodyStyle(bodyLevel, 'fontSize');
+                                }
+                              }}
+                              placeholder={`Inherits: ${(() => {
+                                const style = activeScale.typeStyles?.find(s => s.level === bodyLevel);
+                                if (style) {
+                                  const baseSize = activeScale.baseSize || 16;
+                                  const ratio = (activeScale.scaleRatio || 1250) / 1000;
+                                  const calculatedSize = Math.round(baseSize * Math.pow(ratio, style.size) * 100) / 100;
+                                  return `${calculatedSize}px`;
+                                }
+                                return '16px';
+                              })()}`}
+                            />
+                          </div>
                         </div>
                       </div>
                     );
@@ -1056,6 +1097,47 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 {headerStyle?.color ? headerStyle.color : `Inherits: ${activeScale.headerColor || '#000000'}`}
                               </span>
                             </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={`${headerLevel}-font-size`}>Font Size (px)</Label>
+                              {headerStyle?.fontSize && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'fontSize')}
+                                  className="text-xs h-6 px-2"
+                                >
+                                  Reset
+                                </Button>
+                              )}
+                            </div>
+                            <Input
+                              id={`${headerLevel}-font-size`}
+                              type="number"
+                              min="8"
+                              max="200"
+                              value={headerStyle?.fontSize ? parseFloat(headerStyle.fontSize.replace('px', '')) : ""}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (value) {
+                                  updateIndividualHeaderStyle(headerLevel, { fontSize: `${value}px` });
+                                } else {
+                                  resetIndividualHeaderStyle(headerLevel, 'fontSize');
+                                }
+                              }}
+                              placeholder={`Inherits: ${(() => {
+                                const style = activeScale.typeStyles?.find(s => s.level === headerLevel);
+                                if (style) {
+                                  const baseSize = activeScale.baseSize || 16;
+                                  const ratio = (activeScale.scaleRatio || 1250) / 1000;
+                                  const calculatedSize = Math.round(baseSize * Math.pow(ratio, style.size) * 100) / 100;
+                                  return `${calculatedSize}px`;
+                                }
+                                return '16px';
+                              })()}`}
+                            />
                           </div>
                         </div>
                       </div>
