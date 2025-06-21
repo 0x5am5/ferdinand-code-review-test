@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -483,76 +482,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         </div>
       </div>
 
-      <div className="asset-display">
-        <div className="asset-display__info">
+      <div className="asset-display flex">
+        <div className="asset-display__info flex-1 pr-6 overflow-y-auto">
             <div className="space-y-6">
               {/* Scale Settings */}
               <div>
                 <h4 className="text-base font-semibold mb-4">Scale Settings</h4>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="scale-name">Name</Label>
-                    <Input
-                      id="scale-name"
-                      value={activeScale.name || ""}
-                      onChange={(e) => updateScale({ name: e.target.value })}
-                      placeholder="Type scale name"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="base-size">Base Size</Label>
-                    <div className="flex space-x-2">
-                      <Input
-                        id="base-size"
-                        type="number"
-                        value={activeScale.baseSize || 16}
-                        onChange={(e) => updateScale({ baseSize: parseInt(e.target.value) || 16 })}
-                        className="flex-1"
-                      />
-                      <Select
-                        value={activeScale.unit || "px"}
-                        onValueChange={(value) => updateScale({ unit: value })}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="px">px</SelectItem>
-                          <SelectItem value="rem">rem</SelectItem>
-                          <SelectItem value="em">em</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Scale Ratio: {((activeScale.scaleRatio || 1250) / 1000).toFixed(3)}</Label>
-                    <Slider
-                      value={[(activeScale.scaleRatio || 1250)]}
-                      onValueChange={([value]) => updateScale({ scaleRatio: value })}
-                      min={1000}
-                      max={2000}
-                      step={10}
-                      className="w-full"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>1.000</span>
-                      <span>2.000</span>
-                    </div>
-                  </div>
-
-                  {isEditing && (
-                    <Button
-                      onClick={handleSave}
-                      disabled={saveTypeScaleMutation.isPending}
-                      className="w-full"
-                    >
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </Button>
-                  )}
-                </div>
               </div>
 
               {/* Body Type Styles Section */}
@@ -1154,9 +1089,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
           </div>
         </div>
 
-        <div className="asset-display__preview">
-          <div className="lg:col-span-3">
-            <div>
+        <div className="asset-display__preview flex-1 sticky top-0 h-screen overflow-hidden">
+          <div className="h-full flex flex-col">
+            <div className="flex-shrink-0">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-base font-semibold">Type Scale Preview</h4>
                 <div className="flex items-center space-x-2">

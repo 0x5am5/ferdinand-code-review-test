@@ -107,3 +107,21 @@
     font-size: 12px;
   }
 }
+
+.asset-display {
+  &.flex {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  &__info {
+    max-height: 100vh;
+    padding-bottom: 2rem;
+  }
+
+  &__preview {
+    min-width: 500px;
+    max-width: 600px;
+  }
+}
