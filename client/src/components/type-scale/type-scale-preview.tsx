@@ -2,8 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Monitor } from "lucide-react";
 
+type TypographyLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | 
+                     "body-large" | "body" | "body-small" | 
+                     "caption" | "quote" | "code" | "small";
+
 interface TypeStyle {
-  level: string;
+  level: TypographyLevel | string;
   name: string;
   size: number;
   fontWeight: string;
@@ -84,11 +88,13 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
   const getStyleForLevel = (style: TypeStyle) => {
     const size = calculateFontSize(style.size);
     const isHeader = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(style.level);
+    const isCode = style.level === "code";
+    const isQuote = style.level === "quote";
 
     // Check for individual header styles
     const individualStyle = typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles];
 
-    return {
+    const baseStyle = {
       fontSize: size,
       fontWeight: individualStyle?.fontWeight || style.fontWeight,
       lineHeight: style.lineHeight,
@@ -100,6 +106,30 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
       margin: 0,
       padding: 0
     };
+
+    // Special styling for specific elements
+    if (isCode) {
+      return {
+        ...baseStyle,
+        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+        padding: '0.25rem 0.5rem',
+        borderRadius: '0.25rem',
+        border: '1px solid rgba(0, 0, 0, 0.1)'
+      };
+    }
+
+    if (isQuote) {
+      return {
+        ...baseStyle,
+        fontStyle: 'italic',
+        borderLeft: '4px solid rgba(0, 0, 0, 0.1)',
+        paddingLeft: '1rem',
+        margin: '1rem 0'
+      };
+    }
+
+    return baseStyle;
   };
 
   const sampleText = {
@@ -109,7 +139,12 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     h4: "Design is not just what it looks like",
     h5: "Simplicity is the ultimate sophistication",
     h6: "Less is more when you know what matters",
+    "body-large": "This is large body text for emphasis and important content that needs more visual weight than regular body text.",
     body: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+    "body-small": "This is small body text for secondary information, captions, and supporting details.",
+    caption: "Photo credit: Unsplash",
+    quote: "\"Design is not just what it looks like and feels like. Design is how it works.\" - Steve Jobs",
+    code: "const calculateFontSize = (step) => Math.round(baseSize * Math.pow(ratio, step))",
     small: "Additional information and fine print details"
   };
 

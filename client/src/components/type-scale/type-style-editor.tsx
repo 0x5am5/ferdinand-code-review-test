@@ -73,10 +73,21 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
     onUpdate(newTypeStyles);
   };
 
+  const getDefaultStyleForLevel = (level: string): Partial<TypeStyle> => {
+    const defaults: Record<string, Partial<TypeStyle>> = {
+      "body-large": { size: 0.5, fontWeight: "400", name: "Body Large" },
+      "body-small": { size: -0.5, fontWeight: "400", name: "Body Small" },
+      "caption": { size: -1, fontWeight: "400", name: "Caption" },
+      "quote": { size: 1, fontWeight: "400", name: "Quote", fontStyle: "italic" },
+      "code": { size: -0.5, fontWeight: "400", name: "Code" }
+    };
+    return defaults[level] || {};
+  };
+
   const addTypeStyle = () => {
     const newStyle: TypeStyle = {
-      level: `custom-${Date.now()}`,
-      name: "Custom Style",
+      level: `custom-${typeStyles.length + 1}`,
+      name: `Custom Style ${typeStyles.length + 1}`,
       size: 0,
       fontWeight: "400",
       lineHeight: 1.5,

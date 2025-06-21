@@ -39,7 +39,15 @@
     --heading-1-size: 2.5rem;
     --heading-2-size: 2rem;
     --heading-3-size: 1.5rem;
+    --heading-4-size: 1.25rem;
+    --heading-5-size: 1.125rem;
+    --heading-6-size: 1rem;
+    --body-large-size: 1.125rem;
     --body-size: 1rem;
+    --body-small-size: 0.875rem;
+    --caption-size: 0.75rem;
+    --quote-size: 1.25rem;
+    --code-size: 0.875rem;
     --line-height: 1.5;
     --heading-weight: 700;
     --body-weight: 400;
@@ -74,11 +82,74 @@
     line-height: var(--line-height);
   }
 
+  h4 {
+    @apply font-roc mb-2;
+    font-size: var(--heading-4-size);
+    font-weight: var(--heading-weight);
+    line-height: var(--line-height);
+  }
+
+  h5 {
+    @apply font-roc mb-2;
+    font-size: var(--heading-5-size);
+    font-weight: var(--heading-weight);
+    line-height: var(--line-height);
+  }
+
+  h6 {
+    @apply font-roc mb-2;
+    font-size: var(--heading-6-size);
+    font-weight: var(--heading-weight);
+    line-height: var(--line-height);
+  }
+
   p {
     @apply font-roc mb-4;
     font-size: var(--body-size);
     font-weight: var(--body-weight);
     line-height: var(--line-height);
+  }
+
+  .body-large {
+    @apply font-roc;
+    font-size: var(--body-large-size);
+    font-weight: var(--body-weight);
+    line-height: var(--line-height);
+  }
+
+  .body-small {
+    @apply font-roc;
+    font-size: var(--body-small-size);
+    font-weight: var(--body-weight);
+    line-height: var(--line-height);
+  }
+
+  .caption {
+    @apply font-roc;
+    font-size: var(--caption-size);
+    font-weight: var(--body-weight);
+    line-height: var(--line-height);
+    color: hsl(var(--muted-foreground));
+  }
+
+  .quote {
+    @apply font-roc;
+    font-size: var(--quote-size);
+    font-weight: var(--body-weight);
+    line-height: var(--line-height);
+    font-style: italic;
+    border-left: 4px solid hsl(var(--border));
+    padding-left: 1rem;
+    margin: 1rem 0;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: var(--code-size);
+    background-color: hsl(var(--muted));
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid hsl(var(--border));
   }
 }
 

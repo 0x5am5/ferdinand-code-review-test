@@ -788,3 +788,20 @@ export interface TypeScale {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export type TypographyLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | 
+                              "body-large" | "body" | "body-small" | 
+                              "caption" | "quote" | "code" | "small";
+
+export interface TypeStyle {
+  level: TypographyLevel | string;
+  name: string;
+  size: number;
+  fontWeight: string;
+  lineHeight: number;
+  letterSpacing: number;
+  color: string;
+  backgroundColor?: string;
+  textDecoration?: string;
+  fontStyle?: string;
+}

@@ -46,6 +46,37 @@ const DEFAULT_TYPE_SCALE = {
   ]
 };
 
+const createDefaultTypeScale = (): Omit<TypeScale, 'id' | 'clientId' | 'createdAt' | 'updatedAt'> => ({
+    name: "New Type Scale",
+    unit: "px",
+    baseSize: 16,
+    scaleRatio: 1250,
+    bodyFontFamily: "",
+    bodyFontWeight: "400",
+    bodyLetterSpacing: 0,
+    bodyColor: "#000000",
+    headerFontFamily: "",
+    headerFontWeight: "700",
+    headerLetterSpacing: 0,
+    headerColor: "#000000",
+    typeStyles: [
+      { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
+      { level: "h2", name: "Heading 2", size: 2, fontWeight: "700", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
+      { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+      { level: "h4", name: "Heading 4", size: 0, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+      { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+      { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+      { level: "body-large", name: "Body Large", size: 0.5, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+      { level: "body", name: "Body", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+      { level: "body-small", name: "Body Small", size: -0.5, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+      { level: "caption", name: "Caption", size: -1, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#666666" },
+      { level: "quote", name: "Quote", size: 1, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000", fontStyle: "italic" },
+      { level: "code", name: "Code", size: -0.5, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+    ],
+    individualHeaderStyles: {},
+    exports: []
+  });
+
 export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -114,7 +145,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         ? `/api/type-scales/${data.id}` 
         : `/api/clients/${clientId}/type-scales`;
       const method = data.id ? "PATCH" : "POST";
-      
+
       // Transform data to match schema expectations
       const transformedData = {
         ...data,
@@ -137,16 +168,16 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         headerFontWeight: data.headerFontWeight || "700",
         headerColor: data.headerColor || "#000000"
       };
-      
+
       console.log("Saving type scale with data:", transformedData);
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(transformedData),
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Save error response:", errorText);
@@ -259,7 +290,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     if (headerStyle) {
       const updatedHeaderStyle = { ...headerStyle };
       delete updatedHeaderStyle[property];
-      
+
       const updatedStyles = {
         ...currentIndividualStyles,
         [headerLevel]: updatedHeaderStyle
@@ -280,7 +311,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const handleNewScale = () => {
     setCurrentScale({
-      ...DEFAULT_TYPE_SCALE,
+      ...createDefaultTypeScale(),
       id: undefined,
       clientId,
       name: `Type Scale ${typeScales.length + 1}`
@@ -302,12 +333,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       let scss = `// Type Scale Variables\n`;
       scss += `$base-font-size: ${baseSize}${unit};\n`;
       scss += `$type-scale-ratio: ${ratio};\n\n`;
-      
+
       styles.forEach((style: any) => {
         const size = calculateSize(style.size);
         scss += `$${style.level}-size: ${size}${unit};\n`;
       });
-      
+
       scss += `\n// Type Scale Mixins\n`;
       styles.forEach((style: any) => {
         const size = calculateSize(style.size);
@@ -319,20 +350,20 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         scss += `  color: ${style.color};\n`;
         scss += `}\n\n`;
       });
-      
+
       return scss;
     } else {
       let css = `/* Type Scale CSS */\n`;
       css += `:root {\n`;
       css += `  --base-font-size: ${baseSize}${unit};\n`;
       css += `  --type-scale-ratio: ${ratio};\n`;
-      
+
       styles.forEach((style: any) => {
         const size = calculateSize(style.size);
         css += `  --${style.level}-size: ${size}${unit};\n`;
       });
       css += `}\n\n`;
-      
+
       styles.forEach((style: any) => {
         const size = calculateSize(style.size);
         css += `.${style.level} {\n`;
@@ -343,7 +374,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         css += `  color: ${style.color};\n`;
         css += `}\n\n`;
       });
-      
+
       return css;
     }
   };
@@ -792,7 +823,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               </div>
           </div>
         </div>
-        
+
         <div className="asset-display__preview">
           <div className="lg:col-span-3">
             <div>
