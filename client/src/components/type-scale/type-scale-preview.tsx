@@ -132,10 +132,47 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     const isQuote = style.level === "quote";
 
     // Check for individual header styles
-    const individualHeaderStyle = typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles];
+    const individualHeaderStyle = isHeader ? typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles] : null;
     
     // Check for individual body styles
-    const individualBodyStyle = typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles];
+    const individualBodyStyle = isBodyType ? typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles] : null;
+
+    // Determine base styles from type scale settings
+    const baseFontFamily = isHeader ? typeScale.headerFontFamily : typeScale.bodyFontFamily;
+    const baseFontWeight = isHeader ? typeScale.headerFontWeight : typeScale.bodyFontWeight;
+    const baseLetterSpacing = isHeader ? typeScale.headerLetterSpacing : typeScale.bodyLetterSpacing;
+    const baseColor = isHeader ? typeScale.headerColor : typeScale.bodyColor;
+
+    // Apply individual overrides
+    const finalFontFamily = individualHeaderStyle?.fontFamily || individualBodyStyle?.fontFamily || baseFontFamily || 'inherit';
+    const finalFontWeight = individualHeaderStyle?.fontWeight || individualBodyStyle?.fontWeight || baseFontWeight || '400';
+    const finalLetterSpacing = individualHeaderStyle?.letterSpacing !== undefined ? individualHeaderStyle.letterSpacing : 
+                               individualBodyStyle?.letterSpacing !== undefined ? individualBodyStyle.letterSpacing : 
+                               baseLetterSpacing || 0;
+    const finalColor = individualHeaderStyle?.color || individualBodyStyle?.color || baseColor || '#000000';
+
+    return {
+      fontSize: size,
+      fontFamily: finalFontFamily,
+      fontWeight: finalFontWeight,
+      letterSpacing: `${finalLetterSpacing}em`,
+      color: finalColor,
+      lineHeight: style.lineHeight,
+      ...(isCode && {
+        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+        padding: '0.25rem 0.5rem',
+        borderRadius: '0.25rem',
+        border: '1px solid rgba(0, 0, 0, 0.1)',
+      }),
+      ...(isQuote && {
+        fontStyle: 'italic',
+        borderLeft: '4px solid rgba(0, 0, 0, 0.1)',
+        paddingLeft: '1rem',
+        margin: '1rem 0',
+      }),
+    };
+  };
 
     const baseStyle = {
       fontSize: size,

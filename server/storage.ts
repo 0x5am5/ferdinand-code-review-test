@@ -12,7 +12,7 @@ import {
   convertedAssets, hiddenSections, typeScales, figmaConnections, figmaSyncLogs, figmaDesignTokens, UserRole
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, asc, inArray, and } from "drizzle-orm";
+import { eq, asc, inArray, and, desc } from "drizzle-orm";
 import * as crypto from "crypto";
 
 export interface IStorage {
@@ -508,7 +508,17 @@ export class DatabaseStorage implements IStorage {
   async createTypeScale(insertTypeScale: InsertTypeScale): Promise<TypeScale> {
     const [typeScale] = await db
       .insert(typeScales)
-      .values(insertTypeScale)
+      .values({
+          clientId: insertTypeScale.clientId,
+          name: insertTypeScale.name,
+          description: insertTypeScale.description,
+          baseFontSize: insertTypeScale.baseFontSize,
+          bodyFontFamily: insertTypeScale.bodyFontFamily,
+          headerFontFamily: insertTypeScale.headerFontFamily,
+          typeStyles: JSON.stringify(insertTypeScale.typeStyles),
+          individualHeaderStyles: JSON.stringify(insertTypeScale.individualHeaderStyles || {}),
+          individualBodyStyles: JSON.stringify(insertTypeScale.individualBodyStyles || {}),
+      })
       .returning();
     return typeScale;
   }
@@ -516,7 +526,16 @@ export class DatabaseStorage implements IStorage {
   async updateTypeScale(id: number, updateTypeScale: Partial<InsertTypeScale>): Promise<TypeScale> {
     const [typeScale] = await db
       .update(typeScales)
-      .set({ ...updateTypeScale, updatedAt: new Date() })
+      .set({
+          name: updateTypeScale.name,
+          description: updateTypeScale.description,
+          baseFontSize: updateTypeScale.baseFontSize,
+          bodyFontFamily: updateTypeScale.bodyFontFamily,
+          headerFontFamily: updateTypeScale.headerFontFamily,
+          typeStyles: JSON.stringify(updateTypeScale.typeStyles),
+          individualHeaderStyles: JSON.stringify(updateTypeScale.individualHeaderStyles || {}),
+          individualBodyStyles: JSON.stringify(updateTypeScale.individualBodyStyles || {}),
+      })
       .where(eq(typeScales.id, id))
       .returning();
     return typeScale;

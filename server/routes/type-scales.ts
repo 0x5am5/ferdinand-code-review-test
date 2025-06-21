@@ -70,8 +70,24 @@ export function registerTypeScalesRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid client ID" });
       }
 
+      // Create extended validation schema that accepts individual styles
+      const extendedSchema = insertTypeScaleSchema.extend({
+        individualHeaderStyles: z.record(z.string(), z.object({
+          fontFamily: z.string().optional(),
+          fontWeight: z.string().optional(),
+          letterSpacing: z.number().optional(),
+          color: z.string().optional(),
+        })).optional(),
+        individualBodyStyles: z.record(z.string(), z.object({
+          fontFamily: z.string().optional(),
+          fontWeight: z.string().optional(),
+          letterSpacing: z.number().optional(),
+          color: z.string().optional(),
+        })).optional(),
+      });
+
       // Validate the request body
-      const validationResult = insertTypeScaleSchema.safeParse({
+      const validationResult = extendedSchema.safeParse({
         ...req.body,
         clientId
       });
@@ -106,8 +122,22 @@ export function registerTypeScalesRoutes(app: Express) {
         return res.status(404).json({ error: "Type scale not found" });
       }
 
-      // Validate the update data
-      const updateSchema = insertTypeScaleSchema.partial().omit({ clientId: true });
+      // Create extended update validation schema
+      const updateSchema = insertTypeScaleSchema.extend({
+        individualHeaderStyles: z.record(z.string(), z.object({
+          fontFamily: z.string().optional(),
+          fontWeight: z.string().optional(),
+          letterSpacing: z.number().optional(),
+          color: z.string().optional(),
+        })).optional(),
+        individualBodyStyles: z.record(z.string(), z.object({
+          fontFamily: z.string().optional(),
+          fontWeight: z.string().optional(),
+          letterSpacing: z.number().optional(),
+          color: z.string().optional(),
+        })).optional(),
+      }).partial().omit({ clientId: true });
+      
       const validationResult = updateSchema.safeParse(req.body);
 
       if (!validationResult.success) {
