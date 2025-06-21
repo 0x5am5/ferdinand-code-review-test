@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,6 +154,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const [activeBodyCustomizations, setActiveBodyCustomizations] = useState<Set<string>>(
     new Set(Object.keys(activeScale.individualBodyStyles || {}))
   );
+
+  // Update active customizations when activeScale changes (e.g., on page refresh)
+  useEffect(() => {
+    setActiveHeaderCustomizations(new Set(Object.keys(activeScale.individualHeaderStyles || {})));
+    setActiveBodyCustomizations(new Set(Object.keys(activeScale.individualBodyStyles || {})));
+  }, [activeScale.individualHeaderStyles, activeScale.individualBodyStyles]);
 
   const saveTypeScaleMutation = useMutation({
     mutationFn: async (data: any) => {
