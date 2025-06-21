@@ -1,0 +1,78 @@
+PRD: Custom Body Type Styles Section
+Problem Statement
+Currently, the Type Scale Manager allows for custom styling of header elements (H1-H6) through an individual customization system with toggle chips. However, the body type styles (body, body-large, body-small, code, caption, quote) lack this same level of granular customization, limiting design flexibility for typography hierarchies.
+
+Goals
+Extend Customization Parity: Provide the same level of individual styling control for body type elements that currently exists for headers
+Maintain Design Consistency: Follow the existing UI/UX patterns established by the header customization section
+Preserve Type Hierarchy: Ensure custom body styles work harmoniously with the existing type scale system
+Schema Compatibility: Extend the current data structure to support body type customizations
+Success Criteria
+Users can click toggle chips to activate custom styling for any of the 6 body type elements
+Each activated body type shows an individual customization panel similar to headers
+Custom styles override default body type styles while maintaining inheritance fallbacks
+Changes are persisted to the database and reflected in real-time preview
+CSS/SCSS export includes custom body type styles
+Technical Requirements
+1. Schema Updates
+Extend IndividualHeaderStyle interface to IndividualTypeStyle (or create separate interface)
+Add individualBodyStyles property to TypeScale interface with keys for:
+body
+body-large
+body-small
+code
+caption
+quote
+2. UI Components
+Add "Custom Body Styling" section below existing "Custom Header Styling"
+Implement toggle chips for body type elements matching header chip design
+Create individual customization panels for each body type with same controls as headers:
+Font Family (dropdown from brand fonts)
+Font Weight (dropdown)
+Letter Spacing (number input)
+Color (color picker)
+Reset buttons for each property
+3. State Management
+Extend activeHeaderCustomizations pattern with activeBodyCustomizations state
+Add functions similar to existing header customization:
+toggleBodyCustomization(bodyLevel: string)
+updateIndividualBodyStyle(bodyLevel: string, styleUpdates)
+resetIndividualBodyStyle(bodyLevel: string, property)
+4. Preview Integration
+Update TypeScalePreview component to apply individual body styles
+Modify getStyleForLevel function to check for body-specific overrides
+Ensure proper fallback hierarchy: individual → body defaults → global defaults
+5. Export Functionality
+Update CSS/SCSS export generation to include custom body styles
+Modify generateCodePreview function to output body-specific custom variables and classes
+Implementation Priority
+High Priority: Schema updates and database migrations
+High Priority: UI toggle chips and basic state management
+Medium Priority: Individual customization panels
+Medium Priority: Preview integration and real-time updates
+Low Priority: Export functionality updates
+User Experience Flow
+User navigates to Type Scale Manager
+User scrolls to "Body Type Styles" section
+User sees new "Custom Body Styling" subsection with 6 toggle chips
+User clicks a chip (e.g., "BODY LARGE") to activate customization
+Customization panel appears with font controls and reset options
+Changes reflect immediately in preview pane
+User can save changes and export updated CSS/SCSS
+Dependencies
+Existing header customization system as template
+Current TypeScale and IndividualHeaderStyle interfaces
+Brand font assets for dropdown population
+Type scale preview and export systems
+Risk Considerations
+Data Migration: Existing type scales need migration path for new schema
+Performance: Additional style calculations may impact preview rendering
+Complexity: UI may become cluttered with too many customization options
+Consistency: Need to ensure body customizations don't conflict with header styles
+Acceptance Criteria
+ Body type elements can be individually customized with same controls as headers
+ Custom body styles persist across sessions
+ Preview accurately reflects all custom body styles
+ Export includes custom body type CSS/SCSS
+ UI follows existing design patterns and remains intuitive
+ No breaking changes to existing header customization functionality
