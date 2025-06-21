@@ -1311,7 +1311,7 @@ function ColorSection({
           <AnimatePresence>
             {colors.map((color) => (
               <ColorChip
-                key={`${color.hex}-${color.id || Math.random()}`}
+                key={color.id || `color-${color.hex}-${color.name}`}
                 color={color}
                 onEdit={() => onEditColor(color)}
                 onDelete={() => color.id && deleteColor(color.id)}
