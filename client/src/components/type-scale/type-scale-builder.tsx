@@ -76,8 +76,12 @@ const DEFAULT_TYPE_STYLES: TypeStyle[] = [
   { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
   { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
   { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-  { level: "body", name: "Body Text", size: -3, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-  { level: "small", name: "Small Text", size: -4, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+  { level: "body-large", name: "Body Large", size: 0.5, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+  { level: "body", name: "Body Text", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+  { level: "body-small", name: "Body Small", size: -0.5, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
+  { level: "caption", name: "Caption", size: -1, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#666666" },
+  { level: "quote", name: "Quote", size: 1, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
+  { level: "code", name: "Code", size: -0.5, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#000000" }
 ];
 
 interface TypeScaleBuilderProps {
