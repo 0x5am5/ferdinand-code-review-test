@@ -463,21 +463,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            {activeScale.id && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleteTypeScaleMutation.isPending}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            )}
-            <Button onClick={handleNewScale}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Scale
-            </Button>
+            {/* Delete and New Scale buttons temporarily removed */}
           </div>
         </div>
       </div>
