@@ -479,22 +479,23 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         
         {/* Fixed Save Button */}
         {isEditing && (
-          <div className="fixed bottom-4 left-4 right-1/2 z-50 flex justify-center">
-            <div className="bg-background border rounded-lg shadow-lg p-2">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg p-4">
+            <div className="max-w-7xl mx-auto flex justify-center">
               <Button
                 onClick={handleSave}
                 disabled={saveTypeScaleMutation.isPending}
-                className="w-full min-w-[120px]"
+                className="min-w-[160px] h-12 text-base font-medium"
+                size="lg"
               >
                 {saveTypeScaleMutation.isPending ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Changes
+                    <Save className="mr-2 h-5 w-5" />
+                    SAVE CHANGES
                   </>
                 )}
               </Button>
