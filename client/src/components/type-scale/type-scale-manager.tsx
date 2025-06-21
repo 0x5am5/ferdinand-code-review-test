@@ -449,6 +449,33 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     }
   };
 
+  // Apply individual styles when they change
+  const { individualHeaderStyles, individualBodyStyles } = activeScale;
+  
+  useEffect(() => {
+    if (individualHeaderStyles) {
+      Object.entries(individualHeaderStyles).forEach(([level, styles]) => {
+        updateHeaderStyle(level as any, styles);
+      });
+    }
+  }, [individualHeaderStyles]);
+
+  useEffect(() => {
+    if (individualBodyStyles) {
+      Object.entries(individualBodyStyles).forEach(([level, styles]) => {
+        updateBodyStyle(level as any, styles);
+      });
+    }
+  }, [individualBodyStyles]);
+
+  const updateHeaderStyle = (level: string, styles: any) => {
+    // Implementation for updating header styles
+  };
+
+  const updateBodyStyle = (level: string, styles: any) => {
+    // Implementation for updating body styles
+  };
+
   if (isLoading) {
     return <div>Loading type scales...</div>;
   }
@@ -471,9 +498,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 <p className="mb-8">
                   Create and manage consistent typography scales for your brand.
                 </p>
-                
+
                 <h4 className="text-base font-semibold mb-4">Scale Settings</h4>
-                
+
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="scale-name">Scale Name</Label>
@@ -846,7 +873,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               placeholder={`Inherits: ${(() => {
                                 const baseSize = activeScale.baseSize || 16;
                                 let size: number;
-                                
+
                                 switch(bodyLevel) {
                                   case 'body-large': size = baseSize * 1.125; break;
                                   case 'body': size = baseSize; break;
@@ -856,7 +883,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   case 'code': size = baseSize * 0.875; break;
                                   default: size = baseSize;
                                 }
-                                
+
                                 return `${Math.round(size * 100) / 100}px`;
                               })()}`}
                             />
@@ -1151,7 +1178,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 const baseSize = activeScale.baseSize || 16;
                                 const ratio = (activeScale.scaleRatio || 1250) / 1000;
                                 let size: number;
-                                
+
                                 switch(headerLevel) {
                                   case 'h6': size = baseSize * 0.8; break;
                                   case 'h5': size = baseSize; break;
@@ -1161,7 +1188,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   case 'h1': size = baseSize * ratio * ratio * ratio * ratio; break;
                                   default: size = baseSize;
                                 }
-                                
+
                                 return `${Math.round(size * 100) / 100}px`;
                               })()}`}
                             />
