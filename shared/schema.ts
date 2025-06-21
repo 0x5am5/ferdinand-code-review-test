@@ -6,6 +6,7 @@ import {
   json,
   timestamp,
   boolean,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -286,6 +287,8 @@ export const typeScales = pgTable("type_scales", {
   exports: json("exports").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  individual_header_styles: jsonb("individual_header_styles").default('{}'),
+  individual_body_styles: jsonb("individual_body_styles").default('{}'),
 });
 
 // Figma Integration Tables
@@ -752,7 +755,13 @@ export interface IndividualHeaderStyle {
   fontWeight?: string;
   letterSpacing?: number;
   color?: string;
-  sizeOverride?: number; // Optional deviation from calculated scale size
+}
+
+export interface IndividualBodyStyle {
+  fontFamily?: string;
+  fontWeight?: string;
+  letterSpacing?: number;
+  color?: string;
 }
 
 export interface TypeScale {
@@ -778,6 +787,15 @@ export interface TypeScale {
     h4?: IndividualHeaderStyle;
     h5?: IndividualHeaderStyle;
     h6?: IndividualHeaderStyle;
+  };
+  individualBodyStyles?: {
+    "body-large"?: IndividualBodyStyle;
+    "body"?: IndividualBodyStyle;
+    "body-small"?: IndividualBodyStyle;
+    "caption"?: IndividualBodyStyle;
+    "quote"?: IndividualBodyStyle;
+    "code"?: IndividualBodyStyle;
+    "small"?: IndividualBodyStyle;
   };
   responsiveSizes?: {
     mobile: { baseSize: number; scaleRatio: number };
@@ -805,3 +823,22 @@ export interface TypeStyle {
   textDecoration?: string;
   fontStyle?: string;
 }
+const individualHeaderStyleSchema = z.object({
+  fontFamily: z.string().optional(),
+  fontWeight: z.string().optional(),
+  letterSpacing: z.number().optional(),
+  color: z.string().optional(),
+});
+
+const individualBodyStyleSchema = z.object({
+  fontFamily: z.string().optional(),
+  fontWeight: z.string().optional(),
+  letterSpacing: z.number().optional(),
+  color: z.string().optional(),
+});
+
+export const insertTypeScaleSchemaExtended = insertTypeScaleSchema.extend({
+  individualHeaderStyles: z.record(z.string(), individualHeaderStyleSchema).optional(),
+  individualBodyStyles: z.record(z.string(), individualBodyStyleSchema).optional(),
+  exports: z.array(z.string()).optional(),
+});

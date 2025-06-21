@@ -635,3 +635,65 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+// Raw SQL query example:
+// const typeScales = await db.execute(sql`SELECT * from type_scales WHERE client_id = ${clientId}`);
+
+import { type TypeScale as TypeScaleSchema } from "@shared/schema";
+
+// Map database row to TypeScale schema
+export const mapTypeScale = (row: any): TypeScaleSchema => {
+  return {
+      id: row.id,
+      clientId: row.client_id,
+      name: row.name,
+      description: row.description,
+      baseFontSize: row.base_font_size,
+      bodyFontFamily: row.body_font_family,
+      headerFontFamily: row.header_font_family,
+      typeStyles: row.type_styles ? JSON.parse(row.type_styles) : [],
+      individualHeaderStyles: row.individual_header_styles ? JSON.parse(row.individual_header_styles) : {},
+      individualBodyStyles: row.individual_body_styles ? JSON.parse(row.individual_body_styles) : {},
+      exports: row.exports ? JSON.parse(row.exports) : [],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+  };
+};
+
+// Storage function to create a TypeScale
+export const createTypeScaleStorage = async (typeScale: Omit<TypeScaleSchema, 'id' | 'createdAt' | 'updatedAt'>): Promise<TypeScaleSchema> => {
+  const [newTypeScale] = await db.insert(typeScales).values({
+      clientId: typeScale.clientId,
+      name: typeScale.name,
+      description: typeScale.description,
+      baseFontSize: typeScale.baseFontSize,
+      bodyFontFamily: typeScale.bodyFontFamily,
+      headerFontFamily: typeScale.headerFontFamily,
+      typeStyles: JSON.stringify(typeScale.typeStyles),
+      individualHeaderStyles: JSON.stringify(typeScale.individualHeaderStyles || {}),
+      individualBodyStyles: JSON.stringify(typeScale.individualBodyStyles || {}),
+  }).returning();
+
+  return mapTypeScale(newTypeScale);
+};
+
+// Storage function to update a TypeScale
+export const updateTypeScaleStorage = async (id: number, data: Partial<Omit<TypeScaleSchema, 'id' | 'createdAt' | 'updatedAt' | 'clientId'>>): Promise<TypeScaleSchema> => {
+  const [updatedTypeScale] = await db
+      .update(typeScales)
+      .set({
+          ...(data.name && { name: data.name }),
+          ...(data.description && { description: data.description }),
+          ...(data.baseFontSize && { base_font_size: data.baseFontSize }),
+          ...(data.bodyFontFamily && { body_font_family: data.bodyFontFamily }),
+          ...(data.headerFontFamily && { header_font_family: data.headerFontFamily }),
+          ...(data.typeStyles && { type_styles: JSON.stringify(data.typeStyles) }),
+          ...(data.individualHeaderStyles && { individual_header_styles: JSON.stringify(data.individualHeaderStyles) }),
+          ...(data.individualBodyStyles && { individual_body_styles: JSON.stringify(data.individualBodyStyles) }),
+          ...(data.exports && { exports: JSON.stringify(data.exports) }),
+      })
+      .where(eq(typeScales.id, id))
+      .returning();
+
+  return mapTypeScale(updatedTypeScale);
+};

@@ -148,7 +148,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     small: "Additional information and fine print details"
   };
 
-  
+
 
   return (
     <div className="space-y-6">

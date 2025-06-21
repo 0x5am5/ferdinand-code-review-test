@@ -139,13 +139,13 @@ interface DesignSystem {
 // Semantic token generation functions
 function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
   const { typography, colors, spacing, borders } = rawTokens;
-  
+
   // Generate typography semantic tokens
   const typographyTokens = {
     fontFamilyHeading: typography.fontFamily1Base,
     fontFamilyBody: typography.fontFamily2Base,
     fontFamilyCode: typography.fontFamilyMonoBase,
-    
+
     fontSizeH1: `${typography.fontSizeBase * Math.pow(typography.typeScaleBase, 3)}rem`,
     fontSizeH2: `${typography.fontSizeBase * Math.pow(typography.typeScaleBase, 2)}rem`,
     fontSizeH3: `${typography.fontSizeBase * typography.typeScaleBase}rem`,
@@ -155,56 +155,56 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     fontSizeBody: `${typography.fontSizeBase}rem`,
     fontSizeCaption: `${typography.fontSizeBase / Math.pow(typography.typeScaleBase, 2)}rem`,
     fontSizeCode: `${typography.fontSizeBase / typography.typeScaleBase}rem`,
-    
+
     lineHeightHeading: typography.lineHeightBase * 1.2,
     lineHeightBody: typography.lineHeightBase,
     lineHeightCaption: typography.lineHeightBase * 0.9,
     lineHeightCode: typography.lineHeightBase * 0.9,
-    
+
     fontWeightHeading: 700,
     fontWeightBody: 400,
     fontWeightCaption: 500,
     fontWeightCode: 400,
-    
+
     letterSpacingHeading: typography.letterSpacingBase * 0.8,
     letterSpacingBody: typography.letterSpacingBase,
     letterSpacingCaption: typography.letterSpacingBase * 1.2,
     letterSpacingCode: typography.letterSpacingBase,
   };
-  
+
   // Generate neutral color scale (11 shades)
   const neutralScale = generateNeutralScale(colors.neutralBase);
-  
+
   // Generate brand color variations
   const brandPrimaryVariations = generateColorVariations(colors.brandPrimaryBase);
   const brandSecondaryVariations = generateColorVariations(colors.brandSecondaryBase);
-  
+
   // Generate interactive color variations
   const successVariations = generateColorVariations(colors.interactiveSuccessBase);
   const warningVariations = generateColorVariations(colors.interactiveWarningBase);
   const errorVariations = generateColorVariations(colors.interactiveErrorBase);
   const infoVariations = generateColorVariations(colors.interactiveInfoBase);
-  
+
   const colorTokens = {
     // Neutral scale
     neutral0: neutralScale[0], neutral1: neutralScale[1], neutral2: neutralScale[2], 
     neutral3: neutralScale[3], neutral4: neutralScale[4], neutral5: neutralScale[5],
     neutral6: neutralScale[6], neutral7: neutralScale[7], neutral8: neutralScale[8], 
     neutral9: neutralScale[9], neutral10: neutralScale[10],
-    
+
     // Brand variations
     brandPrimaryXLight: brandPrimaryVariations.xLight,
     brandPrimaryLight: brandPrimaryVariations.light,
     brandPrimary: colors.brandPrimaryBase,
     brandPrimaryDark: brandPrimaryVariations.dark,
     brandPrimaryXDark: brandPrimaryVariations.xDark,
-    
+
     brandSecondaryXLight: brandSecondaryVariations.xLight,
     brandSecondaryLight: brandSecondaryVariations.light,
     brandSecondary: colors.brandSecondaryBase,
     brandSecondaryDark: brandSecondaryVariations.dark,
     brandSecondaryXDark: brandSecondaryVariations.xDark,
-    
+
     // Interactive variations
     successLight: successVariations.light,
     successDark: successVariations.dark,
@@ -214,7 +214,7 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     errorDark: errorVariations.dark,
     infoLight: infoVariations.light,
     infoDark: infoVariations.dark,
-    
+
     // Semantic color mappings
     textHeading: colors.brandSecondaryBase,
     textBody: neutralScale[9],
@@ -224,25 +224,25 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     textLinkHover: brandPrimaryVariations.dark,
     textError: errorVariations.dark,
     textSuccess: successVariations.dark,
-    
+
     backgroundPage: neutralScale[0],
     backgroundSurface: neutralScale[1],
     backgroundMuted: neutralScale[2],
     backgroundOverlay: 'rgba(0, 0, 0, 0.6)',
     backgroundInverted: brandPrimaryVariations.dark,
-    
+
     borderDefault: 'rgba(0, 0, 0, 0.1)',
     borderMuted: neutralScale[3],
     borderActive: colors.brandPrimaryBase,
     borderError: errorVariations.dark,
     borderSuccess: successVariations.dark,
-    
+
     buttonPrimaryBg: colors.brandPrimaryBase,
     buttonPrimaryText: '#ffffff',
     buttonSecondaryBg: neutralScale[2],
     buttonSecondaryText: colors.brandSecondaryBase,
   };
-  
+
   // Generate spacing semantic tokens
   const spacingTokens = {
     xs: `${spacing.spacingUnitBase / Math.pow(spacing.spacingScaleBase, 2)}rem`,
@@ -253,7 +253,7 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     xxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 3)}rem`,
     xxxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 4)}rem`,
     xxxxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 5)}rem`,
-    
+
     // Semantic spacing
     paddingBody: `${spacing.spacingUnitBase}rem`,
     paddingSection: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 2)}rem`,
@@ -263,7 +263,7 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     marginParagraph: `${spacing.spacingUnitBase}rem 0`,
     gapUI: `${spacing.spacingUnitBase / spacing.spacingScaleBase}rem`,
   };
-  
+
   // Generate border semantic tokens
   const borderTokens = {
     radiusXs: `${borders.borderRadiusBase * 0.25}px`,
@@ -271,7 +271,7 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     radiusM: `${borders.borderRadiusBase}px`,
     radiusL: `${borders.borderRadiusBase * 1.5}px`,
     radiusXl: `${borders.borderRadiusBase * 2}px`,
-    
+
     // Semantic borders
     input: `${borders.borderWidthBase}px solid rgba(0, 0, 0, 0.1)`,
     button: `${borders.borderWidthBase}px solid rgba(0, 0, 0, 0.1)`,
@@ -280,7 +280,7 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     radiusInput: `${borders.borderRadiusBase * 0.5}px`,
     radiusCard: `${borders.borderRadiusBase}px`,
   };
-  
+
   // Generate shadow tokens
   const shadowTokens = {
     elevation0: 'none',
@@ -289,20 +289,20 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     elevation3: '0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)',
     elevation4: '0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)',
     elevation5: '0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)',
-    
+
     // Semantic shadows
     elevationCard: '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)',
     elevationModal: '0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)',
     elevationButtonHover: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
   };
-  
+
   // Generate transition tokens
   const transitionTokens = {
     ui: 'all 200ms ease-in-out',
     button: 'background-color 200ms ease-in-out',
     input: 'border-color 200ms ease-in-out',
   };
-  
+
   return {
     typography: typographyTokens,
     colors: colorTokens,
@@ -324,18 +324,18 @@ function generateNeutralScale(neutralBase: string): string[] {
         '#adb5bd', '#6c757d', '#495057', '#343a40', '#212529', '#000000'
       ];
     }
-    
+
     const [, h, s, l] = hslMatch;
     const hue = parseInt(h);
     const saturation = parseInt(s);
-    
+
     // Generate 11 shades from light to dark
     const shades = [];
     for (let i = 0; i <= 10; i++) {
       const lightness = 100 - (i * 10); // 100%, 90%, 80%, ..., 0%
       shades.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
     }
-    
+
     return shades;
   } catch (error) {
     console.error('Error generating neutral scale:', error);
@@ -738,7 +738,7 @@ export function registerDesignSystemRoutes(app: Express) {
   app.get("/api/design-system/export/css/:clientId", async (req, res) => {
     try {
       const { clientId } = req.params;
-      
+
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -802,7 +802,7 @@ export function registerDesignSystemRoutes(app: Express) {
   --font-family-heading: ${semanticTokens.typography.fontFamilyHeading};
   --font-family-body: ${semanticTokens.typography.fontFamilyBody};
   --font-family-code: ${semanticTokens.typography.fontFamilyCode};
-  
+
   --font-size-h1: ${semanticTokens.typography.fontSizeH1};
   --font-size-h2: ${semanticTokens.typography.fontSizeH2};
   --font-size-h3: ${semanticTokens.typography.fontSizeH3};
@@ -812,17 +812,17 @@ export function registerDesignSystemRoutes(app: Express) {
   --font-size-body: ${semanticTokens.typography.fontSizeBody};
   --font-size-caption: ${semanticTokens.typography.fontSizeCaption};
   --font-size-code: ${semanticTokens.typography.fontSizeCode};
-  
+
   --line-height-heading: ${semanticTokens.typography.lineHeightHeading};
   --line-height-body: ${semanticTokens.typography.lineHeightBody};
   --line-height-caption: ${semanticTokens.typography.lineHeightCaption};
   --line-height-code: ${semanticTokens.typography.lineHeightCode};
-  
+
   --font-weight-heading: ${semanticTokens.typography.fontWeightHeading};
   --font-weight-body: ${semanticTokens.typography.fontWeightBody};
   --font-weight-caption: ${semanticTokens.typography.fontWeightCaption};
   --font-weight-code: ${semanticTokens.typography.fontWeightCode};
-  
+
   --letter-spacing-heading: ${semanticTokens.typography.letterSpacingHeading}em;
   --letter-spacing-body: ${semanticTokens.typography.letterSpacingBody}em;
   --letter-spacing-caption: ${semanticTokens.typography.letterSpacingCaption}em;
@@ -840,20 +840,20 @@ export function registerDesignSystemRoutes(app: Express) {
   --color-neutral-8: ${semanticTokens.colors.neutral8};
   --color-neutral-9: ${semanticTokens.colors.neutral9};
   --color-neutral-10: ${semanticTokens.colors.neutral10};
-  
+
   /* Semantic Tokens - Brand Colors */
   --color-brand-primary-x-light: ${semanticTokens.colors.brandPrimaryXLight};
   --color-brand-primary-light: ${semanticTokens.colors.brandPrimaryLight};
   --color-brand-primary: ${semanticTokens.colors.brandPrimary};
   --color-brand-primary-dark: ${semanticTokens.colors.brandPrimaryDark};
   --color-brand-primary-x-dark: ${semanticTokens.colors.brandPrimaryXDark};
-  
+
   --color-brand-secondary-x-light: ${semanticTokens.colors.brandSecondaryXLight};
   --color-brand-secondary-light: ${semanticTokens.colors.brandSecondaryLight};
   --color-brand-secondary: ${semanticTokens.colors.brandSecondary};
   --color-brand-secondary-dark: ${semanticTokens.colors.brandSecondaryDark};
   --color-brand-secondary-x-dark: ${semanticTokens.colors.brandSecondaryXDark};
-  
+
   /* Semantic Tokens - Interactive Colors */
   --color-success-light: ${semanticTokens.colors.successLight};
   --color-success-dark: ${semanticTokens.colors.successDark};
@@ -863,7 +863,7 @@ export function registerDesignSystemRoutes(app: Express) {
   --color-error-dark: ${semanticTokens.colors.errorDark};
   --color-info-light: ${semanticTokens.colors.infoLight};
   --color-info-dark: ${semanticTokens.colors.infoDark};
-  
+
   /* Semantic Tokens - Text Colors */
   --color-text-heading: ${semanticTokens.colors.textHeading};
   --color-text-body: ${semanticTokens.colors.textBody};
@@ -873,21 +873,21 @@ export function registerDesignSystemRoutes(app: Express) {
   --color-text-link-hover: ${semanticTokens.colors.textLinkHover};
   --color-text-error: ${semanticTokens.colors.textError};
   --color-text-success: ${semanticTokens.colors.textSuccess};
-  
+
   /* Semantic Tokens - Background Colors */
   --color-background-page: ${semanticTokens.colors.backgroundPage};
   --color-background-surface: ${semanticTokens.colors.backgroundSurface};
   --color-background-muted: ${semanticTokens.colors.backgroundMuted};
   --color-background-overlay: ${semanticTokens.colors.backgroundOverlay};
   --color-background-inverted: ${semanticTokens.colors.backgroundInverted};
-  
+
   /* Semantic Tokens - Border Colors */
   --color-border-default: ${semanticTokens.colors.borderDefault};
   --color-border-muted: ${semanticTokens.colors.borderMuted};
   --color-border-active: ${semanticTokens.colors.borderActive};
   --color-border-error: ${semanticTokens.colors.borderError};
   --color-border-success: ${semanticTokens.colors.borderSuccess};
-  
+
   /* Semantic Tokens - Button Colors */
   --color-button-primary-bg: ${semanticTokens.colors.buttonPrimaryBg};
   --color-button-primary-text: ${semanticTokens.colors.buttonPrimaryText};
@@ -903,17 +903,17 @@ export function registerDesignSystemRoutes(app: Express) {
   --spacing-xxl: ${semanticTokens.spacing.xxl};
   --spacing-xxxl: ${semanticTokens.spacing.xxxl};
   --spacing-xxxxl: ${semanticTokens.spacing.xxxxl};
-  
+
   /* Semantic Tokens - Padding */
   --padding-body: ${semanticTokens.spacing.paddingBody};
   --padding-section: ${semanticTokens.spacing.paddingSection};
   --padding-card: ${semanticTokens.spacing.paddingCard};
   --padding-button: ${semanticTokens.spacing.paddingButton};
-  
+
   /* Semantic Tokens - Margin */
   --margin-heading: ${semanticTokens.spacing.marginHeading};
   --margin-paragraph: ${semanticTokens.spacing.marginParagraph};
-  
+
   /* Semantic Tokens - Gap */
   --gap-ui: ${semanticTokens.spacing.gapUI};
 
@@ -923,7 +923,7 @@ export function registerDesignSystemRoutes(app: Express) {
   --border-radius-m: ${semanticTokens.borders.radiusM};
   --border-radius-l: ${semanticTokens.borders.radiusL};
   --border-radius-xl: ${semanticTokens.borders.radiusXl};
-  
+
   /* Semantic Tokens - Component Border Radius */
   --border-radius-button: ${semanticTokens.borders.radiusButton};
   --border-radius-input: ${semanticTokens.borders.radiusInput};
@@ -936,7 +936,7 @@ export function registerDesignSystemRoutes(app: Express) {
   --shadow-elevation-3: ${semanticTokens.shadows.elevation3};
   --shadow-elevation-4: ${semanticTokens.shadows.elevation4};
   --shadow-elevation-5: ${semanticTokens.shadows.elevation5};
-  
+
   /* Semantic Tokens - Component Shadows */
   --shadow-card: ${semanticTokens.shadows.elevationCard};
   --shadow-modal: ${semanticTokens.shadows.elevationModal};
@@ -1142,7 +1142,7 @@ a:hover {
   app.get("/api/design-system/export/scss/:clientId", async (req, res) => {
     try {
       const { clientId } = req.params;
-      
+
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -1386,7 +1386,7 @@ $transition-input: ${semanticTokens.transitions.input};
   @include button-style;
   background-color: $color-button-primary-bg;
   color: $color-button-primary-text;
-  
+
   &:hover {
     box-shadow: $shadow-button-hover;
   }
@@ -1408,7 +1408,7 @@ $transition-input: ${semanticTokens.transitions.input};
   background-color: $color-background-surface;
   color: $color-text-body;
   transition: $transition-input;
-  
+
   &:focus {
     outline: none;
     border-color: $color-border-active;
@@ -1474,11 +1474,11 @@ $brand-secondary-colors: (
     }
   });
 
-  // Export design system as comprehensive Tailwind config with semantic tokens
+  // Export design system as comprehensive Tailwind config with semantic config with semantic tokens
   app.get("/api/design-system/export/tailwind/:clientId", async (req, res) => {
     try {
       const { clientId } = req.params;
-      
+
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }

@@ -134,20 +134,21 @@ async function migrateFigmaTables() {
 }
 
 async function migrateIndividualHeaderStyles() {
-  try {
-    await db.execute(sql`
-      ALTER TABLE type_scales 
-      ADD COLUMN IF NOT EXISTS individual_header_styles jsonb DEFAULT '{}'::jsonb
-    `);
-    console.log("✓ individual_header_styles column ensured");
-  } catch (error: any) {
-    if (error.code === '42701') {
-      console.log("individual_header_styles column already exists.");
-    } else {
-      console.error("Error adding individual_header_styles column:", error);
-      throw error;
-    }
-  }
+  // Ensure individual_header_styles column exists
+  await db.execute(sql`
+    ALTER TABLE type_scales 
+    ADD COLUMN IF NOT EXISTS individual_header_styles JSONB DEFAULT '{}'::jsonb
+  `);
+
+  console.log("✓ individual_header_styles column ensured");
+
+  // Ensure individual_body_styles column exists
+  await db.execute(sql`
+    ALTER TABLE type_scales 
+    ADD COLUMN IF NOT EXISTS individual_body_styles JSONB DEFAULT '{}'::jsonb
+  `);
+
+  console.log("✓ individual_body_styles column ensured");
 }
 
 async function migrateTypeScaleHierarchy() {

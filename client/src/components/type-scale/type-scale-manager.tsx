@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Save, Download, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TypeScalePreview } from "./type-scale-preview";
-import type { TypeScale, IndividualHeaderStyle } from "@shared/schema";
+import type { TypeScale, IndividualHeaderStyle, IndividualBodyStyle } from "@shared/schema";
 
 interface TypeScaleManagerProps {
   clientId: number;
@@ -82,7 +82,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const queryClient = useQueryClient();
   const [currentScale, setCurrentScale] = useState<TypeScale | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [activeHeaderCustomizations, setActiveHeaderCustomizations] = useState<Set<string>>(new Set());
+  const [activeHeaderCustomizations, setActiveHeaderCustomizations] = useState<Set<string>>(
+    new Set(Object.keys(activeScale.individualHeaderStyles || {}))
+  );
+
+  const [activeBodyCustomizations, setActiveBodyCustomizations] = useState<Set<string>>(
+    new Set(Object.keys(activeScale.individualBodyStyles || {}))
+  );
 
   const { data: typeScales = [], isLoading } = useQuery({
     queryKey: ["/api/clients", clientId, "type-scales"],
@@ -272,6 +278,32 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     setActiveHeaderCustomizations(newActiveHeaders);
   };
 
+  const toggleBodyCustomization = (bodyLevel: string) => {
+    const newActiveCustomizations = new Set(activeBodyCustomizations);
+    if (newActiveCustomizations.has(bodyLevel)) {
+      newActiveCustomizations.delete(bodyLevel);
+      // Remove the style from the scale
+      const updatedIndividualStyles = { ...activeScale.individualBodyStyles };
+      delete updatedIndividualStyles[bodyLevel];
+      updateScale(prev => ({
+        ...prev,
+        individualBodyStyles: updatedIndividualStyles
+      }));
+    } else {
+      newActiveCustomizations.add(bodyLevel);
+      // Add default style
+      const updatedIndividualStyles = {
+        ...activeScale.individualBodyStyles,
+        [bodyLevel]: {}
+      };
+      updateScale(prev => ({
+        ...prev,
+        individualBodyStyles: updatedIndividualStyles
+      }));
+    }
+    setActiveBodyCustomizations(newActiveCustomizations);
+  };
+
   const updateIndividualHeaderStyle = (headerLevel: string, styleUpdates: Partial<IndividualHeaderStyle>) => {
     const currentIndividualStyles = activeScale.individualHeaderStyles || {};
     const updatedStyles = {
@@ -296,6 +328,34 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         [headerLevel]: updatedHeaderStyle
       };
       updateScale({ individualHeaderStyles: updatedStyles });
+    }
+  };
+
+  const updateIndividualBodyStyle = (bodyLevel: string, styleUpdates: Partial<IndividualBodyStyle>) => {
+    const currentIndividualStyles = activeScale.individualBodyStyles || {};
+    const updatedStyles = {
+      ...currentIndividualStyles,
+      [bodyLevel]: {
+        ...currentIndividualStyles[bodyLevel as keyof typeof currentIndividualStyles],
+        ...styleUpdates
+      }
+    };
+
+    updateScale({ individualBodyStyles: updatedStyles });
+  };
+
+  const resetIndividualBodyStyle = (bodyLevel: string, property: keyof IndividualBodyStyle) => {
+    const currentIndividualStyles = activeScale.individualBodyStyles || {};
+    const bodyStyle = currentIndividualStyles[bodyLevel as keyof typeof currentIndividualStyles];
+    if (bodyStyle) {
+      const updatedBodyStyle = { ...bodyStyle };
+      delete updatedBodyStyle[property];
+
+      const updatedStyles = {
+        ...currentIndividualStyles,
+        [bodyLevel]: updatedBodyStyle
+      };
+      updateScale({ individualBodyStyles: updatedStyles });
     }
   };
 
@@ -703,7 +763,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               )}
                             </div>
                             {brandFonts.length === 1 ? (
-                              <div className="text-sm p-2 bg-muted rounded">
+                              <div className="textsm p-2 bg-muted rounded">
                                 {brandFonts[0].fontFamily} {headerStyle?.fontFamily && headerStyle.fontFamily !== brandFonts[0].fontFamily ? `→ ${headerStyle.fontFamily}` : ''}
                               </div>
                             ) : brandFonts.length > 1 ? (
