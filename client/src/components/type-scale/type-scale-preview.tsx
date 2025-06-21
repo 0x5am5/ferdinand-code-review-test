@@ -197,7 +197,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
 
   return (
     <div className="space-y-6">
-      <Card>
+      <Card className="preview-container">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Monitor className="h-5 w-5" />

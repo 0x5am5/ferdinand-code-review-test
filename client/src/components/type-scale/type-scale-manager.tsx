@@ -482,8 +482,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         </div>
       </div>
 
-      <div className="asset-display flex">
-        <div className="asset-display__info flex-1 pr-6 overflow-y-auto">
+      <div className="asset-display">
+        <div className="asset-display__info">
             <div className="space-y-6">
               {/* Scale Settings */}
               <div>
@@ -1089,7 +1089,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
           </div>
         </div>
 
-        <div className="asset-display__preview flex-1 sticky top-0 h-screen overflow-hidden">
+        <div className="asset-display__preview sticky">
           <div className="h-full flex flex-col">
             <div className="flex-shrink-0">
               <div className="flex items-center justify-between mb-4">

@@ -19,7 +19,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children, pageKey }) => {
       <Sidebar />
       
       {/* Main content area with animated page transitions */}
-      <main className="flex-1 overflow-y-auto ml-64">
+      <main className="bg-white flex-1 overflow-y-auto ml-64">
         <AnimatePresence mode="wait">
           <PageTransition key={pageKey}>
             {children}

@@ -21,6 +21,7 @@
 
   html, body {
     min-height: 100vh;
+    background-color: transparent;
   }
 
   body {
@@ -116,12 +117,22 @@
   }
 
   &__info {
-    max-height: 100vh;
     padding-bottom: 2rem;
   }
 
   &__preview {
     min-width: 500px;
-    max-width: 600px;
+    max-width: 100%;
+
+    &.sticky {
+      position: sticky;
+      top: 100px;
+      height: calc(100vh - 180px);
+
+      .preview-container {
+        height: calc(100vh - 230px);
+        overflow-y: scroll;
+      }
+    }
   }
 }
