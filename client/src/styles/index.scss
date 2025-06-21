@@ -126,11 +126,11 @@
 
     &.sticky {
       position: sticky;
-      top: 100px;
+      top: 80px;
       height: calc(100vh - 180px);
 
       .preview-container {
-        height: calc(100vh - 230px);
+        height: calc(100vh - 210px);
         overflow-y: scroll;
       }
     }

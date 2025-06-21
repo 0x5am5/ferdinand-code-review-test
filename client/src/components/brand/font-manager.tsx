@@ -1648,7 +1648,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         </AssetSection>
 
         {/* Type Scale Manager - as specified in PRD, below font definitions */}
-        <div className="mt-12 pt-8 border-t">
+        <div>
           <TypeScaleManager clientId={clientId} />
         </div>
       </div>

@@ -459,12 +459,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">Type Scale</h3>
-            <p className="text-sm text-muted-foreground">
-              Create and manage consistent typography scales for your brand.
-            </p>
-          </div>
-          <div className="flex items-center space-x-2">
-            {/* Delete and New Scale buttons temporarily removed */}
           </div>
         </div>
       </div>
@@ -474,6 +468,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
             <div className="space-y-6">
               {/* Scale Settings */}
               <div>
+                <p className="mb-8">
+                  Create and manage consistent typography scales for your brand.
+                </p>
+                
                 <h4 className="text-base font-semibold mb-4">Scale Settings</h4>
                 
                 <div className="space-y-4">
