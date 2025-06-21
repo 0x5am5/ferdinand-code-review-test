@@ -951,7 +951,7 @@ function FontCard({
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.8 }}
-      className="p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow"
+      className="p-4 mb-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
