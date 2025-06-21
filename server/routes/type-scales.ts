@@ -26,10 +26,18 @@ export function registerTypeScalesRoutes(app: Express) {
           console.log(`Migrating type scale ${typeScale.id} to new hierarchy`);
           // Assuming migrateTypeScaleToNewHierarchy is defined elsewhere and accessible
           // return migrateTypeScaleToNewHierarchy(typeScale);
-          return typeScale; // Placeholder, replace with actual migration logic
+          return {
+            ...typeScale,
+            individualHeaderStyles: typeScale.individual_header_styles || {},
+            individualBodyStyles: typeScale.individual_body_styles || {},
+          }; // Placeholder, replace with actual migration logic
         }
 
-        return typeScale;
+        return {
+          ...typeScale,
+          individualHeaderStyles: typeScale.individual_header_styles || {},
+          individualBodyStyles: typeScale.individual_body_styles || {},
+        };
       });
       
       res.json(migratedTypeScales);

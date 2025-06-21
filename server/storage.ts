@@ -490,11 +490,18 @@ export class DatabaseStorage implements IStorage {
 
   // Type scale implementations
   async getClientTypeScales(clientId: number): Promise<TypeScale[]> {
-    return await db
+    const results = await db
       .select()
       .from(typeScales)
       .where(eq(typeScales.clientId, clientId))
       .orderBy(asc(typeScales.createdAt));
+
+    // Map the database fields to the expected format
+    return results.map(typeScale => ({
+      ...typeScale,
+      individualHeaderStyles: typeScale.individual_header_styles || {},
+      individualBodyStyles: typeScale.individual_body_styles || {},
+    }));
   }
 
   async getTypeScale(id: number): Promise<TypeScale | undefined> {
