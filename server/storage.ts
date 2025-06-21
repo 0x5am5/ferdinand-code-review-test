@@ -502,7 +502,17 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(typeScales)
       .where(eq(typeScales.id, id));
-    return typeScale;
+
+    if (!typeScale) {
+      return null;
+    }
+
+    // Map the database fields to the expected format
+    return {
+      ...typeScale,
+      individualHeaderStyles: typeScale.individual_header_styles || {},
+      individualBodyStyles: typeScale.individual_body_styles || {},
+    };
   }
 
   async createTypeScale(insertTypeScale: InsertTypeScale): Promise<TypeScale> {
@@ -696,4 +706,37 @@ export const updateTypeScaleStorage = async (id: number, data: Partial<Omit<Type
       .returning();
 
   return mapTypeScale(updatedTypeScale);
+};
+
+export const getClientTypeScales = async (clientId: number): Promise<any[]> => {
+  const results = await db
+    .select()
+    .from(typeScales)
+    .where(eq(typeScales.clientId, clientId))
+    .orderBy(typeScales.createdAt);
+
+  // Map the database fields to the expected format
+  return results.map(typeScale => ({
+    ...typeScale,
+    individualHeaderStyles: typeScale.individual_header_styles || {},
+    individualBodyStyles: typeScale.individual_body_styles || {},
+  }));
+};
+
+export const getTypeScale = async (id: number): Promise<any | null> => {
+  const [typeScale] = await db
+    .select()
+    .from(typeScales)
+    .where(eq(typeScales.id, id));
+
+  if (!typeScale) {
+    return null;
+  }
+
+  // Map the database fields to the expected format
+  return {
+    ...typeScale,
+    individualHeaderStyles: typeScale.individual_header_styles || {},
+    individualBodyStyles: typeScale.individual_body_styles || {},
+  };
 };

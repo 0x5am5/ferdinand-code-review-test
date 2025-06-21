@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Monitor } from "lucide-react";
@@ -40,36 +39,42 @@ interface TypeScalePreviewProps {
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       h2?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       h3?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       h4?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       h5?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       h6?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
     };
     individualBodyStyles?: {
@@ -78,36 +83,42 @@ interface TypeScalePreviewProps {
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       "body"?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       "body-small"?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       "caption"?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       "quote"?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
       "code"?: {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
         fontFamily?: string;
+        fontSize?: string;
       };
     };
   };
@@ -124,58 +135,45 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     return `${size}${unit}`;
   };
 
-  const getStyleForLevel = (style: TypeStyle) => {
-    const size = calculateFontSize(style.size);
-    const isHeader = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(style.level);
-    const isBodyType = ["body-large", "body", "body-small", "caption", "quote", "code"].includes(style.level);
-    const isCode = style.level === "code";
-    const isQuote = style.level === "quote";
+  const getStyleForLevel = (style: TypeStyle): React.CSSProperties => {
+    const isHeader = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(style.level);
+    const isBody = ['body-large', 'body', 'body-small', 'caption', 'quote', 'code'].includes(style.level);
 
-    // Check for individual header styles
-    const individualHeaderStyle = typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles];
-    
-    // Check for individual body styles
-    const individualBodyStyle = typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles];
+    // Get individual customizations
+    const individualHeaderStyle = isHeader ? typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles] : undefined;
+    const individualBodyStyle = isBody ? typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles] : undefined;
 
-    const baseStyle = {
-      fontSize: individualHeaderStyle?.fontSize || individualBodyStyle?.fontSize || size,
-      fontWeight: individualHeaderStyle?.fontWeight || individualBodyStyle?.fontWeight || style.fontWeight,
+    const baseStyle: React.CSSProperties = {
+      fontSize: calculateFontSize(style.size),
+      fontWeight: style.fontWeight || (isHeader ? typeScale.headerFontWeight : typeScale.bodyFontWeight) || "400",
       lineHeight: style.lineHeight,
-      letterSpacing: `${
-        individualHeaderStyle?.letterSpacing !== undefined 
-          ? individualHeaderStyle.letterSpacing 
-          : individualBodyStyle?.letterSpacing !== undefined
-          ? individualBodyStyle.letterSpacing
-          : style.letterSpacing
-      }em`,
-      color: individualHeaderStyle?.color || individualBodyStyle?.color || style.color,
-      fontFamily: individualHeaderStyle?.fontFamily || individualBodyStyle?.fontFamily || (isHeader 
-        ? (typeScale.headerFontFamily || 'inherit')
-        : (typeScale.bodyFontFamily || 'inherit')),
+      letterSpacing: `${style.letterSpacing || (isHeader ? typeScale.headerLetterSpacing : typeScale.bodyLetterSpacing) || 0}em`,
+      color: style.color || (isHeader ? typeScale.headerColor : typeScale.bodyColor) || "#000000",
       margin: 0,
-      padding: 0
+      padding: "8px 0",
     };
 
-    // Special styling for specific elements
-    if (isCode) {
-      return {
-        ...baseStyle,
-        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-        backgroundColor: 'rgba(0, 0, 0, 0.05)',
-        padding: '0.25rem 0.5rem',
-        borderRadius: '0.25rem',
-        border: '1px solid rgba(0, 0, 0, 0.1)'
-      };
+    // Apply font family
+    if (isHeader) {
+      baseStyle.fontFamily = individualHeaderStyle?.fontFamily || typeScale.headerFontFamily || 'inherit';
+    } else {
+      baseStyle.fontFamily = individualBodyStyle?.fontFamily || typeScale.bodyFontFamily || 'inherit';
     }
 
-    if (isQuote) {
-      return {
-        ...baseStyle,
-        fontStyle: 'italic',
-        borderLeft: '4px solid rgba(0, 0, 0, 0.1)',
-        paddingLeft: '1rem',
-        margin: '1rem 0'
-      };
+    // Apply individual customizations for headers
+    if (individualHeaderStyle) {
+      if (individualHeaderStyle.fontWeight) baseStyle.fontWeight = individualHeaderStyle.fontWeight;
+      if (individualHeaderStyle.letterSpacing !== undefined) baseStyle.letterSpacing = `${individualHeaderStyle.letterSpacing}em`;
+      if (individualHeaderStyle.color) baseStyle.color = individualHeaderStyle.color;
+      if (individualHeaderStyle.fontSize) baseStyle.fontSize = individualHeaderStyle.fontSize;
+    }
+
+    // Apply individual customizations for body
+    if (individualBodyStyle) {
+      if (individualBodyStyle.fontWeight) baseStyle.fontWeight = individualBodyStyle.fontWeight;
+      if (individualBodyStyle.letterSpacing !== undefined) baseStyle.letterSpacing = `${individualBodyStyle.letterSpacing}em`;
+      if (individualBodyStyle.color) baseStyle.color = individualBodyStyle.color;
+      if (individualBodyStyle.fontSize) baseStyle.fontSize = individualBodyStyle.fontSize;
     }
 
     return baseStyle;

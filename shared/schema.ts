@@ -830,6 +830,7 @@ const individualHeaderStyleSchema = z.object({
   fontWeight: z.string().optional(),
   letterSpacing: z.number().optional(),
   color: z.string().optional(),
+  fontSize: z.string().optional(),
 });
 
 const individualBodyStyleSchema = z.object({
@@ -837,6 +838,7 @@ const individualBodyStyleSchema = z.object({
   fontWeight: z.string().optional(),
   letterSpacing: z.number().optional(),
   color: z.string().optional(),
+  fontSize: z.string().optional(),
 });
 
 export const insertTypeScaleSchemaExtended = insertTypeScaleSchema.extend({

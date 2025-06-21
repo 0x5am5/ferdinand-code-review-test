@@ -106,18 +106,13 @@ export function registerTypeScalesRoutes(app: Express) {
         return res.status(404).json({ error: "Type scale not found" });
       }
 
-      // Validate the update data
-      const updateSchema = insertTypeScaleSchema.partial().omit({ clientId: true });
-      const validationResult = updateSchema.safeParse(req.body);
+      // Validate the update data - allow individual styles to pass through
+      const updateData = { ...req.body };
+      delete updateData.clientId; // Remove clientId from updates
+      
+      console.log("Updating type scale with data:", JSON.stringify(updateData, null, 2));
 
-      if (!validationResult.success) {
-        return res.status(400).json({ 
-          error: "Invalid update data",
-          details: validationResult.error.errors
-        });
-      }
-
-      const updatedTypeScale = await storage.updateTypeScale(id, validationResult.data);
+      const updatedTypeScale = await storage.updateTypeScale(id, updateData);
       res.json(updatedTypeScale);
     } catch (error) {
       console.error("Error updating type scale:", error);
