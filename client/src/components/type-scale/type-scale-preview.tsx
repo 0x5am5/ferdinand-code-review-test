@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Monitor } from "lucide-react";
@@ -133,7 +132,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
 
     // Check for individual header styles
     const individualHeaderStyle = isHeader ? typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles] : null;
-    
+
     // Check for individual body styles
     const individualBodyStyle = isBodyType ? typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles] : null;
 
@@ -172,50 +171,6 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
         margin: '1rem 0',
       }),
     };
-  };
-
-    const baseStyle = {
-      fontSize: size,
-      fontWeight: individualHeaderStyle?.fontWeight || individualBodyStyle?.fontWeight || style.fontWeight,
-      lineHeight: style.lineHeight,
-      letterSpacing: `${
-        individualHeaderStyle?.letterSpacing !== undefined 
-          ? individualHeaderStyle.letterSpacing 
-          : individualBodyStyle?.letterSpacing !== undefined
-          ? individualBodyStyle.letterSpacing
-          : style.letterSpacing
-      }em`,
-      color: individualHeaderStyle?.color || individualBodyStyle?.color || style.color,
-      fontFamily: individualHeaderStyle?.fontFamily || individualBodyStyle?.fontFamily || (isHeader 
-        ? (typeScale.headerFontFamily || 'inherit')
-        : (typeScale.bodyFontFamily || 'inherit')),
-      margin: 0,
-      padding: 0
-    };
-
-    // Special styling for specific elements
-    if (isCode) {
-      return {
-        ...baseStyle,
-        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-        backgroundColor: 'rgba(0, 0, 0, 0.05)',
-        padding: '0.25rem 0.5rem',
-        borderRadius: '0.25rem',
-        border: '1px solid rgba(0, 0, 0, 0.1)'
-      };
-    }
-
-    if (isQuote) {
-      return {
-        ...baseStyle,
-        fontStyle: 'italic',
-        borderLeft: '4px solid rgba(0, 0, 0, 0.1)',
-        paddingLeft: '1rem',
-        margin: '1rem 0'
-      };
-    }
-
-    return baseStyle;
   };
 
   const sampleText = {

@@ -716,3 +716,72 @@ export const updateTypeScaleStorage = async (id: number, data: Partial<Omit<Type
 
   return mapTypeScale(updatedTypeScale);
 };
+
+export async function saveTypeScale(typeScale: {
+  clientId: number;
+  name: string;
+  baseSize: number;
+  scaleRatio: number;
+  unit: string;
+  bodyFontFamily?: string;
+  bodyFontWeight?: string;
+  bodyLetterSpacing?: number;
+  bodyColor?: string;
+  headerFontFamily?: string;
+  headerFontWeight?: string;
+  headerLetterSpacing?: number;
+  headerColor?: string;
+  individualHeaderStyles?: any;
+  individualBodyStyles?: any;
+}) {
+  const result = await db.insert(typeScales).values({
+    ...typeScale,
+    individualHeaderStyles: typeScale.individualHeaderStyles ? JSON.stringify(typeScale.individualHeaderStyles) : null,
+    individualBodyStyles: typeScale.individualBodyStyles ? JSON.stringify(typeScale.individualBodyStyles) : null,
+  }).returning();
+
+  // Parse the JSON strings back to objects for the response
+  const parsedResult = {
+    ...result[0],
+    individualHeaderStyles: result[0].individualHeaderStyles ? JSON.parse(result[0].individualHeaderStyles) : {},
+    individualBodyStyles: result[0].individualBodyStyles ? JSON.parse(result[0].individualBodyStyles) : {}
+  };
+
+  return parsedResult;
+}
+
+export async function updateTypeScale(id: number, updates: {
+  name?: string;
+  baseSize?: number;
+  scaleRatio?: number;
+  unit?: string;
+  bodyFontFamily?: string;
+  bodyFontWeight?: string;
+  bodyLetterSpacing?: number;
+  bodyColor?: string;
+  headerFontFamily?: string;
+  headerFontWeight?: string;
+  headerLetterSpacing?: number;
+  headerColor?: string;
+  individualHeaderStyles?: any;
+  individualBodyStyles?: any;
+}) {
+  const result = await db.update(typeScales)
+    .set({
+      ...updates,
+      individualHeaderStyles: updates.individualHeaderStyles ? JSON.stringify(updates.individualHeaderStyles) : undefined,
+      individualBodyStyles: updates.individualBodyStyles ? JSON.stringify(updates.individualBodyStyles) : undefined,
+      updatedAt: new Date(),
+    })
+    .where(eq(typeScales.id, id))
+    .returning();
+
+  // Parse the JSON strings back to objects for the response
+  const parsedResult = {
+    ...result[0],
+    individualHeaderStyles: result[0].individualHeaderStyles ? JSON.parse(result[0].individualHeaderStyles) : {},
+    individualBodyStyles: result[0].individualBodyStyles ? JSON.parse(result[0].individualBodyStyles) : {}
+  };
+
+  return parsedResult;
+}
