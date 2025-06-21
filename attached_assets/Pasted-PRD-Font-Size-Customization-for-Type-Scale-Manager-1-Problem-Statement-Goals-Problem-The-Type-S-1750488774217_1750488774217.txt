@@ -1,0 +1,64 @@
+PRD: Font Size Customization for Type Scale Manager
+1. Problem Statement & Goals
+Problem: The Type Scale Manager currently allows customization of font family, weight, letter spacing, and color for individual header and body elements, but lacks the ability to customize font size. Users cannot override the calculated type scale sizes for specific elements that may need custom sizing.
+
+Goals:
+
+Add font size input fields to both header and body custom styling panels
+Maintain consistency with existing customization patterns (inheritance display, reset functionality)
+Fix the preview revert issue that occurs after saving changes
+2. Technical Requirements
+2.1 Font Size Input Implementation
+Add fontSize property support to existing IndividualHeaderStyle and IndividualBodyStyle interfaces (already supported in schema)
+Pre-populate inputs with inherited calculated size from type scale
+Accept values in pixels (px) to match current type scale unit
+Follow same UX pattern as letter spacing customization
+2.2 State Management Fix
+Investigate and resolve preview revert issue occurring after save success toast
+Ensure custom properties persist in preview after successful save operation
+Maintain consistency between activeScale state and saved data
+2.3 UI/UX Requirements
+Display inherited font size with "Inherits: [calculated size]" placeholder
+Include Reset button for font size customization (consistent with other properties)
+Show input in individual customization panels for both headers and bodies
+Simple numeric input without additional preview calculations
+3. Implementation Plan
+3.1 Frontend Changes Required
+File: client/src/components/type-scale/type-scale-manager.tsx
+
+Add font size input fields to individual header customization panels (lines ~880-950)
+Add font size input fields to individual body customization panels (lines ~660-730)
+Implement updateIndividualHeaderStyle calls for fontSize property
+Implement updateIndividualBodyStyle calls for fontSize property
+Add reset functionality for fontSize in both resetIndividualHeaderStyle and resetIndividualBodyStyle
+File: client/src/components/type-scale/type-scale-preview.tsx
+
+Update getStyleForLevel function to apply custom fontSize from individual styles
+Ensure custom font sizes are displayed in preview
+3.2 State Management Investigation
+Review saveTypeScaleMutation.onSuccess callback behavior
+Investigate activeScale state updates after successful save
+Ensure activeHeaderCustomizations and activeBodyCustomizations state persistence
+3.3 Schema Support
+Leverage existing fontSize?: string support in IndividualHeaderStyle and IndividualBodyStyle interfaces
+No backend schema changes required
+4. User Experience Flow
+User clicks on header/body chip to enable customization
+Individual customization panel opens with existing controls
+New "Font Size (px)" input appears with inherited value as placeholder
+User can enter custom pixel value
+Preview updates immediately (without reverting after save)
+Reset button clears custom font size, reverting to inherited calculation
+Save functionality persists all customizations including font size
+5. Acceptance Criteria
+ Font size inputs appear in both header and body customization panels
+ Inputs show inherited calculated size as placeholder text
+ Custom font sizes apply immediately to preview
+ Reset button successfully clears custom font size
+ Preview maintains custom styling after successful save (no revert)
+ Font size customization follows same UX patterns as existing properties
+ Custom font sizes persist across browser sessions when saved
+6. Technical Investigation Results
+Backend Schema: ✅ Already supports fontSize property in both interfaces
+State Management: 🔍 Requires investigation of post-save preview revert issue
+UI Consistency: ✅ Will follow existing letter spacing implementation pattern

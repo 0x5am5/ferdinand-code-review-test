@@ -1,0 +1,92 @@
+Font Size Customization Implementation Checklist
+1. Understanding & Setup
+ Review the existing codebase structure for type scale management
+ Understand how the current customization pattern works (letter spacing, font weight, etc.)
+ Examine the IndividualHeaderStyle and IndividualBodyStyle interfaces in shared/schema.ts
+ Verify that fontSize?: string property already exists in both interfaces
+2. Frontend Implementation - Type Scale Manager
+2.1 Add Font Size Inputs to Body Customization Panel
+ Locate the body customization section in client/src/components/type-scale/type-scale-manager.tsx (around line 660)
+ Add font size input field after the color input in each individual body customization panel
+ Include proper label: "Font Size (px)"
+ Set up placeholder text showing inherited value from type scale calculation
+ Add reset button functionality for font size property
+ Follow the same pattern as existing letter spacing implementation
+2.2 Add Font Size Inputs to Header Customization Panel
+ Locate the header customization section in client/src/components/type-scale/type-scale-manager.tsx (around lines 880-950)
+ Add font size input field after the color input in each individual header customization panel
+ Include proper label: "Font Size (px)"
+ Set up placeholder text showing inherited value from type scale calculation
+ Add reset button functionality for font size property
+ Follow the same pattern as existing letter spacing implementation
+2.3 State Management Updates
+ Update updateIndividualHeaderStyle function to handle fontSize property
+ Update updateIndividualBodyStyle function to handle fontSize property
+ Update resetIndividualHeaderStyle function to handle fontSize property reset
+ Update resetIndividualBodyStyle function to handle fontSize property reset
+3. Preview Component Updates
+3.1 Type Scale Preview Implementation
+ Open client/src/components/type-scale/type-scale-preview.tsx
+ Update getStyleForLevel function to apply custom fontSize from individual styles
+ Ensure custom font sizes override calculated sizes in preview
+ Add logic to check for both header and body individual fontSize properties
+ Test that custom font sizes display correctly in preview
+4. State Management Bug Fix
+4.1 Investigate Preview Revert Issue
+ Examine the saveTypeScaleMutation.onSuccess callback in type-scale-manager.tsx
+ Check how activeScale state is updated after successful save
+ Verify activeHeaderCustomizations and activeBodyCustomizations state persistence
+ Review the relationship between saved data and preview state
+4.2 Fix Preview Persistence
+ Ensure that after save success, the preview maintains custom styling
+ Update state management to properly sync saved data with active customizations
+ Test that customizations persist in preview after save toast appears
+ Verify fix works for both header and body customizations
+5. User Experience Implementation
+5.1 Input Field Setup
+ Use numeric input type for font size values
+ Accept pixel values only (to match current type scale unit)
+ Calculate and display inherited font size in placeholder
+ Implement real-time preview updates as user types
+5.2 Reset Functionality
+ Add "Reset" button next to each font size input
+ Follow same styling pattern as other reset buttons
+ Ensure reset clears custom fontSize and reverts to calculated value
+ Update preview immediately when reset is clicked
+6. Testing & Validation
+6.1 Functionality Testing
+ Test font size customization for all header levels (h1-h6)
+ Test font size customization for all body types (body-large, body, body-small, caption, quote, code)
+ Verify placeholder values show correct inherited calculations
+ Test reset functionality for all font size inputs
+ Confirm real-time preview updates work correctly
+6.2 State Persistence Testing
+ Test that custom font sizes save correctly to database
+ Verify saved font sizes persist after browser refresh
+ Confirm preview doesn't revert after successful save
+ Test that export functionality includes custom font sizes
+6.3 Edge Cases Testing
+ Test with very small font sizes (edge case validation)
+ Test with very large font sizes (edge case validation)
+ Test mixing custom font sizes with other custom properties
+ Verify behavior when switching between different type scales
+7. Code Quality & Consistency
+7.1 Code Review Checklist
+ Ensure code follows existing patterns and conventions
+ Verify proper TypeScript typing for all new functions
+ Check that error handling is consistent with existing code
+ Confirm accessibility standards are maintained (proper labels, etc.)
+7.2 Documentation
+ Add inline comments for complex logic
+ Update any relevant JSDoc comments
+ Ensure variable names are descriptive and consistent
+8. Final Integration
+8.1 Schema Verification
+ Confirm no backend schema changes are needed (fontSize already supported)
+ Verify data flow from frontend to database works correctly
+ Test that existing type scales with custom font sizes load properly
+8.2 Deployment Preparation
+ Test all functionality in development environment
+ Verify no console errors or warnings
+ Confirm all acceptance criteria from PRD are met
+ Prepare for code review and testing by senior developers
