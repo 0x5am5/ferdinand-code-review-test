@@ -135,7 +135,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Initialize with existing scale or create new one
   const defaultFontFamily = brandFonts.length === 1 ? brandFonts[0].fontFamily : undefined;
-  const activeScale = currentScale || (typeScales[0] || {
+  const activeScale = currentScale || (typeScales.length > 0 ? typeScales[0] : {
     ...DEFAULT_TYPE_SCALE,
     id: undefined,
     clientId,
@@ -148,18 +148,22 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Initialize state after activeScale is defined
   const [activeHeaderCustomizations, setActiveHeaderCustomizations] = useState<Set<string>>(
-    new Set(Object.keys(activeScale.individualHeaderStyles || {}))
+    new Set()
   );
 
   const [activeBodyCustomizations, setActiveBodyCustomizations] = useState<Set<string>>(
-    new Set(Object.keys(activeScale.individualBodyStyles || {}))
+    new Set()
   );
 
-  // Update active customizations when activeScale changes (e.g., on page refresh)
+  // Update active customizations when currentScale changes (only when it actually changes)
   useEffect(() => {
-    setActiveHeaderCustomizations(new Set(Object.keys(activeScale.individualHeaderStyles || {})));
-    setActiveBodyCustomizations(new Set(Object.keys(activeScale.individualBodyStyles || {})));
-  }, [activeScale.individualHeaderStyles, activeScale.individualBodyStyles]);
+    if (currentScale?.individualHeaderStyles) {
+      setActiveHeaderCustomizations(new Set(Object.keys(currentScale.individualHeaderStyles)));
+    }
+    if (currentScale?.individualBodyStyles) {
+      setActiveBodyCustomizations(new Set(Object.keys(currentScale.individualBodyStyles)));
+    }
+  }, [currentScale?.id]); // Only depend on the ID to avoid infinite loops
 
   const saveTypeScaleMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -449,32 +453,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     }
   };
 
-  // Apply individual styles when they change
-  const { individualHeaderStyles, individualBodyStyles } = activeScale;
-  
-  useEffect(() => {
-    if (individualHeaderStyles) {
-      Object.entries(individualHeaderStyles).forEach(([level, styles]) => {
-        updateHeaderStyle(level as any, styles);
-      });
-    }
-  }, [individualHeaderStyles]);
-
-  useEffect(() => {
-    if (individualBodyStyles) {
-      Object.entries(individualBodyStyles).forEach(([level, styles]) => {
-        updateBodyStyle(level as any, styles);
-      });
-    }
-  }, [individualBodyStyles]);
-
-  const updateHeaderStyle = (level: string, styles: any) => {
-    // Implementation for updating header styles
-  };
-
-  const updateBodyStyle = (level: string, styles: any) => {
-    // Implementation for updating body styles
-  };
+  // Remove the problematic useEffect hooks that were causing infinite re-renders
+  // The individual styles are already handled by the state management above
 
   if (isLoading) {
     return <div>Loading type scales...</div>;
