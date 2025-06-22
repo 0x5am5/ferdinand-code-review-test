@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Plus, Save, Download, Trash2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TypeScalePreview } from "./type-scale-preview";
@@ -704,70 +705,79 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="body-letter-spacing">Letter Spacing (em)</Label>
-                    <Input
-                      id="body-letter-spacing"
-                      type="number"
-                      step="0.01"
-                      value={activeScale.bodyLetterSpacing || 0}
-                      onChange={(e) => updateScale({ bodyLetterSpacing: parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
-                    />
-                  </div>
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="advanced-styles" className="border-none">
+                      <AccordionTrigger className="text-sm font-medium hover:no-underline py-2 px-0">
+                        Advanced Styles
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="body-letter-spacing">Letter Spacing (em)</Label>
+                          <Input
+                            id="body-letter-spacing"
+                            type="number"
+                            step="0.01"
+                            value={activeScale.bodyLetterSpacing || 0}
+                            onChange={(e) => updateScale({ bodyLetterSpacing: parseFloat(e.target.value) || 0 })}
+                            placeholder="0"
+                          />
+                        </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="body-text-transform">Text Transform</Label>
-                    <Select
-                      value={activeScale.bodyTextTransform || "none"}
-                      onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateScale({ bodyTextTransform: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="uppercase">Uppercase</SelectItem>
-                        <SelectItem value="lowercase">Lowercase</SelectItem>
-                        <SelectItem value="capitalize">Capitalize</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="body-text-transform">Text Transform</Label>
+                          <Select
+                            value={activeScale.bodyTextTransform || "none"}
+                            onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateScale({ bodyTextTransform: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="uppercase">Uppercase</SelectItem>
+                              <SelectItem value="lowercase">Lowercase</SelectItem>
+                              <SelectItem value="capitalize">Capitalize</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="body-font-style">Font Style</Label>
-                    <Select
-                      value={activeScale.bodyFontStyle || "normal"}
-                      onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateScale({ bodyFontStyle: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="italic">Italic</SelectItem>
-                        <SelectItem value="oblique">Oblique</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="body-font-style">Font Style</Label>
+                          <Select
+                            value={activeScale.bodyFontStyle || "normal"}
+                            onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateScale({ bodyFontStyle: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="italic">Italic</SelectItem>
+                              <SelectItem value="oblique">Oblique</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="body-text-decoration">Text Decoration</Label>
-                    <Select
-                      value={activeScale.bodyTextDecoration || "none"}
-                      onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateScale({ bodyTextDecoration: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="underline">Underline</SelectItem>
-                        <SelectItem value="overline">Overline</SelectItem>
-                        <SelectItem value="line-through">Line Through</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="body-text-decoration">Text Decoration</Label>
+                          <Select
+                            value={activeScale.bodyTextDecoration || "none"}
+                            onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateScale({ bodyTextDecoration: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="underline">Underline</SelectItem>
+                              <SelectItem value="overline">Overline</SelectItem>
+                              <SelectItem value="line-through">Line Through</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
 
                 {/* Custom Body Styling Section - NEW */}
@@ -1134,18 +1144,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="header-letter-spacing">Letter Spacing (em)</Label>
-                    <Input
-                      id="header-letter-spacing"
-                      type="number"
-                      step="0.01"
-                      value={activeScale.headerLetterSpacing || 0}
-                      onChange={(e) => updateScale({ headerLetterSpacing: parseFloat(e.target.value) || 0 })}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
                     <Label htmlFor="header-color">Color</Label>
                     <Input
                       id="header-color"
@@ -1155,58 +1153,79 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="header-text-transform">Text Transform</Label>
-                    <Select
-                      value={activeScale.headerTextTransform || "none"}
-                      onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateScale({ headerTextTransform: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="uppercase">Uppercase</SelectItem>
-                        <SelectItem value="lowercase">Lowercase</SelectItem>
-                        <SelectItem value="capitalize">Capitalize</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="advanced-styles" className="border-none">
+                      <AccordionTrigger className="text-sm font-medium hover:no-underline py-2 px-0">
+                        Advanced Styles
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-4 pt-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="header-letter-spacing">Letter Spacing (em)</Label>
+                          <Input
+                            id="header-letter-spacing"
+                            type="number"
+                            step="0.01"
+                            value={activeScale.headerLetterSpacing || 0}
+                            onChange={(e) => updateScale({ headerLetterSpacing: parseFloat(e.target.value) || 0 })}
+                            placeholder="0"
+                          />
+                        </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="header-font-style">Font Style</Label>
-                    <Select
-                      value={activeScale.headerFontStyle || "normal"}
-                      onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateScale({ headerFontStyle: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="normal">Normal</SelectItem>
-                        <SelectItem value="italic">Italic</SelectItem>
-                        <SelectItem value="oblique">Oblique</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="header-text-transform">Text Transform</Label>
+                          <Select
+                            value={activeScale.headerTextTransform || "none"}
+                            onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateScale({ headerTextTransform: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="uppercase">Uppercase</SelectItem>
+                              <SelectItem value="lowercase">Lowercase</SelectItem>
+                              <SelectItem value="capitalize">Capitalize</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="header-text-decoration">Text Decoration</Label>
-                    <Select
-                      value={activeScale.headerTextDecoration || "none"}
-                      onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateScale({ headerTextDecoration: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
-                        <SelectItem value="underline">Underline</SelectItem>
-                        <SelectItem value="overline">Overline</SelectItem>
-                        <SelectItem value="line-through">Line Through</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="header-font-style">Font Style</Label>
+                          <Select
+                            value={activeScale.headerFontStyle || "normal"}
+                            onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateScale({ headerFontStyle: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="italic">Italic</SelectItem>
+                              <SelectItem value="oblique">Oblique</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="header-text-decoration">Text Decoration</Label>
+                          <Select
+                            value={activeScale.headerTextDecoration || "none"}
+                            onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateScale({ headerTextDecoration: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="underline">Underline</SelectItem>
+                              <SelectItem value="overline">Overline</SelectItem>
+                              <SelectItem value="line-through">Line Through</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 </div>
 
                 <div className="mt-6">
