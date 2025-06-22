@@ -3,6 +3,7 @@ import { Sidebar } from "./sidebar";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { PageTransition } from "./page-transition";
 import { RoleIndicatorBanner } from "./role-indicator-banner";
+import { AnimatePresence } from "framer-motion";
 
 interface AppLayoutProps {
   children: ReactNode;
