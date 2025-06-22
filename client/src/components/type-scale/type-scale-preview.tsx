@@ -185,12 +185,17 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
     const individualHeaderStyle = isHeader ? typeScale.individualHeaderStyles?.[style.level as keyof typeof typeScale.individualHeaderStyles] : undefined;
     const individualBodyStyle = isBody ? typeScale.individualBodyStyles?.[style.level as keyof typeof typeScale.individualBodyStyles] : undefined;
 
+    // Use global font weights from typeScale, not from the style object
+    const globalFontWeight = isHeader ? (typeScale.headerFontWeight || "700") : (typeScale.bodyFontWeight || "400");
+    const globalLetterSpacing = isHeader ? (typeScale.headerLetterSpacing || 0) : (typeScale.bodyLetterSpacing || 0);
+    const globalColor = isHeader ? (typeScale.headerColor || "#000000") : (typeScale.bodyColor || "#000000");
+
     const baseStyle: React.CSSProperties = {
       fontSize: calculateFontSize(style.level),
-      fontWeight: style.fontWeight || (isHeader ? typeScale.headerFontWeight : typeScale.bodyFontWeight) || "400",
+      fontWeight: globalFontWeight,
       lineHeight: style.lineHeight,
-      letterSpacing: `${style.letterSpacing || (isHeader ? typeScale.headerLetterSpacing : typeScale.bodyLetterSpacing) || 0}em`,
-      color: style.color || (isHeader ? typeScale.headerColor : typeScale.bodyColor) || "#000000",
+      letterSpacing: `${globalLetterSpacing}em`,
+      color: globalColor,
       margin: 0,
       padding: "8px 0",
     };

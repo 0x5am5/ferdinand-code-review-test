@@ -133,6 +133,47 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     })
     .filter(Boolean);
 
+  // Get available font weights from brand fonts
+  const getAvailableFontWeights = (fontFamily?: string) => {
+    if (!fontFamily) {
+      return [
+        { value: "400", label: "400 - Regular" },
+        { value: "500", label: "500 - Medium" },
+        { value: "600", label: "600 - Semi Bold" },
+        { value: "700", label: "700 - Bold" },
+      ];
+    }
+    
+    const font = brandFonts.find(f => f.fontFamily === fontFamily);
+    if (!font) {
+      return [
+        { value: "400", label: "400 - Regular" },
+        { value: "500", label: "500 - Medium" },
+        { value: "600", label: "600 - Semi Bold" },
+        { value: "700", label: "700 - Bold" },
+      ];
+    }
+    
+    const weightLabels: Record<string, string> = {
+      "100": "100 - Thin",
+      "200": "200 - Extra Light",
+      "300": "300 - Light",
+      "400": "400 - Regular",
+      "500": "500 - Medium",
+      "600": "600 - Semi Bold",
+      "700": "700 - Bold",
+      "800": "800 - Extra Bold",
+      "900": "900 - Black",
+    };
+    
+    return font.weights
+      .sort((a: string, b: string) => parseInt(a) - parseInt(b))
+      .map((weight: string) => ({
+        value: weight,
+        label: weightLabels[weight] || `${weight}`
+      }));
+  };
+
   // Initialize with existing scale or create new one
   const defaultFontFamily = brandFonts.length === 1 ? brandFonts[0].fontFamily : undefined;
   const activeScale = currentScale || (typeScales.length > 0 ? typeScales[0] : {
@@ -207,6 +248,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       };
 
       console.log("Saving type scale with data:", transformedData);
+      console.log("Current activeScale state:", activeScale);
+      console.log("Current currentScale state:", currentScale);
 
       const response = await fetch(url, {
         method,
@@ -226,7 +269,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         }
         throw new Error(`Failed to save type scale: ${errorData.error || errorText}`);
       }
-      return response.json();
+      
+      const result = await response.json();
+      console.log("Save response:", result);
+      return result;
     },
     onSuccess: (data) => {
       toast({
@@ -292,6 +338,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const updateScale = (updates: Partial<any>) => {
     const newScale = currentScale ? { ...currentScale, ...updates } : { ...activeScale, ...updates };
+    console.log("Updating scale with:", updates, "New scale:", newScale);
     setCurrentScale(newScale);
     setIsEditing(true);
   };
@@ -618,15 +665,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="100">100 - Thin</SelectItem>
-                        <SelectItem value="200">200 - Extra Light</SelectItem>
-                        <SelectItem value="300">300 - Light</SelectItem>
-                        <SelectItem value="400">400 - Regular</SelectItem>
-                        <SelectItem value="500">500 - Medium</SelectItem>
-                        <SelectItem value="600">600 - Semi Bold</SelectItem>
-                        <SelectItem value="700">700 - Bold</SelectItem>
-                        <SelectItem value="800">800 - Extra Bold</SelectItem>
-                        <SelectItem value="900">900 - Black</SelectItem>
+                        {getAvailableFontWeights(activeScale.bodyFontFamily).map((weight) => (
+                          <SelectItem key={weight.value} value={weight.value}>
+                            {weight.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -762,15 +805,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 <SelectValue placeholder={`Inherits: ${activeScale.bodyFontWeight || '400'}`} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="100">100 - Thin</SelectItem>
-                                <SelectItem value="200">200 - Extra Light</SelectItem>
-                                <SelectItem value="300">300 - Light</SelectItem>
-                                <SelectItem value="400">400 - Regular</SelectItem>
-                                <SelectItem value="500">500 - Medium</SelectItem>
-                                <SelectItem value="600">600 - Semi Bold</SelectItem>
-                                <SelectItem value="700">700 - Bold</SelectItem>
-                                <SelectItem value="800">800 - Extra Bold</SelectItem>
-                                <SelectItem value="900">900 - Black</SelectItem>
+                                {getAvailableFontWeights(bodyStyle?.fontFamily || activeScale.bodyFontFamily).map((weight) => (
+                                  <SelectItem key={weight.value} value={weight.value}>
+                                    {weight.label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
@@ -923,15 +962,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="100">100 - Thin</SelectItem>
-                        <SelectItem value="200">200 - Extra Light</SelectItem>
-                        <SelectItem value="300">300 - Light</SelectItem>
-                        <SelectItem value="400">400 - Regular</SelectItem>
-                        <SelectItem value="500">500 - Medium</SelectItem>
-                        <SelectItem value="600">600 - Semi Bold</SelectItem>
-                        <SelectItem value="700">700 - Bold</SelectItem>
-                        <SelectItem value="800">800 - Extra Bold</SelectItem>
-                        <SelectItem value="900">900 - Black</SelectItem>
+                        {getAvailableFontWeights(activeScale.headerFontFamily).map((weight) => (
+                          <SelectItem key={weight.value} value={weight.value}>
+                            {weight.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -1066,15 +1101,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 <SelectValue placeholder={`Inherits: ${activeScale.headerFontWeight || '700'}`} />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="100">100 - Thin</SelectItem>
-                                <SelectItem value="200">200 - Extra Light</SelectItem>
-                                <SelectItem value="300">300 - Light</SelectItem>
-                                <SelectItem value="400">400 - Regular</SelectItem>
-                                <SelectItem value="500">500 - Medium</SelectItem>
-                                <SelectItem value="600">600 - Semi Bold</SelectItem>
-                                <SelectItem value="700">700 - Bold</SelectItem>
-                                <SelectItem value="800">800 - Extra Bold</SelectItem>
-                                <SelectItem value="900">900 - Black</SelectItem>
+                                {getAvailableFontWeights(headerStyle?.fontFamily || activeScale.headerFontFamily).map((weight) => (
+                                  <SelectItem key={weight.value} value={weight.value}>
+                                    {weight.label}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </div>
