@@ -7,6 +7,7 @@ import {
   UsersIcon,
   Image,
   ArrowRight,
+  Figma,
 } from "lucide-react";
 
 interface BrandAsset {
@@ -98,6 +99,13 @@ export function ClientDashboard({
       icon: <Image className="h-5 w-5" />,
       enabled: featureToggles.inspiration,
     },
+    {
+      id: "design-system",
+      title: "Design System",
+      description: "Sync design tokens and styles with Figma design files",
+      icon: <Figma className="h-5 w-5" />,
+      enabled: featureToggles.figmaIntegration,
+    },
   ];
 
   // Filter out disabled features
@@ -127,7 +135,7 @@ export function ClientDashboard({
 
   return (
     <div 
-      className="h-full min-h-[calc(100vh-180px)] flex flex-col items-center justify-center relative overflow-hidden" 
+      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" 
       style={{ 
         backgroundColor: primaryColor || 'hsl(var(--primary))',
         color: 'white'
