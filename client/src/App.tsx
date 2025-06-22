@@ -18,6 +18,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
 import { UserRole } from "@shared/schema";
 import Clients from "./pages/clients";
+import { RoleSwitchingProvider } from "@/contexts/RoleSwitchingContext";
 
 function Router() {
   const [location] = useLocation();
@@ -110,10 +111,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SpotlightProvider>
-          <Router />
-          <Toaster />
-        </SpotlightProvider>
+        <RoleSwitchingProvider>
+          <SpotlightProvider>
+            <Router />
+            <Toaster />
+          </SpotlightProvider>
+        </RoleSwitchingProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

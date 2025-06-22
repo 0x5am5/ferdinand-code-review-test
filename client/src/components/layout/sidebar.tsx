@@ -26,6 +26,7 @@ import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { UserRole } from "@shared/schema";
 import { ClientSidebar } from "./client-sidebar";
 import { useClientsQuery } from "@/lib/queries/clients";
+import { RoleSwitchingRibbon } from "./role-switching-ribbon";
 
 interface NavItem {
   title: string;
@@ -298,6 +299,9 @@ export const Sidebar: FC = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Role Switching Ribbon */}
+      <RoleSwitchingRibbon />
     </aside>
   );
 };

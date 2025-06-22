@@ -1,7 +1,8 @@
 import { ReactNode, FC } from "react";
 import { Sidebar } from "./sidebar";
+import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { PageTransition } from "./page-transition";
-import { AnimatePresence } from "framer-motion";
+import { RoleIndicatorBanner } from "./role-indicator-banner";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -17,7 +18,7 @@ export const AppLayout: FC<AppLayoutProps> = ({ children, pageKey }) => {
     <div className="flex h-screen overflow-hidden">
       {/* Fixed sidebar that doesn't re-render during page transitions */}
       <Sidebar />
-      
+
       {/* Main content area with animated page transitions */}
       <main className="bg-white flex-1 overflow-y-auto ml-64">
         <AnimatePresence mode="wait">
