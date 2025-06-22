@@ -471,36 +471,31 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
             <h3 className="text-lg font-semibold">Type Scale</h3>
           </div>
         </div>
+        {isEditing && (
+          <Button
+            onClick={handleSave}
+            disabled={saveTypeScaleMutation.isPending}
+            className="min-w-[160px] h-10 text-sm font-medium"
+          >
+            {saveTypeScaleMutation.isPending ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                SAVE CHANGES
+              </>
+            )}
+          </Button>
+        )}
       </div>
 
       <div className="asset-display">
         <div className="asset-display__info relative">
         
-        {/* Fixed Save Button */}
-        {isEditing && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t shadow-lg p-4">
-            <div className="max-w-7xl mx-auto flex justify-center">
-              <Button
-                onClick={handleSave}
-                disabled={saveTypeScaleMutation.isPending}
-                className="min-w-[160px] h-12 text-base font-medium"
-                size="lg"
-              >
-                {saveTypeScaleMutation.isPending ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current mr-2"></div>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-5 w-5" />
-                    SAVE CHANGES
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
+        
         
         <div className="space-y-6">
               {/* Scale Settings */}
