@@ -475,7 +475,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
       <div className="asset-display">
         <div className="asset-display__info relative">
-            <div className="space-y-6"></div>
         
         {/* Fixed Save Button */}
         {isEditing && (
@@ -568,42 +567,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       <span>2.000</span>
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Preview Scale</Label>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span>H1:</span>
-                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * Math.pow((activeScale.scaleRatio || 1250) / 1000, 4) * 100) / 100}px</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>H2:</span>
-                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * Math.pow((activeScale.scaleRatio || 1250) / 1000, 3) * 100) / 100}px</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>H3:</span>
-                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * Math.pow((activeScale.scaleRatio || 1250) / 1000, 2) * 100) / 100}px</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>H4:</span>
-                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * ((activeScale.scaleRatio || 1250) / 1000) * 100) / 100}px</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>H5:</span>
-                        <Badge variant="outline">{activeScale.baseSize || 16}px</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>H6:</span>
-                        <Badge variant="outline">{Math.round((activeScale.baseSize || 16) * 0.8 * 100) / 100}px</Badge>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
 
               {/* Body Type Styles Section */}
               <div>
-                <h4 className="text-base font-semibold mb-4">Body Type Styles</h4>
+                <h4 className="font-semibold mb-4">Body Type Styles</h4>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="body-font-family">Font Family</Label>
