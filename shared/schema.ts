@@ -784,10 +784,16 @@ export interface TypeScale {
   bodyFontWeight: string;
   bodyLetterSpacing: number;
   bodyColor: string;
+  bodyTextTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  bodyFontStyle?: 'normal' | 'italic' | 'oblique';
+  bodyTextDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
   headerFontFamily: string;
   headerFontWeight: string;
   headerLetterSpacing: number;
   headerColor: string;
+  headerTextTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  headerFontStyle?: 'normal' | 'italic' | 'oblique';
+  headerTextDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
   individualHeaderStyles?: {
     h1?: IndividualHeaderStyle;
     h2?: IndividualHeaderStyle;

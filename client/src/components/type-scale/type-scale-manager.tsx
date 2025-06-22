@@ -715,6 +715,59 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       onChange={(e) => updateScale({ bodyColor: e.target.value })}
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="body-text-transform">Text Transform</Label>
+                    <Select
+                      value={activeScale.bodyTextTransform || "none"}
+                      onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateScale({ bodyTextTransform: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="uppercase">Uppercase</SelectItem>
+                        <SelectItem value="lowercase">Lowercase</SelectItem>
+                        <SelectItem value="capitalize">Capitalize</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="body-font-style">Font Style</Label>
+                    <Select
+                      value={activeScale.bodyFontStyle || "normal"}
+                      onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateScale({ bodyFontStyle: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="italic">Italic</SelectItem>
+                        <SelectItem value="oblique">Oblique</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="body-text-decoration">Text Decoration</Label>
+                    <Select
+                      value={activeScale.bodyTextDecoration || "none"}
+                      onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateScale({ bodyTextDecoration: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="underline">Underline</SelectItem>
+                        <SelectItem value="overline">Overline</SelectItem>
+                        <SelectItem value="line-through">Line Through</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 {/* Custom Body Styling Section - NEW */}
@@ -1100,6 +1153,59 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       value={activeScale.headerColor || "#000000"}
                       onChange={(e) => updateScale({ headerColor: e.target.value })}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="header-text-transform">Text Transform</Label>
+                    <Select
+                      value={activeScale.headerTextTransform || "none"}
+                      onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateScale({ headerTextTransform: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="uppercase">Uppercase</SelectItem>
+                        <SelectItem value="lowercase">Lowercase</SelectItem>
+                        <SelectItem value="capitalize">Capitalize</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="header-font-style">Font Style</Label>
+                    <Select
+                      value={activeScale.headerFontStyle || "normal"}
+                      onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateScale({ headerFontStyle: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="normal">Normal</SelectItem>
+                        <SelectItem value="italic">Italic</SelectItem>
+                        <SelectItem value="oblique">Oblique</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="header-text-decoration">Text Decoration</Label>
+                    <Select
+                      value={activeScale.headerTextDecoration || "none"}
+                      onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateScale({ headerTextDecoration: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="underline">Underline</SelectItem>
+                        <SelectItem value="overline">Overline</SelectItem>
+                        <SelectItem value="line-through">Line Through</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 

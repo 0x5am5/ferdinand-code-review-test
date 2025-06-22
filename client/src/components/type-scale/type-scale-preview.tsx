@@ -29,10 +29,16 @@ interface TypeScalePreviewProps {
     bodyFontWeight?: string;
     bodyLetterSpacing?: number;
     bodyColor?: string;
+    bodyTextTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    bodyFontStyle?: 'normal' | 'italic' | 'oblique';
+    bodyTextDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
     headerFontFamily?: string;
     headerFontWeight?: string;
     headerLetterSpacing?: number;
     headerColor?: string;
+    headerTextTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+    headerFontStyle?: 'normal' | 'italic' | 'oblique';
+    headerTextDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
     individualHeaderStyles?: {
       h1?: {
         fontWeight?: string;
@@ -205,7 +211,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
 
   const calculateFontSize = (level: string) => {
     let size: number;
-    
+
     switch(level) {
       case 'h6':
         size = baseSize * 0.8;
@@ -246,7 +252,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
       default:
         size = baseSize;
     }
-    
+
     return `${Math.round(size * 100) / 100}${unit}`;
   };
 
@@ -278,6 +284,23 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
       baseStyle.fontFamily = individualHeaderStyle?.fontFamily || typeScale.headerFontFamily || 'inherit';
     } else {
       baseStyle.fontFamily = individualBodyStyle?.fontFamily || typeScale.bodyFontFamily || 'inherit';
+    }
+
+    // Apply global header/body styles
+    if (isHeader) {
+      baseStyle.fontWeight = typeScale.headerFontWeight || '700';
+      baseStyle.letterSpacing = `${typeScale.headerLetterSpacing || 0}em`;
+      baseStyle.color = typeScale.headerColor || '#000000';
+      if (typeScale.headerTextTransform) baseStyle.textTransform = typeScale.headerTextTransform;
+      if (typeScale.headerFontStyle) baseStyle.fontStyle = typeScale.headerFontStyle;
+      if (typeScale.headerTextDecoration) baseStyle.textDecoration = typeScale.headerTextDecoration;
+    } else {
+      baseStyle.fontWeight = typeScale.bodyFontWeight || '400';
+      baseStyle.letterSpacing = `${typeScale.bodyLetterSpacing || 0}em`;
+      baseStyle.color = typeScale.bodyColor || '#000000';
+      if (typeScale.bodyTextTransform) baseStyle.textTransform = typeScale.bodyTextTransform;
+      if (typeScale.bodyFontStyle) baseStyle.fontStyle = typeScale.bodyFontStyle;
+      if (typeScale.bodyTextDecoration) baseStyle.textDecoration = typeScale.bodyTextDecoration;
     }
 
     // Apply individual customizations for headers

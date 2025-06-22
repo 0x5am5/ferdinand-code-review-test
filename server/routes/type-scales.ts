@@ -270,6 +270,40 @@ function generateCSS(typeScale: any): string {
 
   css += `}\n\n`;
 
+  // Add global body styles
+  css += `body, .body {\n`;
+  css += `  font-family: ${typeScale.bodyFontFamily || 'inherit'};\n`;
+  css += `  font-weight: ${typeScale.bodyFontWeight || '400'};\n`;
+  css += `  letter-spacing: ${typeScale.bodyLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
+  css += `  color: ${typeScale.bodyColor || '#000000'};\n`;
+  if (typeScale.bodyTextTransform) {
+    css += `  text-transform: ${typeScale.bodyTextTransform};\n`;
+  }
+  if (typeScale.bodyFontStyle) {
+    css += `  font-style: ${typeScale.bodyFontStyle};\n`;
+  }
+  if (typeScale.bodyTextDecoration) {
+    css += `  text-decoration: ${typeScale.bodyTextDecoration};\n`;
+  }
+  css += `}\n\n`;
+
+  // Add global header styles
+  css += `h1, h2, h3, h4, h5, h6, .header {\n`;
+  css += `  font-family: ${typeScale.headerFontFamily || 'inherit'};\n`;
+  css += `  font-weight: ${typeScale.headerFontWeight || '700'};\n`;
+  css += `  letter-spacing: ${typeScale.headerLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
+  css += `  color: ${typeScale.headerColor || '#000000'};\n`;
+  if (typeScale.headerTextTransform) {
+    css += `  text-transform: ${typeScale.headerTextTransform};\n`;
+  }
+  if (typeScale.headerFontStyle) {
+    css += `  font-style: ${typeScale.headerFontStyle};\n`;
+  }
+  if (typeScale.headerTextDecoration) {
+    css += `  text-decoration: ${typeScale.headerTextDecoration};\n`;
+  }
+  css += `}\n\n`;
+
   // Generate utility classes
   typeStyles.forEach((style: any) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
@@ -331,6 +365,40 @@ function generateSCSS(typeScale: any): string {
     scss += `\n`;
   });
   scss += `);\n\n`;
+
+  // Add global body styles
+  scss += `body, .body {\n`;
+  scss += `  font-family: ${typeScale.bodyFontFamily || 'inherit'};\n`;
+  scss += `  font-weight: ${typeScale.bodyFontWeight || '400'};\n`;
+  scss += `  letter-spacing: ${typeScale.bodyLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
+  scss += `  color: ${typeScale.bodyColor || '#000000'};\n`;
+  if (typeScale.bodyTextTransform) {
+    scss += `  text-transform: ${typeScale.bodyTextTransform};\n`;
+  }
+  if (typeScale.bodyFontStyle) {
+    scss += `  font-style: ${typeScale.bodyFontStyle};\n`;
+  }
+  if (typeScale.bodyTextDecoration) {
+    scss += `  text-decoration: ${typeScale.bodyTextDecoration};\n`;
+  }
+  scss += `}\n\n`;
+
+  // Add global header styles
+  scss += `h1, h2, h3, h4, h5, h6, .header {\n`;
+  scss += `  font-family: ${typeScale.headerFontFamily || 'inherit'};\n`;
+  scss += `  font-weight: ${typeScale.headerFontWeight || '700'};\n`;
+  scss += `  letter-spacing: ${typeScale.headerLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
+  scss += `  color: ${typeScale.headerColor || '#000000'};\n`;
+  if (typeScale.headerTextTransform) {
+    scss += `  text-transform: ${typeScale.headerTextTransform};\n`;
+  }
+  if (typeScale.headerFontStyle) {
+    scss += `  font-style: ${typeScale.headerFontStyle};\n`;
+  }
+  if (typeScale.headerTextDecoration) {
+    scss += `  text-decoration: ${typeScale.headerTextDecoration};\n`;
+  }
+  scss += `}\n\n`;
 
   // Generate mixins
   scss += `// Type scale mixin\n`;
