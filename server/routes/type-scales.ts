@@ -39,7 +39,7 @@ export function registerTypeScalesRoutes(app: Express) {
           individualBodyStyles: typeScale.individual_body_styles || {},
         };
       });
-      
+
       res.json(migratedTypeScales);
     } catch (error) {
       console.error("Error fetching type scales:", error);
@@ -119,7 +119,7 @@ export function registerTypeScalesRoutes(app: Express) {
       delete updateData.clientId; // Remove clientId from updates
       delete updateData.id; // Remove id from updates
       delete updateData.createdAt; // Remove createdAt from updates
-      
+
       // Ensure any timestamp strings are converted to Date objects
       if (updateData.updatedAt && typeof updateData.updatedAt === 'string') {
         updateData.updatedAt = new Date(updateData.updatedAt);
@@ -127,7 +127,7 @@ export function registerTypeScalesRoutes(app: Express) {
       if (updateData.createdAt && typeof updateData.createdAt === 'string') {
         delete updateData.createdAt; // Don't update createdAt
       }
-      
+
       console.log("Updating type scale with data:", JSON.stringify(updateData, null, 2));
 
       const updatedTypeScale = await storage.updateTypeScale(id, updateData);

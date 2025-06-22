@@ -133,6 +133,26 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     })
     .filter(Boolean);
 
+    const googleFonts = brandFonts
+    .filter((asset: any) => asset.category === "font")
+    .map((asset: any) => {
+      try {
+        const fontData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+        return {
+          id: asset.id,
+          name: asset.name,
+          fontFamily: fontData.sourceData?.fontFamily || asset.name,
+          source: fontData.source || 'google',
+          weights: fontData.weights || ['400'],
+          styles: fontData.styles || ['normal']
+        };
+      } catch (error) {
+        console.error("Error parsing font asset:", error);
+        return null;
+      }
+    })
+    .filter(Boolean);
+
   // Get available font weights from brand fonts
   const getAvailableFontWeights = (fontFamily?: string) => {
     if (!fontFamily) {
@@ -143,7 +163,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         { value: "700", label: "700 - Bold" },
       ];
     }
-    
+
     const font = brandFonts.find(f => f.fontFamily === fontFamily);
     if (!font) {
       return [
@@ -153,7 +173,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         { value: "700", label: "700 - Bold" },
       ];
     }
-    
+
     const weightLabels: Record<string, string> = {
       "100": "100 - Thin",
       "200": "200 - Extra Light",
@@ -165,7 +185,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       "800": "800 - Extra Bold",
       "900": "900 - Black",
     };
-    
+
     return font.weights
       .sort((a: string, b: string) => parseInt(a) - parseInt(b))
       .map((weight: string) => ({
@@ -269,7 +289,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         }
         throw new Error(`Failed to save type scale: ${errorData.error || errorText}`);
       }
-      
+
       const result = await response.json();
       console.log("Save response:", result);
       return result;
@@ -514,7 +534,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     }
   };
 
-  
+
 
   if (isLoading) {
     return <div>Loading type scales...</div>;
@@ -551,9 +571,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
       <div className="asset-display">
         <div className="asset-display__info relative">
-        
-        
-        
+
+
+
         <div className="space-y-6">
               {/* Scale Settings */}
               <div>

@@ -756,6 +756,9 @@ export interface IndividualHeaderStyle {
   letterSpacing?: number;
   color?: string;
   fontSize?: string;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  fontStyle?: 'normal' | 'italic' | 'oblique';
+  textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
 }
 
 export interface IndividualBodyStyle {
@@ -764,6 +767,9 @@ export interface IndividualBodyStyle {
   letterSpacing?: number;
   color?: string;
   fontSize?: string;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  fontStyle?: 'normal' | 'italic' | 'oblique';
+  textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
 }
 
 export interface TypeScale {
@@ -831,6 +837,9 @@ const individualHeaderStyleSchema = z.object({
   letterSpacing: z.number().optional(),
   color: z.string().optional(),
   fontSize: z.string().optional(),
+  textTransform: z.enum(['none', 'uppercase', 'lowercase', 'capitalize']).optional(),
+  fontStyle: z.enum(['normal', 'italic', 'oblique']).optional(),
+  textDecoration: z.enum(['none', 'underline', 'overline', 'line-through']).optional(),
 });
 
 const individualBodyStyleSchema = z.object({
@@ -839,6 +848,9 @@ const individualBodyStyleSchema = z.object({
   letterSpacing: z.number().optional(),
   color: z.string().optional(),
   fontSize: z.string().optional(),
+  textTransform: z.enum(['none', 'uppercase', 'lowercase', 'capitalize']).optional(),
+  fontStyle: z.enum(['normal', 'italic', 'oblique']).optional(),
+  textDecoration: z.enum(['none', 'underline', 'overline', 'line-through']).optional(),
 });
 
 export const insertTypeScaleSchemaExtended = insertTypeScaleSchema.extend({

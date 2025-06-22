@@ -40,6 +40,9 @@ interface TypeScalePreviewProps {
         color?: string;
         fontFamily?: string;
         fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
       };
       h2?: {
         fontWeight?: string;
@@ -47,6 +50,9 @@ interface TypeScalePreviewProps {
         color?: string;
         fontFamily?: string;
         fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
       };
       h3?: {
         fontWeight?: string;
@@ -54,6 +60,9 @@ interface TypeScalePreviewProps {
         color?: string;
         fontFamily?: string;
         fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
       };
       h4?: {
         fontWeight?: string;
@@ -61,6 +70,9 @@ interface TypeScalePreviewProps {
         color?: string;
         fontFamily?: string;
         fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
       };
       h5?: {
         fontWeight?: string;
@@ -68,6 +80,9 @@ interface TypeScalePreviewProps {
         color?: string;
         fontFamily?: string;
         fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
       };
       h6?: {
         fontWeight?: string;
@@ -75,6 +90,9 @@ interface TypeScalePreviewProps {
         color?: string;
         fontFamily?: string;
         fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
       };
     };
     individualBodyStyles?: {
@@ -82,6 +100,61 @@ interface TypeScalePreviewProps {
         fontWeight?: string;
         letterSpacing?: number;
         color?: string;
+        fontFamily?: string;
+        fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
+      };
+      "body"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+        fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
+      };
+      "body-small"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+        fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
+      };
+      "caption"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+        fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
+      };
+      "quote"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+        fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
+      };
+      "code"?: {
+        fontWeight?: string;
+        letterSpacing?: number;
+        color?: string;
+        fontFamily?: string;
+        fontSize?: string;
+        textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+        fontStyle?: 'normal' | 'italic' | 'oblique';
+        textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
         fontFamily?: string;
         fontSize?: string;
       };
@@ -213,6 +286,9 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
       if (individualHeaderStyle.letterSpacing !== undefined) baseStyle.letterSpacing = `${individualHeaderStyle.letterSpacing}em`;
       if (individualHeaderStyle.color) baseStyle.color = individualHeaderStyle.color;
       if (individualHeaderStyle.fontSize) baseStyle.fontSize = individualHeaderStyle.fontSize;
+      if (individualHeaderStyle.textTransform) baseStyle.textTransform = individualHeaderStyle.textTransform;
+      if (individualHeaderStyle.fontStyle) baseStyle.fontStyle = individualHeaderStyle.fontStyle;
+      if (individualHeaderStyle.textDecoration) baseStyle.textDecoration = individualHeaderStyle.textDecoration;
     }
 
     // Apply individual customizations for body
@@ -221,6 +297,9 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
       if (individualBodyStyle.letterSpacing !== undefined) baseStyle.letterSpacing = `${individualBodyStyle.letterSpacing}em`;
       if (individualBodyStyle.color) baseStyle.color = individualBodyStyle.color;
       if (individualBodyStyle.fontSize) baseStyle.fontSize = individualBodyStyle.fontSize;
+      if (individualBodyStyle.textTransform) baseStyle.textTransform = individualBodyStyle.textTransform;
+      if (individualBodyStyle.fontStyle) baseStyle.fontStyle = individualBodyStyle.fontStyle;
+      if (individualBodyStyle.textDecoration) baseStyle.textDecoration = individualBodyStyle.textDecoration;
     }
 
     return baseStyle;
