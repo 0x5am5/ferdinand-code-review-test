@@ -1824,7 +1824,7 @@ function LogoSection({
                         parentLogoId={logo.id}
                         queryClient={queryClient}
                         buttonOnly={true}
-                        className="min-w-32"
+                        className="min-w-32 text-black"
                         onSuccess={async () => {
                           parsedData.hasDarkVariant = true;
                           await queryClient.invalidateQueries({

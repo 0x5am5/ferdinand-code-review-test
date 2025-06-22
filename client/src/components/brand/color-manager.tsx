@@ -462,7 +462,7 @@ function ColorCard({
               />
             ) : (
               <h5 
-                className="color-chip--title cursor-pointer hover:opacity-80 transition-opacity"
+                className="color-chip--title cursor-pointer font-semibold hover:opacity-80 transition-opacity"
                 style={{
                   color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
                 }}
@@ -489,48 +489,48 @@ function ColorCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
               onClick={onGenerate}
               title={neutralColorsCount && neutralColorsCount >= 11 ? "Re-generate grey shades" : "Generate grey shades"}
             >
-              <RotateCcw className="h-6 w-6" />
+              <RotateCcw className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
             </Button>
           )}
-          {color.category !== "neutral" && (
+          {color.category !== "neutral" && color.data.type !== "gradient" && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
               onClick={() => setShowTints(!showTints)}
               title={showTints ? "Hide tints/shades" : "Show tints/shades"}
             >
-              <Palette className="h-6 w-6" />
+              <Palette className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
             </Button>
           )}
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
             onClick={() => copyHex(color.hex)}
           >
-            <Copy className="h-6 w-6" />
+            <Copy className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
             onClick={handleStartEdit}
           >
-            <Edit2 className="h-6 w-6" />
+            <Edit2 className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
               >
-                <Trash2 className="h-6 w-6" />
+                <Trash2 className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

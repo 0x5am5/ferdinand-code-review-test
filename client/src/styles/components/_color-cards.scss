@@ -10,9 +10,19 @@
   &__controls {
     display: flex;
     flex-direction: row;
-    gap: .5rem;
-    opacity: .1;
+    gap: 0;
+    margin-top: -0.25rem;
+    opacity: .25;
     transition: opacity 0.2s ease-in;
+
+    .dark-bg svg {
+      stroke: #fff;
+      transition: stroke 0.2s ease-in;
+    }
+
+    .dark-bg:hover svg {
+      stroke: #000;
+    }
   }
 
   &:hover &__controls {
