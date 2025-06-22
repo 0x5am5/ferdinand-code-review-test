@@ -74,18 +74,23 @@ export function RoleSwitchingFAB() {
             size="lg"
             className={cn(
               "rounded-full h-14 w-14 shadow-lg hover:shadow-xl transition-all duration-200",
-              "flex items-center justify-center",
-              isActive ? "bg-primary text-primary-foreground" : "bg-white text-gray-700 border border-gray-200"
+              "flex items-center justify-center relative",
+              isActive 
+                ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
             )}
           >
-            <Eye className="h-6 w-6" />
+            <Eye className={cn(
+              "h-6 w-6 transition-colors",
+              isActive ? "text-white" : "text-gray-700"
+            )} />
           </Button>
         </PopoverTrigger>
         
         <PopoverContent 
           side="top" 
           align="end" 
-          className="w-80 p-4"
+          className="w-80 p-4 bg-white border border-gray-200 shadow-lg rounded-lg"
           sideOffset={10}
         >
           <div className="space-y-4">
