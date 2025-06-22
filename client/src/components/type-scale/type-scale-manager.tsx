@@ -695,6 +695,16 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="body-color">Color</Label>
+                    <Input
+                      id="body-color"
+                      type="color"
+                      value={activeScale.bodyColor || "#000000"}
+                      onChange={(e) => updateScale({ bodyColor: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="body-letter-spacing">Letter Spacing (em)</Label>
                     <Input
                       id="body-letter-spacing"
@@ -703,16 +713,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       value={activeScale.bodyLetterSpacing || 0}
                       onChange={(e) => updateScale({ bodyLetterSpacing: parseFloat(e.target.value) || 0 })}
                       placeholder="0"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="body-color">Color</Label>
-                    <Input
-                      id="body-color"
-                      type="color"
-                      value={activeScale.bodyColor || "#000000"}
-                      onChange={(e) => updateScale({ bodyColor: e.target.value })}
                     />
                   </div>
 
