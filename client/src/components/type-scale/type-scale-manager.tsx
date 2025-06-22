@@ -899,58 +899,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <Label htmlFor={`${bodyLevel}-letter-spacing`}>Letter Spacing (em)</Label>
-                              {bodyStyle?.letterSpacing !== undefined && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'letterSpacing')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <Input
-                              id={`${bodyLevel}-letter-spacing`}
-                              type="number"
-                              step="0.01"
-                              value={bodyStyle?.letterSpacing !== undefined ? bodyStyle.letterSpacing : ""}
-                              onChange={(e) => updateIndividualBodyStyle(bodyLevel, { letterSpacing: parseFloat(e.target.value) || 0 })}
-                              placeholder={`Inherits: ${activeScale.bodyLetterSpacing || 0}`}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${bodyLevel}-color`}>Color</Label>
-                              {bodyStyle?.color && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'color')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                id={`${bodyLevel}-color`}
-                                type="color"
-                                value={bodyStyle?.color || activeScale.bodyColor || "#000000"}
-                                onChange={(e) => updateIndividualBodyStyle(bodyLevel, { color: e.target.value })}
-                                className="w-16 h-8"
-                              />
-                              <span className="text-xs text-muted-foreground">
-                                {bodyStyle?.color ? bodyStyle.color : `Inherits: ${activeScale.bodyColor || '#000000'}`}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
                               <Label htmlFor={`${bodyLevel}-font-size`}>Font Size (px)</Label>
                               {bodyStyle?.fontSize && (
                                 <Button
@@ -998,92 +946,153 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <Label htmlFor={`${bodyLevel}-text-transform`}>Text Transform</Label>
-                              {bodyStyle?.textTransform && (
+                              <Label htmlFor={`${bodyLevel}-color`}>Color</Label>
+                              {bodyStyle?.color && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'textTransform')}
+                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'color')}
                                   className="text-xs h-6 px-2"
                                 >
                                   Reset
                                 </Button>
                               )}
                             </div>
-                            <Select
-                              value={bodyStyle?.textTransform || ""}
-                              onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateIndividualBodyStyle(bodyLevel, { textTransform: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Inherits: None" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="uppercase">Uppercase</SelectItem>
-                                <SelectItem value="lowercase">Lowercase</SelectItem>
-                                <SelectItem value="capitalize">Capitalize</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                id={`${bodyLevel}-color`}
+                                type="color"
+                                value={bodyStyle?.color || activeScale.bodyColor || "#000000"}
+                                onChange={(e) => updateIndividualBodyStyle(bodyLevel, { color: e.target.value })}
+                                className="w-16 h-8"
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {bodyStyle?.color ? bodyStyle.color : `Inherits: ${activeScale.bodyColor || '#000000'}`}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${bodyLevel}-font-style`}>Font Style</Label>
-                              {bodyStyle?.fontStyle && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'fontStyle')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <Select
-                              value={bodyStyle?.fontStyle || ""}
-                              onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateIndividualBodyStyle(bodyLevel, { fontStyle: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Inherits: Normal" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="italic">Italic</SelectItem>
-                                <SelectItem value="oblique">Oblique</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="advanced-styles" className="border-none">
+                              <AccordionTrigger className="text-sm font-medium hover:no-underline py-2 px-0">
+                                Advanced Styles
+                              </AccordionTrigger>
+                              <AccordionContent className="space-y-4 pt-2">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${bodyLevel}-letter-spacing`}>Letter Spacing (em)</Label>
+                                    {bodyStyle?.letterSpacing !== undefined && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualBodyStyle(bodyLevel, 'letterSpacing')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Input
+                                    id={`${bodyLevel}-letter-spacing`}
+                                    type="number"
+                                    step="0.01"
+                                    value={bodyStyle?.letterSpacing !== undefined ? bodyStyle.letterSpacing : ""}
+                                    onChange={(e) => updateIndividualBodyStyle(bodyLevel, { letterSpacing: parseFloat(e.target.value) || 0 })}
+                                    placeholder={`Inherits: ${activeScale.bodyLetterSpacing || 0}`}
+                                  />
+                                </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${bodyLevel}-text-decoration`}>Text Decoration</Label>
-                              {bodyStyle?.textDecoration && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualBodyStyle(bodyLevel, 'textDecoration')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <Select
-                              value={bodyStyle?.textDecoration || ""}
-                              onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateIndividualBodyStyle(bodyLevel, { textDecoration: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Inherits: None" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="underline">Underline</SelectItem>
-                                <SelectItem value="overline">Overline</SelectItem>
-                                <SelectItem value="line-through">Line Through</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${bodyLevel}-text-transform`}>Text Transform</Label>
+                                    {bodyStyle?.textTransform && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualBodyStyle(bodyLevel, 'textTransform')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Select
+                                    value={bodyStyle?.textTransform || ""}
+                                    onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateIndividualBodyStyle(bodyLevel, { textTransform: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Inherits: None" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
+                                      <SelectItem value="uppercase">Uppercase</SelectItem>
+                                      <SelectItem value="lowercase">Lowercase</SelectItem>
+                                      <SelectItem value="capitalize">Capitalize</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${bodyLevel}-font-style`}>Font Style</Label>
+                                    {bodyStyle?.fontStyle && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualBodyStyle(bodyLevel, 'fontStyle')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Select
+                                    value={bodyStyle?.fontStyle || ""}
+                                    onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateIndividualBodyStyle(bodyLevel, { fontStyle: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Inherits: Normal" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="normal">Normal</SelectItem>
+                                      <SelectItem value="italic">Italic</SelectItem>
+                                      <SelectItem value="oblique">Oblique</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${bodyLevel}-text-decoration`}>Text Decoration</Label>
+                                    {bodyStyle?.textDecoration && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualBodyStyle(bodyLevel, 'textDecoration')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Select
+                                    value={bodyStyle?.textDecoration || ""}
+                                    onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateIndividualBodyStyle(bodyLevel, { textDecoration: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Inherits: None" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
+                                      <SelectItem value="underline">Underline</SelectItem>
+                                      <SelectItem value="overline">Overline</SelectItem>
+                                      <SelectItem value="line-through">Line Through</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
                         </div>
                       </div>
                     );
@@ -1346,58 +1355,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <Label htmlFor={`${headerLevel}-letter-spacing`}>Letter Spacing (em)</Label>
-                              {headerStyle?.letterSpacing !== undefined && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'letterSpacing')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <Input
-                              id={`${headerLevel}-letter-spacing`}
-                              type="number"
-                              step="0.01"
-                              value={headerStyle?.letterSpacing !== undefined ? headerStyle.letterSpacing : ""}
-                              onChange={(e) => updateIndividualHeaderStyle(headerLevel, { letterSpacing: parseFloat(e.target.value) || 0 })}
-                              placeholder={`Inherits: ${activeScale.headerLetterSpacing || 0}`}
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${headerLevel}-color`}>Color</Label>
-                              {headerStyle?.color && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'color')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                id={`${headerLevel}-color`}
-                                type="color"
-                                value={headerStyle?.color || activeScale.headerColor || "#000000"}
-                                onChange={(e) => updateIndividualHeaderStyle(headerLevel, { color: e.target.value })}
-                                className="w-16 h-8"
-                              />
-                              <span className="text-xs text-muted-foreground">
-                                {headerStyle?.color ? headerStyle.color : `Inherits: ${activeScale.headerColor || '#000000'}`}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
                               <Label htmlFor={`${headerLevel}-font-size`}>Font Size (px)</Label>
                               {headerStyle?.fontSize && (
                                 <Button
@@ -1446,92 +1403,153 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <Label htmlFor={`${headerLevel}-text-transform`}>Text Transform</Label>
-                              {headerStyle?.textTransform && (
+                              <Label htmlFor={`${headerLevel}-color`}>Color</Label>
+                              {headerStyle?.color && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'textTransform')}
+                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'color')}
                                   className="text-xs h-6 px-2"
                                 >
                                   Reset
                                 </Button>
                               )}
                             </div>
-                            <Select
-                              value={headerStyle?.textTransform || ""}
-                              onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateIndividualHeaderStyle(headerLevel, { textTransform: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Inherits: None" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="uppercase">Uppercase</SelectItem>
-                                <SelectItem value="lowercase">Lowercase</SelectItem>
-                                <SelectItem value="capitalize">Capitalize</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <div className="flex items-center space-x-2">
+                              <Input
+                                id={`${headerLevel}-color`}
+                                type="color"
+                                value={headerStyle?.color || activeScale.headerColor || "#000000"}
+                                onChange={(e) => updateIndividualHeaderStyle(headerLevel, { color: e.target.value })}
+                                className="w-16 h-8"
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {headerStyle?.color ? headerStyle.color : `Inherits: ${activeScale.headerColor || '#000000'}`}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${headerLevel}-font-style`}>Font Style</Label>
-                              {headerStyle?.fontStyle && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'fontStyle')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <Select
-                              value={headerStyle?.fontStyle || ""}
-                              onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateIndividualHeaderStyle(headerLevel, { fontStyle: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Inherits: Normal" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="normal">Normal</SelectItem>
-                                <SelectItem value="italic">Italic</SelectItem>
-                                <SelectItem value="oblique">Oblique</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                          <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="advanced-styles" className="border-none">
+                              <AccordionTrigger className="text-sm font-medium hover:no-underline py-2 px-0">
+                                Advanced Styles
+                              </AccordionTrigger>
+                              <AccordionContent className="space-y-4 pt-2">
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${headerLevel}-letter-spacing`}>Letter Spacing (em)</Label>
+                                    {headerStyle?.letterSpacing !== undefined && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualHeaderStyle(headerLevel, 'letterSpacing')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Input
+                                    id={`${headerLevel}-letter-spacing`}
+                                    type="number"
+                                    step="0.01"
+                                    value={headerStyle?.letterSpacing !== undefined ? headerStyle.letterSpacing : ""}
+                                    onChange={(e) => updateIndividualHeaderStyle(headerLevel, { letterSpacing: parseFloat(e.target.value) || 0 })}
+                                    placeholder={`Inherits: ${activeScale.headerLetterSpacing || 0}`}
+                                  />
+                                </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor={`${headerLevel}-text-decoration`}>Text Decoration</Label>
-                              {headerStyle?.textDecoration && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => resetIndividualHeaderStyle(headerLevel, 'textDecoration')}
-                                  className="text-xs h-6 px-2"
-                                >
-                                  Reset
-                                </Button>
-                              )}
-                            </div>
-                            <Select
-                              value={headerStyle?.textDecoration || ""}
-                              onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateIndividualHeaderStyle(headerLevel, { textDecoration: value })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Inherits: None" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="none">None</SelectItem>
-                                <SelectItem value="underline">Underline</SelectItem>
-                                <SelectItem value="overline">Overline</SelectItem>
-                                <SelectItem value="line-through">Line Through</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${headerLevel}-text-transform`}>Text Transform</Label>
+                                    {headerStyle?.textTransform && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualHeaderStyle(headerLevel, 'textTransform')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Select
+                                    value={headerStyle?.textTransform || ""}
+                                    onValueChange={(value: 'none' | 'uppercase' | 'lowercase' | 'capitalize') => updateIndividualHeaderStyle(headerLevel, { textTransform: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Inherits: None" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
+                                      <SelectItem value="uppercase">Uppercase</SelectItem>
+                                      <SelectItem value="lowercase">Lowercase</SelectItem>
+                                      <SelectItem value="capitalize">Capitalize</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${headerLevel}-font-style`}>Font Style</Label>
+                                    {headerStyle?.fontStyle && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualHeaderStyle(headerLevel, 'fontStyle')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Select
+                                    value={headerStyle?.fontStyle || ""}
+                                    onValueChange={(value: 'normal' | 'italic' | 'oblique') => updateIndividualHeaderStyle(headerLevel, { fontStyle: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Inherits: Normal" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="normal">Normal</SelectItem>
+                                      <SelectItem value="italic">Italic</SelectItem>
+                                      <SelectItem value="oblique">Oblique</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label htmlFor={`${headerLevel}-text-decoration`}>Text Decoration</Label>
+                                    {headerStyle?.textDecoration && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => resetIndividualHeaderStyle(headerLevel, 'textDecoration')}
+                                        className="text-xs h-6 px-2"
+                                      >
+                                        Reset
+                                      </Button>
+                                    )}
+                                  </div>
+                                  <Select
+                                    value={headerStyle?.textDecoration || ""}
+                                    onValueChange={(value: 'none' | 'underline' | 'overline' | 'line-through') => updateIndividualHeaderStyle(headerLevel, { textDecoration: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Inherits: None" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="none">None</SelectItem>
+                                      <SelectItem value="underline">Underline</SelectItem>
+                                      <SelectItem value="overline">Overline</SelectItem>
+                                      <SelectItem value="line-through">Line Through</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          </Accordion>
                         </div>
                       </div>
                     );
