@@ -53,10 +53,10 @@ app.get('/api/health', (_req, res) => {
 // Increase the maximum number of listeners to prevent warnings
 EventEmitter.defaultMaxListeners = 20;
 
-// Primary and fallback ports
-const PRIMARY_PORT = 5000;
-const FALLBACK_PORTS = [5001, 3000, 3001];
-const ALL_PORTS = [PRIMARY_PORT, ...FALLBACK_PORTS];
+// Port configuration with Cloud Run compatibility
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : (process.env.NODE_ENV === 'production' ? 5100 : 5000);
+const FALLBACK_PORTS = process.env.NODE_ENV === 'production' ? [] : [5001, 3000, 3001];
+const ALL_PORTS = [PORT, ...FALLBACK_PORTS];
 
 // Enhanced cleanup function
 async function cleanup() {
@@ -115,56 +115,71 @@ async function startServer(retries = 3) {
         server = createServer(app);
       }
 
-      // Try to start with the primary port first, then fallbacks
-      let serverStarted = false;
-      let usedPort: number | null = null;
-
-      // Starting with the primary port
-      console.log(`Attempting to start server on primary port ${PRIMARY_PORT}`);
-
-      // Try primary port first, then fallbacks
-      const portsToTry = [PRIMARY_PORT, ...FALLBACK_PORTS];
-
-      // Try each port in sequence
-      for (const port of portsToTry) {
-        if (serverStarted) break;
-
-        try {
-          // Start listening on the port
-          await new Promise<void>((resolve, reject) => {
-            const timeoutId = setTimeout(() => {
-              reject(new Error(`Timeout when trying to bind to port ${port}`));
-            }, 5000);
-
-            server!.listen(port, '0.0.0.0', () => {
-              clearTimeout(timeoutId);
-              console.log(`✓ Server started successfully on port ${port}`);
-              log(`Server listening at http://0.0.0.0:${port}`);
-              serverStarted = true;
-              usedPort = port;
-              resolve();
-            });
-
-            server!.on('error', (error: NodeJS.ErrnoException) => {
-              clearTimeout(timeoutId);
-              if (error.code === 'EADDRINUSE') {
-                console.error(`Port ${port} is already in use, trying next port...`);
-                reject(new Error(`Port ${port} is in use`));
-              } else {
-                console.error('Server error:', error);
-                reject(error);
-              }
-            });
+      // Simplified port logic for production vs development
+      if (process.env.NODE_ENV === 'production') {
+        // Production: Only use the specified port (5100 or PORT env var)
+        console.log(`Starting server on port ${PORT} for production`);
+        await new Promise<void>((resolve, reject) => {
+          server!.listen(PORT, '0.0.0.0', () => {
+            console.log(`✓ Server started successfully on port ${PORT}`);
+            log(`Server listening at http://0.0.0.0:${PORT}`);
+            resolve();
           });
-        } catch (err) {
-          console.log(`Failed to use port ${port}, trying next...`);
-          // Continue to the next port
-        }
-      }
 
-      // If no port worked, throw an error
-      if (!serverStarted) {
-        throw new Error(`Could not start server on any of the ports: ${portsToTry.join(', ')}`);
+          server!.on('error', (error: NodeJS.ErrnoException) => {
+            console.error('Server error:', error);
+            reject(error);
+          });
+        });
+      } else {
+        // Development: Try multiple ports if needed
+        let serverStarted = false;
+        let usedPort: number | null = null;
+
+        console.log(`Attempting to start server on port ${PORT}`);
+        const portsToTry = ALL_PORTS;
+
+        // Try each port in sequence
+        for (const port of portsToTry) {
+          if (serverStarted) break;
+
+          try {
+            // Start listening on the port
+            await new Promise<void>((resolve, reject) => {
+              const timeoutId = setTimeout(() => {
+                reject(new Error(`Timeout when trying to bind to port ${port}`));
+              }, 5000);
+
+              server!.listen(port, '0.0.0.0', () => {
+                clearTimeout(timeoutId);
+                console.log(`✓ Server started successfully on port ${port}`);
+                log(`Server listening at http://0.0.0.0:${port}`);
+                serverStarted = true;
+                usedPort = port;
+                resolve();
+              });
+
+              server!.on('error', (error: NodeJS.ErrnoException) => {
+                clearTimeout(timeoutId);
+                if (error.code === 'EADDRINUSE') {
+                  console.error(`Port ${port} is already in use, trying next port...`);
+                  reject(new Error(`Port ${port} is in use`));
+                } else {
+                  console.error('Server error:', error);
+                  reject(error);
+                }
+              });
+            });
+          } catch (err) {
+            console.log(`Failed to use port ${port}, trying next...`);
+            // Continue to the next port
+          }
+        }
+
+        // If no port worked, throw an error
+        if (!serverStarted) {
+          throw new Error(`Could not start server on any of the ports: ${portsToTry.join(', ')}`);
+        }
       }
 
       // If we get here, the server started successfully

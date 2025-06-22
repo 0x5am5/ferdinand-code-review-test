@@ -123,6 +123,11 @@ The application follows a full-stack architecture with clear separation between 
 
 ```
 Changelog:
+- June 22, 2025. Fixed deployment port configuration for Cloud Run compatibility:
+  * Updated server to use PORT environment variable with 5100 default for production
+  * Simplified port logic: single port for production, fallback ports for development
+  * Added Cloud Run compatibility with proper 0.0.0.0 binding
+  * Maintained backward compatibility for local development environment
 - June 18, 2025. Completed comprehensive Code-Based Design System Builder V1 implementation:
   * Full semantic token generation system (140+ tokens from 23 raw tokens)
   * Automatic neutral color scale generation (11 shades from HSL base)
