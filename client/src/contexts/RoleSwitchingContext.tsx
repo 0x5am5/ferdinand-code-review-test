@@ -3,12 +3,22 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserRole } from '@shared/schema';
 import { useAuth } from '@/hooks/use-auth';
 
+interface ViewingUser {
+  id: number;
+  name: string;
+  email: string;
+  role: UserRole;
+}
+
 interface RoleSwitchingContextType {
   currentViewingRole: UserRole;
   actualUserRole: UserRole;
+  currentViewingUser: ViewingUser | null;
   switchRole: (role: UserRole) => void;
+  switchToUser: (user: ViewingUser) => void;
   resetRole: () => void;
   isRoleSwitched: boolean;
+  isUserSwitched: boolean;
   canAccessCurrentPage: (role: UserRole) => boolean;
 }
 
@@ -17,41 +27,73 @@ const RoleSwitchingContext = createContext<RoleSwitchingContextType | undefined>
 export function RoleSwitchingProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [currentViewingRole, setCurrentViewingRole] = useState<UserRole>(user?.role || UserRole.GUEST);
+  const [currentViewingUser, setCurrentViewingUser] = useState<ViewingUser | null>(null);
   const actualUserRole = user?.role || UserRole.GUEST;
 
-  // Load persisted role from sessionStorage on mount
+  // Load persisted state from sessionStorage on mount
   useEffect(() => {
     if (user && user.role === UserRole.SUPER_ADMIN) {
       const persistedRole = sessionStorage.getItem('ferdinand_viewing_role');
-      if (persistedRole && Object.values(UserRole).includes(persistedRole as UserRole)) {
+      const persistedUser = sessionStorage.getItem('ferdinand_viewing_user');
+      
+      if (persistedUser) {
+        try {
+          const parsedUser = JSON.parse(persistedUser);
+          setCurrentViewingUser(parsedUser);
+          setCurrentViewingRole(parsedUser.role);
+        } catch (e) {
+          console.error('Error parsing persisted user:', e);
+          sessionStorage.removeItem('ferdinand_viewing_user');
+        }
+      } else if (persistedRole && Object.values(UserRole).includes(persistedRole as UserRole)) {
         setCurrentViewingRole(persistedRole as UserRole);
+        setCurrentViewingUser(null);
       } else {
         setCurrentViewingRole(actualUserRole);
+        setCurrentViewingUser(null);
       }
     } else {
       setCurrentViewingRole(actualUserRole);
+      setCurrentViewingUser(null);
     }
   }, [user, actualUserRole]);
 
-  // Persist role changes to sessionStorage
+  // Persist changes to sessionStorage
   useEffect(() => {
     if (user?.role === UserRole.SUPER_ADMIN) {
-      sessionStorage.setItem('ferdinand_viewing_role', currentViewingRole);
+      if (currentViewingUser) {
+        sessionStorage.setItem('ferdinand_viewing_user', JSON.stringify(currentViewingUser));
+        sessionStorage.removeItem('ferdinand_viewing_role');
+      } else {
+        sessionStorage.setItem('ferdinand_viewing_role', currentViewingRole);
+        sessionStorage.removeItem('ferdinand_viewing_user');
+      }
     }
-  }, [currentViewingRole, user?.role]);
+  }, [currentViewingRole, currentViewingUser, user?.role]);
 
   const switchRole = (role: UserRole) => {
     if (user?.role === UserRole.SUPER_ADMIN) {
       setCurrentViewingRole(role);
+      setCurrentViewingUser(null);
+    }
+  };
+
+  const switchToUser = (viewingUser: ViewingUser) => {
+    if (user?.role === UserRole.SUPER_ADMIN) {
+      setCurrentViewingUser(viewingUser);
+      setCurrentViewingRole(viewingUser.role);
     }
   };
 
   const resetRole = () => {
     setCurrentViewingRole(actualUserRole);
+    setCurrentViewingUser(null);
     sessionStorage.removeItem('ferdinand_viewing_role');
+    sessionStorage.removeItem('ferdinand_viewing_user');
   };
 
   const isRoleSwitched = currentViewingRole !== actualUserRole;
+  const isUserSwitched = currentViewingUser !== null;
 
   // Determine if a role can access the current page
   const canAccessCurrentPage = (role: UserRole): boolean => {
@@ -88,17 +130,20 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
 
   // Auto-revert when navigating to restricted pages
   useEffect(() => {
-    if (isRoleSwitched && !canAccessCurrentPage(currentViewingRole)) {
+    if ((isRoleSwitched || isUserSwitched) && !canAccessCurrentPage(currentViewingRole)) {
       resetRole();
     }
-  }, [window.location.pathname, currentViewingRole, isRoleSwitched]);
+  }, [window.location.pathname, currentViewingRole, isRoleSwitched, isUserSwitched]);
 
   const value: RoleSwitchingContextType = {
     currentViewingRole,
     actualUserRole,
+    currentViewingUser,
     switchRole,
+    switchToUser,
     resetRole,
     isRoleSwitched,
+    isUserSwitched,
     canAccessCurrentPage,
   };
 

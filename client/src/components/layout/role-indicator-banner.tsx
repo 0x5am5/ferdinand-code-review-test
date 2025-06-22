@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useRoleSwitching } from '@/contexts/RoleSwitchingContext';
 import { useAuth } from '@/hooks/use-auth';
@@ -30,11 +29,9 @@ const getRoleColor = (role: UserRole): string => {
 };
 
 export function RoleIndicatorBanner() {
-  const { user } = useAuth();
-  const { currentViewingRole, isRoleSwitched, resetRole } = useRoleSwitching();
+  const { isRoleSwitched, isUserSwitched, currentViewingRole, currentViewingUser, resetRole } = useRoleSwitching();
 
-  // Only show for super admins when role is switched
-  if (!user || user.role !== UserRole.SUPER_ADMIN || !isRoleSwitched) {
+  if (!isRoleSwitched && !isUserSwitched) {
     return null;
   }
 
@@ -53,7 +50,7 @@ export function RoleIndicatorBanner() {
           </Badge>
         </span>
       </div>
-      
+
       <Button
         variant="ghost"
         size="sm"
