@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserRole } from '@shared/schema';
 import { useRoleSwitching } from '@/contexts/RoleSwitchingContext';
@@ -72,7 +71,7 @@ export function RoleSwitchingRibbon() {
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Eye className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <span className="text-xs text-muted-foreground flex-shrink-0">View as:</span>
-          
+
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'role' | 'user')} className="flex-1">
             <TabsList className="grid w-full grid-cols-2 h-7">
               <TabsTrigger value="role" className="text-xs h-6">
@@ -84,7 +83,7 @@ export function RoleSwitchingRibbon() {
                 User
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="role" className="mt-2">
               <Select 
                 value={currentViewingUser ? '' : currentViewingRole} 
@@ -130,18 +129,19 @@ export function RoleSwitchingRibbon() {
                 </SelectContent>
               </Select>
             </TabsContent>
-            
+
             <TabsContent value="user" className="mt-2">
               <Select 
                 value={currentViewingUser?.id.toString() || ''} 
                 onValueChange={(value) => {
-                  const selectedUser = users.find(u => u.id.toString() === value);
+                  const selectedUser = filteredUsers.find(u => u.id.toString() === value);
                   if (selectedUser) {
                     switchToUser({
                       id: selectedUser.id,
                       name: selectedUser.name,
                       email: selectedUser.email,
-                      role: selectedUser.role
+                      role: selectedUser.role,
+                      client_id: selectedUser.client_id,
                     });
                   }
                 }}

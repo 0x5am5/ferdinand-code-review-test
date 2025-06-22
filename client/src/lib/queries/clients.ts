@@ -8,6 +8,19 @@ export const useClientsQuery = () =>
     queryKey: ["/api/clients"],
   });
 
+export function useFilteredClientsQuery() {
+  return useQuery<Client[]>({
+    queryKey: ["/api/clients/filtered"],
+    queryFn: async () => {
+      const response = await fetch("/api/clients/filtered");
+      if (!response.ok) {
+        throw new Error("Failed to fetch filtered clients");
+      }
+      return response.json();
+    },
+  });
+}
+
 export const useClientsById = (clientId: number | null) =>
   useQuery<Client>({
     queryKey: [`/api/clients/${clientId}`],

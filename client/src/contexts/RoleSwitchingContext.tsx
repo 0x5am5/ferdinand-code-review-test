@@ -8,6 +8,7 @@ interface ViewingUser {
   name: string;
   email: string;
   role: UserRole;
+  client_id?: number | null;
 }
 
 interface RoleSwitchingContextType {
@@ -20,6 +21,7 @@ interface RoleSwitchingContextType {
   isRoleSwitched: boolean;
   isUserSwitched: boolean;
   canAccessCurrentPage: (role: UserRole) => boolean;
+  getEffectiveClientId: () => number | null;
 }
 
 const RoleSwitchingContext = createContext<RoleSwitchingContextType | undefined>(undefined);
@@ -135,6 +137,17 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
     }
   }, [window.location.pathname, currentViewingRole, isRoleSwitched, isUserSwitched]);
 
+  // Get the effective client ID for data filtering
+  const getEffectiveClientId = (): number | null => {
+    if (currentViewingUser) {
+      // If viewing as a specific user, use their client ID for filtering
+      return currentViewingUser.id;
+    }
+    
+    // If just role switching (not user switching), use actual user's client access
+    return user?.client_id || null;
+  };
+
   const value: RoleSwitchingContextType = {
     currentViewingRole,
     actualUserRole,
@@ -145,6 +158,7 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
     isRoleSwitched,
     isUserSwitched,
     canAccessCurrentPage,
+    getEffectiveClientId,
   };
 
   return (

@@ -1,3 +1,4 @@
+import React from "react";
 import { UserManager } from "@/components/client/user-manager";
 import {
   useUpdateClientMutation,
@@ -69,9 +70,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
 import { useClientsQuery } from "@/lib/queries/clients";
+import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { currentViewingUser, isUserSwitched } = useRoleSwitching();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
     "custom",
@@ -112,11 +115,28 @@ export default function Dashboard() {
     },
   });
 
-  const { data: clients, isLoading: clientsIsLoading } = useClientsQuery();
+  const { data: allClients, isLoading: clientsIsLoading } = useClientsQuery();
   const updateClientOrder = useUpdateClientOrderMutation(setSortOrder);
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
+
+  // Filter clients based on current viewing user
+  const clients = React.useMemo(() => {
+    if (!allClients) return [];
+    
+    // If viewing as a specific user, filter by their client access
+    if (isUserSwitched && currentViewingUser) {
+      // If the viewing user has a specific client_id, only show that client
+      if (currentViewingUser.client_id) {
+        return allClients.filter(client => client.id === currentViewingUser.client_id);
+      }
+      // If no client_id (like super_admin/admin), show all clients
+      return allClients;
+    }
+    
+    return allClients;
+  }, [allClients, isUserSwitched, currentViewingUser]);
 
   useEffect(() => {
     if (clients && clients.length === 1) {
