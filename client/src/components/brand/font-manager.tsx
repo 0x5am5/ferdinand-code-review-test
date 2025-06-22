@@ -97,8 +97,16 @@ const generateGoogleFontUrl = (
 ) => {
   const family = fontName.replace(/\s+/g, "+");
   const weightStr = weights.join(";");
-  const italicWeights = styles.includes("italic") ? `:ital@0;1` : "";
-  return `https://fonts.googleapis.com/css2?family=${family}:wght@${weightStr}${italicWeights}&display=swap`;
+  
+  // Handle italic styles properly
+  if (styles.includes("italic")) {
+    // For italic, we need to specify both normal (0) and italic (1) for each weight
+    const italicParams = weights.map(weight => `0,${weight};1,${weight}`).join(";");
+    return `https://fonts.googleapis.com/css2?family=${family}:ital,wght@${italicParams}&display=swap`;
+  } else {
+    // For normal style only
+    return `https://fonts.googleapis.com/css2?family=${family}:wght@${weightStr}&display=swap`;
+  }
 };
 
 interface FontData {
@@ -920,9 +928,12 @@ function FontCard({
 
   // Load font for preview
   React.useEffect(() => {
-    if (font.source === FontSource.GOOGLE && font.sourceData?.url) {
+    if (font.source === FontSource.GOOGLE) {
+      // Generate URL with all available weights for preview
+      const fontUrl = font.sourceData?.url || generateGoogleFontUrl(font.name, font.weights, font.styles);
+      
       const link = document.createElement('link');
-      link.href = font.sourceData.url;
+      link.href = fontUrl;
       link.rel = 'stylesheet';
       link.id = `font-${font.name.replace(/\s+/g, '-')}`;
       
@@ -943,7 +954,7 @@ function FontCard({
         document.head.appendChild(link);
       }
     }
-  }, [font.name, font.source, font.sourceData]);
+  }, [font.name, font.source, font.sourceData, font.weights, font.styles]);
 
   return (
     <motion.div
@@ -1222,20 +1233,21 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       (font: any) => font.name === fontName,
     );
     const availableWeights = selectedFont?.weights || ["400", "700"];
-    const defaultWeights = availableWeights.slice(0, 3); // Use first 3 available weights
+    // Use ALL available weights instead of limiting to first 3
+    const allWeights = availableWeights;
 
     console.log(
       `Creating Google Font: ${fontName} with weights:`,
-      defaultWeights,
+      allWeights,
     );
 
     // Create proper font data structure
     const fontData = {
       source: FontSource.GOOGLE,
-      weights: defaultWeights,
+      weights: allWeights,
       styles: ["normal"],
       sourceData: {
-        url: generateGoogleFontUrl(fontName, defaultWeights, ["normal"]),
+        url: generateGoogleFontUrl(fontName, allWeights, ["normal"]),
         fontFamily: fontName,
         category: selectedFont?.category || "Sans Serif",
       },
