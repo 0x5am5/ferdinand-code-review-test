@@ -3,6 +3,7 @@ import { Sidebar } from "./sidebar";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { PageTransition } from "./page-transition";
 import { RoleIndicatorBanner } from "./role-indicator-banner";
+import { RoleSwitchingFAB } from "./role-switching-fab";
 import { AnimatePresence } from "framer-motion";
 
 interface AppLayoutProps {
@@ -28,6 +29,9 @@ export const AppLayout: FC<AppLayoutProps> = ({ children, pageKey }) => {
           </PageTransition>
         </AnimatePresence>
       </main>
+
+      {/* Floating Action Button for Role Switching */}
+      <RoleSwitchingFAB />
     </div>
   );
 };
