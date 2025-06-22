@@ -146,6 +146,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     individualBodyStyles: {},
   });
 
+  // Initialize currentScale if it's null and we have a scale to load
+  useEffect(() => {
+    if (!currentScale && typeScales.length > 0) {
+      setCurrentScale(typeScales[0]);
+    }
+  }, [typeScales, currentScale]);
+
   // Initialize state after activeScale is defined
   const [activeHeaderCustomizations, setActiveHeaderCustomizations] = useState<Set<string>>(
     new Set()
@@ -284,7 +291,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   });
 
   const updateScale = (updates: Partial<any>) => {
-    setCurrentScale(prev => prev ? { ...prev, ...updates } : { ...activeScale, ...updates });
+    const newScale = currentScale ? { ...currentScale, ...updates } : { ...activeScale, ...updates };
+    setCurrentScale(newScale);
     setIsEditing(true);
   };
 
@@ -378,12 +386,14 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   };
 
   const handleSave = () => {
-    saveTypeScaleMutation.mutate(activeScale);
+    const scaleToSave = currentScale || activeScale;
+    saveTypeScaleMutation.mutate(scaleToSave);
   };
 
   const handleDelete = () => {
-    if (activeScale.id && confirm("Are you sure you want to delete this type scale?")) {
-      deleteTypeScaleMutation.mutate(activeScale.id);
+    const scaleToDelete = currentScale || activeScale;
+    if (scaleToDelete.id && confirm("Are you sure you want to delete this type scale?")) {
+      deleteTypeScaleMutation.mutate(scaleToDelete.id);
     }
   };
 
@@ -1209,7 +1219,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   <TabsTrigger value="code">Code</TabsTrigger>
                 </TabsList>
                 <TabsContent value="preview" className="mt-4">
-                  <TypeScalePreview typeScale={activeScale} />
+                  <TypeScalePreview typeScale={{
+                    ...activeScale,
+                    typeStyles: activeScale.typeStyles || DEFAULT_TYPE_SCALE.typeStyles,
+                    baseSize: activeScale.baseSize || 16,
+                    scaleRatio: activeScale.scaleRatio || 1250,
+                    unit: activeScale.unit || "px"
+                  }} />
                 </TabsContent>
                 <TabsContent value="code" className="mt-4">
                   <Tabs defaultValue="css" className="w-full">
