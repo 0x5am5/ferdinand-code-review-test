@@ -65,6 +65,9 @@ export function registerAuthRoutes(app: Express) {
       // Set user in session
       console.log("Setting user in session");
       req.session.userId = user.id;
+
+      console.log(req.session, user.id);
+      
       await new Promise((resolve, reject) => {
         req.session.save((err) => {
           if (err) {

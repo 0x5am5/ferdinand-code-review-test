@@ -19,6 +19,8 @@ app.use(express.json());
 // Set up PostgreSQL session store
 const PostgresStore = connectPg(session);
 
+app.set("trust proxy", 1); // trust first proxy
+
 // Configure session middleware
 app.use(
   session({
@@ -32,7 +34,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
