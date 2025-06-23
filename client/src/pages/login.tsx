@@ -29,14 +29,17 @@ export default function Login() {
     setErrorMessage(null);
 
     try {
+      console.log("Login: Starting Google sign-in");
       const result = await signInWithPopup(auth, googleProvider);
 
       if (!result.user) {
         throw new Error("No user data returned");
       }
 
+      console.log("Login: Getting ID token");
       const idToken = await result.user.getIdToken();
 
+      console.log("Login: Sending token to backend");
       const response = await fetch("/api/auth/google", {
         method: "POST",
         headers: {
@@ -51,12 +54,16 @@ export default function Login() {
         throw new Error(data.message || "Server authentication failed");
       }
 
+      console.log("Login: Authentication successful, redirecting");
       toast({
         title: "Welcome!",
         description: `Signed in as ${result.user.email}`,
       });
 
-      window.location.href = "/dashboard";
+      // Use setTimeout to ensure the auth state has been updated
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 100);
     } catch (error: any) {
       console.error("Authentication error:", error);
 
@@ -68,6 +75,8 @@ export default function Login() {
         errorMsg = "Sign-in was cancelled.";
       } else if (error.code === "auth/network-request-failed") {
         errorMsg = "Network error. Please check your connection.";
+      } else if (error.message) {
+        errorMsg = error.message;
       }
 
       setErrorMessage(errorMsg);
@@ -82,10 +91,12 @@ export default function Login() {
   };
 
   useEffect(() => {
+    console.log("Login: Auth state changed, user:", user);
     if (user) {
-      setLocation("/dashboard");
+      console.log("Login: User detected, redirecting to dashboard");
+      window.location.href = "/dashboard";
     }
-  }, [user]);
+  }, [user, setLocation]);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-background">
