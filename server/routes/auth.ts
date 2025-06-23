@@ -64,13 +64,20 @@ export function registerAuthRoutes(app: Express) {
 
       // Set user in session
       console.log("Setting user in session");
+      console.log("Session before setting userId:", req.session);
+      console.log("Session ID:", req.sessionID);
       req.session.userId = user.id;
+      
       await new Promise((resolve, reject) => {
         req.session.save((err) => {
           if (err) {
             console.error("Error saving session:", err);
             reject(err);
-          } else resolve(undefined);
+          } else {
+            console.log("Session saved successfully");
+            console.log("Session after save:", req.session);
+            resolve(undefined);
+          }
         });
       });
 
