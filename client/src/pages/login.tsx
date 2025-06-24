@@ -15,7 +15,7 @@ import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
-import { FerdinandLogo, BullLogo, BackgroundPattern } from "@/components/icons/BrandIcons";
+import { FerdinandLogo, BullLogo, BackgroundPattern } from "@/images/logos";
 
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
