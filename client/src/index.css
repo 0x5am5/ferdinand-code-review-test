@@ -1,24 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
-/* Ivy Presto - Display font for headings */
-@font-face {
-  font-family: 'Ivy Presto';
-  src: url('https://use.typekit.net/af/cb695f/00000000000000003b9b2033/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n1&v=3') format('woff2'),
-       url('https://use.typekit.net/af/cb695f/00000000000000003b9b2033/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n1&v=3') format('woff');
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Ivy Presto';
-  src: url('https://use.typekit.net/af/366c64/00000000000000003b9b2034/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3') format('woff2'),
-       url('https://use.typekit.net/af/366c64/00000000000000003b9b2034/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3') format('woff');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
 /* Roc Grotesk - Sans serif font for body text */
 @font-face {
   font-family: 'Roc Grotesk';
@@ -85,8 +66,8 @@
     --ring: 205 100% 50%;
     --radius: 0.5rem;
     --transition: 0.2s ease;
-    --font-sans: 'Roc Grotesk', 'Inter', sans-serif;
-    --font-heading: 'Ivy Presto', serif;
+    --font-sans: 'roc-grotesk', 'Inter', sans-serif;
+    --font-heading: 'ivy-presto-display', serif;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-hover: 210 40% 96.1%;
