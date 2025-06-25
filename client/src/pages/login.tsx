@@ -117,7 +117,7 @@ export default function Login() {
         
         <div className="space-y-8">
           <div className="space-y-4">
-            <h1 className="font-ivy font-thin text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight">
               Your AI Design Team
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
@@ -136,7 +136,7 @@ export default function Login() {
               onClick={handleSignIn}
               disabled={isLoading}
               variant="outline"
-              className="w-full h-12 text-base font-medium border-2 hover:bg-foreground hover:text-background"
+              className="text-base font-medium border-2 hover:bg-foreground hover:text-background"
               size="lg"
             >
               {isLoading ? (
