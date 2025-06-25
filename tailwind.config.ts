@@ -6,10 +6,10 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'ivy': ['Ivy Pro Display', 'serif'],
+        'ivy': ['Ivy Presto', 'serif'],
         'roc': ['Roc Grotesk', 'Inter', 'sans-serif'],
         'sans': ['Roc Grotesk', 'Inter', 'sans-serif'],
-        'serif': ['Ivy Pro Display', 'serif'],
+        'serif': ['Ivy Presto', 'serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
