@@ -1,3 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* Ivy Pro Display - Display font for headings */
+@font-face {
+  font-family: 'Ivy Pro Display';
+  src: url('https://use.typekit.net/af/cb695f/00000000000000003b9b2033/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3') format('woff2'),
+       url('https://use.typekit.net/af/cb695f/00000000000000003b9b2033/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Ivy Pro Display';
+  src: url('https://use.typekit.net/af/366c64/00000000000000003b9b2034/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3') format('woff2'),
+       url('https://use.typekit.net/af/366c64/00000000000000003b9b2034/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n7&v=3') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Roc Grotesk - Sans serif font for body text */
+@font-face {
+  font-family: 'Roc Grotesk';
+  src: url('https://use.typekit.net/af/8e0e59/000000000000000000013365/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3') format('woff2'),
+       url('https://use.typekit.net/af/8e0e59/000000000000000000013365/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roc Grotesk';
+  src: url('https://use.typekit.net/af/fe73fc/000000000000000000013366/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3') format('woff2'),
+       url('https://use.typekit.net/af/fe73fc/000000000000000000013366/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roc Grotesk';
+  src: url('https://use.typekit.net/af/d73eb2/000000000000000000013367/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3') format('woff2'),
+       url('https://use.typekit.net/af/d73eb2/000000000000000000013367/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3') format('woff');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Roc Grotesk';
+  src: url('https://use.typekit.net/af/e9b30c/000000000000000000013368/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3') format('woff2'),
+       url('https://use.typekit.net/af/e9b30c/000000000000000000013368/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -27,8 +85,8 @@
     --ring: 205 100% 50%;
     --radius: 0.5rem;
     --transition: 0.2s ease;
-    --font-sans: 'roc-grotesk';
-    --font-heading: 'ivypresto-display';
+    --font-sans: 'Roc Grotesk', 'Inter', sans-serif;
+    --font-heading: 'Ivy Pro Display', serif;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;
     --sidebar-hover: 210 40% 96.1%;

@@ -6,13 +6,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        'ivy': ['var(--font-heading)', 'serif'],
-        'roc': ['var(--font-sans)', 'sans-serif'],
+        'ivy': ['Ivy Pro Display', 'serif'],
+        'roc': ['Roc Grotesk', 'Inter', 'sans-serif'],
+        'sans': ['Roc Grotesk', 'Inter', 'sans-serif'],
+        'serif': ['Ivy Pro Display', 'serif'],
       },
-      fontSize: {
-        'heading-1': ['2.5rem', { lineHeight: '1.2', fontWeight: '400' }],
-        'heading-2': ['2rem', { lineHeight: '1.2', fontWeight: '700' }],
-        'heading-3': ['1.5rem', { lineHeight: '1.2', fontWeight: '500' }],
+      borderRadius: {
+        lg: "var(--radius)",
+        md: "calc(var(--radius) - 2px)",
+        sm: "calc(var(--radius) - 4px)",
       },
       colors: {
         background: "hsl(var(--background))",
