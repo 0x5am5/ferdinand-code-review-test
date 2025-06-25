@@ -161,8 +161,8 @@ export default function Login() {
       </div>
 
       {/* Bull Logo - Bottom Left */}
-      <div className="absolute bottom-8 left-8 z-10">
-        <BullLogo className="h-8 text-foreground" />
+      <div className="absolute bottom-8 left-8">
+        <BullLogo/>
       </div>
 
       {/* Footer - Bottom Right */}
