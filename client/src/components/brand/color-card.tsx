@@ -234,7 +234,7 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
         )}>
           <div className="pt-4 border-t border-white/20">
             {colorFormats && (
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 {/* RGB */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-white font-medium w-16">RGB</span>
