@@ -1525,113 +1525,114 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         let whiteSvgContent: string;
                         
                         try {
-                          // Parse SVG as DOM for precise element manipulation
-                          const parser = new DOMParser();
-                          const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-                          const svgElement = svgDoc.documentElement;
+                          console.log('Starting NUCLEAR SVG conversion - multiple methods...');
                           
-                          // Check for parsing errors
-                          const parseError = svgDoc.querySelector('parsererror');
-                          if (parseError) {
-                            throw new Error('SVG parsing failed');
-                          }
-                          
-                          // Add global white override style as first child
-                          const globalStyle = svgDoc.createElement('style');
-                          globalStyle.textContent = `
-                            * { 
-                              fill: white !important; 
-                              color: white !important; 
-                              stroke: white !important; 
-                            }
-                            text, tspan, textPath { 
-                              fill: white !important; 
-                              color: white !important; 
-                            }
-                            path, circle, rect, polygon, polyline, ellipse, line {
-                              fill: white !important;
-                            }
-                          `;
-                          svgElement.insertBefore(globalStyle, svgElement.firstChild);
-                          
-                          // Get or create a unique class name for white styling
-                          const whiteClassName = 'svg-white-' + Math.random().toString(36).substr(2, 9);
-                          
-                          // Update the global style to target the specific class
-                          globalStyle.textContent = `
-                            .${whiteClassName} * { 
-                              fill: white !important; 
-                              color: white !important; 
-                              stroke: white !important; 
-                            }
-                            .${whiteClassName} text, .${whiteClassName} tspan, .${whiteClassName} textPath { 
-                              fill: white !important; 
-                              color: white !important; 
-                            }
-                            .${whiteClassName} path, .${whiteClassName} circle, .${whiteClassName} rect, .${whiteClassName} polygon, .${whiteClassName} polyline, .${whiteClassName} ellipse, .${whiteClassName} line {
-                              fill: white !important;
-                            }
-                          `;
-                          
-                          // Apply the white class to the root SVG element
-                          svgElement.setAttribute('class', whiteClassName);
-                          
-                          // CRITICAL FIX: Apply the white class to EVERY single element in the SVG
-                          const allElements = svgDoc.querySelectorAll('*');
-                          allElements.forEach(element => {
-                            // Skip svg root and style elements
-                            if (element.tagName === 'svg' || element.tagName === 'style') return;
-                            
-                            // Apply the white class to EVERY element
-                            element.setAttribute('class', whiteClassName);
-                            element.setAttribute('fill', 'white');
-                            element.setAttribute('color', 'white');
-                            element.setAttribute('style', 'fill:white!important;color:white!important;stroke:white!important');
-                          });
-                          
-                          // Remove all internal stylesheets that could override
-                          const internalStyles = svgDoc.querySelectorAll('style:not(:first-child)');
-                          internalStyles.forEach(style => style.remove());
-                          
-                          // Handle gradient stops
-                          const stops = svgDoc.querySelectorAll('stop');
-                          stops.forEach(stop => {
-                            stop.setAttribute('stop-color', 'white');
-                            stop.setAttribute('style', 'stop-color:white!important');
-                          });
-                          
-                          // Serialize back to string
-                          const serializer = new XMLSerializer();
-                          whiteSvgContent = serializer.serializeToString(svgDoc);
-                          
-                        } catch (error) {
-                          console.warn('DOM parsing failed, using fallback regex approach:', error);
-                          
-                          // Fallback: Class-based regex approach
+                          // NUCLEAR METHOD: Start with string-based conversion
                           whiteSvgContent = svgContent;
-                          const whiteClassName = 'svg-white-' + Math.random().toString(36).substr(2, 9);
                           
-                          // Add class-based global override at SVG root
+                          // 1. Strip ALL existing styles and colors completely
+                          whiteSvgContent = whiteSvgContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+                          whiteSvgContent = whiteSvgContent.replace(/style\s*=\s*["'][^"']*["']/gi, '');
+                          whiteSvgContent = whiteSvgContent.replace(/fill\s*=\s*["'][^"']*["']/gi, '');
+                          whiteSvgContent = whiteSvgContent.replace(/color\s*=\s*["'][^"']*["']/gi, '');
+                          whiteSvgContent = whiteSvgContent.replace(/stroke\s*=\s*["'][^"']*["']/gi, '');
+                          
+                          // 2. Add nuclear CSS that overrides EVERYTHING
+                          const nuclearStyle = `<style>
+                            svg, svg *, path, text, tspan, textPath, circle, rect, polygon, polyline, ellipse, line, g, use, defs, clipPath { 
+                              fill: white !important; 
+                              color: white !important; 
+                              stroke: white !important; 
+                            }
+                          </style>`;
+                          
+                          whiteSvgContent = whiteSvgContent.replace(/<svg([^>]*)>/i, `<svg$1>${nuclearStyle}`);
+                          
+                          // 3. Generate unique class name and apply to EVERY SINGLE element
+                          const whiteClass = 'white-' + Math.random().toString(36).substr(2, 9);
+                          
+                          // Apply class to ALL elements - this is the critical fix
+                          const elementTypes = ['path', 'text', 'tspan', 'textPath', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'g', 'use', 'defs', 'clipPath'];
+                          
+                          elementTypes.forEach(tag => {
+                            // Self-closing elements - add class to every single one
+                            whiteSvgContent = whiteSvgContent.replace(
+                              new RegExp(`<${tag}([^>]*?)\\s*/>`, 'gi'),
+                              `<${tag}$1 class="${whiteClass}" fill="white" color="white" style="fill:white!important;color:white!important" />`
+                            );
+                            
+                            // Opening elements - add class to every single one
+                            whiteSvgContent = whiteSvgContent.replace(
+                              new RegExp(`<${tag}([^>]*?)>`, 'gi'),
+                              `<${tag}$1 class="${whiteClass}" fill="white" color="white" style="fill:white!important;color:white!important">`
+                            );
+                          });
+                          
+                          // Update the nuclear style to target the specific class
+                          const nuclearStyleWithClass = `<style>
+                            svg, svg *, path, text, tspan, textPath, circle, rect, polygon, polyline, ellipse, line, g, use, defs, clipPath { 
+                              fill: white !important; 
+                              color: white !important; 
+                              stroke: white !important; 
+                            }
+                            .${whiteClass} { 
+                              fill: white !important; 
+                              color: white !important; 
+                              stroke: white !important; 
+                            }
+                          </style>`;
+                          
+                          // Replace the style
                           whiteSvgContent = whiteSvgContent.replace(
-                            /<svg([^>]*)>/i, 
-                            `<svg$1 class="${whiteClassName}"><style>.${whiteClassName} * { fill: white !important; color: white !important; }</style>`
+                            /<style>[\s\S]*?<\/style>/i,
+                            nuclearStyleWithClass
                           );
                           
-                          // CRITICAL FIX: Force class and fill on every possible element
-                          const allElements = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'textPath', 'g', 'use', 'defs', 'clipPath'];
-                          allElements.forEach(tag => {
-                            const regex = new RegExp(`<${tag}([^>]*?)>`, 'gi');
-                            whiteSvgContent = whiteSvgContent.replace(regex, (match, attributes) => {
-                              if (match.endsWith('/>')) return match;
-                              
-                              let cleanAttrs = attributes
-                                .replace(/fill\s*=\s*["'][^"']*["']/gi, '')
-                                .replace(/class\s*=\s*["'][^"']*["']/gi, '')
-                                .replace(/style\s*=\s*["'][^"']*["']/gi, '');
-                              
-                              return `<${tag}${cleanAttrs} class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important;">`;
+                          // 4. Fix gradient stops
+                          whiteSvgContent = whiteSvgContent.replace(
+                            /<stop([^>]*?)>/gi,
+                            '<stop$1 stop-color="white" style="stop-color:white!important">'
+                          );
+                          
+                          console.log('Nuclear string conversion completed, result length:', whiteSvgContent.length);
+                          
+                        } catch (error) {
+                          console.error('DOM parsing failed, using fallback regex approach:', error);
+                          
+                          // Fallback: Simple but effective regex approach
+                          whiteSvgContent = svgContent;
+                          
+                          try {
+                            const whiteClassName = 'svg-white-' + Math.random().toString(36).substr(2, 9);
+                            
+                            // Add global white style
+                            whiteSvgContent = whiteSvgContent.replace(
+                              /<svg([^>]*)>/i, 
+                              `<svg$1><style>* { fill: white !important; color: white !important; } path, text, tspan, circle, rect, polygon, polyline, ellipse, line, g { fill: white !important; }</style>`
+                            );
+                            
+                            // Force fill="white" on every possible element
+                            const allElements = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'textPath', 'g', 'use'];
+                            allElements.forEach(tag => {
+                              const regex = new RegExp(`<${tag}([^>]*)>`, 'gi');
+                              whiteSvgContent = whiteSvgContent.replace(regex, (match, attributes) => {
+                                if (match.endsWith('/>')) return match;
+                                
+                                // Remove existing fill attributes and add white
+                                let cleanAttrs = attributes.replace(/fill\s*=\s*["'][^"']*["']/gi, '');
+                                return `<${tag}${cleanAttrs} fill="white">`;
+                              });
                             });
-                          });
+                            
+                            console.log('Fallback regex conversion completed');
+                          } catch (fallbackError) {
+                            console.error('Fallback conversion also failed:', fallbackError);
+                            // Last resort: just add global style
+                            whiteSvgContent = svgContent.replace(
+                              /<svg([^>]*)>/i, 
+                              '<svg$1><style>* { fill: white !important; color: white !important; }</style>'
+                            );
+                          }
                         }
 
                         // Create a blob from the modified SVG content
