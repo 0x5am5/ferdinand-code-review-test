@@ -1699,7 +1699,7 @@ export function ColorManager({
       queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: any) => {
         if (!old) return old;
 
-        return old.map((asset: any) => {```typescript
+        return old.map((asset: any) => {
           if (asset.id === newData.id) {
             return {
               ...asset,
