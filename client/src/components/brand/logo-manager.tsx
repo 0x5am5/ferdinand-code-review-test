@@ -902,7 +902,7 @@ function StandardLogoDownloadButton({
       setTimeout(() => {
         document.body.removeChild(container);
         setOpen(false); // Close popover after download
-      }, 100);
+      }, 100);```text
     } catch (error) {
       console.error(`Error downloading ${format} file:`, error);
       toast({
@@ -1505,486 +1505,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 </Button>
 
                 {/* Show "Make logo all white" button only for SVG files */}
-                {(parsedData?.format === 'svg' || parsedData?.format === 'image/svg+xml' || logo.mimeType === 'image/svg+xml' || 
-                  (logo.mimeType && logo.mimeType.includes('svg')) || 
-                  (parsedData?.format && parsedData.format.includes('svg'))) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={async () => {
-                      try {
-                        // Fetch the light variant SVG data
-                        const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
-                        if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
-
-                        // Get the SVG content as text
-                        const svgContent = await fileResponse.text();
-                        
-                        // DOM-BASED SVG WHITE CONVERSION - Most Reliable Approach
-                        let whiteSvgContent: string;
-                        
-                        try {
-                          console.log('Starting DOM-based SVG white conversion...');
-                          
-                          // Parse SVG content as DOM
-                          const parser = new DOMParser();
-                          const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
-                          const svgElement = svgDoc.documentElement;
-
-                          // Generate unique class name
-                          const whiteClass = 'white-' + Math.random().toString(36).substr(2, 9);
-
-                          // Add global white override style at the beginning
-                          const styleElement = svgDoc.createElement('style');
-                          styleElement.textContent = `
-                            .${whiteClass}, .${whiteClass} *, svg *, path, text, tspan, textPath, circle, rect, polygon, polyline, ellipse, line, g, use, defs, clipPath { 
-                              fill: white !important; 
-                              color: white !important; 
-                              stroke: white !important; 
-                            }
-                          `;
-                          svgElement.insertBefore(styleElement, svgElement.firstChild);
-
-                          // Apply white class to ALL drawable elements
-                          const allElements = svgDoc.querySelectorAll('*');
-                          allElements.forEach(el => {
-                            // Add the white class to every element
-                            el.setAttribute('class', whiteClass);
-                            
-                            // Force explicit attributes
-                            el.setAttribute('fill', 'white');
-                            el.setAttribute('color', 'white');
-                            
-                            // Remove any existing style and replace with white
-                            el.setAttribute('style', 'fill:white!important;color:white!important;stroke:white!important');
-                          });
-
-                          // Also apply class to the SVG root element
-                          svgElement.setAttribute('class', whiteClass);
-                          svgElement.setAttribute('fill', 'white');
-                          svgElement.setAttribute('style', 'fill:white!important;color:white!important;stroke:white!important');
-
-                          // Remove any internal stylesheets that might override
-                          const internalStyles = svgDoc.querySelectorAll('style:not(:first-child)');
-                          internalStyles.forEach(style => style.remove());
-
-                          // Serialize back to string
-                          const serializer = new XMLSerializer();
-                          whiteSvgContent = serializer.serializeToString(svgDoc);
-                          
-                          console.log('DOM-based conversion completed successfully');
-                          console.log('CONVERTED SVG CONTENT:', whiteSvgContent.substring(0, 500) + '...');
-                          
-                        } catch (error) {
-                          console.error('DOM parsing failed, using nuclear regex approach:', error);
-                          
-                          // NUCLEAR FALLBACK: Force white on everything using regex
-                          whiteSvgContent = svgContent;
-                          
-                          try {
-                            const whiteClassName = 'svg-white-' + Math.random().toString(36).substr(2, 9);
-                            
-                            // 1. Strip ALL existing styles and colors completely
-                            whiteSvgContent = whiteSvgContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-                            whiteSvgContent = whiteSvgContent.replace(/style\s*=\s*["'][^"']*["']/gi, '');
-                            whiteSvgContent = whiteSvgContent.replace(/fill\s*=\s*["'][^"']*["']/gi, '');
-                            whiteSvgContent = whiteSvgContent.replace(/color\s*=\s*["'][^"']*["']/gi, '');
-                            whiteSvgContent = whiteSvgContent.replace(/class\s*=\s*["'][^"']*["']/gi, '');
-                            
-                            // 2. Add nuclear style at the beginning
-                            whiteSvgContent = whiteSvgContent.replace(
-                              /<svg([^>]*)>/i, 
-                              `<svg$1 class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important"><style>.${whiteClassName}, .${whiteClassName} *, svg *, path, text, tspan, textPath, circle, rect, polygon, polyline, ellipse, line, g, use, defs, clipPath { fill: white !important; color: white !important; stroke: white !important; }</style>`
-                            );
-                            
-                            // 3. Force class and attributes on ALL possible SVG elements
-                            const allElements = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'textPath', 'g', 'use', 'defs', 'clipPath'];
-                            allElements.forEach(tag => {
-                              // Handle self-closing elements
-                              whiteSvgContent = whiteSvgContent.replace(
-                                new RegExp(`<${tag}([^>]*?)\\s*/>`, 'gi'),
-                                `<${tag}$1 class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important;stroke:white!important" />`
-                              );
-                              
-                              // Handle opening elements
-                              whiteSvgContent = whiteSvgContent.replace(
-                                new RegExp(`<${tag}([^>]*?)>`, 'gi'),
-                                `<${tag}$1 class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important;stroke:white!important">`
-                              );
-                            });
-                            
-                            console.log('Nuclear regex conversion completed');
-                          } catch (fallbackError) {
-                            console.error('Nuclear fallback also failed:', fallbackError);
-                            // Last resort: just add global style
-                            whiteSvgContent = svgContent.replace(
-                              /<svg([^>]*)>/i, 
-                              '<svg$1><style>* { fill: white !important; color: white !important; stroke: white !important; }</style>'
-                            );
-                          }
-                        }
-
-                        // Create a blob from the modified SVG content
-                        const svgBlob = new Blob([whiteSvgContent], { type: 'image/svg+xml' });
-                        const fileName = `${type}_logo_dark.svg`;
-                        const file = new File([svgBlob], fileName, { type: 'image/svg+xml' });
-
-                        // Create FormData with the file and necessary metadata
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                        formData.append("type", type);
-                        formData.append("category", "logo");
-                        formData.append("isDarkVariant", "true");
-
-                        // Add data with hasDarkVariant flag
-                        formData.append("data", JSON.stringify({
-                          type,
-                          format: parsedData.format,
-                          hasDarkVariant: true,
-                          isDarkVariant: true
-                        }));
-
-                        console.log("Converting light SVG logo to white for dark variant");
-                        const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                          method: "PATCH",
-                          body: formData,
-                        });
-
-                        if (!response.ok) {
-                          throw new Error(await response.text());
-                        }
-
-                        // Update UI
-                        parsedData.hasDarkVariant = true;
-                        await queryClient.invalidateQueries({
-                          queryKey: [`/api/clients/${clientId}/assets`],
-                        });
-                        await queryClient.invalidateQueries({
-                          queryKey: [`/api/assets/${logo.id}`],
-                        });
-
-                        toast({
-                          title: "Success",
-                          description: "Logo converted to white for dark variant",
-                        });
-                      } catch (error) {
-                        console.error("Error converting logo to white:", error);
-                        toast({
-                          title: "Error",
-                          description: error instanceof Error ? error.message : "Failed to convert logo to white",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                    Make logo all white
-                  </Button>
-                )}
-
-                <div className="text-sm text-muted-foreground">- or -</div>
-              </div>
-
-              <div className="logo-upload__dropzone logo-upload__dropzone--dark flex flex-col items-center justify-center">
-                <div className="logo-upload__dropzone-icon">
-                  <Upload className="h-8 w-8" />
-                </div>
-                <h4 className="logo-upload__dropzone-heading">
-                  Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo for Dark Background
-                </h4>
-                <p className="logo-upload__dropzone-text text-center">
-                  Drag and drop your logo file here, or click to browse.<br />
-                  Supported formats: {Object.values(FILE_FORMATS).join(", ")}
-                </p>
-                <div className="logo-upload__dropzone-actions mt-4">
-                  <FileUpload
-                    type={type}
-                    clientId={clientId}
-                    isDarkVariant={true}
-                    parentLogoId={logo.id}
-                    queryClient={queryClient}
-                    buttonOnly={true}
-                    className="min-w-32"
-                    onSuccess={async () => {
-                      parsedData.hasDarkVariant = true;
-                      // Ensure we update both queries to refresh the UI immediately
-                      await queryClient.invalidateQueries({
-                        queryKey: [`/api/clients/${clientId}/assets`],
-                      });
-                      await queryClient.invalidateQueries({
-                        queryKey: [`/api/assets/${logo.id}`],
-                      });
-                    }}
-                  >
-                    Browse Files
-                  </FileUpload>
-                </div>
-              </div>
-
-
-            </div>
-          ) : (
-            <div className="logo-display__preview-image-container">
-              {parsedData.format === 'svg' ? (
-                  <object
-                    data={variant === 'dark' && parsedData.hasDarkVariant ? 
-                      `/api/assets/${logo.id}/file?variant=dark` : 
-                      imageUrl}
-                    type="image/svg+xml"
-                    className="logo-display__preview-image"
-                  >
-                    <img
-                      src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                        `/api/assets/${logo.id}/file?variant=dark` : 
-                        imageUrl}
-                      className="logo-display__preview-image"
-                      alt={logo.name || "SVG Logo"}
-                      onError={(e) => {
-                        console.error("Error loading SVG:", imageUrl);
-                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
-                      }}
-                    />
-                  </object>
-              ) : (
-                <img
-                  src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                    `/api/assets/${logo.id}/file?variant=dark` : 
-                    imageUrl}
-                  alt={logo.name}
-                  className="logo-display__preview-image"
-                  style={{ 
-                    filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
-                  }}
-                  onError={(e) => {
-                    console.error("Error loading image:", imageUrl);
-                    e.currentTarget.src =
-                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
-                  }}
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// LogoSection component for each type of logo (used for both empty and populated states)
-function LogoSection({ 
-  type, 
-  logos, 
-  clientId, 
-  onDeleteLogo,
-  queryClient,
-  onRemoveSection
-}: { 
-  type: string, 
-  logos: BrandAsset[],
-  clientId: number,
-  onDeleteLogo: (logoId: number, variant: 'light' | 'dark') => void,
-  queryClient: any,
-  onRemoveSection?: (type: string) => void
-}) {
-  const { user = null } = useAuth();
-  const { toast } = useToast();
-  const hasLogos = logos.length > 0;
-
-  return (
-    <AssetSection
-      title={`${type.charAt(0).toUpperCase() + type.slice(1)} Logo`}
-      description={logoDescriptions[type as keyof typeof logoDescriptions]}
-      isEmpty={!hasLogos}
-      onRemoveSection={onRemoveSection}
-      sectionType={type}
-      uploadComponent={
-        <FileUpload 
-          type={type} 
-          clientId={clientId}
-          onSuccess={() => {}}
-          queryClient={queryClient}
-        />
-      }
-      emptyPlaceholder={
-        <div className="logo-section__empty-placeholder">
-          <FileType className="logo-section__empty-placeholder-icon h-10 w-10" />
-          <p>
-            No {type.toLowerCase()} logo uploaded yet
-          </p>
-        </div>
-      }
-    >
-      {hasLogos && logos.map((logo) => {
-        const parsedData = parseBrandAssetData(logo);
-        if (!parsedData) return null;
-        const imageUrl = `/api/assets/${logo.id}/file`;
-        const handleFileUpload = async (file: File, variant: 'light' | 'dark') => {
-          try {
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`);
-            formData.append("type", type);
-            formData.append("category", "logo");
-
-            if (variant === 'dark') {
-              formData.append("isDarkVariant", "true");
-              formData.append("data", JSON.stringify({
-                type,
-                format: file.name.split('.').pop()?.toLowerCase(),
-                hasDarkVariant: true,
-                isDarkVariant: true
-              }));
-              formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-            } else {
-              formData.append("isDarkVariant", "false");
-              formData.append("data", JSON.stringify({
-                type,
-                format: file.name.split('.').pop()?.toLowerCase(),
-                hasDarkVariant: parsedData.hasDarkVariant || false
-              }));
-            }
-
-            const endpoint = variant === 'dark' ? 
-              `/api/clients/${clientId}/assets/${logo.id}?variant=dark` :
-              `/api/clients/${clientId}/assets/${logo.id}`;
-
-            const response = await fetch(endpoint, {
-              method: "PATCH",
-              body: formData,
-            });
-
-            if (!response.ok) {
-              throw new Error(await response.text());
-            }
-
-            await queryClient.invalidateQueries({
-              queryKey: [`/api/clients/${clientId}/assets`],
-            });
-            await queryClient.invalidateQueries({
-              queryKey: [`/api/assets/${logo.id}`],
-            });
-
-            toast({
-              title: "Success",
-              description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo ${variant === 'dark' ? 'dark variant' : ''} updated successfully`,
-            });
-          } catch (error) {
-            console.error("Error updating logo:", error);
-            toast({
-              title: "Error",
-              description: error instanceof Error ? error.message : "Failed to update logo",
-              variant: "destructive",
-            });
-          }
-        };
-
-        return (
-          <AssetDisplay
-            key={logo.id}
-            renderActions={(variant) => (
-              <>
-                <label className="cursor-pointer">
-                  <Input
-                    type="file"
-                    accept={Object.values(FILE_FORMATS).map(format => `.${format}`).join(",")}
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) {
-                        handleFileUpload(e.target.files[0], variant);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                  <button
-                    className="asset-display__preview-action-button"
-                    type="button"
-                    onClick={(e) => {
-                      const fileInput = e.currentTarget.closest('label')?.querySelector('input[type=\"file\"]');
-                      if (fileInput) {
-                        (fileInput as HTMLInputElement).click();
-                      }
-                    }}
-                    >
-                    <Upload className="h-3 w-3" />
-                    <span>Replace</span>
-                  </button>
-                </label>
-
-                <LogoDownloadButton 
-                  logo={logo} 
-                  imageUrl={imageUrl} 
-                  variant={variant}
-                  parsedData={parsedData}
-                />
-
-                {((variant === 'dark' && parsedData.hasDarkVariant) || variant === 'light') && (
-                  <button 
-                    className="asset-display__preview-action-button"
-                    onClick={() => onDeleteLogo(logo.id, variant)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    <span>Delete</span>
-                  </button>
-                )}
-              </>
-            )}
-            renderAsset={(variant) => (
-              variant === 'dark' && !parsedData.hasDarkVariant ? (
-                <div className="w-full h-full flex flex-col items-center justify-center gap-6 mb-[2rem] pr-[5vh] pl-[5vh]">
-                  <div className="flex flex-col items-center gap-2 mt-[2rem]">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={async () => {
-                        try {
-                          const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
-                          if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
-
-                          const fileBlob = await fileResponse.blob();
-                          const fileName = `${type}_logo_dark.${parsedData.format}`;
-                          const file = new File([fileBlob], fileName, { type: fileResponse.headers.get('content-type') || 'image/svg+xml' });
-
-                          const formData = new FormData();
-                          formData.append("file", file);
-                          formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                          formData.append("type", type);
-                          formData.append("category", "logo");
-                          formData.append("isDarkVariant", "true");
-                          formData.append("data", JSON.stringify({
-                            type,
-                            format: parsedData.format,
-                            hasDarkVariant: true,
-                            isDarkVariant: true
-                          }));
-
-                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                            method: "PATCH",
-                            body: formData,
-                          });
-
-                          if (!response.ok) {
-                            throw new Error(await response.text());
-                          }
-
-                          parsedData.hasDarkVariant = true;
-                          await queryClient.invalidateQueries({
-                            queryKey: [`/api/clients/${clientId}/assets`],
-                          });
-                          await queryClient.invalidateQueries({
-                            queryKey: [`/api/assets/${logo.id}`],
-                          });
-                        } catch (error) {
-                          console.error("Error copying light variant as dark:", error);
-                        }
-                      }}
-                    >
-                      <Copy className="h-4 w-4" />
-                      Use light logo for dark variant
-                    </Button>
-
-                    {/* Show "Make logo all white" button only for SVG files */}
                     {(parsedData?.format === 'svg' || parsedData?.format === 'image/svg+xml' || logo.mimeType === 'image/svg+xml' || 
                       (logo.mimeType && logo.mimeType.includes('svg')) || 
                       (parsedData?.format && parsedData.format.includes('svg'))) && (
@@ -2000,59 +1520,147 @@ function LogoSection({
 
                             // Get the SVG content as text
                             const svgContent = await fileResponse.text();
-                            
-                            // Convert SVG to white by replacing fill and stroke colors
-                            let whiteSvgContent = svgContent
-                              // Replace fill attributes with white (handle any color format)
-                              .replace(/fill="[^"]*"/gi, 'fill="white"')
-                              .replace(/fill='[^']*'/gi, "fill='white'")
-                              // Replace stroke attributes with white
-                              .replace(/stroke="[^"]*"/gi, 'stroke="white"')
-                              .replace(/stroke='[^']*'/gi, "stroke='white'")
-                              // Handle CSS style attributes comprehensively
-                              .replace(/style="([^"]*)"/gi, (match, styleContent) => {
-                                const updatedStyle = styleContent
-                                  // Replace fill in CSS
-                                  .replace(/fill\s*:\s*[^;]+/gi, 'fill:white')
-                                  // Replace stroke in CSS
-                                  .replace(/stroke\s*:\s*[^;]+/gi, 'stroke:white')
-                                  // Replace color property (for text elements)
-                                  .replace(/color\s*:\s*[^;]+/gi, 'color:white')
-                                  // Replace any other color-related properties
-                                  .replace(/stop-color\s*:\s*[^;]+/gi, 'stop-color:white');
-                                return `style="${updatedStyle}"`;
-                              })
-                              // Handle CSS style attributes with single quotes
-                              .replace(/style='([^']*)'/gi, (match, styleContent) => {
-                                const updatedStyle = styleContent
-                                  .replace(/fill\s*:\s*[^;]+/gi, 'fill:white')
-                                  .replace(/stroke\s*:\s*[^;]+/gi, 'stroke:white')
-                                  .replace(/color\s*:\s*[^;]+/gi, 'color:white')
-                                  .replace(/stop-color\s*:\s*[^;]+/gi, 'stop-color:white');
-                                return `style='${updatedStyle}'`;
-                              })
-                              // Handle inline CSS styles without quotes
-                              .replace(/fill\s*:\s*[^;}\s]+/gi, 'fill:white')
-                              .replace(/stroke\s*:\s*[^;}\s]+/gi, 'stroke:white')
-                              .replace(/color\s*:\s*[^;}\s]+/gi, 'color:white')
-                              // Handle stop-color for gradients
-                              .replace(/stop-color="[^"]*"/gi, 'stop-color="white"')
-                              .replace(/stop-color='[^']*'/gi, "stop-color='white'")
-                              // Remove any fill="none" and replace with white
-                              .replace(/fill="none"/gi, 'fill="white"')
-                              .replace(/fill='none'/gi, "fill='white'")
-                              // Handle hex colors directly in attributes
-                              .replace(/#[0-9a-fA-F]{3,8}/g, 'white')
-                              // Handle rgb/rgba colors
-                              .replace(/rgb\([^)]+\)/gi, 'white')
-                              .replace(/rgba\([^)]+\)/gi, 'white')
-                              // Handle hsl/hsla colors  
-                              .replace(/hsl\([^)]+\)/gi, 'white')
-                              .replace(/hsla\([^)]+\)/gi, 'white')
-                              // Handle named colors (common ones that might be black)
-                              .replace(/=["']?black["']?/gi, '="white"')
-                              .replace(/=["']?#000000["']?/gi, '="white"')
-                              .replace(/=["']?#000["']?/gi, '="white"');
+
+                            // DOM-BASED SVG WHITE CONVERSION - Most Reliable Approach
+                            let whiteSvgContent: string;
+
+                            try {
+                              console.log('Starting DOM-based SVG white conversion...');
+
+                              // Parse SVG content as DOM
+                              const parser = new DOMParser();
+                              const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+                              const svgElement = svgDoc.documentElement;
+
+                              // Check for parsing errors
+                              const parseError = svgDoc.querySelector('parsererror');
+                              if (parseError) {
+                                throw new Error('SVG parsing failed');
+                              }
+
+                              // Generate unique class name
+                              const whiteClass = 'white-' + Math.random().toString(36).substr(2, 9);
+
+                              // Add global white override style at the beginning
+                              const styleElement = svgDoc.createElement('style');
+                              styleElement.textContent = `
+                                .${whiteClass} *, 
+                                .${whiteClass}, 
+                                svg *, 
+                                path, 
+                                text, 
+                                tspan, 
+                                textPath, 
+                                circle, 
+                                rect, 
+                                polygon, 
+                                polyline, 
+                                ellipse, 
+                                line, 
+                                g, 
+                                use, 
+                                defs, 
+                                clipPath { 
+                                  fill: white !important; 
+                                  color: white !important; 
+                                  stroke: white !important; 
+                                }
+                              `;
+                              svgElement.insertBefore(styleElement, svgElement.firstChild);
+
+                              // Apply white class and attributes to ALL elements
+                              const allElements = svgDoc.querySelectorAll('*');
+                              allElements.forEach((el, index) => {
+                                // Get existing class and append our white class
+                                const existingClass = el.getAttribute('class') || '';
+                                const newClass = existingClass ? `${existingClass} ${whiteClass}` : whiteClass;
+                                el.setAttribute('class', newClass);
+
+                                // Force explicit attributes
+                                el.setAttribute('fill', 'white');
+                                el.setAttribute('color', 'white');
+
+                                // Get existing style and append our white overrides
+                                const existingStyle = el.getAttribute('style') || '';
+                                const whiteStyle = 'fill:white!important;color:white!important;stroke:white!important;';
+                                const newStyle = existingStyle ? `${existingStyle};${whiteStyle}` : whiteStyle;
+                                el.setAttribute('style', newStyle);
+
+                                console.log(`Element ${index} (${el.tagName}): class="${newClass}", style="${newStyle}"`);
+                              });
+
+                              // Also apply class to the SVG root element
+                              const existingRootClass = svgElement.getAttribute('class') || '';
+                              const newRootClass = existingRootClass ? `${existingRootClass} ${whiteClass}` : whiteClass;
+                              svgElement.setAttribute('class', newRootClass);
+                              svgElement.setAttribute('fill', 'white');
+                              const existingRootStyle = svgElement.getAttribute('style') || '';
+                              const whiteRootStyle = 'fill:white!important;color:white!important;stroke:white!important;';
+                              const newRootStyle = existingRootStyle ? `${existingRootStyle};${whiteRootStyle}` : whiteRootStyle;
+                              svgElement.setAttribute('style', newRootStyle);
+
+                              // Remove any internal stylesheets that might override (except our first one)
+                              const internalStyles = svgDoc.querySelectorAll('style:not(:first-child)');
+                              internalStyles.forEach(style => {
+                                console.log('Removing internal style:', style.textContent);
+                                style.remove();
+                              });
+
+                              // Serialize back to string
+                              const serializer = new XMLSerializer();
+                              whiteSvgContent = serializer.serializeToString(svgDoc);
+
+                              console.log('DOM-based conversion completed successfully');
+                              console.log('CONVERTED SVG CONTENT:', whiteSvgContent.substring(0, 500) + '...');
+
+                            } catch (error) {
+                              console.error('DOM parsing failed, using nuclear regex approach:', error);
+
+                              // NUCLEAR FALLBACK: Force white on everything using regex
+                              whiteSvgContent = svgContent;
+
+                              try {
+                                const whiteClassName = 'svg-white-' + Math.random().toString(36).substr(2, 9);
+
+                                // 1. Strip ALL existing styles and colors completely
+                                whiteSvgContent = whiteSvgContent.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+                                whiteSvgContent = whiteSvgContent.replace(/style\s*=\s*["'][^"']*["']/gi, '');
+                                whiteSvgContent = whiteSvgContent.replace(/fill\s*=\s*["'][^"']*["']/gi, '');
+                                whiteSvgContent = whiteSvgContent.replace(/color\s*=\s*["'][^"']*["']/gi, '');
+                                whiteSvgContent = whiteSvgContent.replace(/stroke\s*=\s*["'][^"']*["']/gi, '');
+
+                                // 2. Add nuclear style at the beginning
+                                whiteSvgContent = whiteSvgContent.replace(
+                                  /<svg([^>]*)>/i, 
+                                  `<svg$1 class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important;stroke:white!important"><style>.${whiteClassName}, .${whiteClassName} *, svg *, path, text, tspan, textPath, circle, rect, polygon, polyline, ellipse, line, g, use, defs, clipPath { fill: white !important; color: white !important; stroke: white !important; }</style>`
+                                );
+
+                                // 3. Force class and attributes on ALL possible SVG elements
+                                const allElements = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'textPath', 'g', 'use', 'defs', 'clipPath'];
+                                allElements.forEach(tag => {
+                                  // Handle self-closing elements
+                                  whiteSvgContent = whiteSvgContent.replace(
+                                    new RegExp(`<${tag}([^>]*?)\\s*/>`, 'gi'),
+                                    `<${tag}$1 class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important;stroke:white!important" />`
+                                  );
+
+                                  // Handle opening elements
+                                  whiteSvgContent = whiteSvgContent.replace(
+                                    new RegExp(`<${tag}([^>]*?)>`, 'gi'),
+                                    `<${tag}$1 class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important;stroke:white!important">`
+                                  );
+                                });
+
+                                console.log('Nuclear regex conversion completed');
+                              } catch (fallbackError) {
+                                console.error('Nuclear fallback also failed:', fallbackError);
+                                // Last resort: just add global style
+                                whiteSvgContent = svgContent.replace(
+                                  /<svg([^>]*)>/i, 
+                                  '<svg$1><style>* { fill: white !important; color: white !important; stroke: white !important; }</style>'
+                                );
+                              }
+                            }
 
                             // Create a blob from the modified SVG content
                             const svgBlob = new Blob([whiteSvgContent], { type: 'image/svg+xml' });
@@ -2176,7 +1784,7 @@ function LogoSection({
                   ) : (
                     <img
                       src={variant === 'dark' && parsedData.hasDarkVariant ? 
-                        `/api/assets/${logo.id}/file?variant=dark` : 
+                        `/api/assets/${logo.id/file?variant=dark` : 
                         imageUrl}
                       alt={logo.name}
                       className="asset-display__preview-image"
