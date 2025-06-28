@@ -874,7 +874,7 @@ function ColorCard({
             exit={{ opacity: 0, x: '100%' }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
               {/* RGB */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium w-16">RGB</span>
