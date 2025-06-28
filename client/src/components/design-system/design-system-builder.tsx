@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useClientAssetsById } from "@/lib/queries/clients";
 import { generateSemanticTokens, type RawTokens, type SemanticTokens } from "./token-generator";
 import { BrandAsset } from "@shared/schema";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 // Design System Schema
 const designSystemSchema = z.object({
@@ -29,7 +30,7 @@ const designSystemSchema = z.object({
     fontFamily2Base: z.string().min(1),
     fontFamilyMonoBase: z.string().min(1),
   }),
-  
+
   // Color Raw Tokens
   colors: z.object({
     brandPrimaryBase: z.string().regex(/^#[0-9A-F]{6}$/i),
@@ -40,19 +41,19 @@ const designSystemSchema = z.object({
     interactiveErrorBase: z.string().regex(/^#[0-9A-F]{6}$/i),
     interactiveInfoBase: z.string().regex(/^#[0-9A-F]{6}$/i),
   }),
-  
+
   // Spacing Raw Tokens
   spacing: z.object({
     spacingUnitBase: z.number().min(0.25).max(2),
     spacingScaleBase: z.number().min(1.1).max(2),
   }),
-  
+
   // Border & Radius Raw Tokens
   borders: z.object({
     borderWidthBase: z.number().min(1).max(8),
     borderRadiusBase: z.number().min(0).max(50),
   }),
-  
+
   // Component Properties (Basic)
   components: z.object({
     button: z.object({
@@ -85,7 +86,7 @@ interface DesignSystemBuilderProps {
 const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemForm; clientLogo?: string }) => {
   // Generate semantic tokens from raw tokens
   const semanticTokens = generateSemanticTokens(formData as RawTokens);
-  
+
   // Generate CSS custom properties from semantic tokens
   const cssVars = {
     // Typography
@@ -96,7 +97,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
     '--font-size-body': semanticTokens.typography.fontSizeBody,
     '--line-height-heading': semanticTokens.typography.lineHeightHeading,
     '--line-height-body': semanticTokens.typography.lineHeightBody,
-    
+
     // Colors
     '--color-brand-primary': semanticTokens.colors.brandPrimary,
     '--color-brand-secondary': semanticTokens.colors.brandSecondary,
@@ -109,21 +110,21 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
     '--color-button-primary-text': semanticTokens.colors.buttonPrimaryText,
     '--color-success': semanticTokens.colors.successDark,
     '--color-error': semanticTokens.colors.errorDark,
-    
+
     // Spacing
     '--spacing-s': semanticTokens.spacing.s,
     '--spacing-m': semanticTokens.spacing.m,
     '--spacing-l': semanticTokens.spacing.l,
     '--spacing-xl': semanticTokens.spacing.xl,
-    
+
     // Borders & Radius
     '--border-radius-button': semanticTokens.borders.radiusButton,
     '--border-radius-card': semanticTokens.borders.radiusCard,
-    
+
     // Shadows
     '--elevation-card': semanticTokens.shadows.elevationCard,
     '--elevation-button-hover': semanticTokens.shadows.elevationButtonHover,
-    
+
     // Transitions
     '--transition-button': semanticTokens.transitions.button,
   } as React.CSSProperties;
@@ -161,7 +162,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
           >
             Welcome to Our Brand
           </h1>
-          
+
           <h2 
             style={{ 
               fontSize: 'var(--font-size-h2)',
@@ -172,7 +173,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
           >
             Design System Preview
           </h2>
-          
+
           <p 
             style={{ 
               fontSize: 'var(--font-size-body)',
@@ -198,7 +199,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
           >
             Interactive Components
           </h3>
-          
+
           <div className="flex flex-wrap gap-4">
             <button 
               style={{ 
@@ -216,7 +217,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
             >
               Primary Button
             </button>
-            
+
             <button 
               style={{ 
                 backgroundColor: 'transparent',
@@ -232,7 +233,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
             >
               Secondary Button
             </button>
-            
+
             <button 
               style={{ 
                 backgroundColor: 'var(--color-success)',
@@ -247,7 +248,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
             >
               Success Button
             </button>
-            
+
             <button 
               style={{ 
                 backgroundColor: 'var(--color-error)',
@@ -276,7 +277,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
           >
             Form Elements
           </h3>
-          
+
           <div className="space-y-4">
             <input 
               type="text" 
@@ -291,7 +292,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
                 maxWidth: '300px'
               }}
             />
-            
+
             <textarea 
               placeholder="Example textarea"
               style={{ 
@@ -320,7 +321,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
           >
             Card Components
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div 
               style={{ 
@@ -354,7 +355,7 @@ const DesignSystemPreview = ({ formData, clientLogo }: { formData: DesignSystemF
                 This card demonstrates how spacing, typography, and elevation tokens work together.
               </p>
             </div>
-            
+
             <div 
               style={{ 
                 padding: 'var(--spacing-l)',
@@ -473,7 +474,7 @@ const parseColorAsset = (asset: BrandAsset) => {
   try {
     const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
     if (!data?.colors?.[0]) return null;
-    
+
     return {
       id: asset.id,
       hex: data.colors[0].hex,
@@ -511,7 +512,7 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
     const primary = brandColors.find(c => c.name.toLowerCase().includes('primary')) || brandColors[0];
     const secondary = brandColors.find(c => c.name.toLowerCase().includes('secondary')) || brandColors[1];
     const neutral = neutralColors.find(c => c.name.toLowerCase().includes('base') || c.name.toLowerCase().includes('grey')) || neutralColors[0];
-    
+
     // Find interactive colors by name
     const success = interactiveColors.find(c => c.name.toLowerCase().includes('success'));
     const warning = interactiveColors.find(c => c.name.toLowerCase().includes('warning'));
@@ -678,91 +679,154 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
         <div className="asset-display__info relative">
           <div className="space-y-6">
             <Form {...form}>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-5">
-                  <TabsTrigger value="colors">
-                    <Palette className="h-4 w-4 mr-2" />
-                    Colors
-                  </TabsTrigger>
-                  <TabsTrigger value="typography">
-                    <Type className="h-4 w-4 mr-2" />
-                    Typography
-                  </TabsTrigger>
-                  <TabsTrigger value="spacing">
-                    <Grid3X3 className="h-4 w-4 mr-2" />
-                    Spacing
-                  </TabsTrigger>
-                  <TabsTrigger value="borders">Borders</TabsTrigger>
-                  <TabsTrigger value="components">Components</TabsTrigger>
-                </TabsList>
+              {/* Replacing Tabs with Accordion */}
+              <Accordion type="single" collapsible>
+                <AccordionItem value="colors">
+                  <AccordionTrigger className="text-base font-semibold hover:no-underline py-4 px-0">
+                    <div className="flex items-center">
+                      <Palette className="h-4 w-4 mr-2" />
+                      Colors
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Brand Colors</CardTitle>
+                        <CardDescription>
+                          Define your primary brand color palette
+                          {brandColors.length > 0 && (
+                            <span className="block text-sm text-muted-foreground mt-1">
+                              ✓ Inherited {brandColors.length} color(s) from your Color System
+                            </span>
+                          )}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="colors.brandPrimaryBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Primary</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="colors.brandSecondaryBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Secondary</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <TabsContent value="colors" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Brand Colors</CardTitle>
-                      <CardDescription>
-                        Define your primary brand color palette
-                        {brandColors.length > 0 && (
-                          <span className="block text-sm text-muted-foreground mt-1">
-                            ✓ Inherited {brandColors.length} color(s) from your Color System
-                          </span>
-                        )}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="colors.brandPrimaryBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Primary</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Interactive Colors</CardTitle>
+                        <CardDescription>
+                          Colors for interactive elements and states
+                          {interactiveColors.length > 0 && (
+                            <span className="block text-sm text-muted-foreground mt-1">
+                              ✓ Inherited {interactiveColors.length} color(s) from your Color System
+                            </span>
                           )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="colors.brandSecondaryBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Secondary</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="colors.interactiveSuccessBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Success</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="colors.interactiveErrorBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Error</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="colors.interactiveWarningBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Warning</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="colors.interactiveInfoBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Info</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Interactive Colors</CardTitle>
-                      <CardDescription>
-                        Colors for interactive elements and states
-                        {interactiveColors.length > 0 && (
-                          <span className="block text-sm text-muted-foreground mt-1">
-                            ✓ Inherited {interactiveColors.length} color(s) from your Color System
-                          </span>
-                        )}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
+                <AccordionItem value="typography">
+                  <AccordionTrigger className="text-base font-semibold hover:no-underline py-4 px-0">
+                    <div className="flex items-center">
+                      <Type className="h-4 w-4 mr-2" />
+                      Typography
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Font Families</CardTitle>
+                        <CardDescription>Define your typography system</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
                         <FormField
                           control={form.control}
-                          name="colors.interactiveSuccessBase"
+                          name="typography.fontFamily1Base"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Success</FormLabel>
+                              <FormLabel>Primary Font Family</FormLabel>
                               <FormControl>
-                                <Input type="color" {...field} />
+                                <Input {...field} placeholder="Rock Grotesque" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -770,12 +834,12 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                         />
                         <FormField
                           control={form.control}
-                          name="colors.interactiveErrorBase"
+                          name="typography.fontFamily2Base"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Error</FormLabel>
+                              <FormLabel>Secondary Font Family</FormLabel>
                               <FormControl>
-                                <Input type="color" {...field} />
+                                <Input {...field} placeholder="Rock Grotesque Wide" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -783,403 +847,362 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                         />
                         <FormField
                           control={form.control}
-                          name="colors.interactiveWarningBase"
+                          name="typography.fontFamilyMonoBase"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Warning</FormLabel>
+                              <FormLabel>Monospace Font Family</FormLabel>
                               <FormControl>
-                                <Input type="color" {...field} />
+                                <Input {...field} placeholder="monospace" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                        <FormField
-                          control={form.control}
-                          name="colors.interactiveInfoBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Info</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                      </CardContent>
+                    </Card>
 
-                <TabsContent value="typography" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Font Families</CardTitle>
-                      <CardDescription>Define your typography system</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="typography.fontFamily1Base"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Primary Font Family</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Rock Grotesque" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="typography.fontFamily2Base"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Secondary Font Family</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="Rock Grotesque Wide" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="typography.fontFamilyMonoBase"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Monospace Font Family</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="monospace" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </CardContent>
-                  </Card>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Type Scale</CardTitle>
+                        <CardDescription>Configure font sizing and spacing</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="typography.fontSizeBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Font Size (rem)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="0.5"
+                                    max="2"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="typography.typeScaleBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Type Scale Ratio</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="1.1"
+                                    max="2"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="typography.lineHeightBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Line Height</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="1"
+                                    max="3"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="typography.letterSpacingBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Letter Spacing</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="-0.1"
+                                    max="0.5"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Type Scale</CardTitle>
-                      <CardDescription>Configure font sizing and spacing</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="typography.fontSizeBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Base Font Size (rem)</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.1" 
-                                  min="0.5" 
-                                  max="2" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="typography.typeScaleBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Type Scale Ratio</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.1" 
-                                  min="1.1" 
-                                  max="2" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="typography.lineHeightBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Base Line Height</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.1" 
-                                  min="1" 
-                                  max="3" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="typography.letterSpacingBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Base Letter Spacing</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.01" 
-                                  min="-0.1" 
-                                  max="0.5" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                <AccordionItem value="spacing">
+                  <AccordionTrigger className="text-base font-semibold hover:no-underline py-4 px-0">
+                    <div className="flex items-center">
+                      <Grid3X3 className="h-4 w-4 mr-2" />
+                      Spacing
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Spacing System</CardTitle>
+                        <CardDescription>Define your spacing and layout tokens</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="spacing.spacingUnitBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Spacing Unit (rem)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.25"
+                                    min="0.25"
+                                    max="2"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="spacing.spacingScaleBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Spacing Scale Ratio</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="1.1"
+                                    max="2"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
 
-                <TabsContent value="spacing" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Spacing System</CardTitle>
-                      <CardDescription>Define your spacing and layout tokens</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="spacing.spacingUnitBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Base Spacing Unit (rem)</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.25" 
-                                  min="0.25" 
-                                  max="2" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="spacing.spacingScaleBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Spacing Scale Ratio</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  step="0.1" 
-                                  min="1.1" 
-                                  max="2" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                <AccordionItem value="borders">
+                  <AccordionTrigger className="text-base font-semibold hover:no-underline py-4 px-0">
+                    <div className="flex items-center">
+                      Borders
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Borders & Radius</CardTitle>
+                        <CardDescription>Configure border and radius tokens</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="borders.borderWidthBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Border Width (px)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="8"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="borders.borderRadiusBase"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Base Border Radius (px)</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="50"
+                                    {...field}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
 
-                <TabsContent value="borders" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Borders & Radius</CardTitle>
-                      <CardDescription>Configure border and radius tokens</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="borders.borderWidthBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Base Border Width (px)</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="1" 
-                                  max="8" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="borders.borderRadiusBase"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Base Border Radius (px)</FormLabel>
-                              <FormControl>
-                                <Input 
-                                  type="number" 
-                                  min="0" 
-                                  max="50" 
-                                  {...field} 
-                                  onChange={(e) => field.onChange(parseInt(e.target.value))}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                <AccordionItem value="components">
+                  <AccordionTrigger className="text-base font-semibold hover:no-underline py-4 px-0">
+                    <div className="flex items-center">
+                      Components
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-4 pt-2">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Button Components</CardTitle>
+                        <CardDescription>Link button properties to existing design tokens</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="components.button.primaryBackgroundColor"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Primary Button Background</FormLabel>
+                                <FormControl>
+                                  <Select onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select token" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="brandPrimaryBase">Brand Primary</SelectItem>
+                                      <SelectItem value="brandSecondaryBase">Brand Secondary</SelectItem>
+                                      <SelectItem value="interactiveSuccessBase">Success</SelectItem>
+                                      <SelectItem value="interactiveErrorBase">Error</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="components.button.primaryTextColor"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Primary Button Text</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <TabsContent value="components" className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Button Components</CardTitle>
-                      <CardDescription>Link button properties to existing design tokens</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="components.button.primaryBackgroundColor"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Primary Button Background</FormLabel>
-                              <FormControl>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select token" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="brandPrimaryBase">Brand Primary</SelectItem>
-                                    <SelectItem value="brandSecondaryBase">Brand Secondary</SelectItem>
-                                    <SelectItem value="interactiveSuccessBase">Success</SelectItem>
-                                    <SelectItem value="interactiveErrorBase">Error</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="components.button.primaryTextColor"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Primary Button Text</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Input Components</CardTitle>
+                        <CardDescription>Configure form input styling</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="components.input.backgroundColor"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Input Background</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="components.input.borderColor"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Input Border</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Input Components</CardTitle>
-                      <CardDescription>Configure form input styling</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="components.input.backgroundColor"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Input Background</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="components.input.borderColor"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Input Border</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Card Components</CardTitle>
-                      <CardDescription>Configure card styling</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="components.card.backgroundColor"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Card Background</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="components.card.borderColor"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Card Border</FormLabel>
-                              <FormControl>
-                                <Input type="color" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Card Components</CardTitle>
+                        <CardDescription>Configure card styling</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="components.card.backgroundColor"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Card Background</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="components.card.borderColor"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Card Border</FormLabel>
+                                <FormControl>
+                                  <Input type="color" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </Form>
           </div>
         </div>
