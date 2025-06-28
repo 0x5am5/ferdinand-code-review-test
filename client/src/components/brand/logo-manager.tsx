@@ -1557,29 +1557,21 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           return `style='${updatedStyle}'`;
                         });
 
-                        // Step 4: Add fill="white" to ALL shape elements that don't already have a fill attribute
-                        // This is crucial for <path>, <circle>, <rect>, <polygon>, etc. that inherit default black color
-                        const elementsToUpdate = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan'];
+                        // Step 4: Use a simple, bulletproof approach to add fill="white" to ALL drawable elements
+                        // Replace ALL path/shape elements that don't have fill="white" already
+                        const shapeElements = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan'];
                         
-                        elementsToUpdate.forEach(elementType => {
-                          // More aggressive approach: Find ALL elements of this type that don't have fill attribute
-                          // and add fill="white" regardless of other attributes
-                          const regex = new RegExp(`<${elementType}([^>]*?)(?![^>]*fill\\s*=)([^>]*?)>`, 'gi');
-                          whiteSvgContent = whiteSvgContent.replace(regex, (match, beforeAttrs, afterAttrs) => {
+                        shapeElements.forEach(elementType => {
+                          // Simple, direct approach: find all opening tags and add fill="white" if not present
+                          const elementRegex = new RegExp(`<${elementType}([^>]*)>`, 'gi');
+                          whiteSvgContent = whiteSvgContent.replace(elementRegex, (match, attributes) => {
+                            // If it already has fill="white", don't change it
+                            if (attributes.includes('fill="white"')) {
+                              return match;
+                            }
                             // Add fill="white" to the element
-                            return `<${elementType}${beforeAttrs}${afterAttrs} fill="white">`;
-                          });
-                        });
-
-                        // Step 4.1: Handle elements that might have class attributes but no explicit fill
-                        // Force fill="white" on all shape elements, even if they have class attributes
-                        const forceWhiteRegex = /<(path|circle|rect|polygon|polyline|ellipse|line|text|tspan)([^>]*?)>/gi;
-                        whiteSvgContent = whiteSvgContent.replace(forceWhiteRegex, (match, elementType, attributes) => {
-                          // If this element doesn't already have fill="white", add it
-                          if (!/fill\s*=\s*["']white["']/i.test(attributes)) {
                             return `<${elementType}${attributes} fill="white">`;
-                          }
-                          return match;
+                          });
                         });
 
                         // Step 5: Remove or replace CSS classes and styles that might override our white colors
