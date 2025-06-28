@@ -82,7 +82,9 @@ function ColorCard({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showTints, setShowTints] = useState(false);
-  
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
+  const [pantoneValue, setPantoneValue] = useState('');
+
   // Add updateColor mutation to ColorCard component
   const updateColor = useMutation({
     mutationFn: async (data: { id: number; name: string; category: string; data: any }) => {
@@ -115,7 +117,7 @@ function ColorCard({
       // Optimistically update the cache
       queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: any) => {
         if (!old) return old;
-        
+
         return old.map((asset: any) => {
           if (asset.id === newData.id) {
             return {
@@ -134,7 +136,7 @@ function ColorCard({
     onError: (err, newData, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData([`/api/clients/${clientId}/assets`], context?.previousAssets);
-      
+
       toast({
         title: "Error",
         description: err.message,
@@ -164,22 +166,22 @@ function ColorCard({
     { color: '#D9D9D9', position: 0 },
     { color: '#737373', position: 100 }
   ]);
-  
+
   const handleColorAreaClick = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    
+
     // Simple color calculation for responsive color picker
     const hue = 200; // Default blue
     const saturation = Math.round(x * 100);
     const lightness = Math.round((1 - y) * 100);
-    
+
     // Convert HSL to hex
     const h = hue / 360;
     const s = saturation / 100;
     const l = lightness / 100;
-    
+
     const hue2rgb = (p: number, q: number, t: number) => {
       if (t < 0) t += 1;
       if (t > 1) t -= 1;
@@ -188,7 +190,7 @@ function ColorCard({
       if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
       return p;
     };
-    
+
     let r, g, b;
     if (s === 0) {
       r = g = b = l;
@@ -199,12 +201,12 @@ function ColorCard({
       g = hue2rgb(p, q, h);
       b = hue2rgb(p, q, h - 1/3);
     }
-    
+
     const toHex = (c: number) => {
       const hex = Math.round(c * 255).toString(16);
       return hex.length === 1 ? '0' + hex : hex;
     };
-    
+
     const hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     setTempColor(hexColor);
   };
@@ -213,7 +215,7 @@ function ColorCard({
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const hue = Math.round(x * 360);
-    
+
     // Simple hue change
     const hexColor = `hsl(${hue}, 80%, 60%)`;
     // Convert to actual hex - simplified version
@@ -222,7 +224,7 @@ function ColorCard({
     document.body.appendChild(tempDiv);
     const computedColor = getComputedStyle(tempDiv).color;
     document.body.removeChild(tempDiv);
-    
+
     // Extract RGB values and convert to hex
     const rgb = computedColor.match(/\d+/g);
     if (rgb) {
@@ -237,7 +239,7 @@ function ColorCard({
       setTempColor(value);
     }
   };
-  
+
   // Color picker state
   const [hue, setHue] = useState(0);
   const [saturation, setSaturation] = useState(100);
@@ -293,7 +295,7 @@ function ColorCard({
   const handleStartEdit = () => {
     setTempColor(color.hex);
     setIsEditing(true);
-    
+
     // Load existing gradient data if available
     if (color.data?.gradient) {
       setActiveTab('gradient');
@@ -314,7 +316,7 @@ function ColorCard({
 
   const handleSaveEdit = () => {
     const currentData = typeof color.data === 'string' ? JSON.parse(color.data) : color.data;
-    
+
     if (activeTab === 'color') {
       // Save solid color
       const newData = {
@@ -330,7 +332,7 @@ function ColorCard({
         ...(currentData?.tints && { tints: currentData.tints }),
         ...(currentData?.shades && { shades: currentData.shades }),
       };
-      
+
       updateColor.mutate({
         id: color.id,
         name: color.name,
@@ -355,7 +357,7 @@ function ColorCard({
         type: gradientType,
         stops: gradientStops.sort((a, b) => a.position - b.position)
       };
-      
+
       const newData = {
         type: "gradient",
         category: currentData?.category || "brand",
@@ -369,7 +371,7 @@ function ColorCard({
         ...(currentData?.tints && { tints: currentData.tints }),
         ...(currentData?.shades && { shades: currentData.shades }),
       };
-      
+
       updateColor.mutate({
         id: color.id,
         name: color.name,
@@ -383,13 +385,13 @@ function ColorCard({
               hex: gradientStops[0]?.color || color.hex,
               rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
               hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
-              cmyk: hexToCmyk(gradientStops[0]?.color || color.hex) || "",
+              cmyk: hexToCmyk(color.hex) || "",
             });
           }
         }
       });
     }
-    
+
     setIsEditing(false);
   };
 
@@ -411,7 +413,7 @@ function ColorCard({
   // Generate tints and shades and handle gradient display
   const displayHex = isEditing ? tempColor : color.hex;
   const { tints, shades } = generateTintsAndShades(displayHex);
-  
+
   // Create real-time gradient display
   const getDisplayStyle = () => {
     if (isEditing && activeTab === 'gradient') {
@@ -483,7 +485,7 @@ function ColorCard({
               {displayHex}
             </p>
           </div>
-        
+
         <div className="color-chip__controls" style={{ position: 'relative' }}>
           {color.category === "neutral" && onGenerate && !(/^Grey \d+$/.test(color.name)) && (
             <Button
@@ -551,7 +553,7 @@ function ColorCard({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
+
 
         </div>
       </motion.div>
@@ -573,7 +575,7 @@ function ColorCard({
               <X />
             </button>
           </div>
-          
+
           {/* Tabs */}
           <div className="color-picker-popover__tabs">
             <button
@@ -589,7 +591,7 @@ function ColorCard({
               Gradient
             </button>
           </div>
-          
+
           <div className="color-picker-popover__content">
             {activeTab === 'color' ? (
               <>
@@ -602,7 +604,7 @@ function ColorCard({
                     className="color-picker-popover__color-input"
                   />
                 </div>
-                
+
                 {/* Hex input */}
                 <div className="color-picker-popover__hex-input">
                   <label>Hex:</label>
@@ -654,25 +656,25 @@ function ColorCard({
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        
+
                         const startPosition = stop.position;
                         const rect = e.currentTarget.parentElement!.getBoundingClientRect();
-                        
+
                         const handleMouseMove = (moveEvent: MouseEvent) => {
                           const newPosition = Math.max(0, Math.min(100, 
                             ((moveEvent.clientX - rect.left) / rect.width) * 100
                           ));
-                          
+
                           const newStops = [...gradientStops];
                           newStops[index].position = Math.round(newPosition);
                           setGradientStops(newStops);
                         };
-                        
+
                         const handleMouseUp = () => {
                           document.removeEventListener('mousemove', handleMouseMove);
                           document.removeEventListener('mouseup', handleMouseUp);
                         };
-                        
+
                         document.addEventListener('mousemove', handleMouseMove);
                         document.addEventListener('mouseup', handleMouseUp);
                       }}
@@ -713,7 +715,7 @@ function ColorCard({
                         />
                         <span>%</span>
                       </div>
-                      
+
                       <div 
                         className="stop-color-preview"
                         style={{ backgroundColor: stop.color }}
@@ -722,7 +724,7 @@ function ColorCard({
                           if (colorInput) colorInput.click();
                         }}
                       />
-                      
+
                       <input
                         type="color"
                         value={stop.color}
@@ -734,7 +736,7 @@ function ColorCard({
                         className="stop-color-input"
                         data-stop-index={index}
                       />
-                      
+
                       <input
                         type="number"
                         value={parseInt(stop.color.substring(1, 3), 16)}
@@ -748,7 +750,7 @@ function ColorCard({
                         max="255"
                         className="color-value-input"
                       />
-                      
+
                       {gradientStops.length > 2 && (
                         <button
                           className="remove-stop-button"
@@ -819,6 +821,113 @@ function ColorCard({
                   </div>
                 </motion.div>
               ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Color Information Panel */}
+      <AnimatePresence>
+        {isInfoPanelOpen && (
+          <motion.div 
+            className="absolute top-0 right-0 w-[40%] h-full bg-white/95 backdrop-blur-sm border-l border-gray-200 p-4 flex flex-col"
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            <div className="space-y-3">
+              {/* RGB */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium w-16">RGB</span>
+                <button
+                  onClick={() => {
+                    const rgb = hexToRgb(displayHex);
+                    if (rgb) {
+                      copyHex(rgb);
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                >
+                  <span className="text-sm font-mono">
+                    {(() => {
+                      const rgb = hexToRgb(```typescript
+displayHex);
+                      return rgb ? rgb.replace('rgb(', '').replace(')', '') : '';
+                    })()}
+                  </span>
+                  <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              </div>
+
+              {/* HSL */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium w-16">HSL</span>
+                <button
+                  onClick={() => {
+                    const hsl = hexToHsl(displayHex);
+                    if (hsl) {
+                      copyHex(hsl);
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                >
+                  <span className="text-sm font-mono">
+                    {(() => {
+                      const hsl = hexToHsl(displayHex);
+                      return hsl ? hsl.replace('hsl(', '').replace(')', '') : '';
+                    })()}
+                  </span>
+                  <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              </div>
+
+              {/* CMYK */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium w-16">CMYK</span>
+                <button
+                  onClick={() => {
+                    const cmyk = hexToCmyk(displayHex);
+                    if (cmyk) {
+                      copyHex(cmyk);
+                    }
+                  }}
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                >
+                  <span className="text-sm font-mono">
+                    {(() => {
+                      const cmyk = hexToCmyk(displayHex);
+                      return cmyk ? cmyk.replace('cmyk(', '').replace(')', '') : '';
+                    })()}
+                  </span>
+                  <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </button>
+              </div>
+
+              {/* Pantone */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium w-16">Pantone</span>
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={pantoneValue}
+                    onChange={(e) => setPantoneValue(e.target.value)}
+                    placeholder="Enter Pantone code"
+                    className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button
+                    onClick={() => {
+                      if (pantoneValue) {
+                        copyHex(pantoneValue);
+                      }
+                    }}
+                    disabled={!pantoneValue}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+                  >
+                    <Copy className="h-3 w-3 text-gray-500" />
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
@@ -1038,9 +1147,9 @@ function hslToHex(h: number, s: number, l: number) {
 function isColorFamily(hex: string, family: 'green' | 'yellow' | 'red' | 'blue'): boolean {
   const hsl = hexToHslValues(hex);
   if (!hsl) return false;
-  
+
   const hue = hsl.h * 360;
-  
+
   switch (family) {
     case 'green': return hue >= 90 && hue <= 170;
     case 'yellow': return hue >= 30 && hue <= 80;
@@ -1061,7 +1170,7 @@ function generateInteractiveColors(brandColors: ColorData[]) {
   // Extract average saturation and lightness from brand colors
   let avgSaturation = 0.7;
   let avgLightness = 0.5;
-  
+
   if (brandColors.length > 0) {
     let totalSat = 0;
     let totalLight = 0;
@@ -1119,7 +1228,7 @@ function generateInteractiveColors(brandColors: ColorData[]) {
     const hex = spec.existing 
       ? spec.existing.hex 
       : hslToHex(spec.hue, spec.saturation * 100, spec.lightness * 100);
-    
+
     return {
       name: spec.name,
       hex: hex,
@@ -1590,8 +1699,8 @@ export function ColorManager({
       // Optimistically update the cache
       queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: any) => {
         if (!old) return old;
-        
-        return old.map((asset: any) => {
+
+        return old.map((asset: any) => {```typescript
           if (asset.id === newData.id) {
             return {
               ...asset,
@@ -1609,7 +1718,7 @@ export function ColorManager({
     onError: (err, newData, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData([`/api/clients/${clientId}/assets`], context?.previousAssets);
-      
+
       toast({
         title: "Error",
         description: err.message,
@@ -1629,7 +1738,7 @@ export function ColorManager({
     if (currentColor) {
       // Parse the current data to get the category and preserve other properties
       const currentData = typeof currentColor.data === 'string' ? JSON.parse(currentColor.data) : currentColor.data;
-      
+
       updateColor.mutate({
         id: colorId,
         name: currentColor.name,
@@ -1751,7 +1860,7 @@ export function ColorManager({
   const handleGenerateInteractiveColors = () => {
     // Generate the four interactive colors based on brand colors
     const interactiveColors = generateInteractiveColors(brandColorsData);
-    
+
     // Create each color using the existing createColor mutation
     interactiveColors.forEach(colorData => {
       const payload = {
@@ -1943,7 +2052,7 @@ export function ColorManager({
           isEmpty={brandColorsData.length === 0}
           sectionType="brand-colors"
           uploadComponent={
-            
+
               <div className="flex flex-col gap-2 w-full">
                 <Button 
                   onClick={handleGenerateGreyShades}
@@ -1968,7 +2077,7 @@ export function ColorManager({
                   <span className="text-muted-foreground/50">Add Color</span>
                 </Button>
               </div>
-            
+
           }
           emptyPlaceholder={
             <div className="text-center py-12 text-muted-foreground">
