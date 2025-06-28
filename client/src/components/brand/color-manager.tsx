@@ -382,7 +382,7 @@ function ColorCard({
           hex: gradientStops[0]?.color || color.hex,
           rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
           hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
-          cmyk: hexToCmyk(gradientStops[0]?.color || color.hex) || "",
+          cmyk: hexToCmyk(color.hex) || "",
         }],
         gradient: gradientData,
         ...(currentData?.tints && { tints: currentData.tints }),
@@ -853,7 +853,8 @@ function ColorCard({
                   style={{ backgroundColor: shade }}
                   onClick={() => copyHex(shade)}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0```text
+ bg-black/20 group-hover:opacity-100 transition-opacity">
                     <Copy className="h-3 w-3 text-white" />
                   </div>
                 </motion.div>
@@ -1544,7 +1545,7 @@ function ColorSection({
   return (
     <div className="space-y-4">
       {colors.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <AnimatePresence>
             {colors.map((color) => (
               <ColorChip
@@ -2013,7 +2014,7 @@ export function ColorManager({
       }
       const lightness = Math.max(8, Math.min(98, baseLightness + lightnessShift)); // Apply variation with bounds
 
-      // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
+      // Apply parabolic formula: saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
       const normalizedLightness = lightness / 100; // Convert to 0-1 range
       const saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
 
