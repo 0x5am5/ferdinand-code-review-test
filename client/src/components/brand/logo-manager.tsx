@@ -1823,6 +1823,7 @@ function LogoSection({
               </>
             )}
             renderAsset={(variant) => (
+Fixing the syntax error by removing the extra closing tag.```text
               <LogoDisplay 
                 logo={logo} 
                 imageUrl={imageUrl} 
@@ -1851,7 +1852,7 @@ export default function LogoManager({ clientId, logos }: LogoManagerProps) {
   const logosByType = logos.reduce((acc, logo) => {
     const parsedData = parseBrandAssetData(logo);
     if (!parsedData) return acc;
-    
+
     const type = parsedData.type;
     if (!acc[type]) {
       acc[type] = [];
@@ -1862,7 +1863,7 @@ export default function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   // Get all logo types, including those that might not have logos yet
   const allLogoTypes = ['main', 'horizontal', 'vertical', 'square', 'app_icon', 'favicon'];
-  
+
   // Filter out hidden sections
   const visibleLogoTypes = allLogoTypes.filter(type => 
     !hiddenSections.some(section => section.sectionType === type)
@@ -1929,7 +1930,7 @@ export default function LogoManager({ clientId, logos }: LogoManagerProps) {
           onRemoveSection={handleRemoveSection}
         />
       ))}
-      
+
       {/* Show hidden sections if any exist */}
       {hiddenSections.length > 0 && (
         <Card className="p-6">
@@ -1965,4 +1966,4 @@ export default function LogoManager({ clientId, logos }: LogoManagerProps) {
       )}
     </div>
   );
-}</old_str>
+}
