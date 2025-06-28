@@ -1595,6 +1595,7 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           );
                           
                           console.log('Nuclear string conversion completed, result length:', whiteSvgContent.length);
+                          console.log('CONVERTED SVG CONTENT:', whiteSvgContent.substring(0, 500) + '...');
                           
                         } catch (error) {
                           console.error('DOM parsing failed, using fallback regex approach:', error);
