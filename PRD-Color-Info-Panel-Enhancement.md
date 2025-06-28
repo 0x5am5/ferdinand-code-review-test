@@ -1,0 +1,246 @@
+
+# PRD: Color Information Panel Enhancement for Color Manager
+
+## 1. Problem Statement & Goals
+
+### Problem
+Currently, the Color Manager in Ferdinand only displays HEX color values on color swatch cards. Users need access to additional color formats (RGB, HSL, CMYK, Pantone) for comprehensive brand guidelines and multi-platform design work, but must manually convert these values or use external tools.
+
+### Goals
+1. **Immediate Access**: Provide instant access to multiple color formats without leaving the application
+2. **Copy Functionality**: Enable one-click copying of all color format values
+3. **User Input**: Allow manual Pantone code entry and editing
+4. **Visual Consistency**: Maintain existing UI patterns and design system
+5. **Enhanced Workflow**: Streamline color specification workflow for design teams
+
+## 2. Technical Scope
+
+### Components to Modify
+1. **Color Card Component** (`client/src/components/brand/color-card.tsx`)
+2. **Color Manager** (`client/src/components/brand/color-manager.tsx`)
+3. **Supporting Utilities** (color conversion functions)
+
+### New Features to Implement
+- Info icon with tooltip functionality
+- Sliding info panel with color format display
+- Color format conversion utilities (HEX → RGB, HSL, CMYK)
+- Editable Pantone field with persistence
+- Copy-to-clipboard functionality for all formats
+- Panel state management and mutual exclusivity
+
+## 3. User Interface Design
+
+### Info Icon
+- **Placement**: Adjacent to existing action icons in color card header
+- **Icon**: Lowercase "i" using existing icon library (likely from lucide-react)
+- **Tooltip**: "More Color Info"
+- **Styling**: Consistent with existing hover states and icon styling
+
+### Info Panel Layout
+```
+┌─────────────────────────────────┐
+│ RGB    │ 69, 99, 174      [📋] │
+│ HSL    │ 222°, 40%, 48%   [📋] │
+│ CMYK   │ 60, 43, 0, 32    [📋] │
+│ Pantone│ [User Input]     [📋] │
+└─────────────────────────────────┘
+```
+
+### Panel Behavior
+- **Animation**: Slide in from right with smooth transition
+- **Positioning**: Overlay or expand within card bounds
+- **Mutual Exclusivity**: Only one panel (info or shades) open at a time
+- **Responsive**: Adapts to viewport constraints
+
+## 4. Technical Implementation
+
+### Color Conversion Functions
+```typescript
+interface ColorFormats {
+  hex: string;
+  rgb: { r: number; g: number; b: number };
+  hsl: { h: number; s: number; l: number };
+  cmyk: { c: number; m: number; y: number; k: number };
+  pantone: string;
+}
+```
+
+### State Management
+- Add `isInfoPanelOpen` state to color card component
+- Implement panel toggle logic with mutual exclusivity
+- Handle Pantone value persistence (localStorage or API)
+
+### Copy Functionality
+- Extend existing `copyToClipboard` utility
+- Format color values for copying:
+  - RGB: "rgb(69, 99, 174)"
+  - HSL: "hsl(222°, 40%, 48%)"
+  - CMYK: "cmyk(60%, 43%, 0%, 32%)"
+  - Pantone: User-provided string
+
+## 5. Data Flow
+
+### Panel Opening Flow
+1. User clicks info icon
+2. Component checks if shades panel is open → closes if true
+3. Converts HEX color to RGB, HSL, CMYK formats
+4. Loads saved Pantone value (if exists)
+5. Animates panel open
+6. Updates state to reflect open panel
+
+### Copy Flow
+1. User clicks color format field
+2. Format color value appropriately
+3. Copy to clipboard using existing utility
+4. Show success feedback (tooltip/toast)
+
+### Pantone Editing Flow
+1. User edits Pantone field
+2. onChange event updates local state
+3. onBlur/onSubmit saves to persistence layer
+4. Value remains editable and copyable
+
+## 6. Acceptance Criteria
+
+### Functional Requirements
+- [ ] Info icon appears on all color swatch cards
+- [ ] Clicking info icon opens color details panel
+- [ ] Panel displays RGB, HSL, CMYK values converted from HEX
+- [ ] All color format fields are clickable to copy
+- [ ] Pantone field is editable and saves user input
+- [ ] Only one panel (info or shades) can be open at a time
+- [ ] Panel closes when clicking info icon again
+- [ ] Panel slides in smoothly from right side
+
+### UI/UX Requirements
+- [ ] Icon follows existing design patterns
+- [ ] Panel animation duration matches existing transitions
+- [ ] Copy feedback is consistent with current implementation
+- [ ] Responsive behavior works across breakpoints
+- [ ] Tooltip appears on icon hover
+- [ ] Accessibility standards met (ARIA labels, keyboard navigation)
+
+### Technical Requirements
+- [ ] Color conversion algorithms are accurate
+- [ ] Performance impact is minimal
+- [ ] Code follows existing patterns and conventions
+- [ ] No breaking changes to existing functionality
+- [ ] Error handling for invalid color values
+
+## 7. Implementation Plan
+
+### Phase 1: Core Infrastructure
+1. Create color conversion utility functions
+2. Add state management for info panel
+3. Implement mutual exclusivity logic
+4. Test color conversion accuracy
+
+### Phase 2: UI Components
+1. Add info icon to color card
+2. Create info panel component structure
+3. Implement slide animation
+4. Style panel to match design system
+
+### Phase 3: Functionality
+1. Wire up copy-to-clipboard for all formats
+2. Implement Pantone field editing
+3. Add persistence for Pantone values
+4. Integrate tooltip functionality
+
+### Phase 4: Polish & Testing
+1. Responsive design testing
+2. Accessibility improvements
+3. Performance optimization
+4. User acceptance testing
+
+## 8. Technical Considerations
+
+### Color Conversion Accuracy
+- Use established algorithms for HEX → RGB → HSL → CMYK conversion
+- Handle edge cases (pure blacks, whites, grays)
+- Maintain precision in color calculations
+
+### Performance Optimization
+- Lazy load color conversion (only calculate when panel opens)
+- Memoize conversion results
+- Debounce Pantone field updates
+
+### Accessibility
+- Proper ARIA labels for all interactive elements
+- Keyboard navigation support
+- High contrast considerations for color values
+- Screen reader compatibility
+
+## 9. Risk Mitigation
+
+### Potential Risks
+- **Color Accuracy**: CMYK conversion may not be 100% accurate for print
+  - *Mitigation*: Add disclaimer about print color accuracy
+- **Performance**: Multiple conversions could impact responsiveness
+  - *Mitigation*: Implement lazy loading and memoization
+- **UI Complexity**: Panel might feel cluttered
+  - *Mitigation*: Maintain clean, minimal design with proper spacing
+
+### Testing Strategy
+- Unit tests for color conversion functions
+- Integration tests for panel behavior
+- Visual regression tests for UI consistency
+- Accessibility testing with screen readers
+
+## 10. Success Metrics
+
+- Users can successfully copy all color formats
+- Panel opens/closes smoothly without layout shifts
+- Color conversion accuracy meets design standards
+- No performance degradation in color manager
+- Positive user feedback on enhanced functionality
+
+## 11. Future Enhancements
+
+- Additional color formats (LAB, XYZ)
+- Color harmony suggestions
+- Export functionality for color specifications
+- Integration with design tool APIs (Figma, Adobe)
+- Batch color format export
+
+## 12. Dependencies
+
+### Internal Dependencies
+- Existing color card component structure
+- Current copy-to-clipboard implementation
+- Icon library (lucide-react)
+- Animation system/CSS transitions
+
+### External Dependencies
+- None (all color conversion will be implemented internally)
+
+## 13. Development Checklist
+
+### Setup
+- [ ] Review existing color card component structure
+- [ ] Identify icon library and available icons
+- [ ] Plan state management approach
+- [ ] Design color conversion utility architecture
+
+### Implementation
+- [ ] Create color conversion utilities
+- [ ] Add info icon to color card header
+- [ ] Implement info panel component
+- [ ] Add slide animation
+- [ ] Integrate copy functionality
+- [ ] Implement Pantone editing
+- [ ] Add mutual exclusivity logic
+
+### Testing
+- [ ] Unit test color conversions
+- [ ] Test panel animations
+- [ ] Verify copy functionality
+- [ ] Test responsive behavior
+- [ ] Accessibility testing
+- [ ] Cross-browser compatibility
+
+### Documentation
+- [ ] Update component documentation
+- [ ] Document color conversion algorithms
+- [ ] Create user guide for new feature
+- [ ] Update design system documentation
