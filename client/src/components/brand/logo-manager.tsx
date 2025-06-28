@@ -14,6 +14,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useHiddenSections, useAddHiddenSection, useRemoveHiddenSection } from "@/lib/queries/hidden-sections";
@@ -1502,81 +1503,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   <Copy className="h-4 w-4" />
                   Use light logo for dark variant
                 </Button>
-
-                {parsedData.format === 'svg' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    onClick={async () => {
-                      try {
-                        const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
-                        if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
-
-                        const svgText = await fileResponse.text();
-
-                        // Convert all colors to white in the SVG
-                        const whiteSvg = svgText
-                          .replace(/fill="[^"]*"/g, 'fill="white"')
-                          .replace(/fill:[^;"}]+/g, 'fill:white')
-                          .replace(/stroke="[^"]*"/g, 'stroke="white"')
-                          .replace(/stroke:[^;"}]+/g, 'stroke:white')
-                          .replace(/#[0-9A-Fa-f]{3,6}/g, 'white')
-                          .replace(/rgb\([^)]+\)/g, 'white')
-                          .replace(/rgba\([^)]+\)/g, 'white');
-
-                        const whiteSvgBlob = new Blob([whiteSvg], { type: 'image/svg+xml' });
-                        const fileName = `${type}_logo_white.svg`;
-                        const file = new File([whiteSvgBlob], fileName, { type: 'image/svg+xml' });
-
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
-                        formData.append("type", type);
-                        formData.append("category", "logo");
-                        formData.append("isDarkVariant", "true");
-                        formData.append("data", JSON.stringify({
-                          type,
-                          format: parsedData.format,
-                          hasDarkVariant: true,
-                          isDarkVariant: true
-                        }));
-
-                        const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
-                          method: "PATCH",
-                          body: formData,
-                        });
-
-                        if (!response.ok) {
-                          throw new Error(await response.text());
-                        }
-
-                        parsedData.hasDarkVariant = true;
-                        await queryClient.invalidateQueries({
-                          queryKey: [`/api/clients/${clientId}/assets`],
-                        });
-                        await queryClient.invalidateQueries({
-                          queryKey: [`/api/assets/${logo.id}`],
-                        });
-
-                        toast({
-                          title: "Success",
-                          description: "White logo version created for dark variant",
-                        });
-                      } catch (error) {
-                        console.error("Error creating white variant:", error);
-                        toast({
-                          title: "Error",
-                          description: error instanceof Error ? error.message : "Failed to create white variant",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                    Make logo all white
-                  </Button>
-                )}
                 <div className="text-sm text-muted-foreground">- or -</div>
               </div>
 
@@ -1823,16 +1749,141 @@ function LogoSection({
               </>
             )}
             renderAsset={(variant) => (
-Fixing the syntax error by removing the extra closing tag.```text
-              <LogoDisplay 
-                logo={logo} 
-                imageUrl={imageUrl} 
-                parsedData={parsedData}
-                onDelete={onDeleteLogo}
-                clientId={clientId}
-                queryClient={queryClient}
-              />
+              variant === 'dark' && !parsedData.hasDarkVariant ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-6 mb-[2rem] pr-[5vh] pl-[5vh]">
+                  <div className="flex flex-col items-center gap-2 mt-[2rem]">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={async () => {
+                        try {
+                          const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
+                          if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
+
+                          const fileBlob = await fileResponse.blob();
+                          const fileName = `${type}_logo_dark.${parsedData.format}`;
+                          const file = new File([fileBlob], fileName, { type: fileResponse.headers.get('content-type') || 'image/svg+xml' });
+
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                          formData.append("type", type);
+                          formData.append("category", "logo");
+                          formData.append("isDarkVariant", "true");
+                          formData.append("data", JSON.stringify({
+                            type,
+                            format: parsedData.format,
+                            hasDarkVariant: true,
+                            isDarkVariant: true
+                          }));
+
+                          const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                            method: "PATCH",
+                            body: formData,
+                          });
+
+                          if (!response.ok) {
+                            throw new Error(await response.text());
+                          }
+
+                          parsedData.hasDarkVariant = true;
+                          await queryClient.invalidateQueries({
+                            queryKey: [`/api/clients/${clientId}/assets`],
+                          });
+                          await queryClient.invalidateQueries({
+                            queryKey: [`/api/assets/${logo.id}`],
+                          });
+                        } catch (error) {
+                          console.error("Error copying light variant as dark:", error);
+                        }
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                      Use light logo for dark variant
+                    </Button>
+                    <div className="text-sm text-muted-foreground">- or -</div>
+                  </div>
+
+                  <div className="logo-upload__dropzone logo-upload__dropzone--dark flex flex-col items-center justify-center">
+                    <div className="logo-upload__dropzone-icon">
+                      <Upload className="h-8 w-8" />
+                    </div>
+                    <h4 className="logo-upload__dropzone-heading">
+                      Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo for Dark Background
+                    </h4>
+                    <p className="logo-upload__dropzone-text text-center">
+                      Drag and drop your logo file here, or click to browse.<br />
+                      Supported formats: {Object.values(FILE_FORMATS).join(", ")}
+                    </p>
+                    <div className="logo-upload__dropzone-actions mt-4">
+                      <FileUpload
+                        type={type}
+                        clientId={clientId}
+                        isDarkVariant={true}
+                        parentLogoId={logo.id}
+                        queryClient={queryClient}
+                        buttonOnly={true}
+                        className="min-w-32 text-black"
+                        onSuccess={async () => {
+                          parsedData.hasDarkVariant = true;
+                          await queryClient.invalidateQueries({
+                            queryKey: [`/api/clients/${clientId}/assets`],
+                          });
+                          await queryClient.invalidateQueries({
+                            queryKey: [`/api/assets/${logo.id}`],
+                          });
+                        }}
+                      >
+                        Browse Files
+                      </FileUpload>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="asset-display__preview-image-container">
+                  {parsedData.format === 'svg' ? (
+                    <object
+                      data={variant === 'dark' && parsedData.hasDarkVariant ? 
+                        `/api/assets/${logo.id}/file?variant=dark` : 
+                        imageUrl}
+                      type="image/svg+xml"
+                      className="asset-display__preview-image"
+                    >
+                      <img
+                        src={variant === 'dark' && parsedData.hasDarkVariant ? 
+                          `/api/assets/${logo.id}/file?variant=dark` : 
+                          imageUrl}
+                        className="asset-display__preview-image"
+                        alt={logo.name || "SVG Logo"}
+                        onError={(e) => {
+                          console.error("Error loading SVG:", imageUrl);
+                          e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
+                        }}
+                      />
+                    </object>
+                  ) : (
+                    <img
+                      src={variant === 'dark' && parsedData.hasDarkVariant ? 
+                        `/api/assets/${logo.id}/file?variant=dark` : 
+                        imageUrl}
+                      alt={logo.name}
+                      className="asset-display__preview-image"
+                      style={{ 
+                        filter: variant === 'dark' && !parsedData.hasDarkVariant ? 'invert(1) brightness(1.5)' : 'none' 
+                      }}
+                      onError={(e) => {
+                        console.error("Error loading image:", imageUrl);
+                        e.currentTarget.src =
+                          'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m9.88 9.88 4.24 4.24"/%3E%3Cpath d="m9.88 14.12 4.24-4.24"/%3E%3Ccircle cx="12" cy="12" r="10"/%3E%3C/svg%3E';
+                      }}
+                    />
+                  )}
+                </div>
+              )
             )}
+            description={logoUsageGuidance[type as keyof typeof logoUsageGuidance]}
+            supportsVariants={true}
           />
         );
       })}
@@ -1840,52 +1891,66 @@ Fixing the syntax error by removing the extra closing tag.```text
   );
 }
 
-export default function LogoManager({ clientId, logos }: LogoManagerProps) {
-  const queryClient = useQueryClient();
-  const { user = null } = useAuth();
+export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const { toast } = useToast();
-  const { data: hiddenSections = [] } = useHiddenSections(clientId);
-  const addHiddenSection = useAddHiddenSection();
-  const removeHiddenSection = useRemoveHiddenSection();
+  const { user = null } = useAuth();
+  const queryClient = useQueryClient();
+  // State to track which logo types are visible
+  const [visibleSections, setVisibleSections] = useState<string[]>([]);
+  // State to track if add section dialog is open
+  const [showAddSection, setShowAddSection] = useState(false);
+  // State to track available sections to add
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
 
-  // Group logos by type
-  const logosByType = logos.reduce((acc, logo) => {
-    const parsedData = parseBrandAssetData(logo);
-    if (!parsedData) return acc;
+  // Fetch hidden sections from database
+  const { data: hiddenSections, isLoading: loadingHiddenSections } = useHiddenSections(clientId);
 
-    const type = parsedData.type;
-    if (!acc[type]) {
-      acc[type] = [];
+  // Mutations for adding/removing hidden sections
+  const addHiddenSection = useAddHiddenSection(clientId);
+  const removeHiddenSection = useRemoveHiddenSection(clientId);
+
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+
+  // Set up initial visible sections based on hidden sections from database
+  useEffect(() => {
+    if (loadingHiddenSections) return;
+
+    // Start with all logo types
+    const allLogoTypes = Object.values(LogoType);
+
+    // If we have hidden sections data, filter them out
+    if (hiddenSections && Array.isArray(hiddenSections)) {
+      const hiddenTypes = hiddenSections.map(section => section.sectionType);
+      const visible = allLogoTypes.filter(type => !hiddenTypes.includes(type));
+      setVisibleSections(visible);
+    } else {
+      // If no hidden sections or error, show all by default
+      setVisibleSections(allLogoTypes);
     }
-    acc[type].push(logo);
-    return acc;
-  }, {} as Record<string, BrandAsset[]>);
+  }, [hiddenSections, loadingHiddenSections]);
 
-  // Get all logo types, including those that might not have logos yet
-  const allLogoTypes = ['main', 'horizontal', 'vertical', 'square', 'app_icon', 'favicon'];
+  // When visible sections change, update available sections
+  useEffect(() => {
+    // Available sections are those that exist in LogoType but not in visibleSections
+    const available = Object.values(LogoType).filter(
+      (type) => !visibleSections.includes(type)
+    );
+    setAvailableSections(available);
+  }, [visibleSections]);
 
-  // Filter out hidden sections
-  const visibleLogoTypes = allLogoTypes.filter(type => 
-    !hiddenSections.some(section => section.sectionType === type)
-  );
-
-  // Delete logo mutation
   const deleteLogo = useMutation({
-    mutationFn: async ({ logoId, variant }: { logoId: number, variant: 'light' | 'dark' }) => {
-      const endpoint = variant === 'dark' ? 
-        `/api/clients/${clientId}/assets/${logoId}?variant=dark` :
-        `/api/clients/${clientId}/assets/${logoId}`;
-
-      const response = await fetch(endpoint, {
-        method: "DELETE",
-      });
+    mutationFn: async ({ logoId, variant }: { logoId: number; variant: 'light' | 'dark' }) => {
+      const response =await fetch(
+        `/api/clients/${clientId}/assets/${logoId}${variant === 'dark' ? '?variant=dark' : ''}`,
+        {
+          method: "DELETE",
+        },
+      );
 
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Failed to delete logo");
       }
-
-      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -1905,64 +1970,129 @@ export default function LogoManager({ clientId, logos }: LogoManagerProps) {
     },
   });
 
-  const handleDeleteLogo = (logoId: number, variant: 'light' | 'dark') => {
-    deleteLogo.mutate({ logoId, variant });
+  const logosByType = Object.values(LogoType).reduce(
+    (acc, type) => {
+      acc[type] = logos.filter((logo) => {
+        const parsedData = parseBrandAssetData(logo);
+        return parsedData?.type === type;
+      });
+      return acc;
+    },
+    {} as Record<string, BrandAsset[]>,
+  );
+
+  // Handle removing a section
+  const handleRemoveSection = (type: string) => {
+    // Update local state immediately for responsiveness
+    setVisibleSections(prev => prev.filter(section => section !== type));
+
+    // Persist to database
+    addHiddenSection.mutate(type, {
+      onSuccess: () => {
+        toast({
+          title: "Section removed",
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed`,
+        });
+      },
+      onError: (error) => {
+        // Revert local state on error
+        setVisibleSections(prev => [...prev, type]);
+        toast({
+          title: "Error",
+          description: `Failed to remove section: ${error.message}`,
+          variant: "destructive",
+        });
+      }
+    });
   };
 
-  const handleRemoveSection = (type: string) => {
-    addHiddenSection.mutate({
-      clientId,
-      sectionType: type,
-      sectionCategory: 'logo'
+  // Handle adding a section
+  const handleAddSection = (type: string) => {
+    // Update local state immediately for responsiveness
+    setVisibleSections(prev => [...prev, type]);
+    setShowAddSection(false);
+
+    // Persist to database
+    removeHiddenSection.mutate(type, {
+      onSuccess: () => {
+        toast({
+          title: "Section added",
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been added`,
+        });
+      },
+      onError: (error) => {
+        // Revert local state on error
+        setVisibleSections(prev => prev.filter(section => section !== type));
+        toast({
+          title: "Error",
+          description: `Failed to add section: ${error.message}`,
+          variant: "destructive",
+        });
+      }
     });
   };
 
   return (
-    <div className="space-y-8">
-      {visibleLogoTypes.map((type) => (
-        <LogoSection
+    <div className="logo-manager">
+      <div className="manager__header">
+        <div>
+          <h1>Logo System</h1>
+          <p>Manage and download the official logos for this brand</p>
+        </div>
+        {isAdmin && availableSections.length > 0 && (
+          <Button 
+            onClick={() => setShowAddSection(true)} 
+            variant="outline"
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Section</span>
+          </Button>
+        )}
+      </div>
+
+      {visibleSections.map((type) => (
+        <LogoSection 
           key={type}
           type={type}
           logos={logosByType[type] || []}
           clientId={clientId}
-          onDeleteLogo={handleDeleteLogo}
+          onDeleteLogo={(logoId, variant) => deleteLogo.mutate({ logoId, variant })}
           queryClient={queryClient}
-          onRemoveSection={handleRemoveSection}
+          onRemoveSection={isAdmin ? handleRemoveSection : undefined}
         />
       ))}
 
-      {/* Show hidden sections if any exist */}
-      {hiddenSections.length > 0 && (
-        <Card className="p-6">
-          <CardHeader className="px-0 pt-0">
-            <CardTitle className="flex items-center gap-2">
-              <Folder className="h-5 w-5" />
-              Hidden Sections
-            </CardTitle>
-            <CardDescription>
-              Logo sections you've hidden from view
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-0 pb-0">
-            <div className="space-y-2">
-              {hiddenSections.map((section) => (
-                <div key={section.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                  <span className="font-medium">
-                    {section.sectionType.charAt(0).toUpperCase() + section.sectionType.slice(1)} Logo
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeHiddenSection.mutate(section.id)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Show Section
-                  </Button>
-                </div>
+      {/* Dialog for adding sections */}
+      {isAdmin && (
+        <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Logo Section</DialogTitle>
+              <DialogDescription>
+                Select a logo section to add to the page
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3 py-4">
+              {availableSections.map((section) => (
+                <Button 
+                  key={section} 
+                  variant="outline" 
+                  className="justify-start text-left"
+                  onClick={() => handleAddSection(section)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {section.charAt(0).toUpperCase() + section.slice(1)} Logo
+                </Button>
               ))}
+              {availableSections.length === 0 && (
+                <p className="text-muted-foreground text-center py-2">
+                  All available sections are already displayed
+                </p>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
