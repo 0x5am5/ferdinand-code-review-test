@@ -117,7 +117,7 @@ export default function Login() {
         
         <div className="space-y-8">
           <div className="space-y-4">
-            <h1 className="font-ivy text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight">
+            <h1 className="font-ivy font-light text-4xl md:text-5xl lg:text-6xl text-foreground leading-tight">
               Your AI Design Team
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground max-w-lg leading-relaxed">
@@ -161,7 +161,7 @@ export default function Login() {
       </div>
 
       {/* Bull Logo - Bottom Left */}
-      <div className="absolute bottom-8 left-8">
+      <div className="absolute bottom-8 left-5">
         <BullLogo/>
       </div>
 

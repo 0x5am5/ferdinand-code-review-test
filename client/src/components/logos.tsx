@@ -19,7 +19,7 @@ export const FerdinandLogo = ({ className, width = 159, height = 33 }: LogoProps
   );
 };
 
-export const BullLogo = ({ className, width = 60, height = 60 }: LogoProps) => {
+export const BullLogo = ({ className, width = 100, height = 60 }: LogoProps) => {
   return (
     <svg
       className={className}
