@@ -1,0 +1,81 @@
+Overview
+
+We are adding a new “Info” (i) icon to each color swatch card that, when clicked, reveals a panel with additional color code formats: RGB, HSL, CMYK, and Pantone.
+
+This feature allows users to quickly access and copy multiple color formats beyond HEX. The panel will slide in from the right and contain editable input fields for each color format. All fields will support one-click copy behavior.
+
+⸻
+
+🎯 Goals
+	•	Show full color metadata (RGB, HSL, CMYK, Pantone) in a clean, compact UI
+	•	Allow one-click copy for all color values
+	•	Ensure only one detail panel (either palette or info) can be open at a time
+	•	Maintain visual consistency with current UI
+
+⸻
+
+🖼 UI/UX Requirements
+
+1. Info Icon
+	•	Add lowercase “i” icon to the existing action icon row
+	•	Tooltip: "More Color Info"
+	•	Use hover state styling consistent with existing icons
+	•	Use existing icon library (already available in project)
+
+2. Info Panel UI
+	•	Slides in from the right side of the card
+	•	Appears when icon is clicked; disappears when clicked again or when other panels open
+	•	Panel contains:
+	•	RGB (e.g., 69, 99, 174)
+	•	HSL (e.g., 222°, 40%, 48%)
+	•	CMYK (e.g., 60, 43, 0, 32)
+	•	Pantone: Text input that is editable (user can add/modify Pantone code manually)
+	•	All fields are text input elements, styled consistently with the existing HEX display
+
+3. Copy Behavior
+	•	All color values (RGB, HSL, CMYK, Pantone) are clickable to copy
+	•	Reuse the existing copyToClipboard logic from the HEX field
+	•	Tooltip on copy: "Copied!"
+
+4. Panel Logic
+	•	Clicking the info icon toggles the panel
+	•	Only one panel (palette or info) should be open at a time
+	•	If the shades panel is open, opening the info panel should close it (and vice versa)
+
+5. Responsiveness
+	•	Works across breakpoints
+	•	Info panel stacks or floats logically on narrow viewports
+
+⸻
+
+⚙️ Functional Requirements
+	•	Convert the HEX color value to:
+	•	RGB
+	•	HSL
+	•	CMYK
+	•	Display converted values in real time when panel is opened
+	•	Allow user input only on the Pantone field
+	•	Maintain internal state for isInfoPanelOpen and synchronize with isShadesPanelOpen
+	•	Apply consistent transitions (match shade reveal timing)
+
+⸻
+
+📐 Success Criteria
+	•	Info panel opens and closes cleanly
+	•	All color fields are rendered and copied correctly
+	•	User can enter a Pantone value manually
+	•	UI aligns visually with existing design system
+	•	Panel slides from the right, not beneath or inline
+
+⸻
+
+🧩 Dependencies
+	•	None (Pantone input is user-provided, no mapping needed)
+
+⸻
+
+✅ Implementation Notes
+	•	Reuse existing icon library
+	•	Leverage existing copy-to-clipboard logic
+	•	Animate panel using same animation duration as palette reveal
+	•	Maintain accessibility (e.g., aria-labels for copy buttons, keyboard nav where relevant)
