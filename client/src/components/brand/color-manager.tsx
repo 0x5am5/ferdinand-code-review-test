@@ -8,6 +8,7 @@ import {
   Download,
   Palette,
   X,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -498,6 +499,18 @@ function ColorCard({
               <RotateCcw className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
+            onClick={() => {
+              if (showTints) setShowTints(false);
+              setIsInfoPanelOpen(!isInfoPanelOpen);
+            }}
+            title="More Color Info"
+          >
+            <Info className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
+          </Button>
           {color.category !== "neutral" && color.data.type !== "gradient" && (
             <Button
               variant="ghost"
