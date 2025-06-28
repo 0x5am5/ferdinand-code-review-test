@@ -1557,25 +1557,29 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           return `style='${updatedStyle}'`;
                         });
 
-                        // Step 4: Add fill="white" to elements that don't have any fill attribute
+                        // Step 4: Add fill="white" to ALL shape elements that don't already have a fill attribute
                         // This is crucial for <path>, <circle>, <rect>, <polygon>, etc. that inherit default black color
-                        const elementsToUpdate = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'g'];
+                        const elementsToUpdate = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan'];
                         
                         elementsToUpdate.forEach(elementType => {
-                          // Find elements without fill or style attributes and add fill="white"
-                          const regex = new RegExp(`<${elementType}(?![^>]*fill\\s*=)(?![^>]*style\\s*=)([^>]*)>`, 'gi');
-                          whiteSvgContent = whiteSvgContent.replace(regex, `<${elementType}$1 fill="white">`);
-                          
-                          // Find elements with style but no fill property and add fill="white" to the element
-                          const regexWithStyle = new RegExp(`<${elementType}([^>]*style\\s*=\\s*"[^"]*")([^>]*?)(?![^>]*fill\\s*=)([^>]*)>`, 'gi');
-                          whiteSvgContent = whiteSvgContent.replace(regexWithStyle, (match, beforeStyle, betweenAttrs, afterStyle) => {
-                            // Check if the style already contains fill
-                            const styleMatch = beforeStyle.match(/style\s*=\s*"([^"]*)"/i);
-                            if (styleMatch && !/fill\s*:/i.test(styleMatch[1])) {
-                              return `<${elementType}${beforeStyle}${betweenAttrs}${afterStyle} fill="white">`;
-                            }
-                            return match;
+                          // More aggressive approach: Find ALL elements of this type that don't have fill attribute
+                          // and add fill="white" regardless of other attributes
+                          const regex = new RegExp(`<${elementType}([^>]*?)(?![^>]*fill\\s*=)([^>]*?)>`, 'gi');
+                          whiteSvgContent = whiteSvgContent.replace(regex, (match, beforeAttrs, afterAttrs) => {
+                            // Add fill="white" to the element
+                            return `<${elementType}${beforeAttrs}${afterAttrs} fill="white">`;
                           });
+                        });
+
+                        // Step 4.1: Handle elements that might have class attributes but no explicit fill
+                        // Force fill="white" on all shape elements, even if they have class attributes
+                        const forceWhiteRegex = /<(path|circle|rect|polygon|polyline|ellipse|line|text|tspan)([^>]*?)>/gi;
+                        whiteSvgContent = whiteSvgContent.replace(forceWhiteRegex, (match, elementType, attributes) => {
+                          // If this element doesn't already have fill="white", add it
+                          if (!/fill\s*=\s*["']white["']/i.test(attributes)) {
+                            return `<${elementType}${attributes} fill="white">`;
+                          }
+                          return match;
                         });
 
                         // Step 5: Remove or replace CSS classes and styles that might override our white colors
@@ -1586,7 +1590,14 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           // Replace any remaining color properties in style tags within the SVG
                           .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ''); // Remove internal stylesheets
 
-                        // Step 6: Handle specific edge cases
+                        // Step 6: Handle gradients and their stops
+                        // Replace gradient stop colors with white
+                        whiteSvgContent = whiteSvgContent
+                          .replace(/stop-color\s*=\s*"[^"]*"/gi, 'stop-color="white"')
+                          .replace(/stop-color\s*=\s*'[^']*'/gi, "stop-color='white'")
+                          .replace(/stop-color\s*:\s*[^;]+/gi, 'stop-color:white');
+
+                        // Step 7: Handle specific edge cases
                         // Ensure no 'none' fills remain (make them white instead)
                         whiteSvgContent = whiteSvgContent
                           .replace(/fill\s*=\s*"none"/gi, 'fill="white"')
