@@ -868,16 +868,40 @@ function ColorCard({
       <AnimatePresence>
         {isInfoPanelOpen && (
           <motion.div 
-            className="absolute top-0 right-0 w-[40%] h-full bg-white/95 backdrop-blur-sm border-l border-gray-200 p-4 flex flex-col"
+            className="absolute top-0 right-0 w-[40%] h-full backdrop-blur-sm border-l p-4 flex flex-col"
+            style={{ 
+              backgroundColor: `${displayHex}E6`, // 90% opacity of the color
+              borderLeftColor: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000020' : '#ffffff20'
+            }}
             initial={{ opacity: 0, x: '100%' }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: '100%' }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
+            {/* Close Button */}
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 p-1 hover:bg-black/10 hover:bg-white/10"
+                onClick={() => setIsInfoPanelOpen(false)}
+                style={{
+                  color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
             <div className="grid grid-cols-2 gap-2">
               {/* RGB */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">RGB</span>
+                <span 
+                  className="text-sm font-medium w-16"
+                  style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
+                >
+                  RGB
+                </span>
                 <button
                   onClick={() => {
                     const rgb = hexToRgb(displayHex);
@@ -891,25 +915,49 @@ function ColorCard({
                       });
                     }
                   }}
-                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded transition-colors group"
+                  style={{ 
+                    backgroundColor: 'transparent',
+                    ':hover': { backgroundColor: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000010' : '#ffffff10' }
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000010' : '#ffffff10';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
-                  <span className="text-sm font-mono">
+                  <span 
+                    className="text-sm font-mono"
+                    style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
+                  >
                     {(() => {
                       const rgb = hexToRgb(displayHex);
                       return rgb ? rgb.replace('rgb(', '').replace(')', '') : '';
                     })()}
                   </span>
                   {copiedFormats[`${color.id}-rgb`] ? (
-                    <Check className="h-3 w-3 text-green-500" />
+                    <Check 
+                      className="h-3 w-3"
+                      style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#22c55e' : '#4ade80' }}
+                    />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Copy 
+                      className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000080' : '#ffffff80' }}
+                    />
                   )}
                 </button>
               </div>
 
               {/* HSL */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">HSL</span>
+                <span 
+                  className="text-sm font-medium w-16"
+                  style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
+                >
+                  HSL
+                </span>
                 <button
                   onClick={() => {
                     const hsl = hexToHsl(displayHex);
@@ -923,25 +971,45 @@ function ColorCard({
                       });
                     }
                   }}
-                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded transition-colors group"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000010' : '#ffffff10';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
-                  <span className="text-sm font-mono">
+                  <span 
+                    className="text-sm font-mono"
+                    style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
+                  >
                     {(() => {
                       const hsl = hexToHsl(displayHex);
                       return hsl ? hsl.replace('hsl(', '').replace(')', '') : '';
                     })()}
                   </span>
                   {copiedFormats[`${color.id}-hsl`] ? (
-                    <Check className="h-3 w-3 text-green-500" />
+                    <Check 
+                      className="h-3 w-3"
+                      style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#22c55e' : '#4ade80' }}
+                    />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Copy 
+                      className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000080' : '#ffffff80' }}
+                    />
                   )}
                 </button>
               </div>
 
               {/* CMYK */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">CMYK</span>
+                <span 
+                  className="text-sm font-medium w-16"
+                  style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
+                >
+                  CMYK
+                </span>
                 <button
                   onClick={() => {
                     const cmyk = hexToCmyk(displayHex);
@@ -955,32 +1023,58 @@ function ColorCard({
                       });
                     }
                   }}
-                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded transition-colors group"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000010' : '#ffffff10';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }}
                 >
-                  <span className="text-sm font-mono">
+                  <span 
+                    className="text-sm font-mono"
+                    style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
+                  >
                     {(() => {
                       const cmyk = hexToCmyk(displayHex);
                       return cmyk ? cmyk.replace('cmyk(', '').replace(')', '') : '';
                     })()}
                   </span>
                   {copiedFormats[`${color.id}-cmyk`] ? (
-                    <Check className="h-3 w-3 text-green-500" />
+                    <Check 
+                      className="h-3 w-3"
+                      style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#22c55e' : '#4ade80' }}
+                    />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Copy 
+                      className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000080' : '#ffffff80' }}
+                    />
                   )}
                 </button>
               </div>
 
               {/* Pantone */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">Pantone</span>
+                <span 
+                  className="text-sm font-medium w-16"
+                  style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
+                >
+                  Pantone
+                </span>
                 <div className="flex-1 flex items-center gap-2">
                   <input
                     type="text"
                     value={pantoneValue}
                     onChange={(e) => handlePantoneChange(e.target.value)}
                     placeholder="Enter Pantone code"
-                    className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="flex-1 px-2 py-1 text-sm rounded focus:outline-none focus:ring-1"
+                    style={{
+                      backgroundColor: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#ffffff20' : '#00000020',
+                      border: `1px solid ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000040' : '#ffffff40'}`,
+                      color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
+                      focusRingColor: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#0066cc' : '#66b3ff'
+                    }}
                   />
                   <button
                     onClick={() => {
@@ -995,12 +1089,29 @@ function ColorCard({
                       }
                     }}
                     disabled={!pantoneValue}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+                    className="p-1 rounded transition-colors disabled:opacity-50"
+                    style={{
+                      backgroundColor: 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (pantoneValue) {
+                        e.currentTarget.style.backgroundColor = parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000010' : '#ffffff10';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                   >
                     {copiedFormats[`${color.id}-pantone`] ? (
-                      <Check className="h-3 w-3 text-green-500" />
+                      <Check 
+                        className="h-3 w-3"
+                        style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#22c55e' : '#4ade80' }}
+                      />
                     ) : (
-                      <Copy className="h-3 w-3 text-gray-500" />
+                      <Copy 
+                        className="h-3 w-3"
+                        style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000080' : '#ffffff80' }}
+                      />
                     )}
                   </button>
                 </div>
