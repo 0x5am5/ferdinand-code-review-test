@@ -1823,3 +1823,146 @@ function LogoSection({
               </>
             )}
             renderAsset={(variant) => (
+              <LogoDisplay 
+                logo={logo} 
+                imageUrl={imageUrl} 
+                parsedData={parsedData}
+                onDelete={onDeleteLogo}
+                clientId={clientId}
+                queryClient={queryClient}
+              />
+            )}
+          />
+        );
+      })}
+    </AssetSection>
+  );
+}
+
+export default function LogoManager({ clientId, logos }: LogoManagerProps) {
+  const queryClient = useQueryClient();
+  const { user = null } = useAuth();
+  const { toast } = useToast();
+  const { data: hiddenSections = [] } = useHiddenSections(clientId);
+  const addHiddenSection = useAddHiddenSection();
+  const removeHiddenSection = useRemoveHiddenSection();
+
+  // Group logos by type
+  const logosByType = logos.reduce((acc, logo) => {
+    const parsedData = parseBrandAssetData(logo);
+    if (!parsedData) return acc;
+    
+    const type = parsedData.type;
+    if (!acc[type]) {
+      acc[type] = [];
+    }
+    acc[type].push(logo);
+    return acc;
+  }, {} as Record<string, BrandAsset[]>);
+
+  // Get all logo types, including those that might not have logos yet
+  const allLogoTypes = ['main', 'horizontal', 'vertical', 'square', 'app_icon', 'favicon'];
+  
+  // Filter out hidden sections
+  const visibleLogoTypes = allLogoTypes.filter(type => 
+    !hiddenSections.some(section => section.sectionType === type)
+  );
+
+  // Delete logo mutation
+  const deleteLogo = useMutation({
+    mutationFn: async ({ logoId, variant }: { logoId: number, variant: 'light' | 'dark' }) => {
+      const endpoint = variant === 'dark' ? 
+        `/api/clients/${clientId}/assets/${logoId}?variant=dark` :
+        `/api/clients/${clientId}/assets/${logoId}`;
+
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete logo");
+      }
+
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
+      });
+      toast({
+        title: "Success",
+        description: "Logo deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteLogo = (logoId: number, variant: 'light' | 'dark') => {
+    deleteLogo.mutate({ logoId, variant });
+  };
+
+  const handleRemoveSection = (type: string) => {
+    addHiddenSection.mutate({
+      clientId,
+      sectionType: type,
+      sectionCategory: 'logo'
+    });
+  };
+
+  return (
+    <div className="space-y-8">
+      {visibleLogoTypes.map((type) => (
+        <LogoSection
+          key={type}
+          type={type}
+          logos={logosByType[type] || []}
+          clientId={clientId}
+          onDeleteLogo={handleDeleteLogo}
+          queryClient={queryClient}
+          onRemoveSection={handleRemoveSection}
+        />
+      ))}
+      
+      {/* Show hidden sections if any exist */}
+      {hiddenSections.length > 0 && (
+        <Card className="p-6">
+          <CardHeader className="px-0 pt-0">
+            <CardTitle className="flex items-center gap-2">
+              <Folder className="h-5 w-5" />
+              Hidden Sections
+            </CardTitle>
+            <CardDescription>
+              Logo sections you've hidden from view
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-0 pb-0">
+            <div className="space-y-2">
+              {hiddenSections.map((section) => (
+                <div key={section.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <span className="font-medium">
+                    {section.sectionType.charAt(0).toUpperCase() + section.sectionType.slice(1)} Logo
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeHiddenSection.mutate(section.id)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Show Section
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}</old_str>
