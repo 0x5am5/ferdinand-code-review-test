@@ -1503,6 +1503,99 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                   <Copy className="h-4 w-4" />
                   Use light logo for dark variant
                 </Button>
+
+                {/* Show "Make logo all white" button only for SVG files */}
+                {parsedData.format === 'svg' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={async () => {
+                      try {
+                        // Fetch the light variant SVG data
+                        const fileResponse = await fetch(`/api/assets/${logo.id}/file`);
+                        if (!fileResponse.ok) throw new Error("Failed to fetch light variant file");
+
+                        // Get the SVG content as text
+                        const svgContent = await fileResponse.text();
+                        
+                        // Convert SVG to white by replacing fill and stroke colors
+                        let whiteSvgContent = svgContent
+                          // Replace any fill colors with white
+                          .replace(/fill="[^"]*"/g, 'fill="white"')
+                          .replace(/fill:'[^']*'/g, "fill:'white'")
+                          .replace(/fill:[^;;}]+/g, 'fill:white')
+                          // Replace any stroke colors with white
+                          .replace(/stroke="[^"]*"/g, 'stroke="white"')
+                          .replace(/stroke:'[^']*'/g, "stroke:'white'")
+                          .replace(/stroke:[^;;}]+/g, 'stroke:white')
+                          // Handle style attributes that might contain colors
+                          .replace(/style="([^"]*)"/, (match, styleContent) => {
+                            const updatedStyle = styleContent
+                              .replace(/fill:[^;]+/g, 'fill:white')
+                              .replace(/stroke:[^;]+/g, 'stroke:white');
+                            return `style="${updatedStyle}"`;
+                          });
+
+                        // Create a blob from the modified SVG content
+                        const svgBlob = new Blob([whiteSvgContent], { type: 'image/svg+xml' });
+                        const fileName = `${type}_logo_dark.svg`;
+                        const file = new File([svgBlob], fileName, { type: 'image/svg+xml' });
+
+                        // Create FormData with the file and necessary metadata
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        formData.append("name", `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`);
+                        formData.append("type", type);
+                        formData.append("category", "logo");
+                        formData.append("isDarkVariant", "true");
+
+                        // Add data with hasDarkVariant flag
+                        formData.append("data", JSON.stringify({
+                          type,
+                          format: parsedData.format,
+                          hasDarkVariant: true,
+                          isDarkVariant: true
+                        }));
+
+                        console.log("Converting light SVG logo to white for dark variant");
+                        const response = await fetch(`/api/clients/${clientId}/assets/${logo.id}?variant=dark`, {
+                          method: "PATCH",
+                          body: formData,
+                        });
+
+                        if (!response.ok) {
+                          throw new Error(await response.text());
+                        }
+
+                        // Update UI
+                        parsedData.hasDarkVariant = true;
+                        await queryClient.invalidateQueries({
+                          queryKey: [`/api/clients/${clientId}/assets`],
+                        });
+                        await queryClient.invalidateQueries({
+                          queryKey: [`/api/assets/${logo.id}`],
+                        });
+
+                        toast({
+                          title: "Success",
+                          description: "Logo converted to white for dark variant",
+                        });
+                      } catch (error) {
+                        console.error("Error converting logo to white:", error);
+                        toast({
+                          title: "Error",
+                          description: error instanceof Error ? error.message : "Failed to convert logo to white",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                  >
+                    <Copy className="h-4 w-4" />
+                    Make logo all white
+                  </Button>
+                )}
+
                 <div className="text-sm text-muted-foreground">- or -</div>
               </div>
 
