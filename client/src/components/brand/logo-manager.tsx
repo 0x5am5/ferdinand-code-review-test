@@ -1917,21 +1917,56 @@ function LogoSection({
                             
                             // Convert SVG to white by replacing fill and stroke colors
                             let whiteSvgContent = svgContent
-                              // Replace any fill colors with white
-                              .replace(/fill="[^"]*"/g, 'fill="white"')
-                              .replace(/fill:'[^']*'/g, "fill:'white'")
-                              .replace(/fill:[^;;}]+/g, 'fill:white')
-                              // Replace any stroke colors with white
-                              .replace(/stroke="[^"]*"/g, 'stroke="white"')
-                              .replace(/stroke:'[^']*'/g, "stroke:'white'")
-                              .replace(/stroke:[^;;}]+/g, 'stroke:white')
-                              // Handle style attributes that might contain colors
-                              .replace(/style="([^"]*)"/, (match, styleContent) => {
+                              // Replace fill attributes with white (handle any color format)
+                              .replace(/fill="[^"]*"/gi, 'fill="white"')
+                              .replace(/fill='[^']*'/gi, "fill='white'")
+                              // Replace stroke attributes with white
+                              .replace(/stroke="[^"]*"/gi, 'stroke="white"')
+                              .replace(/stroke='[^']*'/gi, "stroke='white'")
+                              // Handle CSS style attributes comprehensively
+                              .replace(/style="([^"]*)"/gi, (match, styleContent) => {
                                 const updatedStyle = styleContent
-                                  .replace(/fill:[^;]+/g, 'fill:white')
-                                  .replace(/stroke:[^;]+/g, 'stroke:white');
+                                  // Replace fill in CSS
+                                  .replace(/fill\s*:\s*[^;]+/gi, 'fill:white')
+                                  // Replace stroke in CSS
+                                  .replace(/stroke\s*:\s*[^;]+/gi, 'stroke:white')
+                                  // Replace color property (for text elements)
+                                  .replace(/color\s*:\s*[^;]+/gi, 'color:white')
+                                  // Replace any other color-related properties
+                                  .replace(/stop-color\s*:\s*[^;]+/gi, 'stop-color:white');
                                 return `style="${updatedStyle}"`;
-                              });
+                              })
+                              // Handle CSS style attributes with single quotes
+                              .replace(/style='([^']*)'/gi, (match, styleContent) => {
+                                const updatedStyle = styleContent
+                                  .replace(/fill\s*:\s*[^;]+/gi, 'fill:white')
+                                  .replace(/stroke\s*:\s*[^;]+/gi, 'stroke:white')
+                                  .replace(/color\s*:\s*[^;]+/gi, 'color:white')
+                                  .replace(/stop-color\s*:\s*[^;]+/gi, 'stop-color:white');
+                                return `style='${updatedStyle}'`;
+                              })
+                              // Handle inline CSS styles without quotes
+                              .replace(/fill\s*:\s*[^;}\s]+/gi, 'fill:white')
+                              .replace(/stroke\s*:\s*[^;}\s]+/gi, 'stroke:white')
+                              .replace(/color\s*:\s*[^;}\s]+/gi, 'color:white')
+                              // Handle stop-color for gradients
+                              .replace(/stop-color="[^"]*"/gi, 'stop-color="white"')
+                              .replace(/stop-color='[^']*'/gi, "stop-color='white'")
+                              // Remove any fill="none" and replace with white
+                              .replace(/fill="none"/gi, 'fill="white"')
+                              .replace(/fill='none'/gi, "fill='white'")
+                              // Handle hex colors directly in attributes
+                              .replace(/#[0-9a-fA-F]{3,8}/g, 'white')
+                              // Handle rgb/rgba colors
+                              .replace(/rgb\([^)]+\)/gi, 'white')
+                              .replace(/rgba\([^)]+\)/gi, 'white')
+                              // Handle hsl/hsla colors  
+                              .replace(/hsl\([^)]+\)/gi, 'white')
+                              .replace(/hsla\([^)]+\)/gi, 'white')
+                              // Handle named colors (common ones that might be black)
+                              .replace(/=["']?black["']?/gi, '="white"')
+                              .replace(/=["']?#000000["']?/gi, '="white"')
+                              .replace(/=["']?#000["']?/gi, '="white"');
 
                             // Create a blob from the modified SVG content
                             const svgBlob = new Blob([whiteSvgContent], { type: 'image/svg+xml' });
