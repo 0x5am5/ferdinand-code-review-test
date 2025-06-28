@@ -688,20 +688,20 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                       Colors
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Brand Colors</CardTitle>
-                        <CardDescription>
+                  <AccordionContent className="space-y-6 pt-2">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Brand Colors</h4>
+                        <p className="text-sm text-muted-foreground">
                           Define your primary brand color palette
                           {brandColors.length > 0 && (
                             <span className="block text-sm text-muted-foreground mt-1">
                               ✓ Inherited {brandColors.length} color(s) from your Color System
                             </span>
                           )}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                        </p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -730,22 +730,22 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Interactive Colors</CardTitle>
-                        <CardDescription>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Interactive Colors</h4>
+                        <p className="text-sm text-muted-foreground">
                           Colors for interactive elements and states
                           {interactiveColors.length > 0 && (
                             <span className="block text-sm text-muted-foreground mt-1">
                               ✓ Inherited {interactiveColors.length} color(s) from your Color System
                             </span>
                           )}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                        </p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -800,8 +800,8 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
 
@@ -812,13 +812,13 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                       Typography
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Font Families</CardTitle>
-                        <CardDescription>Define your typography system</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                  <AccordionContent className="space-y-6 pt-2">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Font Families</h4>
+                        <p className="text-sm text-muted-foreground">Define your typography system</p>
+                      </div>
+                      <div className="space-y-4">
                         <FormField
                           control={form.control}
                           name="typography.fontFamily1Base"
@@ -858,15 +858,15 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             </FormItem>
                           )}
                         />
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Type Scale</CardTitle>
-                        <CardDescription>Configure font sizing and spacing</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Type Scale</h4>
+                        <p className="text-sm text-muted-foreground">Configure font sizing and spacing</p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -949,8 +949,8 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
 
@@ -962,12 +962,12 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-4 pt-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Spacing System</CardTitle>
-                        <CardDescription>Define your spacing and layout tokens</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Spacing System</h4>
+                        <p className="text-sm text-muted-foreground">Define your spacing and layout tokens</p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -1010,8 +1010,8 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
 
@@ -1022,12 +1022,12 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="space-y-4 pt-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Borders & Radius</CardTitle>
-                        <CardDescription>Configure border and radius tokens</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Borders & Radius</h4>
+                        <p className="text-sm text-muted-foreground">Configure border and radius tokens</p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -1068,8 +1068,8 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
 
@@ -1079,13 +1079,13 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                       Components
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pt-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Button Components</CardTitle>
-                        <CardDescription>Link button properties to existing design tokens</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                  <AccordionContent className="space-y-6 pt-2">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Button Components</h4>
+                        <p className="text-sm text-muted-foreground">Link button properties to existing design tokens</p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -1124,15 +1124,15 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Input Components</CardTitle>
-                        <CardDescription>Configure form input styling</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Input Components</h4>
+                        <p className="text-sm text-muted-foreground">Configure form input styling</p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -1161,15 +1161,15 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Card Components</CardTitle>
-                        <CardDescription>Configure card styling</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <h4 className="text-base font-semibold">Card Components</h4>
+                        <p className="text-sm text-muted-foreground">Configure card styling</p>
+                      </div>
+                      <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
@@ -1198,8 +1198,8 @@ export default function DesignSystemBuilder({ clientId }: DesignSystemBuilderPro
                             )}
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
