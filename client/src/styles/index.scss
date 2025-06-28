@@ -25,7 +25,8 @@
   }
 
   body {
-    @apply text-foreground font-roc antialiased;
+    @apply text-foreground antialiased;
+    font-family: 'roc-grotesk', 'roc-grotesk-wide', 'Inter', sans-serif;
   }
 
   h1, h2, h3, p {
@@ -39,19 +40,22 @@
   }
 
   h2 {
-    @apply font-roc mb-4;
+    @apply mb-4;
+    font-family: 'roc-grotesk', 'roc-grotesk-wide', 'Inter', sans-serif;
     font-size: var(--heading-2-size);
     font-weight: var(--heading-weight);
   }
 
   h3 {
-    @apply font-roc mb-3;
+    @apply mb-3;
+    font-family: 'roc-grotesk', 'roc-grotesk-wide', 'Inter', sans-serif;
     font-size: var(--heading-3-size);
     font-weight: var(--heading-weight);
   }
 
   p {
-    @apply font-roc mb-4;
+    @apply mb-4;
+    font-family: 'roc-grotesk', 'roc-grotesk-wide', 'Inter', sans-serif;
     font-size: var(--body-size);
     font-weight: var(--body-weight);
   }

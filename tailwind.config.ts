@@ -7,8 +7,9 @@ export default {
     extend: {
       fontFamily: {
         'ivy': ['ivypresto-display', 'serif'],
-        'roc': ['Roc Grotesk', 'Inter', 'sans-serif'],
-        'sans': ['Roc Grotesk', 'Inter', 'sans-serif'],
+        'roc': ['roc-grotesk', 'roc-grotesk-wide', 'Inter', 'sans-serif'],
+        'roc-wide': ['roc-grotesk-wide', 'roc-grotesk', 'Inter', 'sans-serif'],
+        'sans': ['roc-grotesk', 'roc-grotesk-wide', 'Inter', 'sans-serif'],
         'serif': ['ivypresto-display', 'serif'],
       },
       borderRadius: {
