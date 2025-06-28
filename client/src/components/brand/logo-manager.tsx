@@ -1521,23 +1521,77 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                         // Get the SVG content as text
                         const svgContent = await fileResponse.text();
                         
-                        // Convert SVG to white by replacing fill and stroke colors
-                        let whiteSvgContent = svgContent
-                          // Replace any fill colors with white
-                          .replace(/fill="[^"]*"/g, 'fill="white"')
-                          .replace(/fill:'[^']*'/g, "fill:'white'")
-                          .replace(/fill:[^;;}]+/g, 'fill:white')
-                          // Replace any stroke colors with white
-                          .replace(/stroke="[^"]*"/g, 'stroke="white"')
-                          .replace(/stroke:'[^']*'/g, "stroke:'white'")
-                          .replace(/stroke:[^;;}]+/g, 'stroke:white')
-                          // Handle style attributes that might contain colors
-                          .replace(/style="([^"]*)"/, (match, styleContent) => {
-                            const updatedStyle = styleContent
-                              .replace(/fill:[^;]+/g, 'fill:white')
-                              .replace(/stroke:[^;]+/g, 'stroke:white');
-                            return `style="${updatedStyle}"`;
+                        // Convert SVG to white using comprehensive approach
+                        let whiteSvgContent = svgContent;
+                        
+                        // Step 1: Replace explicit fill and stroke attributes (any color format)
+                        whiteSvgContent = whiteSvgContent
+                          // Replace fill attributes with white (handle quoted values)
+                          .replace(/fill\s*=\s*"[^"]*"/gi, 'fill="white"')
+                          .replace(/fill\s*=\s*'[^']*'/gi, "fill='white'")
+                          // Replace stroke attributes with white (handle quoted values)
+                          .replace(/stroke\s*=\s*"[^"]*"/gi, 'stroke="white"')
+                          .replace(/stroke\s*=\s*'[^']*'/gi, "stroke='white'");
+
+                        // Step 2: Handle comprehensive style attributes (multiple style tags)
+                        whiteSvgContent = whiteSvgContent.replace(/style\s*=\s*"([^"]*)"/gi, (match, styleContent) => {
+                          const updatedStyle = styleContent
+                            // Replace fill in CSS
+                            .replace(/fill\s*:\s*[^;]+/gi, 'fill:white')
+                            // Replace stroke in CSS
+                            .replace(/stroke\s*:\s*[^;]+/gi, 'stroke:white')
+                            // Replace color property (for text elements)
+                            .replace(/color\s*:\s*[^;]+/gi, 'color:white')
+                            // Add fill:white if no fill property exists
+                            + (!/fill\s*:/i.test(styleContent) ? ';fill:white' : '');
+                          return `style="${updatedStyle}"`;
+                        });
+
+                        // Step 3: Handle single-quoted style attributes
+                        whiteSvgContent = whiteSvgContent.replace(/style\s*=\s*'([^']*)'/gi, (match, styleContent) => {
+                          const updatedStyle = styleContent
+                            .replace(/fill\s*:\s*[^;]+/gi, 'fill:white')
+                            .replace(/stroke\s*:\s*[^;]+/gi, 'stroke:white')
+                            .replace(/color\s*:\s*[^;]+/gi, 'color:white')
+                            + (!/fill\s*:/i.test(styleContent) ? ';fill:white' : '');
+                          return `style='${updatedStyle}'`;
+                        });
+
+                        // Step 4: Add fill="white" to elements that don't have any fill attribute
+                        // This is crucial for <path>, <circle>, <rect>, <polygon>, etc. that inherit default black color
+                        const elementsToUpdate = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'g'];
+                        
+                        elementsToUpdate.forEach(elementType => {
+                          // Find elements without fill or style attributes and add fill="white"
+                          const regex = new RegExp(`<${elementType}(?![^>]*fill\\s*=)(?![^>]*style\\s*=)([^>]*)>`, 'gi');
+                          whiteSvgContent = whiteSvgContent.replace(regex, `<${elementType}$1 fill="white">`);
+                          
+                          // Find elements with style but no fill property and add fill="white" to the element
+                          const regexWithStyle = new RegExp(`<${elementType}([^>]*style\\s*=\\s*"[^"]*")([^>]*?)(?![^>]*fill\\s*=)([^>]*)>`, 'gi');
+                          whiteSvgContent = whiteSvgContent.replace(regexWithStyle, (match, beforeStyle, betweenAttrs, afterStyle) => {
+                            // Check if the style already contains fill
+                            const styleMatch = beforeStyle.match(/style\s*=\s*"([^"]*)"/i);
+                            if (styleMatch && !/fill\s*:/i.test(styleMatch[1])) {
+                              return `<${elementType}${beforeStyle}${betweenAttrs}${afterStyle} fill="white">`;
+                            }
+                            return match;
                           });
+                        });
+
+                        // Step 5: Remove or replace CSS classes and styles that might override our white colors
+                        // Replace common CSS color classes
+                        whiteSvgContent = whiteSvgContent
+                          .replace(/class\s*=\s*"[^"]*"/gi, '') // Remove CSS classes that might contain color styles
+                          .replace(/class\s*=\s*'[^']*'/gi, '') // Remove CSS classes in single quotes
+                          // Replace any remaining color properties in style tags within the SVG
+                          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ''); // Remove internal stylesheets
+
+                        // Step 6: Handle specific edge cases
+                        // Ensure no 'none' fills remain (make them white instead)
+                        whiteSvgContent = whiteSvgContent
+                          .replace(/fill\s*=\s*"none"/gi, 'fill="white"')
+                          .replace(/fill\s*=\s*'none'/gi, "fill='white'")
+                          .replace(/fill\s*:\s*none/gi, 'fill:white');
 
                         // Create a blob from the modified SVG content
                         const svgBlob = new Blob([whiteSvgContent], { type: 'image/svg+xml' });
