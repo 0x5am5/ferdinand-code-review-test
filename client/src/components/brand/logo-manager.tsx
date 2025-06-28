@@ -1,6 +1,3 @@
-Adding 'Make logo all white' button for SVG logos to the LogoSection component.
-```
-```replit_final_file
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
