@@ -1505,7 +1505,9 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                 </Button>
 
                 {/* Show "Make logo all white" button only for SVG files */}
-                {parsedData.format === 'svg' && (
+                {(parsedData?.format === 'svg' || parsedData?.format === 'image/svg+xml' || logo.mimeType === 'image/svg+xml' || 
+                  (logo.mimeType && logo.mimeType.includes('svg')) || 
+                  (parsedData?.format && parsedData.format.includes('svg'))) && (
                   <Button
                     variant="outline"
                     size="sm"
