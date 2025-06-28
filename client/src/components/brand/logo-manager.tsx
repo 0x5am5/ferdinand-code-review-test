@@ -1569,8 +1569,10 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                             if (attributes.includes('fill="white"')) {
                               return match;
                             }
-                            // Add fill="white" to the element
-                            return `<${elementType}${attributes} fill="white">`;
+                            // Add fill="white" to the element with proper spacing
+                            const hasAttributes = attributes.trim().length > 0;
+                            const spacer = hasAttributes ? ' ' : '';
+                            return `<${elementType}${attributes}${spacer}fill="white">`;
                           });
                         });
 
