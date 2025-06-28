@@ -851,8 +851,7 @@ function ColorCard({
                 >
                   <span className="text-sm font-mono">
                     {(() => {
-                      const rgb = hexToRgb(```typescript
-displayHex);
+                      const rgb = hexToRgb(displayHex);
                       return rgb ? rgb.replace('rgb(', '').replace(')', '') : '';
                     })()}
                   </span>
