@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,6 +86,21 @@ function ColorCard({
   const [showTints, setShowTints] = useState(false);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [pantoneValue, setPantoneValue] = useState('');
+  const [copiedFormats, setCopiedFormats] = useState<Record<string, boolean>>({});
+
+  // Load saved Pantone value on mount
+  useEffect(() => {
+    const savedPantone = localStorage.getItem(`pantone-${color.id}`);
+    if (savedPantone) {
+      setPantoneValue(savedPantone);
+    }
+  }, [color.id]);
+
+  // Save Pantone value when it changes
+  const handlePantoneChange = (value: string) => {
+    setPantoneValue(value);
+    localStorage.setItem(`pantone-${color.id}`, value);
+  };
 
   // Add updateColor mutation to ColorCard component
   const updateColor = useMutation({
@@ -499,18 +515,26 @@ function ColorCard({
               <RotateCcw className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
-            onClick={() => {
-              if (showTints) setShowTints(false);
-              setIsInfoPanelOpen(!isInfoPanelOpen);
-            }}
-            title="More Color Info"
-          >
-            <Info className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
+                  onClick={() => {
+                    if (showTints) setShowTints(false);
+                    setIsInfoPanelOpen(!isInfoPanelOpen);
+                  }}
+                >
+                  <Info className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>More Color Info</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {color.category !== "neutral" && color.data.type !== "gradient" && (
             <Button
               variant="ghost"
@@ -857,7 +881,13 @@ function ColorCard({
                   onClick={() => {
                     const rgb = hexToRgb(displayHex);
                     if (rgb) {
-                      copyHex(rgb);
+                      navigator.clipboard.writeText(rgb);
+                      setCopiedFormats(prev => ({ ...prev, [`${color.id}-rgb`]: true }));
+                      setTimeout(() => setCopiedFormats(prev => ({ ...prev, [`${color.id}-rgb`]: false })), 2000);
+                      toast({
+                        title: "Copied!",
+                        description: `${rgb} has been copied to your clipboard.`,
+                      });
                     }
                   }}
                   className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
@@ -868,7 +898,11 @@ function ColorCard({
                       return rgb ? rgb.replace('rgb(', '').replace(')', '') : '';
                     })()}
                   </span>
-                  <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {copiedFormats[`${color.id}-rgb`] ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
                 </button>
               </div>
 
@@ -879,7 +913,13 @@ function ColorCard({
                   onClick={() => {
                     const hsl = hexToHsl(displayHex);
                     if (hsl) {
-                      copyHex(hsl);
+                      navigator.clipboard.writeText(hsl);
+                      setCopiedFormats(prev => ({ ...prev, [`${color.id}-hsl`]: true }));
+                      setTimeout(() => setCopiedFormats(prev => ({ ...prev, [`${color.id}-hsl`]: false })), 2000);
+                      toast({
+                        title: "Copied!",
+                        description: `${hsl} has been copied to your clipboard.`,
+                      });
                     }
                   }}
                   className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
@@ -890,7 +930,11 @@ function ColorCard({
                       return hsl ? hsl.replace('hsl(', '').replace(')', '') : '';
                     })()}
                   </span>
-                  <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {copiedFormats[`${color.id}-hsl`] ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
                 </button>
               </div>
 
@@ -901,7 +945,13 @@ function ColorCard({
                   onClick={() => {
                     const cmyk = hexToCmyk(displayHex);
                     if (cmyk) {
-                      copyHex(cmyk);
+                      navigator.clipboard.writeText(cmyk);
+                      setCopiedFormats(prev => ({ ...prev, [`${color.id}-cmyk`]: true }));
+                      setTimeout(() => setCopiedFormats(prev => ({ ...prev, [`${color.id}-cmyk`]: false })), 2000);
+                      toast({
+                        title: "Copied!",
+                        description: `${cmyk} has been copied to your clipboard.`,
+                      });
                     }
                   }}
                   className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
@@ -912,7 +962,11 @@ function ColorCard({
                       return cmyk ? cmyk.replace('cmyk(', '').replace(')', '') : '';
                     })()}
                   </span>
-                  <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {copiedFormats[`${color.id}-cmyk`] ? (
+                    <Check className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
                 </button>
               </div>
 
@@ -923,20 +977,30 @@ function ColorCard({
                   <input
                     type="text"
                     value={pantoneValue}
-                    onChange={(e) => setPantoneValue(e.target.value)}
+                    onChange={(e) => handlePantoneChange(e.target.value)}
                     placeholder="Enter Pantone code"
                     className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <button
                     onClick={() => {
                       if (pantoneValue) {
-                        copyHex(pantoneValue);
+                        navigator.clipboard.writeText(pantoneValue);
+                        setCopiedFormats(prev => ({ ...prev, [`${color.id}-pantone`]: true }));
+                        setTimeout(() => setCopiedFormats(prev => ({ ...prev, [`${color.id}-pantone`]: false })), 2000);
+                        toast({
+                          title: "Copied!",
+                          description: `${pantoneValue} has been copied to your clipboard.`,
+                        });
                       }
                     }}
                     disabled={!pantoneValue}
                     className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
                   >
-                    <Copy className="h-3 w-3 text-gray-500" />
+                    {copiedFormats[`${color.id}-pantone`] ? (
+                      <Check className="h-3 w-3 text-green-500" />
+                    ) : (
+                      <Copy className="h-3 w-3 text-gray-500" />
+                    )}
                   </button>
                 </div>
               </div>
