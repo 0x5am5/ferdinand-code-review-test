@@ -1576,27 +1576,17 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           // Apply the white class to the root SVG element
                           svgElement.setAttribute('class', whiteClassName);
                           
-                          // Force explicit attributes on ALL drawable elements AND apply the class
-                          const drawableSelectors = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'textPath', 'g', 'use'];
-                          drawableSelectors.forEach(selector => {
-                            const elements = svgDoc.querySelectorAll(selector);
-                            elements.forEach(element => {
-                              // Force white fill and color
-                              element.setAttribute('fill', 'white');
-                              element.setAttribute('color', 'white');
-                              
-                              // Apply the white class to each element
-                              element.setAttribute('class', whiteClassName);
-                              
-                              // Override any existing styles
-                              const existingStyle = element.getAttribute('style') || '';
-                              const newStyle = existingStyle
-                                .replace(/fill\s*:\s*[^;]+/gi, '')
-                                .replace(/color\s*:\s*[^;]+/gi, '')
-                                .replace(/stroke\s*:\s*[^;]+/gi, '') + 
-                                ';fill:white!important;color:white!important';
-                              element.setAttribute('style', newStyle);
-                            });
+                          // CRITICAL FIX: Apply the white class to EVERY single element in the SVG
+                          const allElements = svgDoc.querySelectorAll('*');
+                          allElements.forEach(element => {
+                            // Skip svg root and style elements
+                            if (element.tagName === 'svg' || element.tagName === 'style') return;
+                            
+                            // Apply the white class to EVERY element
+                            element.setAttribute('class', whiteClassName);
+                            element.setAttribute('fill', 'white');
+                            element.setAttribute('color', 'white');
+                            element.setAttribute('style', 'fill:white!important;color:white!important;stroke:white!important');
                           });
                           
                           // Remove all internal stylesheets that could override
@@ -1624,14 +1614,16 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                           // Add class-based global override at SVG root
                           whiteSvgContent = whiteSvgContent.replace(
                             /<svg([^>]*)>/i, 
-                            `<svg$1 class="${whiteClassName}"><style>.${whiteClassName} * { fill: white !important; color: white !important; } .${whiteClassName} text, .${whiteClassName} tspan, .${whiteClassName} textPath { fill: white !important; color: white !important; } .${whiteClassName} path, .${whiteClassName} circle, .${whiteClassName} rect, .${whiteClassName} polygon, .${whiteClassName} polyline, .${whiteClassName} ellipse, .${whiteClassName} line { fill: white !important; }</style>`
+                            `<svg$1 class="${whiteClassName}"><style>.${whiteClassName} * { fill: white !important; color: white !important; }</style>`
                           );
                           
-                          // Force fill="white" and class on every possible drawable element
-                          const allElements = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'textPath', 'g', 'use'];
+                          // CRITICAL FIX: Force class and fill on every possible element
+                          const allElements = ['path', 'circle', 'rect', 'polygon', 'polyline', 'ellipse', 'line', 'text', 'tspan', 'textPath', 'g', 'use', 'defs', 'clipPath'];
                           allElements.forEach(tag => {
-                            const regex = new RegExp(`<${tag}([^>]*?)(?<!/)>`, 'gi');
+                            const regex = new RegExp(`<${tag}([^>]*?)>`, 'gi');
                             whiteSvgContent = whiteSvgContent.replace(regex, (match, attributes) => {
+                              if (match.endsWith('/>')) return match;
+                              
                               let cleanAttrs = attributes
                                 .replace(/fill\s*=\s*["'][^"']*["']/gi, '')
                                 .replace(/class\s*=\s*["'][^"']*["']/gi, '')
@@ -1640,10 +1632,6 @@ function LogoDisplay({ logo, imageUrl, parsedData, onDelete, clientId, queryClie
                               return `<${tag}${cleanAttrs} class="${whiteClassName}" fill="white" style="fill:white!important;color:white!important;">`;
                             });
                           });
-                          
-                          // Remove any remaining problematic styles but preserve our new ones
-                          whiteSvgContent = whiteSvgContent
-                            .replace(/<style[^>]*>(?!.*svg-white-)[\s\S]*?<\/style>/gi, '');
                         }
 
                         // Create a blob from the modified SVG content
