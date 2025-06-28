@@ -784,10 +784,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
       <div className="asset-display">
         <div className="asset-display__info relative">
-
-
-
-        <div className="space-y-6">
+          <div className="space-y-6">
               {/* Scale Settings */}
               <div>
                 <p className="mb-8">

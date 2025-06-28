@@ -868,7 +868,7 @@ function ColorCard({
       <AnimatePresence>
         {isInfoPanelOpen && (
           <motion.div 
-            className="absolute top-0 right-0 w-[40%] h-full backdrop-blur-sm border-l p-4 flex flex-col"
+            className="absolute top-0 right-0 w-[50%] h-full backdrop-blur-sm border-l p-2 flex flex-col"
             style={{ 
               backgroundColor: `${displayHex}E6`, // 90% opacity of the color
               borderLeftColor: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000020' : '#ffffff20'
@@ -883,13 +883,13 @@ function ColorCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 p-1 hover:bg-black/10 hover:bg-white/10"
+                className="h-7 w-7 absolute top-5 left-[-50px] hover:bg-black/10 hover:bg-white/10"
                 onClick={() => setIsInfoPanelOpen(false)}
                 style={{
                   color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff',
                 }}
               >
-                <X className="h-4 w-4" />
+                <X className="h-7 w-7" />
               </Button>
             </div>
             
@@ -897,7 +897,7 @@ function ColorCard({
               {/* RGB */}
               <div className="flex items-center justify-between">
                 <span 
-                  className="text-sm font-medium w-16"
+                  className="text-xs font-medium w-16"
                   style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
                 >
                   RGB
@@ -928,7 +928,7 @@ function ColorCard({
                   }}
                 >
                   <span 
-                    className="text-sm font-mono"
+                    className="text-xs font-mono"
                     style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
                   >
                     {(() => {
@@ -953,7 +953,7 @@ function ColorCard({
               {/* HSL */}
               <div className="flex items-center justify-between">
                 <span 
-                  className="text-sm font-medium w-16"
+                  className="text-xs font-medium w-16"
                   style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
                 >
                   HSL
@@ -980,7 +980,7 @@ function ColorCard({
                   }}
                 >
                   <span 
-                    className="text-sm font-mono"
+                    className="text-xs font-mono"
                     style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
                   >
                     {(() => {
@@ -1005,7 +1005,7 @@ function ColorCard({
               {/* CMYK */}
               <div className="flex items-center justify-between">
                 <span 
-                  className="text-sm font-medium w-16"
+                  className="text-xs font-medium w-16"
                   style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
                 >
                   CMYK
@@ -1032,7 +1032,7 @@ function ColorCard({
                   }}
                 >
                   <span 
-                    className="text-sm font-mono"
+                    className="text-xs font-mono"
                     style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
                   >
                     {(() => {
@@ -1057,18 +1057,18 @@ function ColorCard({
               {/* Pantone */}
               <div className="flex items-center justify-between">
                 <span 
-                  className="text-sm font-medium w-16"
+                  className="text-xs font-medium w-16"
                   style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }}
                 >
                   Pantone
                 </span>
-                <div className="flex-1 flex items-center gap-2">
+                <div className="flex flex-1 pl-2 items-center gap-2">
                   <input
                     type="text"
                     value={pantoneValue}
                     onChange={(e) => handlePantoneChange(e.target.value)}
-                    placeholder="Enter Pantone code"
-                    className="flex-1 px-2 py-1 text-sm rounded focus:outline-none focus:ring-1"
+                    placeholder="PMS1234"
+                    className="px-2 text-xs py-1 w-full text-sm rounded focus:outline-none focus:ring-1"
                     style={{
                       backgroundColor: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#ffffff20' : '#00000020',
                       border: `1px solid ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#00000040' : '#ffffff40'}`,
