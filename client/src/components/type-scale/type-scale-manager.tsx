@@ -1767,7 +1767,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   <TabsTrigger value="preview">Preview</TabsTrigger>
                   <TabsTrigger value="code">Code</TabsTrigger>
                 </TabsList>
-                <TabsContent value="preview" className="mt-4">
+                <TabsContent value="preview">
                   <TypeScalePreview typeScale={{
                     ...activeScale,
                     typeStyles: activeScale.typeStyles || DEFAULT_TYPE_SCALE.typeStyles,
@@ -1783,12 +1783,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       <TabsTrigger value="scss">SCSS</TabsTrigger>
                     </TabsList>
                     <TabsContent value="css" className="mt-4">
-                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
+                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-[75vh]">
                         <code>{generateCodePreview("css")}</code>
                       </pre>
                     </TabsContent>
                     <TabsContent value="scss" className="mt-4">
-                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-96">
+                      <pre className="bg-muted p-4 rounded-md text-sm overflow-auto max-h-[75vh]">
                         <code>{generateCodePreview("scss")}</code>
                       </pre>
                     </TabsContent>

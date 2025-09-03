@@ -32,12 +32,14 @@ export function registerRoutes(app: Express) {
       const apiKey = process.env.GOOGLE_FONTS_API_KEY;
       if (!apiKey) {
         console.error("Google Fonts API key not found");
-        return res.status(500).json({ error: "Google Fonts API key not configured" });
+        return res
+          .status(500)
+          .json({ error: "Google Fonts API key not configured" });
       }
 
       const url = `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&sort=popularity`;
       console.log("Fetching from Google Fonts API...");
-      
+
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -46,10 +48,12 @@ export function registerRoutes(app: Express) {
       }
 
       const data = await response.json();
-      console.log(`Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`);
-      
+      console.log(
+        `Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`,
+      );
+
       // Set proper headers
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader("Content-Type", "application/json");
       res.json(data);
     } catch (error) {
       console.error("Error fetching Google Fonts:", error);

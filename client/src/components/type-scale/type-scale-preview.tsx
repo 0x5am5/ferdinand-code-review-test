@@ -347,13 +347,7 @@ export function TypeScalePreview({ typeScale }: TypeScalePreviewProps) {
   return (
     <div className="space-y-6">
       <Card className="preview-container">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
-            Type Scale Hierarchy
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 mt-5">
           {typeStyles.map((style) => (
             <div key={style.level} className="space-y-2">
               <div className="flex items-center justify-between">
