@@ -2,7 +2,7 @@ import "dotenv/config";
 import { exec } from "child_process";
 import connectPg from "connect-pg-simple";
 import { EventEmitter } from "events";
-import express, { type Request, type Response } from "express";
+import express, { NextFunction, type Request, type Response } from "express";
 import session from "express-session";
 import { createServer } from "http";
 import { promisify } from "util";
@@ -43,7 +43,7 @@ app.use(
 );
 
 // Add error handling middleware
-app.use((err: Error, _req: Request, res: Response) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 	console.error(err.stack);
 	res.status(500).json({ message: "Something broke!", error: err.message });
 });
