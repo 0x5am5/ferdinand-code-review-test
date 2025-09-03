@@ -175,20 +175,10 @@ export default function ClientDetails() {
   let primaryColor = null;
   try {
     if (colorAssets && colorAssets.length > 0) {
-      // Find a color asset with 'primary' in its role or name
+      // Find a color asset with 'primary' in its name
       const primaryColorAsset = colorAssets.find(asset => {
-        if (!asset || !asset.data) return false;
-        
-        let data;
-        try {
-          data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-        } catch (parseErr) {
-          return false;
-        }
-        
-        return (data.role === "primary" || 
-               (data.name && typeof data.name === "string" && 
-                data.name.toLowerCase().includes("primary")));
+        if (!asset || !asset.name) return false;
+        return asset.name.toLowerCase().includes("primary");
       });
       
       if (primaryColorAsset && primaryColorAsset.data) {
@@ -198,7 +188,10 @@ export default function ClientDetails() {
             ? JSON.parse(primaryColorAsset.data) 
             : primaryColorAsset.data;
           
-          primaryColor = colorData.value || colorData.hex || null;
+          // Extract color from the colors array (main color value)
+          if (colorData.colors && colorData.colors.length > 0 && colorData.colors[0].hex) {
+            primaryColor = colorData.colors[0].hex;
+          }
         } catch (parseErr) {
           console.error("Error parsing color data:", parseErr);
         }

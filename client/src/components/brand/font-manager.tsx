@@ -1384,30 +1384,20 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append("category", "font");
     formData.append("subcategory", "custom");
 
+    // For custom fonts, the server expects individual fields, not a data JSON object
+    formData.append("source", FontSource.FILE);
+    formData.append("weights", JSON.stringify(weights.length > 0 ? weights : ["400"]));
+    formData.append("styles", JSON.stringify(["normal"]));
+
     // Add each file to FormData
     validFiles.forEach((file, index) => {
       formData.append(`file_${index}`, file);
     });
 
-    // Create font data structure for custom fonts
-    const fontData = {
-      source: FontSource.FILE,
-      weights: weights.length > 0 ? weights : ["400"],
-      styles: ["normal"],
-      sourceData: {
-        fileCount: validFiles.length,
-        fileNames: validFiles.map((f) => f.name),
-        totalSize: validFiles.reduce((sum, f) => sum + f.size, 0),
-      },
-    };
-
-    formData.append("data", JSON.stringify(fontData));
-
     console.log("Sending custom font data to server for client:", clientId);
-    console.log(
-      "Custom font data structure:",
-      JSON.stringify(fontData, null, 2),
-    );
+    console.log("FontSource.FILE value:", FontSource.FILE);
+    console.log("Weights:", JSON.stringify(weights.length > 0 ? weights : ["400"]));
+    console.log("Styles:", JSON.stringify(["normal"]));
 
     addFont.mutate(formData);
   };

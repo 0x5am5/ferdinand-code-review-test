@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronDown } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -133,6 +136,215 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       }
     })
     .filter(Boolean);
+
+  // Extract and parse color assets - each asset contains multiple color variations
+  const brandColors = brandAssets
+    .filter((asset: any) => asset.category === "color")
+    .flatMap((asset: any) => {
+      try {
+        const colorData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+        const colors = [];
+        
+        // Add tints (lighter variations)
+        if (colorData.tints && Array.isArray(colorData.tints)) {
+          colorData.tints.forEach((tint: any, index: number) => {
+            colors.push({
+              id: `${asset.id}-tint-${index}`,
+              name: asset.name,
+              value: tint.hex,
+              role: colorData.role || null,
+              displayName: `${asset.name} Tint ${tint.percentage}%`,
+              category: colorData.category || 'color',
+              type: 'tint',
+              percentage: tint.percentage
+            });
+          });
+        }
+        
+        // Add main colors
+        if (colorData.colors && Array.isArray(colorData.colors)) {
+          colorData.colors.forEach((color: any, index: number) => {
+            colors.push({
+              id: `${asset.id}-main-${index}`,
+              name: asset.name,
+              value: color.hex,
+              role: colorData.role || null,
+              displayName: asset.name,
+              category: colorData.category || 'color',
+              type: 'main'
+            });
+          });
+        }
+        
+        // Add shades (darker variations)
+        if (colorData.shades && Array.isArray(colorData.shades)) {
+          colorData.shades.forEach((shade: any, index: number) => {
+            colors.push({
+              id: `${asset.id}-shade-${index}`,
+              name: asset.name,
+              value: shade.hex,
+              role: colorData.role || null,
+              displayName: `${asset.name} Shade ${shade.percentage}%`,
+              category: colorData.category || 'color',
+              type: 'shade',
+              percentage: shade.percentage
+            });
+          });
+        }
+        
+        return colors;
+      } catch (error) {
+        console.error("Error parsing color asset:", error);
+        return [];
+      }
+    })
+    .filter(Boolean);
+
+  // Color selector dropdown component for brand colors
+  const ColorSelector = ({ 
+    value, 
+    onChange, 
+    id, 
+    placeholder = "Select a color or enter hex" 
+  }: { 
+    value: string; 
+    onChange: (color: string) => void; 
+    id: string;
+    placeholder?: string;
+  }) => {
+    const [open, setOpen] = useState(false);
+    const [customHex, setCustomHex] = useState(value);
+
+    // Sync state when value prop changes
+    React.useEffect(() => {
+      setCustomHex(value);
+    }, [value]);
+
+    const handleColorChange = (selectedColor: string) => {
+      onChange(selectedColor);
+      setCustomHex(selectedColor);
+      setOpen(false);
+    };
+
+    const handleHexChange = (hex: string) => {
+      setCustomHex(hex);
+      onChange(hex);
+    };
+
+    // Find the selected brand color for display
+    const selectedBrandColor = brandColors.find((color: any) => color.value === value);
+
+    return (
+      <div className="space-y-3">
+        {brandColors.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Brand Colors</Label>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={open}
+                  className="w-full justify-between h-10 px-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-5 h-5 rounded border border-gray-300" 
+                      style={{ backgroundColor: value }}
+                    />
+                    <span className="text-sm">
+                      {selectedBrandColor ? selectedBrandColor.displayName : value}
+                    </span>
+                  </div>
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                  <CommandInput placeholder="Search colors..." />
+                  <CommandList>
+                    <CommandEmpty>No colors found.</CommandEmpty>
+                    {(() => {
+                      // Group colors by base name for better organization
+                      const groupedColors = brandColors.reduce((acc: any, color: any) => {
+                        if (!acc[color.name]) {
+                          acc[color.name] = [];
+                        }
+                        acc[color.name].push(color);
+                        return acc;
+                      }, {});
+
+                      return Object.entries(groupedColors).map(([baseName, colors]: [string, any]) => (
+                        <CommandGroup key={baseName} heading={baseName}>
+                          {(colors as any[])
+                            .sort((a, b) => {
+                              // Sort: tints first (high to low %), then main, then shades (low to high %)
+                              if (a.type !== b.type) {
+                                const typeOrder = { tint: 0, main: 1, shade: 2 };
+                                return typeOrder[a.type as keyof typeof typeOrder] - typeOrder[b.type as keyof typeof typeOrder];
+                              }
+                              if (a.type === 'tint') return (b.percentage || 0) - (a.percentage || 0);
+                              if (a.type === 'shade') return (a.percentage || 0) - (b.percentage || 0);
+                              return 0;
+                            })
+                            .map((color: any) => (
+                            <CommandItem
+                              key={color.id}
+                              value={`${color.displayName} ${color.value}`}
+                              onSelect={() => handleColorChange(color.value)}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <div 
+                                className="w-5 h-5 rounded border border-gray-300" 
+                                style={{ backgroundColor: color.value }}
+                              />
+                              <div className="flex flex-col flex-1">
+                                <span className="text-sm">{color.displayName}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {color.value}
+                                  {color.category && ` • ${color.category}`}
+                                </span>
+                              </div>
+                              {value === color.value && (
+                                <Check className="ml-auto h-4 w-4" />
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      ));
+                    })()}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+        
+        <div className="space-y-2">
+          <Label htmlFor={id} className="text-xs text-muted-foreground">
+            {brandColors.length > 0 ? "Or Custom Color" : "Custom Color"}
+          </Label>
+          <div className="flex items-center space-x-2">
+            <Input
+              id={id}
+              type="color"
+              value={customHex}
+              onChange={(e) => handleHexChange(e.target.value)}
+              className="w-16 h-8"
+            />
+            <Input
+              type="text"
+              value={customHex}
+              onChange={(e) => handleHexChange(e.target.value)}
+              placeholder={placeholder}
+              className="flex-1"
+              pattern="^#[0-9A-Fa-f]{6}$"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
 
     const googleFonts = brandFonts
     .filter((asset: any) => asset.category === "font")
@@ -697,11 +909,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                   <div className="space-y-2">
                     <Label htmlFor="body-color">Color</Label>
-                    <Input
+                    <ColorSelector
                       id="body-color"
-                      type="color"
                       value={activeScale.bodyColor || "#000000"}
-                      onChange={(e) => updateScale({ bodyColor: e.target.value })}
+                      onChange={(color) => updateScale({ bodyColor: color })}
+                      placeholder="#000000"
                     />
                   </div>
 
@@ -958,18 +1170,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 </Button>
                               )}
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                id={`${bodyLevel}-color`}
-                                type="color"
-                                value={bodyStyle?.color || activeScale.bodyColor || "#000000"}
-                                onChange={(e) => updateIndividualBodyStyle(bodyLevel, { color: e.target.value })}
-                                className="w-16 h-8"
-                              />
-                              <span className="text-xs text-muted-foreground">
-                                {bodyStyle?.color ? bodyStyle.color : `Inherits: ${activeScale.bodyColor || '#000000'}`}
-                              </span>
-                            </div>
+                            <ColorSelector
+                              id={`${bodyLevel}-color`}
+                              value={bodyStyle?.color || activeScale.bodyColor || "#000000"}
+                              onChange={(color) => updateIndividualBodyStyle(bodyLevel, { color })}
+                              placeholder={`Inherits: ${activeScale.bodyColor || '#000000'}`}
+                            />
                           </div>
 
                           <Accordion type="single" collapsible className="w-full">
@@ -1154,11 +1360,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                   <div className="space-y-2">
                     <Label htmlFor="header-color">Color</Label>
-                    <Input
+                    <ColorSelector
                       id="header-color"
-                      type="color"
                       value={activeScale.headerColor || "#000000"}
-                      onChange={(e) => updateScale({ headerColor: e.target.value })}
+                      onChange={(color) => updateScale({ headerColor: color })}
+                      placeholder="#000000"
                     />
                   </div>
 
@@ -1415,18 +1621,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 </Button>
                               )}
                             </div>
-                            <div className="flex items-center space-x-2">
-                              <Input
-                                id={`${headerLevel}-color`}
-                                type="color"
-                                value={headerStyle?.color || activeScale.headerColor || "#000000"}
-                                onChange={(e) => updateIndividualHeaderStyle(headerLevel, { color: e.target.value })}
-                                className="w-16 h-8"
-                              />
-                              <span className="text-xs text-muted-foreground">
-                                {headerStyle?.color ? headerStyle.color : `Inherits: ${activeScale.headerColor || '#000000'}`}
-                              </span>
-                            </div>
+                            <ColorSelector
+                              id={`${headerLevel}-color`}
+                              value={headerStyle?.color || activeScale.headerColor || "#000000"}
+                              onChange={(color) => updateIndividualHeaderStyle(headerLevel, { color })}
+                              placeholder={`Inherits: ${activeScale.headerColor || '#000000'}`}
+                            />
                           </div>
 
                           <Accordion type="single" collapsible className="w-full">
@@ -1564,26 +1764,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
             <div className="flex-shrink-0">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-base font-semibold">Type Scale Preview</h4>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => exportMutation.mutate({ format: "css" })}
-                    disabled={!activeScale.id || exportMutation.isPending}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    CSS
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => exportMutation.mutate({ format: "scss" })}
-                    disabled={!activeScale.id || exportMutation.isPending}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    SCSS
-                  </Button>
-                </div>
               </div>
               <Tabs defaultValue="preview" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
@@ -1600,8 +1780,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   }} />
                 </TabsContent>
                 <TabsContent value="code" className="mt-4">
-                  <Tabs defaultValue="css" className="w-full">
-                    <TabsList>
+                  <Tabs defaultValue="css" className="w-full relative">
+                    <TabsList className="absolute top-0 right-0">
                       <TabsTrigger value="css">CSS</TabsTrigger>
                       <TabsTrigger value="scss">SCSS</TabsTrigger>
                     </TabsList>
