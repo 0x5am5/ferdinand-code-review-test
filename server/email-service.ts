@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as util from 'util';
 import sgMail from '@sendgrid/mail';
+import { EmailServiceError, parseSendGridError } from './utils/errorResponse';
 
 interface EmailOptions {
   to: string;
@@ -104,7 +105,10 @@ export class EmailService {
           if (sendGridError.response) {
             console.error('[EMAIL] SendGrid API error response:', sendGridError.response.body);
           }
-          throw sendGridError; // Re-throw to be caught by the outer try/catch
+          
+          // Parse the SendGrid error and throw a structured error
+          const { message, code, details } = parseSendGridError(sendGridError);
+          throw new EmailServiceError(message, code, details);
         }
       } else {
         // Fallback: Write the email to a file
@@ -125,12 +129,22 @@ export class EmailService {
       }
     } catch (error) {
       console.error('Failed to send email:', error);
-      return false;
+      // Re-throw structured errors so they can be handled by the caller
+      if (error instanceof EmailServiceError) {
+        throw error;
+      }
+      // For unexpected errors, wrap them
+      throw new EmailServiceError(
+        "Failed to send email due to an unexpected error.",
+        "EMAIL_SERVICE_FAILED",
+        { originalError: error }
+      );
     }
   }
   
   /**
    * Send an invitation email with a link
+   * @throws {EmailServiceError} When email sending fails
    */
   async sendInvitationEmail({
     to,
@@ -206,12 +220,14 @@ export class EmailService {
       </html>
     `;
     
-    return this.sendEmail({
+    // sendEmail now throws EmailServiceError on failure, so we don't need to handle boolean returns
+    await this.sendEmail({
       to,
       subject,
       text,
       html
     });
+    return true;
   }
   
   /**
@@ -291,12 +307,14 @@ export class EmailService {
       </html>
     `;
     
-    return this.sendEmail({
+    // sendEmail now throws EmailServiceError on failure, so we don't need to handle boolean returns
+    await this.sendEmail({
       to,
       subject,
       text,
       html
     });
+    return true;
   }
   
   /**
@@ -380,18 +398,27 @@ export class EmailService {
     console.log('[PASSWORD RESET] Sending password reset email with subject:', subject);
     
     try {
-      const result = await this.sendEmail({
+      await this.sendEmail({
         to,
         subject,
         text,
         html
       });
       
-      console.log(`[PASSWORD RESET] Email sending result: ${result ? 'Success' : 'Failure'}`);
-      return result;
+      console.log(`[PASSWORD RESET] Email sending result: Success`);
+      return true;
     } catch (error) {
       console.error('[PASSWORD RESET] Error sending password reset email:', error);
-      return false;
+      // Re-throw the EmailServiceError so it can be handled by the caller
+      if (error instanceof EmailServiceError) {
+        throw error;
+      }
+      // Wrap unexpected errors
+      throw new EmailServiceError(
+        "Failed to send password reset email.",
+        "EMAIL_SERVICE_FAILED",
+        { originalError: error }
+      );
     }
   }
 }

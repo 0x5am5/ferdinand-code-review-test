@@ -7,6 +7,7 @@ import {
 } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
 
 interface PendingInvitation {
   id: number;
@@ -93,7 +94,7 @@ export function useUpdateUserRoleMutation() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -125,7 +126,7 @@ export function useInviteUserMutation() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -150,7 +151,7 @@ export function useRemoveInvitationMutation() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -180,7 +181,7 @@ export function useClientAssignmentMutations() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -205,7 +206,7 @@ export function useClientAssignmentMutations() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },

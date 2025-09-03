@@ -24,7 +24,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BrandAsset, UserRole } from "@shared/schema";
+import { BrandAsset, UserRole, FontSource } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { AssetSection } from "./asset-section";
@@ -43,12 +43,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
-// Font source constants
-const FontSource = {
-  GOOGLE: "google",
-  ADOBE: "adobe",
-  FILE: "file",
-} as const;
 
 // Google Fonts interface
 interface GoogleFont {

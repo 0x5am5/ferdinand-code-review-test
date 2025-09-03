@@ -5,6 +5,7 @@ import {
 import type { Express } from "express";
 import multer from "multer";
 import { validateClientId } from "server/middlewares/vaildateClientId";
+import { requireAdminRole } from "server/middlewares/requireAdminRole";
 import { RequestWithClientId } from "server/routes";
 import { storage } from "server/storage";
 
@@ -37,6 +38,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
   app.post(
     "/api/clients/:clientId/inspiration/sections",
     validateClientId,
+    requireAdminRole,
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId!;
@@ -65,6 +67,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
   app.patch(
     "/api/clients/:clientId/inspiration/sections/:sectionId",
     validateClientId,
+    requireAdminRole,
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId!;
@@ -90,6 +93,26 @@ export function registerInspirationBoardsRoutes(app: Express) {
       } catch (error) {
         console.error("Error updating inspiration section:", error);
         res.status(500).json({ message: "Error updating inspiration section" });
+      }
+    },
+  );
+
+  app.delete(
+    "/api/clients/:clientId/inspiration/sections/:sectionId",
+    validateClientId,
+    requireAdminRole,
+    async (req: RequestWithClientId, res) => {
+      try {
+        const sectionId = parseInt(req.params.sectionId);
+        if (isNaN(sectionId)) {
+          return res.status(400).json({ message: "Invalid section ID" });
+        }
+
+        await storage.deleteInspirationSection(sectionId);
+        res.status(204).send();
+      } catch (error) {
+        console.error("Error deleting inspiration section:", error);
+        res.status(500).json({ message: "Error deleting inspiration section" });
       }
     },
   );

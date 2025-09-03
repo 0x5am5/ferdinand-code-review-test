@@ -41,6 +41,7 @@ import {
   Search,
   Check,
   Figma,
+  MoreHorizontal,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -326,63 +327,198 @@ export default function Clients() {
                       Inspo
                     </Badge>
                   )}
+                  {(client.featureToggles as any)?.figmaIntegration && (
+                    <Badge className="bg-gray-100 text-gray-800">
+                      <Figma className="h-3 w-3 mr-1" />
+                      Figma
+                    </Badge>
+                  )}
+                  
+                  {/* Add buttons for disabled features (admin/super_admin only) */}
+                  {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
+                    <>
+                      {!(client.featureToggles as any)?.logoSystem && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures = (client.featureToggles as any) || {};
+                            const newToggles = {
+                              ...currentFeatures,
+                              logoSystem: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <Package className="h-3 w-3" />
+                          Logo
+                        </Button>
+                      )}
+                      {!(client.featureToggles as any)?.colorSystem && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures = (client.featureToggles as any) || {};
+                            const newToggles = {
+                              ...currentFeatures,
+                              colorSystem: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <Palette className="h-3 w-3" />
+                          Colors
+                        </Button>
+                      )}
+                      {!(client.featureToggles as any)?.typeSystem && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures = (client.featureToggles as any) || {};
+                            const newToggles = {
+                              ...currentFeatures,
+                              typeSystem: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <Type className="h-3 w-3" />
+                          Type
+                        </Button>
+                      )}
+                      {!(client.featureToggles as any)?.userPersonas && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures = (client.featureToggles as any) || {};
+                            const newToggles = {
+                              ...currentFeatures,
+                              userPersonas: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <UserIcon className="h-3 w-3" />
+                          Personas
+                        </Button>
+                      )}
+                      {!(client.featureToggles as any)?.inspiration && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures = (client.featureToggles as any) || {};
+                            const newToggles = {
+                              ...currentFeatures,
+                              inspiration: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <Image className="h-3 w-3" />
+                          Inspo
+                        </Button>
+                      )}
+                      {!(client.featureToggles as any)?.figmaIntegration && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures = (client.featureToggles as any) || {};
+                            const newToggles = {
+                              ...currentFeatures,
+                              figmaIntegration: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <Figma className="h-3 w-3" />
+                          Figma
+                        </Button>
+                      )}
+                    </>
+                  )}
                 </div>
-                <div className="absolute top-4 right-4 flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        `${window.location.origin}/clients/${client.id}`,
-                      );
-                      toast({
-                        description: "Client link copied to clipboard",
-                        duration: 2000,
-                      });
-                    }}
-                  >
-                    <Share className="h-4 w-4" />
-                  </Button>
+                <div className="absolute top-4 right-4">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4"
-                        >
-                          <circle cx="12" cy="12" r="1" />
-                          <circle cx="19" cy="12" r="1" />
-                          <circle cx="5" cy="12" r="1" />
-                        </svg>
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent>
+                    <DropdownMenuContent align="end" className="w-48">
                       <Link href={`/clients/${client.id}`}>
                         <DropdownMenuItem>
                           <Eye className="mr-2 h-4 w-4" />
-                          View
+                          View Client
                         </DropdownMenuItem>
                       </Link>
                       <DropdownMenuItem
                         onClick={() => setEditingClient(client)}
                       >
                         <Edit2 className="mr-2 h-4 w-4" />
-                        Edit
+                        Edit Details
                       </DropdownMenuItem>
                       <DropdownMenuItem
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            `${window.location.origin}/clients/${client.id}`,
+                          );
+                          toast({
+                            description: "Client link copied to clipboard",
+                            duration: 2000,
+                          });
+                        }}
+                      >
+                        <Share className="mr-2 h-4 w-4" />
+                        Copy Link
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
                         onClick={() => setDeletingClient(client)}
-                        className="text-destructive"
+                        className="text-destructive focus:text-destructive"
                       >
                         <Trash className="mr-2 h-4 w-4" />
-                        Delete
+                        Delete Client
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -397,7 +533,7 @@ export default function Clients() {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-4">Name</th>
-                <th className="text-left p-4">Description</th>
+                {filteredClients.some((client: Client) => client.description) && <th className="text-left p-4">Description</th>}
                 <th className="text-left p-4">Features</th>
                 <th className="text-left p-4">Users</th>
                 <th className="text-left p-4">Created</th>
@@ -413,6 +549,7 @@ export default function Clients() {
                   typeSystem: true,
                   userPersonas: true,
                   inspiration: true,
+                  figmaIntegration: false,
                 };
 
                 return (
@@ -421,7 +558,7 @@ export default function Clients() {
                     className={`border-b transition-all duration-300 ${animatingRows[client.id] ? "opacity-0 transform translate-x-full" : "opacity-100"}`}
                   >
                     <td className="p-4">{client.name}</td>
-                    <td className="p-4">{client.description}</td>
+                    {client.description && <td className="p-4">{client.description}</td>}
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
                         {clientFeatures.logoSystem && (
@@ -544,6 +681,168 @@ export default function Clients() {
                               <X className="h-3 w-3" />
                             </Button>
                           </Badge>
+                        )}
+                        {clientFeatures.figmaIntegration && (
+                          <Badge className="flex items-center gap-1 bg-gray-100 text-gray-800 hover:bg-gray-200">
+                            <Figma className="h-3 w-3" />
+                            Figma
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 p-0 ml-1 hover:bg-gray-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newToggles = {
+                                  ...clientFeatures,
+                                  figmaIntegration: false,
+                                };
+                                updateClient.mutate({
+                                  id: client.id,
+                                  data: { featureToggles: newToggles },
+                                });
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        )}
+                        
+                        {/* Add buttons for disabled features (admin/super_admin only) */}
+                        {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
+                          <>
+                            {!clientFeatures.logoSystem && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    logoSystem: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <Package className="h-3 w-3" />
+                                Logo
+                              </Button>
+                            )}
+                            {!clientFeatures.colorSystem && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    colorSystem: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <Palette className="h-3 w-3" />
+                                Colors
+                              </Button>
+                            )}
+                            {!clientFeatures.typeSystem && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    typeSystem: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <Type className="h-3 w-3" />
+                                Type
+                              </Button>
+                            )}
+                            {!clientFeatures.userPersonas && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    userPersonas: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <UserIcon className="h-3 w-3" />
+                                Personas
+                              </Button>
+                            )}
+                            {!clientFeatures.inspiration && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    inspiration: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <Image className="h-3 w-3" />
+                                Inspo
+                              </Button>
+                            )}
+                            {!clientFeatures.figmaIntegration && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    figmaIntegration: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <Figma className="h-3 w-3" />
+                                Figma
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>
@@ -672,41 +971,50 @@ export default function Clients() {
                         : "N/A"}
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            navigator.clipboard.writeText(
-                              `${window.location.origin}/clients/${client.id}`,
-                            );
-                            toast({
-                              description: "Client link copied to clipboard",
-                              duration: 2000,
-                            });
-                          }}
-                        >
-                          <Share className="h-4 w-4" />
-                        </Button>
-                        <Link href={`/clients/${client.id}`}>
-                          <Button variant="ghost" size="icon">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setEditingClient(client)}
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setDeletingClient(client)}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
+                      <div className="flex items-center justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <Link href={`/clients/${client.id}`}>
+                              <DropdownMenuItem>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Client
+                              </DropdownMenuItem>
+                            </Link>
+                            <DropdownMenuItem
+                              onClick={() => setEditingClient(client)}
+                            >
+                              <Edit2 className="mr-2 h-4 w-4" />
+                              Edit Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `${window.location.origin}/clients/${client.id}`,
+                                );
+                                toast({
+                                  description: "Client link copied to clipboard",
+                                  duration: 2000,
+                                });
+                              }}
+                            >
+                              <Share className="mr-2 h-4 w-4" />
+                              Copy Link
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDeletingClient(client)}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Delete Client
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>

@@ -46,11 +46,45 @@ export const Sidebar: FC = () => {
     open: openSearch,
     close: closeSearch,
   } = useSpotlight();
-  const [activeTab, setActiveTab] = useState<string>("logos");
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
 
   // Check if we're on a client detail page
   const isClientDetailPage =
     location.startsWith("/clients/") && location !== "/clients";
+
+  // Sync activeTab with URL parameters when on client detail page
+  useEffect(() => {
+    if (isClientDetailPage) {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab) {
+        setActiveTab(tab);
+      } else {
+        setActiveTab("dashboard"); // Default to dashboard if no tab parameter
+      }
+    }
+  }, [location, isClientDetailPage]);
+
+  // Listen for tab change events from the client detail page
+  useEffect(() => {
+    const handleTabChange = (e: CustomEvent) => {
+      if (e.detail && e.detail.tab) {
+        setActiveTab(e.detail.tab);
+      }
+    };
+
+    window.addEventListener(
+      "client-tab-change",
+      handleTabChange as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "client-tab-change",
+        handleTabChange as EventListener,
+      );
+    };
+  }, []);
   let clientId: number | null = null;
 
   if (isClientDetailPage && params?.id) {
