@@ -25,12 +25,14 @@ export default function AuthDebug() {
       addLog("Sign-in successful");
       addLog(`User email: ${result.user.email}`);
       addLog(`ID Token available: ${typeof result.user.getIdToken === 'function' ? "Yes" : "No"}`);
-    } catch (err: code: string; message: string ) {
-      const errorMessage = `Error: ${err.code} - ${err.message}`;
+    } catch (err: unknown) {
+      const error = err as { code: string; message: string };
+      const errorMessage = `Error: ${error.code} - ${error.message}`;
+      
       setError(errorMessage);
       addLog(errorMessage);
       
-      if (err.code === "auth/unauthorized-domain") {
+      if (error.code === "auth/unauthorized-domain") {
         addLog(`This domain (${window.location.hostname}) is not authorized in Firebase console`);
         addLog("You need to add this domain to Firebase Console > Authentication > Settings > Authorized domains");
       }
