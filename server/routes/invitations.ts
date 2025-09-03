@@ -272,6 +272,48 @@ export function registerInvitationRoutes(app: Express) {
     }
   });
 
+  // Delete invitation
+  app.delete("/api/invitations/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid invitation ID" });
+      }
+
+      // Get the current user to check permissions
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Only super admins and admins can delete invitations
+      if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      // Check if invitation exists
+      const invitation = await db.query.invitations.findFirst({
+        where: eq(invitations.id, id),
+      });
+
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+
+      // Delete the invitation
+      await db.delete(invitations).where(eq(invitations.id, id));
+
+      res.json({ message: "Invitation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting invitation:", error);
+      res.status(500).json({ message: "Error deleting invitation" });
+    }
+  });
+
   // Resend invitation email
   app.post("/api/invitations/:id/resend", async (req, res) => {
     try {

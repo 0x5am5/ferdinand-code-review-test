@@ -105,8 +105,14 @@ export function useInviteUserMutation() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: InviteUserForm) => {
-      return await apiRequest("POST", "/api/users", data);
+    mutationFn: async (data: InviteUserForm | number) => {
+      if (typeof data === "number") {
+        // Resend invitation
+        return await apiRequest("POST", `/api/invitations/${data}/resend`);
+      } else {
+        // New invitation
+        return await apiRequest("POST", "/api/users", data);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -114,6 +120,31 @@ export function useInviteUserMutation() {
       toast({
         title: "Success",
         description: "User invited successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Remove invitation mutation
+export function useRemoveInvitationMutation() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (invitationId: number) => {
+      return await apiRequest("DELETE", `/api/invitations/${invitationId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+      toast({
+        title: "Success",
+        description: "Invitation removed successfully",
       });
     },
     onError: (error: Error) => {

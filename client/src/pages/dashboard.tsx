@@ -139,10 +139,12 @@ export default function Dashboard() {
   }, [allClients, isUserSwitched, currentViewingUser]);
 
   useEffect(() => {
-    if (clients && clients.length === 1) {
+    // Only redirect non-admin users if they have exactly one client
+    // Admins and super_admins should stay on the dashboard
+    if (clients && clients.length === 1 && user && !['super_admin', 'admin'].includes(user.role)) {
       setLocation(`/clients/${clients[0].id}`);
     }
-  }, [clients, setLocation]);
+  }, [clients, setLocation, user]);
 
   useEffect(() => {
     if (updateClient.isSuccess) {

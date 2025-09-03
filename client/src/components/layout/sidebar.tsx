@@ -92,7 +92,7 @@ export const Sidebar: FC = () => {
     ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
       ? [
           {
-            title: "Brands",
+            title: "Clients",
             href: "/clients",
             icon: <BuildingIcon className="h-4 w-4" />,
           },

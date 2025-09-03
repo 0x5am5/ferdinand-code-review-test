@@ -64,7 +64,14 @@ export default function Login() {
 
       // Use setTimeout to ensure the auth state has been updated
       setTimeout(() => {
-        window.location.href = "/dashboard";
+        // Role-based redirection after login
+        const userRole = data.role;
+        if (userRole === 'super_admin' || userRole === 'admin') {
+          window.location.href = "/dashboard";
+        } else {
+          // For editors, standard, and guest users, redirect to design builder
+          window.location.href = "/design-builder";
+        }
       }, 100);
     } catch (error: any) {
       console.error("Authentication error:", error);
@@ -95,8 +102,14 @@ export default function Login() {
   useEffect(() => {
     console.log("Login: Auth state changed, user:", user);
     if (user) {
-      console.log("Login: User detected, redirecting to dashboard");
-      window.location.href = "/dashboard";
+      console.log("Login: User detected, redirecting based on role");
+      // Role-based redirection for existing sessions
+      if (user.role === 'super_admin' || user.role === 'admin') {
+        window.location.href = "/dashboard";
+      } else {
+        // For editors, standard, and guest users, redirect to design builder
+        window.location.href = "/design-builder";
+      }
     }
   }, [user, setLocation]);
 

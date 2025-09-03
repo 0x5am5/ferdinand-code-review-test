@@ -48,6 +48,8 @@ export function registerUserRoutes(app: Express) {
       if (currentUser.role === UserRole.SUPER_ADMIN) {
         allUsers = await db.select().from(users);
       } else if (currentUser.role === UserRole.ADMIN) {
+        // Admin users can see all users in their organization (same clients)
+        // including super_admins, but cannot modify super_admin roles
         const adminClients = await storage.getUserClients(currentUser.id);
         const clientUsers = await db
           .select()
@@ -60,16 +62,15 @@ export function registerUserRoutes(app: Express) {
           );
 
         const userIds = [...new Set(clientUsers.map((uc) => uc.userId))];
+        // Include the current admin user even if they don't have client assignments
+        if (!userIds.includes(currentUser.id)) {
+          userIds.push(currentUser.id);
+        }
 
         allUsers = await db
           .select()
           .from(users)
-          .where(
-            and(
-              inArray(users.id, userIds),
-              sql`role NOT IN ('ADMIN', 'SUPER_ADMIN')`,
-            ),
-          );
+          .where(inArray(users.id, userIds));
       } else {
         allUsers = [currentUser];
       }
@@ -203,6 +204,10 @@ export function registerUserRoutes(app: Express) {
   // Update user role
   app.patch("/api/users/:id/role", async (req, res) => {
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
@@ -211,6 +216,47 @@ export function registerUserRoutes(app: Express) {
       const { role } = req.body;
       if (!role || !Object.values(UserRole).includes(role)) {
         return res.status(400).json({ message: "Invalid role" });
+      }
+
+      // Get the current user making the request
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "Current user not found" });
+      }
+
+      // Get the target user being modified
+      const targetUser = await storage.getUser(id);
+      if (!targetUser) {
+        return res.status(404).json({ message: "Target user not found" });
+      }
+
+      // Role-based restrictions
+      if (currentUser.role === UserRole.ADMIN) {
+        // Admins cannot assign super_admin or admin roles
+        if (role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN) {
+          return res.status(403).json({
+            message: "Only super admins can assign admin roles"
+          });
+        }
+
+        // Admins cannot modify super_admin users
+        if (targetUser.role === UserRole.SUPER_ADMIN) {
+          return res.status(403).json({
+            message: "You cannot modify super admin roles"
+          });
+        }
+
+        // Admins cannot change their own role
+        if (targetUser.id === currentUser.id) {
+          return res.status(403).json({
+            message: "You cannot change your own role"
+          });
+        }
+      } else if (currentUser.role !== UserRole.SUPER_ADMIN) {
+        // Only super admins and admins can change roles
+        return res.status(403).json({
+          message: "Insufficient permissions to change user roles"
+        });
       }
 
       const updatedUser = await storage.updateUserRole(id, role);

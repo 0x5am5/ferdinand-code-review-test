@@ -53,6 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/use-auth";
 import {
   useClientsQuery,
   useDeleteClientMutation,
@@ -86,6 +87,7 @@ export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
@@ -139,6 +141,26 @@ export default function Clients() {
     user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
     user.email.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
+
+  // Function to check if current user can remove a specific user
+  const canRemoveUser = (userToRemove: User): boolean => {
+    if (!currentUser) return false;
+    
+    // Users cannot remove themselves
+    if (currentUser.id === userToRemove.id) return false;
+    
+    // Super admins can remove anyone (except themselves)
+    if (currentUser.role === "super_admin") return true;
+    
+    // Admins cannot remove super admins
+    if (currentUser.role === "admin" && userToRemove.role === "super_admin") return false;
+    
+    // Admins can remove other roles
+    if (currentUser.role === "admin") return true;
+    
+    // Other roles cannot remove users
+    return false;
+  };
 
   // Initialize the map with empty arrays for each client
   useEffect(() => {
@@ -535,17 +557,19 @@ export default function Clients() {
                           >
                             <UserCircle className="h-3 w-3" />
                             {user.name}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-blue-200"
-                              onClick={() => {
-                                setActiveClientId(client.id);
-                                removeUser.mutate(user.id);
-                              }}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
+                            {canRemoveUser(user) && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-4 w-4 p-0 ml-1 hover:bg-blue-200"
+                                onClick={() => {
+                                  setActiveClientId(client.id);
+                                  removeUser.mutate(user.id);
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            )}
                           </Badge>
                         ))}
                         

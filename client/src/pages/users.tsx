@@ -8,6 +8,7 @@ import {
   useUpdateUserRoleMutation,
   useInviteUserMutation,
   useClientAssignmentMutations,
+  useRemoveInvitationMutation,
 } from "@/lib/queries/users";
 import { cn } from "@/lib/utils";
 import {
@@ -173,6 +174,7 @@ export default function UsersPage() {
   });
 
   const { mutate: resendInvitation } = useInviteUserMutation();
+  const { mutate: removeInvitation } = useRemoveInvitationMutation();
 
   // Debounced search implementation
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
@@ -185,7 +187,7 @@ export default function UsersPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Enhanced search with fuzzy matching
+  // Enhanced search with fuzzy matching - backend handles organization filtering
   const filteredUsers = debouncedSearchQuery
     ? users.filter((user) => {
         const nameMatch = user.name
@@ -402,21 +404,42 @@ export default function UsersPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                resendInvitation.mutate(invitation.id)
-                              }
-                              disabled={resendInvitation.isPending}
-                            >
-                              {resendInvitation.isPending ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                              )}
-                              Resend
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    resendInvitation.mutate(invitation.id)
+                                  }
+                                  disabled={resendInvitation.isPending}
+                                >
+                                  {resendInvitation.isPending ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                  )}
+                                  <span>Resend Invitation</span>
+                                </DropdownMenuItem>
+                                
+                                {(currentUser?.role === UserRole.SUPER_ADMIN ||
+                                  currentUser?.role === UserRole.ADMIN) && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => removeInvitation(invitation.id)}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <X className="mr-2 h-4 w-4" />
+                                      <span>Remove Invitation</span>
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );
@@ -487,7 +510,27 @@ export default function UsersPage() {
                     <TableCell>
                       <Select
                         defaultValue={user.role}
+                        disabled={
+                          // Disable if current user is not super admin and target user is super admin
+                          (currentUser?.role !== UserRole.SUPER_ADMIN && user.role === UserRole.SUPER_ADMIN) ||
+                          // Disable if current user is admin and trying to modify their own role
+                          (currentUser?.role === UserRole.ADMIN && user.id === currentUser.id)
+                        }
                         onValueChange={(value) => {
+                          // Prevent non-super admins from performing any actions on super admins
+                          if (
+                            currentUser?.role !== UserRole.SUPER_ADMIN &&
+                            user.role === UserRole.SUPER_ADMIN
+                          ) {
+                            toast({
+                              title: "Permission denied",
+                              description:
+                                "Only super admins can modify super admin roles",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
                           // Prevent non-super admins from assigning admin roles
                           if (
                             currentUser?.role !== UserRole.SUPER_ADMIN &&
@@ -501,6 +544,21 @@ export default function UsersPage() {
                             });
                             return;
                           }
+                          
+                          // Prevent admins from changing their own role
+                          if (
+                            currentUser?.role === UserRole.ADMIN &&
+                            user.id === currentUser.id
+                          ) {
+                            toast({
+                              title: "Permission denied",
+                              description:
+                                "You cannot change your own role",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
                           updateUserRole({
                             id: user.id,
                             role: value as (typeof UserRole)[keyof typeof UserRole],
@@ -521,12 +579,22 @@ export default function UsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {USER_ROLES.filter((role) => {
+                            // Only super admins can see/assign super_admin role
                             if (
                               role === "super_admin" &&
                               currentUser?.role !== "super_admin"
                             ) {
                               return false;
                             }
+                            
+                            // Admins cannot assign admin role to others
+                            if (
+                              role === "admin" &&
+                              currentUser?.role === "admin"
+                            ) {
+                              return false;
+                            }
+                            
                             return true;
                           }).map((role) => (
                             <SelectItem key={role} value={role}>
@@ -671,45 +739,58 @@ export default function UsersPage() {
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            disabled={
+                              // Disable actions for super admins when current user is not super admin
+                              currentUser?.role !== UserRole.SUPER_ADMIN && 
+                              user.role === UserRole.SUPER_ADMIN
+                            }
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
-                          {/* Check if user has a pending invitation */}
-                          {pendingInvitations.some(
-                            (invite: Invitation) =>
-                              invite.email === user.email && !invite.used,
-                          ) ? (
-                            <DropdownMenuItem
-                              onClick={() => {
-                                // Look up the pending invitation for this user by email
-                                const pendingInvite = pendingInvitations.find(
-                                  (invite: Invitation) =>
-                                    invite.email === user.email && !invite.used,
-                                );
+                          {/* Only show actions if current user can perform actions on this user */}
+                          {(currentUser?.role === UserRole.SUPER_ADMIN || user.role !== UserRole.SUPER_ADMIN) && (
+                            <>
+                              {/* Check if user has a pending invitation */}
+                              {pendingInvitations.some(
+                                (invite: Invitation) =>
+                                  invite.email === user.email && !invite.used,
+                              ) ? (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    // Look up the pending invitation for this user by email
+                                    const pendingInvite = pendingInvitations.find(
+                                      (invite: Invitation) =>
+                                        invite.email === user.email && !invite.used,
+                                    );
 
-                                if (pendingInvite) {
-                                  resendInvitation(pendingInvite.id);
-                                }
-                              }}
-                            >
-                              <RefreshCw className="mr-2 h-4 w-4" />
-                              <span>Resend Invite</span>
-                            </DropdownMenuItem>
-                          ) : (
-                            /* For active users, show Reset Password option */
-                            <DropdownMenuItem
-                              onClick={() => {
-                                resetPassword(user.id);
-                              }}
-                            >
-                              <RefreshCw className="mr-2 h-4 w-4" />
-                              <span>Reset Password</span>
-                            </DropdownMenuItem>
+                                    if (pendingInvite) {
+                                      resendInvitation(pendingInvite.id);
+                                    }
+                                  }}
+                                >
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  <span>Resend Invite</span>
+                                </DropdownMenuItem>
+                              ) : (
+                                /* For active users, show Reset Password option */
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    resetPassword(user.id);
+                                  }}
+                                >
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  <span>Reset Password</span>
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+                            </>
                           )}
-
-                          <DropdownMenuSeparator />
 
                           <DropdownMenuItem
                             className={
