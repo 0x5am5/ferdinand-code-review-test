@@ -121,11 +121,53 @@ VALUES (
 
 ### User Roles
 
-- **Super Admin**: Full system access, can manage all clients and users
-- **Admin**: Can manage users and settings within assigned clients
-- **Editor**: Can create and edit content within assigned clients  
-- **Standard**: Can view and use features within assigned clients
-- **Guest**: Limited read-only access
+#### **Super Admin** (`super_admin`)
+- **Full system access** - can view all users across all clients
+- **Client management** - unrestricted access to all clients
+- **User management** - can view all invitations and manage users
+- **Design system modification** - can modify design systems and assets
+- **Figma integration** - can create, sync, and delete Figma connections
+- **Section management** - can hide/show sections across all clients
+
+#### **Admin** (`admin`)
+- **Client-specific access** - can only view users within their assigned clients
+- **Limited client management** - access restricted to their associated clients
+- **User management** - can view invitations for their clients
+- **Design system modification** - can modify design systems and assets
+- **Figma integration** - can create, sync, and delete Figma connections
+- **Section management** - can hide/show sections within their clients
+
+#### **Editor** (`editor`)
+- **Content creation and editing** - can create and edit content within assigned clients
+- **Design system modification** - can modify design systems and assets
+- **Figma integration** - can create, sync, and delete Figma connections
+- **Asset management** - can upload and manage brand assets
+
+#### **Standard** (`standard`)
+- **Basic user access** - default role for new users
+- **Feature usage** - can use features within assigned clients
+- **Read access** - can view design systems and assets
+- **Limited permissions** - cannot modify design systems or manage integrations
+
+#### **Guest** (`guest`)
+- **Most limited access** - minimal permissions
+- **Read-only access** - can view content but cannot modify anything
+- **No administrative functions** - cannot access user management or settings
+
+### Permission Matrix
+
+| Feature | Guest | Standard | Editor | Admin | Super Admin |
+|---------|-------|----------|--------|-------|-------------|
+| View design systems | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Use features | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Modify design systems | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Upload/manage assets | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Figma integration | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Hide/show sections | ❌ | ❌ | ❌ | ✅ | ✅ |
+| View invitations | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Manage users (own clients) | ❌ | ❌ | ❌ | ✅ | ✅ |
+| View all users | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Access all clients | ❌ | ❌ | ❌ | ❌ | ✅ |
 
 ### Multi-tenant Setup
 
