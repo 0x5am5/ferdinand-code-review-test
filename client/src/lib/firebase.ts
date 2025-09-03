@@ -2,7 +2,6 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
-  connectAuthEmulator,
   browserLocalPersistence,
   setPersistence,
 } from "firebase/auth";
@@ -48,17 +47,6 @@ googleProvider.addScope("email");
 // Set custom parameters for Google Auth
 googleProvider.setCustomParameters({
   prompt: "select_account",
-});
-
-// Log the current domain for debugging
-console.log("Current domain:", window.location.hostname);
-console.log("Full domain with protocol:", window.location.origin);
-
-// Log Firebase config for debugging
-console.log("Firebase config (without sensitive data):", {
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
 });
 
 // Add persistent logging for debugging

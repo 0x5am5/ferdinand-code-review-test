@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { HiddenSection } from "@shared/schema";
 
 export const useHiddenSections = (clientId: number) => {
   return useQuery({

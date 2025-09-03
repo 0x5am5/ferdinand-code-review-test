@@ -907,10 +907,10 @@ function FontCard({
   const [selectedWeight, setSelectedWeight] = useState("400");
   const { user } = useAuth();
   const isAbleToEdit = user && [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
+    "super_admin",
+    "admin",
+    "editor",
+  ].includes(user.role as string);
 
   // Set default weight to the first available weight or 400
   React.useEffect(() => {
@@ -1027,72 +1027,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const [showAdobeFontPicker, setShowAdobeFontPicker] = useState(false);
   const [showCustomFontPicker, setShowCustomFontPicker] = useState(false);
 
-  if (!user) return null;
-
-  // Validate clientId is available
-  if (!clientId) {
-    console.error("FontManager: clientId is missing");
-    return (
-      <div className="font-manager">
-        <div className="manager__header">
-          <div>
-            <h1>Typography System</h1>
-            <p className="text-muted-foreground text-red-500">
-              Error: Client ID is missing. Please refresh the page.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const isAbleToEdit = [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
-
-  // Fetch Google Fonts
+  // Fetch Google Fonts - outside conditional
   const { data: googleFontsData, isLoading: isFontsLoading } = useQuery({
     queryKey: ["/api/google-fonts"],
     enabled: true,
   });
 
-  // Fallback Google Fonts data
-  const allGoogleFonts = [
-    {
-      name: "Inter",
-      category: "Sans Serif",
-      weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-    },
-    {
-      name: "Roboto",
-      category: "Sans Serif",
-      weights: ["100", "300", "400", "500", "700", "900"],
-    },
-    {
-      name: "Open Sans",
-      category: "Sans Serif",
-      weights: ["300", "400", "500", "600", "700", "800"],
-    },
-    // Add more fallback fonts as needed
-  ];
-
-  // Use API data if available and valid, otherwise use comprehensive fallback
-  const googleFonts =
-    googleFontsData && (googleFontsData as any)?.items?.length > 0
-      ? (googleFontsData as any).items.map((font: GoogleFont) => ({
-          name: font.family,
-          category: convertGoogleFontCategory(font.category),
-          weights: convertGoogleFontVariants(font.variants),
-        }))
-      : allGoogleFonts;
-
-  console.log(
-    `Google Fonts loaded: ${googleFonts?.length || 0} fonts available (${googleFontsData && (googleFontsData as any)?.items?.length > 0 ? "from API" : "from fallback"})`,
-  );
-
-  // Add font mutation
+  // Add font mutation - outside conditional
   const addFont = useMutation({
     mutationFn: async (data: FormData) => {
       if (!clientId) {
@@ -1124,10 +1065,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     },
     onSuccess: (data) => {
       console.log("Font added successfully:", data);
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
-      });
+      if (clientId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${clientId}/assets`],
+        });
+      }
       toast({
         title: "Success",
         description: `${data.name} font added successfully`,
@@ -1144,9 +1087,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     },
   });
 
-  // Edit font mutation
+  // Edit font mutation - outside conditional
   const editFont = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      if (!clientId) {
+        throw new Error("Client ID is required");
+      }
       const response = await apiRequest(
         "PATCH",
         `/api/clients/${clientId}/assets/${id}`,
@@ -1155,10 +1101,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
-      });
+      if (clientId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${clientId}/assets`],
+        });
+      }
       setEditingFont(null);
       toast({
         title: "Font updated successfully",
@@ -1174,9 +1122,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     },
   });
 
-  // Delete font mutation
+  // Delete font mutation - outside conditional
   const deleteFont = useMutation({
     mutationFn: async (fontId: number) => {
+      if (!clientId) {
+        throw new Error("Client ID is required");
+      }
       const response = await apiRequest(
         "DELETE",
         `/api/clients/${clientId}/assets/${fontId}`,
@@ -1184,10 +1135,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
-      });
+      if (clientId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${clientId}/assets`],
+        });
+      }
       toast({
         title: "Font deleted successfully",
         variant: "default",
@@ -1201,6 +1154,60 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       });
     },
   });
+
+  if (!user) return null;
+
+  // Validate clientId is available
+  if (!clientId) {
+    return (
+      <div className="font-manager">
+        <div className="manager__header">
+          <div>
+            <h1>Typography System</h1>
+            <p className="text-muted-foreground text-red-500">
+              Error: Client ID is missing. Please refresh the page.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isAbleToEdit = user ? [
+    "super_admin",
+    "admin",
+    "editor",
+  ].includes(user.role as string) : false;
+
+  // Fallback Google Fonts data
+  const allGoogleFonts = [
+    {
+      name: "Inter",
+      category: "Sans Serif",
+      weights: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+    },
+    {
+      name: "Roboto",
+      category: "Sans Serif",
+      weights: ["100", "300", "400", "500", "700", "900"],
+    },
+    {
+      name: "Open Sans",
+      category: "Sans Serif",
+      weights: ["300", "400", "500", "600", "700", "800"],
+    },
+    // Add more fallback fonts as needed
+  ];
+
+  // Use API data if available and valid, otherwise use comprehensive fallback
+  const googleFonts =
+    googleFontsData && (googleFontsData as any)?.items?.length > 0
+      ? (googleFontsData as any).items.map((font: GoogleFont) => ({
+          name: font.family,
+          category: convertGoogleFontCategory(font.category),
+          weights: convertGoogleFontVariants(font.variants),
+        }))
+      : allGoogleFonts;
 
   // Google Font handler with proper validation
   const handleGoogleFontSelect = (fontName: string) => {
@@ -1374,10 +1381,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       });
     }
 
-    console.log(
-      `Creating Custom Font: ${fontName} with ${validFiles.length} files`,
-    );
-
     // Process files and create FormData
     const formData = new FormData();
     formData.append("name", fontName.trim());
@@ -1393,11 +1396,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     validFiles.forEach((file, index) => {
       formData.append(`file_${index}`, file);
     });
-
-    console.log("Sending custom font data to server for client:", clientId);
-    console.log("FontSource.FILE value:", FontSource.FILE);
-    console.log("Weights:", JSON.stringify(weights.length > 0 ? weights : ["400"]));
-    console.log("Styles:", JSON.stringify(["normal"]));
 
     addFont.mutate(formData);
   };

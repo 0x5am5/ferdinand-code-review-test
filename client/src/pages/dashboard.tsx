@@ -82,9 +82,7 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
 
   const isAbleToEdit = user
-    ? [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.EDITOR].includes(
-        user.role,
-      )
+    ? (user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.EDITOR)
     : false;
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);

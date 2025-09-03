@@ -125,11 +125,6 @@ export function AssetCard({ asset }: AssetCardProps) {
         <CardTitle>{asset.name}</CardTitle>
       </CardHeader>
       <CardContent>
-        {asset.description && (
-          <p className="text-muted-foreground mb-4">
-            {asset.description}
-          </p>
-        )}
         {asset.category === "logo" && renderLogoAsset()}
         {asset.category === "color" && renderColorAsset()}
         {asset.category === "typography" && renderTypographyAsset()}

@@ -52,7 +52,7 @@ export function registerInvitationRoutes(app: Express) {
           }
 
           // Exclude token from response
-          const { token, ...safeInvitation } = invitation;
+          const { ...safeInvitation } = invitation;
 
           return {
             ...safeInvitation,

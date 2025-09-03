@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { UserRole, insertFigmaConnectionSchema, insertFigmaSyncLogSchema } from "@shared/schema";
+import { UserRole, insertFigmaConnectionSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Figma API Base URL
@@ -9,8 +9,8 @@ const FIGMA_API_BASE = "https://api.figma.com/v1";
 interface FigmaFile {
   key: string;
   name: string;
-  lastModified: string;
-  thumbnailUrl: string;
+  last_modified: string;
+  thumbnail_url: string;
 }
 
 interface FigmaFileResponse {
@@ -18,7 +18,7 @@ interface FigmaFileResponse {
     id: string;
     name: string;
     type: string;
-    children: any[];
+    children: FigmaFile[];
   };
   styles: Record<string, {
     key: string;
@@ -27,13 +27,6 @@ interface FigmaFileResponse {
     description: string;
   }>;
   lastModified: string;
-}
-
-interface FigmaStyle {
-  key: string;
-  name: string;
-  styleType: "FILL" | "TEXT" | "EFFECT" | "GRID";
-  description: string;
 }
 
 export function registerFigmaRoutes(app: Express) {
@@ -165,7 +158,7 @@ export function registerFigmaRoutes(app: Express) {
           
           if (projectResponse.ok) {
             const projectData = await projectResponse.json();
-            files.push(...projectData.files.map((file: any) => ({
+            files.push(...projectData.files.map((file: FigmaFile) => ({
               key: file.key,
               name: file.name,
               lastModified: file.last_modified,
@@ -195,7 +188,7 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       // Only allow editors, admins, and super admins to create connections
-      if (![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role)) {
+      if (user.role !== UserRole.EDITOR && user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ 
           message: "Insufficient permissions to create Figma connections" 
         });
@@ -319,7 +312,7 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       // Only allow editors, admins, and super admins to sync
-      if (![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role)) {
+      if (user.role !== UserRole.EDITOR && user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ 
           message: "Insufficient permissions to sync design tokens" 
         });
@@ -363,7 +356,7 @@ export function registerFigmaRoutes(app: Express) {
         
         // Process color styles
         if (fileData.styles) {
-          for (const [styleId, style] of Object.entries(fileData.styles)) {
+          for (const [, style] of Object.entries(fileData.styles)) {
             if (style.styleType === "FILL") {
               // Get detailed style information
               const styleResponse = await fetch(`${FIGMA_API_BASE}/styles/${style.key}`, {
@@ -457,7 +450,7 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       // Only allow editors, admins, and super admins to delete connections
-      if (![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role)) {
+      if (user.role !== UserRole.EDITOR && user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ 
           message: "Insufficient permissions to delete Figma connections" 
         });

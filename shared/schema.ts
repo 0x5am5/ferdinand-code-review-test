@@ -105,7 +105,7 @@ export const users = pgTable("users", {
   role: text("role", {
     enum: ["super_admin", "admin", "editor", "standard", "guest"],
   }).notNull(),
-  client_id: integer("client_id").references(() => clients.id),
+  client_id: integer("client_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLogin: timestamp("last_login"),
@@ -121,7 +121,7 @@ export const clients = pgTable("clients", {
   logo: text("logo_url"),
   primaryColor: text("primary_color"),
   displayOrder: integer("display_order"),
-  userId: integer("user_id").references(() => users.id),
+  userId: integer("user_id"),
   // Feature toggles
   featureToggles: json("feature_toggles").default({
     logoSystem: true,
@@ -169,7 +169,7 @@ export const convertedAssets = pgTable("converted_assets", {
     .notNull()
     .references(() => brandAssets.id),
   format: text("format", {
-    enum: Object.values(FILE_FORMATS),
+    enum: Object.values(FILE_FORMATS) as [string, ...string[]],
   }).notNull(),
   fileData: text("file_data").notNull(),
   mimeType: text("mime_type").notNull(),
@@ -648,7 +648,7 @@ export type InspirationSection = typeof inspirationSections.$inferSelect;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
 export type HiddenSection = typeof hiddenSections.$inferSelect;
-export type TypeScale = typeof typeScales.$inferSelect;
+export type TypeScaleDB = typeof typeScales.$inferSelect;
 
 // Insert Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -695,8 +695,8 @@ export const insertFigmaSyncLogSchema = createInsertSchema(figmaSyncLogs)
     conflictsDetected: z.array(z.object({
       tokenType: z.string(),
       tokenName: z.string(),
-      ferdinandValue: z.any(),
-      figmaValue: z.any()
+      ferdinandValue: z.unknown(),
+      figmaValue: z.unknown()
     })).optional(),
     conflictsResolved: z.array(z.object({
       tokenType: z.string(),
@@ -711,8 +711,8 @@ export const insertFigmaDesignTokenSchema = createInsertSchema(figmaDesignTokens
     tokenType: z.enum(["color", "typography", "spacing", "border_radius", "shadow"]),
     tokenName: z.string().min(1),
     figmaId: z.string().optional(),
-    ferdinandValue: z.any(),
-    figmaValue: z.any().optional(),
+    ferdinandValue: z.unknown().optional(),
+    figmaValue: z.unknown().optional(),
     syncStatus: z.enum(["in_sync", "ferdinand_newer", "figma_newer", "conflict"]).default("in_sync"),
   });
 
@@ -726,6 +726,16 @@ export type InsertFigmaDesignToken = z.infer<typeof insertFigmaDesignTokenSchema
 
 // Other Types
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
+
+// Feature Toggles Type
+export interface FeatureToggles {
+  logoSystem: boolean;
+  colorSystem: boolean;
+  typeSystem: boolean;
+  userPersonas: boolean;
+  inspiration: boolean;
+  figmaIntegration: boolean;
+}
 
 // Constants from enums
 export const LOGO_TYPES = Object.values(LogoType);
@@ -817,6 +827,7 @@ export interface TypeScale {
     desktop: { baseSize: number; scaleRatio: number };
   };
   typeStyles?: TypeStyle[];
+  exports?: string[];
   createdAt?: string;
   updatedAt?: string;
 }

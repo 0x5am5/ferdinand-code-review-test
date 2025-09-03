@@ -74,7 +74,7 @@ import {
   Check,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
@@ -127,26 +127,22 @@ export interface PendingInvitation {
 }
 
 export default function UsersPage() {
+  // Move all hooks to the top level
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-
-  if (isAuthLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const { toast } = useToast();
 
-  // Get users - server already handles filtering based on role and client assignments
+  // Query hooks - use enabled flag to control when they run
   const { data: users = [], isLoading: isLoadingUsers } = useUsersQuery();
-  const { data: pendingInvitations = [], isLoading: isLoadingInvitations } =
-    usePendingInvitationsQuery();
-  const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } =
-    useUserClientAssignmentsQuery(users.map((u) => u.id));
+  const { data: pendingInvitations = [], isLoading: isLoadingInvitations } = usePendingInvitationsQuery();
+  const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } = useUserClientAssignmentsQuery(users.map((u) => u.id));
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+  });
 
+  // Mutation hooks
   const { mutate: updateUserRole } = useUpdateUserRoleMutation();
   const { assignClient, removeClient } = useClientAssignmentMutations();
   const { mutate: resetPassword } = useMutation({
@@ -168,26 +164,26 @@ export default function UsersPage() {
     },
   });
 
-  // Get all clients for assignment
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
-  });
+  const { mutate: resendInvitation, isPending: isResendingInvitationPending } = useInviteUserMutation();
+  const { mutate: removeInvitation  } = useRemoveInvitationMutation();
 
-  const { mutate: resendInvitation } = useInviteUserMutation();
-  const { mutate: removeInvitation } = useRemoveInvitationMutation();
-
-  // Debounced search implementation
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
-
+  // Effects
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Enhanced search with fuzzy matching - backend handles organization filtering
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Derived state
   const filteredUsers = debouncedSearchQuery
     ? users.filter((user) => {
         const nameMatch = user.name
@@ -206,17 +202,7 @@ export default function UsersPage() {
           part.startsWith(debouncedSearchQuery.toLowerCase()),
         );
 
-        // Also match client names if assigned to user
-        const clientMatch = userClientAssignments[user.id]?.some(
-          (client: Client) =>
-            client.name
-              .toLowerCase()
-              .includes(debouncedSearchQuery.toLowerCase()),
-        );
-
-        return (
-          nameMatch || emailMatch || roleMatch || namePartsMatch || clientMatch
-        );
+        return nameMatch || emailMatch || roleMatch || namePartsMatch;
       })
     : users;
 
@@ -362,30 +348,12 @@ export default function UsersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {invitation.clientData ? (
+                            {invitation ? (
                               <div className="flex items-center space-x-2">
-                                {invitation.clientData.logoUrl ? (
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage
-                                      src={invitation.clientData.logoUrl}
-                                      alt={invitation.clientData.name}
-                                    />
-                                    <AvatarFallback
-                                      style={{
-                                        backgroundColor:
-                                          invitation.clientData.primaryColor ||
-                                          "#e2e8f0",
-                                      }}
-                                    >
-                                      {getInitials(invitation.clientData.name)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                ) : (
-                                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs">
-                                    {getInitials(invitation.clientData.name)}
-                                  </div>
-                                )}
-                                <span>{invitation.clientData.name}</span>
+                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs">
+                                  {getInitials(invitation.name)}
+                                </div>
+                                <span>{invitation.name}</span>
                               </div>
                             ) : (
                               <span className="text-muted-foreground">
@@ -413,11 +381,11 @@ export default function UsersPage() {
                               <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    resendInvitation.mutate(invitation.id)
+                                    resendInvitation(invitation.id)
                                   }
-                                  disabled={resendInvitation.isPending}
+                                  disabled={isResendingInvitationPending}
                                 >
-                                  {resendInvitation.isPending ? (
+                                  {isResendingInvitationPending ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   ) : (
                                     <RefreshCw className="mr-2 h-4 w-4" />
@@ -677,7 +645,7 @@ export default function UsersPage() {
                                           (client) =>
                                             !userClientAssignments[
                                               user.id
-                                            ]?.some((c) => c.id === client.id),
+                                            ]?.some((c: Client) => c.id === client.id),
                                         )
                                         .map((client) => (
                                           <CommandItem
@@ -703,7 +671,7 @@ export default function UsersPage() {
                             {userClientAssignments[user.id]?.length > 0 && (
                               <div className="flex flex-wrap gap-1.5">
                                 {userClientAssignments[user.id]?.map(
-                                  (client) => (
+                                  (client: Client) => (
                                     <Badge
                                       key={client.id}
                                       variant="outline"
@@ -855,7 +823,7 @@ export default function UsersPage() {
       <InviteUserDialog
         open={isInviteDialogOpen}
         onOpenChange={setIsInviteDialogOpen}
-        currentUser={currentUser}
+        currentUser={currentUser!}
         clients={clients}
       />
     </div>

@@ -19,11 +19,10 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
-import { UserRole } from "@shared/schema";
+import { UserRole, FeatureToggles } from "@shared/schema";
 import { ClientSidebar } from "./client-sidebar";
 import { useClientsQuery } from "@/lib/queries/clients";
 
@@ -39,7 +38,6 @@ interface NavItem {
 export const Sidebar: FC = () => {
   const [location] = useLocation();
   const params = useParams();
-  const themeContext = useTheme();
   const { user } = useAuth();
   const {
     isOpen: showSearch,
@@ -96,14 +94,6 @@ export const Sidebar: FC = () => {
   const currentClient = clients.length
     ? clients.find((client) => client.id === clientId)
     : null;
-  console.log(
-    "Client ID:",
-    clientId,
-    "Found client?",
-    !!currentClient,
-    "Total clients:",
-    clients.length,
-  );
 
   const { logout } = useAuth();
 
@@ -169,31 +159,10 @@ export const Sidebar: FC = () => {
     }
   };
 
-  const toggleTheme = async () => {
-    if (
-      !themeContext ||
-      !themeContext.designSystem ||
-      !themeContext.updateDesignSystem
-    ) {
-      console.error("Theme context not properly initialized");
-      return;
-    }
-
-    const currentAppearance = themeContext.designSystem.theme.appearance;
-    const newAppearance = currentAppearance === "dark" ? "light" : "dark";
-
-    await themeContext.updateDesignSystem({
-      theme: {
-        ...themeContext.designSystem.theme,
-        appearance: newAppearance,
-      },
-    });
-  };
-
   // If we're on a client detail page, render the client sidebar
   if (isClientDetailPage && clientId && currentClient) {
     // Safely handle feature toggles with proper type casting
-    const clientToggles = (currentClient.featureToggles || {}) as any;
+    const clientToggles = (currentClient.featureToggles || {}) as FeatureToggles;
 
     const featureToggles = {
       logoSystem:

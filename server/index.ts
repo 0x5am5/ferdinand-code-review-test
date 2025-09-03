@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { setupVite, serveStatic, log } from "./vite";
 import { registerRoutes } from "./routes";
@@ -43,7 +43,7 @@ app.use(
 );
 
 // Add error handling middleware
-app.use((err: any, req: any, res: any, next: any) => {
+app.use((err: Error, _req: Request, res: Response) => {
   console.error(err.stack);
   res.status(500).json({ message: "Something broke!", error: err.message });
 });
@@ -79,8 +79,9 @@ async function cleanup() {
         // Kill any existing process on the port
         await execAsync(`npx kill-port ${port}`);
         console.log(`✓ Port ${port} is now available`);
-      } catch (err) {
+      } catch (e: unknown) {
         // Ignore errors as the port might not be in use
+        console.log(e)
         console.log(`✓ Port ${port} already available`);
       }
     }
@@ -142,7 +143,6 @@ async function startServer(retries = 3) {
       } else {
         // Development: Try multiple ports if needed
         let serverStarted = false;
-        let usedPort: number | null = null;
 
         console.log(`Attempting to start server on port ${PORT}`);
         const portsToTry = ALL_PORTS;
@@ -182,7 +182,8 @@ async function startServer(retries = 3) {
                 }
               });
             });
-          } catch (err) {
+          } catch (err: unknown) {
+            console.log(err)
             console.log(`Failed to use port ${port}, trying next...`);
             // Continue to the next port
           }

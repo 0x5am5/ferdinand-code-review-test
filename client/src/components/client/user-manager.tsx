@@ -175,13 +175,13 @@ export function UserManager({ clientId }: UserManagerProps) {
   // Enhanced search with fuzzy matching
   const filteredUsers = debouncedSearchQuery 
     ? users.filter((user) => {
-        const nameMatch = user.name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-        const emailMatch = user.email.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-        const roleMatch = user.role.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        const nameMatch = (user.name as string)?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        const emailMatch = (user.email as string).toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+        const roleMatch = (user.role as string).toLowerCase().includes(debouncedSearchQuery.toLowerCase());
         
         // Also match parts of names (first/last name)
-        const nameParts = user.name?.toLowerCase().split(' ') || [];
-        const namePartsMatch = nameParts.some(part => 
+        const nameParts = (user.name as string)?.toLowerCase().split(' ') || [];
+        const namePartsMatch = nameParts.some((part: string) => 
           part.startsWith(debouncedSearchQuery.toLowerCase())
         );
         
@@ -271,29 +271,29 @@ export function UserManager({ clientId }: UserManagerProps) {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user: User) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id as number}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                          {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                          {(user.name as string) ? (user.name as string).charAt(0).toUpperCase() : (user.email as string).charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <div className="font-medium">{user.name}</div>
+                          <div className="font-medium">{user.name as string}</div>
                           <div className="flex items-center text-sm text-muted-foreground">
                             <Mail className="mr-1 h-3 w-3" />
-                            {user.email}
+                            {user.email as string}
                           </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <RoleBadge role={user.role} onChange={(newRole) => handleRoleChange(user.id, newRole)} />
+                      <RoleBadge role={user.role as string} onChange={(newRole) => handleRoleChange(user.id as number, newRole)} />
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveUser(user.id)}
+                        onClick={() => handleRemoveUser(user.id as number)}
                       >
                         Remove
                       </Button>

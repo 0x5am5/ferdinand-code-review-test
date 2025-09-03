@@ -7,8 +7,10 @@ import {
   invitations,
   insertUserClientSchema,
   clients,
+  User,
+  Client,
 } from "@shared/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { emailService } from "../email-service";
 import { validateClientId } from "server/middlewares/vaildateClientId";
@@ -61,7 +63,7 @@ export function registerUserRoutes(app: Express) {
             ),
           );
 
-        const userIds = [...new Set(clientUsers.map((uc) => uc.userId))];
+        const userIds = Array.from(new Set(clientUsers.map((uc) => uc.userId)));
         // Include the current admin user even if they don't have client assignments
         if (!userIds.includes(currentUser.id)) {
           userIds.push(currentUser.id);
@@ -378,11 +380,11 @@ export function registerUserRoutes(app: Express) {
       const userList = await storage.getUsers();
 
       // Create a map to store user assignments
-      const assignments: Record<number, any[]> = {};
+      const assignments: Record<number, Client[]> = {};
 
       // Get clients for each user
       await Promise.all(
-        userList.map(async (user) => {
+        userList.map(async (user: User) => {
           const userClients = await storage.getUserClients(user.id);
           assignments[user.id] = userClients;
         }),

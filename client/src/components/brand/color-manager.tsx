@@ -5,15 +5,12 @@ import {
   Check,
   Copy,
   RotateCcw,
-  Download,
   Palette,
   X,
   Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import "../../styles/components/color-picker-popover.scss";
 import {
@@ -45,6 +42,38 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BrandAsset, UserRole } from "@shared/schema";
+
+// Define types for color data structure
+type ColorData = {
+  hex: string;
+  rgb?: string;
+  hsl?: string;
+  cmyk?: string;
+  pantone?: string;
+};
+
+type GradientData = {
+  type: "linear" | "radial";
+  stops: { color: string; position: number }[];
+};
+
+type TintShadeData = {
+  percentage: number;
+  hex: string;
+};
+
+type ColorAssetData = {
+  type: "solid" | "gradient";
+  category: "brand" | "neutral" | "interactive";
+  colors: ColorData[];
+  gradient?: GradientData;
+  tints?: TintShadeData[];
+  shades?: TintShadeData[];
+};
+
+type ColorBrandAsset = BrandAsset & {
+  data: ColorAssetData;
+};
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -59,22 +88,20 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
-import { AssetDisplay } from "./asset-display";
 import { AssetSection } from "./asset-section";
-import { ColorPicker } from "@/components/ui/color-picker";
 
 // ColorCard component for the color manager
 function ColorCard({ 
   color, 
-  onEdit, 
+  onEdit: _onEdit, 
   onDelete,
   onGenerate,
   neutralColorsCount,
   onUpdate,
   clientId,
 }: { 
-  color: any; 
-  onEdit: (color: any) => void; 
+  color: ColorBrandAsset; 
+  onEdit: (color: ColorBrandAsset) => void; 
   onDelete: (id: number) => void; 
   onGenerate?: () => void;
   neutralColorsCount?: number;
@@ -104,7 +131,7 @@ function ColorCard({
 
   // Add updateColor mutation to ColorCard component
   const updateColor = useMutation({
-    mutationFn: async (data: { id: number; name: string; category: string; data: any }) => {
+    mutationFn: async (data: { id: number; name: string; category: string; data: ColorAssetData }) => {
       const response = await fetch(`/api/clients/${clientId}/assets/${data.id}`, {
         method: "PATCH",
         headers: {
@@ -132,10 +159,10 @@ function ColorCard({
       const previousAssets = queryClient.getQueryData([`/api/clients/${clientId}/assets`]);
 
       // Optimistically update the cache
-      queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: any) => {
+      queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: BrandAsset[] | undefined) => {
         if (!old) return old;
 
-        return old.map((asset: any) => {
+        return old.map((asset: BrandAsset) => {
           if (asset.id === newData.id) {
             return {
               ...asset,
@@ -174,7 +201,7 @@ function ColorCard({
     },
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [tempColor, setTempColor] = useState(color.hex);
+  const [tempColor, setTempColor] = useState(color.data.colors[0]?.hex || "#000000");
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(color.name);
   const [activeTab, setActiveTab] = useState<'color' | 'gradient'>('color');
@@ -310,7 +337,7 @@ function ColorCard({
   };
 
   const handleStartEdit = () => {
-    setTempColor(color.hex);
+    setTempColor(color.data.colors[0]?.hex || "#000000");
     setIsEditing(true);
 
     // Load existing gradient data if available
@@ -379,10 +406,10 @@ function ColorCard({
         type: "gradient",
         category: currentData?.category || "brand",
         colors: [{
-          hex: gradientStops[0]?.color || color.hex,
-          rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
-          hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
-          cmyk: hexToCmyk(gradientStops[0]?.color || color.hex) || "",
+          hex: gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000",
+          rgb: hexToRgb(gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000") || "",
+          hsl: hexToHsl(gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000") || "",
+          cmyk: hexToCmyk(gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000") || "",
         }],
         gradient: gradientData,
         ...(currentData?.tints && { tints: currentData.tints }),
@@ -399,10 +426,10 @@ function ColorCard({
           // Update local color data immediately
           if (onUpdate) {
             onUpdate(color.id, {
-              hex: gradientStops[0]?.color || color.hex,
-              rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
-              hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
-              cmyk: hexToCmyk(color.hex) || "",
+              hex: gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000",
+              rgb: hexToRgb(gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000") || "",
+              hsl: hexToHsl(gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000") || "",
+              cmyk: hexToCmyk(color.data.colors[0]?.hex || "#000000") || "",
             });
           }
         }
@@ -413,22 +440,22 @@ function ColorCard({
   };
 
   const handleCancelEdit = () => {
-    setTempColor(color.hex);
+    setTempColor(color.data.colors[0]?.hex || "#000000");
     setIsEditing(false);
     if (onUpdate) {
       // Revert to original color
       const updates = {
-        hex: color.hex,
-        rgb: hexToRgb(color.hex) || undefined,
-        hsl: hexToHsl(color.hex) || undefined,
-        cmyk: hexToCmyk(color.hex) || undefined,
+        hex: color.data.colors[0]?.hex || "#000000",
+        rgb: hexToRgb(color.data.colors[0]?.hex || "#000000") || undefined,
+        hsl: hexToHsl(color.data.colors[0]?.hex || "#000000") || undefined,
+        cmyk: hexToCmyk(color.data.colors[0]?.hex || "#000000") || undefined,
       };
       onUpdate(color.id, updates);
     }
   };
 
   // Generate tints and shades and handle gradient display
-  const displayHex = isEditing ? tempColor : color.hex;
+  const displayHex = isEditing ? tempColor : (color.data.colors[0]?.hex || "#000000");
   const { tints, shades } = generateTintsAndShades(displayHex);
 
   // Create real-time gradient display
@@ -445,7 +472,7 @@ function ColorCard({
       return {
         background: `${color.data.gradient.type === 'radial' ? 'radial' : 'linear'}-gradient(${
           color.data.gradient.type === 'radial' ? 'circle' : 'to right'
-        }, ${color.data.gradient.stops.map(stop => `${stop.color} ${stop.position}%`).join(', ')})`
+        }, ${color.data.gradient.stops.map((stop: { color: string; position: number }) => `${stop.color} ${stop.position}%`).join(', ')})`
       };
     } else {
       // Show solid color
@@ -504,7 +531,7 @@ function ColorCard({
           </div>
 
         <div className="color-chip__controls" style={{ position: 'relative' }}>
-          {color.category === "neutral" && onGenerate && !(/^Grey \d+$/.test(color.name)) && (
+          {color.data.category === "neutral" && onGenerate && !(/^Grey \d+$/.test(color.name)) && (
             <Button
               variant="ghost"
               size="icon"
@@ -535,7 +562,7 @@ function ColorCard({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          {color.category !== "neutral" && color.data.type !== "gradient" && (
+          {color.data.category !== "neutral" && color.data.type !== "gradient" && (
             <Button
               variant="ghost"
               size="icon"
@@ -550,7 +577,7 @@ function ColorCard({
             variant="ghost"
             size="icon"
             className={`h-9 w-9 p-2 ${parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '' : 'dark-bg'}`}
-            onClick={() => copyHex(color.hex)}
+            onClick={() => copyHex(color.data.colors[0]?.hex || "#000000")}
           >
             <Copy className="h-6 w-6" style={{ color: parseInt(displayHex.replace('#', ''), 16) > 0xffffff / 2 ? '#000' : '#fff' }} />
           </Button>
@@ -1363,7 +1390,7 @@ function ColorChip({
   onDelete,
   onUpdate,
 }: {
-  color: ColorData;
+  color: ColorBrandAsset;
   onEdit?: () => void;
   onDelete?: () => void;
   onUpdate?: (colorId: number, updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string; }) => void;
@@ -1372,7 +1399,7 @@ function ColorChip({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState({
     name: color.name,
-    hex: color.hex,
+    hex: color.data.colors[0]?.hex || "#000000",
   });
 
   const { user } = useAuth();
@@ -1413,7 +1440,7 @@ function ColorChip({
             variant="ghost"
             size="icon"
             className="h-8 w-8 bg-white/90 hover:bg-white"
-            onClick={() => handleCopy(color.hex)}
+            onClick={() => handleCopy(color.data.colors[0]?.hex || "#000000")}
           >
             <Copy className="h-4 w-4" />
           </Button>
@@ -1486,7 +1513,7 @@ function ColorChip({
         ) : (
           <>
             <h4 className="font-medium mb-1">{color.name}</h4>
-            <ColorBlock hex={color.hex} onClick={() => handleCopy(color.hex)} />
+            <ColorBlock hex={color.data.colors[0]?.hex || "#000000"} onClick={() => handleCopy(color.data.colors[0]?.hex || "#000000")} />
           </>
         )}
       </div>
@@ -1496,24 +1523,24 @@ function ColorChip({
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
             <Label className="text-xs text-muted-foreground">HEX</Label>
-            <p className="font-mono">{color.hex}</p>
+            <p className="font-mono">{color.data.colors[0]?.hex || "#000000"}</p>
           </div>
-          {color.rgb && (
+          {color.data.colors[0]?.rgb && (
             <div>
               <Label className="text-xs text-muted-foreground">RGB</Label>
-              <p className="font-mono">{color.rgb}</p>
+              <p className="font-mono">{color.data.colors[0]?.rgb}</p>
             </div>
           )}
-          {color.cmyk && (
+          {color.data.colors[0]?.cmyk && (
             <div>
               <Label className="text-xs text-muted-foreground">CMYK</Label>
-              <p className="font-mono">{color.cmyk}</p>
+              <p className="font-mono">{color.data.colors[0]?.cmyk}</p>
             </div>
           )}
-          {color.pantone && (
+          {color.data.colors[0]?.pantone && (
             <div>
               <Label className="text-xs text-muted-foreground">Pantone</Label>
-              <p className="font-mono">{color.pantone}</p>
+              <p className="font-mono">{color.data.colors[0]?.pantone}</p>
             </div>
           )}
         </div>
@@ -1532,10 +1559,10 @@ function ColorSection({
   onEditColor,
 }: {
   title: string;
-  colors: ColorData[];
+  colors: ColorBrandAsset[];
   onAddColor: () => void;
   deleteColor: (colorId: number) => void;
-  onEditColor: (color: ColorData) => void;
+  onEditColor: (color: ColorBrandAsset) => void;
 }) {
   const { user } = useAuth();
 
@@ -1548,7 +1575,7 @@ function ColorSection({
           <AnimatePresence>
             {colors.map((color) => (
               <ColorChip
-                key={color.id || `color-${color.hex}-${color.name}`}
+                key={color.id || `color-${color.data.colors[0]?.hex || 'unknown'}-${color.name}`}
                 color={color}
                 onEdit={() => onEditColor(color)}
                 onDelete={() => color.id && deleteColor(color.id)}
@@ -1589,7 +1616,7 @@ export function ColorManager({
   const [selectedCategory, setSelectedCategory] = useState<
     "brand" | "neutral" | "interactive"
   >("brand");
-  const [editingColor, setEditingColor] = useState<ColorData | null>(null);
+  const [editingColor, setEditingColor] = useState<ColorBrandAsset | null>(null);
   const [regenerationCount, setRegenerationCount] = useState(0);
   // We don't need an extra state since colors are derived from props
 
@@ -1745,7 +1772,7 @@ export function ColorManager({
   });
 
   const updateColor = useMutation({
-    mutationFn: async (data: { id: number; name: string; category: string; data: any }) => {
+    mutationFn: async (data: { id: number; name: string; category: string; data: ColorAssetData }) => {
       const response = await fetch(`/api/clients/${clientId}/assets/${data.id}`, {
         method: "PATCH",
         headers: {
@@ -1773,10 +1800,10 @@ export function ColorManager({
       const previousAssets = queryClient.getQueryData([`/api/clients/${clientId}/assets`]);
 
       // Optimistically update the cache
-      queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: any) => {
+      queryClient.setQueryData([`/api/clients/${clientId}/assets`], (old: BrandAsset[] | undefined) => {
         if (!old) return old;
 
-        return old.map((asset: any) => {
+        return old.map((asset: BrandAsset) => {
           if (asset.id === newData.id) {
             return {
               ...asset,
@@ -1836,24 +1863,16 @@ export function ColorManager({
     }
   };
 
-  const parseColorAsset = (asset: BrandAsset): ColorData | null => {
+  const parseColorAsset = (asset: BrandAsset): ColorBrandAsset | null => {
     try {
       const data =
         typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
       if (!data?.colors?.[0]) return null;
 
       return {
-        id: asset.id,
-        hex: data.colors[0].hex,
-        rgb: data.colors[0].rgb,
-        hsl: data.colors[0].hsl,
-        cmyk: data.colors[0].cmyk,
-        pantone: data.colors[0].pantone,
-        name: asset.name,
-        category: data.category,
-        // Preserve the full data object including gradient information
+        ...asset,
         data: data,
-      };
+      } as ColorBrandAsset;
     } catch (error) {
       console.error("Error parsing color asset:", error);
       return null;
@@ -1863,15 +1882,15 @@ export function ColorManager({
   const transformedColors = colors
     .filter((asset) => asset.category === "color")
     .map(parseColorAsset)
-    .filter((color): color is ColorData => color !== null);
+    .filter((color): color is ColorBrandAsset => color !== null);
 
   const brandColorsData = transformedColors.filter(
-    (c) => c.category === "brand",
+    (c) => c.data.category === "brand",
   );
 
   // Sort neutral colors: manual (base grey) first, then generated shades from light to dark (Grey 11 to Grey 1)
   const neutralColorsData = transformedColors
-    .filter((c) => c.category === "neutral")
+    .filter((c) => c.data.category === "neutral")
     .sort((a, b) => {
       // Check if colors are generated grey shades (names like "Grey 1", "Grey 2", etc.)
       const isAGeneratedGrey = /^Grey \d+$/.test(a.name);
@@ -1897,18 +1916,18 @@ export function ColorManager({
     });
 
   const interactiveColorsData = transformedColors.filter(
-    (c) => c.category === "interactive",
+    (c) => c.data.category === "interactive",
   );
 
-  const handleEditColor = (color: ColorData) => {
+  const handleEditColor = (color: ColorBrandAsset) => {
     setEditingColor(color);
-    setSelectedCategory(color.category);
+    setSelectedCategory(color.data.category);
     form.reset({
       name: color.name,
-      hex: color.hex,
-      rgb: color.rgb,
-      cmyk: color.cmyk,
-      pantone: color.pantone,
+      hex: color.data.colors[0]?.hex || "#000000",
+      rgb: color.data.colors[0]?.rgb || "",
+      cmyk: color.data.colors[0]?.cmyk || "",
+      pantone: color.data.colors[0]?.pantone || "",
       type: "solid",
     });
     setIsAddingColor(true);
@@ -1934,8 +1953,17 @@ export function ColorManager({
   };
 
   const handleGenerateInteractiveColors = () => {
+    // Convert ColorBrandAsset to ColorData for the utility function
+    const brandColorsForGeneration = brandColorsData.map(asset => ({
+      hex: asset.data.colors[0]?.hex || "#000000",
+      rgb: asset.data.colors[0]?.rgb,
+      hsl: asset.data.colors[0]?.hsl,
+      cmyk: asset.data.colors[0]?.cmyk,
+      pantone: asset.data.colors[0]?.pantone,
+    }));
+    
     // Generate the four interactive colors based on brand colors
-    const interactiveColors = generateInteractiveColors(brandColorsData);
+    const interactiveColors = generateInteractiveColors(brandColorsForGeneration);
 
     // Create each color using the existing createColor mutation
     interactiveColors.forEach(colorData => {
@@ -1966,16 +1994,16 @@ export function ColorManager({
               type: "solid",
               category: "neutral",
               colors: [{
-                hex: color.hex,
-                rgb: color.rgb,
-                cmyk: color.cmyk,
-                pantone: color.pantone,
+                hex: color.data.colors[0]?.hex || "#000000",
+                rgb: color.data.colors[0]?.rgb,
+                cmyk: color.data.colors[0]?.cmyk,
+                pantone: color.data.colors[0]?.pantone,
               }],
-              tints: generateTintsAndShades(color.hex).tints.map((hex, i) => ({
+              tints: generateTintsAndShades(color.data.colors[0]?.hex || "#000000").tints.map((hex, i) => ({
                 percentage: [60, 40, 20][i],
                 hex,
               })),
-              shades: generateTintsAndShades(color.hex).shades.map((hex, i) => ({
+              shades: generateTintsAndShades(color.data.colors[0]?.hex || "#000000").shades.map((hex, i) => ({
                 percentage: [20, 40, 60][i],
                 hex,
               })),
@@ -1994,10 +2022,19 @@ export function ColorManager({
 
     // Find the base grey color to use as reference
     const baseGreyColor = neutralColorsData.find(color => !(/^Grey \d+$/.test(color.name)));
-    const baseGreyHex = baseGreyColor?.hex || null;
+    const baseGreyHex = baseGreyColor?.data.colors[0]?.hex || null;
 
+    // Convert ColorBrandAsset to ColorData for the utility function
+    const brandColorsForExtraction = brandColorsData.map(asset => ({
+      hex: asset.data.colors[0]?.hex || "#000000",
+      rgb: asset.data.colors[0]?.rgb,
+      hsl: asset.data.colors[0]?.hsl,
+      cmyk: asset.data.colors[0]?.cmyk,
+      pantone: asset.data.colors[0]?.pantone,
+    }));
+    
     // Extract hue and base saturation from base grey or brand colors with variation
-    const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(brandColorsData, baseGreyHex, regenerationCount);
+    const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(brandColorsForExtraction, baseGreyHex, regenerationCount);
 
     // Generate all 11 shades using new parabolic algorithm
     const allShades = [];
@@ -2058,35 +2095,11 @@ export function ColorManager({
     isBaseColor = false,
   ) => {
     //  Updated color change handling to dynamically generate container and neutral colors
-    const updatedDesignSystem = {
-      ...(designSystem || {}),
-      colors: {
-        ...(designSystem?.colors || {}),
-        [key]: value,
-      },
-    };
-
-    if (isBaseColor) {
-      // Generate container colors
-      const { container, onContainer } = generateContainerColors(value);
-
-      // Update container colors
-      updatedDesignSystem.colors[`${key}-container`] = container;
-      updatedDesignSystem.colors[`on-${key}-container`] = onContainer;
-
-      // If it's a neutral base color, generate the palette
-      if (key === "neutral-base") {
-        const neutralPalette = generateNeutralPalette(value);
-        neutralPalette.forEach((color, index) => {
-          const colorKey = `neutral-${index * 100}`;
-          updatedDesignSystem.colors[colorKey] = color;
-        });
-      }
-    }
+    const updatedDesignSystem = designSystem || [];
 
     // Only call these if the props are provided
     if (updateDraftDesignSystem) {
-      updateDraftDesignSystem(updatedDesignSystem.colors);
+      updateDraftDesignSystem(updatedDesignSystem);
     }
 
     if (addToHistory) {
@@ -2477,22 +2490,12 @@ export function ColorManager({
 interface ColorManagerProps {
   clientId: number;
   colors: BrandAsset[];
-  updateDraftDesignSystem?: (colors: any) => void; // Made optional
-  addToHistory?: (designSystem: any) => void; // Made optional
-  designSystem?: any; // Made optional
+  updateDraftDesignSystem?: (colors: BrandAsset[]) => void; // Made optional
+  addToHistory?: (designSystem: BrandAsset[]) => void; // Made optional
+  designSystem?: BrandAsset[]; // Made optional
 }
 
-interface ColorData {
-  id?: number;
-  hex: string;
-  rgb?: string;
-  hsl?: string;
-  cmyk?: string;
-  pantone?: string;
-  name: string;
-  category: "brand" | "neutral" | "interactive";
-  data?: any; // Include data property to preserve gradient information
-}
+// ColorData interface already defined at top of file
 
 // Color category descriptions
 const colorDescriptions = {

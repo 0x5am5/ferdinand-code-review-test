@@ -39,7 +39,7 @@ const resetPasswordSchema = z
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
@@ -73,9 +73,9 @@ export default function ResetPassword() {
         // You can verify the token with the server if needed
         // For now, we'll just check if it exists
         setIsTokenValid(true);
-      } catch (error) {
+      } catch (error: unknown) {
         setIsTokenValid(false);
-        setTokenError("Invalid or expired reset token");
+        setTokenError("Invalid or expired reset token: " + (error as Error).message);
       }
     }
 

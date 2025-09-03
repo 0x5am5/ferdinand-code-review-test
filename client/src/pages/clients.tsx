@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Client, User } from "@shared/schema";
+import { Client, User, FeatureToggles } from "@shared/schema";
 import {
   Card,
   CardContent,
@@ -218,7 +218,7 @@ export default function Clients() {
         typeof editingClient.featureToggles === "object"
       ) {
         // Make sure we have all expected properties
-        const featureTogglesObj = editingClient.featureToggles as any;
+        const featureTogglesObj = editingClient.featureToggles as FeatureToggles;
         const toggles = {
           logoSystem: Boolean(featureTogglesObj.logoSystem ?? true),
           colorSystem: Boolean(featureTogglesObj.colorSystem ?? true),
@@ -297,37 +297,37 @@ export default function Clients() {
               <CardContent>
                 {/* Feature Toggle Chips */}
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {(client.featureToggles as any)?.logoSystem && (
+                  {(client.featureToggles as FeatureToggles)?.logoSystem && (
                     <Badge className="bg-blue-100 text-blue-800">
                       <Package className="h-3 w-3 mr-1" />
                       Logo
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.colorSystem && (
+                  {(client.featureToggles as FeatureToggles)?.colorSystem && (
                     <Badge className="bg-green-100 text-green-800">
                       <Palette className="h-3 w-3 mr-1" />
                       Colors
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.typeSystem && (
+                  {(client.featureToggles as FeatureToggles)?.typeSystem && (
                     <Badge className="bg-purple-100 text-purple-800">
                       <Type className="h-3 w-3 mr-1" />
                       Type
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.userPersonas && (
+                  {(client.featureToggles as FeatureToggles)?.userPersonas && (
                     <Badge className="bg-amber-100 text-amber-800">
                       <UserIcon className="h-3 w-3 mr-1" />
                       Personas
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.inspiration && (
+                  {(client.featureToggles as FeatureToggles)?.inspiration && (
                     <Badge className="bg-red-100 text-red-800">
                       <Image className="h-3 w-3 mr-1" />
                       Inspo
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.figmaIntegration && (
+                  {(client.featureToggles as FeatureToggles)?.figmaIntegration && (
                     <Badge className="bg-gray-100 text-gray-800">
                       <Figma className="h-3 w-3 mr-1" />
                       Figma
@@ -337,14 +337,14 @@ export default function Clients() {
                   {/* Add buttons for disabled features (admin/super_admin only) */}
                   {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
                     <>
-                      {!(client.featureToggles as any)?.logoSystem && (
+                      {!(client.featureToggles as FeatureToggles)?.logoSystem && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures = (client.featureToggles as FeatureToggles) || {} as FeatureToggles;
                             const newToggles = {
                               ...currentFeatures,
                               logoSystem: true,
@@ -360,14 +360,14 @@ export default function Clients() {
                           Logo
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.colorSystem && (
+                      {!(client.featureToggles as FeatureToggles)?.colorSystem && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures = (client.featureToggles as FeatureToggles) || {} as FeatureToggles;
                             const newToggles = {
                               ...currentFeatures,
                               colorSystem: true,
@@ -383,14 +383,14 @@ export default function Clients() {
                           Colors
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.typeSystem && (
+                      {!(client.featureToggles as FeatureToggles)?.typeSystem && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures = (client.featureToggles as FeatureToggles) || {} as FeatureToggles;
                             const newToggles = {
                               ...currentFeatures,
                               typeSystem: true,
@@ -406,14 +406,14 @@ export default function Clients() {
                           Type
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.userPersonas && (
+                      {!(client.featureToggles as FeatureToggles)?.userPersonas && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures = (client.featureToggles as FeatureToggles) || {} as FeatureToggles;
                             const newToggles = {
                               ...currentFeatures,
                               userPersonas: true,
@@ -429,14 +429,14 @@ export default function Clients() {
                           Personas
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.inspiration && (
+                      {!(client.featureToggles as FeatureToggles)?.inspiration && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures = (client.featureToggles as FeatureToggles) || {} as FeatureToggles;
                             const newToggles = {
                               ...currentFeatures,
                               inspiration: true,
@@ -452,14 +452,14 @@ export default function Clients() {
                           Inspo
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.figmaIntegration && (
+                      {!(client.featureToggles as FeatureToggles)?.figmaIntegration && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures = (client.featureToggles as FeatureToggles) || {} as FeatureToggles;
                             const newToggles = {
                               ...currentFeatures,
                               figmaIntegration: true,
@@ -543,7 +543,7 @@ export default function Clients() {
             <tbody>
               {filteredClients.map((client: Client) => {
                 // Get feature toggles for this client
-                const clientFeatures = (client.featureToggles as any) || {
+                const clientFeatures = (client.featureToggles as FeatureToggles) || {
                   logoSystem: true,
                   colorSystem: true,
                   typeSystem: true,
@@ -1054,7 +1054,7 @@ export default function Clients() {
                 <Input
                   value={editingClient?.name || ""}
                   onChange={(e) =>
-                    setEditingClient((prev) =>
+                    setEditingClient((prev: Client | null) =>
                       prev ? { ...prev, name: e.target.value } : null,
                     )
                   }
@@ -1065,7 +1065,7 @@ export default function Clients() {
                 <Textarea
                   value={editingClient?.description || ""}
                   onChange={(e) =>
-                    setEditingClient((prev) =>
+                    setEditingClient((prev: Client | null) =>
                       prev ? { ...prev, description: e.target.value } : null,
                     )
                   }

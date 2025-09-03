@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,78 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronDown } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Plus, Save, Download, Trash2, X } from "lucide-react";
+import { Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { TypeScalePreview } from "./type-scale-preview";
-import type { TypeScale, IndividualHeaderStyle, IndividualBodyStyle } from "@shared/schema";
+import type { TypeScale, IndividualHeaderStyle, IndividualBodyStyle, BrandAsset, TypeStyle } from "@shared/schema";
+import { ColorCategory } from "@shared/schema";
+
+// Define types for font data structure
+type FontAssetData = {
+  source: "file" | "adobe" | "google";
+  weights: string[];
+  styles: string[];
+  sourceData: {
+    projectId?: string;
+    url?: string;
+    fontFamily?: string;
+    files?: {
+      weight: string;
+      style: string;
+      format: string;
+      fileName: string;
+      fileData: string;
+    }[];
+  };
+};
+
+type FontBrandAsset = BrandAsset & {
+  data: FontAssetData;
+};
+
+type ColorAssetData = {
+  type: "solid" | "gradient";
+  category: typeof ColorCategory[keyof typeof ColorCategory];
+  colors: {
+    hex: string;
+    rgb?: string;
+    hsl?: string;
+    cmyk?: string;
+    pantone?: string;
+  }[];
+  tints?: { percentage: number; hex: string }[];
+  shades?: { percentage: number; hex: string }[];
+};
+
+type ColorBrandAsset = BrandAsset & {
+  data: ColorAssetData;
+};
+
+type BrandColor = {
+  id: string;
+  name: string;
+  value: string;
+  role?: string | null;
+  displayName: string;
+  category: string;
+  type: string;
+  percentage?: number;
+};
+
+type ProcessedFont = {
+  id: number;
+  name: string;
+  fontFamily: string;
+  source: string;
+  weights: string[];
+  styles: string[];
+};
+
+type FontWeight = {
+  value: string;
+  label: string;
+};
 
 interface TypeScaleManagerProps {
   clientId: number;
@@ -84,7 +150,7 @@ const createDefaultTypeScale = (): Omit<TypeScale, 'id' | 'clientId' | 'createdA
     ],
     individualHeaderStyles: {},
     individualBodyStyles: {},
-    exports: []
+    // exports: []
   });
 
 export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
@@ -117,9 +183,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   });
 
   // Extract and parse font assets
-  const brandFonts = brandAssets
-    .filter((asset: any) => asset.category === "font")
-    .map((asset: any) => {
+  const brandFonts = (brandAssets as BrandAsset[])
+    .filter((asset: BrandAsset) => asset.category === "font")
+    .map((asset: BrandAsset) => {
       try {
         const fontData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
         return {
@@ -135,19 +201,19 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         return null;
       }
     })
-    .filter(Boolean);
+    .filter((font): font is ProcessedFont => font !== null);
 
   // Extract and parse color assets - each asset contains multiple color variations
-  const brandColors = brandAssets
-    .filter((asset: any) => asset.category === "color")
-    .flatMap((asset: any) => {
+  const brandColors = (brandAssets as BrandAsset[])
+    .filter((asset: BrandAsset) => asset.category === "color")
+    .flatMap((asset: BrandAsset) => {
       try {
         const colorData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-        const colors = [];
+        const colors: { id: string; name: string; value: string; role?: string | null; displayName: string; category: string; type: string; percentage?: number }[] = [];
         
         // Add tints (lighter variations)
         if (colorData.tints && Array.isArray(colorData.tints)) {
-          colorData.tints.forEach((tint: any, index: number) => {
+          colorData.tints.forEach((tint: { percentage: number; hex: string }, index: number) => {
             colors.push({
               id: `${asset.id}-tint-${index}`,
               name: asset.name,
@@ -163,7 +229,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         
         // Add main colors
         if (colorData.colors && Array.isArray(colorData.colors)) {
-          colorData.colors.forEach((color: any, index: number) => {
+          colorData.colors.forEach((color: { hex: string; rgb?: string; hsl?: string; cmyk?: string; pantone?: string }, index: number) => {
             colors.push({
               id: `${asset.id}-main-${index}`,
               name: asset.name,
@@ -178,7 +244,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         
         // Add shades (darker variations)
         if (colorData.shades && Array.isArray(colorData.shades)) {
-          colorData.shades.forEach((shade: any, index: number) => {
+          colorData.shades.forEach((shade: { percentage: number; hex: string }, index: number) => {
             colors.push({
               id: `${asset.id}-shade-${index}`,
               name: asset.name,
@@ -216,7 +282,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     const [customHex, setCustomHex] = useState(value);
 
     // Sync state when value prop changes
-    React.useEffect(() => {
+    useEffect(() => {
       setCustomHex(value);
     }, [value]);
 
@@ -232,7 +298,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     };
 
     // Find the selected brand color for display
-    const selectedBrandColor = brandColors.find((color: any) => color.value === value);
+    const selectedBrandColor = brandColors.find((color: BrandColor) => color.value === value);
 
     return (
       <div className="space-y-3">
@@ -266,7 +332,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     <CommandEmpty>No colors found.</CommandEmpty>
                     {(() => {
                       // Group colors by base name for better organization
-                      const groupedColors = brandColors.reduce((acc: any, color: any) => {
+                      const groupedColors = brandColors.reduce((acc: Record<string, BrandColor[]>, color: BrandColor) => {
                         if (!acc[color.name]) {
                           acc[color.name] = [];
                         }
@@ -274,10 +340,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         return acc;
                       }, {});
 
-                      return Object.entries(groupedColors).map(([baseName, colors]: [string, any]) => (
+                      return Object.entries(groupedColors).map(([baseName, colors]: [string, BrandColor[]]) => (
                         <CommandGroup key={baseName} heading={baseName}>
-                          {(colors as any[])
-                            .sort((a, b) => {
+                          {(colors as BrandColor[])
+                            .sort((a: BrandColor, b: BrandColor) => {
                               // Sort: tints first (high to low %), then main, then shades (low to high %)
                               if (a.type !== b.type) {
                                 const typeOrder = { tint: 0, main: 1, shade: 2 };
@@ -287,7 +353,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               if (a.type === 'shade') return (a.percentage || 0) - (b.percentage || 0);
                               return 0;
                             })
-                            .map((color: any) => (
+                            .map((color: BrandColor) => (
                             <CommandItem
                               key={color.id}
                               value={`${color.displayName} ${color.value}`}
@@ -346,25 +412,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     );
   };
 
-    const googleFonts = brandFonts
-    .filter((asset: any) => asset.category === "font")
-    .map((asset: any) => {
-      try {
-        const fontData = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
-        return {
-          id: asset.id,
-          name: asset.name,
-          fontFamily: fontData.sourceData?.fontFamily || asset.name,
-          source: fontData.source || 'google',
-          weights: fontData.weights || ['400'],
-          styles: fontData.styles || ['normal']
-        };
-      } catch (error) {
-        console.error("Error parsing font asset:", error);
-        return null;
-      }
-    })
-    .filter(Boolean);
+  // brandFonts is already processed above
 
   // Get available font weights from brand fonts
   const getAvailableFontWeights = (fontFamily?: string) => {
@@ -377,7 +425,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       ];
     }
 
-    const font = brandFonts.find(f => f.fontFamily === fontFamily);
+    const font = brandFonts.find((f) => f.fontFamily === fontFamily);
     if (!font) {
       return [
         { value: "400", label: "400 - Regular" },
@@ -451,7 +499,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   }, [currentScale?.id, currentScale?.individualHeaderStyles, currentScale?.individualBodyStyles]);
 
   const saveTypeScaleMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: TypeScale) => {
       const url = data.id 
         ? `/api/type-scales/${data.id}` 
         : `/api/clients/${clientId}/type-scales`;
@@ -518,7 +566,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         queryKey: ["/api/clients", clientId, "type-scales"],
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to save type scale. Please try again.",
@@ -702,13 +750,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       scss += `$base-font-size: ${baseSize}${unit};\n`;
       scss += `$type-scale-ratio: ${ratio};\n\n`;
 
-      styles.forEach((style: any) => {
+      styles.forEach((style: TypeStyle) => {
         const size = calculateSize(style.size);
         scss += `$${style.level}-size: ${size}${unit};\n`;
       });
 
       scss += `\n// Type Scale Mixins\n`;
-      styles.forEach((style: any) => {
+      styles.forEach((style: TypeStyle) => {
         const size = calculateSize(style.size);
         scss += `@mixin ${style.level} {\n`;
         scss += `  font-size: ${size}${unit};\n`;
@@ -726,13 +774,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       css += `  --base-font-size: ${baseSize}${unit};\n`;
       css += `  --type-scale-ratio: ${ratio};\n`;
 
-      styles.forEach((style: any) => {
+      styles.forEach((style: TypeStyle) => {
         const size = calculateSize(style.size);
         css += `  --${style.level}-size: ${size}${unit};\n`;
       });
       css += `}\n\n`;
 
-      styles.forEach((style: any) => {
+      styles.forEach((style: TypeStyle) => {
         const size = calculateSize(style.size);
         css += `.${style.level} {\n`;
         css += `  font-size: ${size}${unit};\n`;
@@ -874,7 +922,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                           <SelectValue placeholder="Select a font family" />
                         </SelectTrigger>
                         <SelectContent>
-                          {brandFonts.map((font: any) => (
+                          {brandFonts.map((font: ProcessedFont) => (
                             <SelectItem key={font.id} value={font.fontFamily}>
                               {font.fontFamily}
                             </SelectItem>
@@ -898,7 +946,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {getAvailableFontWeights(activeScale.bodyFontFamily).map((weight) => (
+                        {getAvailableFontWeights(activeScale.bodyFontFamily).map((weight: FontWeight) => (
                           <SelectItem key={weight.value} value={weight.value}>
                             {weight.label}
                           </SelectItem>
@@ -1064,7 +1112,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   <SelectValue placeholder={`Inherits: ${activeScale.bodyFontFamily || 'Default'}`} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {brandFonts.map((font: any) => (
+                                  {brandFonts.map((font: ProcessedFont) => (
                                     <SelectItem key={font.id} value={font.fontFamily}>
                                       {font.fontFamily}
                                     </SelectItem>
@@ -1100,7 +1148,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 <SelectValue placeholder={`Inherits: ${activeScale.bodyFontWeight || '400'}`} />
                               </SelectTrigger>
                               <SelectContent>
-                                {getAvailableFontWeights(bodyStyle?.fontFamily || activeScale.bodyFontFamily).map((weight) => (
+                                {getAvailableFontWeights(bodyStyle?.fontFamily || activeScale.bodyFontFamily).map((weight: FontWeight) => (
                                   <SelectItem key={weight.value} value={weight.value}>
                                     {weight.label}
                                   </SelectItem>
@@ -1325,7 +1373,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                           <SelectValue placeholder="Select a font family" />
                         </SelectTrigger>
                         <SelectContent>
-                          {brandFonts.map((font: any) => (
+                          {brandFonts.map((font: ProcessedFont) => (
                             <SelectItem key={font.id} value={font.fontFamily}>
                               {font.fontFamily}
                             </SelectItem>
@@ -1349,7 +1397,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {getAvailableFontWeights(activeScale.headerFontFamily).map((weight) => (
+                        {getAvailableFontWeights(activeScale.headerFontFamily).map((weight: FontWeight) => (
                           <SelectItem key={weight.value} value={weight.value}>
                             {weight.label}
                           </SelectItem>
@@ -1514,7 +1562,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   <SelectValue placeholder={`Inherits: ${activeScale.headerFontFamily || 'Default'}`} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {brandFonts.map((font: any) => (
+                                  {brandFonts.map((font: ProcessedFont) => (
                                     <SelectItem key={font.id} value={font.fontFamily}>
                                       {font.fontFamily}
                                     </SelectItem>
@@ -1550,7 +1598,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 <SelectValue placeholder={`Inherits: ${activeScale.headerFontWeight || '700'}`} />
                               </SelectTrigger>
                               <SelectContent>
-                                {getAvailableFontWeights(headerStyle?.fontFamily || activeScale.headerFontFamily).map((weight) => (
+                                {getAvailableFontWeights(headerStyle?.fontFamily || activeScale.headerFontFamily).map((weight: FontWeight) => (
                                   <SelectItem key={weight.value} value={weight.value}>
                                     {weight.label}
                                   </SelectItem>

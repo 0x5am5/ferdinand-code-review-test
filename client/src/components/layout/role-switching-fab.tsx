@@ -18,21 +18,21 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { X, Eye, User, UserCheck, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const getRoleDisplayName = (role: UserRole): string => {
-  return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+const getRoleDisplayName = (role: string): string => {
+  return role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
-const getRoleColor = (role: UserRole): string => {
+const getRoleColor = (role: string): string => {
   switch (role) {
-    case UserRole.SUPER_ADMIN:
+    case "super_admin":
       return 'bg-red-100 text-red-800';
-    case UserRole.ADMIN:
+    case "admin":
       return 'bg-blue-100 text-blue-800';
-    case UserRole.EDITOR:
+    case "editor":
       return 'bg-green-100 text-green-800';
-    case UserRole.STANDARD:
+    case "standard":
       return 'bg-yellow-100 text-yellow-800';
-    case UserRole.GUEST:
+    case "guest":
       return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
@@ -159,8 +159,8 @@ export function RoleSwitchingFAB() {
               <TabsContent value="role" className="mt-3">
                 <Select 
                   value={currentViewingUser ? '' : currentViewingRole} 
-                  onValueChange={(value: UserRole) => {
-                    switchRole(value);
+                  onValueChange={(value: string) => {
+                    switchRole(value as typeof UserRole[keyof typeof UserRole]);
                     setIsOpen(false);
                   }}
                 >

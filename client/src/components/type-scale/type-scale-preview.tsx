@@ -1,3 +1,4 @@
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Monitor } from "lucide-react";
@@ -161,43 +162,6 @@ interface TypeScalePreviewProps {
         textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
         fontStyle?: 'normal' | 'italic' | 'oblique';
         textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
-        fontFamily?: string;
-        fontSize?: string;
-      };
-      "body"?: {
-        fontWeight?: string;
-        letterSpacing?: number;
-        color?: string;
-        fontFamily?: string;
-        fontSize?: string;
-      };
-      "body-small"?: {
-        fontWeight?: string;
-        letterSpacing?: number;
-        color?: string;
-        fontFamily?: string;
-        fontSize?: string;
-      };
-      "caption"?: {
-        fontWeight?: string;
-        letterSpacing?: number;
-        color?: string;
-        fontFamily?: string;
-        fontSize?: string;
-      };
-      "quote"?: {
-        fontWeight?: string;
-        letterSpacing?: number;
-        color?: string;
-        fontFamily?: string;
-        fontSize?: string;
-      };
-      "code"?: {
-        fontWeight?: string;
-        letterSpacing?: number;
-        color?: string;
-        fontFamily?: string;
-        fontSize?: string;
       };
     };
   };

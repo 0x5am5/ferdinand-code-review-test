@@ -22,11 +22,11 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
       console.log("AuthButton: Initiating Google sign-in");
       await signInWithGoogle();
       // Success toast is shown in the useAuth hook
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("AuthButton: Sign-in error:", error);
       toast({
         title: "Authentication Error",
-        description: error.message || "Failed to sign in. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to sign in. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -45,11 +45,11 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
         title: "Signed out",
         description: "You have been signed out successfully.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("AuthButton: Logout error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to sign out. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to sign out. Please try again.",
         variant: "destructive",
       });
     } finally {

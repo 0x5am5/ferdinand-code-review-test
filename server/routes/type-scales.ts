@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
-import { insertTypeScaleSchema, type InsertTypeScale } from "@shared/schema";
-import { z } from "zod";
+import { insertTypeScaleSchema, type TypeScale, type TypeStyle } from "@shared/schema";
 
 export function registerTypeScalesRoutes(app: Express) {
   // Get all type scales for a client
@@ -16,8 +15,8 @@ export function registerTypeScalesRoutes(app: Express) {
       const typeScales = await storage.getClientTypeScales(clientId);
 
       // Migrate type scales to new hierarchy if they don't have the new structure
-      const migratedTypeScales = typeScales.map(typeScale => {
-        const currentTypeStyles = typeScale.typeStyles as any[] || [];
+      const migratedTypeScales = typeScales.map((typeScale: TypeScale) => {
+        const currentTypeStyles = (typeScale.typeStyles as TypeStyle[]) || [];
         const hasNewStructure = currentTypeStyles.some(style => 
           ['body-large', 'body-small', 'caption', 'quote', 'code'].includes(style.level)
         );
@@ -28,15 +27,15 @@ export function registerTypeScalesRoutes(app: Express) {
           // return migrateTypeScaleToNewHierarchy(typeScale);
           return {
             ...typeScale,
-            individualHeaderStyles: typeScale.individual_header_styles || {},
-            individualBodyStyles: typeScale.individual_body_styles || {},
+            individualHeaderStyles: typeScale.individualHeaderStyles || {},
+            individualBodyStyles: typeScale.individualBodyStyles || {},
           }; // Placeholder, replace with actual migration logic
         }
 
         return {
           ...typeScale,
-          individualHeaderStyles: typeScale.individual_header_styles || {},
-          individualBodyStyles: typeScale.individual_body_styles || {},
+          individualHeaderStyles: typeScale.individualHeaderStyles || {},
+          individualBodyStyles: typeScale.individualBodyStyles || {},
         };
       });
 
@@ -248,7 +247,7 @@ function calculateFontSize(baseSize: number, ratio: number, step: number, unit: 
 }
 
 // Helper function to generate CSS from type scale
-function generateCSS(typeScale: any): string {
+function generateCSS(typeScale: TypeScale): string {
   const { baseSize, scaleRatio, unit, typeStyles } = typeScale;
   const actualRatio = scaleRatio / 1000;
 
@@ -258,7 +257,7 @@ function generateCSS(typeScale: any): string {
   css += `  --type-scale-ratio: ${actualRatio};\n\n`;
 
   // Generate CSS custom properties for each type style
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     const varName = style.level.replace('-', '_');
     css += `  --font-size-${varName}: ${size};\n`;
@@ -305,7 +304,7 @@ function generateCSS(typeScale: any): string {
   css += `}\n\n`;
 
   // Generate utility classes
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     const className = style.level;
     css += `.${className} {\n`;
@@ -342,7 +341,7 @@ function generateCSS(typeScale: any): string {
 }
 
 // Helper function to generate SCSS from type scale
-function generateSCSS(typeScale: any): string {
+function generateSCSS(typeScale: TypeScale): string {
   const { baseSize, scaleRatio, unit, typeStyles } = typeScale;
   const actualRatio = scaleRatio / 1000;
 
@@ -351,17 +350,17 @@ function generateSCSS(typeScale: any): string {
   scss += `$type-scale-ratio: ${actualRatio};\n\n`;
 
   // Generate SCSS variables for each type style
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     scss += `$font-size-${style.level}: ${size};\n`;
   });
 
   scss += `\n// Type scale map\n`;
   scss += `$type-scale: (\n`;
-  typeStyles.forEach((style: any, index: number) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle, index: number) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     scss += `  "${style.level}": ${size}`;
-    if (index < typeStyles.length - 1) scss += ',';
+    if (index < (typeStyles as TypeStyle[]).length - 1) scss += ',';
     scss += `\n`;
   });
   scss += `);\n\n`;
@@ -407,7 +406,7 @@ function generateSCSS(typeScale: any): string {
   scss += `}\n\n`;
 
   // Generate utility classes
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     scss += `.text-${style.level} {\n`;
     scss += `  @include type-scale("${style.level}");\n`;
     scss += `  font-weight: ${style.fontWeight};\n`;

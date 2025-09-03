@@ -1,27 +1,12 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   User,
-  Client,
   UpdateUserRoleForm,
   InviteUserForm,
 } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
-
-interface PendingInvitation {
-  id: number;
-  email: string;
-  role: string;
-  clientIds: number[] | null;
-  expiresAt: string;
-  used: boolean;
-  clientData?: {
-    name: string;
-    logoUrl?: string;
-    primaryColor?: string;
-  };
-}
 
 // Get all users
 export function useUsersQuery() {

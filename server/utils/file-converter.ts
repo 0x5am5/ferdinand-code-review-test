@@ -5,7 +5,6 @@ import * as path from 'path';
 import * as os from 'os';
 import { promisify } from 'util';
 
-const writeFileAsync = promisify(fs.writeFile);
 const unlinkAsync = promisify(fs.unlink);
 const mkdtempAsync = promisify(fs.mkdtemp);
 

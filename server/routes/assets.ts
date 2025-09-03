@@ -2,10 +2,12 @@ import type { Express, Response } from "express";
 import { storage } from "../storage";
 import { 
   insertColorAssetSchema, 
-  insertFontAssetSchema, 
-  insertConvertedAssetSchema, 
+  insertFontAssetSchema,
   brandAssets,
-  convertedAssets 
+  convertedAssets, 
+  InsertBrandAsset,
+  InsertFontAsset,
+  InsertColorAsset
 } from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../db";
@@ -15,6 +17,16 @@ import { RequestWithClientId } from "server/routes";
 import { convertToAllFormats } from "../utils/file-converter";
 
 const upload = multer({ preservePath: true });
+
+interface AdobeFontsFamily {
+  name: string;
+  slug: string;
+  variations: string[];
+  foundry: {
+    name: string;
+  };
+  css_names: string[];
+}
 
 export function registerAssetRoutes(app: Express) {
   // Adobe Fonts API endpoint
@@ -80,7 +92,7 @@ export function registerAssetRoutes(app: Express) {
       // Transform the Adobe Fonts API response to our expected format
       const transformedData = {
         projectId,
-        fonts: data.kit?.families?.map((family: any) => {
+        fonts: data.kit?.families?.map((family: AdobeFontsFamily ) => {
           console.log(`Processing family: ${family.name}`, JSON.stringify(family.variations, null, 2));
           // Convert Adobe font variations (fvd format) to weights and styles
           const weights: string[] = [];
@@ -284,11 +296,11 @@ export function registerAssetRoutes(app: Express) {
               const asset = await storage.createAsset(fontAsset);
               console.log("Google Font asset created successfully:", asset.id);
               return res.status(201).json(asset);
-            } catch (dbError) {
+            } catch (dbError: unknown) {
               console.error("Database error creating Google Font:", dbError);
               return res.status(500).json({ 
                 message: "Failed to create font asset", 
-                error: dbError.message 
+                error: (dbError as Error).message 
               });
             }
           }
@@ -336,11 +348,11 @@ export function registerAssetRoutes(app: Express) {
               const asset = await storage.createAsset(fontAsset);
               console.log("Adobe Font asset created successfully:", asset.id);
               return res.status(201).json(asset);
-            } catch (dbError) {
+            } catch (dbError: unknown) {
               console.error("Database error creating Adobe Font:", dbError);
               return res.status(500).json({ 
                 message: "Failed to create font asset", 
-                error: dbError.message 
+                error: (dbError as Error).message 
               });
             }
           }
@@ -678,11 +690,11 @@ export function registerAssetRoutes(app: Express) {
         if (!parsed.success) {
           return res.status(400).json({
             message: `Invalid ${req.body.category} data`,
-            errors: parsed.error.errors,
+            errors: parsed.error?.errors,
           });
         }
 
-        const updatedAsset = await storage.updateAsset(assetId, parsed.data);
+        const updatedAsset = await storage.updateAsset(assetId, parsed.data as InsertBrandAsset | InsertFontAsset | InsertColorAsset);
         res.json(updatedAsset);
       } catch (error) {
         console.error("Error updating asset:", error);
@@ -724,7 +736,7 @@ export function registerAssetRoutes(app: Express) {
           // Update the asset with old system data removed
           await storage.updateAsset(assetId, {
             ...asset,
-            data: typeof data === 'string' ? data : JSON.stringify(data)
+            data: data as InsertBrandAsset | InsertFontAsset | InsertColorAsset
           });
 
           // Delete converted assets for dark variant using direct SQL
@@ -1047,7 +1059,7 @@ export function registerAssetRoutes(app: Express) {
   });
 
   // Helper function to get dark variant buffer
-  function getDarkVariantBuffer(asset: any): Buffer | null {
+  function getDarkVariantBuffer(asset: InsertBrandAsset | InsertFontAsset | InsertColorAsset): Buffer | null {
     if (!asset) return null;
 
     try {

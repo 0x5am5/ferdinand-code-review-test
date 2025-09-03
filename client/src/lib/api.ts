@@ -1,5 +1,5 @@
 
-export async function apiRequest<T>(method: string, path: string, data?: any): Promise<T> {
+export async function apiRequest<T>(method: string, path: string, data?: unknown): Promise<T> {
   const options: RequestInit = {
     method,
     headers: {
@@ -30,7 +30,7 @@ export async function apiRequest<T>(method: string, path: string, data?: any): P
   
   try {
     return JSON.parse(text);
-  } catch (e) {
-    throw new Error('Invalid JSON response: ' + text);
+  } catch (e: unknown) {
+    throw new Error('Invalid JSON response: ' + text + ' ' + (e as Error).message);
   }
 }

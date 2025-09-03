@@ -2,7 +2,6 @@ import { auth, googleProvider } from "./firebase";
 import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
 import { apiRequest } from "./queryClient";
 import { queryClient } from "./queryClient";
-import { useToast } from "@/hooks/use-toast";
 
 export async function signInWithGoogle() {
   try {
@@ -21,14 +20,23 @@ export async function signInWithGoogle() {
     console.log("Authentication completed successfully");
     // Refresh the user data
     queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Google sign-in error:", error);
-    console.error("Error code:", error.code);
-    console.error("Error message:", error.message);
+    
+    // Type guard for Firebase Auth Error
+    const isFirebaseError = (err: unknown): err is { code: string; message: string } => {
+      return typeof err === 'object' && err !== null && 'code' in err && 'message' in err;
+    };
+    
+    if (isFirebaseError(error)) {
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+    }
 
     let errorMessage = "";
 
-    switch (error.code) {
+    if (isFirebaseError(error)) {
+      switch (error.code) {
       case "auth/unauthorized-domain":
         errorMessage = `This domain (${window.location.hostname}) is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains`;
         break;
@@ -43,6 +51,9 @@ export async function signInWithGoogle() {
         break;
       default:
         errorMessage = error.message || "Failed to sign in with Google";
+      }
+    } else {
+      errorMessage = "Failed to sign in with Google";
     }
 
     throw new Error(errorMessage);
@@ -58,8 +69,8 @@ export async function signOut() {
     queryClient.setQueryData(["/api/user"], null);
     // Redirect to login page
     window.location.href = "/login";
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Sign out error:", error);
-    throw new Error(error.message || "Failed to sign out");
+    throw new Error(error instanceof Error ? error.message : "Failed to sign out");
   }
 }

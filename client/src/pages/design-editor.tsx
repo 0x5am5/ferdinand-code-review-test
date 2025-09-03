@@ -31,33 +31,19 @@ export default function DesignEditor() {
   const { id } = useParams();
   const clientId = id ? parseInt(id) : null;
   const [activeTab, setActiveTab] = useState("typography");
+  const validClientId = Boolean(clientId && !isNaN(clientId));
 
-  // Validate clientId
-  if (!clientId || isNaN(clientId)) {
-    return (
-      <div className="container py-8 max-w-6xl">
-        <Card>
-          <div className="p-6">
-            <h1>Invalid Client ID</h1>
-            <p className="text-muted-foreground">
-              Please provide a valid client ID to access the design editor.
-            </p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
-  // Fetch design settings and assets
+  // Fetch design settings and assets - moved outside conditional
   const { data: designSettings } = useQuery<DesignSettings>({
     queryKey: ["/api/design-settings"],
   });
 
   const { data: brandAssets } = useQuery<BrandAsset[]>({
     queryKey: [`/api/clients/${clientId}/assets`],
+    enabled: validClientId,
   });
 
-  // Update design settings mutation
+  // Update design settings mutation - moved outside conditional
   const updateSettings = useMutation({
     mutationFn: async (settings: Partial<DesignSettings>) => {
       const response = await fetch("/api/design-settings", {
@@ -111,9 +97,9 @@ export default function DesignEditor() {
             <Card>
               <div className="p-6">
                 <FontManager
-                  clientId={clientId}
+                  clientId={clientId || 0}
                   fonts={
-                    brandAssets?.filter((asset) => asset.category === "font") ||
+                    brandAssets?.filter((asset: BrandAsset) => asset.category === "font") ||
                     []
                   }
                 />
@@ -125,10 +111,10 @@ export default function DesignEditor() {
             <Card>
               <div className="p-6">
                 <ColorManager
-                  clientId={clientId}
+                  clientId={clientId || 0}
                   colors={
                     brandAssets?.filter(
-                      (asset) => asset.category === "color",
+                      (asset: BrandAsset) => asset.category === "color",
                     ) || []
                   }
                 />

@@ -1,11 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Sun, Moon, Upload, Download } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
+import { Sun, Moon } from "lucide-react";
 
 interface AssetDisplayProps {
   renderActions: (variant: 'light' | 'dark') => React.ReactNode;
-  onFileUpload: (file: File, variant: 'light' | 'dark') => void;
   renderAsset: (variant: 'light' | 'dark') => React.ReactNode;
   supportsVariants?: boolean;
   description: string;
@@ -14,7 +11,6 @@ interface AssetDisplayProps {
 
 export function AssetDisplay({
   renderActions,
-  onFileUpload,
   renderAsset,
   supportsVariants = true,
   description,

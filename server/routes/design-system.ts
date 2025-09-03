@@ -134,6 +134,23 @@ interface DesignSystem {
     ring: string;
   };
   raw_tokens?: RawTokens;
+  variant: "professional" | "tint" | "vibrant";
+  primary: string;
+  appearance: "light" | "dark" | "system";
+  radius: number;
+  animation: string;
+  font: {
+    primary: string;
+    heading: string;
+  };
+  typography_extended: {
+    font_family_base: string;
+    font_family_secondary: string;
+    font_family_mono: string;
+    font_size_base: number;
+    font_scale_ratio: number;
+    line_height_ratio: number;
+  };
 }
 
 // Semantic token generation functions
@@ -325,7 +342,7 @@ function generateNeutralScale(neutralBase: string): string[] {
       ];
     }
 
-    const [, h, s, l] = hslMatch;
+    const [, h, s] = hslMatch;
     const hue = parseInt(h);
     const saturation = parseInt(s);
 
@@ -520,9 +537,9 @@ export function registerDesignSystemRoutes(app: Express) {
 
       // Only allow editors, admins and super admins to modify the design system
       if (
-        ![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(
-          user.role,
-        )
+        user.role !== UserRole.EDITOR && 
+        user.role !== UserRole.ADMIN && 
+        user.role !== UserRole.SUPER_ADMIN
       ) {
         return res.status(403).json({
           message: "Insufficient permissions to modify design system",
@@ -639,7 +656,7 @@ export function registerDesignSystemRoutes(app: Express) {
       }
 
       // Read existing theme.json to preserve any values not being updated
-      let existingTheme: any = {};
+      let existingTheme = {} as DesignSystem;
       try {
         const themeData = fs.readFileSync("./theme.json", "utf8");
         existingTheme = JSON.parse(themeData);
@@ -700,7 +717,7 @@ export function registerDesignSystemRoutes(app: Express) {
       }
 
       // Read existing theme.json to get current settings
-      let existingTheme: any = {};
+      let existingTheme = {} as DesignSystem;
       try {
         const themeData = fs.readFileSync("./theme.json", "utf8");
         existingTheme = JSON.parse(themeData);
@@ -1132,9 +1149,9 @@ a:hover {
       res.setHeader('Content-Type', 'text/css');
       res.setHeader('Content-Disposition', 'attachment; filename="design-system-complete.css"');
       res.send(css);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error exporting CSS:", error);
-      res.status(500).json({ message: "Error exporting CSS", error: error.message });
+      res.status(500).json({ message: "Error exporting CSS", error: (error as Error).message });
     }
   });
 
@@ -1468,9 +1485,9 @@ $brand-secondary-colors: (
       res.setHeader('Content-Type', 'text/scss');
       res.setHeader('Content-Disposition', 'attachment; filename="design-system-complete.scss"');
       res.send(scss);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error exporting SCSS:", error);
-      res.status(500).json({ message: "Error exporting SCSS", error: error.message });
+      res.status(500).json({ message: "Error exporting SCSS", error: (error as Error).message });
     }
   });
 
@@ -1717,7 +1734,7 @@ $brand-secondary-colors: (
         // Plugins for additional functionality
         plugins: [
           // Custom component classes
-          function({ addComponents, theme }) {
+          function({ addComponents, theme }: { addComponents: (obj: unknown) => void, theme: (selector: string) => void }) {
             addComponents({
               '.btn': {
                 fontFamily: theme('fontFamily.body'),

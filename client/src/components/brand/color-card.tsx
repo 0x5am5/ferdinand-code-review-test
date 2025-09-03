@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Trash2, Edit, Palette, Copy, Check, Info } from "lucide-react";
-import { Color } from "@/lib/api";
+import { BrandAsset } from "@shared/schema";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { convertColor, formatColorForCopy, getPantoneValue, setPantoneValue, ColorFormats } from "@/lib/color-utils";
+
+interface Shade {
+  name: string;
+  hex: string;
+  id?: number;
+}
 
 export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: ColorCardProps) {
   const [isShadesOpen, setIsShadesOpen] = useState(false);
@@ -18,10 +24,10 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
 
   useEffect(() => {
     if (color.shades && color.shades.length > 0) {
-      setShades(color.shades.map(shade => ({
+      setShades(color.shades.map((shade: Shade) => ({
         name: shade.name,
         hex: shade.hex,
-        colorId: shade.id
+        colorId: shade.id || 0
       })));
     }
 
@@ -321,6 +327,17 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
       </CardContent>
     </Card>
   );
+}
+
+interface Color {
+  id: number;
+  name: string;
+  hex: string;
+  shades?: Array<{
+    id: number;
+    name: string;
+    hex: string;
+  }>;
 }
 
 interface ColorCardProps {

@@ -7,20 +7,20 @@ interface ViewingUser {
   id: number;
   name: string;
   email: string;
-  role: UserRole;
+  role: typeof UserRole[keyof typeof UserRole];
   client_id?: number | null;
 }
 
 interface RoleSwitchingContextType {
-  currentViewingRole: UserRole;
-  actualUserRole: UserRole;
+  currentViewingRole: typeof UserRole[keyof typeof UserRole];
+  actualUserRole: typeof UserRole[keyof typeof UserRole];
   currentViewingUser: ViewingUser | null;
-  switchRole: (role: UserRole) => void;
+  switchRole: (role: typeof UserRole[keyof typeof UserRole]) => void;
   switchToUser: (user: ViewingUser) => void;
   resetRole: () => void;
   isRoleSwitched: boolean;
   isUserSwitched: boolean;
-  canAccessCurrentPage: (role: UserRole) => boolean;
+  canAccessCurrentPage: (role: typeof UserRole[keyof typeof UserRole]) => boolean;
   getEffectiveClientId: () => number | null;
 }
 
@@ -28,7 +28,7 @@ const RoleSwitchingContext = createContext<RoleSwitchingContextType | undefined>
 
 export function RoleSwitchingProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [currentViewingRole, setCurrentViewingRole] = useState<UserRole>(user?.role || UserRole.GUEST);
+  const [currentViewingRole, setCurrentViewingRole] = useState<typeof UserRole[keyof typeof UserRole]>(user?.role || UserRole.GUEST);
   const [currentViewingUser, setCurrentViewingUser] = useState<ViewingUser | null>(null);
   const actualUserRole = user?.role || UserRole.GUEST;
 
@@ -47,8 +47,8 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
           console.error('Error parsing persisted user:', e);
           sessionStorage.removeItem('ferdinand_viewing_user');
         }
-      } else if (persistedRole && Object.values(UserRole).includes(persistedRole as UserRole)) {
-        setCurrentViewingRole(persistedRole as UserRole);
+      } else if (persistedRole && Object.values(UserRole).includes(persistedRole as typeof UserRole[keyof typeof UserRole])) {
+        setCurrentViewingRole(persistedRole as typeof UserRole[keyof typeof UserRole]);
         setCurrentViewingUser(null);
       } else {
         setCurrentViewingRole(actualUserRole);
@@ -73,7 +73,7 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
     }
   }, [currentViewingRole, currentViewingUser, user?.role]);
 
-  const switchRole = (role: UserRole) => {
+  const switchRole = (role: typeof UserRole[keyof typeof UserRole]) => {
     if (user?.role === UserRole.SUPER_ADMIN) {
       setCurrentViewingRole(role);
       setCurrentViewingUser(null);
@@ -98,7 +98,7 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
   const isUserSwitched = currentViewingUser !== null;
 
   // Determine if a role can access the current page
-  const canAccessCurrentPage = (role: UserRole): boolean => {
+  const canAccessCurrentPage = (role: typeof UserRole[keyof typeof UserRole]): boolean => {
     const currentPath = window.location.pathname;
     
     // Dashboard is only accessible to super admins and admins

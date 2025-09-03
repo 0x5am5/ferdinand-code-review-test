@@ -53,18 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Handle Firebase auth state changes
   useEffect(() => {
-    console.log("Setting up auth state listener");
     setIsLoading(true);
 
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      console.log("Auth state changed:", fbUser?.email);
       setFirebaseUser(fbUser);
 
       if (fbUser) {
         try {
           // Get the ID token
           const idToken = await fbUser.getIdToken();
-          console.log("ID token obtained, creating session...");
 
           // Create session on backend
           const response = await fetch("/api/auth/google", {
@@ -76,7 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
 
           if (response.ok) {
-            console.log("Session created successfully");
             // Fetch user data
             await fetchUser();
           } else {
@@ -85,9 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setError(new Error(data.message || "Authentication failed"));
             setIsLoading(false);
           }
-        } catch (e: any) {
+        } catch (e: unknown) {
           console.error("Auth processing error:", e);
-          setError(e);
+          setError(e instanceof Error ? e : new Error("Authentication failed"));
           setIsLoading(false);
         }
       } else {
@@ -98,7 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      console.log("Cleaning up auth listener");
       unsubscribe();
     };
   }, []);
@@ -111,18 +106,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await signInWithPopup(auth, googleProvider);
 
       // Auth state listener will handle the session creation and user fetching
-
       toast({
         title: "Sign In Successful",
         description: `Signed in as ${result.user?.email}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google sign-in error:", error);
-      setError(error);
+      const errorInstance = error instanceof Error ? error : new Error("Failed to sign in with Google");
+      setError(errorInstance);
 
       toast({
         title: "Sign In Error",
-        description: error.message || "Failed to sign in with Google",
+        description: errorInstance.message,
         variant: "destructive",
       });
 
@@ -132,7 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      console.log("Logging out...");
       await signOut(auth);
 
       // Clear session on backend
@@ -149,9 +143,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Redirect to login
       window.location.href = "/login";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Logout error:", error);
-      setError(error);
+      setError(error instanceof Error ? error : new Error("Logout failed"));
 
       toast({
         title: "Logout Error",

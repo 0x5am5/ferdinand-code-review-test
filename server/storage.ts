@@ -3,14 +3,16 @@ import {
   type InsertUser, type InsertClient, type InsertBrandAsset, type InsertUserPersona,
   type InspirationSection, type InspirationImage, type Invitation,
   type InsertInspirationSection, type InsertInspirationImage, type InsertInvitation,
-  type InsertFontAsset, type InsertColorAsset, type UserClient,
+  type InsertFontAsset, type InsertColorAsset,
   type ConvertedAsset, type InsertConvertedAsset, type HiddenSection, type InsertHiddenSection,
-  type TypeScale, type InsertTypeScale,
+  type TypeScale, type InsertTypeScale, type TypeScaleDB,
   type FigmaConnection, type FigmaSyncLog, type FigmaDesignToken,
   type InsertFigmaConnection, type InsertFigmaSyncLog, type InsertFigmaDesignToken,
   users, clients, brandAssets, userPersonas, inspirationSections, inspirationImages, invitations, userClients,
-  convertedAssets, hiddenSections, typeScales, figmaConnections, figmaSyncLogs, figmaDesignTokens, UserRole
+  convertedAssets, hiddenSections, typeScales, figmaConnections, figmaSyncLogs, figmaDesignTokens,
+  insertTypeScaleSchemaExtended
 } from "@shared/schema";
+import { z } from "zod";
 import { db } from "./db";
 import { eq, asc, inArray, and } from "drizzle-orm";
 import * as crypto from "crypto";
@@ -66,7 +68,7 @@ export interface IStorage {
   getClientTypeScales(clientId: number): Promise<TypeScale[]>;
   getTypeScale(id: number): Promise<TypeScale | undefined>;
   createTypeScale(typeScale: InsertTypeScale): Promise<TypeScale>;
-  updateTypeScale(id: number, typeScale: Partial<InsertTypeScale>): Promise<TypeScale>;
+  updateTypeScale(id: number, typeScale: Partial<z.infer<typeof insertTypeScaleSchemaExtended>>): Promise<TypeScale>;
   deleteTypeScale(id: number): Promise<void>;
   // Figma integration methods
   getFigmaConnections(clientId: number): Promise<FigmaConnection[]>;
@@ -176,7 +178,7 @@ export class DatabaseStorage implements IStorage {
     return asset;
   }
 
-  async createAsset(asset: any) {
+  async createAsset(asset: InsertBrandAsset | InsertFontAsset | InsertColorAsset) {
     try {
       console.log("Creating asset in database:", {
         clientId: asset.clientId,
@@ -428,7 +430,7 @@ export class DatabaseStorage implements IStorage {
 
     // In a real application, we would hash the password before storing
     // For this demo, we'll just update it directly
-    const updateData: Record<string, any> = {
+    const updateData: Record<string, unknown> = {
       password: password,
     };
 
@@ -498,10 +500,29 @@ export class DatabaseStorage implements IStorage {
 
     // Map the database fields to the expected format
     return results.map(typeScale => ({
-      ...typeScale,
+      id: typeScale.id,
+      clientId: typeScale.clientId,
+      name: typeScale.name,
+      unit: typeScale.unit,
+      baseSize: typeScale.baseSize,
+      scaleRatio: typeScale.scaleRatio,
+      customRatio: typeScale.customRatio,
+      bodyFontFamily: typeScale.bodyFontFamily,
+      bodyFontWeight: typeScale.bodyFontWeight,
+      bodyLetterSpacing: typeScale.bodyLetterSpacing,
+      bodyColor: typeScale.bodyColor,
+      headerFontFamily: typeScale.headerFontFamily,
+      headerFontWeight: typeScale.headerFontWeight,
+      headerLetterSpacing: typeScale.headerLetterSpacing,
+      headerColor: typeScale.headerColor,
+      responsiveSizes: typeScale.responsiveSizes,
+      typeStyles: typeScale.typeStyles,
+      exports: typeScale.exports,
+      createdAt: typeScale.createdAt,
+      updatedAt: typeScale.updatedAt,
       individualHeaderStyles: typeScale.individual_header_styles || {},
       individualBodyStyles: typeScale.individual_body_styles || {},
-    }));
+    } as unknown as TypeScale));
   }
 
   async getTypeScale(id: number): Promise<TypeScale | undefined> {
@@ -516,10 +537,29 @@ export class DatabaseStorage implements IStorage {
 
     // Map the database fields to the expected format
     return {
-      ...typeScale,
+      id: typeScale.id,
+      clientId: typeScale.clientId,
+      name: typeScale.name,
+      unit: typeScale.unit,
+      baseSize: typeScale.baseSize,
+      scaleRatio: typeScale.scaleRatio,
+      customRatio: typeScale.customRatio,
+      bodyFontFamily: typeScale.bodyFontFamily,
+      bodyFontWeight: typeScale.bodyFontWeight,
+      bodyLetterSpacing: typeScale.bodyLetterSpacing,
+      bodyColor: typeScale.bodyColor,
+      headerFontFamily: typeScale.headerFontFamily,
+      headerFontWeight: typeScale.headerFontWeight,
+      headerLetterSpacing: typeScale.headerLetterSpacing,
+      headerColor: typeScale.headerColor,
+      responsiveSizes: typeScale.responsiveSizes,
+      typeStyles: typeScale.typeStyles,
+      exports: typeScale.exports,
+      createdAt: typeScale.createdAt,
+      updatedAt: typeScale.updatedAt,
       individualHeaderStyles: typeScale.individual_header_styles || {},
       individualBodyStyles: typeScale.individual_body_styles || {},
-    };
+    } as unknown as TypeScale;
   }
 
   async createTypeScale(insertTypeScale: InsertTypeScale): Promise<TypeScale> {
@@ -527,10 +567,35 @@ export class DatabaseStorage implements IStorage {
       .insert(typeScales)
       .values(insertTypeScale)
       .returning();
-    return typeScale;
+    
+    // Map the database fields to the expected format
+    return {
+      id: typeScale.id,
+      clientId: typeScale.clientId,
+      name: typeScale.name,
+      unit: typeScale.unit,
+      baseSize: typeScale.baseSize,
+      scaleRatio: typeScale.scaleRatio,
+      customRatio: typeScale.customRatio,
+      bodyFontFamily: typeScale.bodyFontFamily,
+      bodyFontWeight: typeScale.bodyFontWeight,
+      bodyLetterSpacing: typeScale.bodyLetterSpacing,
+      bodyColor: typeScale.bodyColor,
+      headerFontFamily: typeScale.headerFontFamily,
+      headerFontWeight: typeScale.headerFontWeight,
+      headerLetterSpacing: typeScale.headerLetterSpacing,
+      headerColor: typeScale.headerColor,
+      responsiveSizes: typeScale.responsiveSizes,
+      typeStyles: typeScale.typeStyles,
+      exports: typeScale.exports,
+      createdAt: typeScale.createdAt,
+      updatedAt: typeScale.updatedAt,
+      individualHeaderStyles: typeScale.individual_header_styles || {},
+      individualBodyStyles: typeScale.individual_body_styles || {},
+    } as unknown as TypeScale;
   }
 
-  async updateTypeScale(id: number, updateTypeScale: Partial<InsertTypeScale>): Promise<TypeScale> {
+  async updateTypeScale(id: number, updateTypeScale: Partial<z.infer<typeof insertTypeScaleSchemaExtended>>): Promise<TypeScale> {
     // Clean the data to remove any conflicting fields and ensure proper format
     const cleanedData = { ...updateTypeScale };
     
@@ -546,8 +611,8 @@ export class DatabaseStorage implements IStorage {
       cleanedData.individual_body_styles = updateTypeScale.individualBodyStyles;
     }
     
-    // Ensure updatedAt is a proper Date object
-    cleanedData.updatedAt = new Date();
+    // Set updatedAt field for the database (snake_case)
+    (cleanedData as Record<string, unknown>).updatedAt = new Date();
     
     console.log("Cleaned data for database update:", JSON.stringify(cleanedData, null, 2));
     
@@ -559,10 +624,29 @@ export class DatabaseStorage implements IStorage {
       
     // Map the database fields back to the expected format
     return {
-      ...typeScale,
+      id: typeScale.id,
+      clientId: typeScale.clientId,
+      name: typeScale.name,
+      unit: typeScale.unit,
+      baseSize: typeScale.baseSize,
+      scaleRatio: typeScale.scaleRatio,
+      customRatio: typeScale.customRatio,
+      bodyFontFamily: typeScale.bodyFontFamily,
+      bodyFontWeight: typeScale.bodyFontWeight,
+      bodyLetterSpacing: typeScale.bodyLetterSpacing,
+      bodyColor: typeScale.bodyColor,
+      headerFontFamily: typeScale.headerFontFamily,
+      headerFontWeight: typeScale.headerFontWeight,
+      headerLetterSpacing: typeScale.headerLetterSpacing,
+      headerColor: typeScale.headerColor,
+      responsiveSizes: typeScale.responsiveSizes,
+      typeStyles: typeScale.typeStyles,
+      exports: typeScale.exports,
+      createdAt: typeScale.createdAt,
+      updatedAt: typeScale.updatedAt,
       individualHeaderStyles: typeScale.individual_header_styles || {},
       individualBodyStyles: typeScale.individual_body_styles || {},
-    };
+    } as unknown as TypeScale;
   }
 
   async deleteTypeScale(id: number): Promise<void> {
@@ -662,7 +746,7 @@ export class DatabaseStorage implements IStorage {
       // Create new token
       const [newToken] = await db
         .insert(figmaDesignTokens)
-        .values([insertToken])
+        .values(insertToken)
         .returning();
       return newToken;
     }
@@ -685,21 +769,29 @@ export const storage = new DatabaseStorage();
 import { type TypeScale as TypeScaleSchema } from "@shared/schema";
 
 // Map database row to TypeScale schema
-export const mapTypeScale = (row: any): TypeScaleSchema => {
+export const mapTypeScale = (row: TypeScaleDB): TypeScaleSchema => {
   return {
       id: row.id,
-      clientId: row.client_id,
+      clientId: row.clientId,
       name: row.name,
-      description: row.description,
-      baseFontSize: row.base_font_size,
-      bodyFontFamily: row.body_font_family,
-      headerFontFamily: row.header_font_family,
-      typeStyles: row.type_styles ? JSON.parse(row.type_styles) : [],
-      individualHeaderStyles: row.individual_header_styles ? JSON.parse(row.individual_header_styles) : {},
-      individualBodyStyles: row.individual_body_styles ? JSON.parse(row.individual_body_styles) : {},
-      exports: row.exports ? JSON.parse(row.exports) : [],
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      unit: row.unit || "px",
+      baseSize: row.baseSize || 16,
+      scaleRatio: row.scaleRatio || 1250,
+      customRatio: row.customRatio || undefined,
+      bodyFontFamily: row.bodyFontFamily || "",
+      bodyFontWeight: row.bodyFontWeight || "400", 
+      bodyLetterSpacing: row.bodyLetterSpacing || 0,
+      bodyColor: row.bodyColor || "#000000",
+      headerFontFamily: row.headerFontFamily || "",
+      headerFontWeight: row.headerFontWeight || "700",
+      headerLetterSpacing: row.headerLetterSpacing || 0,
+      headerColor: row.headerColor || "#000000",
+      responsiveSizes: row.responsiveSizes ? JSON.parse(row.responsiveSizes as string) : undefined,
+      typeStyles: row.typeStyles ? JSON.parse(row.typeStyles as string) : [],
+      individualHeaderStyles: row.individual_header_styles ? JSON.parse(row.individual_header_styles as string) : {},
+      individualBodyStyles: row.individual_body_styles ? JSON.parse(row.individual_body_styles as string) : {},
+      createdAt: row.createdAt?.toISOString(),
+      updatedAt: row.updatedAt?.toISOString(),
   };
 };
 
@@ -708,13 +800,12 @@ export const createTypeScaleStorage = async (typeScale: Omit<TypeScaleSchema, 'i
   const [newTypeScale] = await db.insert(typeScales).values({
       clientId: typeScale.clientId,
       name: typeScale.name,
-      description: typeScale.description,
-      baseFontSize: typeScale.baseFontSize,
+      baseSize: typeScale.baseSize,
       bodyFontFamily: typeScale.bodyFontFamily,
       headerFontFamily: typeScale.headerFontFamily,
       typeStyles: JSON.stringify(typeScale.typeStyles),
-      individualHeaderStyles: JSON.stringify(typeScale.individualHeaderStyles || {}),
-      individualBodyStyles: JSON.stringify(typeScale.individualBodyStyles || {}),
+      individual_header_styles: JSON.stringify(typeScale.individualHeaderStyles || {}),
+      individual_body_styles: JSON.stringify(typeScale.individualBodyStyles || {}),
   }).returning();
 
   return mapTypeScale(newTypeScale);
@@ -726,14 +817,13 @@ export const updateTypeScaleStorage = async (id: number, data: Partial<Omit<Type
       .update(typeScales)
       .set({
           ...(data.name && { name: data.name }),
-          ...(data.description && { description: data.description }),
-          ...(data.baseFontSize && { base_font_size: data.baseFontSize }),
-          ...(data.bodyFontFamily && { body_font_family: data.bodyFontFamily }),
-          ...(data.headerFontFamily && { header_font_family: data.headerFontFamily }),
-          ...(data.typeStyles && { type_styles: JSON.stringify(data.typeStyles) }),
-          ...(data.individualHeaderStyles && { individual_header_styles: JSON.stringify(data.individualHeaderStyles) }),
-          ...(data.individualBodyStyles && { individual_body_styles: JSON.stringify(data.individualBodyStyles) }),
-          ...(data.exports && { exports: JSON.stringify(data.exports) }),
+          ...(data.baseSize && { baseSize: data.baseSize }),
+          ...(data.bodyFontFamily && { bodyFontFamily: data.bodyFontFamily }),
+          ...(data.headerFontFamily && { headerFontFamily: data.headerFontFamily }),
+          ...(data.typeStyles && { typeStyles: data.typeStyles }),
+          ...(data.individualHeaderStyles && { individual_header_styles: data.individualHeaderStyles }),
+          ...(data.individualBodyStyles && { individual_body_styles: data.individualBodyStyles }),
+          // ...(data.exports && { exports: data.exports }),
       })
       .where(eq(typeScales.id, id))
       .returning();
@@ -741,7 +831,7 @@ export const updateTypeScaleStorage = async (id: number, data: Partial<Omit<Type
   return mapTypeScale(updatedTypeScale);
 };
 
-export const getClientTypeScales = async (clientId: number): Promise<any[]> => {
+export const getClientTypeScales = async (clientId: number): Promise<TypeScale[]> => {
   const results = await db
     .select()
     .from(typeScales)
@@ -751,12 +841,13 @@ export const getClientTypeScales = async (clientId: number): Promise<any[]> => {
   // Map the database fields to the expected format
   return results.map(typeScale => ({
     ...typeScale,
+    customRatio: typeScale.customRatio ?? undefined,
     individualHeaderStyles: typeScale.individual_header_styles || {},
     individualBodyStyles: typeScale.individual_body_styles || {},
   }));
 };
 
-export const getTypeScale = async (id: number): Promise<any | null> => {
+export const getTypeScale = async (id: number): Promise<TypeScale | null> => {
   const [typeScale] = await db
     .select()
     .from(typeScales)
@@ -769,6 +860,7 @@ export const getTypeScale = async (id: number): Promise<any | null> => {
   // Map the database fields to the expected format
   return {
     ...typeScale,
+    customRatio: typeScale.customRatio ?? undefined,
     individualHeaderStyles: typeScale.individual_header_styles || {},
     individualBodyStyles: typeScale.individual_body_styles || {},
   };

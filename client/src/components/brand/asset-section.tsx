@@ -1,6 +1,6 @@
 
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";

@@ -3,7 +3,7 @@ import { Response } from "express";
 export interface ApiError {
   message: string;
   code?: string;
-  details?: any;
+  details?: unknown;
 }
 
 export interface ApiErrorResponse {
@@ -15,7 +15,7 @@ export interface ApiErrorResponse {
  * Standardized error response utility for consistent API error handling
  */
 export class ErrorResponse {
-  static badRequest(res: Response, message: string, code?: string, details?: any): Response {
+  static badRequest(res: Response, message: string, code?: string, details?: unknown): Response {
     return res.status(400).json({
       error: {
         message,
@@ -53,7 +53,7 @@ export class ErrorResponse {
     });
   }
 
-  static conflict(res: Response, message: string, code?: string, details?: any): Response {
+  static conflict(res: Response, message: string, code?: string, details?: unknown): Response {
     return res.status(409).json({
       error: {
         message,
@@ -73,7 +73,7 @@ export class ErrorResponse {
     });
   }
 
-  static validationError(res: Response, message: string, errors: any[]): Response {
+  static validationError(res: Response, message: string, errors: unknown[]): Response {
     return res.status(400).json({
       error: {
         message,
@@ -113,9 +113,9 @@ export const ERROR_MESSAGES = {
  */
 export class EmailServiceError extends Error {
   public readonly code: string;
-  public readonly details?: any;
+  public readonly details?: unknown;
 
-  constructor(message: string, code: string, details?: any) {
+  constructor(message: string, code: string, details?: unknown) {
     super(message);
     this.name = 'EmailServiceError';
     this.code = code;
@@ -126,19 +126,23 @@ export class EmailServiceError extends Error {
 /**
  * Parse SendGrid errors and return appropriate error message and code
  */
-export function parseSendGridError(error: any): { message: string; code: string; details?: any } {
+export function parseSendGridError(error: unknown): { message: string; code: string; details?: unknown } {
   console.error('Parsing SendGrid error:', error);
   
   // Check if it's a SendGrid API error with response body
-  if (error.response && error.response.body) {
+  if (error && typeof error === 'object' && 'response' in error && 
+      error.response && typeof error.response === 'object' && 'body' in error.response) {
     const body = error.response.body;
-    const statusCode = error.code || error.response?.statusCode;
+    const statusCode = ('code' in error ? error.code : null) || 
+                      (error.response && typeof error.response === 'object' && 'statusCode' in error.response ? error.response.statusCode : null) as number | null;
     
     console.error('SendGrid error body:', body);
     console.error('SendGrid status code:', statusCode);
     
     // Handle specific SendGrid error codes
-    if (statusCode === 402 || (body.errors && body.errors.some((e: any) => e.message?.includes('quota') || e.message?.includes('credits')))) {
+    if ((typeof statusCode === 'number' && statusCode === 402) || (body && typeof body === 'object' && 'errors' in body && Array.isArray(body.errors) && 
+        body.errors.some((e: unknown) => e && typeof e === 'object' && 'message' in e && typeof e.message === 'string' && 
+        (e.message.includes('quota') || e.message.includes('credits'))))) {
       return {
         message: ERROR_MESSAGES.EMAIL_QUOTA_EXCEEDED,
         code: 'EMAIL_QUOTA_EXCEEDED',
@@ -146,7 +150,7 @@ export function parseSendGridError(error: any): { message: string; code: string;
       };
     }
     
-    if (statusCode === 401 || statusCode === 403) {
+    if (typeof statusCode === 'number' && (statusCode === 401 || statusCode === 403)) {
       return {
         message: ERROR_MESSAGES.EMAIL_INVALID_CREDENTIALS,
         code: 'EMAIL_INVALID_CREDENTIALS',
@@ -154,9 +158,11 @@ export function parseSendGridError(error: any): { message: string; code: string;
       };
     }
     
-    if (statusCode === 400 && body.errors) {
-      const hasInvalidEmail = body.errors.some((e: any) => 
-        e.field === 'to' || e.message?.includes('email') || e.message?.includes('invalid')
+    if (typeof statusCode === 'number' && statusCode === 400 && body && typeof body === 'object' && 'errors' in body && Array.isArray(body.errors)) {
+      const hasInvalidEmail = body.errors.some((e: unknown) => 
+        e && typeof e === 'object' && 
+        (('field' in e && e.field === 'to') || 
+         ('message' in e && typeof e.message === 'string' && (e.message.includes('email') || e.message.includes('invalid'))))
       );
       
       if (hasInvalidEmail) {
@@ -168,7 +174,7 @@ export function parseSendGridError(error: any): { message: string; code: string;
       }
     }
     
-    if (statusCode >= 500) {
+    if (typeof statusCode === 'number' && statusCode >= 500) {
       return {
         message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
         code: 'EMAIL_SERVICE_UNAVAILABLE',
@@ -177,8 +183,8 @@ export function parseSendGridError(error: any): { message: string; code: string;
     }
     
     // Extract first error message if available
-    if (body.errors && body.errors.length > 0) {
-      const firstError = body.errors[0];
+    if (body && typeof body === 'object' && 'errors' in body && Array.isArray(body.errors) && body.errors.length > 0) {
+      const firstError = body.errors[0] instanceof Error ? body.errors[0] : body.errors[0];
       return {
         message: `${ERROR_MESSAGES.EMAIL_SERVICE_FAILED} (${firstError.message})`,
         code: 'EMAIL_SERVICE_FAILED',
@@ -188,11 +194,11 @@ export function parseSendGridError(error: any): { message: string; code: string;
   }
   
   // Handle network errors or other issues
-  if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+  if (error && typeof error === 'object' && 'code' in error && (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED')) {
     return {
       message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
       code: 'EMAIL_SERVICE_UNAVAILABLE',
-      details: { originalError: error.message }
+      details: { originalError: (error && typeof error === 'object' && 'message' in error) ? error.message : 'Network error' }
     };
   }
   
@@ -200,6 +206,6 @@ export function parseSendGridError(error: any): { message: string; code: string;
   return {
     message: ERROR_MESSAGES.EMAIL_SERVICE_FAILED,
     code: 'EMAIL_SERVICE_FAILED',
-    details: { originalError: error.message || error.toString() }
+    details: { originalError: (error && typeof error === 'object' && 'message' in error) ? error.message : (typeof error === 'string' ? error : 'Unknown error') }
   };
 }

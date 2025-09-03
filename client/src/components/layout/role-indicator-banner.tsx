@@ -7,21 +7,21 @@ import { X, Eye } from 'lucide-react';
 import { UserRole } from '@shared/schema';
 import { cn } from '@/lib/utils';
 
-const getRoleDisplayName = (role: UserRole): string => {
-  return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+const getRoleDisplayName = (role: string): string => {
+  return role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
-const getRoleColor = (role: UserRole): string => {
+const getRoleColor = (role: string): string => {
   switch (role) {
-    case UserRole.SUPER_ADMIN:
+    case "super_admin":
       return 'bg-red-100 text-red-800 border-red-200';
-    case UserRole.ADMIN:
+    case "admin":
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case UserRole.EDITOR:
+    case "editor":
       return 'bg-green-100 text-green-800 border-green-200';
-    case UserRole.STANDARD:
+    case "standard":
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    case UserRole.GUEST:
+    case "guest":
       return 'bg-gray-100 text-gray-800 border-gray-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';

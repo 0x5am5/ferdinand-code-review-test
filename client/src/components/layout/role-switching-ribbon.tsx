@@ -16,11 +16,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { X, Eye, User, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const getRoleDisplayName = (role: UserRole): string => {
-  return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+const getRoleDisplayName = (role: typeof UserRole[keyof typeof UserRole]): string => {
+  return role.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
-const getRoleColor = (role: UserRole): string => {
+const getRoleColor = (role: typeof UserRole[keyof typeof UserRole]): string => {
   switch (role) {
     case UserRole.SUPER_ADMIN:
       return 'bg-red-100 text-red-800';
@@ -87,7 +87,7 @@ export function RoleSwitchingRibbon() {
             <TabsContent value="role" className="mt-2">
               <Select 
                 value={currentViewingUser ? '' : currentViewingRole} 
-                onValueChange={(value: UserRole) => switchRole(value)}
+                onValueChange={(value: typeof UserRole[keyof typeof UserRole]) => switchRole(value)}
               >
                 <SelectTrigger className="h-7 text-xs bg-background border-input">
                   <SelectValue>

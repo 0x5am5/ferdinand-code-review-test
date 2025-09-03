@@ -13,7 +13,7 @@ import {
 interface BrandAsset {
   id: number;
   name: string;
-  data: string | any;
+  data: unknown;
   category: string;
   clientId: number;
   fileData?: string | null;
@@ -33,6 +33,7 @@ interface ClientDashboardProps {
     typeSystem: boolean;
     userPersonas: boolean;
     inspiration: boolean;
+    figmaIntegration: boolean;
   };
   onTabChange: (tab: string) => void;
 }

@@ -29,7 +29,7 @@ export function getUserFriendlyErrorMessage(error: Error): string {
   
   // Check if the error message matches one of our known error messages
   // (these would come from the backend ERROR_MESSAGES)
-  if (Object.values(ERROR_MESSAGES).includes(message as any)) {
+  if (Object.values(ERROR_MESSAGES).includes(message as typeof ERROR_MESSAGES[keyof typeof ERROR_MESSAGES])) {
     return message;
   }
   

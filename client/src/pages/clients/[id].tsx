@@ -16,6 +16,7 @@ import {
 } from "@/lib/queries/clients";
 import { useEffect, useState } from "react";
 import { queryClient } from "@/lib/queryClient";
+import type { FeatureToggles } from "@shared/schema";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -54,11 +55,6 @@ export default function ClientDetails() {
       );
     };
   }, []);
-
-  // Debug logging
-  useEffect(() => {
-    console.log("Current active tab:", activeTab);
-  }, [activeTab]);
 
   const { data: client, isLoading: isLoadingClient } = useClientsById(clientId);
   const { isLoading: isLoadingAssets, data: assets = [] } = useClientAssetsById(
@@ -138,7 +134,7 @@ export default function ClientDetails() {
   const fontAssets = assets.filter((asset) => asset.category === "font") || [];
 
   // Read feature toggles from client data
-  const featureToggles = client.featureToggles || {
+  const featureToggles: FeatureToggles = (client?.featureToggles as FeatureToggles) || {
     logoSystem: true,
     colorSystem: true,
     typeSystem: true,
@@ -208,7 +204,7 @@ export default function ClientDetails() {
         return (
           <ClientDashboard 
             clientId={clientId} 
-            clientName={client.name}
+            clientName={client?.name || 'Unknown Client'}
             logos={logoAssets}
             primaryColor={primaryColor}
             featureToggles={featureToggles}
@@ -288,7 +284,7 @@ export default function ClientDetails() {
 
       case "design-system":
         return featureToggles.figmaIntegration ? (
-          <FigmaIntegration clientId={client.id} />
+          <FigmaIntegration clientId={client?.id || 0} />
         ) : (
           <Card>
             <CardHeader>
@@ -305,7 +301,7 @@ export default function ClientDetails() {
         return (
           <ClientDashboard 
             clientId={clientId} 
-            clientName={client.name}
+            clientName={client?.name || 'Unknown Client'}
             logos={logoAssets}
             primaryColor={primaryColor}
             featureToggles={featureToggles}

@@ -52,7 +52,6 @@ import {
   Sun,
   Palette,
   Type,
-  Check,
   Code,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -96,7 +95,7 @@ export default function DesignBuilder() {
   const [hasChanges, setHasChanges] = useState(false);
   const { user, isLoading } = useAuth();
   const userRole = user?.role; // Replace with actual user role fetch mechanism.
-  const canEdit = ["editor", "admin"].includes(userRole);
+  const canEdit = userRole ? ["editor", "admin"].includes(userRole) : false;
 
   // Initialize the form with current theme values
   const form = useForm<z.infer<typeof themeFormSchema>>({
@@ -244,7 +243,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -296,7 +295,7 @@ export default function DesignBuilder() {
                               {...field}
                               type="color"
                               className="w-10 h-10 p-1"
-                              readOnly={!canEdit}
+                              disabled={!canEdit}
                             />
                           </FormControl>
                           <FormControl>
@@ -304,7 +303,7 @@ export default function DesignBuilder() {
                               value={field.value}
                               onChange={field.onChange}
                               className="w-32"
-                              readOnly={!canEdit}
+                              disabled={!canEdit}
                             />
                           </FormControl>
                         </div>
@@ -331,7 +330,7 @@ export default function DesignBuilder() {
                                   {...field}
                                   type="color"
                                   className="w-10 h-10 p-1"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                               <FormControl>
@@ -339,7 +338,7 @@ export default function DesignBuilder() {
                                   value={field.value || "#666666"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                             </div>
@@ -365,7 +364,7 @@ export default function DesignBuilder() {
                                   {...field}
                                   type="color"
                                   className="w-10 h-10 p-1"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                               <FormControl>
@@ -373,7 +372,7 @@ export default function DesignBuilder() {
                                   value={field.value || "#444444"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                             </div>
@@ -397,7 +396,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -449,7 +448,7 @@ export default function DesignBuilder() {
                               field.onChange(values[0])
                             }
                             className="w-full"
-                            readOnly={!canEdit}
+                            disabled={!canEdit}
                           />
                         </FormControl>
                         <FormDescription>
@@ -469,7 +468,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -526,7 +525,7 @@ export default function DesignBuilder() {
                             });
                             setHasChanges(true);
                           }}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for body text throughout the application.
@@ -545,7 +544,7 @@ export default function DesignBuilder() {
                             });
                             setHasChanges(true);
                           }}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for headings and emphasized text.
@@ -627,7 +626,7 @@ export default function DesignBuilder() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="preview-select">Select Menu</Label>
-                      <Select readOnly={!canEdit}>
+                      <Select disabled={!canEdit}>
                         <SelectTrigger id="preview-select">
                           <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
@@ -641,7 +640,7 @@ export default function DesignBuilder() {
                     <div className="space-y-2">
                       <Label htmlFor="preview-checkbox">Checkbox</Label>
                       <div className="flex items-center space-x-2">
-                        <Switch id="preview-checkbox" readOnly={!canEdit} />
+                        <Switch id="preview-checkbox" disabled={!canEdit} />
                         <Label htmlFor="preview-checkbox">Toggle me</Label>
                       </div>
                     </div>

@@ -71,20 +71,14 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  if (!user) return null;
-  const isAbleToEdit = [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
-
-  // Fetch sections
+  
+  // Fetch sections - moved outside conditional
   const { data: sections = [] } = useQuery<Section[]>({
     queryKey: [`/api/clients/${clientId}/inspiration/sections`],
     enabled: !!clientId,
   });
 
-  // Create section mutation
+  // Create section mutation - moved outside conditional
   const createSection = useMutation({
     mutationFn: async () => {
       const response = await fetch(
@@ -126,7 +120,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     },
   });
 
-  // Update section mutation
+  // Update section mutation - moved outside conditional
   const updateSection = useMutation({
     mutationFn: async ({ id, newLabel }: { id: number; newLabel: string }) => {
       const response = await fetch(
@@ -169,7 +163,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     },
   });
 
-  // Upload image mutation
+  // Upload image mutation - moved outside conditional
   const uploadImage = useMutation({
     mutationFn: async ({
       sectionId,
@@ -215,6 +209,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     },
   });
 
+  // Handle drop callback - moved outside conditional
   const handleDrop = useCallback(
     (files: File[], sectionId: number) => {
       const imageFiles = files.filter((file) => file.type.startsWith("image/"));
@@ -242,6 +237,15 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     },
     [uploadImage, toast],
   );
+
+  if (!user) return null;
+
+  // This code can be conditional since it's just calculating a boolean, not a hook
+  const isAbleToEdit = [
+    "super_admin",
+    "admin",
+    "editor",
+  ].includes(user.role as string);
 
   return (
     <div className="space-y-8">

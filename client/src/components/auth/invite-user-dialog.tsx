@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { UserRole, inviteUserSchema, type User } from "@shared/schema";
+import { UserRole, inviteUserSchema, type User, type Client, type InviteUserForm } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -36,7 +35,7 @@ interface InviteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentUser: User;
-  clients: any[];
+  clients: Client[];
 }
 
 export function InviteUserDialog({
@@ -62,7 +61,7 @@ export function InviteUserDialog({
     return [];
   };
 
-  const inviteForm = useForm<any>({
+  const inviteForm = useForm<InviteUserForm>({
     resolver: zodResolver(inviteUserSchema),
     defaultValues: {
       email: "",
@@ -73,13 +72,13 @@ export function InviteUserDialog({
   });
 
   const inviteUser = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: InviteUserForm) => {
       try {
         const response = await apiRequest("POST", "/api/users", data);
         return response;
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (err instanceof Error && "response" in err) {
-          const response = (err as any).response;
+          const response = (err as { response?: { data?: { code?: string; message?: string; invitationId?: string } } }).response;
           if (response?.data) {
             if (response.data.code === "EMAIL_EXISTS") {
               throw new Error("A user with this email already exists.");
@@ -87,7 +86,7 @@ export function InviteUserDialog({
               const customError = new Error(
                 "An invitation for this email already exists. Would you like to resend it?",
               );
-              (customError as any).invitationId = response.data.invitationId;
+              (customError as Error & { invitationId?: string }).invitationId = response.data.invitationId;
               throw customError;
             }
             if (response.data.message) {

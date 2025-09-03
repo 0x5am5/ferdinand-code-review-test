@@ -25,7 +25,7 @@ export default function AuthDebug() {
       const result = await signInWithPopup(auth, googleProvider);
       addLog("Sign-in successful");
       addLog(`User email: ${result.user.email}`);
-      addLog(`ID Token available: ${result.user.getIdToken ? "Yes" : "No"}`);
+      addLog(`ID Token available: ${typeof result.user.getIdToken === 'function' ? "Yes" : "No"}`);
     } catch (err: any) {
       const errorMessage = `Error: ${err.code} - ${err.message}`;
       setError(errorMessage);

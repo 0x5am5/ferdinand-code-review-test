@@ -449,8 +449,12 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
         <TabsContent value="preview">
           <TypeScalePreview
-            typeStyles={typeStyles}
-            calculateFontSize={calculateFontSize}
+            typeScale={{
+              typeStyles,
+              baseSize,
+              scaleRatio: getCurrentRatio(),
+              unit,
+            }}
           />
         </TabsContent>
 

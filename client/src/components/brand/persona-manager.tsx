@@ -12,10 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   UserPersona,
-  PersonaEventAttribute,
   PERSONA_EVENT_ATTRIBUTES,
-  UserRole,
 } from "@shared/schema";
+
+interface PersonaMetrics {
+  eventAttendance?: number;
+  engagementRate?: number;
+  averageSpend?: string;
+}
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -67,11 +71,12 @@ function PersonaCard({
 }) {
   const { user } = useAuth();
   if (!user) return null;
+
   const isAbleToEdit = [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
+    "super_admin",
+    "admin",
+    "editor",
+  ].includes(user.role as string);
 
   return (
     <motion.div
@@ -111,9 +116,9 @@ function PersonaCard({
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">STATS</Label>
-              {persona.metrics && (
-                <p className="text-sm">{persona.metrics.averageSpend}</p>
-              )}
+              {persona.metrics && (persona.metrics as PersonaMetrics).averageSpend ? (
+                <p className="text-sm">{String((persona.metrics as PersonaMetrics).averageSpend)}</p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -186,14 +191,15 @@ export function PersonaManager({
   );
   const { user } = useAuth();
 
-  if (!user) return null;
+  // if (!user) return null;
 
   const isAbleToEdit = [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
+    "super_admin",
+    "admin",
+    "editor",
+  ].includes(user?.role as string);
 
+  // Move useForm to top level
   const form = useForm<PersonaFormData>({
     resolver: zodResolver(personaFormSchema),
     defaultValues: {
@@ -212,8 +218,13 @@ export function PersonaManager({
     },
   });
 
+  // Move all mutations to top level
   const addPersona = useMutation({
     mutationFn: async (data: PersonaFormData) => {
+      if (!clientId) {
+        throw new Error("Client ID is required");
+      }
+
       const response = await fetch(`/api/clients/${clientId}/personas`, {
         method: "POST",
         headers: {
@@ -245,9 +256,11 @@ export function PersonaManager({
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/personas`],
-      });
+      if (clientId) {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${clientId}/personas`],
+        });
+      }
       toast({
         title: "Success",
         description: "Persona added successfully",
@@ -266,6 +279,10 @@ export function PersonaManager({
 
   const deletePersona = useMutation({
     mutationFn: async (personaId: number) => {
+      if (!clientId) {
+        throw new Error("Client ID is required");
+      }
+
       const response = await fetch(
         `/api/clients/${clientId}/personas/${personaId}`,
         {
@@ -278,9 +295,11 @@ export function PersonaManager({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/personas`],
-      });
+      if (clientId) {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${clientId}/personas`],
+        });
+      }
       toast({
         title: "Success",
         description: "Persona deleted successfully",
@@ -297,6 +316,10 @@ export function PersonaManager({
 
   const updatePersona = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: PersonaFormData }) => {
+      if (!clientId) {
+        throw new Error("Client ID is required");
+      }
+
       const response = await fetch(`/api/clients/${clientId}/personas/${id}`, {
         method: "PATCH",
         headers: {
@@ -327,9 +350,11 @@ export function PersonaManager({
       return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/personas`],
-      });
+      if (clientId) {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${clientId}/personas`],
+        });
+      }
       toast({
         title: "Success",
         description: "Persona updated successfully",
@@ -346,17 +371,10 @@ export function PersonaManager({
     },
   });
 
-  const onSubmit = (data: PersonaFormData) => {
-    if (editingPersona) {
-      updatePersona.mutate({ id: editingPersona.id, data });
-    } else {
-      addPersona.mutate(data);
-    }
-  };
-
-  // Set form values when editing
+  // Move useEffect to top level
   useEffect(() => {
-    if (editingPersona) {
+    // Control execution with condition inside effect
+    if (editingPersona && form) {
       form.reset({
         name: editingPersona.name,
         role: editingPersona.role || "",
@@ -366,13 +384,23 @@ export function PersonaManager({
         coreNeeds: editingPersona.coreNeeds?.join(", ") || "",
         painPoints: editingPersona.painPoints?.join(", ") || "",
         metrics: {
-          averageSpend: editingPersona.metrics?.averageSpend || "",
-          eventAttendance: editingPersona.metrics?.eventAttendance,
-          engagementRate: editingPersona.metrics?.engagementRate,
+          averageSpend: (editingPersona.metrics as PersonaMetrics)?.averageSpend || "",
+          eventAttendance: (editingPersona.metrics as PersonaMetrics)?.eventAttendance,
+          engagementRate: (editingPersona.metrics as PersonaMetrics)?.engagementRate,
         },
       });
     }
   }, [editingPersona, form]);
+
+  const onSubmit = (data: PersonaFormData) => {
+    if (editingPersona) {
+      updatePersona.mutate({ id: editingPersona.id, data });
+    } else {
+      addPersona.mutate(data);
+    }
+  };
+
+  if (!user) return null;
 
   return (
     <div className="space-y-8">

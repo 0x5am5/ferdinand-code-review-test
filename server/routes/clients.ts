@@ -1,5 +1,4 @@
 import type { Express } from "express";
-import multer from "multer";
 
 import { storage } from "../storage";
 import { updateClientOrderSchema, insertClientSchema, UserRole } from "@shared/schema";

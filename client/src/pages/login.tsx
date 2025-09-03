@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-} from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { LogIn, ArrowRight } from "lucide-react";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
@@ -31,17 +22,14 @@ export default function Login() {
     setErrorMessage(null);
 
     try {
-      console.log("Login: Starting Google sign-in");
       const result = await signInWithPopup(auth, googleProvider);
 
       if (!result.user) {
         throw new Error("No user data returned");
       }
 
-      console.log("Login: Getting ID token");
       const idToken = await result.user.getIdToken();
 
-      console.log("Login: Sending token to backend");
       const response = await fetch("/api/auth/google", {
         method: "POST",
         headers: {
@@ -56,7 +44,6 @@ export default function Login() {
         throw new Error(data.message || "Server authentication failed");
       }
 
-      console.log("Login: Authentication successful, redirecting");
       toast({
         title: "Welcome!",
         description: `Signed in as ${result.user.email}`,
@@ -73,18 +60,23 @@ export default function Login() {
           window.location.href = "/design-builder";
         }
       }, 100);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Authentication error:", error);
+      
+      // Type guard for Firebase Auth Error
+      const isFirebaseError = (err: unknown): err is { code: string; message: string } => {
+        return typeof err === 'object' && err !== null && 'code' in err && 'message' in err;
+      };
 
       let errorMsg = "Authentication failed. Please try again.";
 
-      if (error.code === "auth/popup-blocked") {
+      if (isFirebaseError(error) && error.code === "auth/popup-blocked") {
         errorMsg = "Please allow popups for this site to sign in.";
-      } else if (error.code === "auth/cancelled-popup-request") {
+      } else if (isFirebaseError(error) && error.code === "auth/cancelled-popup-request") {
         errorMsg = "Sign-in was cancelled.";
-      } else if (error.code === "auth/network-request-failed") {
+      } else if (isFirebaseError(error) && error.code === "auth/network-request-failed") {
         errorMsg = "Network error. Please check your connection.";
-      } else if (error.message) {
+      } else if (isFirebaseError(error) && error.message) {
         errorMsg = error.message;
       }
 
@@ -100,9 +92,7 @@ export default function Login() {
   };
 
   useEffect(() => {
-    console.log("Login: Auth state changed, user:", user);
     if (user) {
-      console.log("Login: User detected, redirecting based on role");
       // Role-based redirection for existing sessions
       if (user.role === 'super_admin' || user.role === 'admin') {
         window.location.href = "/dashboard";

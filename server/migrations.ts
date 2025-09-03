@@ -1,6 +1,6 @@
 import { db } from "./db.js";
 import { sql, eq } from "drizzle-orm";
-import { clients, figmaConnections, figmaSyncLogs, figmaDesignTokens, typeScales as typeScalesTable } from "@shared/schema";
+import { typeScales as typeScalesTable } from "@shared/schema";
 
 export async function runMigrations() {
   console.log('Starting database migrations...');
