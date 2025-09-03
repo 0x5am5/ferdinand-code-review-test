@@ -1,15 +1,15 @@
+import type { BrandAsset } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { FontManager } from "@/components/brand/font-manager";
-import { ColorManager } from "@/components/brand/color-manager";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { BrandAsset } from "@shared/schema";
 import { useParams } from "wouter";
+import { ColorManager } from "@/components/brand/color-manager";
+import { FontManager } from "@/components/brand/font-manager";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 interface DesignSettings {
   radius: number;
@@ -33,7 +33,7 @@ export default function DesignEditor() {
   const [activeTab, setActiveTab] = useState("typography");
   const validClientId = Boolean(clientId && !isNaN(clientId));
 
-  // Fetch design settings and assets - moved outside conditional
+  // Fetch design settings and assets
   const { data: designSettings } = useQuery<DesignSettings>({
     queryKey: ["/api/design-settings"],
   });
@@ -43,7 +43,7 @@ export default function DesignEditor() {
     enabled: validClientId,
   });
 
-  // Update design settings mutation - moved outside conditional
+  // Update design settings mutation
   const updateSettings = useMutation({
     mutationFn: async (settings: Partial<DesignSettings>) => {
       const response = await fetch("/api/design-settings", {
@@ -70,7 +70,7 @@ export default function DesignEditor() {
     },
   });
 
-  const handleSettingChange = (key: keyof DesignSettings, value: any) => {
+  const handleSettingChange = (key: keyof DesignSettings, value: unknown) => {
     updateSettings.mutate({ [key]: value });
   };
 
@@ -99,8 +99,9 @@ export default function DesignEditor() {
                 <FontManager
                   clientId={clientId || 0}
                   fonts={
-                    brandAssets?.filter((asset: BrandAsset) => asset.category === "font") ||
-                    []
+                    brandAssets?.filter(
+                      (asset: BrandAsset) => asset.category === "font"
+                    ) || []
                   }
                 />
               </div>
@@ -114,7 +115,7 @@ export default function DesignEditor() {
                   clientId={clientId || 0}
                   colors={
                     brandAssets?.filter(
-                      (asset: BrandAsset) => asset.category === "color",
+                      (asset: BrandAsset) => asset.category === "color"
                     ) || []
                   }
                 />

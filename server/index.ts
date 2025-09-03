@@ -1,14 +1,14 @@
 import "dotenv/config";
-import express, { Request, Response, NextFunction } from "express";
-import { createServer } from "http";
-import { setupVite, serveStatic, log } from "./vite";
-import { registerRoutes } from "./routes";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
 import { exec } from "child_process";
-import { promisify } from "util";
+import connectPg from "connect-pg-simple";
 import { EventEmitter } from "events";
+import express, { type Request, type Response } from "express";
+import session from "express-session";
+import { createServer } from "http";
+import { promisify } from "util";
 import { runMigrations } from "./migrations";
+import { registerRoutes } from "./routes";
+import { log, serveStatic, setupVite } from "./vite";
 
 const execAsync = promisify(exec);
 const app = express();
@@ -39,7 +39,7 @@ app.use(
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
-  }),
+  })
 );
 
 // Add error handling middleware
@@ -81,7 +81,7 @@ async function cleanup() {
         console.log(`✓ Port ${port} is now available`);
       } catch (e: unknown) {
         // Ignore errors as the port might not be in use
-        console.log(e)
+        console.log(e);
         console.log(`✓ Port ${port} already available`);
       }
     }
@@ -90,8 +90,11 @@ async function cleanup() {
     console.log("Waiting for ports to be fully released...");
     await new Promise((resolve) => setTimeout(resolve, 3000));
     console.log("Port cleanup completed successfully");
-  } catch (err) {
-    console.error("Error during cleanup:", err);
+  } catch (err: unknown) {
+    console.error(
+      "Error during cleanup:",
+      err instanceof Error ? err.message : "Unknown error"
+    );
   }
 }
 
@@ -136,7 +139,10 @@ async function startServer(retries = 3) {
           });
 
           server!.on("error", (error: NodeJS.ErrnoException) => {
-            console.error("Server error:", error);
+            console.error(
+              "Server error:",
+              error instanceof Error ? error.message : "Unknown error"
+            );
             reject(error);
           });
         });
@@ -156,7 +162,7 @@ async function startServer(retries = 3) {
             await new Promise<void>((resolve, reject) => {
               const timeoutId = setTimeout(() => {
                 reject(
-                  new Error(`Timeout when trying to bind to port ${port}`),
+                  new Error(`Timeout when trying to bind to port ${port}`)
                 );
               }, 5000);
 
@@ -165,7 +171,6 @@ async function startServer(retries = 3) {
                 console.log(`✓ Server started successfully on port ${port}`);
                 log(`Server listening at http://0.0.0.0:${port}`);
                 serverStarted = true;
-                usedPort = port;
                 resolve();
               });
 
@@ -173,17 +178,20 @@ async function startServer(retries = 3) {
                 clearTimeout(timeoutId);
                 if (error.code === "EADDRINUSE") {
                   console.error(
-                    `Port ${port} is already in use, trying next port...`,
+                    `Port ${port} is already in use, trying next port...`
                   );
                   reject(new Error(`Port ${port} is in use`));
                 } else {
-                  console.error("Server error:", error);
+                  console.error(
+                    "Server error:",
+                    error instanceof Error ? error.message : "Unknown error"
+                  );
                   reject(error);
                 }
               });
             });
           } catch (err: unknown) {
-            console.log(err)
+            console.log(err);
             console.log(`Failed to use port ${port}, trying next...`);
             // Continue to the next port
           }
@@ -192,14 +200,14 @@ async function startServer(retries = 3) {
         // If no port worked, throw an error
         if (!serverStarted) {
           throw new Error(
-            `Could not start server on any of the ports: ${portsToTry.join(", ")}`,
+            `Could not start server on any of the ports: ${portsToTry.join(", ")}`
           );
         }
       }
 
       // If we get here, the server started successfully
       return;
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(`Attempt ${attempt} failed:`, err);
 
       if (attempt === retries) {
@@ -226,6 +234,9 @@ process.on("unhandledRejection", (reason, promise) => {
 // Start the server
 console.log("Initiating server startup...");
 startServer().catch((error) => {
-  console.error("Fatal server error:", error);
+  console.error(
+    "Fatal server error:",
+    error instanceof Error ? error.message : "Unknown error"
+  );
   process.exit(1);
 });

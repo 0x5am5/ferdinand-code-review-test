@@ -1,9 +1,9 @@
+import { type TypeStyle, typeScales as typeScalesTable } from "@shared/schema";
+import { eq, sql } from "drizzle-orm";
 import { db } from "./db.js";
-import { sql, eq } from "drizzle-orm";
-import { typeScales as typeScalesTable } from "@shared/schema";
 
 export async function runMigrations() {
-  console.log('Starting database migrations...');
+  console.log("Starting database migrations...");
 
   try {
     // Run all migrations in sequence
@@ -13,9 +13,9 @@ export async function runMigrations() {
     await migrateIndividualHeaderStyles();
     await migrateTypeScaleHierarchy();
 
-    console.log('All migrations completed successfully!');
-  } catch (error) {
-    console.error('Migration failed:', error);
+    console.log("All migrations completed successfully!");
+  } catch (error: unknown) {
+    console.error("Migration failed:", error);
   }
 }
 
@@ -28,15 +28,15 @@ async function migrateFeatureToggles() {
   `);
 
   if (checkFeatureToggles.rows.length === 0) {
-    console.log('Adding feature_toggles column to clients table...');
+    console.log("Adding feature_toggles column to clients table...");
     // Add the feature_toggles column
     await db.execute(sql`
       ALTER TABLE clients 
       ADD COLUMN feature_toggles JSONB DEFAULT '{"logoSystem": true, "colorSystem": true, "typeSystem": true, "userPersonas": true, "inspiration": true}'
     `);
-    console.log('feature_toggles migration completed successfully!');
+    console.log("feature_toggles migration completed successfully!");
   } else {
-    console.log('feature_toggles column already exists.');
+    console.log("feature_toggles column already exists.");
   }
 }
 
@@ -49,15 +49,15 @@ async function migrateLastEditedBy() {
   `);
 
   if (checkLastEditedBy.rows.length === 0) {
-    console.log('Adding last_edited_by column to clients table...');
+    console.log("Adding last_edited_by column to clients table...");
     // Add the last_edited_by column
     await db.execute(sql`
       ALTER TABLE clients 
       ADD COLUMN last_edited_by INTEGER REFERENCES users(id)
     `);
-    console.log('last_edited_by migration completed successfully!');
+    console.log("last_edited_by migration completed successfully!");
   } else {
-    console.log('last_edited_by column already exists.');
+    console.log("last_edited_by column already exists.");
   }
 }
 
@@ -70,7 +70,7 @@ async function migrateFigmaTables() {
   `);
 
   if (checkFigmaConnections.rows.length === 0) {
-    console.log('Creating Figma integration tables...');
+    console.log("Creating Figma integration tables...");
 
     // Create figma_connections table
     await db.execute(sql`
@@ -127,9 +127,9 @@ async function migrateFigmaTables() {
       )
     `);
 
-    console.log('Figma tables migration completed successfully!');
+    console.log("Figma tables migration completed successfully!");
   } else {
-    console.log('Figma tables already exist.');
+    console.log("Figma tables already exist.");
   }
 }
 
@@ -157,24 +157,122 @@ async function migrateTypeScaleHierarchy() {
     const typeScales = await db.select().from(typeScalesTable);
 
     const newTypeStyles = [
-      { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
-      { level: "h2", name: "Heading 2", size: 2, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
-      { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-      { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-      { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-      { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-      { level: "body-large", name: "Body Large", size: 0.5, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-      { level: "body", name: "Body", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-      { level: "body-small", name: "Body Small", size: -0.5, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-      { level: "caption", name: "Caption", size: -1, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#666666" },
-      { level: "quote", name: "Quote", size: 1, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-      { level: "code", name: "Code", size: -0.5, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
+      {
+        level: "h1",
+        name: "Heading 1",
+        size: 3,
+        fontWeight: "700",
+        lineHeight: 1.2,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "h2",
+        name: "Heading 2",
+        size: 2,
+        fontWeight: "600",
+        lineHeight: 1.3,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "h3",
+        name: "Heading 3",
+        size: 1,
+        fontWeight: "600",
+        lineHeight: 1.4,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "h4",
+        name: "Heading 4",
+        size: 0,
+        fontWeight: "500",
+        lineHeight: 1.4,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "h5",
+        name: "Heading 5",
+        size: -1,
+        fontWeight: "500",
+        lineHeight: 1.5,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "h6",
+        name: "Heading 6",
+        size: -2,
+        fontWeight: "500",
+        lineHeight: 1.5,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "body-large",
+        name: "Body Large",
+        size: 0.5,
+        fontWeight: "400",
+        lineHeight: 1.6,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "body",
+        name: "Body",
+        size: 0,
+        fontWeight: "400",
+        lineHeight: 1.6,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "body-small",
+        name: "Body Small",
+        size: -0.5,
+        fontWeight: "400",
+        lineHeight: 1.5,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "caption",
+        name: "Caption",
+        size: -1,
+        fontWeight: "400",
+        lineHeight: 1.4,
+        letterSpacing: 0,
+        color: "#666666",
+      },
+      {
+        level: "quote",
+        name: "Quote",
+        size: 1,
+        fontWeight: "400",
+        lineHeight: 1.6,
+        letterSpacing: 0,
+        color: "#000000",
+      },
+      {
+        level: "code",
+        name: "Code",
+        size: -0.5,
+        fontWeight: "400",
+        lineHeight: 1.4,
+        letterSpacing: 0,
+        color: "#000000",
+      },
     ];
 
     for (const typeScale of typeScales) {
-      const currentTypeStyles = typeScale.typeStyles as any[] || [];
-      const hasNewStructure = currentTypeStyles.some(style => 
-        ['body-large', 'body-small', 'caption', 'quote', 'code'].includes(style.level)
+      const currentTypeStyles = typeScale.typeStyles as TypeStyle[];
+      const hasNewStructure = currentTypeStyles.some((style) =>
+        ["body-large", "body-small", "caption", "quote", "code"].includes(
+          style.level
+        )
       );
 
       if (!hasNewStructure) {
@@ -187,8 +285,11 @@ async function migrateTypeScaleHierarchy() {
     }
 
     console.log("✓ Type scale hierarchy migration completed");
-  } catch (error) {
-    console.error("Error migrating type scale hierarchy:", error);
+  } catch (error: unknown) {
+    console.error(
+      "Error migrating type scale hierarchy:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
     throw error;
   }
 }

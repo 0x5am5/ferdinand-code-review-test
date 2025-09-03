@@ -1,24 +1,23 @@
-import React, { FC, useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import type { BrandAsset } from "@shared/schema";
 import {
-  BuildingIcon,
-  PaletteIcon,
-  UsersIcon,
-  BookText,
-  Image,
   ArrowLeft,
-  Search,
-  LayoutDashboard,
+  BookText,
+  BuildingIcon,
   Figma,
+  Image,
+  LayoutDashboard,
+  PaletteIcon,
+  Search,
+  UsersIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React, { type FC, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
-import { useSpotlight } from "@/hooks/use-spotlight";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useSpotlight } from "@/hooks/use-spotlight";
 import { useClientAssetsById } from "@/lib/queries/clients";
-import { BrandAsset } from "@shared/schema";
-import { queryClient } from "@/lib/queryClient";
 
 interface ClientSidebarProps {
   clientId: number;
@@ -49,16 +48,16 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     open: openSearch,
     close: closeSearch,
   } = useSpotlight();
-  
+
   // Fetch logos for this client
   const { data: clientAssets = [] } = useClientAssetsById(clientId);
-  const logoAssets = clientAssets.filter(asset => asset.category === "logo");
-  
+  const logoAssets = clientAssets.filter((asset) => asset.category === "logo");
+
   // Keep internal state synced with prop
   useEffect(() => {
     setInternalActiveTab(activeTab);
   }, [activeTab]);
-  
+
   // Listen for tab changes from the dashboard or other components
   useEffect(() => {
     const handleTabChangeEvent = (e: CustomEvent) => {
@@ -70,13 +69,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChangeEvent as EventListener,
+      handleTabChangeEvent as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChangeEvent as EventListener,
+        handleTabChangeEvent as EventListener
       );
     };
   }, []);
@@ -132,8 +131,6 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
   const enabledTabs = tabs.filter((tab) => tab.enabled);
 
-
-
   // Handle tab change and dispatch custom event for client page
   const handleTabChange = (tabId: string) => {
     // Call the parent's callback
@@ -159,24 +156,36 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           // First try to find a main logo, then fall back to horizontal logo
           const mainLogo = logoAssets.find((logo: BrandAsset) => {
             try {
-              const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+              const data =
+                typeof logo.data === "string"
+                  ? JSON.parse(logo.data)
+                  : logo.data;
               return data?.type === "main";
-            } catch (e) {
-              console.error("Error parsing logo data:", e);
+            } catch (e: unknown) {
+              console.error(
+                "Error parsing logo data:",
+                e instanceof Error ? e.message : "Unknown error"
+              );
               return false;
             }
           });
-          
+
           const horizontalLogo = logoAssets.find((logo: BrandAsset) => {
             try {
-              const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+              const data =
+                typeof logo.data === "string"
+                  ? JSON.parse(logo.data)
+                  : logo.data;
               return data?.type === "horizontal";
-            } catch (e) {
-              console.error("Error parsing logo data:", e);
+            } catch (e: unknown) {
+              console.error(
+                "Error parsing logo data:",
+                e instanceof Error ? e.message : "Unknown error"
+              );
               return false;
             }
           });
-          
+
           // Use main logo if available, otherwise try horizontal
           const logoToUse = mainLogo || horizontalLogo;
 
@@ -189,9 +198,10 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                   alt={clientName}
                   className="h-full w-auto object-contain"
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.style.display = "none";
                     // On error, revert to the client name as fallback
-                    e.currentTarget.insertAdjacentHTML('afterend', 
+                    e.currentTarget.insertAdjacentHTML(
+                      "afterend",
                       `<h2 class="font-bold">${clientName}</h2>`
                     );
                   }}

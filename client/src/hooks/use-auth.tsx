@@ -1,19 +1,19 @@
+import type { User } from "@shared/schema";
+import {
+  type User as FirebaseUser,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import {
   createContext,
-  ReactNode,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
 } from "react";
-import {
-  User as FirebaseUser,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-} from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@shared/schema";
+import { auth, googleProvider } from "@/lib/firebase";
 
 type AuthContextType = {
   user: User | null;
@@ -43,8 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setUser(null);
       }
-    } catch (e) {
-      console.error("Error fetching user:", e);
+    } catch (e: unknown) {
+      console.error(
+        "Error fetching user:",
+        e instanceof Error ? e.message : "Unknown error"
+      );
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -82,7 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
           }
         } catch (e: unknown) {
-          console.error("Auth processing error:", e);
+          console.error(
+            "Auth processing error:",
+            e instanceof Error ? e.message : "Unknown error"
+          );
           setError(e instanceof Error ? e : new Error("Authentication failed"));
           setIsLoading(false);
         }
@@ -111,8 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: `Signed in as ${result.user?.email}`,
       });
     } catch (error: unknown) {
-      console.error("Google sign-in error:", error);
-      const errorInstance = error instanceof Error ? error : new Error("Failed to sign in with Google");
+      console.error(
+        "Google sign-in error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      const errorInstance =
+        error instanceof Error
+          ? error
+          : new Error("Failed to sign in with Google");
       setError(errorInstance);
 
       toast({
@@ -144,7 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Redirect to login
       window.location.href = "/login";
     } catch (error: unknown) {
-      console.error("Logout error:", error);
+      console.error(
+        "Logout error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       setError(error instanceof Error ? error : new Error("Logout failed"));
 
       toast({

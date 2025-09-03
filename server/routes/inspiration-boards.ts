@@ -4,9 +4,9 @@ import {
 } from "@shared/schema";
 import type { Express } from "express";
 import multer from "multer";
-import { validateClientId } from "server/middlewares/vaildateClientId";
 import { requireAdminRole } from "server/middlewares/requireAdminRole";
-import { RequestWithClientId } from "server/routes";
+import { validateClientId } from "server/middlewares/vaildateClientId";
+import type { RequestWithClientId } from "server/routes";
 import { storage } from "server/storage";
 
 const upload = multer();
@@ -23,16 +23,19 @@ export function registerInspirationBoardsRoutes(app: Express) {
           sections.map(async (section) => ({
             ...section,
             images: await storage.getSectionImages(section.id),
-          })),
+          }))
         );
         res.json(sectionsWithImages);
-      } catch (error) {
-        console.error("Error fetching inspiration sections:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error fetching inspiration sections:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         res
           .status(500)
           .json({ message: "Error fetching inspiration sections" });
       }
-    },
+    }
   );
 
   app.post(
@@ -57,11 +60,14 @@ export function registerInspirationBoardsRoutes(app: Express) {
 
         const section = await storage.createInspirationSection(parsed.data);
         res.status(201).json(section);
-      } catch (error) {
-        console.error("Error creating inspiration section:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error creating inspiration section:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         res.status(500).json({ message: "Error creating inspiration section" });
       }
-    },
+    }
   );
 
   app.patch(
@@ -87,14 +93,17 @@ export function registerInspirationBoardsRoutes(app: Express) {
 
         const section = await storage.updateInspirationSection(
           sectionId,
-          parsed.data,
+          parsed.data
         );
         res.json(section);
-      } catch (error) {
-        console.error("Error updating inspiration section:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error updating inspiration section:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         res.status(500).json({ message: "Error updating inspiration section" });
       }
-    },
+    }
   );
 
   app.delete(
@@ -110,11 +119,14 @@ export function registerInspirationBoardsRoutes(app: Express) {
 
         await storage.deleteInspirationSection(sectionId);
         res.status(204).send();
-      } catch (error) {
-        console.error("Error deleting inspiration section:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error deleting inspiration section:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         res.status(500).json({ message: "Error deleting inspiration section" });
       }
-    },
+    }
   );
 
   app.post(
@@ -149,10 +161,13 @@ export function registerInspirationBoardsRoutes(app: Express) {
 
         const image = await storage.createInspirationImage(parsed.data);
         res.status(201).json(image);
-      } catch (error) {
-        console.error("Error uploading inspiration image:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error uploading inspiration image:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         res.status(500).json({ message: "Error uploading inspiration image" });
       }
-    },
+    }
   );
 }

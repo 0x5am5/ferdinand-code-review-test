@@ -1,5 +1,5 @@
 // Token generation utilities for semantic tokens from raw tokens
-import chroma from 'chroma-js';
+import chroma from "chroma-js";
 
 export interface RawTokens {
   typography: {
@@ -70,20 +70,20 @@ export interface SemanticTokens {
     neutral8: string;
     neutral9: string;
     neutral10: string;
-    
+
     // Brand variations
     brandPrimaryXLight: string;
     brandPrimaryLight: string;
     brandPrimary: string;
     brandPrimaryDark: string;
     brandPrimaryXDark: string;
-    
+
     brandSecondaryXLight: string;
     brandSecondaryLight: string;
     brandSecondary: string;
     brandSecondaryDark: string;
     brandSecondaryXDark: string;
-    
+
     // Interactive variations
     successLight: string;
     successDark: string;
@@ -93,7 +93,7 @@ export interface SemanticTokens {
     errorDark: string;
     infoLight: string;
     infoDark: string;
-    
+
     // Semantic color mappings
     textHeading: string;
     textBody: string;
@@ -103,19 +103,19 @@ export interface SemanticTokens {
     textLinkHover: string;
     textError: string;
     textSuccess: string;
-    
+
     backgroundPage: string;
     backgroundSurface: string;
     backgroundMuted: string;
     backgroundOverlay: string;
     backgroundInverted: string;
-    
+
     borderDefault: string;
     borderMuted: string;
     borderActive: string;
     borderError: string;
     borderSuccess: string;
-    
+
     buttonPrimaryBg: string;
     buttonPrimaryText: string;
     buttonSecondaryBg: string;
@@ -130,7 +130,7 @@ export interface SemanticTokens {
     xxl: string;
     xxxl: string;
     xxxxl: string;
-    
+
     // Semantic spacing
     paddingBody: string;
     paddingSection: string;
@@ -146,7 +146,7 @@ export interface SemanticTokens {
     radiusM: string;
     radiusL: string;
     radiusXl: string;
-    
+
     // Semantic borders
     input: string;
     button: string;
@@ -162,7 +162,7 @@ export interface SemanticTokens {
     elevation3: string;
     elevation4: string;
     elevation5: string;
-    
+
     // Semantic shadows
     elevationCard: string;
     elevationModal: string;
@@ -177,52 +177,60 @@ export interface SemanticTokens {
 
 export function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
   const { typography, colors, spacing, borders } = rawTokens;
-  
+
   // Generate typography semantic tokens
   const typographyTokens = {
     fontFamilyHeading: typography.fontFamily1Base,
     fontFamilyBody: typography.fontFamily2Base,
     fontFamilyCode: typography.fontFamilyMonoBase,
-    
-    fontSizeH1: `${typography.fontSizeBase * Math.pow(typography.typeScaleBase, 3)}rem`,
-    fontSizeH2: `${typography.fontSizeBase * Math.pow(typography.typeScaleBase, 2)}rem`,
+
+    fontSizeH1: `${typography.fontSizeBase * typography.typeScaleBase ** 3}rem`,
+    fontSizeH2: `${typography.fontSizeBase * typography.typeScaleBase ** 2}rem`,
     fontSizeH3: `${typography.fontSizeBase * typography.typeScaleBase}rem`,
     fontSizeH4: `${typography.fontSizeBase}rem`,
     fontSizeH5: `${typography.fontSizeBase / typography.typeScaleBase}rem`,
-    fontSizeH6: `${typography.fontSizeBase / Math.pow(typography.typeScaleBase, 2)}rem`,
+    fontSizeH6: `${typography.fontSizeBase / typography.typeScaleBase ** 2}rem`,
     fontSizeBody: `${typography.fontSizeBase}rem`,
-    fontSizeCaption: `${typography.fontSizeBase / Math.pow(typography.typeScaleBase, 2)}rem`,
+    fontSizeCaption: `${typography.fontSizeBase / typography.typeScaleBase ** 2}rem`,
     fontSizeCode: `${typography.fontSizeBase / typography.typeScaleBase}rem`,
-    
+
     lineHeightHeading: typography.lineHeightBase * 1.2,
     lineHeightBody: typography.lineHeightBase,
     lineHeightCaption: typography.lineHeightBase * 0.9,
     lineHeightCode: typography.lineHeightBase * 0.9,
-    
+
     fontWeightHeading: 700,
     fontWeightBody: 400,
     fontWeightCaption: 500,
     fontWeightCode: 400,
-    
+
     letterSpacingHeading: typography.letterSpacingBase * 0.8,
     letterSpacingBody: typography.letterSpacingBase,
     letterSpacingCaption: typography.letterSpacingBase * 1.2,
     letterSpacingCode: typography.letterSpacingBase,
   };
-  
+
   // Generate neutral color scale (11 shades)
   const neutralScale = generateNeutralScale(colors.neutralBase);
-  
+
   // Generate brand color variations
-  const brandPrimaryVariations = generateColorVariations(colors.brandPrimaryBase);
-  const brandSecondaryVariations = generateColorVariations(colors.brandSecondaryBase);
-  
+  const brandPrimaryVariations = generateColorVariations(
+    colors.brandPrimaryBase
+  );
+  const brandSecondaryVariations = generateColorVariations(
+    colors.brandSecondaryBase
+  );
+
   // Generate interactive color variations
-  const successVariations = generateColorVariations(colors.interactiveSuccessBase);
-  const warningVariations = generateColorVariations(colors.interactiveWarningBase);
+  const successVariations = generateColorVariations(
+    colors.interactiveSuccessBase
+  );
+  const warningVariations = generateColorVariations(
+    colors.interactiveWarningBase
+  );
   const errorVariations = generateColorVariations(colors.interactiveErrorBase);
   const infoVariations = generateColorVariations(colors.interactiveInfoBase);
-  
+
   const colorTokens = {
     // Neutral scale
     neutral0: neutralScale[0],
@@ -236,20 +244,20 @@ export function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     neutral8: neutralScale[8],
     neutral9: neutralScale[9],
     neutral10: neutralScale[10],
-    
+
     // Brand variations
     brandPrimaryXLight: brandPrimaryVariations.xLight,
     brandPrimaryLight: brandPrimaryVariations.light,
     brandPrimary: colors.brandPrimaryBase,
     brandPrimaryDark: brandPrimaryVariations.dark,
     brandPrimaryXDark: brandPrimaryVariations.xDark,
-    
+
     brandSecondaryXLight: brandSecondaryVariations.xLight,
     brandSecondaryLight: brandSecondaryVariations.light,
     brandSecondary: colors.brandSecondaryBase,
     brandSecondaryDark: brandSecondaryVariations.dark,
     brandSecondaryXDark: brandSecondaryVariations.xDark,
-    
+
     // Interactive variations
     successLight: successVariations.light,
     successDark: successVariations.dark,
@@ -259,56 +267,56 @@ export function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     errorDark: errorVariations.dark,
     infoLight: infoVariations.light,
     infoDark: infoVariations.dark,
-    
+
     // Semantic color mappings
     textHeading: colors.brandSecondaryBase,
     textBody: neutralScale[9],
     textMuted: neutralScale[5],
-    textInverted: '#ffffff',
+    textInverted: "#ffffff",
     textLink: colors.brandPrimaryBase,
     textLinkHover: brandPrimaryVariations.dark,
     textError: errorVariations.dark,
     textSuccess: successVariations.dark,
-    
+
     backgroundPage: neutralScale[0],
     backgroundSurface: neutralScale[1],
     backgroundMuted: neutralScale[2],
-    backgroundOverlay: 'rgba(0, 0, 0, 0.6)',
+    backgroundOverlay: "rgba(0, 0, 0, 0.6)",
     backgroundInverted: brandPrimaryVariations.dark,
-    
-    borderDefault: 'rgba(0, 0, 0, 0.1)',
+
+    borderDefault: "rgba(0, 0, 0, 0.1)",
     borderMuted: neutralScale[3],
     borderActive: colors.brandPrimaryBase,
     borderError: errorVariations.dark,
     borderSuccess: successVariations.dark,
-    
+
     buttonPrimaryBg: colors.brandPrimaryBase,
-    buttonPrimaryText: '#ffffff',
+    buttonPrimaryText: "#ffffff",
     buttonSecondaryBg: neutralScale[2],
     buttonSecondaryText: colors.brandSecondaryBase,
   };
-  
+
   // Generate spacing semantic tokens
   const spacingTokens = {
-    xs: `${spacing.spacingUnitBase / Math.pow(spacing.spacingScaleBase, 2)}rem`,
+    xs: `${spacing.spacingUnitBase / spacing.spacingScaleBase ** 2}rem`,
     s: `${spacing.spacingUnitBase / spacing.spacingScaleBase}rem`,
     m: `${spacing.spacingUnitBase}rem`,
     l: `${spacing.spacingUnitBase * spacing.spacingScaleBase}rem`,
-    xl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 2)}rem`,
-    xxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 3)}rem`,
-    xxxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 4)}rem`,
-    xxxxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 5)}rem`,
-    
+    xl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 2}rem`,
+    xxl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 3}rem`,
+    xxxl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 4}rem`,
+    xxxxl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 5}rem`,
+
     // Semantic spacing
     paddingBody: `${spacing.spacingUnitBase}rem`,
-    paddingSection: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 2)}rem`,
+    paddingSection: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 2}rem`,
     paddingCard: `${spacing.spacingUnitBase * spacing.spacingScaleBase}rem`,
     paddingButton: `${spacing.spacingUnitBase / spacing.spacingScaleBase}rem ${spacing.spacingUnitBase}rem`,
     marginHeading: `${spacing.spacingUnitBase * spacing.spacingScaleBase}rem 0 ${spacing.spacingUnitBase}rem 0`,
     marginParagraph: `${spacing.spacingUnitBase}rem 0`,
     gapUI: `${spacing.spacingUnitBase / spacing.spacingScaleBase}rem`,
   };
-  
+
   // Generate border semantic tokens
   const borderTokens = {
     radiusXs: `${borders.borderRadiusBase * 0.25}px`,
@@ -316,7 +324,7 @@ export function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     radiusM: `${borders.borderRadiusBase}px`,
     radiusL: `${borders.borderRadiusBase * 1.5}px`,
     radiusXl: `${borders.borderRadiusBase * 2}px`,
-    
+
     // Semantic borders
     input: `${borders.borderWidthBase}px solid rgba(0, 0, 0, 0.1)`,
     button: `${borders.borderWidthBase}px solid rgba(0, 0, 0, 0.1)`,
@@ -325,29 +333,35 @@ export function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     radiusInput: `${borders.borderRadiusBase * 0.5}px`,
     radiusCard: `${borders.borderRadiusBase}px`,
   };
-  
+
   // Generate shadow tokens
   const shadowTokens = {
-    elevation0: 'none',
-    elevation1: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
-    elevation2: '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)',
-    elevation3: '0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)',
-    elevation4: '0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)',
-    elevation5: '0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)',
-    
+    elevation0: "none",
+    elevation1: "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)",
+    elevation2: "0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)",
+    elevation3:
+      "0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)",
+    elevation4:
+      "0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)",
+    elevation5:
+      "0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)",
+
     // Semantic shadows
-    elevationCard: '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)',
-    elevationModal: '0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)',
-    elevationButtonHover: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
+    elevationCard:
+      "0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)",
+    elevationModal:
+      "0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)",
+    elevationButtonHover:
+      "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)",
   };
-  
+
   // Generate transition tokens
   const transitionTokens = {
-    ui: 'all 200ms ease-in-out',
-    button: 'background-color 200ms ease-in-out',
-    input: 'border-color 200ms ease-in-out',
+    ui: "all 200ms ease-in-out",
+    button: "background-color 200ms ease-in-out",
+    input: "border-color 200ms ease-in-out",
   };
-  
+
   return {
     typography: typographyTokens,
     colors: colorTokens,
@@ -365,29 +379,47 @@ function generateNeutralScale(neutralBase: string): string[] {
     if (!hslMatch) {
       // Fallback to default gray scale
       return [
-        '#ffffff', '#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da',
-        '#adb5bd', '#6c757d', '#495057', '#343a40', '#212529', '#000000'
+        "#ffffff",
+        "#f8f9fa",
+        "#e9ecef",
+        "#dee2e6",
+        "#ced4da",
+        "#adb5bd",
+        "#6c757d",
+        "#495057",
+        "#343a40",
+        "#212529",
+        "#000000",
       ];
     }
-    
-    const [, h, s, l] = hslMatch;
+
+    const [, h, s] = hslMatch;
     const hue = parseInt(h);
     const saturation = parseInt(s);
-    
+
     // Generate 11 shades from light to dark
     const shades = [];
     for (let i = 0; i <= 10; i++) {
-      const lightness = 100 - (i * 10); // 100%, 90%, 80%, ..., 0%
+      const lightness = 100 - i * 10; // 100%, 90%, 80%, ..., 0%
       shades.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
     }
-    
+
     return shades;
-  } catch (error) {
-    console.error('Error generating neutral scale:', error);
+  } catch (error: unknown) {
+    console.error("Error generating neutral scale:", error);
     // Fallback to default gray scale
     return [
-      '#ffffff', '#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da',
-      '#adb5bd', '#6c757d', '#495057', '#343a40', '#212529', '#000000'
+      "#ffffff",
+      "#f8f9fa",
+      "#e9ecef",
+      "#dee2e6",
+      "#ced4da",
+      "#adb5bd",
+      "#6c757d",
+      "#495057",
+      "#343a40",
+      "#212529",
+      "#000000",
     ];
   }
 }
@@ -406,8 +438,8 @@ function generateColorVariations(baseColor: string): {
       dark: color.darken(1.5).hex(),
       xDark: color.darken(3).hex(),
     };
-  } catch (error) {
-    console.error('Error generating color variations for', baseColor, error);
+  } catch (error: unknown) {
+    console.error("Error generating color variations for", baseColor, error);
     // Fallback variations
     return {
       xLight: baseColor,

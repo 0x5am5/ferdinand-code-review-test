@@ -1,14 +1,14 @@
+import {
+  ArrowRight,
+  BookText,
+  BuildingIcon,
+  Figma,
+  Image,
+  PaletteIcon,
+  UsersIcon,
+} from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import {
-  BuildingIcon,
-  PaletteIcon,
-  BookText,
-  UsersIcon,
-  Image,
-  ArrowRight,
-  Figma,
-} from "lucide-react";
 
 interface BrandAsset {
   id: number;
@@ -39,7 +39,7 @@ interface ClientDashboardProps {
 }
 
 export function ClientDashboard({
-  clientId,
+  clientId: _clientId,
   clientName,
   logos = [],
   primaryColor,
@@ -47,17 +47,20 @@ export function ClientDashboard({
   onTabChange,
 }: ClientDashboardProps) {
   // Find the primary logo (horizontal is usually best for display)
-  const mainLogo = logos && logos.length > 0 ? 
-    logos.find((logo) => {
-      if (!logo || !logo.data) return false;
-      try {
-        const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
-        return data?.type === "horizontal" || data?.type === "primary";
-      } catch (e) {
-        console.log("Error parsing logo data:", e);
-        return false;
-      }
-    }) : null;
+  const mainLogo =
+    logos && logos.length > 0
+      ? logos.find((logo) => {
+          if (!logo || !logo.data) return false;
+          try {
+            const data =
+              typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+            return data?.type === "horizontal" || data?.type === "primary";
+          } catch (e: unknown) {
+            console.log("Error parsing logo data:", e);
+            return false;
+          }
+        })
+      : null;
 
   // Fallback to any logo if no horizontal/primary found
   const fallbackLogo = logos && logos.length > 0 ? logos[0] : null;
@@ -115,10 +118,10 @@ export function ClientDashboard({
   // Handle navigation to a specific section
   const handleNavigate = (tabId: string) => {
     console.log("Dashboard: navigating to tab:", tabId);
-    
+
     // First update parent component state
     onTabChange(tabId);
-    
+
     // Add a small delay to ensure the state is updated before dispatching the event
     setTimeout(() => {
       // Dispatch the event for sidebar to catch
@@ -126,7 +129,7 @@ export function ClientDashboard({
         detail: { tab: tabId },
       });
       window.dispatchEvent(event);
-      
+
       // Update URL without page reload
       const url = new URL(window.location.href);
       url.searchParams.set("tab", tabId);
@@ -135,19 +138,29 @@ export function ClientDashboard({
   };
 
   return (
-    <div 
-      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden" 
-      style={{ 
-        backgroundColor: primaryColor || 'hsl(var(--primary))',
-        color: 'white'
+    <div
+      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
+      style={{
+        backgroundColor: primaryColor || "hsl(var(--primary))",
+        color: "white",
       }}
     >
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-5">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1"/>
+            <pattern
+              id="grid"
+              width="40"
+              height="40"
+              patternUnits="userSpaceOnUse"
+            >
+              <path
+                d="M 40 0 L 0 0 0 40"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+              />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#grid)" />
@@ -160,15 +173,15 @@ export function ClientDashboard({
           {logoToShow ? (
             <div className="max-w-md max-h-40 mx-auto mb-4">
               <img
-                src={logoToShow?.id ? `/api/assets/${logoToShow.id}/file` : ''}
+                src={logoToShow?.id ? `/api/assets/${logoToShow.id}/file` : ""}
                 alt={clientName}
                 className="max-h-40 w-auto mx-auto object-contain"
-                style={{ 
-                  filter: 'brightness(0) invert(1)' // Make logo white
+                style={{
+                  filter: "brightness(0) invert(1)", // Make logo white
                 }}
                 onError={(e) => {
                   // Handle image loading errors
-                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.style.display = "none";
                   console.log("Error loading logo image");
                 }}
               />
@@ -176,17 +189,17 @@ export function ClientDashboard({
           ) : (
             <h1 className="text-5xl font-bold text-white mb-4">{clientName}</h1>
           )}
-          
+
           <h2 className="text-2xl font-light text-white opacity-90 mt-6">
             Brand Management Dashboard
           </h2>
         </div>
-        
+
         {/* Feature Cards */}
         <div className="max-w-5xl w-full mt-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {enabledFeatures.map((feature) => (
-              <div 
+              <div
                 key={feature.id}
                 className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6 hover:bg-white/15 transition-all group cursor-pointer"
                 onClick={() => handleNavigate(feature.id)}
@@ -195,12 +208,14 @@ export function ClientDashboard({
                   <div className="mb-4 bg-white/20 w-12 h-12 flex items-center justify-center rounded-full">
                     {feature.icon}
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                  <h3 className="text-xl font-semibold mb-2">
+                    {feature.title}
+                  </h3>
                   <p className="text-white/80 text-sm mb-6 flex-grow">
                     {feature.description}
                   </p>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className="justify-start p-0 text-white hover:text-white hover:bg-transparent group-hover:translate-x-1 transition-transform"
                     onClick={(e) => {
                       e.stopPropagation();

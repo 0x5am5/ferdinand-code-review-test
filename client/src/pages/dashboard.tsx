@@ -1,11 +1,44 @@
-import React from "react";
-import { UserManager } from "@/components/client/user-manager";
 import {
-  useUpdateClientMutation,
-  useDeleteClientMutation,
-  useUpdateClientOrderMutation,
-} from "@/lib/queries/clients";
-import { Client, insertClientSchema, UserRole } from "@shared/schema";
+  DragDropContext,
+  Draggable,
+  Droppable,
+  type DropResult,
+} from "@hello-pangea/dnd";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  type Client,
+  type FeatureToggles,
+  insertClientSchema,
+  UserRole,
+} from "@shared/schema";
+import {
+  Clock,
+  Edit2,
+  Eye,
+  Figma,
+  Globe,
+  GripVertical,
+  MapPin,
+  MoreHorizontal,
+  Package,
+  Palette,
+  Phone,
+  Plus,
+  Search,
+  Share,
+  SortAsc,
+  SortDesc,
+  Trash,
+  Type,
+  User,
+  UserCircle,
+  Users,
+} from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { Link, useLocation } from "wouter";
+import { UserManager } from "@/components/client/user-manager";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
@@ -13,48 +46,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Search,
-  SortAsc,
-  SortDesc,
-  Edit2,
-  Trash,
-  GripVertical,
-  Eye,
-  Share,
-  MoreHorizontal,
-  User,
-  Users,
-  Package,
-  Palette,
-  Type,
-  Globe,
-  MapPin,
-  Phone,
-  Clock,
-  UserCircle,
-  Plus,
-  Figma,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link, useLocation } from "wouter";
-import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -63,26 +67,33 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useAuth } from "@/hooks/use-auth";
-import { useClientsQuery } from "@/lib/queries/clients";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useClientsQuery,
+  useDeleteClientMutation,
+  useUpdateClientMutation,
+  useUpdateClientOrderMutation,
+} from "@/lib/queries/clients";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { currentViewingUser, isUserSwitched } = useRoleSwitching();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
-    "custom",
+    "custom"
   );
   const [, setLocation] = useLocation();
 
   const isAbleToEdit = user
-    ? (user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN || user.role === UserRole.EDITOR)
+    ? user.role === UserRole.SUPER_ADMIN ||
+      user.role === UserRole.ADMIN ||
+      user.role === UserRole.EDITOR
     : false;
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -122,24 +133,31 @@ export default function Dashboard() {
   // Filter clients based on current viewing user
   const clients = React.useMemo(() => {
     if (!allClients) return [];
-    
+
     // If viewing as a specific user, filter by their client access
     if (isUserSwitched && currentViewingUser) {
       // If the viewing user has a specific client_id, only show that client
       if (currentViewingUser.client_id) {
-        return allClients.filter(client => client.id === currentViewingUser.client_id);
+        return allClients.filter(
+          (client) => client.id === currentViewingUser.client_id
+        );
       }
       // If no client_id (like super_admin/admin), show all clients
       return allClients;
     }
-    
+
     return allClients;
   }, [allClients, isUserSwitched, currentViewingUser]);
 
   useEffect(() => {
     // Only redirect non-admin users if they have exactly one client
     // Admins and super_admins should stay on the dashboard
-    if (clients && clients.length === 1 && user && !['super_admin', 'admin'].includes(user.role)) {
+    if (
+      clients &&
+      clients.length === 1 &&
+      user &&
+      !["super_admin", "admin"].includes(user.role)
+    ) {
       setLocation(`/clients/${clients[0].id}`);
     }
   }, [clients, setLocation, user]);
@@ -149,7 +167,7 @@ export default function Dashboard() {
       setEditingClient(null);
       form.reset();
     }
-  }, [updateClient.isSuccess]);
+  }, [updateClient.isSuccess, form]);
 
   useEffect(() => {
     if (deleteClient.isSuccess) {
@@ -163,7 +181,7 @@ export default function Dashboard() {
     }
   }, [clients]);
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(orderedClients);
@@ -200,14 +218,17 @@ export default function Dashboard() {
         typeof editingClient.featureToggles === "object"
       ) {
         // Make sure we have all expected properties
-        const featureTogglesObj = editingClient.featureToggles as any;
+        const featureTogglesObj =
+          editingClient.featureToggles as FeatureToggles;
         const toggles = {
           logoSystem: Boolean(featureTogglesObj.logoSystem ?? true),
           colorSystem: Boolean(featureTogglesObj.colorSystem ?? true),
           typeSystem: Boolean(featureTogglesObj.typeSystem ?? true),
           userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
           inspiration: Boolean(featureTogglesObj.inspiration ?? true),
-          figmaIntegration: Boolean(featureTogglesObj.figmaIntegration ?? false),
+          figmaIntegration: Boolean(
+            featureTogglesObj.figmaIntegration ?? false
+          ),
         };
         setFeatureToggles(toggles);
       } else {
@@ -248,7 +269,7 @@ export default function Dashboard() {
       .filter(
         (client: Client) =>
           client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+          client.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
       .sort((a, b) => {
         if (sortOrder === "custom") {
@@ -261,11 +282,11 @@ export default function Dashboard() {
         return b.name.localeCompare(a.name);
       });
   };
-  
+
   // Define the loading and filtered clients outside any conditional returns
   const isLoading = clientsIsLoading;
   const filteredAndSortedClients = getFilteredAndSortedClients();
-  
+
   // Render loading spinner if data is still loading
   if (isLoading) {
     return (
@@ -474,7 +495,7 @@ export default function Dashboard() {
                                       <span>
                                         Last updated:{" "}
                                         {new Date(
-                                          client.updatedAt,
+                                          client.updatedAt
                                         ).toLocaleDateString()}
                                       </span>
                                     </div>
@@ -786,7 +807,8 @@ export default function Dashboard() {
                             <div className="font-medium">Figma Integration</div>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Sync design tokens and styles with Figma design files
+                            Sync design tokens and styles with Figma design
+                            files
                           </div>
                         </div>
                         <Switch
@@ -810,10 +832,7 @@ export default function Dashboard() {
 
                 <DialogFooter>
                   {activeTab === "client-info" && (
-                    <Button
-                      type="submit"
-                      disabled={updateClient.isPending}
-                    >
+                    <Button type="submit" disabled={updateClient.isPending}>
                       Save Changes
                     </Button>
                   )}
@@ -823,14 +842,17 @@ export default function Dashboard() {
                       onClick={() => {
                         if (editingClient) {
                           // Save feature toggles to the database
-                          updateClient.mutate({
-                            id: editingClient.id,
-                            data: { featureToggles },
-                          }, {
-                            onSuccess: () => {
-                              setEditingClient(null);
+                          updateClient.mutate(
+                            {
+                              id: editingClient.id,
+                              data: { featureToggles },
+                            },
+                            {
+                              onSuccess: () => {
+                                setEditingClient(null);
+                              },
                             }
-                          });
+                          );
                         }
                       }}
                       disabled={updateClient.isPending}
@@ -866,8 +888,7 @@ export default function Dashboard() {
             <Button
               variant="destructive"
               onClick={() =>
-                deletingClient &&
-                deleteClient.mutate(deletingClient.id)
+                deletingClient && deleteClient.mutate(deletingClient.id)
               }
               disabled={deleteClient.isPending}
             >

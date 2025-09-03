@@ -1,16 +1,16 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;
-  } catch (err) {
-    console.error('Failed to copy to clipboard:', err);
+  } catch (err: unknown) {
+    console.error("Failed to copy to clipboard:", err);
     return false;
   }
 }
@@ -24,25 +24,25 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 export function lightenColor(color: string, amount = 20): string {
   // Default to white if color is undefined
   if (!color) return "#ffffff";
-  
+
   try {
     // Remove the hash if it exists
-    color = color.replace('#', '');
-    
+    color = color.replace("#", "");
+
     // Parse the hex values to get R, G, B components
     let r = parseInt(color.substring(0, 2), 16);
     let g = parseInt(color.substring(2, 4), 16);
     let b = parseInt(color.substring(4, 6), 16);
-    
+
     // Lighten each component
     r = Math.min(255, Math.floor(r + (255 - r) * (amount / 100)));
     g = Math.min(255, Math.floor(g + (255 - g) * (amount / 100)));
     b = Math.min(255, Math.floor(b + (255 - b) * (amount / 100)));
-    
+
     // Convert back to hex and ensure each component has two digits
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  } catch (e) {
-    console.error('Error lightening color:', e);
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  } catch (e: unknown) {
+    console.error("Error lightening color:", e);
     return color; // Return the original color if there's an error
   }
 }
@@ -56,25 +56,25 @@ export function lightenColor(color: string, amount = 20): string {
 export function darkenColor(color: string, amount = 20): string {
   // Default to black if color is undefined
   if (!color) return "#000000";
-  
+
   try {
     // Remove the hash if it exists
-    color = color.replace('#', '');
-    
+    color = color.replace("#", "");
+
     // Parse the hex values to get R, G, B components
     let r = parseInt(color.substring(0, 2), 16);
     let g = parseInt(color.substring(2, 4), 16);
     let b = parseInt(color.substring(4, 6), 16);
-    
+
     // Darken each component
     r = Math.max(0, Math.floor(r * (1 - amount / 100)));
     g = Math.max(0, Math.floor(g * (1 - amount / 100)));
     b = Math.max(0, Math.floor(b * (1 - amount / 100)));
-    
+
     // Convert back to hex and ensure each component has two digits
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  } catch (e) {
-    console.error('Error darkening color:', e);
+    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  } catch (e: unknown) {
+    console.error("Error darkening color:", e);
     return color; // Return the original color if there's an error
   }
 }

@@ -1,6 +1,16 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  ArrowUpDown,
+  Code,
+  Moon,
+  Palette,
+  Save,
+  Sun,
+  Type,
+} from "lucide-react";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useThemeManager } from "@/hooks/use-theme-manager";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +30,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -30,6 +39,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -37,24 +48,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useLocation } from "wouter";
-import {
-  Save,
-  ArrowUpDown,
-  Moon,
-  Sun,
-  Palette,
-  Type,
-  Code,
-} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
+import { useThemeManager } from "@/hooks/use-theme-manager";
+import { useToast } from "@/hooks/use-toast";
 
 // Form schema for validation
 const themeFormSchema = z.object({
@@ -77,7 +76,6 @@ const themeFormSchema = z.object({
 
 export default function DesignBuilder() {
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const {
     designSystem: appliedDesignSystem,
     draftDesignSystem,
@@ -90,7 +88,6 @@ export default function DesignBuilder() {
 
   // State for handling navigation confirmation
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
-  const [navTarget, setNavTarget] = useState("");
   const [activeTab, setActiveTab] = useState("theme");
   const [hasChanges, setHasChanges] = useState(false);
   const { user, isLoading } = useAuth();
@@ -125,7 +122,12 @@ export default function DesignBuilder() {
         description:
           "Your changes have been applied to the preview. Save to make them permanent.",
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error(
+        "Error applying changes:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+
       toast({
         title: "Error",
         description: "There was an error applying your changes.",
@@ -143,7 +145,12 @@ export default function DesignBuilder() {
         title: "Changes saved",
         description: "Your design changes have been saved successfully.",
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error(
+        "Error saving changes:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+
       toast({
         title: "Error saving changes",
         description: "There was an error saving your changes.",
@@ -154,9 +161,6 @@ export default function DesignBuilder() {
 
   const confirmNavigation = () => {
     setShowLeaveAlert(false);
-    if (navTarget) {
-      navigate(navTarget);
-    }
   };
 
   // Color preview component
@@ -872,7 +876,7 @@ export default function DesignBuilder() {
                                 ></div>
                                 <span className="text-xs">{value}</span>
                               </div>
-                            ),
+                            )
                           )}
                         </div>
                       </div>

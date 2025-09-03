@@ -1,9 +1,8 @@
-
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
 import { UserRole } from "@shared/schema";
+import { X } from "lucide-react";
+import type React from "react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 
 interface AssetSectionProps {
   title: string;
@@ -24,10 +23,11 @@ export function AssetSection({
   sectionType,
   uploadComponent,
   emptyPlaceholder,
-  children
+  children,
 }: AssetSectionProps) {
   const { user } = useAuth();
-  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const isAdmin =
+    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
 
   return (
     <div className="asset-section">
@@ -35,9 +35,9 @@ export function AssetSection({
         <div className="flex items-center justify-between w-full">
           <h3>{title}</h3>
           {isAdmin && onRemoveSection && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="text-muted-foreground hover:text-destructive"
               onClick={() => onRemoveSection(sectionType)}
             >
@@ -53,11 +53,9 @@ export function AssetSection({
           <div className="asset-section__empty-info">
             <p>{description}</p>
           </div>
-          {user && user.role !== UserRole.STANDARD ? (
-            uploadComponent
-          ) : (
-            emptyPlaceholder
-          )}
+          {user && user.role !== UserRole.STANDARD
+            ? uploadComponent
+            : emptyPlaceholder}
         </div>
       ) : (
         <div>{children}</div>

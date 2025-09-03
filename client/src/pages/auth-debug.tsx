@@ -1,9 +1,9 @@
 
+import { signInWithPopup } from "firebase/auth";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth, googleProvider } from "@/lib/firebase";
-import { signInWithPopup } from "firebase/auth";
-import { useState } from "react";
 
 export default function AuthDebug() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -11,7 +11,6 @@ export default function AuthDebug() {
 
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
-    console.log(message);
   };
 
   const testGoogleSignIn = async () => {
@@ -26,7 +25,7 @@ export default function AuthDebug() {
       addLog("Sign-in successful");
       addLog(`User email: ${result.user.email}`);
       addLog(`ID Token available: ${typeof result.user.getIdToken === 'function' ? "Yes" : "No"}`);
-    } catch (err: any) {
+    } catch (err: code: string; message: string ) {
       const errorMessage = `Error: ${err.code} - ${err.message}`;
       setError(errorMessage);
       addLog(errorMessage);

@@ -1,12 +1,8 @@
+import type { InviteUserForm, UpdateUserRoleForm, User } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  User,
-  UpdateUserRoleForm,
-  InviteUserForm,
-} from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Get all users
 export function useUsersQuery() {
@@ -50,8 +46,11 @@ export function useUserClientAssignmentsQuery(userIds: number[]) {
           throw new Error("Failed to fetch client assignments");
         }
         return await response.json();
-      } catch (error) {
-        console.error("Failed to fetch client assignments:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Failed to fetch client assignments:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         return {};
       }
     },
@@ -182,7 +181,7 @@ export function useClientAssignmentMutations() {
     }) => {
       return await apiRequest(
         "DELETE",
-        `/api/user-clients/${userId}/${clientId}`,
+        `/api/user-clients/${userId}/${clientId}`
       );
     },
     onSuccess: () => {

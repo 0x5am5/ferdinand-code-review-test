@@ -1,10 +1,14 @@
-import type { Express } from "express";
-import { storage } from "../storage";
+import { insertInvitationSchema, invitations, UserRole } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import type { Express } from "express";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import { insertInvitationSchema, invitations, UserRole } from "@shared/schema";
-import { ErrorResponse, ERROR_MESSAGES, EmailServiceError } from "../utils/errorResponse";
+import { storage } from "../storage";
+import {
+  EmailServiceError,
+  ERROR_MESSAGES,
+  ErrorResponse,
+} from "../utils/errorResponse";
 
 export function registerInvitationRoutes(app: Express) {
   // Get all pending invitations
@@ -34,7 +38,7 @@ export function registerInvitationRoutes(app: Express) {
       // Enhance invitations with client data
       const enhancedInvitations = await Promise.all(
         pendingInvitations.map(async (invitation) => {
-          let clientData = undefined;
+          let clientData;
 
           if (invitation.clientIds && invitation.clientIds.length > 0) {
             try {
@@ -46,8 +50,11 @@ export function registerInvitationRoutes(app: Express) {
                   primaryColor: client.primaryColor || undefined,
                 };
               }
-            } catch (err) {
-              console.error("Error fetching client data for invitation:", err);
+            } catch (err: unknown) {
+              console.error(
+                "Error fetching client data for invitation:",
+                err instanceof Error ? err.message : "Unknown error"
+              );
             }
           }
 
@@ -58,12 +65,15 @@ export function registerInvitationRoutes(app: Express) {
             ...safeInvitation,
             clientData,
           };
-        }),
+        })
       );
 
       res.json(enhancedInvitations);
-    } catch (error) {
-      console.error("Error fetching invitations:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching invitations:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching invitations" });
     }
   });
@@ -114,7 +124,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl = undefined;
+      let logoUrl;
 
       if (
         req.body.clientIds &&
@@ -127,10 +137,10 @@ export function registerInvitationRoutes(app: Express) {
             clientName = client.name;
             logoUrl = client.logo || undefined;
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(
             "Error fetching client data for invitation email:",
-            err,
+            err instanceof Error ? err.message : "Unknown error"
           );
           // Continue with default values if client fetch fails
         }
@@ -148,9 +158,12 @@ export function registerInvitationRoutes(app: Express) {
         });
 
         console.log(`Invitation email sent to ${parsed.data.email}`);
-      } catch (emailError) {
-        console.error("Failed to send invitation email:", emailError);
-        
+      } catch (emailError: unknown) {
+        console.error(
+          "Failed to send invitation email:",
+          emailError instanceof Error ? emailError.message : "Unknown error"
+        );
+
         // If it's a structured EmailServiceError, return it to the frontend
         if (emailError instanceof EmailServiceError) {
           return ErrorResponse.badRequest(
@@ -160,7 +173,7 @@ export function registerInvitationRoutes(app: Express) {
             emailError.details
           );
         }
-        
+
         // For unexpected email errors, return a generic email error
         return ErrorResponse.badRequest(
           res,
@@ -174,8 +187,11 @@ export function registerInvitationRoutes(app: Express) {
         ...invitation,
         inviteLink,
       });
-    } catch (error) {
-      console.error("Error creating invitation:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error creating invitation:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       return ErrorResponse.internalError(res, ERROR_MESSAGES.INTERNAL_ERROR);
     }
   });
@@ -192,12 +208,20 @@ export function registerInvitationRoutes(app: Express) {
 
       // Check if invitation is expired
       if (new Date(invitation.expiresAt) < new Date()) {
-        return ErrorResponse.badRequest(res, ERROR_MESSAGES.INVITATION_EXPIRED, "INVITATION_EXPIRED");
+        return ErrorResponse.badRequest(
+          res,
+          ERROR_MESSAGES.INVITATION_EXPIRED,
+          "INVITATION_EXPIRED"
+        );
       }
 
       // Check if invitation has already been used
       if (invitation.used) {
-        return ErrorResponse.badRequest(res, ERROR_MESSAGES.INVITATION_USED, "INVITATION_USED");
+        return ErrorResponse.badRequest(
+          res,
+          ERROR_MESSAGES.INVITATION_USED,
+          "INVITATION_USED"
+        );
       }
 
       // Return the invitation data (but not the token)
@@ -208,8 +232,11 @@ export function registerInvitationRoutes(app: Express) {
         clientIds: invitation.clientIds,
         expiresAt: invitation.expiresAt,
       });
-    } catch (error) {
-      console.error("Error fetching invitation:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching invitation:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching invitation" });
     }
   });
@@ -251,7 +278,7 @@ export function registerInvitationRoutes(app: Express) {
           asset.data &&
           typeof asset.data === "object" &&
           "type" in asset.data &&
-          asset.data.type === "primary",
+          asset.data.type === "primary"
       );
 
       if (logoAsset) {
@@ -267,8 +294,11 @@ export function registerInvitationRoutes(app: Express) {
           primaryColor: client.primaryColor || "#0f172a",
         },
       });
-    } catch (error) {
-      console.error("Error fetching client for invitation:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching client for invitation:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching client for invitation" });
     }
   });
@@ -284,8 +314,11 @@ export function registerInvitationRoutes(app: Express) {
 
       const invitation = await storage.markInvitationAsUsed(id);
       res.json({ message: "Invitation marked as used", invitation });
-    } catch (error) {
-      console.error("Error updating invitation:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating invitation:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error updating invitation" });
     }
   });
@@ -309,7 +342,10 @@ export function registerInvitationRoutes(app: Express) {
       }
 
       // Only super admins and admins can delete invitations
-      if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.ADMIN) {
+      if (
+        currentUser.role !== UserRole.SUPER_ADMIN &&
+        currentUser.role !== UserRole.ADMIN
+      ) {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
 
@@ -326,8 +362,11 @@ export function registerInvitationRoutes(app: Express) {
       await db.delete(invitations).where(eq(invitations.id, id));
 
       res.json({ message: "Invitation deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting invitation:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error deleting invitation:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error deleting invitation" });
     }
   });
@@ -362,7 +401,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl = undefined;
+      let logoUrl;
 
       if (invitation.clientIds && invitation.clientIds.length > 0) {
         try {
@@ -371,10 +410,10 @@ export function registerInvitationRoutes(app: Express) {
             clientName = client.name;
             logoUrl = client.logo || undefined;
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(
             "Error fetching client data for invitation email:",
-            err,
+            err instanceof Error ? err.message : "Unknown error"
           );
           // Continue with default values if client fetch fails
         }
@@ -398,9 +437,12 @@ export function registerInvitationRoutes(app: Express) {
           message: "Invitation email resent successfully",
           inviteLink,
         });
-      } catch (emailError) {
-        console.error("Failed to resend invitation email:", emailError);
-        
+      } catch (emailError: unknown) {
+        console.error(
+          "Failed to resend invitation email:",
+          emailError instanceof Error ? emailError.message : "Unknown error"
+        );
+
         // If it's a structured EmailServiceError, return it to the frontend
         if (emailError instanceof EmailServiceError) {
           return ErrorResponse.badRequest(
@@ -410,12 +452,18 @@ export function registerInvitationRoutes(app: Express) {
             emailError.details
           );
         }
-        
+
         // For unexpected email errors, return a generic email error
-        return ErrorResponse.internalError(res, ERROR_MESSAGES.EMAIL_SERVICE_FAILED);
+        return ErrorResponse.internalError(
+          res,
+          ERROR_MESSAGES.EMAIL_SERVICE_FAILED
+        );
       }
-    } catch (error) {
-      console.error("Error resending invitation:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error resending invitation:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error resending invitation" });
     }
   });

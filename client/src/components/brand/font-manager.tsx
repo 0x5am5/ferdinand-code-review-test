@@ -1,39 +1,19 @@
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { type BrandAsset, FontSource } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Plus,
+  ChevronDown,
   Edit2,
+  Lock,
+  Plus,
+  Search,
   Trash2,
   Type,
-  Search,
-  ChevronDown,
-  Lock,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { BrandAsset, UserRole, FontSource } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/hooks/use-auth";
-import { AssetSection } from "./asset-section";
-import { TypeScaleManager } from "../type-scale/type-scale-manager";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -42,7 +22,26 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { TypeScaleManager } from "../type-scale/type-scale-manager";
+import { AssetSection } from "./asset-section";
 
 // Google Fonts interface
 interface GoogleFont {
@@ -55,6 +54,12 @@ interface GoogleFont {
 interface GoogleFontsResponse {
   kind: string;
   items: GoogleFont[];
+}
+
+interface ProcessedGoogleFont {
+  name: string;
+  category: string;
+  weights: string[];
 }
 
 // Convert Google Fonts variant format to readable weights
@@ -87,15 +92,17 @@ const convertGoogleFontCategory = (category: string): string => {
 const generateGoogleFontUrl = (
   fontName: string,
   weights: string[] = ["400"],
-  styles: string[] = ["normal"],
+  styles: string[] = ["normal"]
 ) => {
   const family = fontName.replace(/\s+/g, "+");
   const weightStr = weights.join(";");
-  
+
   // Handle italic styles properly
   if (styles.includes("italic")) {
     // For italic, we need to specify both normal (0) and italic (1) for each weight
-    const italicParams = weights.map(weight => `0,${weight};1,${weight}`).join(";");
+    const italicParams = weights
+      .map((weight) => `0,${weight};1,${weight}`)
+      .join(";");
     return `https://fonts.googleapis.com/css2?family=${family}:ital,wght@${italicParams}&display=swap`;
   } else {
     // For normal style only
@@ -103,13 +110,27 @@ const generateGoogleFontUrl = (
   }
 };
 
+interface FontSourceData {
+  projectId?: string;
+  url?: string;
+  fontFamily?: string;
+  category?: string;
+  files?: Array<{
+    weight: string;
+    style: string;
+    format: string;
+    fileName: string;
+    fileData: string;
+  }>;
+}
+
 interface FontData {
   id?: number;
   name: string;
   source: (typeof FontSource)[keyof typeof FontSource];
   weights: string[];
   styles: string[];
-  sourceData: any;
+  sourceData: FontSourceData;
 }
 
 // Font picker buttons component
@@ -190,7 +211,7 @@ function GoogleFontPicker({
 }: {
   onFontSelect: (fontName: string) => void;
   isLoading: boolean;
-  googleFonts: any[];
+  googleFonts: ProcessedGoogleFont[];
   isFontsLoading: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -202,18 +223,18 @@ function GoogleFontPicker({
   // Load font for preview
   const loadFontForPreview = (fontName: string) => {
     if (!fontName) return;
-    
-    const link = document.createElement('link');
-    link.href = generateGoogleFontUrl(fontName, ['400'], ['normal']);
-    link.rel = 'stylesheet';
-    link.id = `preview-font-${fontName.replace(/\s+/g, '-')}`;
-    
+
+    const link = document.createElement("link");
+    link.href = generateGoogleFontUrl(fontName, ["400"], ["normal"]);
+    link.rel = "stylesheet";
+    link.id = `preview-font-${fontName.replace(/\s+/g, "-")}`;
+
     // Remove existing preview font
     const existingLink = document.head.querySelector('[id^="preview-font-"]');
     if (existingLink) {
       document.head.removeChild(existingLink);
     }
-    
+
     document.head.appendChild(link);
     setPreviewFont(fontName);
   };
@@ -226,9 +247,9 @@ function GoogleFontPicker({
   }, [googleFonts, previewFont]);
 
   const filteredFonts = googleFonts.filter(
-    (font: any) =>
+    (font) =>
       font.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      font.category.toLowerCase().includes(searchValue.toLowerCase()),
+      font.category.toLowerCase().includes(searchValue.toLowerCase())
   );
 
   const displayedFonts = filteredFonts.slice(0, displayCount);
@@ -261,11 +282,11 @@ function GoogleFontPicker({
       </div>
       <div className="text-center space-y-4">
         <div className="text-center">
-            <h3 className="font-medium">Add Google Font</h3>
-            <p className="text-sm text-muted-foreground">
-              Search and select from popular Google Fonts
-            </p>
-          </div>
+          <h3 className="font-medium">Add Google Font</h3>
+          <p className="text-sm text-muted-foreground">
+            Search and select from popular Google Fonts
+          </p>
+        </div>
 
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -391,7 +412,7 @@ function AdobeFontPicker({
 
     try {
       const response = await fetch(`/api/adobe-fonts/${projectId.trim()}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to load fonts");
@@ -399,17 +420,20 @@ function AdobeFontPicker({
 
       const data: AdobeFontsResponse = await response.json();
       setAvailableFonts(data.fonts);
-      
+
       if (data.fonts.length === 0) {
-        setError("No fonts found in this project. Please check your Project ID.");
+        setError(
+          "No fonts found in this project. Please check your Project ID."
+        );
       } else {
         toast({
           title: "Success",
           description: `Found ${data.fonts.length} fonts in your Adobe Fonts project`,
         });
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to load fonts";
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load fonts";
       setError(errorMessage);
       toast({
         title: "Error",
@@ -425,7 +449,7 @@ function AdobeFontPicker({
     if (selected) {
       setSelectedFonts([...selectedFonts, font]);
     } else {
-      setSelectedFonts(selectedFonts.filter(f => f.family !== font.family));
+      setSelectedFonts(selectedFonts.filter((f) => f.family !== font.family));
     }
   };
 
@@ -440,7 +464,7 @@ function AdobeFontPicker({
     }
 
     // Submit each selected font
-    selectedFonts.forEach(font => {
+    selectedFonts.forEach((font) => {
       onFontSubmit({
         projectId: projectId.trim(),
         fontFamily: font.family,
@@ -455,9 +479,10 @@ function AdobeFontPicker({
     setError(null);
   };
 
-  const filteredFonts = availableFonts.filter(font =>
-    font.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    font.family.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredFonts = availableFonts.filter(
+    (font) =>
+      font.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      font.family.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -492,7 +517,7 @@ function AdobeFontPicker({
               onChange={(e) => setProjectId(e.target.value)}
               placeholder="e.g., abc1234"
               disabled={isLoading || isLoadingFonts}
-              onKeyDown={(e) => e.key === 'Enter' && loadProjectFonts()}
+              onKeyDown={(e) => e.key === "Enter" && loadProjectFonts()}
             />
             <Button
               onClick={loadProjectFonts}
@@ -539,20 +564,32 @@ function AdobeFontPicker({
                   className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50"
                 >
                   <Checkbox
-                    checked={selectedFonts.some(f => f.family === font.family)}
-                    onCheckedChange={(checked) => handleFontSelection(font, !!checked)}
+                    checked={selectedFonts.some(
+                      (f) => f.family === font.family
+                    )}
+                    onCheckedChange={(checked) =>
+                      handleFontSelection(font, !!checked)
+                    }
                   />
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-sm">{font.displayName}</h4>
-                      <span className="text-xs text-muted-foreground">{font.category}</span>
+                      <h4 className="font-medium text-sm">
+                        {font.displayName}
+                      </h4>
+                      <span className="text-xs text-muted-foreground">
+                        {font.category}
+                      </span>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {font.weights.length} weights • {font.foundry}
                     </p>
                     <div className="flex gap-1 mt-1">
-                      {font.weights.slice(0, 5).map(weight => (
-                        <Badge key={weight} variant="outline" className="text-xs">
+                      {font.weights.slice(0, 5).map((weight) => (
+                        <Badge
+                          key={weight}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {weight}
                         </Badge>
                       ))}
@@ -570,11 +607,16 @@ function AdobeFontPicker({
             {selectedFonts.length > 0 && (
               <div className="p-3 bg-primary/5 border border-primary/20 rounded-md">
                 <p className="text-sm font-medium">
-                  {selectedFonts.length} font{selectedFonts.length > 1 ? 's' : ''} selected
+                  {selectedFonts.length} font
+                  {selectedFonts.length > 1 ? "s" : ""} selected
                 </p>
                 <div className="flex flex-wrap gap-1 mt-2">
-                  {selectedFonts.map(font => (
-                    <Badge key={font.family} variant="default" className="text-xs">
+                  {selectedFonts.map((font) => (
+                    <Badge
+                      key={font.family}
+                      variant="default"
+                      className="text-xs"
+                    >
                       {font.displayName}
                     </Badge>
                   ))}
@@ -587,19 +629,24 @@ function AdobeFontPicker({
               disabled={selectedFonts.length === 0 || isLoading}
               className="w-full"
             >
-              {isLoading ? "Adding Fonts..." : `Add ${selectedFonts.length || ''} Font${selectedFonts.length !== 1 ? 's' : ''}`}
+              {isLoading
+                ? "Adding Fonts..."
+                : `Add ${selectedFonts.length || ""} Font${selectedFonts.length !== 1 ? "s" : ""}`}
             </Button>
           </>
         )}
 
         {/* Initial Load Button */}
-        {availableFonts.length === 0 && !error && !isLoadingFonts && projectId.trim() && (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground">
-              Enter your Project ID and click Load to see available fonts
-            </p>
-          </div>
-        )}
+        {availableFonts.length === 0 &&
+          !error &&
+          !isLoadingFonts &&
+          projectId.trim() && (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">
+                Enter your Project ID and click Load to see available fonts
+              </p>
+            </div>
+          )}
       </div>
     </motion.div>
   );
@@ -627,7 +674,7 @@ function CustomFontPicker({
     setSelectedWeights(["400"]);
     setSelectedFiles(null);
     const fileInput = document.querySelector(
-      'input[type="file"]',
+      'input[type="file"]'
     ) as HTMLInputElement;
     if (fileInput) fileInput.value = "";
   };
@@ -771,7 +818,7 @@ function CustomFontPicker({
                       setSelectedWeights([...selectedWeights, weight]);
                     } else {
                       setSelectedWeights(
-                        selectedWeights.filter((w) => w !== weight),
+                        selectedWeights.filter((w) => w !== weight)
                       );
                     }
                   }}
@@ -848,7 +895,7 @@ function WeightStyleSelector({
                       onWeightChange([...selectedWeights, weight]);
                     } else {
                       onWeightChange(
-                        selectedWeights.filter((w) => w !== weight),
+                        selectedWeights.filter((w) => w !== weight)
                       );
                     }
                   }}
@@ -906,16 +953,15 @@ function FontCard({
 }) {
   const [selectedWeight, setSelectedWeight] = useState("400");
   const { user } = useAuth();
-  const isAbleToEdit = user && [
-    "super_admin",
-    "admin",
-    "editor",
-  ].includes(user.role as string);
+  const isAbleToEdit =
+    user && ["super_admin", "admin", "editor"].includes(user.role as string);
 
   // Set default weight to the first available weight or 400
   React.useEffect(() => {
     if (font.weights.length > 0) {
-      const defaultWeight = font.weights.includes("400") ? "400" : font.weights[0];
+      const defaultWeight = font.weights.includes("400")
+        ? "400"
+        : font.weights[0];
       setSelectedWeight(defaultWeight);
     }
   }, [font.weights]);
@@ -924,26 +970,32 @@ function FontCard({
   React.useEffect(() => {
     if (font.source === FontSource.GOOGLE) {
       // Generate URL with all available weights for preview
-      const fontUrl = font.sourceData?.url || generateGoogleFontUrl(font.name, font.weights, font.styles);
-      
-      const link = document.createElement('link');
+      const fontUrl =
+        font.sourceData?.url ||
+        generateGoogleFontUrl(font.name, font.weights, font.styles);
+
+      const link = document.createElement("link");
       link.href = fontUrl;
-      link.rel = 'stylesheet';
-      link.id = `font-${font.name.replace(/\s+/g, '-')}`;
-      
+      link.rel = "stylesheet";
+      link.id = `font-${font.name.replace(/\s+/g, "-")}`;
+
       // Remove existing font link if it exists
-      const existingLink = document.head.querySelector(`#font-${font.name.replace(/\s+/g, '-')}`);
+      const existingLink = document.head.querySelector(
+        `#font-${font.name.replace(/\s+/g, "-")}`
+      );
       if (!existingLink) {
         document.head.appendChild(link);
       }
     } else if (font.source === FontSource.ADOBE && font.sourceData?.url) {
-      const link = document.createElement('link');
+      const link = document.createElement("link");
       link.href = font.sourceData.url;
-      link.rel = 'stylesheet';
-      link.id = `font-${font.name.replace(/\s+/g, '-')}`;
-      
+      link.rel = "stylesheet";
+      link.id = `font-${font.name.replace(/\s+/g, "-")}`;
+
       // Remove existing font link if it exists
-      const existingLink = document.head.querySelector(`#font-${font.name.replace(/\s+/g, '-')}`);
+      const existingLink = document.head.querySelector(
+        `#font-${font.name.replace(/\s+/g, "-")}`
+      );
       if (!existingLink) {
         document.head.appendChild(link);
       }
@@ -964,24 +1016,27 @@ function FontCard({
           <p className="text-xs text-muted-foreground capitalize">
             {font.source} Font
           </p>
-          
+
           {/* Font Preview Section */}
           <div className="text-left mb-4 mt-3">
-            <div style={{ 
-              fontFamily: `'${font.name}', monospace`, 
-              fontSize: '1.75rem',
-              lineHeight: '1.4',
-              fontWeight: selectedWeight
-            }}>
-              ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />
+            <div
+              style={{
+                fontFamily: `'${font.name}', monospace`,
+                fontSize: "1.75rem",
+                lineHeight: "1.4",
+                fontWeight: selectedWeight,
+              }}
+            >
+              ABCDEFGHIJKLMNOPQRSTUVWXYZ
+              <br />
               abcdefghijklmnopqrstuvwxyz 1234567890
             </div>
           </div>
-        
+
           <div className="flex flex-wrap gap-1 mt-2">
             {font.weights.map((weight) => (
-              <Badge 
-                key={weight} 
+              <Badge
+                key={weight}
                 variant={selectedWeight === weight ? "default" : "outline"}
                 className="text-xs cursor-pointer hover:bg-primary/20 transition-colors"
                 onClick={() => setSelectedWeight(weight)}
@@ -1078,7 +1133,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       });
     },
     onError: (error: Error) => {
-      console.error("Font addition failed:", error);
+      console.error(
+        "Font addition failed:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       toast({
         title: "Error adding font",
         description: error.message || "Failed to add font. Please try again.",
@@ -1089,14 +1147,20 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   // Edit font mutation - outside conditional
   const editFont = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { name: string; data: string };
+    }) => {
       if (!clientId) {
         throw new Error("Client ID is required");
       }
       const response = await apiRequest(
         "PATCH",
         `/api/clients/${clientId}/assets/${id}`,
-        data,
+        data
       );
       return response.json();
     },
@@ -1130,7 +1194,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       }
       const response = await apiRequest(
         "DELETE",
-        `/api/clients/${clientId}/assets/${fontId}`,
+        `/api/clients/${clientId}/assets/${fontId}`
       );
       return response.json();
     },
@@ -1173,14 +1237,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     );
   }
 
-  const isAbleToEdit = user ? [
-    "super_admin",
-    "admin",
-    "editor",
-  ].includes(user.role as string) : false;
+  const isAbleToEdit = user
+    ? ["super_admin", "admin", "editor"].includes(user.role as string)
+    : false;
 
   // Fallback Google Fonts data
-  const allGoogleFonts = [
+  const allGoogleFonts: ProcessedGoogleFont[] = [
     {
       name: "Inter",
       category: "Sans Serif",
@@ -1200,13 +1262,16 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   ];
 
   // Use API data if available and valid, otherwise use comprehensive fallback
-  const googleFonts =
-    googleFontsData && (googleFontsData as any)?.items?.length > 0
-      ? (googleFontsData as any).items.map((font: GoogleFont) => ({
-          name: font.family,
-          category: convertGoogleFontCategory(font.category),
-          weights: convertGoogleFontVariants(font.variants),
-        }))
+  const googleFonts: ProcessedGoogleFont[] =
+    googleFontsData &&
+    (googleFontsData as GoogleFontsResponse)?.items?.length > 0
+      ? (googleFontsData as GoogleFontsResponse).items.map(
+          (font: GoogleFont) => ({
+            name: font.family,
+            category: convertGoogleFontCategory(font.category),
+            weights: convertGoogleFontVariants(font.variants),
+          })
+        )
       : allGoogleFonts;
 
   // Google Font handler with proper validation
@@ -1230,17 +1295,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     }
 
     // Find the font in our Google Fonts list to get available weights
-    const selectedFont = googleFonts?.find(
-      (font: any) => font.name === fontName,
-    );
+    const selectedFont = googleFonts?.find((font) => font.name === fontName);
     const availableWeights = selectedFont?.weights || ["400", "700"];
     // Use ALL available weights instead of limiting to first 3
     const allWeights = availableWeights;
 
-    console.log(
-      `Creating Google Font: ${fontName} with weights:`,
-      allWeights,
-    );
+    console.log(`Creating Google Font: ${fontName} with weights:`, allWeights);
 
     // Create proper font data structure
     const fontData = {
@@ -1292,7 +1352,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
     console.log(
       `Creating Adobe Font: ${adobeFontData.fontFamily} with weights:`,
-      adobeFontData.weights,
+      adobeFontData.weights
     );
 
     // Create proper font data structure for Adobe fonts
@@ -1311,7 +1371,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     console.log("Sending Adobe font data to server for client:", clientId);
     console.log(
       "Adobe font data structure:",
-      JSON.stringify(fontData, null, 2),
+      JSON.stringify(fontData, null, 2)
     );
 
     const formData = new FormData();
@@ -1327,7 +1387,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const handleCustomFontUpload = (
     files: FileList,
     fontName: string,
-    weights: string[],
+    weights: string[]
   ) => {
     if (!files || files.length === 0) {
       toast({
@@ -1389,7 +1449,10 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
     // For custom fonts, the server expects individual fields, not a data JSON object
     formData.append("source", FontSource.FILE);
-    formData.append("weights", JSON.stringify(weights.length > 0 ? weights : ["400"]));
+    formData.append(
+      "weights",
+      JSON.stringify(weights.length > 0 ? weights : ["400"])
+    );
     formData.append("styles", JSON.stringify(["normal"]));
 
     // Add each file to FormData
@@ -1435,8 +1498,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
         styles: data.styles || ["normal"],
         sourceData: data.sourceData || {},
       };
-    } catch (error) {
-      console.error("Error parsing font asset:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error parsing font asset:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       return null;
     }
   };
@@ -1666,7 +1732,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   value={editingFont?.name || ""}
                   onChange={(e) =>
                     setEditingFont((prev) =>
-                      prev ? { ...prev, name: e.target.value } : null,
+                      prev ? { ...prev, name: e.target.value } : null
                     )
                   }
                 />

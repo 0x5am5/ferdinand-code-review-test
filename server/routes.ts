@@ -1,16 +1,15 @@
 import type { Express, Request } from "express";
-
-import { registerAuthRoutes } from "./routes/auth";
-import { registerUserRoutes } from "./routes/users";
-import { registerClientRoutes } from "./routes/clients";
 import { registerAssetRoutes } from "./routes/assets";
-import { registerInvitationRoutes } from "./routes/invitations";
+import { registerAuthRoutes } from "./routes/auth";
+import { registerClientRoutes } from "./routes/clients";
 import { registerDesignSystemRoutes } from "./routes/design-system";
-import { registerPersonasRoutes } from "./routes/personas";
-import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
-import { registerHiddenSectionsRoutes } from "./routes/hidden-sections";
-import { registerTypeScalesRoutes } from "./routes/type-scales";
 import { registerFigmaRoutes } from "./routes/figma";
+import { registerHiddenSectionsRoutes } from "./routes/hidden-sections";
+import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
+import { registerInvitationRoutes } from "./routes/invitations";
+import { registerPersonasRoutes } from "./routes/personas";
+import { registerTypeScalesRoutes } from "./routes/type-scales";
+import { registerUserRoutes } from "./routes/users";
 
 // Add session augmentation for TypeScript
 declare module "express-session" {
@@ -32,12 +31,14 @@ export function registerRoutes(app: Express) {
       const apiKey = process.env.GOOGLE_FONTS_API_KEY;
       if (!apiKey) {
         console.error("Google Fonts API key not found");
-        return res.status(500).json({ error: "Google Fonts API key not configured" });
+        return res
+          .status(500)
+          .json({ error: "Google Fonts API key not configured" });
       }
 
       const url = `https://www.googleapis.com/webfonts/v1/webfonts?key=${apiKey}&sort=popularity`;
       console.log("Fetching from Google Fonts API...");
-      
+
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -46,13 +47,18 @@ export function registerRoutes(app: Express) {
       }
 
       const data = await response.json();
-      console.log(`Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`);
-      
+      console.log(
+        `Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`
+      );
+
       // Set proper headers
-      res.setHeader('Content-Type', 'application/json');
+      res.setHeader("Content-Type", "application/json");
       res.json(data);
-    } catch (error) {
-      console.error("Error fetching Google Fonts:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching Google Fonts:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to fetch Google Fonts" });
     }
   });

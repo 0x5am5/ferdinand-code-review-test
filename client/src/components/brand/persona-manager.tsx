@@ -1,32 +1,30 @@
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { PERSONA_EVENT_ATTRIBUTES, type UserPersona } from "@shared/schema";
+import { Edit2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  UserPersona,
-  PERSONA_EVENT_ATTRIBUTES,
-} from "@shared/schema";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PersonaMetrics {
   eventAttendance?: number;
   engagementRate?: number;
   averageSpend?: string;
 }
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
+
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -35,10 +33,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import React from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 // Form schema for persona creation/editing
 const personaFormSchema = z.object({
@@ -72,11 +69,9 @@ function PersonaCard({
   const { user } = useAuth();
   if (!user) return null;
 
-  const isAbleToEdit = [
-    "super_admin",
-    "admin",
-    "editor",
-  ].includes(user.role as string);
+  const isAbleToEdit = ["super_admin", "admin", "editor"].includes(
+    user.role as string
+  );
 
   return (
     <motion.div
@@ -116,8 +111,11 @@ function PersonaCard({
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">STATS</Label>
-              {persona.metrics && (persona.metrics as PersonaMetrics).averageSpend ? (
-                <p className="text-sm">{String((persona.metrics as PersonaMetrics).averageSpend)}</p>
+              {persona.metrics &&
+              (persona.metrics as PersonaMetrics).averageSpend ? (
+                <p className="text-sm">
+                  {String((persona.metrics as PersonaMetrics).averageSpend)}
+                </p>
               ) : null}
             </div>
           </div>
@@ -187,17 +185,15 @@ export function PersonaManager({
   const queryClient = useQueryClient();
   const [isAddingPersona, setIsAddingPersona] = useState(false);
   const [editingPersona, setEditingPersona] = useState<UserPersona | null>(
-    null,
+    null
   );
   const { user } = useAuth();
 
   // if (!user) return null;
 
-  const isAbleToEdit = [
-    "super_admin",
-    "admin",
-    "editor",
-  ].includes(user?.role as string);
+  const isAbleToEdit = ["super_admin", "admin", "editor"].includes(
+    user?.role as string
+  );
 
   // Move useForm to top level
   const form = useForm<PersonaFormData>({
@@ -287,7 +283,7 @@ export function PersonaManager({
         `/api/clients/${clientId}/personas/${personaId}`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -384,9 +380,12 @@ export function PersonaManager({
         coreNeeds: editingPersona.coreNeeds?.join(", ") || "",
         painPoints: editingPersona.painPoints?.join(", ") || "",
         metrics: {
-          averageSpend: (editingPersona.metrics as PersonaMetrics)?.averageSpend || "",
-          eventAttendance: (editingPersona.metrics as PersonaMetrics)?.eventAttendance,
-          engagementRate: (editingPersona.metrics as PersonaMetrics)?.engagementRate,
+          averageSpend:
+            (editingPersona.metrics as PersonaMetrics)?.averageSpend || "",
+          eventAttendance: (editingPersona.metrics as PersonaMetrics)
+            ?.eventAttendance,
+          engagementRate: (editingPersona.metrics as PersonaMetrics)
+            ?.engagementRate,
         },
       });
     }
@@ -520,15 +519,14 @@ export function PersonaManager({
                                       <FormControl>
                                         <Checkbox
                                           checked={field.value?.includes(
-                                            attribute,
+                                            attribute
                                           )}
                                           onCheckedChange={(checked) => {
                                             const current = field.value || [];
                                             const next = checked
                                               ? [...current, attribute]
                                               : current.filter(
-                                                  (value) =>
-                                                    value !== attribute,
+                                                  (value) => value !== attribute
                                                 );
                                             field.onChange(next);
                                           }}
@@ -540,7 +538,7 @@ export function PersonaManager({
                                           .map(
                                             (word) =>
                                               word.charAt(0).toUpperCase() +
-                                              word.slice(1),
+                                              word.slice(1)
                                           )
                                           .join(" ")}
                                       </Label>

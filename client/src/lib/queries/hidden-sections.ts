@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export const useHiddenSections = (clientId: number) => {
   return useQuery({
@@ -11,11 +11,9 @@ export const useHiddenSections = (clientId: number) => {
 export const useAddHiddenSection = (clientId: number) => {
   return useMutation({
     mutationFn: async (sectionType: string) => {
-      return apiRequest(
-        "POST", 
-        `/api/clients/${clientId}/hidden-sections`, 
-        { sectionType }
-      );
+      return apiRequest("POST", `/api/clients/${clientId}/hidden-sections`, {
+        sectionType,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

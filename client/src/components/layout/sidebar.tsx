@@ -1,30 +1,31 @@
-import React, { FC, useState, useEffect } from "react";
+import { type FeatureToggles, UserRole } from "@shared/schema";
+import {
+  ArrowLeft,
+  BuildingIcon,
+  ChevronDown,
+  CircleUserIcon,
+  HomeIcon,
+  LogOutIcon,
+  PaletteIcon,
+  Search,
+  UsersIcon,
+} from "lucide-react";
+import type React from "react";
+import { type FC, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { SpotlightSearch } from "@/components/search/spotlight-search";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  CircleUserIcon,
-  HomeIcon,
-  BuildingIcon,
-  UsersIcon,
-  PaletteIcon,
-  LogOutIcon,
-  ChevronDown,
-  Search,
-  ArrowLeft,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
-import { SpotlightSearch } from "@/components/search/spotlight-search";
-import { UserRole, FeatureToggles } from "@shared/schema";
-import { ClientSidebar } from "./client-sidebar";
 import { useClientsQuery } from "@/lib/queries/clients";
+import { ClientSidebar } from "./client-sidebar";
 
 interface NavItem {
   title: string;
@@ -73,13 +74,13 @@ export const Sidebar: FC = () => {
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChange as EventListener,
+      handleTabChange as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChange as EventListener,
+        handleTabChange as EventListener
       );
     };
   }, []);
@@ -154,15 +155,19 @@ export const Sidebar: FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Logout error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
     }
   };
 
   // If we're on a client detail page, render the client sidebar
   if (isClientDetailPage && clientId && currentClient) {
     // Safely handle feature toggles with proper type casting
-    const clientToggles = (currentClient.featureToggles || {}) as FeatureToggles;
+    const clientToggles = (currentClient.featureToggles ||
+      {}) as FeatureToggles;
 
     const featureToggles = {
       logoSystem:

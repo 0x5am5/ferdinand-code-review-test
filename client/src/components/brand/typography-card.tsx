@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface TypographyCardProps {
   name: string;
@@ -10,8 +10,12 @@ interface TypographyCardProps {
   url: string;
 }
 
-export function TypographyCard({ 
-  name, family, weights, specimen, url 
+export function TypographyCard({
+  name,
+  family,
+  weights,
+  specimen,
+  url,
 }: TypographyCardProps) {
   return (
     <Card>
@@ -26,13 +30,8 @@ export function TypographyCard({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-muted-foreground mb-4">
-          {weights.join(", ")}
-        </p>
-        <p 
-          className="text-xl" 
-          style={{ fontFamily: family }}
-        >
+        <p className="text-muted-foreground mb-4">{weights.join(", ")}</p>
+        <p className="text-xl" style={{ fontFamily: family }}>
           {specimen}
         </p>
       </CardContent>

@@ -1,7 +1,10 @@
+import {
+  insertClientSchema,
+  UserRole,
+  updateClientOrderSchema,
+} from "@shared/schema";
 import type { Express } from "express";
-
 import { storage } from "../storage";
-import { updateClientOrderSchema, insertClientSchema, UserRole } from "@shared/schema";
 
 export function registerClientRoutes(app: Express) {
   // Client routes
@@ -33,8 +36,11 @@ export function registerClientRoutes(app: Express) {
       });
 
       res.json(filteredClients);
-    } catch (error) {
-      console.error("Error fetching clients:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching clients:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching clients" });
     }
   });
@@ -50,8 +56,11 @@ export function registerClientRoutes(app: Express) {
         return res.status(404).json({ message: "Client not found" });
       }
       res.json(client);
-    } catch (error) {
-      console.error("Error fetching client:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching client:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching client" });
     }
   });
@@ -68,19 +77,22 @@ export function registerClientRoutes(app: Express) {
       }
       await storage.deleteClient(id);
       res.status(200).json({ message: "Client deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting client:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error deleting client:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error deleting client" });
     }
   });
-  
+
   // Create new client
   app.post("/api/clients", async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      
+
       // Validate client data
       const parsed = insertClientSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -89,14 +101,17 @@ export function registerClientRoutes(app: Express) {
           errors: parsed.error?.errors || "Validation failed",
         });
       }
-      
+
       // Create client with validated data
       const clientData = parsed.data;
-      
+
       const client = await storage.createClient(clientData);
       res.status(201).json(client);
-    } catch (error) {
-      console.error("Error creating client:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error creating client:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error creating client" });
     }
   });
@@ -108,12 +123,15 @@ export function registerClientRoutes(app: Express) {
       // Update each client's display order
       await Promise.all(
         clientOrders.map(({ id, displayOrder }) =>
-          storage.updateClient(id, { displayOrder }),
-        ),
+          storage.updateClient(id, { displayOrder })
+        )
       );
       res.json({ message: "Client order updated successfully" });
-    } catch (error) {
-      console.error("Error updating client order:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating client order:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error updating client order" });
     }
   });
@@ -141,8 +159,11 @@ export function registerClientRoutes(app: Express) {
       // Update the client
       const updatedClient = await storage.updateClient(id, req.body);
       res.json(updatedClient);
-    } catch (error) {
-      console.error("Error updating client:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating client:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error updating client" });
     }
   });
