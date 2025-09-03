@@ -7,6 +7,7 @@ import {
 } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
 
 interface PendingInvitation {
   id: number;
@@ -93,7 +94,7 @@ export function useUpdateUserRoleMutation() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -105,8 +106,14 @@ export function useInviteUserMutation() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: InviteUserForm) => {
-      return await apiRequest("POST", "/api/users", data);
+    mutationFn: async (data: InviteUserForm | number) => {
+      if (typeof data === "number") {
+        // Resend invitation
+        return await apiRequest("POST", `/api/invitations/${data}/resend`);
+      } else {
+        // New invitation
+        return await apiRequest("POST", "/api/users", data);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
@@ -119,7 +126,32 @@ export function useInviteUserMutation() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+// Remove invitation mutation
+export function useRemoveInvitationMutation() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (invitationId: number) => {
+      return await apiRequest("DELETE", `/api/invitations/${invitationId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+      toast({
+        title: "Success",
+        description: "Invitation removed successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -149,7 +181,7 @@ export function useClientAssignmentMutations() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -174,7 +206,7 @@ export function useClientAssignmentMutations() {
     onError: (error: Error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getUserFriendlyErrorMessage(error),
         variant: "destructive",
       });
     },

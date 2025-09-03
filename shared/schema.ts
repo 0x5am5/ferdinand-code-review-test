@@ -225,7 +225,7 @@ export const invitations = pgTable("invitations", {
   email: text("email").notNull(),
   name: text("name").notNull(),
   role: text("role", {
-    enum: ["super_admin", "admin", "standard", "guest"],
+    enum: ["super_admin", "admin", "editor", "standard", "guest"],
   }).notNull(),
   token: text("token").notNull().unique(),
   createdById: integer("created_by_id").references(() => users.id),

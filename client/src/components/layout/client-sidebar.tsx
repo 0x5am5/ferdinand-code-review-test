@@ -82,8 +82,6 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   }, []);
 
   const handleAllBrands = () => {
-    // Invalidate clients cache to ensure fresh data when returning to dashboard
-    queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
     setLocation("/dashboard");
   };
 

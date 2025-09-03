@@ -329,12 +329,12 @@ export class DatabaseStorage implements IStorage {
   }
   async createUserWithRole(user: Omit<InsertUser, 'role'> & {role: string}):Promise<User>{
     // Ensure role is one of the valid enum values from the database schema
-    if (!["super_admin", "admin", "standard", "guest"].includes(user.role)) {
+    if (!["super_admin", "admin", "editor", "standard", "guest"].includes(user.role)) {
       throw new Error(`Invalid role: ${user.role}`);
     }
 
     // Use type assertion to tell TypeScript this is a valid role
-    const validRole = user.role as "super_admin" | "admin" | "standard" | "guest";
+    const validRole = user.role as "super_admin" | "admin" | "editor" | "standard" | "guest";
 
     // Create a new user object with the validated role
     const userToInsert = {
@@ -347,12 +347,12 @@ export class DatabaseStorage implements IStorage {
   }
   async updateUserRole(id: number, role: string): Promise<User> {
     // Ensure role is one of the valid enum values from the database schema
-    if (!["super_admin", "admin", "standard", "guest"].includes(role)) {
+    if (!["super_admin", "admin", "editor", "standard", "guest"].includes(role)) {
       throw new Error(`Invalid role: ${role}`);
     }
 
     // Use type assertion to tell TypeScript this is a valid role
-    const validRole = role as "super_admin" | "admin" | "standard" | "guest";
+    const validRole = role as "super_admin" | "admin" | "editor" | "standard" | "guest";
 
     const [updatedUser] = await db
       .update(users)

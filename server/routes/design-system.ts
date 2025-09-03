@@ -388,7 +388,7 @@ export function registerDesignSystemRoutes(app: Express) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Allow access for viewers and above since this is just reading
+      // Allow access for guests and above since this is just reading
 
       // Read the theme.json file from the project root
       const themeData = fs.readFileSync("./theme.json", "utf8");
@@ -748,8 +748,8 @@ export function registerDesignSystemRoutes(app: Express) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Allow access for viewers and above
-      if (!["super_admin", "admin", "editor", "viewer"].includes(user.role)) {
+      // Allow access for guests and above
+      if (!["super_admin", "admin", "editor", "standard", "guest"].includes(user.role)) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -1152,8 +1152,8 @@ a:hover {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Allow access for viewers and above
-      if (!["super_admin", "admin", "editor", "viewer"].includes(user.role)) {
+      // Allow access for guests and above
+      if (!["super_admin", "admin", "editor", "standard", "guest"].includes(user.role)) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -1488,8 +1488,8 @@ $brand-secondary-colors: (
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Allow access for viewers and above
-      if (!["super_admin", "admin", "editor", "viewer"].includes(user.role)) {
+      // Allow access for guests and above
+      if (!["super_admin", "admin", "editor", "standard", "guest"].includes(user.role)) {
         return res.status(403).json({ message: "Access denied" });
       }
 

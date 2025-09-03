@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { emailService } from "../email-service";
 import { insertInvitationSchema, invitations, UserRole } from "@shared/schema";
+import { ErrorResponse, ERROR_MESSAGES, EmailServiceError } from "../utils/errorResponse";
 
 export function registerInvitationRoutes(app: Express) {
   // Get all pending invitations
@@ -73,19 +74,21 @@ export function registerInvitationRoutes(app: Express) {
       const parsed = insertInvitationSchema.safeParse(req.body);
 
       if (!parsed.success) {
-        return res.status(400).json({
-          message: "Invalid invitation data",
-          errors: parsed.error.errors,
-        });
+        return ErrorResponse.validationError(
+          res,
+          ERROR_MESSAGES.VALIDATION_ERROR,
+          parsed.error.errors
+        );
       }
 
       // Check if a user with this email already exists
       const existingUser = await storage.getUserByEmail(parsed.data.email);
       if (existingUser) {
-        return res.status(400).json({
-          message: "A user with this email already exists",
-          code: "EMAIL_EXISTS",
-        });
+        return ErrorResponse.conflict(
+          res,
+          ERROR_MESSAGES.EMAIL_EXISTS,
+          "EMAIL_EXISTS"
+        );
       }
 
       // Check if an invitation with this email already exists
@@ -96,11 +99,12 @@ export function registerInvitationRoutes(app: Express) {
       // Only consider unused invitations as duplicates
       const pendingInvitation = existingInvitations.find((inv) => !inv.used);
       if (pendingInvitation) {
-        return res.status(400).json({
-          message: "An invitation with this email already exists",
-          code: "INVITATION_EXISTS",
-          invitationId: pendingInvitation.id,
-        });
+        return ErrorResponse.conflict(
+          res,
+          ERROR_MESSAGES.INVITATION_EXISTS,
+          "INVITATION_EXISTS",
+          { invitationId: pendingInvitation.id }
+        );
       }
 
       const invitation = await storage.createInvitation(parsed.data);
@@ -146,7 +150,23 @@ export function registerInvitationRoutes(app: Express) {
         console.log(`Invitation email sent to ${parsed.data.email}`);
       } catch (emailError) {
         console.error("Failed to send invitation email:", emailError);
-        // We don't want to fail the entire invitation process if just the email fails
+        
+        // If it's a structured EmailServiceError, return it to the frontend
+        if (emailError instanceof EmailServiceError) {
+          return ErrorResponse.badRequest(
+            res,
+            emailError.message,
+            emailError.code,
+            emailError.details
+          );
+        }
+        
+        // For unexpected email errors, return a generic email error
+        return ErrorResponse.badRequest(
+          res,
+          ERROR_MESSAGES.EMAIL_SERVICE_FAILED,
+          "EMAIL_SERVICE_FAILED"
+        );
       }
 
       // Return the invitation with the token (this will be used to create the invitation link)
@@ -156,7 +176,7 @@ export function registerInvitationRoutes(app: Express) {
       });
     } catch (error) {
       console.error("Error creating invitation:", error);
-      res.status(500).json({ message: "Error creating invitation" });
+      return ErrorResponse.internalError(res, ERROR_MESSAGES.INTERNAL_ERROR);
     }
   });
 
@@ -167,19 +187,17 @@ export function registerInvitationRoutes(app: Express) {
       const invitation = await storage.getInvitation(token);
 
       if (!invitation) {
-        return res.status(404).json({ message: "Invitation not found" });
+        return ErrorResponse.notFound(res, ERROR_MESSAGES.INVITATION_NOT_FOUND);
       }
 
       // Check if invitation is expired
       if (new Date(invitation.expiresAt) < new Date()) {
-        return res.status(400).json({ message: "Invitation has expired" });
+        return ErrorResponse.badRequest(res, ERROR_MESSAGES.INVITATION_EXPIRED, "INVITATION_EXPIRED");
       }
 
       // Check if invitation has already been used
       if (invitation.used) {
-        return res
-          .status(400)
-          .json({ message: "Invitation has already been used" });
+        return ErrorResponse.badRequest(res, ERROR_MESSAGES.INVITATION_USED, "INVITATION_USED");
       }
 
       // Return the invitation data (but not the token)
@@ -272,6 +290,48 @@ export function registerInvitationRoutes(app: Express) {
     }
   });
 
+  // Delete invitation
+  app.delete("/api/invitations/:id", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid invitation ID" });
+      }
+
+      // Get the current user to check permissions
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Only super admins and admins can delete invitations
+      if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.ADMIN) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      // Check if invitation exists
+      const invitation = await db.query.invitations.findFirst({
+        where: eq(invitations.id, id),
+      });
+
+      if (!invitation) {
+        return res.status(404).json({ message: "Invitation not found" });
+      }
+
+      // Delete the invitation
+      await db.delete(invitations).where(eq(invitations.id, id));
+
+      res.json({ message: "Invitation deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting invitation:", error);
+      res.status(500).json({ message: "Error deleting invitation" });
+    }
+  });
+
   // Resend invitation email
   app.post("/api/invitations/:id/resend", async (req, res) => {
     try {
@@ -340,7 +400,19 @@ export function registerInvitationRoutes(app: Express) {
         });
       } catch (emailError) {
         console.error("Failed to resend invitation email:", emailError);
-        res.status(500).json({ message: "Failed to resend invitation email" });
+        
+        // If it's a structured EmailServiceError, return it to the frontend
+        if (emailError instanceof EmailServiceError) {
+          return ErrorResponse.badRequest(
+            res,
+            emailError.message,
+            emailError.code,
+            emailError.details
+          );
+        }
+        
+        // For unexpected email errors, return a generic email error
+        return ErrorResponse.internalError(res, ERROR_MESSAGES.EMAIL_SERVICE_FAILED);
       }
     } catch (error) {
       console.error("Error resending invitation:", error);

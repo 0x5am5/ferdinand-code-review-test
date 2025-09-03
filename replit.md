@@ -155,4 +155,10 @@ Changelog:
 
 ```
 Preferred communication style: Simple, everyday language.
+npm run db:push is used for database migrations
+If new packages are installed, make sure to run `npm i`
+the project runs on http://localhost:3001/
+Create appropriate tests for any new features, workflows, helpers. Focus on test only for the current task
+make sure all typescript errors are resolved
+CLAUDE.md file and replit.md file should be in sync
 ```
