@@ -122,10 +122,14 @@ export const Sidebar: FC = () => {
     inspiration: true,
   };
 
+  // Check if admin has multiple clients to determine nav items
+  const isMultiClientAdmin =
+    user?.role === UserRole.ADMIN && clients.length > 1;
+
   // Navigation items
   const navItems: NavItem[] = [
-    // Only show Dashboard for super_admins
-    ...(user?.role === UserRole.SUPER_ADMIN
+    // Show Dashboard for super_admins and multi-client admins
+    ...(user?.role === UserRole.SUPER_ADMIN || isMultiClientAdmin
       ? [
           {
             title: "Dashboard",
@@ -134,8 +138,8 @@ export const Sidebar: FC = () => {
           },
         ]
       : []),
-    // Only show Clients and Users for super_admins (admins see these in their client view)
-    ...(user?.role === UserRole.SUPER_ADMIN
+    // Show Clients and Users for super_admins and multi-client admins
+    ...(user?.role === UserRole.SUPER_ADMIN || isMultiClientAdmin
       ? [
           {
             title: "Clients",
@@ -149,8 +153,9 @@ export const Sidebar: FC = () => {
           },
         ]
       : []),
-    ...(user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
+    // Only show Design Builder for single-client admins, editors, and super admins
+    ...(user?.role === UserRole.SUPER_ADMIN ||
+    (user?.role === UserRole.ADMIN && !isMultiClientAdmin) ||
     user?.role === UserRole.EDITOR
       ? [
           {

@@ -19,12 +19,14 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   const [redirecting, setRedirecting] = useState(false);
 
   // Determine which role to check: super_admins use the viewing role, others use their actual role
-  const roleToCheck = user?.role === "super_admin" ? currentViewingRole : user?.role;
+  const roleToCheck =
+    user?.role === "super_admin" ? currentViewingRole : user?.role;
 
   useEffect(() => {
     // Clear any stale redirect once authorized or when loading changes
     const isAuthorized =
-      !!user && (roles.length === 0 || (roleToCheck && roles.includes(roleToCheck)));
+      !!user &&
+      (roles.length === 0 || (roleToCheck && roles.includes(roleToCheck)));
 
     if (isLoading || (user?.role === "super_admin" && !isReady)) {
       return; // wait until ready to evaluate access for super_admins
@@ -80,15 +82,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
       if (redirectTo !== null) setRedirectTo(null);
       if (redirecting) setRedirecting(false);
     }
-  }, [
-    roles,
-    roleToCheck,
-    user,
-    isLoading,
-    isReady,
-    redirectTo,
-    redirecting,
-  ]);
+  }, [roles, roleToCheck, user, isLoading, isReady, redirectTo, redirecting]);
 
   // Wait for auth and role switching readiness (for super_admins)
   if (isLoading || (user?.role === "super_admin" && !isReady)) {

@@ -37,7 +37,7 @@ function Router() {
 
       {/* Protected routes that require authentication */}
       <Route path="/dashboard">
-        <ProtectedRoute roles={[UserRole.SUPER_ADMIN]}>
+        <ProtectedRoute roles={[UserRole.SUPER_ADMIN, UserRole.ADMIN]}>
           <AppLayout pageKey="dashboard">
             <Dashboard />
           </AppLayout>

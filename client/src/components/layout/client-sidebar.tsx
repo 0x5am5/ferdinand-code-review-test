@@ -1,35 +1,35 @@
 import type { BrandAsset } from "@shared/schema";
 import { UserRole } from "@shared/schema";
 import {
+  ArrowLeft,
+  BookText,
   BuildingIcon,
   ChevronDown,
   CircleUserIcon,
-  LogOutIcon,
-  ArrowLeft,
-  BookText,
   Figma,
   Image,
   LayoutDashboard,
+  LogOutIcon,
   PaletteIcon,
   Search,
   Users,
   UsersIcon,
 } from "lucide-react";
+import { type FC, useEffect, useState } from "react";
+import { useLocation } from "wouter";
+import { SpotlightSearch } from "@/components/search/spotlight-search";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { type FC, useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { SpotlightSearch } from "@/components/search/spotlight-search";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
-import { useClientAssetsById } from "@/lib/queries/clients";
+import { useClientAssetsById, useClientsQuery } from "@/lib/queries/clients";
 
 interface ClientSidebarProps {
   clientId: number;
@@ -65,6 +65,8 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   // Fetch logos for this client
   const { data: clientAssets = [] } = useClientAssetsById(clientId);
   const logoAssets = clientAssets.filter((asset) => asset.category === "logo");
+
+  const { data: allClients, isLoading: clientsIsLoading } = useClientsQuery();
 
   // Keep internal state synced with prop
   useEffect(() => {
@@ -292,7 +294,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       ) : (
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
-            {user?.role === UserRole.SUPER_ADMIN && (
+            {(user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.ADMIN) && allClients && allClients.length > 1 && (
               <div className="mb-3">
                 <Button
                   variant="ghost"

@@ -89,7 +89,7 @@ export function RoleSwitchingProvider({
     setIsReady(true);
   }, [isLoading, user, actualUserRole]);
 
-// Persist changes to sessionStorage (only for super_admins and after ready)
+  // Persist changes to sessionStorage (only for super_admins and after ready)
   useEffect(() => {
     if (!isReady) return;
     if (user?.role === UserRole.SUPER_ADMIN) {

@@ -187,13 +187,17 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    // Only redirect non-admin users if they have exactly one client
-    // Admins and super_admins should stay on the dashboard
+    // Redirect logic based on user role and client count:
+    // - Single-client users (including single-client admins) → redirect to client page
+    // - Multi-client admins and super_admins → stay on dashboard
     if (
       clients &&
       clients.length === 1 &&
       user &&
-      !["super_admin", "admin"].includes(user.role)
+      (user.role === "standard" ||
+        user.role === "editor" ||
+        user.role === "guest" ||
+        user.role === "admin")
     ) {
       setLocation(`/clients/${clients[0].id}`);
     }

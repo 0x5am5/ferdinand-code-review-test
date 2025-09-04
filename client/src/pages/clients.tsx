@@ -295,15 +295,16 @@ export default function Clients() {
               <LayoutGrid className="h-4 w-4" />
             )}
           </Button>
-          <Link href="/clients/new">
-            <Button
-              variant="default"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
+          <Button
+            variant="default"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            asChild
+          >
+            <Link href="/clients/new">
               <Plus className="h-4 w-4 mr-2" />
               New Client
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -881,8 +882,7 @@ export default function Clients() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <button
-                        type="button"
+                      <div
                         className="flex flex-wrap gap-1 border-0 bg-transparent p-0"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -1013,7 +1013,7 @@ export default function Clients() {
                             </Command>
                           </PopoverContent>
                         </Popover>
-                      </button>
+                      </div>
                     </td>
                     <td className="p-4">
                       {client.createdAt
