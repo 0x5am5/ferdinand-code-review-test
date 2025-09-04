@@ -971,8 +971,6 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Apply theme changes when design system changes
     applyThemeToDom();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     // Apply theme changes when design system changes
     applyThemeToDom,

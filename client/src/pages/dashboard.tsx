@@ -83,6 +83,7 @@ import {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { currentViewingUser, isUserSwitched } = useRoleSwitching();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
@@ -110,8 +111,6 @@ export default function Dashboard() {
     figmaIntegration: false,
   });
 
-  const { toast } = useToast();
-
   // Define form before any useEffect hooks that use it
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
@@ -136,18 +135,56 @@ export default function Dashboard() {
 
     // If viewing as a specific user, filter by their client access
     if (isUserSwitched && currentViewingUser) {
-      // If the viewing user has a specific client_id, only show that client
-      if (currentViewingUser.client_id) {
-        return allClients.filter(
-          (client) => client.id === currentViewingUser.client_id
-        );
-      }
-      // If no client_id (like super_admin/admin), show all clients
+      // For user switching, we should show all clients they have access to
+      // The userClients relationship is handled elsewhere
       return allClients;
     }
 
     return allClients;
   }, [allClients, isUserSwitched, currentViewingUser]);
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+
+    const items = Array.from(orderedClients);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+
+    // Insert the item at its new position
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    // Apply the new order with a smooth transition
+    setOrderedClients(items);
+
+    // Update the order in the backend
+    const clientOrders = items.map((client, index) => ({
+      id: client.id,
+      displayOrder: index,
+    }));
+
+    updateClientOrder.mutate(clientOrders);
+  };
+
+  // Calculate filtered and sorted clients list
+  const getFilteredAndSortedClients = () => {
+    if (!orderedClients) return [];
+
+    return orderedClients
+      .filter(
+        (client: Client) =>
+          client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          client.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .sort((a, b) => {
+        if (sortOrder === "custom") {
+          // Use the current order for custom sorting
+          return 0;
+        }
+        if (sortOrder === "asc") {
+          return a.name.localeCompare(b.name);
+        }
+        return b.name.localeCompare(a.name);
+      });
+  };
 
   useEffect(() => {
     // Only redirect non-admin users if they have exactly one client
@@ -180,27 +217,6 @@ export default function Dashboard() {
       setOrderedClients(clients);
     }
   }, [clients]);
-
-  const handleDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
-
-    const items = Array.from(orderedClients);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-
-    // Insert the item at its new position
-    items.splice(result.destination.index, 0, reorderedItem);
-
-    // Apply the new order with a smooth transition
-    setOrderedClients(items);
-
-    // Update the order in the backend
-    const clientOrders = items.map((client, index) => ({
-      id: client.id,
-      displayOrder: index,
-    }));
-
-    updateClientOrder.mutate(clientOrders);
-  };
 
   useEffect(() => {
     if (editingClient) {
@@ -263,43 +279,19 @@ export default function Dashboard() {
     }
   }, [editingClient, form]);
 
-  // Calculate filtered and sorted clients list
-  const getFilteredAndSortedClients = () => {
-    return orderedClients
-      .filter(
-        (client: Client) =>
-          client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          client.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-      .sort((a, b) => {
-        if (sortOrder === "custom") {
-          // Use the current order for custom sorting
-          return 0;
-        }
-        if (sortOrder === "asc") {
-          return a.name.localeCompare(b.name);
-        }
-        return b.name.localeCompare(a.name);
-      });
-  };
+  if (clientsIsLoading) {
+    return <div>Loading...</div>;
+  }
 
   // Define the loading and filtered clients outside any conditional returns
-  const isLoading = clientsIsLoading;
   const filteredAndSortedClients = getFilteredAndSortedClients();
-
-  // Render loading spinner if data is still loading
-  if (isLoading) {
-    return (
-      <div className="p-8 flex justify-center items-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="font-bold">Dashboard</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-bold">Dashboard</h1>
+        </div>
       </div>
 
       {/* Search and Sort Controls */}
@@ -544,6 +536,29 @@ export default function Dashboard() {
             <CardDescription>
               No clients found matching "{searchQuery}"
             </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Empty state when no clients exist */}
+      {filteredAndSortedClients.length === 0 && !searchQuery && (
+        <Card className="col-span-full">
+          <CardHeader className="text-center py-12">
+            <CardTitle className="text-2xl mb-4">No Clients Yet</CardTitle>
+            <CardDescription className="text-lg mb-6">
+              Get started by creating your first client to manage their brand
+              assets and design systems.
+            </CardDescription>
+            {user?.role === "super_admin" && (
+              <div>
+                <Button asChild size="lg">
+                  <Link href="/clients/new">
+                    <Plus className="h-5 w-5 mr-2" />
+                    Create Your First Client
+                  </Link>
+                </Button>
+              </div>
+            )}
           </CardHeader>
         </Card>
       )}

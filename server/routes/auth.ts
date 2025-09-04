@@ -87,7 +87,14 @@ export function registerAuthRoutes(app: Express) {
       });
 
       console.log("Authentication successful, sending user data");
-      return res.json(user);
+
+      // Get user's assigned clients to determine redirect
+      const userClients = await storage.getUserClients(user.id);
+
+      return res.json({
+        ...user,
+        assignedClients: userClients,
+      });
     } catch (error: unknown) {
       console.error(
         "Auth error:",

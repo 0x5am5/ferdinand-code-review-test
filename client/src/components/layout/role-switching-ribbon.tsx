@@ -160,7 +160,6 @@ export function RoleSwitchingRibbon() {
                       name: selectedUser.name,
                       email: selectedUser.email,
                       role: selectedUser.role,
-                      client_id: selectedUser.client_id,
                     });
                   }
                 }}

@@ -469,4 +469,94 @@ export function registerInvitationRoutes(app: Express) {
       res.status(500).json({ message: "Error resending invitation" });
     }
   });
+
+  // Get pending invitations for a specific client
+  app.get("/api/clients/:clientId/invitations", async (req, res) => {
+    try {
+      // Make sure the user is authenticated
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const clientId = parseInt(req.params.clientId, 10);
+      if (Number.isNaN(clientId)) {
+        return res.status(400).json({ message: "Invalid client ID" });
+      }
+
+      // Get the user to check their role
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Only allow admins and super admins to view invitations
+      if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
+        return res.status(403).json({ message: "Insufficient permissions" });
+      }
+
+      // For admins (non-super_admin), check if they have access to this client
+      if (user.role === UserRole.ADMIN) {
+        const userClients = await storage.getUserClients(user.id);
+        const hasAccess = userClients.some((client) => client.id === clientId);
+
+        if (!hasAccess) {
+          return res
+            .status(403)
+            .json({ message: "Access denied to this client" });
+        }
+      }
+
+      // Get all pending invitations for this client
+      const allPendingInvitations = await db.query.invitations.findMany({
+        where: eq(invitations.used, false),
+      });
+
+      // Filter invitations for the specific client
+      const clientInvitations = allPendingInvitations.filter((invitation) =>
+        invitation.clientIds?.includes(clientId)
+      );
+
+      // Enhance invitations with client data
+      const enhancedInvitations = await Promise.all(
+        clientInvitations.map(async (invitation) => {
+          let clientData:
+            | { name: string; logoUrl?: string; primaryColor?: string }
+            | undefined;
+
+          if (invitation.clientIds && invitation.clientIds.length > 0) {
+            try {
+              const client = await storage.getClient(invitation.clientIds[0]);
+              if (client) {
+                clientData = {
+                  name: client.name,
+                  logoUrl: client.logo || undefined,
+                  primaryColor: client.primaryColor || undefined,
+                };
+              }
+            } catch (clientError: unknown) {
+              console.error(
+                "Error fetching client data for invitation:",
+                clientError instanceof Error
+                  ? clientError.message
+                  : "Unknown error"
+              );
+            }
+          }
+
+          return {
+            ...invitation,
+            clientData,
+          };
+        })
+      );
+
+      res.json(enhancedInvitations);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching client invitations:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error fetching invitations" });
+    }
+  });
 }

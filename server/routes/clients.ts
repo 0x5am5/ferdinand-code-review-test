@@ -25,17 +25,15 @@ export function registerClientRoutes(app: Express) {
         return res.status(400).json({ message: "User role not defined" });
       }
 
-      if (!user.client_id) {
-        return res.status(400).json({ message: "User client ID not defined" });
+      // For super admins, return all clients
+      if (user.role === UserRole.SUPER_ADMIN) {
+        res.json(clients);
+        return;
       }
 
-      const filteredClients = clients.filter((client) => {
-        if (user.role === UserRole.SUPER_ADMIN) return true;
-
-        return user.client_id === client.id;
-      });
-
-      res.json(filteredClients);
+      // For other users, get their assigned clients through userClients relationship
+      const userClients = await storage.getUserClients(user.id);
+      res.json(userClients);
     } catch (error: unknown) {
       console.error(
         "Error fetching clients:",

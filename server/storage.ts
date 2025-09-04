@@ -483,17 +483,18 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
   async getUserClients(userId: number): Promise<Client[]> {
+    // Get explicit user-client relationships
     const userClientRecords = await db
       .select()
       .from(userClients)
       .where(eq(userClients.userId, userId));
 
-    if (userClientRecords.length === 0) {
+    // Collect all client IDs the user has access to
+    const clientIds = userClientRecords.map((record) => record.clientId);
+
+    if (clientIds.length === 0) {
       return [];
     }
-
-    // Get all client IDs from the user-client relationships
-    const clientIds = userClientRecords.map((record) => record.clientId);
 
     // Fetch the client records
     const clientRecords = await db

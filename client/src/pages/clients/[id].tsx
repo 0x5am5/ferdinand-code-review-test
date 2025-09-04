@@ -1,7 +1,7 @@
 import type { FeatureToggles } from "@shared/schema";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import { ClientDashboard } from "@/components/brand/client-dashboard";
 import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
@@ -20,6 +20,7 @@ import { queryClient } from "@/lib/queryClient";
 
 export default function ClientDetails() {
   const { id } = useParams();
+  const [, setLocation] = useLocation();
   const clientId = id ? parseInt(id, 10) : null;
   const [activeTab, setActiveTab] = useState<string>("dashboard"); // Default to dashboard
 
@@ -28,9 +29,14 @@ export default function ClientDetails() {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
     if (tab) {
+      // If users tab is selected, redirect to the users page
+      if (tab === "users" && clientId) {
+        setLocation(`/clients/${clientId}/users`);
+        return;
+      }
       setActiveTab(tab);
     }
-  }, []);
+  }, [clientId, setLocation]);
 
   // Listen for tab changes from the sidebar
   useEffect(() => {
@@ -38,6 +44,11 @@ export default function ClientDetails() {
     const handleTabChange = (e: CustomEvent) => {
       if (e.detail?.tab) {
         console.log("Received tab change event:", e.detail.tab);
+        // If users tab is selected, redirect to the users page
+        if (e.detail.tab === "users" && clientId) {
+          setLocation(`/clients/${clientId}/users`);
+          return;
+        }
         setActiveTab(e.detail.tab);
       }
     };
@@ -53,7 +64,7 @@ export default function ClientDetails() {
         handleTabChange as EventListener
       );
     };
-  }, []);
+  }, [clientId, setLocation]);
 
   const { data: client, isLoading: isLoadingClient } = useClientsById(clientId);
   const { isLoading: isLoadingAssets, data: assets = [] } = useClientAssetsById(
@@ -166,7 +177,7 @@ export default function ClientDetails() {
   }
 
   // Extract primary color from color assets if available
-  let primaryColor: string | undefined = undefined;
+  let primaryColor: string | undefined;
   try {
     if (colorAssets && colorAssets.length > 0) {
       // Find a color asset with 'primary' in its name

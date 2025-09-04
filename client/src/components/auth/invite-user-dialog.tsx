@@ -42,6 +42,7 @@ interface InviteUserDialogProps {
   onOpenChange: (open: boolean) => void;
   currentUser: User;
   clients: Client[];
+  preSelectedClientId?: number | null;
 }
 
 export function InviteUserDialog({
@@ -49,6 +50,7 @@ export function InviteUserDialog({
   onOpenChange,
   currentUser,
   clients,
+  preSelectedClientId = null,
 }: InviteUserDialogProps) {
   const { toast } = useToast();
 
@@ -73,7 +75,7 @@ export function InviteUserDialog({
       email: "",
       name: "",
       role: UserRole.STANDARD,
-      clientIds: [],
+      clientIds: preSelectedClientId ? [preSelectedClientId] : [],
     },
   });
 
@@ -117,12 +119,25 @@ export function InviteUserDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+      if (preSelectedClientId) {
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${preSelectedClientId}/users`],
+        });
+        queryClient.invalidateQueries({
+          queryKey: [`/api/clients/${preSelectedClientId}/invitations`],
+        });
+      }
       toast({
         title: "Success",
         description: "User invited successfully",
       });
       onOpenChange(false);
-      inviteForm.reset();
+      inviteForm.reset({
+        email: "",
+        name: "",
+        role: UserRole.STANDARD,
+        clientIds: preSelectedClientId ? [preSelectedClientId] : [],
+      });
     },
     onError: (error: Error) => {
       toast({

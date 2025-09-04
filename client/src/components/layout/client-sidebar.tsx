@@ -1,4 +1,5 @@
 import type { BrandAsset } from "@shared/schema";
+import { UserRole } from "@shared/schema";
 import {
   ArrowLeft,
   BookText,
@@ -8,6 +9,7 @@ import {
   LayoutDashboard,
   PaletteIcon,
   Search,
+  Users,
   UsersIcon,
 } from "lucide-react";
 import { type FC, useEffect, useState } from "react";
@@ -16,6 +18,7 @@ import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { useClientAssetsById } from "@/lib/queries/clients";
 
@@ -43,6 +46,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 }) => {
   const [, setLocation] = useLocation();
   const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
+  const { user } = useAuth();
   const {
     isOpen: showSearch,
     open: openSearch,
@@ -81,7 +85,12 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   }, []);
 
   const handleAllBrands = () => {
-    setLocation("/dashboard");
+    const currentUrl = new URL(window.location.href);
+    const currentTab = currentUrl.searchParams.get("tab");
+    const dashboardUrl = currentTab
+      ? `/dashboard?tab=${currentTab}`
+      : "/dashboard";
+    setLocation(dashboardUrl);
   };
 
   const tabs = [
@@ -90,6 +99,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       title: "Dashboard",
       icon: <LayoutDashboard className="h-4 w-4" />,
       enabled: true, // Dashboard is always enabled
+    },
+    {
+      id: "users",
+      title: "Users",
+      icon: <Users className="h-4 w-4" />,
+      enabled:
+        user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN,
     },
     {
       id: "logos",
@@ -142,8 +158,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     });
     window.dispatchEvent(event);
 
+    const currentUrl =
+      tabId === "users"
+        ? window.location.href
+        : window.location.href.split("/users")[0];
+
     // Update URL without page reload
-    const url = new URL(window.location.href);
+    const url = new URL(currentUrl);
     url.searchParams.set("tab", tabId);
     window.history.replaceState({}, "", url.toString());
   };
@@ -251,16 +272,18 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       ) : (
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
-            <div className="mb-3">
-              <Button
-                variant="ghost"
-                className="flex items-center text-muted-foreground gap-1 w-full justify-start"
-                onClick={handleAllBrands}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>All Brands</span>
-              </Button>
-            </div>
+            {user?.role === UserRole.SUPER_ADMIN && (
+              <div className="mb-3">
+                <Button
+                  variant="ghost"
+                  className="flex items-center text-muted-foreground gap-1 w-full justify-start"
+                  onClick={handleAllBrands}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>All Brands</span>
+                </Button>
+              </div>
+            )}
           </div>
 
           <Separator className="mb-2" />

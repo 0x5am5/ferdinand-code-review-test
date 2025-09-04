@@ -242,7 +242,6 @@ export function RoleSwitchingFAB() {
                         name: selectedUser.name,
                         email: selectedUser.email,
                         role: selectedUser.role,
-                        client_id: selectedUser.client_id,
                       });
                       setIsOpen(false);
                     }

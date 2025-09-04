@@ -26,6 +26,7 @@ interface RoleSwitchingContextType {
   resetRole: () => void;
   isRoleSwitched: boolean;
   isUserSwitched: boolean;
+  isReady: boolean; // role switching state is initialized and ready to use
   canAccessCurrentPage: (role: UserRoleType) => boolean;
   getEffectiveClientId: () => number | null;
 }
@@ -39,16 +40,19 @@ export function RoleSwitchingProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [currentViewingRole, setCurrentViewingRole] = useState<UserRoleType>(
-    user?.role || UserRole.GUEST
+    UserRole.GUEST
   );
   const [currentViewingUser, setCurrentViewingUser] =
     useState<ViewingUser | null>(null);
+  const [isReady, setIsReady] = useState(false);
   const actualUserRole = user?.role || UserRole.GUEST;
 
-  // Load persisted state from sessionStorage on mount
+  // Initialize role switching state once auth is resolved
   useEffect(() => {
+    if (isLoading) return; // wait for auth to resolve
+
     if (user && user.role === UserRole.SUPER_ADMIN) {
       const persistedRole = sessionStorage.getItem("ferdinand_viewing_role");
       const persistedUser = sessionStorage.getItem("ferdinand_viewing_user");
@@ -61,25 +65,33 @@ export function RoleSwitchingProvider({
         } catch (e: unknown) {
           console.error("Error parsing persisted user:", e);
           sessionStorage.removeItem("ferdinand_viewing_user");
+          setCurrentViewingUser(null);
+          setCurrentViewingRole(UserRole.SUPER_ADMIN);
         }
       } else if (
         persistedRole &&
         Object.values(UserRole).includes(persistedRole as UserRoleType)
       ) {
+        setCurrentViewingUser(null);
         setCurrentViewingRole(persistedRole as UserRoleType);
-        setCurrentViewingUser(null);
       } else {
-        setCurrentViewingRole(actualUserRole);
         setCurrentViewingUser(null);
+        setCurrentViewingRole(UserRole.SUPER_ADMIN);
       }
     } else {
-      setCurrentViewingRole(actualUserRole);
+      // Not super admin: role switching disabled; use actual role and clear persisted values
       setCurrentViewingUser(null);
+      setCurrentViewingRole(actualUserRole);
+      sessionStorage.removeItem("ferdinand_viewing_role");
+      sessionStorage.removeItem("ferdinand_viewing_user");
     }
-  }, [user, actualUserRole]);
 
-  // Persist changes to sessionStorage
+    setIsReady(true);
+  }, [isLoading, user, actualUserRole]);
+
+// Persist changes to sessionStorage (only for super_admins and after ready)
   useEffect(() => {
+    if (!isReady) return;
     if (user?.role === UserRole.SUPER_ADMIN) {
       if (currentViewingUser) {
         sessionStorage.setItem(
@@ -92,7 +104,7 @@ export function RoleSwitchingProvider({
         sessionStorage.removeItem("ferdinand_viewing_user");
       }
     }
-  }, [currentViewingRole, currentViewingUser, user?.role]);
+  }, [isReady, currentViewingRole, currentViewingUser, user?.role]);
 
   const switchRole = (role: UserRoleType) => {
     if (user?.role === UserRole.SUPER_ADMIN) {
@@ -122,9 +134,9 @@ export function RoleSwitchingProvider({
   const canAccessCurrentPage = useCallback((role: UserRoleType): boolean => {
     const currentPath = window.location.pathname;
 
-    // Dashboard is only accessible to super admins and admins
+    // Dashboard is only accessible to super admins
     if (currentPath === "/dashboard") {
-      return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
+      return role === UserRole.SUPER_ADMIN;
     }
 
     // Users page is only accessible to admins and super admins
@@ -194,8 +206,10 @@ export function RoleSwitchingProvider({
       return currentViewingUser.id;
     }
 
-    // If just role switching (not user switching), use actual user's client access
-    return user?.client_id || null;
+    // If just role switching (not user switching), the client ID should be managed
+    // through the userClients relationship instead of user.client_id
+    // For now, return null to indicate no direct client association
+    return null;
   };
 
   const value: RoleSwitchingContextType = {
@@ -207,6 +221,7 @@ export function RoleSwitchingProvider({
     resetRole,
     isRoleSwitched,
     isUserSwitched,
+    isReady,
     canAccessCurrentPage,
     getEffectiveClientId,
   };

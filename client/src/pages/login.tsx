@@ -53,10 +53,25 @@ export default function Login() {
       setTimeout(() => {
         // Role-based redirection after login
         const userRole = data.role;
-        if (userRole === "super_admin" || userRole === "admin") {
+        const assignedClients = data.assignedClients || [];
+
+        if (userRole === "super_admin") {
           window.location.href = "/dashboard";
+        } else if (
+          userRole === "admin" ||
+          userRole === "editor" ||
+          userRole === "standard" ||
+          userRole === "guest"
+        ) {
+          // For all non-super_admin users, redirect to their assigned client
+          if (assignedClients.length > 0) {
+            window.location.href = `/clients/${assignedClients[0].id}`;
+          } else {
+            // If no assigned clients, redirect to design builder as fallback
+            window.location.href = "/design-builder";
+          }
         } else {
-          // For editors, standard, and guest users, redirect to design builder
+          // Default fallback
           window.location.href = "/design-builder";
         }
       }, 100);
@@ -110,11 +125,25 @@ export default function Login() {
   useEffect(() => {
     if (user) {
       // Role-based redirection for existing sessions
-      if (user.role === "super_admin" || user.role === "admin") {
+      if (user.role === "super_admin") {
         window.location.href = "/dashboard";
       } else {
-        // For editors, standard, and guest users, redirect to design builder
-        window.location.href = "/design-builder";
+        // For all non-super_admin users, we need to fetch their assigned clients
+        // and redirect to their client page
+        fetch("/api/user/clients")
+          .then((res) => res.json())
+          .then((assignedClients) => {
+            if (assignedClients.length > 0) {
+              window.location.href = `/clients/${assignedClients[0].id}`;
+            } else {
+              // If no assigned clients, redirect to design builder as fallback
+              window.location.href = "/design-builder";
+            }
+          })
+          .catch(() => {
+            // On error, redirect to design builder as fallback
+            window.location.href = "/design-builder";
+          });
       }
     }
   }, [user]);

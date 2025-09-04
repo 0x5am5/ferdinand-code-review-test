@@ -1,6 +1,6 @@
-import { type FeatureToggles, UserRole } from "@shared/schema";
+import { type Client, type FeatureToggles, UserRole } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   BuildingIcon,
   ChevronDown,
   CircleUserIcon,
@@ -39,7 +39,7 @@ interface NavItem {
 export const Sidebar: FC = () => {
   const [location] = useLocation();
   const params = useParams();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const {
     isOpen: showSearch,
     open: openSearch,
@@ -91,12 +91,27 @@ export const Sidebar: FC = () => {
   }
 
   // Fetch client data if we're on a client page
-  const { data: clients = [] } = useClientsQuery();
+  // For super_admins, use the admin clients query
+  // For other users, use their assigned clients
+  const { data: adminClients = [] } = useClientsQuery();
+  const { data: userClients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/user/clients"],
+    queryFn: async () => {
+      const response = await fetch("/api/user/clients");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user clients");
+      }
+      return response.json();
+    },
+    enabled: !!user && user.role !== UserRole.SUPER_ADMIN,
+  });
+
+  // Use appropriate client list based on user role
+  const clients =
+    user?.role === UserRole.SUPER_ADMIN ? adminClients : userClients;
   const currentClient = clients.length
     ? clients.find((client) => client.id === clientId)
     : null;
-
-  const { logout } = useAuth();
 
   // Default feature toggles
   const defaultFeatureToggles = {
@@ -109,22 +124,24 @@ export const Sidebar: FC = () => {
 
   // Navigation items
   const navItems: NavItem[] = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: <HomeIcon className="h-4 w-4" />,
-    },
-    ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
+    // Only show Dashboard for super_admins
+    ...(user?.role === UserRole.SUPER_ADMIN
+      ? [
+          {
+            title: "Dashboard",
+            href: "/dashboard",
+            icon: <HomeIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
+    // Only show Clients and Users for super_admins (admins see these in their client view)
+    ...(user?.role === UserRole.SUPER_ADMIN
       ? [
           {
             title: "Clients",
             href: "/clients",
             icon: <BuildingIcon className="h-4 w-4" />,
           },
-        ]
-      : []),
-    ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
-      ? [
           {
             title: "Users",
             href: "/users",
@@ -243,10 +260,10 @@ export const Sidebar: FC = () => {
               <Link key={item.href} href={item.href}>
                 <Button
                   variant="ghost"
-                  className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+                  className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-slate-100
                     ${
                       isActiveLink(item.href)
-                        ? "bg-muted font-medium"
+                        ? "bg-slate-100 font-medium"
                         : "hover:bg-muted/50"
                     }`}
                 >

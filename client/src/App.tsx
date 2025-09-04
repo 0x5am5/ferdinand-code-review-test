@@ -1,6 +1,7 @@
 import { UserRole } from "@shared/schema";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Redirect, Route, Switch, useLocation } from "wouter";
+import { ClientProtectedRoute } from "@/components/auth/client-protected-route";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,6 +12,7 @@ import { queryClient } from "@/lib/queryClient";
 import Instances from "@/pages/admin/instances";
 import ClientDetails from "@/pages/clients/[id]";
 import NewClientPage from "@/pages/clients/new";
+import ClientUsers from "@/pages/clients/users";
 import Dashboard from "@/pages/dashboard";
 import DesignBuilder from "@/pages/design-builder";
 import DesignEditor from "@/pages/design-editor";
@@ -35,7 +37,7 @@ function Router() {
 
       {/* Protected routes that require authentication */}
       <Route path="/dashboard">
-        <ProtectedRoute>
+        <ProtectedRoute roles={[UserRole.SUPER_ADMIN]}>
           <AppLayout pageKey="dashboard">
             <Dashboard />
           </AppLayout>
@@ -82,12 +84,20 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/clients/:id/users">
+        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+          <AppLayout pageKey="client-users">
+            <ClientUsers />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/clients/:id">
-        <ProtectedRoute>
+        <ClientProtectedRoute>
           <AppLayout pageKey="client-details">
             <ClientDetails />
           </AppLayout>
-        </ProtectedRoute>
+        </ClientProtectedRoute>
       </Route>
 
       <Route path="/clients">

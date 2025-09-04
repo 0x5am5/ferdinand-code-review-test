@@ -37,6 +37,24 @@ export function registerUserRoutes(app: Express) {
     }
   });
 
+  // Get current user's assigned clients
+  app.get("/api/user/clients", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const clients = await storage.getUserClients(req.session.userId);
+      res.json(clients);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching user clients:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error fetching user clients" });
+    }
+  });
+
   // Get all users
   app.get("/api/users", async (req, res) => {
     try {
