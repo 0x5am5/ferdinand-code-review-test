@@ -21,105 +21,105 @@ import Users from "@/pages/users";
 import Clients from "./pages/clients";
 
 function Router() {
-  const [location] = useLocation();
+	const [location] = useLocation();
 
-  if (location === "/") {
-    return <Redirect to="/login" />;
-  }
+	if (location === "/") {
+		return <Redirect to="/login" />;
+	}
 
-  return (
-    <Switch>
-      {/* Public routes that don't require authentication */}
-      <Route path="/login" component={Login} />
-      <Route path="/signup" component={SignupPage} />
+	return (
+		<Switch>
+			{/* Public routes that don't require authentication */}
+			<Route path="/login" component={Login} />
+			<Route path="/signup" component={SignupPage} />
 
-      {/* Protected routes that require authentication */}
-      <Route path="/dashboard">
-        <ProtectedRoute>
-          <AppLayout pageKey="dashboard">
-            <Dashboard />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			{/* Protected routes that require authentication */}
+			<Route path="/dashboard">
+				<ProtectedRoute>
+					<AppLayout pageKey="dashboard">
+						<Dashboard />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route path="/design-builder">
-        <ProtectedRoute roles={[]}>
-          <AppLayout pageKey="design-builder">
-            <DesignBuilder />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			<Route path="/design-builder">
+				<ProtectedRoute roles={[]}>
+					<AppLayout pageKey="design-builder">
+						<DesignBuilder />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route path="/design-editor/:id">
-        <ProtectedRoute>
-          <AppLayout pageKey="design-editor">
-            <DesignEditor />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			<Route path="/design-editor/:id">
+				<ProtectedRoute>
+					<AppLayout pageKey="design-editor">
+						<DesignEditor />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route path="/users">
-        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
-          <AppLayout pageKey="users">
-            <Users />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			<Route path="/users">
+				<ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+					<AppLayout pageKey="users">
+						<Users />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route path="/admin/instances">
-        <ProtectedRoute>
-          <AppLayout pageKey="instances">
-            <Instances />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			<Route path="/admin/instances">
+				<ProtectedRoute>
+					<AppLayout pageKey="instances">
+						<Instances />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route path="/clients/new">
-        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
-          <AppLayout pageKey="new-client">
-            <NewClientPage />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			<Route path="/clients/new">
+				<ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+					<AppLayout pageKey="new-client">
+						<NewClientPage />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route path="/clients/:id">
-        <ProtectedRoute>
-          <AppLayout pageKey="client-details">
-            <ClientDetails />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			<Route path="/clients/:id">
+				<ProtectedRoute>
+					<AppLayout pageKey="client-details">
+						<ClientDetails />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route path="/clients">
-        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
-          <AppLayout pageKey="client-details">
-            <Clients />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
+			<Route path="/clients">
+				<ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+					<AppLayout pageKey="client-details">
+						<Clients />
+					</AppLayout>
+				</ProtectedRoute>
+			</Route>
 
-      <Route>
-        <AppLayout pageKey="not-found">
-          <NotFound />
-        </AppLayout>
-      </Route>
-    </Switch>
-  );
+			<Route>
+				<AppLayout pageKey="not-found">
+					<NotFound />
+				</AppLayout>
+			</Route>
+		</Switch>
+	);
 }
 
 function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <RoleSwitchingProvider>
-          <SpotlightProvider>
-            <Router />
-            <Toaster />
-          </SpotlightProvider>
-        </RoleSwitchingProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  );
+	return (
+		<QueryClientProvider client={queryClient}>
+			<AuthProvider>
+				<RoleSwitchingProvider>
+					<SpotlightProvider>
+						<Router />
+						<Toaster />
+					</SpotlightProvider>
+				</RoleSwitchingProvider>
+			</AuthProvider>
+		</QueryClientProvider>
+	);
 }
 
 export default App;

@@ -4,208 +4,197 @@ import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface PendingInvitation {
-  id: number;
-  email: string;
-  role: string;
-  clientIds: number[] | null;
-  expiresAt: string;
-  used: boolean;
-  clientData?: {
-    name: string;
-    logoUrl?: string;
-    primaryColor?: string;
-  };
-}
-
 // Get all users
 export function useUsersQuery() {
-  return useQuery<User[]>({
-    queryKey: ["/api/users"],
-    queryFn: async () => {
-      const response = await fetch("/api/users");
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-      return response.json();
-    },
-  });
+	return useQuery<User[]>({
+		queryKey: ["/api/users"],
+		queryFn: async () => {
+			const response = await fetch("/api/users");
+			if (!response.ok) {
+				throw new Error("Failed to fetch users");
+			}
+			return response.json();
+		},
+	});
 }
 
 // Get pending invitations
 export function usePendingInvitationsQuery() {
-  return useQuery<PendingInvitation[]>({
-    queryKey: ["/api/invitations"],
-    queryFn: async () => {
-      const response = await fetch("/api/invitations");
-      if (!response.ok) {
-        if (response.status === 403) {
-          return [];
-        }
-        throw new Error("Failed to fetch pending invitations");
-      }
-      return response.json();
-    },
-  });
+	return useQuery({
+		queryKey: ["/api/invitations"],
+		queryFn: async () => {
+			const response = await fetch("/api/invitations");
+			if (!response.ok) {
+				if (response.status === 403) {
+					return [];
+				}
+				throw new Error("Failed to fetch pending invitations");
+			}
+			return response.json();
+		},
+	});
 }
 
 // Get client assignments for users
 export function useUserClientAssignmentsQuery(userIds: number[]) {
-  return useQuery({
-    queryKey: ["/api/users/client-assignments"],
-    queryFn: async () => {
-      try {
-        const response = await fetch(`/api/users/client-assignments`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch client assignments");
-        }
-        return await response.json();
-      } catch (error) {
-        console.error("Failed to fetch client assignments:", error);
-        return {};
-      }
-    },
-    enabled: userIds.length > 0,
-  });
+	return useQuery({
+		queryKey: ["/api/users/client-assignments"],
+		queryFn: async () => {
+			try {
+				const response = await fetch(`/api/users/client-assignments`);
+				if (!response.ok) {
+					throw new Error("Failed to fetch client assignments");
+				}
+				return await response.json();
+			} catch (error: unknown) {
+				console.error(
+					"Failed to fetch client assignments:",
+					error instanceof Error ? error.message : "Unknown error",
+				);
+				return {};
+			}
+		},
+		enabled: userIds.length > 0,
+	});
 }
 
 // Update user role mutation
 export function useUpdateUserRoleMutation() {
-  const { toast } = useToast();
+	const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (data: UpdateUserRoleForm) => {
-      return await apiRequest("PATCH", `/api/users/${data.id}/role`, {
-        role: data.role,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({
-        title: "Success",
-        description: "User role updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: getUserFriendlyErrorMessage(error),
-        variant: "destructive",
-      });
-    },
-  });
+	return useMutation({
+		mutationFn: async (data: UpdateUserRoleForm) => {
+			return await apiRequest("PATCH", `/api/users/${data.id}/role`, {
+				role: data.role,
+			});
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+			toast({
+				title: "Success",
+				description: "User role updated successfully",
+			});
+		},
+		onError: (error: Error) => {
+			toast({
+				title: "Error",
+				description: getUserFriendlyErrorMessage(error),
+				variant: "destructive",
+			});
+		},
+	});
 }
 
 // Invite user mutation
 export function useInviteUserMutation() {
-  const { toast } = useToast();
+	const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (data: InviteUserForm | number) => {
-      if (typeof data === "number") {
-        // Resend invitation
-        return await apiRequest("POST", `/api/invitations/${data}/resend`);
-      } else {
-        // New invitation
-        return await apiRequest("POST", "/api/users", data);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
-      toast({
-        title: "Success",
-        description: "User invited successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: getUserFriendlyErrorMessage(error),
-        variant: "destructive",
-      });
-    },
-  });
+	return useMutation({
+		mutationFn: async (data: InviteUserForm | number) => {
+			if (typeof data === "number") {
+				// Resend invitation
+				return await apiRequest("POST", `/api/invitations/${data}/resend`);
+			} else {
+				// New invitation
+				return await apiRequest("POST", "/api/users", data);
+			}
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+			queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+			toast({
+				title: "Success",
+				description: "User invited successfully",
+			});
+		},
+		onError: (error: Error) => {
+			toast({
+				title: "Error",
+				description: getUserFriendlyErrorMessage(error),
+				variant: "destructive",
+			});
+		},
+	});
 }
 
 // Remove invitation mutation
 export function useRemoveInvitationMutation() {
-  const { toast } = useToast();
+	const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (invitationId: number) => {
-      return await apiRequest("DELETE", `/api/invitations/${invitationId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
-      toast({
-        title: "Success",
-        description: "Invitation removed successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: getUserFriendlyErrorMessage(error),
-        variant: "destructive",
-      });
-    },
-  });
+	return useMutation({
+		mutationFn: async (invitationId: number) => {
+			return await apiRequest("DELETE", `/api/invitations/${invitationId}`);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["/api/invitations"] });
+			toast({
+				title: "Success",
+				description: "Invitation removed successfully",
+			});
+		},
+		onError: (error: Error) => {
+			toast({
+				title: "Error",
+				description: getUserFriendlyErrorMessage(error),
+				variant: "destructive",
+			});
+		},
+	});
 }
 
 // Client assignment mutations
 export function useClientAssignmentMutations() {
-  const { toast } = useToast();
+	const { toast } = useToast();
 
-  const assignClient = useMutation({
-    mutationFn: async ({
-      userId,
-      clientId,
-    }: {
-      userId: number;
-      clientId: number;
-    }) => {
-      return await apiRequest("POST", `/api/user-clients`, {
-        userId,
-        clientId,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: getUserFriendlyErrorMessage(error),
-        variant: "destructive",
-      });
-    },
-  });
+	const assignClient = useMutation({
+		mutationFn: async ({
+			userId,
+			clientId,
+		}: {
+			userId: number;
+			clientId: number;
+		}) => {
+			return await apiRequest("POST", `/api/user-clients`, {
+				userId,
+				clientId,
+			});
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+		},
+		onError: (error: Error) => {
+			toast({
+				title: "Error",
+				description: getUserFriendlyErrorMessage(error),
+				variant: "destructive",
+			});
+		},
+	});
 
-  const removeClient = useMutation({
-    mutationFn: async ({
-      userId,
-      clientId,
-    }: {
-      userId: number;
-      clientId: number;
-    }) => {
-      return await apiRequest(
-        "DELETE",
-        `/api/user-clients/${userId}/${clientId}`
-      );
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: getUserFriendlyErrorMessage(error),
-        variant: "destructive",
-      });
-    },
-  });
+	const removeClient = useMutation({
+		mutationFn: async ({
+			userId,
+			clientId,
+		}: {
+			userId: number;
+			clientId: number;
+		}) => {
+			return await apiRequest(
+				"DELETE",
+				`/api/user-clients/${userId}/${clientId}`,
+			);
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+		},
+		onError: (error: Error) => {
+			toast({
+				title: "Error",
+				description: getUserFriendlyErrorMessage(error),
+				variant: "destructive",
+			});
+		},
+	});
 
-  return { assignClient, removeClient };
+	return { assignClient, removeClient };
 }

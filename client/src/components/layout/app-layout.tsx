@@ -5,8 +5,8 @@ import { RoleSwitchingFAB } from "./role-switching-fab";
 import { Sidebar } from "./sidebar";
 
 interface AppLayoutProps {
-  children: ReactNode;
-  pageKey: string;
+	children: ReactNode;
+	pageKey: string;
 }
 
 /**
@@ -14,20 +14,20 @@ interface AppLayoutProps {
  * fixed sidebar and animated page transitions
  */
 export const AppLayout: FC<AppLayoutProps> = ({ children, pageKey }) => {
-  return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Fixed sidebar that doesn't re-render during page transitions */}
-      <Sidebar />
+	return (
+		<div className="flex h-screen overflow-hidden">
+			{/* Fixed sidebar that doesn't re-render during page transitions */}
+			<Sidebar />
 
-      {/* Main content area with animated page transitions */}
-      <main className="bg-white flex-1 overflow-y-auto ml-64">
-        <AnimatePresence mode="wait">
-          <PageTransition key={pageKey}>{children}</PageTransition>
-        </AnimatePresence>
-      </main>
+			{/* Main content area with animated page transitions */}
+			<main className="bg-white flex-1 overflow-y-auto ml-64">
+				<AnimatePresence mode="wait">
+					<PageTransition key={pageKey}>{children}</PageTransition>
+				</AnimatePresence>
+			</main>
 
-      {/* Floating Action Button for Role Switching */}
-      <RoleSwitchingFAB />
-    </div>
-  );
+			{/* Floating Action Button for Role Switching */}
+			<RoleSwitchingFAB />
+		</div>
+	);
 };

@@ -2,100 +2,100 @@
 
 /* Roc Grotesk - Sans serif font for body text */
 @font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk";
+	src:
+		url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
+		format("woff");
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk";
+	src:
+		url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+		format("woff");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk";
+	src:
+		url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
+		format("woff");
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk";
+	src:
+		url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
+		format("woff");
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
 }
 
 /* Roc Grotesk Wide - Extended variant */
 @font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk-wide";
+	src:
+		url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
+		format("woff");
+	font-weight: 300;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk-wide";
+	src:
+		url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
+		format("woff");
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk-wide";
+	src:
+		url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
+		format("woff");
+	font-weight: 500;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
+	font-family: "roc-grotesk-wide";
+	src:
+		url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
+		format("woff2"),
+		url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
+		format("woff");
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
 }
 
 @tailwind base;
@@ -103,204 +103,204 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 0 0% 93.7%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    /* Primary variables are set by the ThemeContext.tsx file */
-    --primary: 205 100% 50%;
-    --primary-foreground: 210 40% 98%;
-    --primary-light: 205 100% 95%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 205 100% 50%;
-    --radius: 0.5rem;
-    --transition: 0.2s ease;
-    --font-sans: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    --font-heading: "ivypresto-display", serif;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-hover: 210 40% 96.1%;
-    --sidebar-active: 205 100% 95%;
-    --sidebar-border: 214.3 31.8% 91.4%;
+	:root {
+		--background: 0 0% 93.7%;
+		--foreground: 222.2 84% 4.9%;
+		--card: 0 0% 100%;
+		--card-foreground: 222.2 84% 4.9%;
+		--popover: 0 0% 100%;
+		--popover-foreground: 222.2 84% 4.9%;
+		/* Primary variables are set by the ThemeContext.tsx file */
+		--primary: 205 100% 50%;
+		--primary-foreground: 210 40% 98%;
+		--primary-light: 205 100% 95%;
+		--secondary: 210 40% 96.1%;
+		--secondary-foreground: 222.2 47.4% 11.2%;
+		--muted: 210 40% 96.1%;
+		--muted-foreground: 215.4 16.3% 46.9%;
+		--accent: 210 40% 96.1%;
+		--accent-foreground: 222.2 47.4% 11.2%;
+		--destructive: 0 84.2% 60.2%;
+		--destructive-foreground: 210 40% 98%;
+		--border: 214.3 31.8% 91.4%;
+		--input: 214.3 31.8% 91.4%;
+		--ring: 205 100% 50%;
+		--radius: 0.5rem;
+		--transition: 0.2s ease;
+		--font-sans: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		--font-heading: "ivypresto-display", serif;
+		--sidebar-background: 0 0% 100%;
+		--sidebar-foreground: 222.2 84% 4.9%;
+		--sidebar-hover: 210 40% 96.1%;
+		--sidebar-active: 205 100% 95%;
+		--sidebar-border: 214.3 31.8% 91.4%;
 
-    /* Typography Customization Variables - added for design builder */
-    --heading-1-size: 2.5rem;
-    --heading-2-size: 2rem;
-    --heading-3-size: 1.5rem;
-    --heading-4-size: 1.25rem;
-    --heading-5-size: 1.125rem;
-    --heading-6-size: 1rem;
-    --body-large-size: 1.125rem;
-    --body-size: 1rem;
-    --body-small-size: 0.875rem;
-    --caption-size: 0.75rem;
-    --quote-size: 1.25rem;
-    --code-size: 0.875rem;
-    --line-height: 1.5;
-    --heading-weight: 700;
-    --body-weight: 400;
+		/* Typography Customization Variables - added for design builder */
+		--heading-1-size: 2.5rem;
+		--heading-2-size: 2rem;
+		--heading-3-size: 1.5rem;
+		--heading-4-size: 1.25rem;
+		--heading-5-size: 1.125rem;
+		--heading-6-size: 1rem;
+		--body-large-size: 1.125rem;
+		--body-size: 1rem;
+		--body-small-size: 0.875rem;
+		--caption-size: 0.75rem;
+		--quote-size: 1.25rem;
+		--code-size: 0.875rem;
+		--line-height: 1.5;
+		--heading-weight: 700;
+		--body-weight: 400;
 
-    /* Additional typography element sizes for type scale */
-    --font-size-h1: var(--heading-1-size);
-    --font-size-h2: var(--heading-2-size);
-    --font-size-h3: var(--heading-3-size);
-    --font-size-h4: var(--heading-4-size);
-    --font-size-h5: var(--heading-5-size);
-    --font-size-h6: var(--heading-6-size);
-    --font-size-body-large: var(--body-large-size);
-    --font-size-body: var(--body-size);
-    --font-size-body-small: var(--body-small-size);
-    --font-size-caption: var(--caption-size);
-    --font-size-quote: var(--quote-size);
-    --font-size-code: var(--code-size);
-  }
+		/* Additional typography element sizes for type scale */
+		--font-size-h1: var(--heading-1-size);
+		--font-size-h2: var(--heading-2-size);
+		--font-size-h3: var(--heading-3-size);
+		--font-size-h4: var(--heading-4-size);
+		--font-size-h5: var(--heading-5-size);
+		--font-size-h6: var(--heading-6-size);
+		--font-size-body-large: var(--body-large-size);
+		--font-size-body: var(--body-size);
+		--font-size-body-small: var(--body-small-size);
+		--font-size-caption: var(--caption-size);
+		--font-size-quote: var(--quote-size);
+		--font-size-code: var(--code-size);
+	}
 
-  * {
-    @apply border-border;
-  }
+	* {
+		@apply border-border;
+	}
 
-  body {
-    @apply bg-background text-foreground antialiased;
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-  }
+	body {
+		@apply bg-background text-foreground antialiased;
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+	}
 
-  h1 {
-    @apply font-ivy mb-6;
-    font-size: var(--heading-1-size);
-    font-weight: var(--heading-weight);
-    line-height: var(--line-height);
-  }
+	h1 {
+		@apply font-ivy mb-6;
+		font-size: var(--heading-1-size);
+		font-weight: var(--heading-weight);
+		line-height: var(--line-height);
+	}
 
-  h2 {
-    @apply mb-4;
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--heading-2-size);
-    font-weight: var(--heading-weight);
-    line-height: var(--line-height);
-  }
+	h2 {
+		@apply mb-4;
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--heading-2-size);
+		font-weight: var(--heading-weight);
+		line-height: var(--line-height);
+	}
 
-  h3 {
-    @apply mb-3;
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--heading-3-size);
-    font-weight: var(--heading-weight);
-    line-height: var(--line-height);
-  }
+	h3 {
+		@apply mb-3;
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--heading-3-size);
+		font-weight: var(--heading-weight);
+		line-height: var(--line-height);
+	}
 
-  h4 {
-    @apply mb-2;
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--heading-4-size);
-    font-weight: var(--heading-weight);
-    line-height: var(--line-height);
-  }
+	h4 {
+		@apply mb-2;
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--heading-4-size);
+		font-weight: var(--heading-weight);
+		line-height: var(--line-height);
+	}
 
-  h5 {
-    @apply mb-2;
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--heading-5-size);
-    font-weight: var(--heading-weight);
-    line-height: var(--line-height);
-  }
+	h5 {
+		@apply mb-2;
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--heading-5-size);
+		font-weight: var(--heading-weight);
+		line-height: var(--line-height);
+	}
 
-  h6 {
-    @apply mb-2;
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--heading-6-size);
-    font-weight: var(--heading-weight);
-    line-height: var(--line-height);
-  }
+	h6 {
+		@apply mb-2;
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--heading-6-size);
+		font-weight: var(--heading-weight);
+		line-height: var(--line-height);
+	}
 
-  p {
-    @apply mb-4;
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--body-size);
-    font-weight: var(--body-weight);
-    line-height: var(--line-height);
-  }
+	p {
+		@apply mb-4;
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--body-size);
+		font-weight: var(--body-weight);
+		line-height: var(--line-height);
+	}
 
-  .body-large {
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--body-large-size);
-    font-weight: var(--body-weight);
-    line-height: var(--line-height);
-  }
+	.body-large {
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--body-large-size);
+		font-weight: var(--body-weight);
+		line-height: var(--line-height);
+	}
 
-  .body-small {
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--body-small-size);
-    font-weight: var(--body-weight);
-    line-height: var(--line-height);
-  }
+	.body-small {
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--body-small-size);
+		font-weight: var(--body-weight);
+		line-height: var(--line-height);
+	}
 
-  .caption {
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--caption-size);
-    font-weight: var(--body-weight);
-    line-height: var(--line-height);
-    color: hsl(var(--muted-foreground));
-  }
+	.caption {
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--caption-size);
+		font-weight: var(--body-weight);
+		line-height: var(--line-height);
+		color: hsl(var(--muted-foreground));
+	}
 
-  .quote {
-    font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
-    font-size: var(--quote-size);
-    font-weight: var(--body-weight);
-    line-height: var(--line-height);
-    font-style: italic;
-    border-left: 4px solid hsl(var(--border));
-    padding-left: 1rem;
-    margin: 1rem 0;
-  }
+	.quote {
+		font-family: "roc-grotesk", "roc-grotesk-wide", "Inter", sans-serif;
+		font-size: var(--quote-size);
+		font-weight: var(--body-weight);
+		line-height: var(--line-height);
+		font-style: italic;
+		border-left: 4px solid hsl(var(--border));
+		padding-left: 1rem;
+		margin: 1rem 0;
+	}
 
-  code {
-    font-family:
-      ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono",
-      Menlo, monospace;
-    font-size: var(--code-size);
-    background-color: hsl(var(--muted));
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    border: 1px solid hsl(var(--border));
-  }
+	code {
+		font-family:
+			ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono",
+			Menlo, monospace;
+		font-size: var(--code-size);
+		background-color: hsl(var(--muted));
+		padding: 0.25rem 0.5rem;
+		border-radius: 0.25rem;
+		border: 1px solid hsl(var(--border));
+	}
 }
 
 @layer components {
-  .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-2 rounded-md transition-colors text-sidebar-foreground hover:bg-sidebar-hover;
-  }
+	.sidebar-link {
+		@apply flex items-center gap-3 px-4 py-2 rounded-md transition-colors text-sidebar-foreground hover:bg-sidebar-hover;
+	}
 
-  .sidebar-link.active {
-    @apply bg-sidebar-active text-primary;
-  }
+	.sidebar-link.active {
+		@apply bg-sidebar-active text-primary;
+	}
 
-  .card {
-    @apply bg-card rounded-lg border p-6 shadow-sm transition-shadow hover:shadow-md;
-  }
+	.card {
+		@apply bg-card rounded-lg border p-6 shadow-sm transition-shadow hover:shadow-md;
+	}
 }
 
 .flex-direction--column {
-  flex-direction: column;
+	flex-direction: column;
 }
 
 .app-name--h1 {
-  font-style: italic;
-  font-size: 40px;
-  margin: 20px 0;
+	font-style: italic;
+	font-size: 40px;
+	margin: 20px 0;
 }
 
 .builder--controls {
-  position: fixed;
-  bottom: 0;
+	position: fixed;
+	bottom: 0;
 }
