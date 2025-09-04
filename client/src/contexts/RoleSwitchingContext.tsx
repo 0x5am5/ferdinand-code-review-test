@@ -1,7 +1,7 @@
-
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserRole } from '@shared/schema';
-import { useAuth } from '@/hooks/use-auth';
+import { UserRole } from "@shared/schema";
+import type React from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ViewingUser {
   id: number;
@@ -24,30 +24,42 @@ interface RoleSwitchingContextType {
   getEffectiveClientId: () => number | null;
 }
 
-const RoleSwitchingContext = createContext<RoleSwitchingContextType | undefined>(undefined);
+const RoleSwitchingContext = createContext<
+  RoleSwitchingContextType | undefined
+>(undefined);
 
-export function RoleSwitchingProvider({ children }: { children: React.ReactNode }) {
+export function RoleSwitchingProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user } = useAuth();
-  const [currentViewingRole, setCurrentViewingRole] = useState<UserRole>(user?.role || UserRole.GUEST);
-  const [currentViewingUser, setCurrentViewingUser] = useState<ViewingUser | null>(null);
+  const [currentViewingRole, setCurrentViewingRole] = useState<UserRole>(
+    user?.role || UserRole.GUEST
+  );
+  const [currentViewingUser, setCurrentViewingUser] =
+    useState<ViewingUser | null>(null);
   const actualUserRole = user?.role || UserRole.GUEST;
 
   // Load persisted state from sessionStorage on mount
   useEffect(() => {
     if (user && user.role === UserRole.SUPER_ADMIN) {
-      const persistedRole = sessionStorage.getItem('ferdinand_viewing_role');
-      const persistedUser = sessionStorage.getItem('ferdinand_viewing_user');
-      
+      const persistedRole = sessionStorage.getItem("ferdinand_viewing_role");
+      const persistedUser = sessionStorage.getItem("ferdinand_viewing_user");
+
       if (persistedUser) {
         try {
           const parsedUser = JSON.parse(persistedUser);
           setCurrentViewingUser(parsedUser);
           setCurrentViewingRole(parsedUser.role);
         } catch (e) {
-          console.error('Error parsing persisted user:', e);
-          sessionStorage.removeItem('ferdinand_viewing_user');
+          console.error("Error parsing persisted user:", e);
+          sessionStorage.removeItem("ferdinand_viewing_user");
         }
-      } else if (persistedRole && Object.values(UserRole).includes(persistedRole as UserRole)) {
+      } else if (
+        persistedRole &&
+        Object.values(UserRole).includes(persistedRole as UserRole)
+      ) {
         setCurrentViewingRole(persistedRole as UserRole);
         setCurrentViewingUser(null);
       } else {
@@ -64,11 +76,14 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     if (user?.role === UserRole.SUPER_ADMIN) {
       if (currentViewingUser) {
-        sessionStorage.setItem('ferdinand_viewing_user', JSON.stringify(currentViewingUser));
-        sessionStorage.removeItem('ferdinand_viewing_role');
+        sessionStorage.setItem(
+          "ferdinand_viewing_user",
+          JSON.stringify(currentViewingUser)
+        );
+        sessionStorage.removeItem("ferdinand_viewing_role");
       } else {
-        sessionStorage.setItem('ferdinand_viewing_role', currentViewingRole);
-        sessionStorage.removeItem('ferdinand_viewing_user');
+        sessionStorage.setItem("ferdinand_viewing_role", currentViewingRole);
+        sessionStorage.removeItem("ferdinand_viewing_user");
       }
     }
   }, [currentViewingRole, currentViewingUser, user?.role]);
@@ -90,8 +105,8 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
   const resetRole = () => {
     setCurrentViewingRole(actualUserRole);
     setCurrentViewingUser(null);
-    sessionStorage.removeItem('ferdinand_viewing_role');
-    sessionStorage.removeItem('ferdinand_viewing_user');
+    sessionStorage.removeItem("ferdinand_viewing_role");
+    sessionStorage.removeItem("ferdinand_viewing_user");
   };
 
   const isRoleSwitched = currentViewingRole !== actualUserRole;
@@ -100,42 +115,55 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
   // Determine if a role can access the current page
   const canAccessCurrentPage = (role: UserRole): boolean => {
     const currentPath = window.location.pathname;
-    
+
     // Dashboard is only accessible to super admins and admins
-    if (currentPath === '/dashboard') {
+    if (currentPath === "/dashboard") {
       return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
     }
-    
+
     // Users page is only accessible to admins and super admins
-    if (currentPath === '/users') {
+    if (currentPath === "/users") {
       return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
     }
-    
-    // Clients page is only accessible to admins and super admins  
-    if (currentPath === '/clients') {
+
+    // Clients page is only accessible to admins and super admins
+    if (currentPath === "/clients") {
       return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
     }
-    
+
     // Design builder is accessible to super admins, admins, and editors
-    if (currentPath === '/design-builder') {
-      return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN || role === UserRole.EDITOR;
+    if (currentPath === "/design-builder") {
+      return (
+        role === UserRole.SUPER_ADMIN ||
+        role === UserRole.ADMIN ||
+        role === UserRole.EDITOR
+      );
     }
-    
+
     // Client-specific pages (brand guidelines) are accessible to all roles
-    if (currentPath.startsWith('/clients/')) {
+    if (currentPath.startsWith("/clients/")) {
       return true;
     }
-    
+
     // Default: allow access
     return true;
   };
 
   // Auto-revert when navigating to restricted pages
   useEffect(() => {
-    if ((isRoleSwitched || isUserSwitched) && !canAccessCurrentPage(currentViewingRole)) {
+    if (
+      (isRoleSwitched || isUserSwitched) &&
+      !canAccessCurrentPage(currentViewingRole)
+    ) {
       resetRole();
     }
-  }, [window.location.pathname, currentViewingRole, isRoleSwitched, isUserSwitched]);
+  }, [
+    currentViewingRole,
+    isRoleSwitched,
+    isUserSwitched,
+    canAccessCurrentPage,
+    resetRole,
+  ]);
 
   // Get the effective client ID for data filtering
   const getEffectiveClientId = (): number | null => {
@@ -143,7 +171,7 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
       // If viewing as a specific user, use their client ID for filtering
       return currentViewingUser.id;
     }
-    
+
     // If just role switching (not user switching), use actual user's client access
     return user?.client_id || null;
   };
@@ -171,7 +199,9 @@ export function RoleSwitchingProvider({ children }: { children: React.ReactNode 
 export function useRoleSwitching() {
   const context = useContext(RoleSwitchingContext);
   if (context === undefined) {
-    throw new Error('useRoleSwitching must be used within a RoleSwitchingProvider');
+    throw new Error(
+      "useRoleSwitching must be used within a RoleSwitchingProvider"
+    );
   }
   return context;
 }

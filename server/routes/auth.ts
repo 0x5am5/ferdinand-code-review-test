@@ -1,6 +1,6 @@
 import type { Express } from "express";
-import { storage } from "../storage";
 import { auth as firebaseAuth } from "../firebase";
+import { storage } from "../storage";
 
 export function registerAuthRoutes(app: Express) {
   // Logout endpoint
@@ -67,7 +67,7 @@ export function registerAuthRoutes(app: Express) {
       req.session.userId = user.id;
 
       console.log(req.session, user.id);
-      
+
       await new Promise((resolve, reject) => {
         req.session.save((err) => {
           if (err) {

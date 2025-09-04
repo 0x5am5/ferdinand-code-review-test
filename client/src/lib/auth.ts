@@ -1,8 +1,6 @@
+import { signOut as firebaseSignOut, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
-import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
-import { apiRequest } from "./queryClient";
-import { queryClient } from "./queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "./queryClient";
 
 export async function signInWithGoogle() {
   try {
@@ -33,13 +31,16 @@ export async function signInWithGoogle() {
         errorMessage = `This domain (${window.location.hostname}) is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains`;
         break;
       case "auth/operation-not-allowed":
-        errorMessage = "Google sign-in is not enabled. Please enable it in Firebase Console > Authentication > Sign-in method";
+        errorMessage =
+          "Google sign-in is not enabled. Please enable it in Firebase Console > Authentication > Sign-in method";
         break;
       case "auth/configuration-not-found":
-        errorMessage = "Firebase configuration is incorrect. Please check your Firebase project settings";
+        errorMessage =
+          "Firebase configuration is incorrect. Please check your Firebase project settings";
         break;
       case "auth/internal-error":
-        errorMessage = "Authentication service encountered an error. Please try again later";
+        errorMessage =
+          "Authentication service encountered an error. Please try again later";
         break;
       default:
         errorMessage = error.message || "Failed to sign in with Google";

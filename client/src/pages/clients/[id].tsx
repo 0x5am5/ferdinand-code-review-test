@@ -1,26 +1,26 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Link, useParams, useLocation } from "wouter";
-import { LogoManager } from "@/components/brand/logo-manager";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useParams } from "wouter";
+import { ClientDashboard } from "@/components/brand/client-dashboard";
 import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
-import { PersonaManager } from "@/components/brand/persona-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
-import { ClientDashboard } from "@/components/brand/client-dashboard";
+import { LogoManager } from "@/components/brand/logo-manager";
+import { PersonaManager } from "@/components/brand/persona-manager";
 import FigmaIntegration from "@/components/figma/figma-integration";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   useClientAssetsById,
-  useClientsById,
   useClientPersonasById,
+  useClientsById,
 } from "@/lib/queries/clients";
-import { useEffect, useState } from "react";
 import { queryClient } from "@/lib/queryClient";
 
 export default function ClientDetails() {
   const { id } = useParams();
-  const clientId = id ? parseInt(id) : null;
-  const [, setLocation] = useLocation();
+  const clientId = id ? parseInt(id, 10) : null;
+  const [, _setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<string>("dashboard"); // Default to dashboard
 
   // Get the active tab from the sidebar through URL query params
@@ -36,7 +36,7 @@ export default function ClientDetails() {
   useEffect(() => {
     // This function will be called from the sidebar
     const handleTabChange = (e: CustomEvent) => {
-      if (e.detail && e.detail.tab) {
+      if (e.detail?.tab) {
         console.log("Received tab change event:", e.detail.tab);
         setActiveTab(e.detail.tab);
       }
@@ -44,13 +44,13 @@ export default function ClientDetails() {
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChange as EventListener,
+      handleTabChange as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChange as EventListener,
+        handleTabChange as EventListener
       );
     };
   }, []);
@@ -62,12 +62,12 @@ export default function ClientDetails() {
 
   const { data: client, isLoading: isLoadingClient } = useClientsById(clientId);
   const { isLoading: isLoadingAssets, data: assets = [] } = useClientAssetsById(
-    clientId ?? null,
+    clientId ?? null
   );
   const { data: personas = [], isLoading: isLoadingPersonas } =
     useClientPersonasById(clientId ?? null);
 
-  if (!clientId || isNaN(clientId)) {
+  if (!clientId || Number.isNaN(clientId)) {
     return (
       <div className="p-8">
         <Card>
@@ -79,7 +79,7 @@ export default function ClientDetails() {
           </CardHeader>
           <CardContent>
             <Link href="/dashboard">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => {
                   queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
@@ -115,7 +115,7 @@ export default function ClientDetails() {
           </CardHeader>
           <CardContent>
             <Link href="/dashboard">
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => {
                   queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
@@ -147,10 +147,8 @@ export default function ClientDetails() {
     figmaIntegration: false,
   };
 
-
-
   const anyFeatureEnabled = Object.values(featureToggles).some(
-    (value) => value === true,
+    (value) => value === true
   );
 
   if (!anyFeatureEnabled) {
@@ -170,26 +168,31 @@ export default function ClientDetails() {
       </div>
     );
   }
-  
+
   // Extract primary color from color assets if available
   let primaryColor = null;
   try {
     if (colorAssets && colorAssets.length > 0) {
       // Find a color asset with 'primary' in its name
-      const primaryColorAsset = colorAssets.find(asset => {
+      const primaryColorAsset = colorAssets.find((asset) => {
         if (!asset || !asset.name) return false;
         return asset.name.toLowerCase().includes("primary");
       });
-      
-      if (primaryColorAsset && primaryColorAsset.data) {
+
+      if (primaryColorAsset?.data) {
         let colorData;
         try {
-          colorData = typeof primaryColorAsset.data === "string" 
-            ? JSON.parse(primaryColorAsset.data) 
-            : primaryColorAsset.data;
-          
+          colorData =
+            typeof primaryColorAsset.data === "string"
+              ? JSON.parse(primaryColorAsset.data)
+              : primaryColorAsset.data;
+
           // Extract color from the colors array (main color value)
-          if (colorData.colors && colorData.colors.length > 0 && colorData.colors[0].hex) {
+          if (
+            colorData.colors &&
+            colorData.colors.length > 0 &&
+            colorData.colors[0].hex
+          ) {
             primaryColor = colorData.colors[0].hex;
           }
         } catch (parseErr) {
@@ -206,8 +209,8 @@ export default function ClientDetails() {
     switch (activeTab) {
       case "dashboard":
         return (
-          <ClientDashboard 
-            clientId={clientId} 
+          <ClientDashboard
+            clientId={clientId}
             clientName={client.name}
             logos={logoAssets}
             primaryColor={primaryColor}
@@ -215,7 +218,7 @@ export default function ClientDetails() {
             onTabChange={setActiveTab}
           />
         );
-        
+
       case "logos":
         return featureToggles.logoSystem ? (
           <LogoManager clientId={clientId} logos={logoAssets} />
@@ -303,8 +306,8 @@ export default function ClientDetails() {
       default:
         // Show dashboard by default
         return (
-          <ClientDashboard 
-            clientId={clientId} 
+          <ClientDashboard
+            clientId={clientId}
             clientName={client.name}
             logos={logoAssets}
             primaryColor={primaryColor}

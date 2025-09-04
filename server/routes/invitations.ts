@@ -1,10 +1,14 @@
-import type { Express } from "express";
-import { storage } from "../storage";
+import { insertInvitationSchema, invitations, UserRole } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import type { Express } from "express";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import { insertInvitationSchema, invitations, UserRole } from "@shared/schema";
-import { ErrorResponse, ERROR_MESSAGES, EmailServiceError } from "../utils/errorResponse";
+import { storage } from "../storage";
+import {
+  EmailServiceError,
+  ERROR_MESSAGES,
+  ErrorResponse,
+} from "../utils/errorResponse";
 
 export function registerInvitationRoutes(app: Express) {
   // Get all pending invitations
@@ -34,7 +38,7 @@ export function registerInvitationRoutes(app: Express) {
       // Enhance invitations with client data
       const enhancedInvitations = await Promise.all(
         pendingInvitations.map(async (invitation) => {
-          let clientData = undefined;
+          let clientData;
 
           if (invitation.clientIds && invitation.clientIds.length > 0) {
             try {
@@ -58,7 +62,7 @@ export function registerInvitationRoutes(app: Express) {
             ...safeInvitation,
             clientData,
           };
-        }),
+        })
       );
 
       res.json(enhancedInvitations);
@@ -114,7 +118,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl = undefined;
+      let logoUrl;
 
       if (
         req.body.clientIds &&
@@ -130,7 +134,7 @@ export function registerInvitationRoutes(app: Express) {
         } catch (err) {
           console.error(
             "Error fetching client data for invitation email:",
-            err,
+            err
           );
           // Continue with default values if client fetch fails
         }
@@ -150,7 +154,7 @@ export function registerInvitationRoutes(app: Express) {
         console.log(`Invitation email sent to ${parsed.data.email}`);
       } catch (emailError) {
         console.error("Failed to send invitation email:", emailError);
-        
+
         // If it's a structured EmailServiceError, return it to the frontend
         if (emailError instanceof EmailServiceError) {
           return ErrorResponse.badRequest(
@@ -160,7 +164,7 @@ export function registerInvitationRoutes(app: Express) {
             emailError.details
           );
         }
-        
+
         // For unexpected email errors, return a generic email error
         return ErrorResponse.badRequest(
           res,
@@ -192,12 +196,20 @@ export function registerInvitationRoutes(app: Express) {
 
       // Check if invitation is expired
       if (new Date(invitation.expiresAt) < new Date()) {
-        return ErrorResponse.badRequest(res, ERROR_MESSAGES.INVITATION_EXPIRED, "INVITATION_EXPIRED");
+        return ErrorResponse.badRequest(
+          res,
+          ERROR_MESSAGES.INVITATION_EXPIRED,
+          "INVITATION_EXPIRED"
+        );
       }
 
       // Check if invitation has already been used
       if (invitation.used) {
-        return ErrorResponse.badRequest(res, ERROR_MESSAGES.INVITATION_USED, "INVITATION_USED");
+        return ErrorResponse.badRequest(
+          res,
+          ERROR_MESSAGES.INVITATION_USED,
+          "INVITATION_USED"
+        );
       }
 
       // Return the invitation data (but not the token)
@@ -251,7 +263,7 @@ export function registerInvitationRoutes(app: Express) {
           asset.data &&
           typeof asset.data === "object" &&
           "type" in asset.data &&
-          asset.data.type === "primary",
+          asset.data.type === "primary"
       );
 
       if (logoAsset) {
@@ -276,9 +288,9 @@ export function registerInvitationRoutes(app: Express) {
   // Mark invitation as used (called after user registration is complete)
   app.post("/api/invitations/:id/use", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
 
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid invitation ID" });
       }
 
@@ -297,8 +309,8 @@ export function registerInvitationRoutes(app: Express) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid invitation ID" });
       }
 
@@ -309,7 +321,10 @@ export function registerInvitationRoutes(app: Express) {
       }
 
       // Only super admins and admins can delete invitations
-      if (currentUser.role !== UserRole.SUPER_ADMIN && currentUser.role !== UserRole.ADMIN) {
+      if (
+        currentUser.role !== UserRole.SUPER_ADMIN &&
+        currentUser.role !== UserRole.ADMIN
+      ) {
         return res.status(403).json({ message: "Insufficient permissions" });
       }
 
@@ -335,9 +350,9 @@ export function registerInvitationRoutes(app: Express) {
   // Resend invitation email
   app.post("/api/invitations/:id/resend", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
 
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid invitation ID" });
       }
 
@@ -362,7 +377,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl = undefined;
+      let logoUrl;
 
       if (invitation.clientIds && invitation.clientIds.length > 0) {
         try {
@@ -374,7 +389,7 @@ export function registerInvitationRoutes(app: Express) {
         } catch (err) {
           console.error(
             "Error fetching client data for invitation email:",
-            err,
+            err
           );
           // Continue with default values if client fetch fails
         }
@@ -400,7 +415,7 @@ export function registerInvitationRoutes(app: Express) {
         });
       } catch (emailError) {
         console.error("Failed to resend invitation email:", emailError);
-        
+
         // If it's a structured EmailServiceError, return it to the frontend
         if (emailError instanceof EmailServiceError) {
           return ErrorResponse.badRequest(
@@ -410,9 +425,12 @@ export function registerInvitationRoutes(app: Express) {
             emailError.details
           );
         }
-        
+
         // For unexpected email errors, return a generic email error
-        return ErrorResponse.internalError(res, ERROR_MESSAGES.EMAIL_SERVICE_FAILED);
+        return ErrorResponse.internalError(
+          res,
+          ERROR_MESSAGES.EMAIL_SERVICE_FAILED
+        );
       }
     } catch (error) {
       console.error("Error resending invitation:", error);

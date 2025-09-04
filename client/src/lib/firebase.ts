@@ -1,9 +1,8 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { getApp, getApps, initializeApp } from "firebase/app";
 import {
-  getAuth,
-  GoogleAuthProvider,
-  connectAuthEmulator,
   browserLocalPersistence,
+  GoogleAuthProvider,
+  getAuth,
   setPersistence,
 } from "firebase/auth";
 

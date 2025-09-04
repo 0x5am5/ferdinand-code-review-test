@@ -1,15 +1,15 @@
+import type { BrandAsset } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { FontManager } from "@/components/brand/font-manager";
-import { ColorManager } from "@/components/brand/color-manager";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { BrandAsset } from "@shared/schema";
 import { useParams } from "wouter";
+import { ColorManager } from "@/components/brand/color-manager";
+import { FontManager } from "@/components/brand/font-manager";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 interface DesignSettings {
   radius: number;
@@ -29,11 +29,11 @@ export default function DesignEditor() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { id } = useParams();
-  const clientId = id ? parseInt(id) : null;
+  const clientId = id ? parseInt(id, 10) : null;
   const [activeTab, setActiveTab] = useState("typography");
 
   // Validate clientId
-  if (!clientId || isNaN(clientId)) {
+  if (!clientId || Number.isNaN(clientId)) {
     return (
       <div className="container py-8 max-w-6xl">
         <Card>
@@ -128,7 +128,7 @@ export default function DesignEditor() {
                   clientId={clientId}
                   colors={
                     brandAssets?.filter(
-                      (asset) => asset.category === "color",
+                      (asset) => asset.category === "color"
                     ) || []
                   }
                 />

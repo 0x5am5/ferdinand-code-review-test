@@ -1,28 +1,24 @@
-import { Plus, Edit2, Trash2 } from "lucide-react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  PERSONA_EVENT_ATTRIBUTES,
+  type UserPersona,
+  UserRole,
+} from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { Edit2, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  UserPersona,
-  PersonaEventAttribute,
-  PERSONA_EVENT_ATTRIBUTES,
-  UserRole,
-} from "@shared/schema";
-import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -31,10 +27,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import React from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 // Form schema for persona creation/editing
 const personaFormSchema = z.object({
@@ -182,17 +180,9 @@ export function PersonaManager({
   const queryClient = useQueryClient();
   const [isAddingPersona, setIsAddingPersona] = useState(false);
   const [editingPersona, setEditingPersona] = useState<UserPersona | null>(
-    null,
+    null
   );
   const { user } = useAuth();
-
-  if (!user) return null;
-
-  const isAbleToEdit = [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
 
   const form = useForm<PersonaFormData>({
     resolver: zodResolver(personaFormSchema),
@@ -270,7 +260,7 @@ export function PersonaManager({
         `/api/clients/${clientId}/personas/${personaId}`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -346,14 +336,6 @@ export function PersonaManager({
     },
   });
 
-  const onSubmit = (data: PersonaFormData) => {
-    if (editingPersona) {
-      updatePersona.mutate({ id: editingPersona.id, data });
-    } else {
-      addPersona.mutate(data);
-    }
-  };
-
   // Set form values when editing
   useEffect(() => {
     if (editingPersona) {
@@ -373,6 +355,23 @@ export function PersonaManager({
       });
     }
   }, [editingPersona, form]);
+
+  // Early return after all hooks
+  if (!user) return null;
+
+  const isAbleToEdit = [
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.EDITOR,
+  ].includes(user.role);
+
+  const onSubmit = (data: PersonaFormData) => {
+    if (editingPersona) {
+      updatePersona.mutate({ id: editingPersona.id, data });
+    } else {
+      addPersona.mutate(data);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -492,15 +491,14 @@ export function PersonaManager({
                                       <FormControl>
                                         <Checkbox
                                           checked={field.value?.includes(
-                                            attribute,
+                                            attribute
                                           )}
                                           onCheckedChange={(checked) => {
                                             const current = field.value || [];
                                             const next = checked
                                               ? [...current, attribute]
                                               : current.filter(
-                                                  (value) =>
-                                                    value !== attribute,
+                                                  (value) => value !== attribute
                                                 );
                                             field.onChange(next);
                                           }}
@@ -512,7 +510,7 @@ export function PersonaManager({
                                           .map(
                                             (word) =>
                                               word.charAt(0).toUpperCase() +
-                                              word.slice(1),
+                                              word.slice(1)
                                           )
                                           .join(" ")}
                                       </Label>

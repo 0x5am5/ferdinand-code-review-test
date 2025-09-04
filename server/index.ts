@@ -1,14 +1,14 @@
 import "dotenv/config";
-import express from "express";
-import { createServer } from "http";
-import { setupVite, serveStatic, log } from "./vite";
-import { registerRoutes } from "./routes";
-import session from "express-session";
+import { exec } from "node:child_process";
+import { EventEmitter } from "node:events";
+import { createServer } from "node:http";
+import { promisify } from "node:util";
 import connectPg from "connect-pg-simple";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { EventEmitter } from "events";
+import express from "express";
+import session from "express-session";
 import { runMigrations } from "./migrations";
+import { registerRoutes } from "./routes";
+import { log, serveStatic, setupVite } from "./vite";
 
 const execAsync = promisify(exec);
 const app = express();
@@ -39,11 +39,11 @@ app.use(
       sameSite: "lax",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
-  }),
+  })
 );
 
 // Add error handling middleware
-app.use((err: any, req: any, res: any, next: any) => {
+app.use((err: any, _req: any, res: any, _next: any) => {
   console.error(err.stack);
   res.status(500).json({ message: "Something broke!", error: err.message });
 });
@@ -79,7 +79,7 @@ async function cleanup() {
         // Kill any existing process on the port
         await execAsync(`npx kill-port ${port}`);
         console.log(`✓ Port ${port} is now available`);
-      } catch (err) {
+      } catch (_err) {
         // Ignore errors as the port might not be in use
         console.log(`✓ Port ${port} already available`);
       }
@@ -128,13 +128,13 @@ async function startServer(retries = 3) {
         // Production: Only use the specified port (5100 or PORT env var)
         console.log(`Starting server on port ${PORT} for production`);
         await new Promise<void>((resolve, reject) => {
-          server!.listen(PORT, "0.0.0.0", () => {
+          server?.listen(PORT, "0.0.0.0", () => {
             console.log(`✓ Server started successfully on port ${PORT}`);
             log(`Server listening at http://0.0.0.0:${PORT}`);
             resolve();
           });
 
-          server!.on("error", (error: NodeJS.ErrnoException) => {
+          server?.on("error", (error: NodeJS.ErrnoException) => {
             console.error("Server error:", error);
             reject(error);
           });
@@ -142,7 +142,7 @@ async function startServer(retries = 3) {
       } else {
         // Development: Try multiple ports if needed
         let serverStarted = false;
-        let usedPort: number | null = null;
+        let _usedPort: number | null = null;
 
         console.log(`Attempting to start server on port ${PORT}`);
         const portsToTry = ALL_PORTS;
@@ -156,24 +156,24 @@ async function startServer(retries = 3) {
             await new Promise<void>((resolve, reject) => {
               const timeoutId = setTimeout(() => {
                 reject(
-                  new Error(`Timeout when trying to bind to port ${port}`),
+                  new Error(`Timeout when trying to bind to port ${port}`)
                 );
               }, 5000);
 
-              server!.listen(port, "0.0.0.0", () => {
+              server?.listen(port, "0.0.0.0", () => {
                 clearTimeout(timeoutId);
                 console.log(`✓ Server started successfully on port ${port}`);
                 log(`Server listening at http://0.0.0.0:${port}`);
                 serverStarted = true;
-                usedPort = port;
+                _usedPort = port;
                 resolve();
               });
 
-              server!.on("error", (error: NodeJS.ErrnoException) => {
+              server?.on("error", (error: NodeJS.ErrnoException) => {
                 clearTimeout(timeoutId);
                 if (error.code === "EADDRINUSE") {
                   console.error(
-                    `Port ${port} is already in use, trying next port...`,
+                    `Port ${port} is already in use, trying next port...`
                   );
                   reject(new Error(`Port ${port} is in use`));
                 } else {
@@ -182,7 +182,7 @@ async function startServer(retries = 3) {
                 }
               });
             });
-          } catch (err) {
+          } catch (_err) {
             console.log(`Failed to use port ${port}, trying next...`);
             // Continue to the next port
           }
@@ -191,7 +191,7 @@ async function startServer(retries = 3) {
         // If no port worked, throw an error
         if (!serverStarted) {
           throw new Error(
-            `Could not start server on any of the ports: ${portsToTry.join(", ")}`,
+            `Could not start server on any of the ports: ${portsToTry.join(", ")}`
           );
         }
       }

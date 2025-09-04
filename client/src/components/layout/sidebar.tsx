@@ -1,31 +1,32 @@
-import React, { FC, useState, useEffect } from "react";
+import { UserRole } from "@shared/schema";
+import {
+  ArrowLeft,
+  BuildingIcon,
+  ChevronDown,
+  CircleUserIcon,
+  HomeIcon,
+  LogOutIcon,
+  PaletteIcon,
+  Search,
+  UsersIcon,
+} from "lucide-react";
+import type React from "react";
+import { type FC, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { SpotlightSearch } from "@/components/search/spotlight-search";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  CircleUserIcon,
-  HomeIcon,
-  BuildingIcon,
-  UsersIcon,
-  PaletteIcon,
-  LogOutIcon,
-  ChevronDown,
-  Search,
-  ArrowLeft,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
-import { SpotlightSearch } from "@/components/search/spotlight-search";
-import { UserRole } from "@shared/schema";
-import { ClientSidebar } from "./client-sidebar";
 import { useClientsQuery } from "@/lib/queries/clients";
+import { ClientSidebar } from "./client-sidebar";
 
 interface NavItem {
   title: string;
@@ -63,25 +64,25 @@ export const Sidebar: FC = () => {
         setActiveTab("dashboard"); // Default to dashboard if no tab parameter
       }
     }
-  }, [location, isClientDetailPage]);
+  }, [isClientDetailPage]);
 
   // Listen for tab change events from the client detail page
   useEffect(() => {
     const handleTabChange = (e: CustomEvent) => {
-      if (e.detail && e.detail.tab) {
+      if (e.detail?.tab) {
         setActiveTab(e.detail.tab);
       }
     };
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChange as EventListener,
+      handleTabChange as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChange as EventListener,
+        handleTabChange as EventListener
       );
     };
   }, []);
@@ -102,7 +103,7 @@ export const Sidebar: FC = () => {
     "Found client?",
     !!currentClient,
     "Total clients:",
-    clients.length,
+    clients.length
   );
 
   const { logout } = useAuth();
@@ -169,7 +170,7 @@ export const Sidebar: FC = () => {
     }
   };
 
-  const toggleTheme = async () => {
+  const _toggleTheme = async () => {
     if (
       !themeContext ||
       !themeContext.designSystem ||
@@ -193,7 +194,10 @@ export const Sidebar: FC = () => {
   // If we're on a client detail page, render the client sidebar
   if (isClientDetailPage && clientId && currentClient) {
     // Safely handle feature toggles with proper type casting
-    const clientToggles = (currentClient.featureToggles || {}) as any;
+    const clientToggles = (currentClient.featureToggles || {}) as Record<
+      string,
+      unknown
+    >;
 
     const featureToggles = {
       logoSystem:

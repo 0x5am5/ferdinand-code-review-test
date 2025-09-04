@@ -1,11 +1,18 @@
+import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { signInWithGoogle } from "@/lib/auth";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { signInWithGoogle } from "@/lib/auth";
 
 interface InvitationData {
   id: number;
@@ -24,7 +31,7 @@ export default function SignupPage() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const [token, setToken] = useState<string | null>(null);
-  
+
   // Extract token from URL query parameter
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -33,7 +40,11 @@ export default function SignupPage() {
   }, []);
 
   // Fetch invitation data using the token
-  const { data: invitation, isLoading, error } = useQuery({
+  const {
+    data: invitation,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["invitation", token],
     queryFn: async () => {
       if (!token) return null;
@@ -43,7 +54,7 @@ export default function SignupPage() {
           if (response.status === 401) return null;
           throw new Error(`Failed to fetch invitation: ${response.statusText}`);
         }
-        return await response.json() as InvitationData;
+        return (await response.json()) as InvitationData;
       } catch (error) {
         console.error("Error fetching invitation:", error);
         return null;
@@ -51,7 +62,7 @@ export default function SignupPage() {
     },
     enabled: !!token,
     retry: 1,
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   });
 
   // Fetch client branding data for the invitation
@@ -63,7 +74,9 @@ export default function SignupPage() {
         const response = await fetch(`/api/invitations/${token}/client`);
         if (!response.ok) {
           if (response.status === 401) return null;
-          throw new Error(`Failed to fetch client data: ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch client data: ${response.statusText}`
+          );
         }
         return await response.json();
       } catch (error) {
@@ -72,14 +85,17 @@ export default function SignupPage() {
       }
     },
     enabled: !!token && !!invitation,
-    retry: 1
+    retry: 1,
   });
 
   // Combine invitation with client data
-  const invitationWithClient = invitation && clientDataResponse?.clientData ? {
-    ...invitation,
-    clientData: clientDataResponse.clientData
-  } : invitation;
+  const invitationWithClient =
+    invitation && clientDataResponse?.clientData
+      ? {
+          ...invitation,
+          clientData: clientDataResponse.clientData,
+        }
+      : invitation;
 
   // Handle Google sign-in
   const handleGoogleSignIn = async () => {
@@ -88,27 +104,27 @@ export default function SignupPage() {
         toast({
           title: "Error",
           description: "Invalid invitation data",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
 
       // Sign in with Google
       await signInWithGoogle();
-      
+
       // Update user role based on invitation
       try {
         // Update the user role
-        const response = await fetch('/api/users/role', {
-          method: 'PATCH',
+        const response = await fetch("/api/users/role", {
+          method: "PATCH",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            role: invitation.role
-          })
+            role: invitation.role,
+          }),
         });
-        
+
         if (!response.ok) {
           console.error("Failed to update user role");
         } else {
@@ -117,54 +133,63 @@ export default function SignupPage() {
       } catch (error) {
         console.error("Error updating user role:", error);
       }
-      
+
       // Associate user with the clients in the invitation
       if (invitation.clientIds && invitation.clientIds.length > 0) {
         try {
           // Create user-client associations for each client ID
-          await Promise.all(invitation.clientIds.map(async (clientId) => {
-            const response = await fetch('/api/user-clients', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                clientId
-              })
-            });
-            
-            if (!response.ok) {
-              throw new Error(`Failed to associate user with client ID ${clientId}`);
-            }
-          }));
-          
-          console.log(`User associated with ${invitation.clientIds.length} clients`);
+          await Promise.all(
+            invitation.clientIds.map(async (clientId) => {
+              const response = await fetch("/api/user-clients", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  clientId,
+                }),
+              });
+
+              if (!response.ok) {
+                throw new Error(
+                  `Failed to associate user with client ID ${clientId}`
+                );
+              }
+            })
+          );
+
+          console.log(
+            `User associated with ${invitation.clientIds.length} clients`
+          );
         } catch (error) {
           console.error("Error associating user with clients:", error);
         }
       }
-      
+
       // Mark invitation as used
       await fetch(`/api/invitations/${invitation.id}/use`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
-        }
+          "Content-Type": "application/json",
+        },
       });
-      
+
       // Redirect to dashboard
       toast({
         title: "Welcome!",
-        description: "Your account has been created successfully."
+        description: "Your account has been created successfully.",
       });
-      
+
       setLocation("/dashboard");
     } catch (error) {
       console.error("Error signing in with Google:", error);
       toast({
         title: "Sign-in failed",
-        description: error instanceof Error ? error.message : "An error occurred during sign-in",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred during sign-in",
+        variant: "destructive",
       });
     }
   };
@@ -188,10 +213,7 @@ export default function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button 
-              className="w-full" 
-              onClick={() => setLocation("/login")}
-            >
+            <Button className="w-full" onClick={() => setLocation("/login")}>
               Go to Login
             </Button>
           </CardFooter>
@@ -211,10 +233,7 @@ export default function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button 
-              className="w-full" 
-              onClick={() => setLocation("/login")}
-            >
+            <Button className="w-full" onClick={() => setLocation("/login")}>
               Go to Login
             </Button>
           </CardFooter>
@@ -224,21 +243,22 @@ export default function SignupPage() {
   }
 
   return (
-    <div 
-      className="h-screen flex items-center justify-center p-4" 
-      style={{ 
-        backgroundColor: invitationWithClient?.clientData?.primaryColor ? 
-          `${invitationWithClient.clientData.primaryColor}10` : // 10% opacity version of the primary color
-          "bg-background" 
+    <div
+      className="h-screen flex items-center justify-center p-4"
+      style={{
+        backgroundColor: invitationWithClient?.clientData?.primaryColor
+          ? `${invitationWithClient.clientData.primaryColor}10`
+          : // 10% opacity version of the primary color
+            "bg-background",
       }}
     >
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           {invitationWithClient?.clientData?.logoUrl && (
             <div className="mx-auto mb-4 flex justify-center">
-              <img 
-                src={invitationWithClient.clientData.logoUrl} 
-                alt={`${invitationWithClient.clientData.name} logo`} 
+              <img
+                src={invitationWithClient.clientData.logoUrl}
+                alt={`${invitationWithClient.clientData.name} logo`}
                 className="h-20 w-auto object-contain"
               />
             </div>
@@ -252,16 +272,17 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-6">
-            This invitation was sent to {invitation.email}. 
-            Please sign in with this email to accept the invitation.
+            This invitation was sent to {invitation.email}. Please sign in with
+            this email to accept the invitation.
           </p>
         </CardContent>
         <CardFooter>
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
             onClick={handleGoogleSignIn}
             style={{
-              backgroundColor: invitationWithClient?.clientData?.primaryColor || undefined,
+              backgroundColor:
+                invitationWithClient?.clientData?.primaryColor || undefined,
             }}
           >
             Join with Google

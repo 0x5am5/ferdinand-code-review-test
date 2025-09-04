@@ -4,9 +4,9 @@ import {
 } from "@shared/schema";
 import type { Express } from "express";
 import multer from "multer";
-import { validateClientId } from "server/middlewares/vaildateClientId";
 import { requireAdminRole } from "server/middlewares/requireAdminRole";
-import { RequestWithClientId } from "server/routes";
+import { validateClientId } from "server/middlewares/vaildateClientId";
+import type { RequestWithClientId } from "server/routes";
 import { storage } from "server/storage";
 
 const upload = multer();
@@ -23,7 +23,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
           sections.map(async (section) => ({
             ...section,
             images: await storage.getSectionImages(section.id),
-          })),
+          }))
         );
         res.json(sectionsWithImages);
       } catch (error) {
@@ -32,7 +32,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
           .status(500)
           .json({ message: "Error fetching inspiration sections" });
       }
-    },
+    }
   );
 
   app.post(
@@ -61,7 +61,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
         console.error("Error creating inspiration section:", error);
         res.status(500).json({ message: "Error creating inspiration section" });
       }
-    },
+    }
   );
 
   app.patch(
@@ -71,7 +71,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId!;
-        const sectionId = parseInt(req.params.sectionId);
+        const sectionId = parseInt(req.params.sectionId, 10);
         const sectionData = {
           ...req.body,
           clientId,
@@ -87,14 +87,14 @@ export function registerInspirationBoardsRoutes(app: Express) {
 
         const section = await storage.updateInspirationSection(
           sectionId,
-          parsed.data,
+          parsed.data
         );
         res.json(section);
       } catch (error) {
         console.error("Error updating inspiration section:", error);
         res.status(500).json({ message: "Error updating inspiration section" });
       }
-    },
+    }
   );
 
   app.delete(
@@ -103,8 +103,8 @@ export function registerInspirationBoardsRoutes(app: Express) {
     requireAdminRole,
     async (req: RequestWithClientId, res) => {
       try {
-        const sectionId = parseInt(req.params.sectionId);
-        if (isNaN(sectionId)) {
+        const sectionId = parseInt(req.params.sectionId, 10);
+        if (Number.isNaN(sectionId)) {
           return res.status(400).json({ message: "Invalid section ID" });
         }
 
@@ -114,7 +114,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
         console.error("Error deleting inspiration section:", error);
         res.status(500).json({ message: "Error deleting inspiration section" });
       }
-    },
+    }
   );
 
   app.post(
@@ -123,7 +123,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const sectionId = parseInt(req.params.sectionId);
+        const sectionId = parseInt(req.params.sectionId, 10);
         const file = req.file;
 
         if (!file) {
@@ -136,7 +136,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
           url: `data:${file.mimetype};base64,${base64Data}`,
           fileData: base64Data,
           mimeType: file.mimetype,
-          order: parseInt(req.body.order) || 0,
+          order: parseInt(req.body.order, 10) || 0,
         };
 
         const parsed = insertInspirationImageSchema.safeParse(imageData);
@@ -153,6 +153,6 @@ export function registerInspirationBoardsRoutes(app: Express) {
         console.error("Error uploading inspiration image:", error);
         res.status(500).json({ message: "Error uploading inspiration image" });
       }
-    },
+    }
   );
 }

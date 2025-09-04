@@ -1,21 +1,37 @@
+import {
+  type Client,
+  type Invitation,
+  USER_ROLES,
+  UserRole,
+} from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
-
-import { UserRole, Client, USER_ROLES, Invitation } from "@shared/schema";
 import {
-  useUsersQuery,
-  usePendingInvitationsQuery,
-  useUserClientAssignmentsQuery,
-  useUpdateUserRoleMutation,
-  useInviteUserMutation,
-  useClientAssignmentMutations,
-  useRemoveInvitationMutation,
-} from "@/lib/queries/users";
-import { cn } from "@/lib/utils";
+  Building2,
+  Check,
+  ChevronDown,
+  Filter,
+  Loader2,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Shield,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { InviteUserDialog } from "@/components/auth/invite-user-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Command,
   CommandEmpty,
@@ -25,20 +41,18 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -47,34 +61,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Search,
-  MoreHorizontal,
-  UserPlus,
-  Filter,
-  X,
-  RefreshCw,
-  Users,
-  Building2,
-  UserCheck,
-  Shield,
-  Loader2,
-  ChevronDown,
-  Check,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
@@ -82,7 +75,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { InviteUserDialog } from "@/components/auth/invite-user-dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useClientAssignmentMutations,
+  useInviteUserMutation,
+  usePendingInvitationsQuery,
+  useRemoveInvitationMutation,
+  useUpdateUserRoleMutation,
+  useUserClientAssignmentsQuery,
+  useUsersQuery,
+} from "@/lib/queries/users";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 
 // Helper to get badge variant based on role
 const getRoleBadgeVariant = (role: string) => {
@@ -203,7 +207,7 @@ export default function UsersPage() {
         // Also match parts of names (first/last name)
         const nameParts = user.name?.toLowerCase().split(" ") || [];
         const namePartsMatch = nameParts.some((part) =>
-          part.startsWith(debouncedSearchQuery.toLowerCase()),
+          part.startsWith(debouncedSearchQuery.toLowerCase())
         );
 
         // Also match client names if assigned to user
@@ -211,7 +215,7 @@ export default function UsersPage() {
           (client: Client) =>
             client.name
               .toLowerCase()
-              .includes(debouncedSearchQuery.toLowerCase()),
+              .includes(debouncedSearchQuery.toLowerCase())
         );
 
         return (
@@ -348,7 +352,7 @@ export default function UsersPage() {
                       const isExpired = expiresAt < now;
                       const daysLeft = Math.ceil(
                         (expiresAt.getTime() - now.getTime()) /
-                          (1000 * 3600 * 24),
+                          (1000 * 3600 * 24)
                       );
 
                       return (
@@ -424,13 +428,15 @@ export default function UsersPage() {
                                   )}
                                   <span>Resend Invitation</span>
                                 </DropdownMenuItem>
-                                
+
                                 {(currentUser?.role === UserRole.SUPER_ADMIN ||
                                   currentUser?.role === UserRole.ADMIN) && (
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      onClick={() => removeInvitation(invitation.id)}
+                                      onClick={() =>
+                                        removeInvitation(invitation.id)
+                                      }
                                       className="text-red-600 focus:text-red-600"
                                     >
                                       <X className="mr-2 h-4 w-4" />
@@ -472,7 +478,7 @@ export default function UsersPage() {
             <TableBody>
               {isLoadingUsers || isLoadingAssignments ? (
                 Array.from({ length: 3 }).map((_, index) => (
-                  <TableRow key={"loading-users-" + index}>
+                  <TableRow key={`loading-users-${index}`}>
                     <TableCell>
                       <div className="flex items-center space-x-4">
                         <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
@@ -512,9 +518,11 @@ export default function UsersPage() {
                         defaultValue={user.role}
                         disabled={
                           // Disable if current user is not super admin and target user is super admin
-                          (currentUser?.role !== UserRole.SUPER_ADMIN && user.role === UserRole.SUPER_ADMIN) ||
+                          (currentUser?.role !== UserRole.SUPER_ADMIN &&
+                            user.role === UserRole.SUPER_ADMIN) ||
                           // Disable if current user is admin and trying to modify their own role
-                          (currentUser?.role === UserRole.ADMIN && user.id === currentUser.id)
+                          (currentUser?.role === UserRole.ADMIN &&
+                            user.id === currentUser.id)
                         }
                         onValueChange={(value) => {
                           // Prevent non-super admins from performing any actions on super admins
@@ -530,7 +538,7 @@ export default function UsersPage() {
                             });
                             return;
                           }
-                          
+
                           // Prevent non-super admins from assigning admin roles
                           if (
                             currentUser?.role !== UserRole.SUPER_ADMIN &&
@@ -544,7 +552,7 @@ export default function UsersPage() {
                             });
                             return;
                           }
-                          
+
                           // Prevent admins from changing their own role
                           if (
                             currentUser?.role === UserRole.ADMIN &&
@@ -552,13 +560,12 @@ export default function UsersPage() {
                           ) {
                             toast({
                               title: "Permission denied",
-                              description:
-                                "You cannot change your own role",
+                              description: "You cannot change your own role",
                               variant: "destructive",
                             });
                             return;
                           }
-                          
+
                           updateUserRole({
                             id: user.id,
                             role: value as (typeof UserRole)[keyof typeof UserRole],
@@ -586,7 +593,7 @@ export default function UsersPage() {
                             ) {
                               return false;
                             }
-                            
+
                             // Admins cannot assign admin role to others
                             if (
                               role === "admin" &&
@@ -594,7 +601,7 @@ export default function UsersPage() {
                             ) {
                               return false;
                             }
-                            
+
                             return true;
                           }).map((role) => (
                             <SelectItem key={role} value={role}>
@@ -623,7 +630,7 @@ export default function UsersPage() {
                                   className={cn(
                                     "w-full justify-start text-left font-normal h-8",
                                     !userClientAssignments[user.id]?.length &&
-                                      "text-muted-foreground",
+                                      "text-muted-foreground"
                                   )}
                                 >
                                   <Building2 className="h-4 w-4 mr-2 opacity-70" />
@@ -666,7 +673,7 @@ export default function UsersPage() {
                                               <span>{client.name}</span>
                                               <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
                                             </CommandItem>
-                                          ),
+                                          )
                                         )}
                                       </CommandGroup>
                                     )}
@@ -677,7 +684,7 @@ export default function UsersPage() {
                                           (client) =>
                                             !userClientAssignments[
                                               user.id
-                                            ]?.some((c) => c.id === client.id),
+                                            ]?.some((c) => c.id === client.id)
                                         )
                                         .map((client) => (
                                           <CommandItem
@@ -728,7 +735,7 @@ export default function UsersPage() {
                                         <X className="h-2.5 w-2.5" />
                                       </Button>
                                     </Badge>
-                                  ),
+                                  )
                                 )}
                               </div>
                             )}
@@ -739,12 +746,12 @@ export default function UsersPage() {
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="icon"
                             disabled={
                               // Disable actions for super admins when current user is not super admin
-                              currentUser?.role !== UserRole.SUPER_ADMIN && 
+                              currentUser?.role !== UserRole.SUPER_ADMIN &&
                               user.role === UserRole.SUPER_ADMIN
                             }
                           >
@@ -753,20 +760,23 @@ export default function UsersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                           {/* Only show actions if current user can perform actions on this user */}
-                          {(currentUser?.role === UserRole.SUPER_ADMIN || user.role !== UserRole.SUPER_ADMIN) && (
+                          {(currentUser?.role === UserRole.SUPER_ADMIN ||
+                            user.role !== UserRole.SUPER_ADMIN) && (
                             <>
                               {/* Check if user has a pending invitation */}
                               {pendingInvitations.some(
                                 (invite: Invitation) =>
-                                  invite.email === user.email && !invite.used,
+                                  invite.email === user.email && !invite.used
                               ) ? (
                                 <DropdownMenuItem
                                   onClick={() => {
                                     // Look up the pending invitation for this user by email
-                                    const pendingInvite = pendingInvitations.find(
-                                      (invite: Invitation) =>
-                                        invite.email === user.email && !invite.used,
-                                    );
+                                    const pendingInvite =
+                                      pendingInvitations.find(
+                                        (invite: Invitation) =>
+                                          invite.email === user.email &&
+                                          !invite.used
+                                      );
 
                                     if (pendingInvite) {
                                       resendInvitation(pendingInvite.id);

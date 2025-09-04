@@ -8,7 +8,7 @@ export default function FigmaIntegration({ clientId }: FigmaIntegrationProps) {
   // TEMPORARILY COMMENTED OUT - Replaced with Code-Based Design System Builder
   // All existing Figma integration functionality has been commented out
   // and replaced with the new code-based design system builder
-  
+
   return <DesignSystemBuilder clientId={clientId} />;
 }
 

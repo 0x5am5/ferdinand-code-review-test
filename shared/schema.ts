@@ -1,16 +1,16 @@
+import { relations } from "drizzle-orm";
 import {
-  pgTable,
-  text,
-  serial,
+  boolean,
   integer,
   json,
-  timestamp,
-  boolean,
   jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
 
 // Constants
 export const LogoType = {
@@ -88,7 +88,7 @@ export const TypeScaleRatio = {
   MINOR_THIRD: 1.2,
   MAJOR_THIRD: 1.25,
   PERFECT_FOURTH: 1.333,
-  AUGMENTED_FOURTH: 1.414,
+  AUGMENTED_FOURTH: Math.SQRT2,
   PERFECT_FIFTH: 1.5,
   GOLDEN_RATIO: 1.618,
   MAJOR_SIXTH: 1.667,
@@ -257,7 +257,9 @@ export const typeScales = pgTable("type_scales", {
   name: text("name").notNull(),
   unit: text("unit", {
     enum: ["px", "rem", "em"],
-  }).notNull().default("px"),
+  })
+    .notNull()
+    .default("px"),
   baseSize: integer("base_size").notNull().default(16),
   scaleRatio: integer("scale_ratio").notNull().default(1250), // stored as integer (1.25 * 1000)
   customRatio: integer("custom_ratio"), // for custom ratios
@@ -272,23 +274,87 @@ export const typeScales = pgTable("type_scales", {
   responsiveSizes: json("responsive_sizes").default({
     mobile: { baseSize: 14, scaleRatio: 1.125 },
     tablet: { baseSize: 15, scaleRatio: 1.2 },
-    desktop: { baseSize: 16, scaleRatio: 1.25 }
+    desktop: { baseSize: 16, scaleRatio: 1.25 },
   }),
   typeStyles: json("type_styles").default([
-    { level: "h1", name: "Heading 1", size: 4, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
-    { level: "h2", name: "Heading 2", size: 3, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
-    { level: "h3", name: "Heading 3", size: 2, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h4", name: "Heading 4", size: 1, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-    { level: "h5", name: "Heading 5", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "h6", name: "Heading 6", size: 0, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-    { level: "body", name: "Body Text", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-    { level: "small", name: "Small Text", size: -1, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#666666" }
+    {
+      level: "h1",
+      name: "Heading 1",
+      size: 4,
+      fontWeight: "700",
+      lineHeight: 1.2,
+      letterSpacing: 0,
+      color: "#000000",
+    },
+    {
+      level: "h2",
+      name: "Heading 2",
+      size: 3,
+      fontWeight: "600",
+      lineHeight: 1.3,
+      letterSpacing: 0,
+      color: "#000000",
+    },
+    {
+      level: "h3",
+      name: "Heading 3",
+      size: 2,
+      fontWeight: "600",
+      lineHeight: 1.4,
+      letterSpacing: 0,
+      color: "#000000",
+    },
+    {
+      level: "h4",
+      name: "Heading 4",
+      size: 1,
+      fontWeight: "500",
+      lineHeight: 1.4,
+      letterSpacing: 0,
+      color: "#000000",
+    },
+    {
+      level: "h5",
+      name: "Heading 5",
+      size: 0,
+      fontWeight: "500",
+      lineHeight: 1.5,
+      letterSpacing: 0,
+      color: "#000000",
+    },
+    {
+      level: "h6",
+      name: "Heading 6",
+      size: 0,
+      fontWeight: "500",
+      lineHeight: 1.5,
+      letterSpacing: 0,
+      color: "#000000",
+    },
+    {
+      level: "body",
+      name: "Body Text",
+      size: 0,
+      fontWeight: "400",
+      lineHeight: 1.6,
+      letterSpacing: 0,
+      color: "#000000",
+    },
+    {
+      level: "small",
+      name: "Small Text",
+      size: -1,
+      fontWeight: "400",
+      lineHeight: 1.5,
+      letterSpacing: 0,
+      color: "#666666",
+    },
   ]),
   exports: json("exports").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  individual_header_styles: jsonb("individual_header_styles").default('{}'),
-  individual_body_styles: jsonb("individual_body_styles").default('{}'),
+  individual_header_styles: jsonb("individual_header_styles").default("{}"),
+  individual_body_styles: jsonb("individual_body_styles").default("{}"),
 });
 
 // Figma Integration Tables
@@ -384,12 +450,15 @@ export const brandAssetsRelations = relations(brandAssets, ({ many }) => ({
   convertedAssets: many(convertedAssets),
 }));
 
-export const convertedAssetsRelations = relations(convertedAssets, ({ one }) => ({
-  originalAsset: one(brandAssets, {
-    fields: [convertedAssets.originalAssetId],
-    references: [brandAssets.id],
-  }),
-}));
+export const convertedAssetsRelations = relations(
+  convertedAssets,
+  ({ one }) => ({
+    originalAsset: one(brandAssets, {
+      fields: [convertedAssets.originalAssetId],
+      references: [brandAssets.id],
+    }),
+  })
+);
 
 export const typeScalesRelations = relations(typeScales, ({ one }) => ({
   client: one(clients, {
@@ -398,18 +467,21 @@ export const typeScalesRelations = relations(typeScales, ({ one }) => ({
   }),
 }));
 
-export const figmaConnectionsRelations = relations(figmaConnections, ({ one, many }) => ({
-  client: one(clients, {
-    fields: [figmaConnections.clientId],
-    references: [clients.id],
-  }),
-  user: one(users, {
-    fields: [figmaConnections.userId],
-    references: [users.id],
-  }),
-  syncLogs: many(figmaSyncLogs),
-  designTokens: many(figmaDesignTokens),
-}));
+export const figmaConnectionsRelations = relations(
+  figmaConnections,
+  ({ one, many }) => ({
+    client: one(clients, {
+      fields: [figmaConnections.clientId],
+      references: [clients.id],
+    }),
+    user: one(users, {
+      fields: [figmaConnections.userId],
+      references: [users.id],
+    }),
+    syncLogs: many(figmaSyncLogs),
+    designTokens: many(figmaDesignTokens),
+  })
+);
 
 export const figmaSyncLogsRelations = relations(figmaSyncLogs, ({ one }) => ({
   connection: one(figmaConnections, {
@@ -418,12 +490,15 @@ export const figmaSyncLogsRelations = relations(figmaSyncLogs, ({ one }) => ({
   }),
 }));
 
-export const figmaDesignTokensRelations = relations(figmaDesignTokens, ({ one }) => ({
-  connection: one(figmaConnections, {
-    fields: [figmaDesignTokens.connectionId],
-    references: [figmaConnections.id],
-  }),
-}));
+export const figmaDesignTokensRelations = relations(
+  figmaDesignTokens,
+  ({ one }) => ({
+    connection: one(figmaConnections, {
+      fields: [figmaDesignTokens.connectionId],
+      references: [figmaConnections.id],
+    }),
+  })
+);
 
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users)
@@ -471,18 +546,20 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
             hsl: z.string().optional(),
             cmyk: z.string().optional(),
             pantone: z.string().optional(),
-          }),
+          })
         )
         .min(1),
       gradient: z
         .object({
           type: z.enum(["linear", "radial"]),
-          stops: z.array(
-            z.object({
-              color: z.string(),
-              position: z.number().min(0).max(100),
-            })
-          ).min(2),
+          stops: z
+            .array(
+              z.object({
+                color: z.string(),
+                position: z.number().min(0).max(100),
+              })
+            )
+            .min(2),
         })
         .optional(),
       tints: z
@@ -490,7 +567,7 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
           z.object({
             percentage: z.number(),
             hex: z.string(),
-          }),
+          })
         )
         .optional(),
       shades: z
@@ -498,7 +575,7 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
           z.object({
             percentage: z.number(),
             hex: z.string(),
-          }),
+          })
         )
         .optional(),
     }),
@@ -511,10 +588,10 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
     data: z.object({
       source: z.enum(Object.values(FontSource) as [string, ...string[]]),
       weights: z.array(
-        z.enum(Object.values(FontWeight) as [string, ...string[]]),
+        z.enum(Object.values(FontWeight) as [string, ...string[]])
       ),
       styles: z.array(
-        z.enum(Object.values(FontStyle) as [string, ...string[]]),
+        z.enum(Object.values(FontStyle) as [string, ...string[]])
       ),
       sourceData: z.object({
         projectId: z.string().optional(),
@@ -523,13 +600,13 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
           .array(
             z.object({
               weight: z.enum(
-                Object.values(FontWeight) as [string, ...string[]],
+                Object.values(FontWeight) as [string, ...string[]]
               ),
               style: z.enum(Object.values(FontStyle) as [string, ...string[]]),
               format: z.enum(["woff", "woff2", "otf", "ttf", "eot"]),
               fileName: z.string(),
               fileData: z.string(),
-            }),
+            })
           )
           .optional(),
       }),
@@ -549,7 +626,7 @@ export const insertUserPersonaSchema = createInsertSchema(userPersonas)
       })
       .optional(),
     eventAttributes: z.array(
-      z.enum(Object.values(PersonaEventAttribute) as [string, ...string[]]),
+      z.enum(Object.values(PersonaEventAttribute) as [string, ...string[]])
     ),
     metrics: z
       .object({
@@ -561,11 +638,11 @@ export const insertUserPersonaSchema = createInsertSchema(userPersonas)
   });
 
 export const insertInspirationSectionSchema = createInsertSchema(
-  inspirationSections,
+  inspirationSections
 ).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertInspirationImageSchema = createInsertSchema(
-  inspirationImages,
+  inspirationImages
 ).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertInvitationSchema = createInsertSchema(invitations)
@@ -582,8 +659,9 @@ export const insertConvertedAssetSchema = createInsertSchema(convertedAssets)
     mimeType: z.string(),
   });
 
-export const insertHiddenSectionSchema = createInsertSchema(hiddenSections)
-  .omit({ id: true, createdAt: true });
+export const insertHiddenSectionSchema = createInsertSchema(
+  hiddenSections
+).omit({ id: true, createdAt: true });
 
 export const insertTypeScaleSchema = createInsertSchema(typeScales)
   .omit({ id: true, createdAt: true, updatedAt: true })
@@ -594,38 +672,48 @@ export const insertTypeScaleSchema = createInsertSchema(typeScales)
     customRatio: z.number().min(1000).max(3000).optional(),
     bodyLetterSpacing: z.number().min(-1000).max(1000), // stored as integer (em * 1000)
     headerLetterSpacing: z.number().min(-1000).max(1000), // stored as integer (em * 1000)
-    responsiveSizes: z.object({
-      mobile: z.object({
-        baseSize: z.number().min(8).max(72),
-        scaleRatio: z.number().min(1.0).max(3.0)
-      }),
-      tablet: z.object({
-        baseSize: z.number().min(8).max(72),
-        scaleRatio: z.number().min(1.0).max(3.0)
-      }),
-      desktop: z.object({
-        baseSize: z.number().min(8).max(72),
-        scaleRatio: z.number().min(1.0).max(3.0)
+    responsiveSizes: z
+      .object({
+        mobile: z.object({
+          baseSize: z.number().min(8).max(72),
+          scaleRatio: z.number().min(1.0).max(3.0),
+        }),
+        tablet: z.object({
+          baseSize: z.number().min(8).max(72),
+          scaleRatio: z.number().min(1.0).max(3.0),
+        }),
+        desktop: z.object({
+          baseSize: z.number().min(8).max(72),
+          scaleRatio: z.number().min(1.0).max(3.0),
+        }),
       })
-    }).optional(),
-    typeStyles: z.array(z.object({
-      level: z.string(),
-      name: z.string(),
-      size: z.number(),
-      fontWeight: z.string(),
-      lineHeight: z.number(),
-      letterSpacing: z.number(),
-      color: z.string(),
-      backgroundColor: z.string().optional(),
-      textDecoration: z.string().optional(),
-      fontStyle: z.string().optional()
-    })).optional(),
-    exports: z.array(z.object({
-      format: z.enum(["css", "scss", "figma", "adobe"]),
-      content: z.string(),
-      fileName: z.string(),
-      exportedAt: z.string()
-    })).optional()
+      .optional(),
+    typeStyles: z
+      .array(
+        z.object({
+          level: z.string(),
+          name: z.string(),
+          size: z.number(),
+          fontWeight: z.string(),
+          lineHeight: z.number(),
+          letterSpacing: z.number(),
+          color: z.string(),
+          backgroundColor: z.string().optional(),
+          textDecoration: z.string().optional(),
+          fontStyle: z.string().optional(),
+        })
+      )
+      .optional(),
+    exports: z
+      .array(
+        z.object({
+          format: z.enum(["css", "scss", "figma", "adobe"]),
+          content: z.string(),
+          fileName: z.string(),
+          exportedAt: z.string(),
+        })
+      )
+      .optional(),
   });
 
 export const updateClientOrderSchema = z.object({
@@ -633,7 +721,7 @@ export const updateClientOrderSchema = z.object({
     z.object({
       id: z.number(),
       displayOrder: z.number(),
-    }),
+    })
   ),
 });
 
@@ -687,33 +775,55 @@ export const insertFigmaSyncLogSchema = createInsertSchema(figmaSyncLogs)
     syncType: z.enum(["pull_from_figma", "push_to_figma", "bidirectional"]),
     syncDirection: z.enum(["figma_to_ferdinand", "ferdinand_to_figma"]),
     status: z.enum(["started", "completed", "failed"]),
-    elementsChanged: z.array(z.object({
-      type: z.string(),
-      name: z.string(),
-      action: z.enum(["created", "updated", "deleted"])
-    })).optional(),
-    conflictsDetected: z.array(z.object({
-      tokenType: z.string(),
-      tokenName: z.string(),
-      ferdinandValue: z.any(),
-      figmaValue: z.any()
-    })).optional(),
-    conflictsResolved: z.array(z.object({
-      tokenType: z.string(),
-      tokenName: z.string(),
-      resolution: z.enum(["ferdinand_wins", "figma_wins", "manual"])
-    })).optional(),
+    elementsChanged: z
+      .array(
+        z.object({
+          type: z.string(),
+          name: z.string(),
+          action: z.enum(["created", "updated", "deleted"]),
+        })
+      )
+      .optional(),
+    conflictsDetected: z
+      .array(
+        z.object({
+          tokenType: z.string(),
+          tokenName: z.string(),
+          ferdinandValue: z.any(),
+          figmaValue: z.any(),
+        })
+      )
+      .optional(),
+    conflictsResolved: z
+      .array(
+        z.object({
+          tokenType: z.string(),
+          tokenName: z.string(),
+          resolution: z.enum(["ferdinand_wins", "figma_wins", "manual"]),
+        })
+      )
+      .optional(),
   });
 
-export const insertFigmaDesignTokenSchema = createInsertSchema(figmaDesignTokens)
+export const insertFigmaDesignTokenSchema = createInsertSchema(
+  figmaDesignTokens
+)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
-    tokenType: z.enum(["color", "typography", "spacing", "border_radius", "shadow"]),
+    tokenType: z.enum([
+      "color",
+      "typography",
+      "spacing",
+      "border_radius",
+      "shadow",
+    ]),
     tokenName: z.string().min(1),
     figmaId: z.string().optional(),
     ferdinandValue: z.any(),
     figmaValue: z.any().optional(),
-    syncStatus: z.enum(["in_sync", "ferdinand_newer", "figma_newer", "conflict"]).default("in_sync"),
+    syncStatus: z
+      .enum(["in_sync", "ferdinand_newer", "figma_newer", "conflict"])
+      .default("in_sync"),
   });
 
 // Figma Integration Types
@@ -722,7 +832,9 @@ export type FigmaSyncLog = typeof figmaSyncLogs.$inferSelect;
 export type FigmaDesignToken = typeof figmaDesignTokens.$inferSelect;
 export type InsertFigmaConnection = z.infer<typeof insertFigmaConnectionSchema>;
 export type InsertFigmaSyncLog = z.infer<typeof insertFigmaSyncLogSchema>;
-export type InsertFigmaDesignToken = z.infer<typeof insertFigmaDesignTokenSchema>;
+export type InsertFigmaDesignToken = z.infer<
+  typeof insertFigmaDesignTokenSchema
+>;
 
 // Other Types
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
@@ -756,9 +868,9 @@ export interface IndividualHeaderStyle {
   letterSpacing?: number;
   color?: string;
   fontSize?: string;
-  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  fontStyle?: 'normal' | 'italic' | 'oblique';
-  textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  fontStyle?: "normal" | "italic" | "oblique";
+  textDecoration?: "none" | "underline" | "overline" | "line-through";
 }
 
 export interface IndividualBodyStyle {
@@ -767,63 +879,25 @@ export interface IndividualBodyStyle {
   letterSpacing?: number;
   color?: string;
   fontSize?: string;
-  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  fontStyle?: 'normal' | 'italic' | 'oblique';
-  textDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  fontStyle?: "normal" | "italic" | "oblique";
+  textDecoration?: "none" | "underline" | "overline" | "line-through";
 }
 
-export interface TypeScale {
-  id?: number;
-  clientId: number;
-  name: string;
-  unit: "px" | "rem" | "em";
-  baseSize: number;
-  scaleRatio: number;
-  customRatio?: number;
-  bodyFontFamily: string;
-  bodyFontWeight: string;
-  bodyLetterSpacing: number;
-  bodyColor: string;
-  bodyTextTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  bodyFontStyle?: 'normal' | 'italic' | 'oblique';
-  bodyTextDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
-  headerFontFamily: string;
-  headerFontWeight: string;
-  headerLetterSpacing: number;
-  headerColor: string;
-  headerTextTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  headerFontStyle?: 'normal' | 'italic' | 'oblique';
-  headerTextDecoration?: 'none' | 'underline' | 'overline' | 'line-through';
-  individualHeaderStyles?: {
-    h1?: IndividualHeaderStyle;
-    h2?: IndividualHeaderStyle;
-    h3?: IndividualHeaderStyle;
-    h4?: IndividualHeaderStyle;
-    h5?: IndividualHeaderStyle;
-    h6?: IndividualHeaderStyle;
-  };
-  individualBodyStyles?: {
-    "body-large"?: IndividualBodyStyle;
-    "body"?: IndividualBodyStyle;
-    "body-small"?: IndividualBodyStyle;
-    "caption"?: IndividualBodyStyle;
-    "quote"?: IndividualBodyStyle;
-    "code"?: IndividualBodyStyle;
-    "small"?: IndividualBodyStyle;
-  };
-  responsiveSizes?: {
-    mobile: { baseSize: number; scaleRatio: number };
-    tablet: { baseSize: number; scaleRatio: number };
-    desktop: { baseSize: number; scaleRatio: number };
-  };
-  typeStyles?: TypeStyle[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export type TypographyLevel = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | 
-                              "body-large" | "body" | "body-small" | 
-                              "caption" | "quote" | "code" | "small";
+export type TypographyLevel =
+  | "h1"
+  | "h2"
+  | "h3"
+  | "h4"
+  | "h5"
+  | "h6"
+  | "body-large"
+  | "body"
+  | "body-small"
+  | "caption"
+  | "quote"
+  | "code"
+  | "small";
 
 export interface TypeStyle {
   level: TypographyLevel | string;
@@ -843,9 +917,13 @@ const individualHeaderStyleSchema = z.object({
   letterSpacing: z.number().optional(),
   color: z.string().optional(),
   fontSize: z.string().optional(),
-  textTransform: z.enum(['none', 'uppercase', 'lowercase', 'capitalize']).optional(),
-  fontStyle: z.enum(['normal', 'italic', 'oblique']).optional(),
-  textDecoration: z.enum(['none', 'underline', 'overline', 'line-through']).optional(),
+  textTransform: z
+    .enum(["none", "uppercase", "lowercase", "capitalize"])
+    .optional(),
+  fontStyle: z.enum(["normal", "italic", "oblique"]).optional(),
+  textDecoration: z
+    .enum(["none", "underline", "overline", "line-through"])
+    .optional(),
 });
 
 const individualBodyStyleSchema = z.object({
@@ -854,13 +932,21 @@ const individualBodyStyleSchema = z.object({
   letterSpacing: z.number().optional(),
   color: z.string().optional(),
   fontSize: z.string().optional(),
-  textTransform: z.enum(['none', 'uppercase', 'lowercase', 'capitalize']).optional(),
-  fontStyle: z.enum(['normal', 'italic', 'oblique']).optional(),
-  textDecoration: z.enum(['none', 'underline', 'overline', 'line-through']).optional(),
+  textTransform: z
+    .enum(["none", "uppercase", "lowercase", "capitalize"])
+    .optional(),
+  fontStyle: z.enum(["normal", "italic", "oblique"]).optional(),
+  textDecoration: z
+    .enum(["none", "underline", "overline", "line-through"])
+    .optional(),
 });
 
 export const insertTypeScaleSchemaExtended = insertTypeScaleSchema.extend({
-  individualHeaderStyles: z.record(z.string(), individualHeaderStyleSchema).optional(),
-  individualBodyStyles: z.record(z.string(), individualBodyStyleSchema).optional(),
+  individualHeaderStyles: z
+    .record(z.string(), individualHeaderStyleSchema)
+    .optional(),
+  individualBodyStyles: z
+    .record(z.string(), individualBodyStyleSchema)
+    .optional(),
   exports: z.array(z.string()).optional(),
 });

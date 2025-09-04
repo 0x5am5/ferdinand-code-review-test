@@ -1,11 +1,11 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, type QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     try {
       const errorData = await res.json();
       // Check if it's our standardized error format
-      if (errorData.error && errorData.error.message) {
+      if (errorData.error?.message) {
         throw new Error(errorData.error.message);
       }
       // Fallback for other error formats
@@ -14,9 +14,9 @@ async function throwIfResNotOk(res: Response) {
       }
       // Final fallback
       throw new Error(errorData.toString());
-    } catch (parseError) {
+    } catch (_parseError) {
       // If JSON parsing fails, fall back to text
-      const text = await res.text() || res.statusText;
+      const text = (await res.text()) || res.statusText;
       throw new Error(`${res.status}: ${text}`);
     }
   }
@@ -25,7 +25,7 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown | undefined
 ): Promise<Response> {
   const res = await fetch(url, {
     method,

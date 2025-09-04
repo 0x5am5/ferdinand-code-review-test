@@ -1,10 +1,18 @@
-import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
 import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -14,15 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 // Password reset form schema
 const resetPasswordSchema = z
@@ -39,7 +39,7 @@ const resetPasswordSchema = z
 type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
 export default function ResetPassword() {
-  const [location, setLocation] = useLocation();
+  const [_location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
@@ -73,7 +73,7 @@ export default function ResetPassword() {
         // You can verify the token with the server if needed
         // For now, we'll just check if it exists
         setIsTokenValid(true);
-      } catch (error) {
+      } catch (_error) {
         setIsTokenValid(false);
         setTokenError("Invalid or expired reset token");
       }
@@ -105,7 +105,8 @@ export default function ResetPassword() {
       setResetComplete(true);
       toast({
         title: "Password reset successful",
-        description: "Your password has been changed. You can now log in with your new password.",
+        description:
+          "Your password has been changed. You can now log in with your new password.",
       });
 
       // Redirect to login page after a delay
@@ -115,7 +116,8 @@ export default function ResetPassword() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An unknown error occurred",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
         variant: "destructive",
       });
     } finally {
@@ -129,7 +131,9 @@ export default function ResetPassword() {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Card className="w-[350px] shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Verifying Link</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              Verifying Link
+            </CardTitle>
             <CardDescription className="text-center">
               Please wait while we verify your reset link...
             </CardDescription>
@@ -148,9 +152,12 @@ export default function ResetPassword() {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Card className="w-[350px] shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center text-red-500">Link Invalid</CardTitle>
+            <CardTitle className="text-2xl text-center text-red-500">
+              Link Invalid
+            </CardTitle>
             <CardDescription className="text-center">
-              {tokenError || "This password reset link is invalid or has expired."}
+              {tokenError ||
+                "This password reset link is invalid or has expired."}
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -169,9 +176,12 @@ export default function ResetPassword() {
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <Card className="w-[350px] shadow-lg">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center text-green-500">Password Reset</CardTitle>
+            <CardTitle className="text-2xl text-center text-green-500">
+              Password Reset
+            </CardTitle>
             <CardDescription className="text-center">
-              Your password has been successfully reset. You will be redirected to the login page.
+              Your password has been successfully reset. You will be redirected
+              to the login page.
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -204,10 +214,10 @@ export default function ResetPassword() {
                   <FormItem>
                     <FormLabel>New Password</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
+                      <Input
+                        type="password"
                         placeholder="Enter your new password"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -221,21 +231,17 @@ export default function ResetPassword() {
                   <FormItem>
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
+                      <Input
+                        type="password"
                         placeholder="Confirm your new password"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

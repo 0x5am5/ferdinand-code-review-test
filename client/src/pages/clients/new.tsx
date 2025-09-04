@@ -1,12 +1,9 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { type InsertClient, insertClientSchema } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { insertClientSchema, type InsertClient } from "@shared/schema";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
@@ -15,6 +12,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -91,10 +90,10 @@ export default function NewClientPage() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea 
+                    <Textarea
                       placeholder="Enter client description"
                       {...field}
-                      value={field.value || ''} 
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -109,10 +108,10 @@ export default function NewClientPage() {
                 <FormItem>
                   <FormLabel>Website</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="https://example.com" 
-                      {...field} 
-                      value={field.value || ''} 
+                    <Input
+                      placeholder="https://example.com"
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -127,10 +126,10 @@ export default function NewClientPage() {
                 <FormItem>
                   <FormLabel>Address</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter client address" 
-                      {...field} 
-                      value={field.value || ''} 
+                    <Input
+                      placeholder="Enter client address"
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -145,10 +144,10 @@ export default function NewClientPage() {
                 <FormItem>
                   <FormLabel>Phone</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter phone number" 
-                      {...field} 
-                      value={field.value || ''} 
+                    <Input
+                      placeholder="Enter phone number"
+                      {...field}
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -157,10 +156,7 @@ export default function NewClientPage() {
             />
 
             <div className="flex gap-4">
-              <Button
-                type="submit"
-                disabled={createClient.isPending}
-              >
+              <Button type="submit" disabled={createClient.isPending}>
                 {createClient.isPending ? "Creating..." : "Create Client"}
               </Button>
               <Button

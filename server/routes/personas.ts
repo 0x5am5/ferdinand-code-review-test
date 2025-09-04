@@ -1,7 +1,7 @@
 import { insertUserPersonaSchema } from "@shared/schema";
 import type { Express } from "express";
 import { validateClientId } from "server/middlewares/vaildateClientId";
-import { RequestWithClientId } from "server/routes";
+import type { RequestWithClientId } from "server/routes";
 import { storage } from "server/storage";
 
 export function registerPersonasRoutes(app: Express) {
@@ -18,7 +18,7 @@ export function registerPersonasRoutes(app: Express) {
         console.error("Error fetching client personas:", error);
         res.status(500).json({ message: "Error fetching client personas" });
       }
-    },
+    }
   );
 
   app.post(
@@ -47,7 +47,7 @@ export function registerPersonasRoutes(app: Express) {
         console.error("Error creating persona:", error);
         res.status(500).json({ message: "Error creating persona" });
       }
-    },
+    }
   );
 
   app.patch(
@@ -56,7 +56,7 @@ export function registerPersonasRoutes(app: Express) {
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId!;
-        const personaId = parseInt(req.params.personaId);
+        const personaId = parseInt(req.params.personaId, 10);
 
         const persona = await storage.getPersona(personaId);
 
@@ -84,14 +84,14 @@ export function registerPersonasRoutes(app: Express) {
 
         const updatedPersona = await storage.updatePersona(
           personaId,
-          parsed.data,
+          parsed.data
         );
         res.json(updatedPersona);
       } catch (error) {
         console.error("Error updating persona:", error);
         res.status(500).json({ message: "Error updating persona" });
       }
-    },
+    }
   );
 
   app.delete(
@@ -100,7 +100,7 @@ export function registerPersonasRoutes(app: Express) {
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId!;
-        const personaId = parseInt(req.params.personaId);
+        const personaId = parseInt(req.params.personaId, 10);
 
         const persona = await storage.getPersona(personaId);
 
@@ -120,6 +120,6 @@ export function registerPersonasRoutes(app: Express) {
         console.error("Error deleting persona:", error);
         res.status(500).json({ message: "Error deleting persona" });
       }
-    },
+    }
   );
 }

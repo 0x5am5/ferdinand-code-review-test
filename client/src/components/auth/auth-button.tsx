@@ -1,8 +1,8 @@
+import { LogIn, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthButtonProps {
   collapsed?: boolean;
@@ -16,17 +16,20 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
   const handleSignIn = async () => {
     // Prevent multiple clicks
     if (isLoading) return;
-    
+
     setIsLoading(true);
     try {
       console.log("AuthButton: Initiating Google sign-in");
       await signInWithGoogle();
       // Success toast is shown in the useAuth hook
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("AuthButton: Sign-in error:", error);
       toast({
         title: "Authentication Error",
-        description: error.message || "Failed to sign in. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to sign in. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -36,7 +39,7 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
 
   const handleSignOut = async () => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
     try {
       console.log("AuthButton: Logging out");
@@ -45,11 +48,14 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
         title: "Signed out",
         description: "You have been signed out successfully.",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("AuthButton: Logout error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to sign out. Please try again.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to sign out. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -57,19 +63,21 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
     }
   };
 
-  const buttonProps = collapsed ? {
-    size: "icon" as const,
-    className: "w-full"
-  } : {
-    className: ""
-  };
+  const buttonProps = collapsed
+    ? {
+        size: "icon" as const,
+        className: "w-full",
+      }
+    : {
+        className: "",
+      };
 
   if (!user) {
     return (
-      <Button 
-        onClick={handleSignIn} 
-        variant="outline" 
-        {...buttonProps} 
+      <Button
+        onClick={handleSignIn}
+        variant="outline"
+        {...buttonProps}
         disabled={isLoading}
       >
         {isLoading ? (
@@ -83,9 +91,9 @@ export function AuthButton({ collapsed = false }: AuthButtonProps) {
   }
 
   return (
-    <Button 
-      onClick={handleSignOut} 
-      variant="outline" 
+    <Button
+      onClick={handleSignOut}
+      variant="outline"
       {...buttonProps}
       disabled={isLoading}
     >

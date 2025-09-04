@@ -1,10 +1,15 @@
-import { useState } from "react";
-import { UserRole, inviteUserSchema, type User } from "@shared/schema";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  type Client,
+  type InviteUserForm,
+  inviteUserSchema,
+  type User,
+  UserRole,
+} from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -22,7 +27,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -30,13 +34,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface InviteUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentUser: User;
-  clients: any[];
+  clients: Client[];
 }
 
 export function InviteUserDialog({
@@ -62,7 +67,7 @@ export function InviteUserDialog({
     return [];
   };
 
-  const inviteForm = useForm<any>({
+  const inviteForm = useForm<InviteUserForm>({
     resolver: zodResolver(inviteUserSchema),
     defaultValues: {
       email: "",
@@ -73,21 +78,32 @@ export function InviteUserDialog({
   });
 
   const inviteUser = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: InviteUserForm) => {
       try {
         const response = await apiRequest("POST", "/api/users", data);
         return response;
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (err instanceof Error && "response" in err) {
-          const response = (err as any).response;
+          const response = (
+            err as {
+              response?: {
+                data?: {
+                  code?: string;
+                  message?: string;
+                  invitationId?: string;
+                };
+              };
+            }
+          ).response;
           if (response?.data) {
             if (response.data.code === "EMAIL_EXISTS") {
               throw new Error("A user with this email already exists.");
             } else if (response.data.code === "INVITATION_EXISTS") {
               const customError = new Error(
-                "An invitation for this email already exists. Would you like to resend it?",
+                "An invitation for this email already exists. Would you like to resend it?"
               );
-              (customError as any).invitationId = response.data.invitationId;
+              (customError as Error & { invitationId?: string }).invitationId =
+                response.data.invitationId;
               throw customError;
             }
             if (response.data.message) {
@@ -130,7 +146,7 @@ export function InviteUserDialog({
         <Form {...inviteForm}>
           <form
             onSubmit={inviteForm.handleSubmit((data) =>
-              inviteUser.mutate(data),
+              inviteUser.mutate(data)
             )}
             className="space-y-4"
           >

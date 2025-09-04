@@ -1,14 +1,24 @@
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Plus, Trash2, Palette } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface TypeStyle {
   level: string;
@@ -54,7 +64,11 @@ const FONT_STYLES = [
   { value: "oblique", label: "Oblique" },
 ];
 
-export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: TypeStyleEditorProps) {
+export function TypeStyleEditor({
+  typeStyles,
+  onUpdate,
+  calculateFontSize,
+}: TypeStyleEditorProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (level: string) => {
@@ -73,13 +87,13 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
     onUpdate(newTypeStyles);
   };
 
-  const getDefaultStyleForLevel = (level: string): Partial<TypeStyle> => {
+  const _getDefaultStyleForLevel = (level: string): Partial<TypeStyle> => {
     const defaults: Record<string, Partial<TypeStyle>> = {
       "body-large": { size: 0.5, fontWeight: "400", name: "Body Large" },
       "body-small": { size: -0.5, fontWeight: "400", name: "Body Small" },
-      "caption": { size: -1, fontWeight: "400", name: "Caption" },
-      "quote": { size: 1, fontWeight: "400", name: "Quote", fontStyle: "italic" },
-      "code": { size: -0.5, fontWeight: "400", name: "Code" }
+      caption: { size: -1, fontWeight: "400", name: "Caption" },
+      quote: { size: 1, fontWeight: "400", name: "Quote", fontStyle: "italic" },
+      code: { size: -0.5, fontWeight: "400", name: "Code" },
     };
     return defaults[level] || {};
   };
@@ -108,9 +122,9 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
     lineHeight: style.lineHeight,
     letterSpacing: `${style.letterSpacing}px`,
     color: style.color,
-    backgroundColor: style.backgroundColor || 'transparent',
-    textDecoration: style.textDecoration || 'none',
-    fontStyle: style.fontStyle || 'normal',
+    backgroundColor: style.backgroundColor || "transparent",
+    textDecoration: style.textDecoration || "none",
+    fontStyle: style.fontStyle || "normal",
   });
 
   return (
@@ -147,11 +161,15 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                           ) : (
                             <ChevronRight className="h-4 w-4" />
                           )}
-                          <Badge variant="outline">{style.level.toUpperCase()}</Badge>
+                          <Badge variant="outline">
+                            {style.level.toUpperCase()}
+                          </Badge>
                           <span className="font-medium">{style.name}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="secondary">{calculateFontSize(style.size)}</Badge>
+                          <Badge variant="secondary">
+                            {calculateFontSize(style.size)}
+                          </Badge>
                           {typeStyles.length > 1 && (
                             <Button
                               onClick={(e) => {
@@ -186,7 +204,9 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                           <Input
                             id={`name-${index}`}
                             value={style.name}
-                            onChange={(e) => updateTypeStyle(index, { name: e.target.value })}
+                            onChange={(e) =>
+                              updateTypeStyle(index, { name: e.target.value })
+                            }
                           />
                         </div>
 
@@ -195,7 +215,9 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                           <Input
                             id={`level-${index}`}
                             value={style.level}
-                            onChange={(e) => updateTypeStyle(index, { level: e.target.value })}
+                            onChange={(e) =>
+                              updateTypeStyle(index, { level: e.target.value })
+                            }
                           />
                         </div>
 
@@ -204,7 +226,9 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                           <div className="space-y-2">
                             <Slider
                               value={[style.size]}
-                              onValueChange={([value]) => updateTypeStyle(index, { size: value })}
+                              onValueChange={([value]) =>
+                                updateTypeStyle(index, { size: value })
+                              }
                               min={-6}
                               max={6}
                               step={1}
@@ -222,14 +246,19 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                           <Label htmlFor={`weight-${index}`}>Font Weight</Label>
                           <Select
                             value={style.fontWeight}
-                            onValueChange={(value) => updateTypeStyle(index, { fontWeight: value })}
+                            onValueChange={(value) =>
+                              updateTypeStyle(index, { fontWeight: value })
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               {FONT_WEIGHTS.map((weight) => (
-                                <SelectItem key={weight.value} value={weight.value}>
+                                <SelectItem
+                                  key={weight.value}
+                                  value={weight.value}
+                                >
                                   {weight.label} ({weight.value})
                                 </SelectItem>
                               ))}
@@ -238,11 +267,15 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`lineHeight-${index}`}>Line Height</Label>
+                          <Label htmlFor={`lineHeight-${index}`}>
+                            Line Height
+                          </Label>
                           <div className="space-y-2">
                             <Slider
                               value={[style.lineHeight]}
-                              onValueChange={([value]) => updateTypeStyle(index, { lineHeight: value })}
+                              onValueChange={([value]) =>
+                                updateTypeStyle(index, { lineHeight: value })
+                              }
                               min={0.8}
                               max={2.5}
                               step={0.1}
@@ -255,11 +288,15 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`letterSpacing-${index}`}>Letter Spacing (px)</Label>
+                          <Label htmlFor={`letterSpacing-${index}`}>
+                            Letter Spacing (px)
+                          </Label>
                           <div className="space-y-2">
                             <Slider
                               value={[style.letterSpacing]}
-                              onValueChange={([value]) => updateTypeStyle(index, { letterSpacing: value })}
+                              onValueChange={([value]) =>
+                                updateTypeStyle(index, { letterSpacing: value })
+                              }
                               min={-2}
                               max={5}
                               step={0.1}
@@ -278,12 +315,20 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                               id={`color-${index}`}
                               type="color"
                               value={style.color}
-                              onChange={(e) => updateTypeStyle(index, { color: e.target.value })}
+                              onChange={(e) =>
+                                updateTypeStyle(index, {
+                                  color: e.target.value,
+                                })
+                              }
                               className="w-16 h-10 p-1 rounded"
                             />
                             <Input
                               value={style.color}
-                              onChange={(e) => updateTypeStyle(index, { color: e.target.value })}
+                              onChange={(e) =>
+                                updateTypeStyle(index, {
+                                  color: e.target.value,
+                                })
+                              }
                               placeholder="#000000"
                               className="flex-1"
                             />
@@ -291,18 +336,28 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`backgroundColor-${index}`}>Background Color</Label>
+                          <Label htmlFor={`backgroundColor-${index}`}>
+                            Background Color
+                          </Label>
                           <div className="flex gap-2">
                             <Input
                               id={`backgroundColor-${index}`}
                               type="color"
                               value={style.backgroundColor || "#ffffff"}
-                              onChange={(e) => updateTypeStyle(index, { backgroundColor: e.target.value })}
+                              onChange={(e) =>
+                                updateTypeStyle(index, {
+                                  backgroundColor: e.target.value,
+                                })
+                              }
                               className="w-16 h-10 p-1 rounded"
                             />
                             <Input
                               value={style.backgroundColor || ""}
-                              onChange={(e) => updateTypeStyle(index, { backgroundColor: e.target.value })}
+                              onChange={(e) =>
+                                updateTypeStyle(index, {
+                                  backgroundColor: e.target.value,
+                                })
+                              }
                               placeholder="Transparent"
                               className="flex-1"
                             />
@@ -310,17 +365,24 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`decoration-${index}`}>Text Decoration</Label>
+                          <Label htmlFor={`decoration-${index}`}>
+                            Text Decoration
+                          </Label>
                           <Select
                             value={style.textDecoration || "none"}
-                            onValueChange={(value) => updateTypeStyle(index, { textDecoration: value })}
+                            onValueChange={(value) =>
+                              updateTypeStyle(index, { textDecoration: value })
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               {TEXT_DECORATIONS.map((decoration) => (
-                                <SelectItem key={decoration.value} value={decoration.value}>
+                                <SelectItem
+                                  key={decoration.value}
+                                  value={decoration.value}
+                                >
                                   {decoration.label}
                                 </SelectItem>
                               ))}
@@ -329,17 +391,24 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor={`fontStyle-${index}`}>Font Style</Label>
+                          <Label htmlFor={`fontStyle-${index}`}>
+                            Font Style
+                          </Label>
                           <Select
                             value={style.fontStyle || "normal"}
-                            onValueChange={(value) => updateTypeStyle(index, { fontStyle: value })}
+                            onValueChange={(value) =>
+                              updateTypeStyle(index, { fontStyle: value })
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                               {FONT_STYLES.map((fontStyle) => (
-                                <SelectItem key={fontStyle.value} value={fontStyle.value}>
+                                <SelectItem
+                                  key={fontStyle.value}
+                                  value={fontStyle.value}
+                                >
                                   {fontStyle.label}
                                 </SelectItem>
                               ))}
@@ -349,12 +418,17 @@ export function TypeStyleEditor({ typeStyles, onUpdate, calculateFontSize }: Typ
                       </div>
 
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                        <Label className="text-sm font-medium mb-2 block">Preview</Label>
+                        <Label className="text-sm font-medium mb-2 block">
+                          Preview
+                        </Label>
                         <div
                           style={getPreviewStyle(style)}
                           className="transition-all duration-200"
                         >
-                          {style.name} - The quick brown fox jumps over the lazy dog. Typography is the art and technique of arranging type to make written language legible, readable, and appealing.
+                          {style.name} - The quick brown fox jumps over the lazy
+                          dog. Typography is the art and technique of arranging
+                          type to make written language legible, readable, and
+                          appealing.
                         </div>
                       </div>
                     </CardContent>

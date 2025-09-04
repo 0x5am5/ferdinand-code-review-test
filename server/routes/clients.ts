@@ -1,8 +1,10 @@
+import {
+  insertClientSchema,
+  UserRole,
+  updateClientOrderSchema,
+} from "@shared/schema";
 import type { Express } from "express";
-import multer from "multer";
-
 import { storage } from "../storage";
-import { updateClientOrderSchema, insertClientSchema, UserRole } from "@shared/schema";
 
 export function registerClientRoutes(app: Express) {
   // Client routes
@@ -30,7 +32,7 @@ export function registerClientRoutes(app: Express) {
       const filteredClients = clients.filter((client) => {
         if (user.role === UserRole.SUPER_ADMIN) return true;
 
-        return user.client_id == client.id;
+        return user.client_id === client.id;
       });
 
       res.json(filteredClients);
@@ -42,8 +44,8 @@ export function registerClientRoutes(app: Express) {
 
   app.get("/api/clients/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
       const client = await storage.getClient(id);
@@ -59,8 +61,8 @@ export function registerClientRoutes(app: Express) {
 
   app.delete("/api/clients/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
       const client = await storage.getClient(id);
@@ -74,14 +76,14 @@ export function registerClientRoutes(app: Express) {
       res.status(500).json({ message: "Error deleting client" });
     }
   });
-  
+
   // Create new client
   app.post("/api/clients", async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      
+
       // Validate client data
       const parsed = insertClientSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -90,10 +92,10 @@ export function registerClientRoutes(app: Express) {
           errors: parsed.error?.errors || "Validation failed",
         });
       }
-      
+
       // Create client with validated data
       const clientData = parsed.data;
-      
+
       const client = await storage.createClient(clientData);
       res.status(201).json(client);
     } catch (error) {
@@ -109,8 +111,8 @@ export function registerClientRoutes(app: Express) {
       // Update each client's display order
       await Promise.all(
         clientOrders.map(({ id, displayOrder }) =>
-          storage.updateClient(id, { displayOrder }),
-        ),
+          storage.updateClient(id, { displayOrder })
+        )
       );
       res.json({ message: "Client order updated successfully" });
     } catch (error) {
@@ -122,8 +124,8 @@ export function registerClientRoutes(app: Express) {
   // Update client information
   app.patch("/api/clients/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
 

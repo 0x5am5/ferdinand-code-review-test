@@ -1,13 +1,8 @@
+import type { InviteUserForm, UpdateUserRoleForm, User } from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import {
-  User,
-  Client,
-  UpdateUserRoleForm,
-  InviteUserForm,
-} from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface PendingInvitation {
   id: number;
@@ -197,7 +192,7 @@ export function useClientAssignmentMutations() {
     }) => {
       return await apiRequest(
         "DELETE",
-        `/api/user-clients/${userId}/${clientId}`,
+        `/api/user-clients/${userId}/${clientId}`
       );
     },
     onSuccess: () => {

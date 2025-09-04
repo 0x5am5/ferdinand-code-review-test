@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { DesignSystem, themeManager, defaultTheme } from '../lib/theme-manager';
+import { useCallback, useEffect, useState } from "react";
+import { type DesignSystem, themeManager } from "../lib/theme-manager";
 
 interface ThemeManagerHookResult {
   designSystem: DesignSystem;
@@ -12,8 +12,12 @@ interface ThemeManagerHookResult {
 
 // React hook to integrate the theme manager with React components
 export function useThemeManager(): ThemeManagerHookResult {
-  const [currentTheme, setCurrentTheme] = useState<DesignSystem>(themeManager.getTheme());
-  const [draftTheme, setDraftTheme] = useState<DesignSystem | null>(themeManager.getDraftTheme());
+  const [currentTheme, setCurrentTheme] = useState<DesignSystem>(
+    themeManager.getTheme()
+  );
+  const [draftTheme, setDraftTheme] = useState<DesignSystem | null>(
+    themeManager.getDraftTheme()
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Apply theme changes to DOM with debounce
@@ -21,50 +25,54 @@ export function useThemeManager(): ThemeManagerHookResult {
     // Prevent the infinite loop by using requestAnimationFrame
     requestAnimationFrame(() => {
       const root = document.documentElement;
-      
+
       // Apply basic theme properties
       if (theme.theme) {
         // Apply border radius
         if (theme.theme.radius !== undefined) {
-          root.style.setProperty('--radius', `${theme.theme.radius}rem`);
+          root.style.setProperty("--radius", `${theme.theme.radius}rem`);
         }
-        
+
         // Apply animation settings
         if (theme.theme.animation) {
           const animationSettings: Record<string, string> = {
-            'none': '0s',
-            'minimal': '0.1s',
-            'smooth': '0.2s',
-            'bounce': '0.3s'
+            none: "0s",
+            minimal: "0.1s",
+            smooth: "0.2s",
+            bounce: "0.3s",
           };
-          const animValue = theme.theme.animation as keyof typeof animationSettings;
-          root.style.setProperty('--transition', animationSettings[animValue] || '0.2s');
+          const animValue = theme.theme
+            .animation as keyof typeof animationSettings;
+          root.style.setProperty(
+            "--transition",
+            animationSettings[animValue] || "0.2s"
+          );
         }
-        
+
         // Apply appearance (dark/light mode)
-        if (theme.theme.appearance === 'dark') {
-          root.classList.add('dark');
+        if (theme.theme.appearance === "dark") {
+          root.classList.add("dark");
         } else {
-          root.classList.remove('dark');
+          root.classList.remove("dark");
         }
       }
-      
+
       // Apply all CSS variables from theme.colors
       if (theme.colors) {
         Object.entries(theme.colors).forEach(([key, value]) => {
-          if (typeof value === 'string') {
+          if (typeof value === "string") {
             root.style.setProperty(`--${key}`, value);
           }
         });
       }
-      
+
       // Apply typography settings
       if (theme.typography) {
         if (theme.typography.primary) {
-          root.style.setProperty('--font-sans', theme.typography.primary);
+          root.style.setProperty("--font-sans", theme.typography.primary);
         }
         if (theme.typography.heading) {
-          root.style.setProperty('--font-heading', theme.typography.heading);
+          root.style.setProperty("--font-heading", theme.typography.heading);
         }
       }
     });
@@ -72,17 +80,17 @@ export function useThemeManager(): ThemeManagerHookResult {
 
   useEffect(() => {
     // Subscribe to theme changes
-    const themeUnsubscribe = themeManager.subscribe('theme-update', (theme) => {
+    const themeUnsubscribe = themeManager.subscribe("theme-update", (theme) => {
       setCurrentTheme(theme);
       setIsLoading(false);
     });
-    
+
     // Subscribe to draft theme changes
-    const draftUnsubscribe = themeManager.subscribe('draft-update', (theme) => {
+    const draftUnsubscribe = themeManager.subscribe("draft-update", (theme) => {
       setDraftTheme(theme);
       setIsLoading(false);
     });
-    
+
     // Clean up subscriptions
     return () => {
       themeUnsubscribe();
@@ -114,7 +122,7 @@ export function useThemeManager(): ThemeManagerHookResult {
     applyDraftChanges: async () => {
       return await themeManager.applyDraftChanges();
     },
-    isLoading
+    isLoading,
   };
 }
 

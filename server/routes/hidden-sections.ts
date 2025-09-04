@@ -1,7 +1,6 @@
-import { Express, Request, Response } from "express";
-import { z } from "zod";
-import { storage } from "../storage";
 import { insertHiddenSectionSchema, UserRole } from "@shared/schema";
+import type { Express, Request, Response } from "express";
+import { storage } from "../storage";
 
 // User role middleware for admin checks
 const requireAdminRole = async (req: Request, res: Response, next: any) => {
@@ -18,7 +17,9 @@ const requireAdminRole = async (req: Request, res: Response, next: any) => {
 
     // Check if user is either admin or super_admin
     if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
-      return res.status(403).json({ message: "Forbidden - Admin role required" });
+      return res
+        .status(403)
+        .json({ message: "Forbidden - Admin role required" });
     }
 
     next();
@@ -34,8 +35,8 @@ export function registerHiddenSectionsRoutes(app: Express) {
     "/api/clients/:clientId/hidden-sections",
     async (req: Request, res: Response) => {
       try {
-        const clientId = parseInt(req.params.clientId);
-        if (isNaN(clientId)) {
+        const clientId = parseInt(req.params.clientId, 10);
+        if (Number.isNaN(clientId)) {
           return res.status(400).json({ message: "Invalid client ID" });
         }
 
@@ -54,8 +55,8 @@ export function registerHiddenSectionsRoutes(app: Express) {
     requireAdminRole,
     async (req: Request, res: Response) => {
       try {
-        const clientId = parseInt(req.params.clientId);
-        if (isNaN(clientId)) {
+        const clientId = parseInt(req.params.clientId, 10);
+        if (Number.isNaN(clientId)) {
           return res.status(400).json({ message: "Invalid client ID" });
         }
 
@@ -89,8 +90,8 @@ export function registerHiddenSectionsRoutes(app: Express) {
     requireAdminRole,
     async (req: Request, res: Response) => {
       try {
-        const clientId = parseInt(req.params.clientId);
-        if (isNaN(clientId)) {
+        const clientId = parseInt(req.params.clientId, 10);
+        if (Number.isNaN(clientId)) {
           return res.status(400).json({ message: "Invalid client ID" });
         }
 
@@ -100,7 +101,9 @@ export function registerHiddenSectionsRoutes(app: Express) {
         }
 
         await storage.deleteHiddenSection(clientId, sectionType);
-        return res.status(200).json({ message: "Section removed from hidden list" });
+        return res
+          .status(200)
+          .json({ message: "Section removed from hidden list" });
       } catch (error) {
         console.error("Error removing hidden section:", error);
         return res.status(500).json({ message: "Internal server error" });

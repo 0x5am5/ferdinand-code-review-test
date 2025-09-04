@@ -1,19 +1,19 @@
+import type { User } from "@shared/schema";
+import {
+  type User as FirebaseUser,
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import {
   createContext,
-  ReactNode,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
 } from "react";
-import {
-  User as FirebaseUser,
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged,
-} from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@shared/schema";
+import { auth, googleProvider } from "@/lib/firebase";
 
 type AuthContextType = {
   user: User | null;
@@ -33,8 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Fetch user data from our backend
-  const fetchUser = async () => {
+  // Fetch user data from our backend with retry logic
+  const fetchUser = async (retryCount = 0) => {
     try {
       const response = await fetch("/api/user");
       if (response.ok) {
@@ -45,9 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.error("Error fetching user:", e);
+      // Retry up to 3 times with exponential backoff
+      if (retryCount < 3) {
+        console.log(`Retrying fetchUser (attempt ${retryCount + 1})`);
+        setTimeout(() => fetchUser(retryCount + 1), 1000 * 2 ** retryCount);
+        return;
+      }
       setUser(null);
     } finally {
-      setIsLoading(false);
+      if (retryCount === 0) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -56,52 +64,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("Setting up auth state listener");
     setIsLoading(true);
 
+    let debounceTimer: NodeJS.Timeout | null = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       console.log("Auth state changed:", fbUser?.email);
       setFirebaseUser(fbUser);
 
-      if (fbUser) {
-        try {
-          // Get the ID token
-          const idToken = await fbUser.getIdToken();
-          console.log("ID token obtained, creating session...");
+      // Clear any existing debounce timer
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
 
-          // Create session on backend
-          const response = await fetch("/api/auth/google", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ idToken }),
-          });
+      // Debounce the auth processing to prevent rapid fire
+      debounceTimer = setTimeout(async () => {
+        if (fbUser) {
+          try {
+            // Get the ID token
+            const idToken = await fbUser.getIdToken();
+            console.log("ID token obtained, creating session...");
 
-          if (response.ok) {
-            console.log("Session created successfully");
-            // Fetch user data
-            await fetchUser();
-          } else {
-            const data = await response.json();
-            console.error("Failed to create session:", data);
-            setError(new Error(data.message || "Authentication failed"));
+            // Create session on backend with timeout and better error handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+            const response = await fetch("/api/auth/google", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ idToken }),
+              signal: controller.signal,
+            });
+
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+              console.log("Session created successfully");
+              // Fetch user data
+              await fetchUser();
+            } else {
+              const data = await response
+                .json()
+                .catch(() => ({ message: "Unknown server error" }));
+              console.error("Failed to create session:", data);
+              setError(new Error(data.message || "Authentication failed"));
+              setIsLoading(false);
+            }
+          } catch (e: any) {
+            console.error("Auth processing error:", e);
+            // More specific error handling
+            if (e.name === "AbortError") {
+              console.error("Auth request timed out");
+              setError(
+                new Error("Authentication request timed out. Please try again.")
+              );
+            } else if (e.message === "Failed to fetch") {
+              console.error("Network error during authentication");
+              setError(
+                new Error(
+                  "Network error. Please check your connection and try again."
+                )
+              );
+            } else {
+              setError(e);
+            }
             setIsLoading(false);
           }
-        } catch (e: any) {
-          console.error("Auth processing error:", e);
-          setError(e);
+        } else {
+          // User is not authenticated
+          setUser(null);
           setIsLoading(false);
         }
-      } else {
-        // User is not authenticated
-        setUser(null);
-        setIsLoading(false);
-      }
+      }, 500); // 500ms debounce
     });
 
     return () => {
       console.log("Cleaning up auth listener");
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
       unsubscribe();
     };
-  }, []);
+  }, [fetchUser]); // Remove fetchUser dependency to prevent infinite re-renders
 
   const signInWithGoogle = async (): Promise<void> => {
     setIsLoading(true);

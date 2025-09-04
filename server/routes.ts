@@ -1,16 +1,15 @@
 import type { Express, Request } from "express";
-
-import { registerAuthRoutes } from "./routes/auth";
-import { registerUserRoutes } from "./routes/users";
-import { registerClientRoutes } from "./routes/clients";
 import { registerAssetRoutes } from "./routes/assets";
-import { registerInvitationRoutes } from "./routes/invitations";
+import { registerAuthRoutes } from "./routes/auth";
+import { registerClientRoutes } from "./routes/clients";
 import { registerDesignSystemRoutes } from "./routes/design-system";
-import { registerPersonasRoutes } from "./routes/personas";
-import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
-import { registerHiddenSectionsRoutes } from "./routes/hidden-sections";
-import { registerTypeScalesRoutes } from "./routes/type-scales";
 import { registerFigmaRoutes } from "./routes/figma";
+import { registerHiddenSectionsRoutes } from "./routes/hidden-sections";
+import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
+import { registerInvitationRoutes } from "./routes/invitations";
+import { registerPersonasRoutes } from "./routes/personas";
+import { registerTypeScalesRoutes } from "./routes/type-scales";
+import { registerUserRoutes } from "./routes/users";
 
 // Add session augmentation for TypeScript
 declare module "express-session" {
@@ -26,7 +25,7 @@ export interface RequestWithClientId extends Request {
 
 export function registerRoutes(app: Express) {
   // Google Fonts API endpoint - must be registered first
-  app.get("/api/google-fonts", async (req, res) => {
+  app.get("/api/google-fonts", async (_req, res) => {
     try {
       console.log("Google Fonts API endpoint called");
       const apiKey = process.env.GOOGLE_FONTS_API_KEY;
@@ -49,7 +48,7 @@ export function registerRoutes(app: Express) {
 
       const data = await response.json();
       console.log(
-        `Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`,
+        `Successfully fetched ${data.items?.length || 0} fonts from Google Fonts API`
       );
 
       // Set proper headers

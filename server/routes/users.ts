@@ -1,18 +1,18 @@
-import type { Express } from "express";
-import { storage } from "../storage";
 import {
-  UserRole,
-  users,
-  userClients,
-  invitations,
-  insertUserClientSchema,
   clients,
+  insertUserClientSchema,
+  invitations,
+  UserRole,
+  userClients,
+  users,
 } from "@shared/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
+import type { Express } from "express";
+import { validateClientId } from "server/middlewares/vaildateClientId";
+import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import { validateClientId } from "server/middlewares/vaildateClientId";
-import { RequestWithClientId } from "server/routes";
+import { storage } from "../storage";
 
 export function registerUserRoutes(app: Express) {
   // Get current user
@@ -57,8 +57,8 @@ export function registerUserRoutes(app: Express) {
           .where(
             inArray(
               userClients.clientId,
-              adminClients.map((c) => c.id),
-            ),
+              adminClients.map((c) => c.id)
+            )
           );
 
         const userIds = [...new Set(clientUsers.map((uc) => uc.userId))];
@@ -128,7 +128,7 @@ export function registerUserRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl = undefined;
+      let logoUrl;
 
       if (invitationData.clientIds && invitationData.clientIds.length > 0) {
         try {
@@ -140,7 +140,7 @@ export function registerUserRoutes(app: Express) {
         } catch (err) {
           console.error(
             "Error fetching client data for invitation email:",
-            err,
+            err
           );
           // Continue with default values if client fetch fails
         }
@@ -192,7 +192,7 @@ export function registerUserRoutes(app: Express) {
 
       const updatedUser = await storage.updateUserRole(
         req.session.userId,
-        role,
+        role
       );
       res.json(updatedUser);
     } catch (error) {
@@ -208,8 +208,8 @@ export function registerUserRoutes(app: Express) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
@@ -235,27 +235,27 @@ export function registerUserRoutes(app: Express) {
         // Admins cannot assign super_admin or admin roles
         if (role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN) {
           return res.status(403).json({
-            message: "Only super admins can assign admin roles"
+            message: "Only super admins can assign admin roles",
           });
         }
 
         // Admins cannot modify super_admin users
         if (targetUser.role === UserRole.SUPER_ADMIN) {
           return res.status(403).json({
-            message: "You cannot modify super admin roles"
+            message: "You cannot modify super admin roles",
           });
         }
 
         // Admins cannot change their own role
         if (targetUser.id === currentUser.id) {
           return res.status(403).json({
-            message: "You cannot change your own role"
+            message: "You cannot change your own role",
           });
         }
       } else if (currentUser.role !== UserRole.SUPER_ADMIN) {
         // Only super admins and admins can change roles
         return res.status(403).json({
-          message: "Insufficient permissions to change user roles"
+          message: "Insufficient permissions to change user roles",
         });
       }
 
@@ -270,8 +270,8 @@ export function registerUserRoutes(app: Express) {
   // Send password reset email
   app.post("/api/users/:id/reset-password", async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
-      if (isNaN(userId)) {
+      const userId = parseInt(req.params.id, 10);
+      if (Number.isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
@@ -288,7 +288,7 @@ export function registerUserRoutes(app: Express) {
       };
 
       const resetToken = Buffer.from(JSON.stringify(tokenData)).toString(
-        "base64",
+        "base64"
       );
       const baseUrl = process.env.APP_URL || `http://${req.headers.host}`;
       const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
@@ -358,8 +358,8 @@ export function registerUserRoutes(app: Express) {
   // Get clients for a user
   app.get("/api/users/:id/clients", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
@@ -372,7 +372,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Get all client assignments for all users
-  app.get("/api/users/client-assignments", async (req, res) => {
+  app.get("/api/users/client-assignments", async (_req, res) => {
     try {
       // Get all users
       const userList = await storage.getUsers();
@@ -385,7 +385,7 @@ export function registerUserRoutes(app: Express) {
         userList.map(async (user) => {
           const userClients = await storage.getUserClients(user.id);
           assignments[user.id] = userClients;
-        }),
+        })
       );
 
       res.json(assignments);
@@ -416,8 +416,8 @@ export function registerUserRoutes(app: Express) {
         .where(
           and(
             eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId),
-          ),
+            eq(userClients.clientId, clientId)
+          )
         );
 
       if (existingRelationship.length > 0) {
@@ -478,10 +478,10 @@ export function registerUserRoutes(app: Express) {
   // Delete user-client relationship
   app.delete("/api/user-clients/:userId/:clientId", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
-      const clientId = parseInt(req.params.clientId);
+      const userId = parseInt(req.params.userId, 10);
+      const clientId = parseInt(req.params.clientId, 10);
 
-      if (isNaN(userId) || isNaN(clientId)) {
+      if (Number.isNaN(userId) || Number.isNaN(clientId)) {
         return res.status(400).json({ message: "Invalid user or client ID" });
       }
 
@@ -491,8 +491,8 @@ export function registerUserRoutes(app: Express) {
         .where(
           and(
             eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId),
-          ),
+            eq(userClients.clientId, clientId)
+          )
         )
         .execute();
 
@@ -503,8 +503,8 @@ export function registerUserRoutes(app: Express) {
         .where(
           and(
             eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId),
-          ),
+            eq(userClients.clientId, clientId)
+          )
         );
 
       if (verifyDeletion.length > 0) {
@@ -554,6 +554,6 @@ export function registerUserRoutes(app: Express) {
         console.error("Error fetching client users:", error);
         res.status(500).json({ message: "Failed to fetch client users" });
       }
-    },
+    }
   );
 }

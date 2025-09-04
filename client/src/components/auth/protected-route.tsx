@@ -1,7 +1,7 @@
-import { FC, ReactNode } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
+import type { FC, ReactNode } from "react";
 import { Redirect } from "wouter";
+import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -24,8 +24,9 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   }
 
   // Use the current viewing role for access control
-  const roleToCheck = user.role === 'super_admin' ? currentViewingRole : user.role;
-  
+  const roleToCheck =
+    user.role === "super_admin" ? currentViewingRole : user.role;
+
   if (roles.length > 0 && !roles.includes(roleToCheck)) {
     return <Redirect to="/dashboard" />;
   }

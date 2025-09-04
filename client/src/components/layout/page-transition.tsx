@@ -1,5 +1,5 @@
-import { ReactNode, FC } from "react";
 import { motion } from "framer-motion";
+import type { FC, ReactNode } from "react";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -9,9 +9,9 @@ interface PageTransitionProps {
 /**
  * Animates page content transitions with a fade effect
  */
-export const PageTransition: FC<PageTransitionProps> = ({ 
+export const PageTransition: FC<PageTransitionProps> = ({
   children,
-  className = ""
+  className = "",
 }) => {
   return (
     <motion.div
