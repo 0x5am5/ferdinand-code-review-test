@@ -212,15 +212,6 @@ export const Sidebar: FC = () => {
     <aside className="w-64 h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={openSearch}
-        >
-          <Search className="h-4 w-4" />
-          <span className="sr-only">Search</span>
-        </Button>
       </div>
 
       <div className="px-4 py-2">
@@ -243,17 +234,6 @@ export const Sidebar: FC = () => {
 
       {showSearch ? (
         <div className="flex-1 flex flex-col">
-          <div className="mb-2 px-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center text-muted-foreground gap-1"
-              onClick={closeSearch}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </Button>
-          </div>
           <SpotlightSearch className="flex-1" onClose={closeSearch} />
         </div>
       ) : (
@@ -284,14 +264,14 @@ export const Sidebar: FC = () => {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 px-3 py-2"
+              className="w-full justify-start gap-3 px-3 py-3"
             >
               <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm m-0 font-medium truncate">
                   {user?.name || "User"}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate m-0">
                   {user?.email || "Unknown"}
                 </p>
               </div>

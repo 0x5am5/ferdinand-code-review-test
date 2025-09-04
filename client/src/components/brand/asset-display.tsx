@@ -20,7 +20,7 @@ export function AssetDisplay({
   const [variant, setVariant] = useState<"light" | "dark">("light");
 
   return (
-    <div className={`asset-display ${className}`}>
+    <div className={`asset-display ${className} bg-white`}>
       <div className="asset-display__info">
         <p className="asset-display__info-description">{description}</p>
       </div>
