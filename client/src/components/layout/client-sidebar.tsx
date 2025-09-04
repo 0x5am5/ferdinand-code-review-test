@@ -1,9 +1,12 @@
 import type { BrandAsset } from "@shared/schema";
 import { UserRole } from "@shared/schema";
 import {
+  BuildingIcon,
+  ChevronDown,
+  CircleUserIcon,
+  LogOutIcon,
   ArrowLeft,
   BookText,
-  BuildingIcon,
   Figma,
   Image,
   LayoutDashboard,
@@ -12,6 +15,12 @@ import {
   Users,
   UsersIcon,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { type FC, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
@@ -46,7 +55,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 }) => {
   const [, setLocation] = useLocation();
   const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const {
     isOpen: showSearch,
     open: openSearch,
@@ -91,6 +100,17 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       ? `/dashboard?tab=${currentTab}`
       : "/dashboard";
     setLocation(dashboardUrl);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error: unknown) {
+      console.error(
+        "Logout error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
   };
 
   const tabs = [
@@ -325,6 +345,34 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           <p className="mb-1">Brand last edited:</p>
           <p className="mb-0">May 2, 2025</p>
         </div>
+      </div>
+
+      <div className="border-t p-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 px-3 py-3"
+            >
+              <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm m-0 font-medium truncate">
+                  {user?.name || "User"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate m-0">
+                  {user?.email || "Unknown"}
+                </p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56" side="top">
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOutIcon className="h-4 w-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );
