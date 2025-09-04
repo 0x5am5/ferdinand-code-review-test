@@ -8,7 +8,7 @@ import {
   Sun,
   Type,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
 import * as z from "zod";
@@ -75,9 +75,22 @@ const themeFormSchema = z.object({
   animation: z.enum(["none", "minimal", "smooth", "bounce"]),
 });
 
+// Color preview component
+const ColorPreview = ({ color }: { color: string | undefined }) => (
+  <div
+    className="h-6 w-6 rounded-full inline-block mr-2 border border-border"
+    style={{ backgroundColor: color || "#cccccc" }}
+  />
+);
+
 export default function DesignBuilder() {
   const { toast } = useToast();
   const [, navigate] = useLocation();
+
+  // Generate unique IDs for form elements
+  const inputId = useId();
+  const selectId = useId();
+  const checkboxId = useId();
   const {
     designSystem: appliedDesignSystem,
     draftDesignSystem,
@@ -158,14 +171,6 @@ export default function DesignBuilder() {
       navigate(navTarget);
     }
   };
-
-  // Color preview component
-  const ColorPreview = ({ color }: { color: string | undefined }) => (
-    <div
-      className="h-6 w-6 rounded-full inline-block mr-2 border border-border"
-      style={{ backgroundColor: color || "#cccccc" }}
-    />
-  );
 
   if (isLoading) return null;
 
@@ -617,17 +622,17 @@ export default function DesignBuilder() {
                   <h3 className="text-lg font-medium">Forms</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="preview-input">Input Field</Label>
+                      <Label htmlFor={inputId}>Input Field</Label>
                       <Input
-                        id="preview-input"
+                        id={inputId}
                         placeholder="Enter some text"
                         readOnly={!canEdit}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="preview-select">Select Menu</Label>
+                      <Label htmlFor={selectId}>Select Menu</Label>
                       <Select readOnly={!canEdit}>
-                        <SelectTrigger id="preview-select">
+                        <SelectTrigger id={selectId}>
                           <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
                         <SelectContent>
@@ -638,10 +643,10 @@ export default function DesignBuilder() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="preview-checkbox">Checkbox</Label>
+                      <Label htmlFor={checkboxId}>Checkbox</Label>
                       <div className="flex items-center space-x-2">
-                        <Switch id="preview-checkbox" readOnly={!canEdit} />
-                        <Label htmlFor="preview-checkbox">Toggle me</Label>
+                        <Switch id={checkboxId} readOnly={!canEdit} />
+                        <Label htmlFor={checkboxId}>Toggle me</Label>
                       </div>
                     </div>
                   </div>

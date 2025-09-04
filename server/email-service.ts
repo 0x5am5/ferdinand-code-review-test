@@ -24,8 +24,8 @@ export class EmailService {
     const apiKey = process.env.SENDGRID_API_KEY;
     this.useSendGrid = !!apiKey;
 
-    if (this.useSendGrid) {
-      sgMail.setApiKey(apiKey!);
+    if (this.useSendGrid && apiKey) {
+      sgMail.setApiKey(apiKey);
       console.log(
         "SendGrid API key detected. Using SendGrid for email delivery."
       );
@@ -111,7 +111,7 @@ export class EmailService {
 
           return true;
         } catch (error) {
-          const sendGridError = error as any;
+          const sendGridError = error as unknown;
           console.error("[EMAIL] SendGrid error:", sendGridError);
           if (sendGridError.response) {
             console.error(

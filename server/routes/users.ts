@@ -44,7 +44,7 @@ export function registerUserRoutes(app: Express) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      let allUsers;
+      let allUsers: User[];
       if (currentUser.role === UserRole.SUPER_ADMIN) {
         allUsers = await db.select().from(users);
       } else if (currentUser.role === UserRole.ADMIN) {
@@ -128,7 +128,7 @@ export function registerUserRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl;
+      let logoUrl: string | undefined;
 
       if (invitationData.clientIds && invitationData.clientIds.length > 0) {
         try {
@@ -378,7 +378,7 @@ export function registerUserRoutes(app: Express) {
       const userList = await storage.getUsers();
 
       // Create a map to store user assignments
-      const assignments: Record<number, any[]> = {};
+      const assignments: Record<number, Client[]> = {};
 
       // Get clients for each user
       await Promise.all(
@@ -528,7 +528,10 @@ export function registerUserRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
 
         // Query all users who have this client assigned
         const userClientRows = await db

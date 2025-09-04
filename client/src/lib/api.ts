@@ -1,7 +1,7 @@
 export async function apiRequest<T>(
   method: string,
   path: string,
-  data?: any
+  data?: unknown
 ): Promise<T> {
   const options: RequestInit = {
     method,

@@ -1,8 +1,8 @@
 import { insertUserPersonaSchema } from "@shared/schema";
 import type { Express } from "express";
 import { validateClientId } from "server/middlewares/vaildateClientId";
-import type { RequestWithClientId } from "server/routes";
 import { storage } from "server/storage";
+import type { RequestWithClientId } from "../routes";
 
 export function registerPersonasRoutes(app: Express) {
   // User Persona routes
@@ -11,7 +11,10 @@ export function registerPersonasRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const personas = await storage.getClientPersonas(clientId);
         res.json(personas);
       } catch (error) {
@@ -26,7 +29,10 @@ export function registerPersonasRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const personaData = {
           ...req.body,
           clientId,
@@ -55,7 +61,10 @@ export function registerPersonasRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const personaId = parseInt(req.params.personaId, 10);
 
         const persona = await storage.getPersona(personaId);
@@ -99,7 +108,10 @@ export function registerPersonasRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const personaId = parseInt(req.params.personaId, 10);
 
         const persona = await storage.getPersona(personaId);

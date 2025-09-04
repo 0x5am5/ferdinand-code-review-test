@@ -1,4 +1,4 @@
-import type { Client, User } from "@shared/schema";
+import type { Client, FeatureToggles, User } from "@shared/schema";
 import {
   Edit2,
   Eye,
@@ -19,7 +19,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -73,10 +73,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import {
+  useAssignUserMutation,
   useClientsQuery,
-  useClientUserMutations,
   useClientUsersQuery,
   useDeleteClientMutation,
+  useInviteUserMutation,
+  useRemoveUserMutation,
   useUpdateClientMutation,
 } from "@/lib/queries/clients";
 import { useUsersQuery } from "@/lib/queries/users";
@@ -86,6 +88,11 @@ export default function Clients() {
   const [viewMode, setViewMode] = useState<"grid" | "table">("table");
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
+
+  // Generate unique IDs for form inputs
+  const emailId = useId();
+  const nameId = useId();
+  const roleId = useId();
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
@@ -117,9 +124,9 @@ export default function Clients() {
   const { data: activeClientUsers = [] } = useClientUsersQuery(
     activeClientId || 0
   );
-  const { assignUser, removeUser, inviteUser } = useClientUserMutations(
-    activeClientId || 0
-  );
+  const assignUser = useAssignUserMutation(activeClientId || 0);
+  const removeUser = useRemoveUserMutation(activeClientId || 0);
+  const inviteUser = useInviteUserMutation(activeClientId || 0);
 
   // Create a map to store client users with a default empty array for each client
   const [clientUsersMap, setClientUsersMap] = useState<Map<number, User[]>>(
@@ -228,7 +235,8 @@ export default function Clients() {
         typeof editingClient.featureToggles === "object"
       ) {
         // Make sure we have all expected properties
-        const featureTogglesObj = editingClient.featureToggles as any;
+        const featureTogglesObj =
+          editingClient.featureToggles as FeatureToggles;
         const toggles = {
           logoSystem: Boolean(featureTogglesObj.logoSystem ?? true),
           colorSystem: Boolean(featureTogglesObj.colorSystem ?? true),
@@ -309,37 +317,38 @@ export default function Clients() {
               <CardContent>
                 {/* Feature Toggle Chips */}
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {(client.featureToggles as any)?.logoSystem && (
+                  {(client.featureToggles as FeatureToggles)?.logoSystem && (
                     <Badge className="bg-blue-100 text-blue-800">
                       <Package className="h-3 w-3 mr-1" />
                       Logo
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.colorSystem && (
+                  {(client.featureToggles as FeatureToggles)?.colorSystem && (
                     <Badge className="bg-green-100 text-green-800">
                       <Palette className="h-3 w-3 mr-1" />
                       Colors
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.typeSystem && (
+                  {(client.featureToggles as FeatureToggles)?.typeSystem && (
                     <Badge className="bg-purple-100 text-purple-800">
                       <Type className="h-3 w-3 mr-1" />
                       Type
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.userPersonas && (
+                  {(client.featureToggles as FeatureToggles)?.userPersonas && (
                     <Badge className="bg-amber-100 text-amber-800">
                       <UserIcon className="h-3 w-3 mr-1" />
                       Personas
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.inspiration && (
+                  {(client.featureToggles as FeatureToggles)?.inspiration && (
                     <Badge className="bg-red-100 text-red-800">
                       <Image className="h-3 w-3 mr-1" />
                       Inspo
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.figmaIntegration && (
+                  {(client.featureToggles as FeatureToggles)
+                    ?.figmaIntegration && (
                     <Badge className="bg-gray-100 text-gray-800">
                       <Figma className="h-3 w-3 mr-1" />
                       Figma
@@ -350,7 +359,8 @@ export default function Clients() {
                   {(currentUser?.role === "admin" ||
                     currentUser?.role === "super_admin") && (
                     <>
-                      {!(client.featureToggles as any)?.logoSystem && (
+                      {!(client.featureToggles as FeatureToggles)
+                        ?.logoSystem && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -358,7 +368,7 @@ export default function Clients() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             const currentFeatures =
-                              (client.featureToggles as any) || {};
+                              (client.featureToggles as FeatureToggles) || {};
                             const newToggles = {
                               ...currentFeatures,
                               logoSystem: true,
@@ -374,7 +384,8 @@ export default function Clients() {
                           Logo
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.colorSystem && (
+                      {!(client.featureToggles as FeatureToggles)
+                        ?.colorSystem && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -382,7 +393,7 @@ export default function Clients() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             const currentFeatures =
-                              (client.featureToggles as any) || {};
+                              (client.featureToggles as FeatureToggles) || {};
                             const newToggles = {
                               ...currentFeatures,
                               colorSystem: true,
@@ -398,7 +409,8 @@ export default function Clients() {
                           Colors
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.typeSystem && (
+                      {!(client.featureToggles as FeatureToggles)
+                        ?.typeSystem && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -406,7 +418,7 @@ export default function Clients() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             const currentFeatures =
-                              (client.featureToggles as any) || {};
+                              (client.featureToggles as FeatureToggles) || {};
                             const newToggles = {
                               ...currentFeatures,
                               typeSystem: true,
@@ -422,7 +434,8 @@ export default function Clients() {
                           Type
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.userPersonas && (
+                      {!(client.featureToggles as FeatureToggles)
+                        ?.userPersonas && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -430,7 +443,7 @@ export default function Clients() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             const currentFeatures =
-                              (client.featureToggles as any) || {};
+                              (client.featureToggles as FeatureToggles) || {};
                             const newToggles = {
                               ...currentFeatures,
                               userPersonas: true,
@@ -446,7 +459,8 @@ export default function Clients() {
                           Personas
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.inspiration && (
+                      {!(client.featureToggles as FeatureToggles)
+                        ?.inspiration && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -454,7 +468,7 @@ export default function Clients() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             const currentFeatures =
-                              (client.featureToggles as any) || {};
+                              (client.featureToggles as FeatureToggles) || {};
                             const newToggles = {
                               ...currentFeatures,
                               inspiration: true,
@@ -470,7 +484,8 @@ export default function Clients() {
                           Inspo
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.figmaIntegration && (
+                      {!(client.featureToggles as FeatureToggles)
+                        ?.figmaIntegration && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -478,7 +493,7 @@ export default function Clients() {
                           onClick={async (e) => {
                             e.stopPropagation();
                             const currentFeatures =
-                              (client.featureToggles as any) || {};
+                              (client.featureToggles as FeatureToggles) || {};
                             const newToggles = {
                               ...currentFeatures,
                               figmaIntegration: true,
@@ -564,14 +579,15 @@ export default function Clients() {
             <tbody>
               {filteredClients.map((client: Client) => {
                 // Get feature toggles for this client
-                const clientFeatures = (client.featureToggles as any) || {
-                  logoSystem: true,
-                  colorSystem: true,
-                  typeSystem: true,
-                  userPersonas: true,
-                  inspiration: true,
-                  figmaIntegration: false,
-                };
+                const clientFeatures =
+                  (client.featureToggles as FeatureToggles) || {
+                    logoSystem: true,
+                    colorSystem: true,
+                    typeSystem: true,
+                    userPersonas: true,
+                    inspiration: true,
+                    figmaIntegration: false,
+                  };
 
                 return (
                   <tr
@@ -871,9 +887,16 @@ export default function Clients() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div
+                      <fieldset
                         className="flex flex-wrap gap-1"
+                        aria-label="Client user management"
                         onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }
+                        }}
                       >
                         {/* Fetch and display client users or use cached ones */}
                         {(clientUsersMap.get(client.id) || []).map((user) => (
@@ -1002,7 +1025,7 @@ export default function Clients() {
                             </Command>
                           </PopoverContent>
                         </Popover>
-                      </div>
+                      </fieldset>
                     </td>
                     <td className="p-4">
                       {client.createdAt
@@ -1337,9 +1360,9 @@ export default function Clients() {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor={emailId}>Email</Label>
               <Input
-                id="email"
+                id={emailId}
                 value={inviteEmail}
                 onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder="user@example.com"
@@ -1347,9 +1370,9 @@ export default function Clients() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Name (optional)</Label>
+              <Label htmlFor={nameId}>Name (optional)</Label>
               <Input
-                id="name"
+                id={nameId}
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
                 placeholder="User's name"
@@ -1357,12 +1380,12 @@ export default function Clients() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor={roleId}>Role</Label>
               <Select
                 defaultValue={inviteRole}
                 onValueChange={(value) => setInviteRole(value)}
               >
-                <SelectTrigger id="role">
+                <SelectTrigger id={roleId}>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>

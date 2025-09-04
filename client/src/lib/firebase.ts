@@ -1,4 +1,4 @@
-import { getApp, getApps, initializeApp } from "firebase/app";
+import { type FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import {
   browserLocalPersistence,
   GoogleAuthProvider,
@@ -17,7 +17,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase - handling potential duplicate initialization
-let app;
+let app: FirebaseApp;
 try {
   if (getApps().length === 0) {
     app = initializeApp(firebaseConfig);

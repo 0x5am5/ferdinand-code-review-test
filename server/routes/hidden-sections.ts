@@ -1,9 +1,13 @@
 import { insertHiddenSectionSchema, UserRole } from "@shared/schema";
-import type { Express, Request, Response } from "express";
+import type { Express, NextFunction, Request, Response } from "express";
 import { storage } from "../storage";
 
 // User role middleware for admin checks
-const requireAdminRole = async (req: Request, res: Response, next: any) => {
+const requireAdminRole = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const userId = req.session.userId;
   if (!userId) {
     return res.status(401).json({ message: "Unauthorized" });

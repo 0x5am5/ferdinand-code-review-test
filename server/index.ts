@@ -4,7 +4,11 @@ import { EventEmitter } from "node:events";
 import { createServer } from "node:http";
 import { promisify } from "node:util";
 import connectPg from "connect-pg-simple";
-import express from "express";
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import session from "express-session";
 import { runMigrations } from "./migrations";
 import { registerRoutes } from "./routes";
@@ -43,7 +47,7 @@ app.use(
 );
 
 // Add error handling middleware
-app.use((err: any, _req: any, res: any, _next: any) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ message: "Something broke!", error: err.message });
 });

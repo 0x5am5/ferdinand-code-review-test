@@ -38,7 +38,13 @@ export function registerInvitationRoutes(app: Express) {
       // Enhance invitations with client data
       const enhancedInvitations = await Promise.all(
         pendingInvitations.map(async (invitation) => {
-          let clientData;
+          let clientData:
+            | {
+                name: string;
+                logoUrl?: string;
+                primaryColor?: string;
+              }
+            | undefined;
 
           if (invitation.clientIds && invitation.clientIds.length > 0) {
             try {
@@ -56,7 +62,7 @@ export function registerInvitationRoutes(app: Express) {
           }
 
           // Exclude token from response
-          const { token, ...safeInvitation } = invitation;
+          const { token: _token, ...safeInvitation } = invitation;
 
           return {
             ...safeInvitation,
@@ -118,7 +124,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl;
+      let logoUrl: string | undefined;
 
       if (
         req.body.clientIds &&
@@ -377,7 +383,7 @@ export function registerInvitationRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl;
+      let logoUrl: string | undefined;
 
       if (invitation.clientIds && invitation.clientIds.length > 0) {
         try {

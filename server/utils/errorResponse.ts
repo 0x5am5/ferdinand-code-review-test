@@ -16,18 +16,81 @@ interface SendGridError {
   field?: string;
 }
 
+interface SendGridErrorBody {
+  errors?: SendGridError[];
+}
+
+interface SendGridResponse {
+  body?: SendGridErrorBody;
+  statusCode?: number;
+}
+
 interface SendGridErrorResponse {
-  response?: {
-    body?: {
-      errors?: SendGridError[];
-    };
-    statusCode?: number;
-  };
+  response?: SendGridResponse;
   code?: string | number;
 }
 
 interface NetworkError extends Error {
   code?: string;
+}
+
+// Type guard functions for safe property access
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function _hasStringProperty(
+  obj: unknown,
+  key: string
+): obj is Record<string, string> {
+  return isObject(obj) && typeof obj[key] === "string";
+}
+
+function _hasNumberProperty(
+  obj: unknown,
+  key: string
+): obj is Record<string, number> {
+  return isObject(obj) && typeof obj[key] === "number";
+}
+
+function _hasArrayProperty(
+  obj: unknown,
+  key: string
+): obj is Record<string, unknown[]> {
+  return isObject(obj) && Array.isArray(obj[key]);
+}
+
+function isSendGridErrorResponse(
+  error: unknown
+): error is SendGridErrorResponse {
+  if (!isObject(error)) return false;
+
+  if ("response" in error && error.response) {
+    const response = error.response;
+    return (
+      isObject(response) && ("body" in response || "statusCode" in response)
+    );
+  }
+
+  return "code" in error;
+}
+
+function isNetworkError(error: unknown): error is NetworkError {
+  return (
+    error instanceof Error &&
+    "code" in error &&
+    typeof (error as { code?: string }).code === "string"
+  );
+}
+
+function isSendGridErrorArray(errors: unknown): errors is SendGridError[] {
+  if (!Array.isArray(errors)) return false;
+  return errors.every(
+    (error) =>
+      isObject(error) &&
+      (typeof error.message === "string" || error.message === undefined) &&
+      (typeof error.field === "string" || error.field === undefined)
+  );
 }
 
 /**
@@ -61,7 +124,10 @@ export function unauthorized(
   });
 }
 
-export function forbidden(res: Response, message: string = "Forbidden"): Response {
+export function forbidden(
+  res: Response,
+  message: string = "Forbidden"
+): Response {
   return res.status(403).json({
     error: {
       message,
@@ -70,7 +136,10 @@ export function forbidden(res: Response, message: string = "Forbidden"): Respons
   });
 }
 
-export function notFound(res: Response, message: string = "Not found"): Response {
+export function notFound(
+  res: Response,
+  message: string = "Not found"
+): Response {
   return res.status(404).json({
     error: {
       message,
@@ -178,90 +247,108 @@ export function parseSendGridError(error: unknown): {
   console.error("Parsing SendGrid error:", error);
 
   // Check if it's a SendGrid API error with response body
-  const sendGridError = error as SendGridErrorResponse;
-  if (sendGridError.response?.body) {
-    const body = sendGridError.response.body;
-    const statusCode = sendGridError.code || sendGridError.response?.statusCode;
+  if (isSendGridErrorResponse(error)) {
+    const response = error.response;
 
-    console.error("SendGrid error body:", body);
-    console.error("SendGrid status code:", statusCode);
+    if (response?.body) {
+      const body = response.body;
+      const statusCode = error.code || response.statusCode;
 
-    // Handle specific SendGrid error codes
-    if (
-      statusCode === 402 ||
-      body.errors?.some(
-        (e: SendGridError) =>
-          e.message?.includes("quota") ||
-          e.message?.includes("credits")
-      )
-    ) {
-      return {
-        message: ERROR_MESSAGES.EMAIL_QUOTA_EXCEEDED,
-        code: "EMAIL_QUOTA_EXCEEDED",
-        details: { sendGridError: body },
-      };
-    }
+      console.error("SendGrid error body:", body);
+      console.error("SendGrid status code:", statusCode);
 
-    if (statusCode === 401 || statusCode === 403) {
-      return {
-        message: ERROR_MESSAGES.EMAIL_INVALID_CREDENTIALS,
-        code: "EMAIL_INVALID_CREDENTIALS",
-        details: { sendGridError: body },
-      };
-    }
+      // Convert statusCode to number for comparison
+      const numericStatusCode =
+        typeof statusCode === "string" ? parseInt(statusCode, 10) : statusCode;
 
-    if (statusCode === 400 && body.errors) {
-      const hasInvalidEmail = body.errors.some(
-        (e: SendGridError) =>
-          e.field === "to" ||
-          e.message?.includes("email") ||
-          e.message?.includes("invalid")
-      );
-
-      if (hasInvalidEmail) {
+      // Handle specific SendGrid error codes
+      if (
+        numericStatusCode === 402 ||
+        (body.errors &&
+          isSendGridErrorArray(body.errors) &&
+          body.errors.some(
+            (e: SendGridError) =>
+              e.message?.includes("quota") || e.message?.includes("credits")
+          ))
+      ) {
         return {
-          message: ERROR_MESSAGES.EMAIL_INVALID_ADDRESS,
-          code: "EMAIL_INVALID_ADDRESS",
+          message: ERROR_MESSAGES.EMAIL_QUOTA_EXCEEDED,
+          code: "EMAIL_QUOTA_EXCEEDED",
+          details: { sendGridError: body },
+        };
+      }
+
+      if (numericStatusCode === 401 || numericStatusCode === 403) {
+        return {
+          message: ERROR_MESSAGES.EMAIL_INVALID_CREDENTIALS,
+          code: "EMAIL_INVALID_CREDENTIALS",
+          details: { sendGridError: body },
+        };
+      }
+
+      if (
+        numericStatusCode === 400 &&
+        body.errors &&
+        isSendGridErrorArray(body.errors)
+      ) {
+        const hasInvalidEmail = body.errors.some(
+          (e: SendGridError) =>
+            e.field === "to" ||
+            e.message?.includes("email") ||
+            e.message?.includes("invalid")
+        );
+
+        if (hasInvalidEmail) {
+          return {
+            message: ERROR_MESSAGES.EMAIL_INVALID_ADDRESS,
+            code: "EMAIL_INVALID_ADDRESS",
+            details: { sendGridError: body },
+          };
+        }
+      }
+
+      if (typeof numericStatusCode === "number" && numericStatusCode >= 500) {
+        return {
+          message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
+          code: "EMAIL_SERVICE_UNAVAILABLE",
+          details: { sendGridError: body },
+        };
+      }
+
+      // Extract first error message if available
+      if (
+        body.errors &&
+        isSendGridErrorArray(body.errors) &&
+        body.errors.length > 0
+      ) {
+        const firstError = body.errors[0];
+        return {
+          message: `${ERROR_MESSAGES.EMAIL_SERVICE_FAILED} (${firstError.message || "Unknown error"})`,
+          code: "EMAIL_SERVICE_FAILED",
           details: { sendGridError: body },
         };
       }
     }
-
-    if (statusCode >= 500) {
-      return {
-        message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
-        code: "EMAIL_SERVICE_UNAVAILABLE",
-        details: { sendGridError: body },
-      };
-    }
-
-    // Extract first error message if available
-    if (body.errors && body.errors.length > 0) {
-      const firstError = body.errors[0];
-      return {
-        message: `${ERROR_MESSAGES.EMAIL_SERVICE_FAILED} (${firstError.message})`,
-        code: "EMAIL_SERVICE_FAILED",
-        details: { sendGridError: body },
-      };
-    }
   }
 
   // Handle network errors or other issues
-  const networkError = error as NetworkError;
-  if (networkError.code === "ENOTFOUND" || networkError.code === "ECONNREFUSED") {
-    return {
-      message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
-      code: "EMAIL_SERVICE_UNAVAILABLE",
-      details: { originalError: networkError.message },
-    };
+  if (isNetworkError(error)) {
+    if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+      return {
+        message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
+        code: "EMAIL_SERVICE_UNAVAILABLE",
+        details: { originalError: error.message },
+      };
+    }
   }
 
   // Generic fallback
+  const errorMessage = error instanceof Error ? error.message : String(error);
   return {
     message: ERROR_MESSAGES.EMAIL_SERVICE_FAILED,
     code: "EMAIL_SERVICE_FAILED",
-    details: { 
-      originalError: networkError.message || String(error)
+    details: {
+      originalError: errorMessage,
     },
   };
 }

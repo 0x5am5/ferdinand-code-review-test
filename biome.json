@@ -26,7 +26,8 @@
         "useImportType": "error"
       },
       "suspicious": {
-        "noExplicitAny": "error"
+        "noExplicitAny": "error",
+        "noUnknownAtRules": "off"
       }
     }
   },

@@ -34,7 +34,7 @@ export function useUsersQuery() {
 
 // Get pending invitations
 export function usePendingInvitationsQuery() {
-  return useQuery({
+  return useQuery<PendingInvitation[]>({
     queryKey: ["/api/invitations"],
     queryFn: async () => {
       const response = await fetch("/api/invitations");

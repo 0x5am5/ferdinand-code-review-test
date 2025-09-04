@@ -13,12 +13,26 @@ interface FigmaFile {
   thumbnailUrl: string;
 }
 
+interface FigmaNode {
+  id: string;
+  name: string;
+  type: string;
+  children?: FigmaNode[];
+}
+
+interface FigmaFileFromAPI {
+  key: string;
+  name: string;
+  last_modified: string;
+  thumbnail_url: string;
+}
+
 interface FigmaFileResponse {
   document: {
     id: string;
     name: string;
     type: string;
-    children: any[];
+    children: FigmaNode[];
   };
   styles: Record<
     string,
@@ -30,13 +44,6 @@ interface FigmaFileResponse {
     }
   >;
   lastModified: string;
-}
-
-interface FigmaStyle {
-  key: string;
-  name: string;
-  styleType: "FILL" | "TEXT" | "EFFECT" | "GRID";
-  description: string;
 }
 
 export function registerFigmaRoutes(app: Express) {
@@ -176,7 +183,7 @@ export function registerFigmaRoutes(app: Express) {
           if (projectResponse.ok) {
             const projectData = await projectResponse.json();
             files.push(
-              ...projectData.files.map((file: any) => ({
+              ...projectData.files.map((file: FigmaFileFromAPI) => ({
                 key: file.key,
                 name: file.name,
                 lastModified: file.last_modified,

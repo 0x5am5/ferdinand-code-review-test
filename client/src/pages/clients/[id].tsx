@@ -16,6 +16,7 @@ import {
   useClientsById,
 } from "@/lib/queries/clients";
 import { queryClient } from "@/lib/queryClient";
+import type { ColorAssetData } from "@/types/color";
 
 export default function ClientDetails() {
   const { id } = useParams();
@@ -180,7 +181,7 @@ export default function ClientDetails() {
       });
 
       if (primaryColorAsset?.data) {
-        let colorData;
+        let colorData: ColorAssetData;
         try {
           colorData =
             typeof primaryColorAsset.data === "string"

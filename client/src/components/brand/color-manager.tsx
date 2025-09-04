@@ -78,7 +78,7 @@ import { ColorChip } from "./ColorChip";
 // ColorCard component for the color manager
 function ColorCard({
   color,
-  onEdit,
+  onEdit: _onEdit,
   onDelete,
   onGenerate,
   neutralColorsCount,
@@ -245,7 +245,7 @@ function ColorCard({
       return p;
     };
 
-    let r, g, b;
+    let r: number, g: number, b: number;
     if (s === 0) {
       r = g = b = l;
     } else {
@@ -540,6 +540,12 @@ function ColorCard({
                     : "#fff",
               }}
               onClick={handleNameEdit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleNameEdit();
+                }
+              }}
               title="Click to edit name"
             >
               {color.name}
@@ -554,6 +560,12 @@ function ColorCard({
                   : "#fff",
             }}
             onClick={handleStartEdit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleStartEdit();
+              }
+            }}
             title="Click to edit color"
           >
             {displayHex}
@@ -716,6 +728,7 @@ function ColorCard({
           <div className="color-picker-popover__header">
             <h4>Edit Color</h4>
             <button
+              type="button"
               className="color-picker-popover__close-button"
               onClick={handleCancelEdit}
             >
@@ -726,12 +739,14 @@ function ColorCard({
           {/* Tabs */}
           <div className="color-picker-popover__tabs">
             <button
+              type="button"
               className={`color-picker-popover__tab ${activeTab === "color" ? "active" : ""}`}
               onClick={() => setActiveTab("color")}
             >
               Color
             </button>
             <button
+              type="button"
               className={`color-picker-popover__tab ${activeTab === "gradient" ? "active" : ""}`}
               onClick={() => setActiveTab("gradient")}
             >
@@ -754,8 +769,9 @@ function ColorCard({
 
                 {/* Hex input */}
                 <div className="color-picker-popover__hex-input">
-                  <label>Hex:</label>
+                  <label htmlFor={`hex-input-${color.id}`}>Hex:</label>
                   <input
+                    id={`hex-input-${color.id}`}
                     type="text"
                     value={tempColor}
                     onChange={handleHexInputChange}
@@ -782,6 +798,12 @@ function ColorCard({
                 {/* Gradient Preview Bar */}
                 <div
                   className="color-picker-popover__gradient-preview"
+                  role="slider"
+                  tabIndex={0}
+                  aria-label="Gradient preview - click to add color stops"
+                  aria-valuenow={gradientStops.length}
+                  aria-valuemin={0}
+                  aria-valuemax={10}
                   style={{
                     background: `linear-gradient(to right, ${gradientStops.map((stop) => `${stop.color} ${stop.position}%`).join(", ")})`,
                   }}
@@ -803,9 +825,12 @@ function ColorCard({
                 >
                   {/* Color Stop Handles */}
                   {gradientStops.map((stop, index) => (
-                    <div
-                      key={index}
+                    <button
+                      key={`stop-handle-${stop.position}-${stop.color}-${index}`}
                       className="gradient-stop-handle"
+                      type="button"
+                      tabIndex={0}
+                      aria-label={`Color stop ${index + 1} at ${stop.position}% - drag to move`}
                       style={{
                         left: `${stop.position}%`,
                         backgroundColor: stop.color,
@@ -856,6 +881,7 @@ function ColorCard({
                   <div className="gradient-stops-header">
                     <span>Stops</span>
                     <button
+                      type="button"
                       className="add-stop-button"
                       onClick={() => {
                         const newPosition =
@@ -879,7 +905,10 @@ function ColorCard({
 
                   {/* Individual Stop Controls */}
                   {gradientStops.map((stop, index) => (
-                    <div key={index} className="gradient-stop-control">
+                    <div
+                      key={`stop-control-${stop.position}-${stop.color}-${index}`}
+                      className="gradient-stop-control"
+                    >
                       <div className="stop-position">
                         <input
                           type="number"
@@ -898,14 +927,25 @@ function ColorCard({
                         <span>%</span>
                       </div>
 
-                      <div
+                      <button
+                        type="button"
                         className="stop-color-preview"
+                        aria-label={`Change color for stop ${index + 1}`}
                         style={{ backgroundColor: stop.color }}
                         onClick={() => {
                           const colorInput = document.querySelector(
                             `input[data-stop-index="${index}"]`
                           ) as HTMLInputElement;
                           if (colorInput) colorInput.click();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            const colorInput = document.querySelector(
+                              `input[data-stop-index="${index}"]`
+                            ) as HTMLInputElement;
+                            if (colorInput) colorInput.click();
+                          }
                         }}
                       />
 
@@ -943,6 +983,7 @@ function ColorCard({
 
                       {gradientStops.length > 2 && (
                         <button
+                          type="button"
                           className="remove-stop-button"
                           onClick={() => {
                             setGradientStops(
@@ -963,6 +1004,7 @@ function ColorCard({
           {/* Save button with icon - left aligned */}
           <div className="color-picker-popover__actions">
             <button
+              type="button"
               className="color-picker-popover__save-button"
               onClick={handleSaveEdit}
             >
@@ -985,9 +1027,9 @@ function ColorCard({
           >
             {/* Tints Row (Lighter) */}
             <div className="flex h-1/2">
-              {tints.map((tint, index) => (
+              {tints.map((tint, _index) => (
                 <motion.div
-                  key={`tint-${index}`}
+                  key={`tint-${tint}`}
                   className="flex-1 relative group cursor-pointer"
                   style={{ backgroundColor: tint }}
                   onClick={() => copyHex(tint)}
@@ -1001,9 +1043,9 @@ function ColorCard({
 
             {/* Shades Row (Darker) */}
             <div className="flex h-1/2">
-              {shades.map((shade, index) => (
+              {shades.map((shade, _index) => (
                 <motion.div
-                  key={`shade-${index}`}
+                  key={`shade-${shade}`}
                   className="flex-1 relative group cursor-pointer"
                   style={{ backgroundColor: shade }}
                   onClick={() => copyHex(shade)}
@@ -1071,6 +1113,7 @@ function ColorCard({
                   RGB
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
                     const rgb = hexToRgb(displayHex);
                     if (rgb) {
@@ -1163,6 +1206,7 @@ function ColorCard({
                   HSL
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
                     const hsl = hexToHsl(displayHex);
                     if (hsl) {
@@ -1252,6 +1296,7 @@ function ColorCard({
                   CMYK
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
                     const cmyk = hexToCmyk(displayHex);
                     if (cmyk) {
@@ -1360,6 +1405,7 @@ function ColorCard({
                     }}
                   />
                   <button
+                    type="button"
                     onClick={() => {
                       if (pantoneValue) {
                         navigator.clipboard.writeText(pantoneValue);
@@ -1955,7 +2001,7 @@ export function ColorManager({
     const allShades = [];
     for (let level = 1; level <= 11; level++) {
       // Generate lightness values with midpoint shifted to Grey 5 for more lighter shades
-      let baseLightness;
+      let baseLightness: number;
       if (level <= 5) {
         // Greys 1-5: 8% to 50% (compressed dark range)
         baseLightness = 8 + ((level - 1) / 4) * 42; // 8% to 50%

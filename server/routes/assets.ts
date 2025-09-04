@@ -1,6 +1,7 @@
 import {
   brandAssets,
   convertedAssets,
+  type InsertFontAsset,
   insertColorAssetSchema,
   insertFontAssetSchema,
 } from "@shared/schema";
@@ -12,6 +13,19 @@ import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { storage } from "../storage";
 import { convertToAllFormats } from "../utils/file-converter";
+
+// Adobe Fonts API types
+interface AdobeFontVariation {
+  fvs: string;
+  name: string;
+}
+
+interface AdobeFontFamily {
+  id: string;
+  name: string;
+  slug: string;
+  variations: AdobeFontVariation[];
+}
 
 const upload = multer({ preservePath: true });
 
@@ -92,7 +106,7 @@ export function registerAssetRoutes(app: Express) {
         projectId,
         fonts:
           data.kit?.families
-            ?.map((family: any) => {
+            ?.map((family: AdobeFontFamily) => {
               console.log(
                 `Processing family: ${family.name}`,
                 JSON.stringify(family.variations, null, 2)
@@ -253,7 +267,10 @@ export function registerAssetRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {
-        const clientId = req.clientId!;
+        const { clientId } = req;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const { category } = req.body;
 
         // Font asset creation
@@ -281,7 +298,7 @@ export function registerAssetRoutes(app: Express) {
               clientId
             );
 
-            let fontData;
+            let fontData: unknown;
             try {
               fontData = typeof data === "string" ? JSON.parse(data) : data;
             } catch (error) {
@@ -345,7 +362,7 @@ export function registerAssetRoutes(app: Express) {
               clientId
             );
 
-            let fontData;
+            let fontData: unknown;
             try {
               fontData = typeof data === "string" ? JSON.parse(data) : data;
             } catch (error) {
@@ -568,7 +585,10 @@ export function registerAssetRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {
-        const clientId = req.clientId!;
+        const { clientId } = req;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const assetId = parseInt(req.params.assetId, 10);
         // Get variant from query params with debugging
         const variant = req.query.variant as string;
@@ -596,7 +616,11 @@ export function registerAssetRoutes(app: Express) {
             .json({ message: "Not authorized to update this asset" });
         }
 
-        let parsed;
+        let parsed: {
+          success: boolean;
+          data?: InsertFontAsset;
+          error?: unknown;
+        };
         if (req.body.category === "font") {
           parsed = insertFontAssetSchema.safeParse({
             ...req.body,
@@ -818,7 +842,10 @@ export function registerAssetRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {
-        const clientId = req.clientId!;
+        const { clientId } = req;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const assetId = parseInt(req.params.assetId, 10);
         const variant = req.query.variant as string;
 
@@ -888,7 +915,10 @@ export function registerAssetRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {
-        const clientId = req.clientId!;
+        const { clientId } = req;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const assets = await storage.getClientAssets(clientId);
         res.json(assets);
       } catch (error) {
@@ -1292,7 +1322,9 @@ export function registerAssetRoutes(app: Express) {
   );
 
   // Helper function to get dark variant buffer
-  function getDarkVariantBuffer(asset: any): Buffer | null {
+  function getDarkVariantBuffer(asset: {
+    darkVariant?: Buffer | null;
+  }): Buffer | null {
     if (!asset) return null;
 
     try {

@@ -133,14 +133,6 @@ export interface PendingInvitation {
 export default function UsersPage() {
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-
-  if (isAuthLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { toast } = useToast();
 
@@ -190,6 +182,14 @@ export default function UsersPage() {
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // Enhanced search with fuzzy matching - backend handles organization filtering
   const filteredUsers = debouncedSearchQuery
@@ -325,8 +325,11 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {isLoadingInvitations
-                  ? Array.from({ length: 2 }).map((_, index) => (
-                      <TableRow key={index}>
+                  ? Array.from(
+                      { length: 2 },
+                      (_, index) => `loading-invitation-${index}`
+                    ).map((key) => (
+                      <TableRow key={key}>
                         <TableCell>
                           <div className="h-4 w-48 bg-muted animate-pulse"></div>
                         </TableCell>
@@ -477,8 +480,11 @@ export default function UsersPage() {
             </TableHeader>
             <TableBody>
               {isLoadingUsers || isLoadingAssignments ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <TableRow key={`loading-users-${index}`}>
+                Array.from(
+                  { length: 3 },
+                  (_, index) => `loading-users-${index}`
+                ).map((key) => (
+                  <TableRow key={key}>
                     <TableCell>
                       <div className="flex items-center space-x-4">
                         <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />

@@ -17,7 +17,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
         const sections = await storage.getClientInspirationSections(clientId);
         const sectionsWithImages = await Promise.all(
           sections.map(async (section) => ({
@@ -41,7 +41,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
     requireAdminRole,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
         const sectionData = {
           ...req.body,
           clientId,
@@ -70,7 +70,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
     requireAdminRole,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
         const sectionId = parseInt(req.params.sectionId, 10);
         const sectionData = {
           ...req.body,

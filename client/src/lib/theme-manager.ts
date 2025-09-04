@@ -226,7 +226,9 @@ class ThemeManager {
   private notify(event: ThemeChangeEvent, theme: DesignSystem) {
     const subscribers = this.subscribers.get(event);
     if (subscribers) {
-      subscribers.forEach((callback) => callback(theme));
+      subscribers.forEach((callback) => {
+        callback(theme);
+      });
     }
   }
 

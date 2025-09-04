@@ -139,9 +139,8 @@ export function useUpdateClientOrderMutation(
   });
 }
 
-// Client user assignment mutations
-export function useClientUserMutations(clientId: number) {
-  const assignUser = useMutation({
+export function useAssignUserMutation(clientId: number) {
+  return useMutation({
     mutationFn: async (userId: number) => {
       return await apiRequest("POST", `/api/user-clients`, {
         userId,
@@ -166,8 +165,10 @@ export function useClientUserMutations(clientId: number) {
       });
     },
   });
+}
 
-  const removeUser = useMutation({
+export function useRemoveUserMutation(clientId: number) {
+  return useMutation({
     mutationFn: async (userId: number) => {
       return await apiRequest(
         "DELETE",
@@ -192,8 +193,10 @@ export function useClientUserMutations(clientId: number) {
       });
     },
   });
+}
 
-  const inviteUser = useMutation({
+export function useInviteUserMutation(clientId: number) {
+  return useMutation({
     mutationFn: async ({
       email,
       name,
@@ -227,6 +230,4 @@ export function useClientUserMutations(clientId: number) {
       });
     },
   });
-
-  return { assignUser, removeUser, inviteUser };
 }

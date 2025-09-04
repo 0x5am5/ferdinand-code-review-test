@@ -631,7 +631,7 @@ function AppIconDownloadButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="logo-display__preview-action-button">
+        <button type="button" className="logo-display__preview-action-button">
           <Download className="h-3 w-3" />
           <span>Download</span>
         </button>
@@ -677,7 +677,8 @@ function AppIconDownloadButton({
                     Open in Figma
                   </a>
                 )}
-                <div
+                <button
+                  type="button"
                   className="logo-download__link"
                   onClick={() => {
                     // Download SVG
@@ -699,7 +700,7 @@ function AppIconDownloadButton({
                 >
                   <FileType className="logo-download__icon" />
                   Download SVG logo
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -1063,7 +1064,7 @@ function StandardLogoDownloadButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="asset-display__preview-action-button">
+        <button type="button" className="asset-display__preview-action-button">
           <Download className="h-3 w-3" />
           <span>Download</span>
         </button>
@@ -1080,31 +1081,38 @@ function StandardLogoDownloadButton({
                 Standard PNG formats with transparent background
               </p>
               <div className="logo-download__links">
-                <div className="logo-download__link" onClick={downloadAllLogos}>
+                <button
+                  type="button"
+                  className="logo-download__link"
+                  onClick={downloadAllLogos}
+                >
                   <Folder className="logo-download__icon" />
                   Logo Package (small, medium, large)
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
                   className="logo-download__link"
                   onClick={() => downloadSpecificSize(300)}
                 >
                   <FileType className="logo-download__icon" />
                   Small (300px wide)
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
                   className="logo-download__link"
                   onClick={() => downloadSpecificSize(800)}
                 >
                   <FileType className="logo-download__icon" />
                   Medium (800px wide)
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
                   className="logo-download__link"
                   onClick={() => downloadSpecificSize(2000)}
                 >
                   <FileType className="logo-download__icon" />
                   Large (2000px wide)
-                </div>
+                </button>
               </div>
             </div>
 
@@ -1128,20 +1136,22 @@ function StandardLogoDownloadButton({
                     Open in Figma
                   </a>
                 )}
-                <div
+                <button
+                  type="button"
                   className="logo-download__link"
                   onClick={() => downloadEditableFiles("svg")}
                 >
                   <FileType className="logo-download__icon" />
                   Download SVG logo
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
                   className="logo-download__link"
                   onClick={() => downloadEditableFiles("pdf")}
                 >
                   <FileType className="logo-download__icon" />
                   Download PDF logo
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -1342,7 +1352,7 @@ function FaviconDownloadButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button className="asset-display__preview-action-button">
+        <button type="button" className="asset-display__preview-action-button">
           <Download className="h-3 w-3" />
           <span>Download</span>
         </button>
@@ -1359,13 +1369,14 @@ function FaviconDownloadButton({
                 Standard favicon sizes (16×16, 32×32, 48×48) in ICO and PNG
                 formats
               </p>
-              <div
+              <button
+                type="button"
                 className="logo-download__link"
                 onClick={downloadFaviconPackage}
               >
                 <Folder className="logo-download__icon" />
                 Download favicon package
-              </div>
+              </button>
             </div>
 
             {/* Editable Design Files Section */}
@@ -1388,7 +1399,8 @@ function FaviconDownloadButton({
                     Open in Figma
                   </a>
                 )}
-                <div
+                <button
+                  type="button"
                   className="logo-download__link"
                   onClick={() => {
                     // Download SVG
@@ -1410,7 +1422,7 @@ function FaviconDownloadButton({
                 >
                   <FileType className="logo-download__icon" />
                   Download SVG logo
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -1435,7 +1447,7 @@ function _LogoDisplay({
   clientId: number;
   queryClient: QueryClient;
 }) {
-  const { user = null } = useAuth();
+  const { user: _user = null } = useAuth();
   const { toast } = useToast();
   const type = parsedData.type;
   const [variant, setVariant] = useState<"light" | "dark">("light");
@@ -1463,6 +1475,7 @@ function _LogoDisplay({
             <div className="logo-display__preview-background-toggle">
               <div className="logo-display__preview-background-toggle-tabs">
                 <button
+                  type="button"
                   data-state={variant === "light" ? "active" : "inactive"}
                   onClick={() => setVariant("light")}
                 >
@@ -1470,6 +1483,7 @@ function _LogoDisplay({
                   Light Background
                 </button>
                 <button
+                  type="button"
                   data-state={variant === "dark" ? "active" : "inactive"}
                   onClick={() => setVariant("dark")}
                 >
@@ -1622,6 +1636,7 @@ function _LogoDisplay({
               {((variant === "dark" && parsedData.hasDarkVariant) ||
                 variant === "light") && (
                 <button
+                  type="button"
                   className="asset-display__preview-action-button"
                   onClick={() => onDelete(logo.id, variant)}
                 >
@@ -1960,7 +1975,7 @@ function LogoSection({
   queryClient: QueryClient;
   onRemoveSection?: (type: string) => void;
 }) {
-  const { user = null } = useAuth();
+  const { user: _user = null } = useAuth();
   const { toast } = useToast();
   const hasLogos = logos.length > 0;
 
@@ -2115,6 +2130,7 @@ function LogoSection({
                   {((variant === "dark" && parsedData.hasDarkVariant) ||
                     variant === "light") && (
                     <button
+                      type="button"
                       className="asset-display__preview-action-button"
                       onClick={() => onDeleteLogo(logo.id, variant)}
                     >

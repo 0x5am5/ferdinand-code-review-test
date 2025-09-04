@@ -64,19 +64,21 @@ export default function Login() {
           window.location.href = "/design-builder";
         }
       }, 100);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Authentication error:", error);
 
       let errorMsg = "Authentication failed. Please try again.";
 
-      if (error.code === "auth/popup-blocked") {
-        errorMsg = "Please allow popups for this site to sign in.";
-      } else if (error.code === "auth/cancelled-popup-request") {
-        errorMsg = "Sign-in was cancelled.";
-      } else if (error.code === "auth/network-request-failed") {
-        errorMsg = "Network error. Please check your connection.";
-      } else if (error.message) {
-        errorMsg = error.message;
+      if (error && typeof error === "object" && "code" in error) {
+        if (error.code === "auth/popup-blocked") {
+          errorMsg = "Please allow popups for this site to sign in.";
+        } else if (error.code === "auth/cancelled-popup-request") {
+          errorMsg = "Sign-in was cancelled.";
+        } else if (error.code === "auth/network-request-failed") {
+          errorMsg = "Network error. Please check your connection.";
+        } else if ("message" in error && typeof error.message === "string") {
+          errorMsg = error.message;
+        }
       }
 
       setErrorMessage(errorMsg);
@@ -150,7 +152,11 @@ export default function Login() {
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
                     <path
                       fill="currentColor"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"

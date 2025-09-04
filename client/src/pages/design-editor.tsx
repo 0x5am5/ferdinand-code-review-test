@@ -32,29 +32,15 @@ export default function DesignEditor() {
   const clientId = id ? parseInt(id, 10) : null;
   const [activeTab, setActiveTab] = useState("typography");
 
-  // Validate clientId
-  if (!clientId || Number.isNaN(clientId)) {
-    return (
-      <div className="container py-8 max-w-6xl">
-        <Card>
-          <div className="p-6">
-            <h1>Invalid Client ID</h1>
-            <p className="text-muted-foreground">
-              Please provide a valid client ID to access the design editor.
-            </p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   // Fetch design settings and assets
   const { data: designSettings } = useQuery<DesignSettings>({
     queryKey: ["/api/design-settings"],
+    enabled: !!clientId && !Number.isNaN(clientId),
   });
 
   const { data: brandAssets } = useQuery<BrandAsset[]>({
     queryKey: [`/api/clients/${clientId}/assets`],
+    enabled: !!clientId && !Number.isNaN(clientId),
   });
 
   // Update design settings mutation
@@ -84,7 +70,26 @@ export default function DesignEditor() {
     },
   });
 
-  const handleSettingChange = (key: keyof DesignSettings, value: any) => {
+  // Validate clientId
+  if (!clientId || Number.isNaN(clientId)) {
+    return (
+      <div className="container py-8 max-w-6xl">
+        <Card>
+          <div className="p-6">
+            <h1>Invalid Client ID</h1>
+            <p className="text-muted-foreground">
+              Please provide a valid client ID to access the design editor.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  const handleSettingChange = (
+    key: keyof DesignSettings,
+    value: DesignSettings[keyof DesignSettings]
+  ) => {
     updateSettings.mutate({ [key]: value });
   };
 
@@ -191,7 +196,9 @@ export default function DesignEditor() {
                     </div>
                     <Button
                       variant="outline"
-                      onClick={() => updateSettings.mutate(designSettings!)}
+                      onClick={() =>
+                        designSettings && updateSettings.mutate(designSettings)
+                      }
                     >
                       Save Changes
                     </Button>

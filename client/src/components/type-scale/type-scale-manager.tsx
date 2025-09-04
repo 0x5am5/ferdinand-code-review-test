@@ -1,11 +1,12 @@
 import type {
+  BrandAsset,
   IndividualBodyStyle,
   IndividualHeaderStyle,
   TypeScale,
 } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, Save, X } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useId, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -43,6 +44,200 @@ import { TypeScalePreview } from "./type-scale-preview";
 interface TypeScaleManagerProps {
   clientId: number;
 }
+
+interface BrandColor {
+  id: string;
+  name: string;
+  value: string;
+  role: string | null;
+  displayName: string;
+  category: string;
+  type: string;
+  percentage?: number;
+}
+
+interface BrandFont {
+  id: number;
+  fontFamily: string;
+  weights: string[];
+  styles: string[];
+}
+
+interface ColorSelectorProps {
+  value: string;
+  onChange: (color: string) => void;
+  id: string;
+  placeholder?: string;
+  brandColors: BrandColor[];
+}
+
+// Color selector dropdown component for brand colors
+const ColorSelector = ({
+  value,
+  onChange,
+  id,
+  placeholder = "Select a color or enter hex",
+  brandColors,
+}: ColorSelectorProps) => {
+  const [open, setOpen] = useState(false);
+  const [customHex, setCustomHex] = useState(value);
+
+  // Sync state when value prop changes
+  React.useEffect(() => {
+    setCustomHex(value);
+  }, [value]);
+
+  const handleColorChange = (selectedColor: string) => {
+    onChange(selectedColor);
+    setCustomHex(selectedColor);
+    setOpen(false);
+  };
+
+  const handleHexChange = (hex: string) => {
+    setCustomHex(hex);
+    onChange(hex);
+  };
+
+  // Find the selected brand color for display
+  const selectedBrandColor = brandColors.find(
+    (color: BrandColor) => color.value === value
+  );
+
+  return (
+    <div className="space-y-3">
+      {brandColors.length > 0 && (
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Brand Colors</Label>
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full justify-between h-10 px-3"
+                type="button"
+              >
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-5 h-5 rounded border border-gray-300"
+                    style={{ backgroundColor: value }}
+                  />
+                  <span className="text-sm">
+                    {selectedBrandColor
+                      ? selectedBrandColor.displayName
+                      : value}
+                  </span>
+                </div>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+              <Command>
+                <CommandInput placeholder="Search colors..." />
+                <CommandList>
+                  <CommandEmpty>No colors found.</CommandEmpty>
+                  {(() => {
+                    // Group colors by base name for better organization
+                    const groupedColors = brandColors.reduce(
+                      (
+                        acc: Record<string, BrandColor[]>,
+                        color: BrandColor
+                      ) => {
+                        if (!acc[color.name]) {
+                          acc[color.name] = [];
+                        }
+                        acc[color.name].push(color);
+                        return acc;
+                      },
+                      {}
+                    );
+
+                    return Object.entries(groupedColors).map(
+                      ([baseName, colors]: [string, BrandColor[]]) => (
+                        <CommandGroup key={baseName} heading={baseName}>
+                          {colors
+                            .sort((a: BrandColor, b: BrandColor) => {
+                              // Sort: tints first (high to low %), then main, then shades (low to high %)
+                              if (a.type !== b.type) {
+                                const typeOrder = {
+                                  tint: 0,
+                                  main: 1,
+                                  shade: 2,
+                                };
+                                return (
+                                  typeOrder[a.type as keyof typeof typeOrder] -
+                                  typeOrder[b.type as keyof typeof typeOrder]
+                                );
+                              }
+                              if (a.type === "tint")
+                                return (
+                                  (b.percentage || 0) - (a.percentage || 0)
+                                );
+                              if (a.type === "shade")
+                                return (
+                                  (a.percentage || 0) - (b.percentage || 0)
+                                );
+                              return 0;
+                            })
+                            .map((color: BrandColor) => (
+                              <CommandItem
+                                key={color.id}
+                                value={`${color.displayName} ${color.value}`}
+                                onSelect={() => handleColorChange(color.value)}
+                                className="flex items-center gap-2 cursor-pointer"
+                              >
+                                <div
+                                  className="w-5 h-5 rounded border border-gray-300"
+                                  style={{ backgroundColor: color.value }}
+                                />
+                                <div className="flex flex-col flex-1">
+                                  <span className="text-sm">
+                                    {color.displayName}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {color.value}
+                                  </span>
+                                </div>
+                                {value === color.value && (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      )
+                    );
+                  })()}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+      )}
+      <div className="space-y-1">
+        <Label htmlFor={id} className="text-xs text-muted-foreground">
+          {brandColors.length > 0 ? "Or Custom Color" : "Custom Color"}
+        </Label>
+        <div className="flex items-center space-x-2">
+          <Input
+            id={id}
+            type="color"
+            value={customHex}
+            onChange={(e) => handleHexChange(e.target.value)}
+            className="w-16 h-8"
+          />
+          <Input
+            type="text"
+            value={customHex}
+            onChange={(e) => handleHexChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1"
+            pattern="^#[0-9A-Fa-f]{6}$"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Default type scale values
 const DEFAULT_TYPE_SCALE = {
@@ -314,6 +509,75 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const [currentScale, setCurrentScale] = useState<TypeScale | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Generate unique IDs
+  const scaleNameId = useId();
+  const baseSizeId = useId();
+  const _unitId = useId();
+  const scaleRatioId = useId();
+  const bodyFontFamilyId = useId();
+  const bodyFontWeightId = useId();
+  const bodyColorId = useId();
+  const bodyLetterSpacingId = useId();
+  const bodyTextTransformId = useId();
+  const bodyFontStyleId = useId();
+  const bodyTextDecorationId = useId();
+  const headerFontFamilyId = useId();
+  const headerFontWeightId = useId();
+  const headerColorId = useId();
+  const headerLetterSpacingId = useId();
+  const headerTextTransformId = useId();
+  const headerFontStyleId = useId();
+  const headerTextDecorationId = useId();
+
+  // Generate unique IDs for dynamic sections
+  const baseId = useId();
+  const bodyLevelIds = useMemo(() => {
+    const levels = [
+      "body-large",
+      "body",
+      "body-small",
+      "caption",
+      "quote",
+      "code",
+    ];
+    return levels.reduce(
+      (acc, level) => {
+        acc[level] = {
+          fontFamily: `${baseId}-${level}-font-family`,
+          fontWeight: `${baseId}-${level}-font-weight`,
+          fontSize: `${baseId}-${level}-font-size`,
+          color: `${baseId}-${level}-color`,
+          letterSpacing: `${baseId}-${level}-letter-spacing`,
+          textTransform: `${baseId}-${level}-text-transform`,
+          fontStyle: `${baseId}-${level}-font-style`,
+          textDecoration: `${baseId}-${level}-text-decoration`,
+        };
+        return acc;
+      },
+      {} as Record<string, Record<string, string>>
+    );
+  }, [baseId]);
+
+  const headerLevelIds = useMemo(() => {
+    const levels = ["h1", "h2", "h3", "h4", "h5", "h6"];
+    return levels.reduce(
+      (acc, level) => {
+        acc[level] = {
+          fontFamily: `${baseId}-${level}-font-family`,
+          fontWeight: `${baseId}-${level}-font-weight`,
+          fontSize: `${baseId}-${level}-font-size`,
+          color: `${baseId}-${level}-color`,
+          letterSpacing: `${baseId}-${level}-letter-spacing`,
+          textTransform: `${baseId}-${level}-text-transform`,
+          fontStyle: `${baseId}-${level}-font-style`,
+          textDecoration: `${baseId}-${level}-text-decoration`,
+        };
+        return acc;
+      },
+      {} as Record<string, Record<string, string>>
+    );
+  }, [baseId]);
+
   const { data: typeScales = [], isLoading } = useQuery({
     queryKey: ["/api/clients", clientId, "type-scales"],
     queryFn: async () => {
@@ -339,8 +603,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Extract and parse font assets
   const brandFonts = brandAssets
-    .filter((asset: any) => asset.category === "font")
-    .map((asset: any) => {
+    .filter((asset: BrandAsset) => asset.category === "font")
+    .map((asset: BrandAsset) => {
       try {
         const fontData =
           typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
@@ -361,8 +625,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Extract and parse color assets - each asset contains multiple color variations
   const brandColors = brandAssets
-    .filter((asset: any) => asset.category === "color")
-    .flatMap((asset: any) => {
+    .filter((asset: BrandAsset) => asset.category === "color")
+    .flatMap((asset: BrandAsset) => {
       try {
         const colorData =
           typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
@@ -370,23 +634,25 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
         // Add tints (lighter variations)
         if (colorData.tints && Array.isArray(colorData.tints)) {
-          colorData.tints.forEach((tint: any, index: number) => {
-            colors.push({
-              id: `${asset.id}-tint-${index}`,
-              name: asset.name,
-              value: tint.hex,
-              role: colorData.role || null,
-              displayName: `${asset.name} Tint ${tint.percentage}%`,
-              category: colorData.category || "color",
-              type: "tint",
-              percentage: tint.percentage,
-            });
-          });
+          colorData.tints.forEach(
+            (tint: { hex: string; percentage: number }, index: number) => {
+              colors.push({
+                id: `${asset.id}-tint-${index}`,
+                name: asset.name,
+                value: tint.hex,
+                role: colorData.role || null,
+                displayName: `${asset.name} Tint ${tint.percentage}%`,
+                category: colorData.category || "color",
+                type: "tint",
+                percentage: tint.percentage,
+              });
+            }
+          );
         }
 
         // Add main colors
         if (colorData.colors && Array.isArray(colorData.colors)) {
-          colorData.colors.forEach((color: any, index: number) => {
+          colorData.colors.forEach((color: { hex: string }, index: number) => {
             colors.push({
               id: `${asset.id}-main-${index}`,
               name: asset.name,
@@ -401,18 +667,20 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
         // Add shades (darker variations)
         if (colorData.shades && Array.isArray(colorData.shades)) {
-          colorData.shades.forEach((shade: any, index: number) => {
-            colors.push({
-              id: `${asset.id}-shade-${index}`,
-              name: asset.name,
-              value: shade.hex,
-              role: colorData.role || null,
-              displayName: `${asset.name} Shade ${shade.percentage}%`,
-              category: colorData.category || "color",
-              type: "shade",
-              percentage: shade.percentage,
-            });
-          });
+          colorData.shades.forEach(
+            (shade: { hex: string; percentage: number }, index: number) => {
+              colors.push({
+                id: `${asset.id}-shade-${index}`,
+                name: asset.name,
+                value: shade.hex,
+                role: colorData.role || null,
+                displayName: `${asset.name} Shade ${shade.percentage}%`,
+                category: colorData.category || "color",
+                type: "shade",
+                percentage: shade.percentage,
+              });
+            }
+          );
         }
 
         return colors;
@@ -423,185 +691,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     })
     .filter(Boolean);
 
-  // Color selector dropdown component for brand colors
-  const ColorSelector = ({
-    value,
-    onChange,
-    id,
-    placeholder = "Select a color or enter hex",
-  }: {
-    value: string;
-    onChange: (color: string) => void;
-    id: string;
-    placeholder?: string;
-  }) => {
-    const [open, setOpen] = useState(false);
-    const [customHex, setCustomHex] = useState(value);
-
-    // Sync state when value prop changes
-    React.useEffect(() => {
-      setCustomHex(value);
-    }, [value]);
-
-    const handleColorChange = (selectedColor: string) => {
-      onChange(selectedColor);
-      setCustomHex(selectedColor);
-      setOpen(false);
-    };
-
-    const handleHexChange = (hex: string) => {
-      setCustomHex(hex);
-      onChange(hex);
-    };
-
-    // Find the selected brand color for display
-    const selectedBrandColor = brandColors.find(
-      (color: any) => color.value === value
-    );
-
-    return (
-      <div className="space-y-3">
-        {brandColors.length > 0 && (
-          <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">
-              Brand Colors
-            </Label>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full justify-between h-10 px-3"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-5 h-5 rounded border border-gray-300"
-                      style={{ backgroundColor: value }}
-                    />
-                    <span className="text-sm">
-                      {selectedBrandColor
-                        ? selectedBrandColor.displayName
-                        : value}
-                    </span>
-                  </div>
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                <Command>
-                  <CommandInput placeholder="Search colors..." />
-                  <CommandList>
-                    <CommandEmpty>No colors found.</CommandEmpty>
-                    {(() => {
-                      // Group colors by base name for better organization
-                      const groupedColors = brandColors.reduce(
-                        (acc: any, color: any) => {
-                          if (!acc[color.name]) {
-                            acc[color.name] = [];
-                          }
-                          acc[color.name].push(color);
-                          return acc;
-                        },
-                        {}
-                      );
-
-                      return Object.entries(groupedColors).map(
-                        ([baseName, colors]: [string, any]) => (
-                          <CommandGroup key={baseName} heading={baseName}>
-                            {(colors as any[])
-                              .sort((a, b) => {
-                                // Sort: tints first (high to low %), then main, then shades (low to high %)
-                                if (a.type !== b.type) {
-                                  const typeOrder = {
-                                    tint: 0,
-                                    main: 1,
-                                    shade: 2,
-                                  };
-                                  return (
-                                    typeOrder[
-                                      a.type as keyof typeof typeOrder
-                                    ] -
-                                    typeOrder[b.type as keyof typeof typeOrder]
-                                  );
-                                }
-                                if (a.type === "tint")
-                                  return (
-                                    (b.percentage || 0) - (a.percentage || 0)
-                                  );
-                                if (a.type === "shade")
-                                  return (
-                                    (a.percentage || 0) - (b.percentage || 0)
-                                  );
-                                return 0;
-                              })
-                              .map((color: any) => (
-                                <CommandItem
-                                  key={color.id}
-                                  value={`${color.displayName} ${color.value}`}
-                                  onSelect={() =>
-                                    handleColorChange(color.value)
-                                  }
-                                  className="flex items-center gap-2 cursor-pointer"
-                                >
-                                  <div
-                                    className="w-5 h-5 rounded border border-gray-300"
-                                    style={{ backgroundColor: color.value }}
-                                  />
-                                  <div className="flex flex-col flex-1">
-                                    <span className="text-sm">
-                                      {color.displayName}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {color.value}
-                                      {color.category && ` • ${color.category}`}
-                                    </span>
-                                  </div>
-                                  {value === color.value && (
-                                    <Check className="ml-auto h-4 w-4" />
-                                  )}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                        )
-                      );
-                    })()}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          <Label htmlFor={id} className="text-xs text-muted-foreground">
-            {brandColors.length > 0 ? "Or Custom Color" : "Custom Color"}
-          </Label>
-          <div className="flex items-center space-x-2">
-            <Input
-              id={id}
-              type="color"
-              value={customHex}
-              onChange={(e) => handleHexChange(e.target.value)}
-              className="w-16 h-8"
-            />
-            <Input
-              type="text"
-              value={customHex}
-              onChange={(e) => handleHexChange(e.target.value)}
-              placeholder={placeholder}
-              className="flex-1"
-              pattern="^#[0-9A-Fa-f]{6}$"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const _googleFonts = brandFonts
-    .filter((asset: any) => asset.category === "font")
-    .map((asset: any) => {
+    .filter((asset: BrandAsset) => asset.category === "font")
+    .map((asset: BrandAsset) => {
       try {
         const fontData =
           typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
@@ -719,7 +811,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   ]);
 
   const saveTypeScaleMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: TypeScale) => {
       const url = data.id
         ? `/api/type-scales/${data.id}`
         : `/api/clients/${clientId}/type-scales`;
@@ -764,7 +856,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Save error response:", errorText);
-        let errorData;
+        let errorData: unknown;
         try {
           errorData = JSON.parse(errorText);
         } catch {
@@ -779,7 +871,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       console.log("Save response:", result);
       return result;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: TypeScale) => {
       toast({
         title: "Type scale saved",
         description: "Your type scale has been saved successfully.",
@@ -790,7 +882,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         queryKey: ["/api/clients", clientId, "type-scales"],
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description:
@@ -846,7 +938,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
-  const updateScale = (updates: Partial<any>) => {
+  const updateScale = (updates: Partial<TypeScale>) => {
     const newScale = currentScale
       ? { ...currentScale, ...updates }
       : { ...activeScale, ...updates };
@@ -1006,13 +1098,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       scss += `$base-font-size: ${baseSize}${unit};\n`;
       scss += `$type-scale-ratio: ${ratio};\n\n`;
 
-      styles.forEach((style: any) => {
+      styles.forEach((style: { level: string; size: number }) => {
         const size = calculateSize(style.size);
         scss += `$${style.level}-size: ${size}${unit};\n`;
       });
 
       scss += `\n// Type Scale Mixins\n`;
-      styles.forEach((style: any) => {
+      styles.forEach((style: { level: string; size: number }) => {
         const size = calculateSize(style.size);
         scss += `@mixin ${style.level} {\n`;
         scss += `  font-size: ${size}${unit};\n`;
@@ -1030,13 +1122,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       css += `  --base-font-size: ${baseSize}${unit};\n`;
       css += `  --type-scale-ratio: ${ratio};\n`;
 
-      styles.forEach((style: any) => {
+      styles.forEach((style: { level: string; size: number }) => {
         const size = calculateSize(style.size);
         css += `  --${style.level}-size: ${size}${unit};\n`;
       });
       css += `}\n\n`;
 
-      styles.forEach((style: any) => {
+      styles.forEach((style: { level: string; size: number }) => {
         const size = calculateSize(style.size);
         css += `.${style.level} {\n`;
         css += `  font-size: ${size}${unit};\n`;
@@ -1097,9 +1189,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="scale-name">Scale Name</Label>
+                  <Label htmlFor={scaleNameId}>Scale Name</Label>
                   <Input
-                    id="scale-name"
+                    id={scaleNameId}
                     value={activeScale.name || "Brand Type Scale"}
                     onChange={(e) => updateScale({ name: e.target.value })}
                     placeholder="Enter scale name"
@@ -1108,9 +1200,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="base-size">Base Size</Label>
+                    <Label htmlFor={baseSizeId}>Base Size</Label>
                     <Input
-                      id="base-size"
+                      id={baseSizeId}
                       type="number"
                       value={activeScale.baseSize || 16}
                       onChange={(e) =>
@@ -1143,7 +1235,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="scale-ratio">
+                  <Label htmlFor={scaleRatioId}>
                     Scale Ratio:{" "}
                     {((activeScale.scaleRatio || 1250) / 1000).toFixed(3)}
                   </Label>
@@ -1170,7 +1262,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               <h4 className="font-semibold mb-4">Body Type Styles</h4>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="body-font-family">Font Family</Label>
+                  <Label htmlFor={bodyFontFamilyId}>Font Family</Label>
                   {brandFonts.length === 1 ? (
                     <div className="text-sm p-2 bg-muted rounded">
                       {brandFonts[0].fontFamily}
@@ -1186,7 +1278,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <SelectValue placeholder="Select a font family" />
                       </SelectTrigger>
                       <SelectContent>
-                        {brandFonts.map((font: any) => (
+                        {brandFonts.map((font: BrandFont) => (
                           <SelectItem key={font.id} value={font.fontFamily}>
                             {font.fontFamily}
                           </SelectItem>
@@ -1202,7 +1294,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="body-font-weight">Font Weight</Label>
+                  <Label htmlFor={bodyFontWeightId}>Font Weight</Label>
                   <Select
                     value={activeScale.bodyFontWeight || "400"}
                     onValueChange={(value) =>
@@ -1225,9 +1317,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="body-color">Color</Label>
+                  <Label htmlFor={bodyColorId}>Color</Label>
                   <ColorSelector
-                    id="body-color"
+                    brandColors={brandColors}
+                    id={bodyColorId}
                     value={activeScale.bodyColor || "#000000"}
                     onChange={(color) => updateScale({ bodyColor: color })}
                     placeholder="#000000"
@@ -1244,11 +1337,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
                       <div className="space-y-2">
-                        <Label htmlFor="body-letter-spacing">
+                        <Label htmlFor={bodyLetterSpacingId}>
                           Letter Spacing (em)
                         </Label>
                         <Input
-                          id="body-letter-spacing"
+                          id={bodyLetterSpacingId}
                           type="number"
                           step="0.01"
                           value={activeScale.bodyLetterSpacing || 0}
@@ -1263,7 +1356,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="body-text-transform">
+                        <Label htmlFor={bodyTextTransformId}>
                           Text Transform
                         </Label>
                         <Select
@@ -1291,7 +1384,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="body-font-style">Font Style</Label>
+                        <Label htmlFor={bodyFontStyleId}>Font Style</Label>
                         <Select
                           value={activeScale.bodyFontStyle || "normal"}
                           onValueChange={(
@@ -1310,7 +1403,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="body-text-decoration">
+                        <Label htmlFor={bodyTextDecorationId}>
                           Text Decoration
                         </Label>
                         <Select
@@ -1362,6 +1455,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   ].map((bodyLevel) => (
                     <button
                       key={bodyLevel}
+                      type="button"
                       onClick={() => toggleBodyCustomization(bodyLevel)}
                       className={`
                           px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200
@@ -1398,6 +1492,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                           size="sm"
                           onClick={() => toggleBodyCustomization(bodyLevel)}
                           className="h-6 w-6 p-0"
+                          type="button"
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -1406,7 +1501,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${bodyLevel}-font-family`}>
+                            <Label
+                              htmlFor={bodyLevelIds[bodyLevel]?.fontFamily}
+                            >
                               Font Family
                             </Label>
                             {bodyStyle?.fontFamily && (
@@ -1420,6 +1517,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   )
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
@@ -1448,7 +1546,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 />
                               </SelectTrigger>
                               <SelectContent>
-                                {brandFonts.map((font: any) => (
+                                {brandFonts.map((font: BrandFont) => (
                                   <SelectItem
                                     key={font.id}
                                     value={font.fontFamily}
@@ -1468,7 +1566,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${bodyLevel}-font-weight`}>
+                            <Label
+                              htmlFor={bodyLevelIds[bodyLevel]?.fontWeight}
+                            >
                               Font Weight
                             </Label>
                             {bodyStyle?.fontWeight && (
@@ -1482,6 +1582,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   )
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
@@ -1518,7 +1619,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${bodyLevel}-font-size`}>
+                            <Label htmlFor={bodyLevelIds[bodyLevel]?.fontSize}>
                               Font Size (px)
                             </Label>
                             {bodyStyle?.fontSize && (
@@ -1532,13 +1633,14 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   )
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
                             )}
                           </div>
                           <Input
-                            id={`${bodyLevel}-font-size`}
+                            id={bodyLevelIds[bodyLevel]?.fontSize}
                             type="number"
                             min="8"
                             max="200"
@@ -1593,7 +1695,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${bodyLevel}-color`}>Color</Label>
+                            <Label htmlFor={bodyLevelIds[bodyLevel]?.color}>
+                              Color
+                            </Label>
                             {bodyStyle?.color && (
                               <Button
                                 variant="ghost"
@@ -1602,13 +1706,15 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   resetIndividualBodyStyle(bodyLevel, "color")
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
                             )}
                           </div>
                           <ColorSelector
-                            id={`${bodyLevel}-color`}
+                            brandColors={brandColors}
+                            id={bodyLevelIds[bodyLevel]?.color}
                             value={
                               bodyStyle?.color ||
                               activeScale.bodyColor ||
@@ -1633,7 +1739,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <Label
-                                    htmlFor={`${bodyLevel}-letter-spacing`}
+                                    htmlFor={
+                                      bodyLevelIds[bodyLevel]?.letterSpacing
+                                    }
                                   >
                                     Letter Spacing (em)
                                   </Label>
@@ -1648,13 +1756,14 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>
                                   )}
                                 </div>
                                 <Input
-                                  id={`${bodyLevel}-letter-spacing`}
+                                  id={bodyLevelIds[bodyLevel]?.letterSpacing}
                                   type="number"
                                   step="0.01"
                                   value={
@@ -1675,7 +1784,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <Label
-                                    htmlFor={`${bodyLevel}-text-transform`}
+                                    htmlFor={
+                                      bodyLevelIds[bodyLevel]?.textTransform
+                                    }
                                   >
                                     Text Transform
                                   </Label>
@@ -1690,6 +1801,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>
@@ -1729,7 +1841,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                  <Label htmlFor={`${bodyLevel}-font-style`}>
+                                  <Label
+                                    htmlFor={bodyLevelIds[bodyLevel]?.fontStyle}
+                                  >
                                     Font Style
                                   </Label>
                                   {bodyStyle?.fontStyle && (
@@ -1743,6 +1857,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>
@@ -1778,7 +1893,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <Label
-                                    htmlFor={`${bodyLevel}-text-decoration`}
+                                    htmlFor={
+                                      bodyLevelIds[bodyLevel]?.textDecoration
+                                    }
                                   >
                                     Text Decoration
                                   </Label>
@@ -1793,6 +1910,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>
@@ -1846,7 +1964,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
               </h4>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="header-font-family">Font Family</Label>
+                  <Label htmlFor={headerFontFamilyId}>Font Family</Label>
                   {brandFonts.length === 1 ? (
                     <div className="text-sm p-2 bg-muted rounded">
                       {brandFonts[0].fontFamily}
@@ -1862,7 +1980,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <SelectValue placeholder="Select a font family" />
                       </SelectTrigger>
                       <SelectContent>
-                        {brandFonts.map((font: any) => (
+                        {brandFonts.map((font: BrandFont) => (
                           <SelectItem key={font.id} value={font.fontFamily}>
                             {font.fontFamily}
                           </SelectItem>
@@ -1878,7 +1996,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="header-font-weight">Font Weight</Label>
+                  <Label htmlFor={headerFontWeightId}>Font Weight</Label>
                   <Select
                     value={activeScale.headerFontWeight || "700"}
                     onValueChange={(value) =>
@@ -1901,9 +2019,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="header-color">Color</Label>
+                  <Label htmlFor={headerColorId}>Color</Label>
                   <ColorSelector
-                    id="header-color"
+                    brandColors={brandColors}
+                    id={headerColorId}
                     value={activeScale.headerColor || "#000000"}
                     onChange={(color) => updateScale({ headerColor: color })}
                     placeholder="#000000"
@@ -1920,11 +2039,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pt-2">
                       <div className="space-y-2">
-                        <Label htmlFor="header-letter-spacing">
+                        <Label htmlFor={headerLetterSpacingId}>
                           Letter Spacing (em)
                         </Label>
                         <Input
-                          id="header-letter-spacing"
+                          id={headerLetterSpacingId}
                           type="number"
                           step="0.01"
                           value={activeScale.headerLetterSpacing || 0}
@@ -1939,7 +2058,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="header-text-transform">
+                        <Label htmlFor={headerTextTransformId}>
                           Text Transform
                         </Label>
                         <Select
@@ -1967,7 +2086,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="header-font-style">Font Style</Label>
+                        <Label htmlFor={headerFontStyleId}>Font Style</Label>
                         <Select
                           value={activeScale.headerFontStyle || "normal"}
                           onValueChange={(
@@ -1986,7 +2105,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="header-text-decoration">
+                        <Label htmlFor={headerTextDecorationId}>
                           Text Decoration
                         </Label>
                         <Select
@@ -2029,6 +2148,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                   {["h1", "h2", "h3", "h4", "h5", "h6"].map((headerLevel) => (
                     <button
                       key={headerLevel}
+                      type="button"
                       onClick={() => toggleHeaderCustomization(headerLevel)}
                       className={`
                           px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200
@@ -2064,6 +2184,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                           size="sm"
                           onClick={() => toggleHeaderCustomization(headerLevel)}
                           className="h-6 w-6 p-0"
+                          type="button"
                         >
                           <X className="h-3 w-3" />
                         </Button>
@@ -2072,7 +2193,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${headerLevel}-font-family`}>
+                            <Label
+                              htmlFor={headerLevelIds[headerLevel]?.fontFamily}
+                            >
                               Font Family
                             </Label>
                             {headerStyle?.fontFamily && (
@@ -2086,6 +2209,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   )
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
@@ -2115,7 +2239,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 />
                               </SelectTrigger>
                               <SelectContent>
-                                {brandFonts.map((font: any) => (
+                                {brandFonts.map((font: BrandFont) => (
                                   <SelectItem
                                     key={font.id}
                                     value={font.fontFamily}
@@ -2135,7 +2259,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${headerLevel}-font-weight`}>
+                            <Label
+                              htmlFor={headerLevelIds[headerLevel]?.fontWeight}
+                            >
                               Font Weight
                             </Label>
                             {headerStyle?.fontWeight && (
@@ -2149,6 +2275,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   )
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
@@ -2185,7 +2312,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${headerLevel}-font-size`}>
+                            <Label
+                              htmlFor={headerLevelIds[headerLevel]?.fontSize}
+                            >
                               Font Size (px)
                             </Label>
                             {headerStyle?.fontSize && (
@@ -2199,13 +2328,14 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   )
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
                             )}
                           </div>
                           <Input
-                            id={`${headerLevel}-font-size`}
+                            id={headerLevelIds[headerLevel]?.fontSize}
                             type="number"
                             min="8"
                             max="200"
@@ -2266,7 +2396,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                         <div className="space-y-2">
                           <div className="flex items-center justify-between">
-                            <Label htmlFor={`${headerLevel}-color`}>
+                            <Label htmlFor={headerLevelIds[headerLevel]?.color}>
                               Color
                             </Label>
                             {headerStyle?.color && (
@@ -2280,13 +2410,15 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                   )
                                 }
                                 className="text-xs h-6 px-2"
+                                type="button"
                               >
                                 Reset
                               </Button>
                             )}
                           </div>
                           <ColorSelector
-                            id={`${headerLevel}-color`}
+                            brandColors={brandColors}
+                            id={headerLevelIds[headerLevel]?.color}
                             value={
                               headerStyle?.color ||
                               activeScale.headerColor ||
@@ -2313,7 +2445,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <Label
-                                    htmlFor={`${headerLevel}-letter-spacing`}
+                                    htmlFor={
+                                      headerLevelIds[headerLevel]?.letterSpacing
+                                    }
                                   >
                                     Letter Spacing (em)
                                   </Label>
@@ -2328,13 +2462,16 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>
                                   )}
                                 </div>
                                 <Input
-                                  id={`${headerLevel}-letter-spacing`}
+                                  id={
+                                    headerLevelIds[headerLevel]?.letterSpacing
+                                  }
                                   type="number"
                                   step="0.01"
                                   value={
@@ -2355,7 +2492,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <Label
-                                    htmlFor={`${headerLevel}-text-transform`}
+                                    htmlFor={
+                                      headerLevelIds[headerLevel]?.textTransform
+                                    }
                                   >
                                     Text Transform
                                   </Label>
@@ -2370,6 +2509,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>
@@ -2409,7 +2549,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
-                                  <Label htmlFor={`${headerLevel}-font-style`}>
+                                  <Label
+                                    htmlFor={
+                                      headerLevelIds[headerLevel]?.fontStyle
+                                    }
+                                  >
                                     Font Style
                                   </Label>
                                   {headerStyle?.fontStyle && (
@@ -2423,6 +2567,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>
@@ -2458,7 +2603,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <Label
-                                    htmlFor={`${headerLevel}-text-decoration`}
+                                    htmlFor={
+                                      headerLevelIds[headerLevel]
+                                        ?.textDecoration
+                                    }
                                   >
                                     Text Decoration
                                   </Label>
@@ -2473,6 +2621,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                         )
                                       }
                                       className="text-xs h-6 px-2"
+                                      type="button"
                                     >
                                       Reset
                                     </Button>

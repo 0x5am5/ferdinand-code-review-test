@@ -747,7 +747,7 @@ export function registerDesignSystemRoutes(app: Express) {
       }
 
       // Read existing theme.json to preserve any values not being updated
-      let existingTheme: any = {};
+      let existingTheme: Record<string, unknown> = {};
       try {
         const themeData = fs.readFileSync("./theme.json", "utf8");
         existingTheme = JSON.parse(themeData);
@@ -808,7 +808,7 @@ export function registerDesignSystemRoutes(app: Express) {
       }
 
       // Read existing theme.json to get current settings
-      let existingTheme: any = {};
+      let existingTheme: Record<string, unknown> = {};
       try {
         const themeData = fs.readFileSync("./theme.json", "utf8");
         existingTheme = JSON.parse(themeData);

@@ -8,6 +8,7 @@ import {
 import {
   createContext,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   // Fetch user data from our backend with retry logic
-  const fetchUser = async (retryCount = 0) => {
+  const fetchUser = useCallback(async (retryCount = 0) => {
     try {
       const response = await fetch("/api/user");
       if (response.ok) {
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     }
-  };
+  }, []);
 
   // Handle Firebase auth state changes
   useEffect(() => {
@@ -110,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setError(new Error(data.message || "Authentication failed"));
               setIsLoading(false);
             }
-          } catch (e: any) {
+          } catch (e: unknown) {
             console.error("Auth processing error:", e);
             // More specific error handling
             if (e.name === "AbortError") {
@@ -160,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Sign In Successful",
         description: `Signed in as ${result.user?.email}`,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Google sign-in error:", error);
       setError(error);
 
@@ -193,9 +194,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Redirect to login
       window.location.href = "/login";
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Logout error:", error);
-      setError(error);
+      setError(
+        error instanceof Error ? error : new Error("Unknown logout error")
+      );
 
       toast({
         title: "Logout Error",

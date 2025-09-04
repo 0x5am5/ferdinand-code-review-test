@@ -268,7 +268,19 @@ async function migrateTypeScaleHierarchy() {
     ];
 
     for (const typeScale of typeScales) {
-      const currentTypeStyles = (typeScale.typeStyles as any[]) || [];
+      const currentTypeStyles =
+        (typeScale.typeStyles as Array<{
+          level: string;
+          name: string;
+          size: number;
+          fontWeight: string;
+          lineHeight: number;
+          letterSpacing: number;
+          color: string;
+          backgroundColor?: string;
+          textDecoration?: string;
+          fontStyle?: string;
+        }>) || [];
       const hasNewStructure = currentTypeStyles.some((style) =>
         ["body-large", "body-small", "caption", "quote", "code"].includes(
           style.level

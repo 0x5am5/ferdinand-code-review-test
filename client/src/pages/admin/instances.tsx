@@ -1,5 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { type Client, insertClientSchema } from "@shared/schema";
+import {
+  type Client,
+  type InsertClient,
+  insertClientSchema,
+} from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useForm } from "react-hook-form";
@@ -46,7 +50,7 @@ export default function Instances() {
   });
 
   const createClient = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: InsertClient) => {
       await apiRequest("POST", "/api/clients", data);
     },
     onSuccess: () => {

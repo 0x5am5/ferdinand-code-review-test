@@ -936,7 +936,9 @@ export const updateTypeScaleStorage = async (
   return mapTypeScale(updatedTypeScale);
 };
 
-export const getClientTypeScales = async (clientId: number): Promise<TypeScaleSchema[]> => {
+export const getClientTypeScales = async (
+  clientId: number
+): Promise<TypeScaleSchema[]> => {
   const results = await db
     .select()
     .from(typeScales)
@@ -951,7 +953,7 @@ export const getClientTypeScales = async (clientId: number): Promise<TypeScaleSc
   }));
 };
 
-export const getTypeScale = async (id: number): Promise<any | null> => {
+export const getTypeScale = async (id: number): Promise<TypeScale | null> => {
   const [typeScale] = await db
     .select()
     .from(typeScales)

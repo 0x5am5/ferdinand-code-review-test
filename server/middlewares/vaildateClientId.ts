@@ -1,4 +1,5 @@
 import type { NextFunction, Response } from "express";
+import type { RequestWithClientId } from "../routes";
 
 export const validateClientId = (
   req: RequestWithClientId,

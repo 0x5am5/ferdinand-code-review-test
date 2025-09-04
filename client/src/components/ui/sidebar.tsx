@@ -83,6 +83,7 @@ const SidebarProvider = React.forwardRef<
         _setOpen(value);
 
         // This sets the cookie to keep the sidebar state.
+        // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API not widely supported yet
         document.cookie = `${SIDEBAR_COOKIE_NAME}=${open}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
       },
       [setOpenProp, open]
@@ -379,6 +380,7 @@ const SidebarFooter = React.forwardRef<
       {...props}
     >
       <button
+        type="button"
         onClick={logout}
         className={cn(
           "flex w-full items-center gap-2 rounded-md p-2 text-sm text-sidebar-foreground/70 outline-none hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring",

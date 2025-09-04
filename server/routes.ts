@@ -20,7 +20,7 @@ declare module "express-session" {
 
 // Add request augmentation for clientId parameter
 export interface RequestWithClientId extends Request {
-  clientId?: number;
+  clientId: number;
 }
 
 export function registerRoutes(app: Express) {

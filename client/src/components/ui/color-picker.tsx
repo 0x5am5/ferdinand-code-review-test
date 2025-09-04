@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -249,48 +249,52 @@ export function ColorPicker({
     }
   };
 
-  const updateColorFromPosition = (
-    e: React.MouseEvent<HTMLDivElement> | MouseEvent
-  ) => {
-    if (!spectrumRef.current) return;
+  const updateColorFromPosition = useCallback(
+    (e: React.MouseEvent<HTMLDivElement> | MouseEvent) => {
+      if (!spectrumRef.current) return;
 
-    const rect = spectrumRef.current.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+      const rect = spectrumRef.current.getBoundingClientRect();
+      const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
 
-    // Calculate saturation and brightness as percentages
-    const newSaturation = (x / rect.width) * 100;
-    const newBrightness = 100 - (y / rect.height) * 100;
+      // Calculate saturation and brightness as percentages
+      const newSaturation = (x / rect.width) * 100;
+      const newBrightness = 100 - (y / rect.height) * 100;
 
-    setSaturation(newSaturation);
-    setBrightness(newBrightness);
+      setSaturation(newSaturation);
+      setBrightness(newBrightness);
 
-    // Convert HSV to RGB
-    const { r, g, b } = hsvToRgb(hue, newSaturation, newBrightness);
-    setRed(r);
-    setGreen(g);
-    setBlue(b);
+      // Convert HSV to RGB
+      const { r, g, b } = hsvToRgb(hue, newSaturation, newBrightness);
+      setRed(r);
+      setGreen(g);
+      setBlue(b);
 
-    // Update hex value
-    const newHex = rgbToHex(r, g, b);
-    setHexValue(newHex);
-    onChange(newHex);
-  };
+      // Update hex value
+      const newHex = rgbToHex(r, g, b);
+      setHexValue(newHex);
+      onChange(newHex);
+    },
+    [hue, onChange]
+  );
 
   const handleSpectrumMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(true);
     updateColorFromPosition(e);
   };
 
-  const handleSpectrumMouseMove = (e: MouseEvent) => {
-    if (isDragging) {
-      updateColorFromPosition(e);
-    }
-  };
+  const handleSpectrumMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (isDragging) {
+        updateColorFromPosition(e);
+      }
+    },
+    [isDragging, updateColorFromPosition]
+  );
 
-  const handleSpectrumMouseUp = () => {
+  const handleSpectrumMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   // Add global mouse event listeners for dragging
   useEffect(() => {
@@ -368,11 +372,32 @@ export function ColorPicker({
           {/* Color spectrum */}
           <div
             ref={spectrumRef}
+            role="slider"
+            aria-label="Color spectrum"
+            aria-valuenow={hsv.s}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            tabIndex={0}
             className="relative w-full h-48 rounded-lg cursor-crosshair border border-gray-200"
             style={{
               background: getSpectrumBackground(),
             }}
             onMouseDown={handleSpectrumMouseDown}
+            onKeyDown={(e) => {
+              // Basic keyboard navigation for accessibility
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                // Simulate click at center
+                const rect = spectrumRef.current?.getBoundingClientRect();
+                if (rect) {
+                  const mockEvent = {
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2,
+                  } as MouseEvent;
+                  updateColorFromPosition(mockEvent);
+                }
+              }
+            }}
           >
             {/* Indicator dot for current selection */}
             <div
@@ -389,6 +414,12 @@ export function ColorPicker({
           {/* Hue slider */}
           <div className="space-y-1.5">
             <div
+              role="slider"
+              aria-label="Hue slider"
+              aria-valuenow={Math.round(hue)}
+              aria-valuemin={0}
+              aria-valuemax={360}
+              tabIndex={0}
               className="relative h-6 rounded-md cursor-pointer border border-gray-200"
               style={{
                 background: hueGradient,
@@ -398,6 +429,14 @@ export function ColorPicker({
                 const x = e.clientX - rect.left;
                 const newHue = (x / rect.width) * 360;
                 handleHueChange([Math.max(0, Math.min(360, newHue))]);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                  e.preventDefault();
+                  const increment = e.key === "ArrowRight" ? 10 : -10;
+                  const newHue = Math.max(0, Math.min(360, hue + increment));
+                  handleHueChange([newHue]);
+                }
               }}
             >
               {/* Hue indicator */}

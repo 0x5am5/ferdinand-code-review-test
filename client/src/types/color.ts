@@ -1,3 +1,21 @@
+export interface GradientStop {
+  color: string;
+  position: number;
+}
+
+export interface GradientData {
+  type: "linear" | "radial";
+  stops: GradientStop[];
+  angle?: number;
+}
+
+export interface ColorAssetData {
+  type: "solid" | "gradient";
+  category: "brand" | "neutral" | "interactive";
+  colors: string[];
+  gradient?: GradientData;
+}
+
 export interface ColorData {
   id?: number;
   hex: string;
@@ -7,7 +25,7 @@ export interface ColorData {
   pantone?: string;
   name: string;
   category: "brand" | "neutral" | "interactive";
-  data?: any; // Include data property to preserve gradient information
+  data?: ColorAssetData;
 }
 
 // Color category descriptions

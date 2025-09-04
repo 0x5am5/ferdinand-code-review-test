@@ -1,4 +1,9 @@
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import {
+  DragDropContext,
+  Draggable,
+  Droppable,
+  type DropResult,
+} from "@hello-pangea/dnd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type Client, insertClientSchema, UserRole } from "@shared/schema";
 import {
@@ -171,7 +176,7 @@ export default function Dashboard() {
     }
   }, [clients]);
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
     const items = Array.from(orderedClients);
@@ -208,7 +213,10 @@ export default function Dashboard() {
         typeof editingClient.featureToggles === "object"
       ) {
         // Make sure we have all expected properties
-        const featureTogglesObj = editingClient.featureToggles as any;
+        const featureTogglesObj = editingClient.featureToggles as Record<
+          string,
+          boolean
+        >;
         const toggles = {
           logoSystem: Boolean(featureTogglesObj.logoSystem ?? true),
           colorSystem: Boolean(featureTogglesObj.colorSystem ?? true),

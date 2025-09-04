@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
 // Define the theme structure to match what we're using in design-builder.tsx
 export interface DesignSystem {
@@ -224,7 +230,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Color utility functions
   // Function to convert hex color to HSL format
-  const hexToHSL = (hex: string) => {
+  const hexToHSL = useCallback((hex: string) => {
     // Remove the # if present
     hex = hex.replace(/^#/, "");
 
@@ -269,32 +275,38 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     l = Math.round(l * 100);
 
     return { h, s, l, hslString: `${h} ${s}% ${l}%` };
-  };
+  }, []);
 
   // Check if a string is a hex color
-  const isHexColor = (color: string) => {
+  const isHexColor = useCallback((color: string) => {
     return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
-  };
+  }, []);
 
   // Generate tints (lighter versions) of a color
-  const generateTint = (hex: string, amount: number) => {
-    if (!isHexColor(hex)) return hex;
+  const generateTint = useCallback(
+    (hex: string, amount: number) => {
+      if (!isHexColor(hex)) return hex;
 
-    const { h, s, l } = hexToHSL(hex);
-    // Increase lightness by the percentage amount (0-100)
-    const newL = Math.min(100, l + ((100 - l) * amount) / 100);
-    return `hsl(${h}, ${s}%, ${newL}%)`;
-  };
+      const { h, s, l } = hexToHSL(hex);
+      // Increase lightness by the percentage amount (0-100)
+      const newL = Math.min(100, l + ((100 - l) * amount) / 100);
+      return `hsl(${h}, ${s}%, ${newL}%)`;
+    },
+    [hexToHSL, isHexColor]
+  );
 
   // Generate shades (darker versions) of a color
-  const generateShade = (hex: string, amount: number) => {
-    if (!isHexColor(hex)) return hex;
+  const generateShade = useCallback(
+    (hex: string, amount: number) => {
+      if (!isHexColor(hex)) return hex;
 
-    const { h, s, l } = hexToHSL(hex);
-    // Decrease lightness by the percentage amount (0-100)
-    const newL = Math.max(0, l - (l * amount) / 100);
-    return `hsl(${h}, ${s}%, ${newL}%)`;
-  };
+      const { h, s, l } = hexToHSL(hex);
+      // Decrease lightness by the percentage amount (0-100)
+      const newL = Math.max(0, l - (l * amount) / 100);
+      return `hsl(${h}, ${s}%, ${newL}%)`;
+    },
+    [hexToHSL, isHexColor]
+  );
 
   // Generate high-contrast text color for a background
   const _generateOnColor = (hex: string) => {
@@ -320,111 +332,90 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   // Store a reference to the current theme snapshot to avoid unnecessary DOM updates
   const _lastAppliedThemeRef = React.useRef<string | null>(null);
 
-  // Effect to initialize theme when data is loaded
-  useEffect(() => {
-    // Only run this effect once when loading completes
-    if (!isLoading) {
-      console.log("Initial theme loading complete, applying theme");
-      applyThemeToDom();
-    }
-  }, [isLoading, applyThemeToDom]);
-
-  // Separate effect to handle design system changes
-  useEffect(() => {
-    // Skip during loading phase
-    if (isLoading) return;
-
-    // Apply theme changes when design system changes
-    applyThemeToDom();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    // Apply theme changes when design system changes
-    applyThemeToDom,
-    isLoading,
-  ]);
-
   // Apply theme variant transformations based on the selected variant
-  const applyThemeVariant = (
-    primaryColor: string,
-    variant: "professional" | "tint" | "vibrant"
-  ): Record<string, string> => {
-    // Ensure we have a valid hex color
-    if (!isHexColor(primaryColor)) {
-      primaryColor = "#0099ff"; // Default fallback color
-    }
+  const applyThemeVariant = useCallback(
+    (
+      primaryColor: string,
+      variant: "professional" | "tint" | "vibrant"
+    ): Record<string, string> => {
+      // Ensure we have a valid hex color
+      if (!isHexColor(primaryColor)) {
+        primaryColor = "#0099ff"; // Default fallback color
+      }
 
-    // Extract color components
-    const { h, s, l } = hexToHSL(primaryColor);
+      // Extract color components
+      const { h, s: _s, l: _l } = hexToHSL(primaryColor);
 
-    // Create base theme colors that will be common across all variants
-    let colors: Record<string, string> = {
-      primary: primaryColor,
-      ring: primaryColor,
-    };
+      // Create base theme colors that will be common across all variants
+      let colors: Record<string, string> = {
+        primary: primaryColor,
+        ring: primaryColor,
+      };
 
-    // Apply variant-specific transformations
-    switch (variant) {
-      case "professional":
-        // Professional: Subtle, low-saturation, corporate look
-        colors = {
-          ...colors,
-          background: "#ffffff",
-          foreground: "#000000",
-          muted: "#f1f5f9",
-          "muted-foreground": "#64748b",
-          card: "#ffffff",
-          "card-foreground": "#000000",
-          accent: "#f1f5f9",
-          "accent-foreground": "#0f172a",
-          destructive: "#ef4444",
-          "destructive-foreground": "#ffffff",
-          border: "#e2e8f0",
-        };
-        break;
+      // Apply variant-specific transformations
+      switch (variant) {
+        case "professional":
+          // Professional: Subtle, low-saturation, corporate look
+          colors = {
+            ...colors,
+            background: "#ffffff",
+            foreground: "#000000",
+            muted: "#f1f5f9",
+            "muted-foreground": "#64748b",
+            card: "#ffffff",
+            "card-foreground": "#000000",
+            accent: "#f1f5f9",
+            "accent-foreground": "#0f172a",
+            destructive: "#ef4444",
+            "destructive-foreground": "#ffffff",
+            border: "#e2e8f0",
+          };
+          break;
 
-      case "tint":
-        // Tint: Subtle colorization of UI elements with the primary color
-        colors = {
-          ...colors,
-          background: `hsl(${h}, 20%, 98%)`,
-          foreground: `hsl(${h}, 90%, 10%)`,
-          muted: `hsl(${h}, 10%, 95%)`,
-          "muted-foreground": `hsl(${h}, 30%, 40%)`,
-          card: `hsl(${h}, 5%, 100%)`,
-          "card-foreground": `hsl(${h}, 80%, 10%)`,
-          accent: `hsl(${h}, 15%, 92%)`,
-          "accent-foreground": `hsl(${h}, 80%, 10%)`,
-          destructive: "#ef4444",
-          "destructive-foreground": "#ffffff",
-          border: `hsl(${h}, 15%, 92%)`,
-        };
-        break;
+        case "tint":
+          // Tint: Subtle colorization of UI elements with the primary color
+          colors = {
+            ...colors,
+            background: `hsl(${h}, 20%, 98%)`,
+            foreground: `hsl(${h}, 90%, 10%)`,
+            muted: `hsl(${h}, 10%, 95%)`,
+            "muted-foreground": `hsl(${h}, 30%, 40%)`,
+            card: `hsl(${h}, 5%, 100%)`,
+            "card-foreground": `hsl(${h}, 80%, 10%)`,
+            accent: `hsl(${h}, 15%, 92%)`,
+            "accent-foreground": `hsl(${h}, 80%, 10%)`,
+            destructive: "#ef4444",
+            "destructive-foreground": "#ffffff",
+            border: `hsl(${h}, 15%, 92%)`,
+          };
+          break;
 
-      case "vibrant":
-        // Vibrant: High contrast, saturated colors
-        colors = {
-          ...colors,
-          background: `hsl(${h}, 10%, 95%)`,
-          foreground: `hsl(${h}, 95%, 15%)`,
-          muted: `hsl(${h}, 20%, 90%)`,
-          "muted-foreground": `hsl(${h}, 60%, 30%)`,
-          card: `#ffffff`,
-          "card-foreground": `hsl(${h}, 90%, 10%)`,
-          accent: `hsl(${h}, 80%, 90%)`,
-          "accent-foreground": `hsl(${h}, 90%, 10%)`,
-          destructive: "#ff4444",
-          "destructive-foreground": "#ffffff",
-          border: `hsl(${h}, 30%, 85%)`,
-        };
-        break;
-    }
+        case "vibrant":
+          // Vibrant: High contrast, saturated colors
+          colors = {
+            ...colors,
+            background: `hsl(${h}, 10%, 95%)`,
+            foreground: `hsl(${h}, 95%, 15%)`,
+            muted: `hsl(${h}, 20%, 90%)`,
+            "muted-foreground": `hsl(${h}, 60%, 30%)`,
+            card: `#ffffff`,
+            "card-foreground": `hsl(${h}, 90%, 10%)`,
+            accent: `hsl(${h}, 80%, 90%)`,
+            "accent-foreground": `hsl(${h}, 90%, 10%)`,
+            destructive: "#ff4444",
+            "destructive-foreground": "#ffffff",
+            border: `hsl(${h}, 30%, 85%)`,
+          };
+          break;
+      }
 
-    return colors;
-  };
+      return colors;
+    },
+    [hexToHSL, isHexColor]
+  );
 
   // Extract theme application logic to a separate function to avoid duplicated code
-  const applyThemeToDom = () => {
+  const applyThemeToDom = useCallback(() => {
     // Get the active design system (draft takes precedence)
     const activeSystem = draftDesignSystem || designSystem;
     if (!activeSystem) return;
@@ -616,7 +607,32 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error("Error applying theme:", error);
     }
-  };
+  }, [
+    designSystem,
+    draftDesignSystem,
+    applyThemeVariant,
+    generateShade,
+    generateTint,
+    hexToHSL,
+  ]);
+
+  // Effect to initialize theme when data is loaded
+  useEffect(() => {
+    // Only run this effect once when loading completes
+    if (!isLoading) {
+      console.log("Initial theme loading complete, applying theme");
+      applyThemeToDom();
+    }
+  }, [isLoading, applyThemeToDom]);
+
+  // Separate effect to handle design system changes
+  useEffect(() => {
+    // Skip during loading phase
+    if (isLoading) return;
+
+    // Apply theme changes when design system changes
+    applyThemeToDom();
+  }, [applyThemeToDom, isLoading]);
 
   // Function to update theme settings (and persist to API)
   const updateDesignSystem = async (newTheme: Partial<DesignSystem>) => {

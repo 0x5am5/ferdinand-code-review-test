@@ -21,7 +21,7 @@ export function hexToHsl(hex: string) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h = 0,
-    s,
+    s: number,
     l = (max + min) / 2;
 
   if (max === min) {
@@ -121,7 +121,7 @@ export function hexToHslValues(hex: string) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   let h = 0,
-    s,
+    s: number,
     l = (max + min) / 2;
 
   if (max === min) {

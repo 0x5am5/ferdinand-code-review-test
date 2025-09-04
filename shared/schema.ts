@@ -98,14 +98,14 @@ export const TypeScaleRatio = {
 } as const;
 
 // Database Tables
-export const users = pgTable("users", {
+export const users: any = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   role: text("role", {
     enum: ["super_admin", "admin", "editor", "standard", "guest"],
   }).notNull(),
-  client_id: integer("client_id").references(() => clients.id),
+  client_id: integer("client_id").references((): any => clients.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLogin: timestamp("last_login"),
@@ -838,6 +838,16 @@ export type InsertFigmaDesignToken = z.infer<
 
 // Other Types
 export type UpdateClientOrder = z.infer<typeof updateClientOrderSchema>;
+
+// Feature toggles type
+export interface FeatureToggles {
+  logoSystem: boolean;
+  colorSystem: boolean;
+  typeSystem: boolean;
+  userPersonas: boolean;
+  inspiration: boolean;
+  figmaIntegration: boolean;
+}
 
 // Constants from enums
 export const LOGO_TYPES = Object.values(LogoType);

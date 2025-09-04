@@ -1,6 +1,12 @@
 import { UserRole } from "@shared/schema";
 import type React from "react";
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface ViewingUser {
@@ -102,18 +108,18 @@ export function RoleSwitchingProvider({
     }
   };
 
-  const resetRole = () => {
+  const resetRole = useCallback(() => {
     setCurrentViewingRole(actualUserRole);
     setCurrentViewingUser(null);
     sessionStorage.removeItem("ferdinand_viewing_role");
     sessionStorage.removeItem("ferdinand_viewing_user");
-  };
+  }, [actualUserRole]);
 
   const isRoleSwitched = currentViewingRole !== actualUserRole;
   const isUserSwitched = currentViewingUser !== null;
 
   // Determine if a role can access the current page
-  const canAccessCurrentPage = (role: UserRole): boolean => {
+  const canAccessCurrentPage = useCallback((role: UserRole): boolean => {
     const currentPath = window.location.pathname;
 
     // Dashboard is only accessible to super admins and admins
@@ -147,7 +153,7 @@ export function RoleSwitchingProvider({
 
     // Default: allow access
     return true;
-  };
+  }, []);
 
   // Auto-revert when navigating to restricted pages
   useEffect(() => {
