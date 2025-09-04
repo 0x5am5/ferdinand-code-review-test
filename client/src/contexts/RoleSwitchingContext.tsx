@@ -1,223 +1,229 @@
 import { UserRole, type UserRoleType } from "@shared/schema";
 import type React from "react";
 import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface ViewingUser {
-	id: number;
-	name: string;
-	email: string;
-	role: UserRoleType;
-	client_id?: number | null;
+  id: number;
+  name: string;
+  email: string;
+  role: UserRoleType;
+  client_id?: number | null;
 }
 
 interface RoleSwitchingContextType {
-	currentViewingRole: UserRoleType;
-	actualUserRole: UserRoleType;
-	currentViewingUser: ViewingUser | null;
-	switchRole: (role: UserRoleType) => void;
-	switchToUser: (user: ViewingUser) => void;
-	resetRole: () => void;
-	isRoleSwitched: boolean;
-	isUserSwitched: boolean;
-	canAccessCurrentPage: (role: UserRoleType) => boolean;
-	getEffectiveClientId: () => number | null;
+  currentViewingRole: UserRoleType;
+  actualUserRole: UserRoleType;
+  currentViewingUser: ViewingUser | null;
+  switchRole: (role: UserRoleType) => void;
+  switchToUser: (user: ViewingUser) => void;
+  resetRole: () => void;
+  isRoleSwitched: boolean;
+  isUserSwitched: boolean;
+  canAccessCurrentPage: (role: UserRoleType) => boolean;
+  getEffectiveClientId: () => number | null;
 }
 
 const RoleSwitchingContext = createContext<
-	RoleSwitchingContextType | undefined
+  RoleSwitchingContextType | undefined
 >(undefined);
 
 export function RoleSwitchingProvider({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	const { user } = useAuth();
-	const [currentViewingRole, setCurrentViewingRole] = useState<UserRoleType>(
-		user?.role || UserRole.GUEST,
-	);
-	const [currentViewingUser, setCurrentViewingUser] =
-		useState<ViewingUser | null>(null);
-	const actualUserRole = user?.role || UserRole.GUEST;
+  const { user } = useAuth();
+  const [currentViewingRole, setCurrentViewingRole] = useState<UserRoleType>(
+    user?.role || UserRole.GUEST
+  );
+  const [currentViewingUser, setCurrentViewingUser] =
+    useState<ViewingUser | null>(null);
+  const actualUserRole = user?.role || UserRole.GUEST;
 
-	// Load persisted state from sessionStorage on mount
-	useEffect(() => {
-		if (user && user.role === UserRole.SUPER_ADMIN) {
-			const persistedRole = sessionStorage.getItem("ferdinand_viewing_role");
-			const persistedUser = sessionStorage.getItem("ferdinand_viewing_user");
+  // Load persisted state from sessionStorage on mount
+  useEffect(() => {
+    if (user && user.role === UserRole.SUPER_ADMIN) {
+      const persistedRole = sessionStorage.getItem("ferdinand_viewing_role");
+      const persistedUser = sessionStorage.getItem("ferdinand_viewing_user");
 
-			if (persistedUser) {
-				try {
-					const parsedUser = JSON.parse(persistedUser);
-					setCurrentViewingUser(parsedUser);
-					setCurrentViewingRole(parsedUser.role);
-				} catch (e: unknown) {
-					console.error("Error parsing persisted user:", e);
-					sessionStorage.removeItem("ferdinand_viewing_user");
-				}
-			} else if (
-				persistedRole &&
-				Object.values(UserRole).includes(persistedRole as UserRoleType)
-			) {
-				setCurrentViewingRole(persistedRole as UserRoleType);
-				setCurrentViewingUser(null);
-			} else {
-				setCurrentViewingRole(actualUserRole);
-				setCurrentViewingUser(null);
-			}
-		} else {
-			setCurrentViewingRole(actualUserRole);
-			setCurrentViewingUser(null);
-		}
-	}, [user, actualUserRole]);
+      if (persistedUser) {
+        try {
+          const parsedUser = JSON.parse(persistedUser);
+          setCurrentViewingUser(parsedUser);
+          setCurrentViewingRole(parsedUser.role);
+        } catch (e: unknown) {
+          console.error("Error parsing persisted user:", e);
+          sessionStorage.removeItem("ferdinand_viewing_user");
+        }
+      } else if (
+        persistedRole &&
+        Object.values(UserRole).includes(persistedRole as UserRoleType)
+      ) {
+        setCurrentViewingRole(persistedRole as UserRoleType);
+        setCurrentViewingUser(null);
+      } else {
+        setCurrentViewingRole(actualUserRole);
+        setCurrentViewingUser(null);
+      }
+    } else {
+      setCurrentViewingRole(actualUserRole);
+      setCurrentViewingUser(null);
+    }
+  }, [user, actualUserRole]);
 
-	// Persist changes to sessionStorage
-	useEffect(() => {
-		if (user?.role === UserRole.SUPER_ADMIN) {
-			if (currentViewingUser) {
-				sessionStorage.setItem(
-					"ferdinand_viewing_user",
-					JSON.stringify(currentViewingUser),
-				);
-				sessionStorage.removeItem("ferdinand_viewing_role");
-			} else {
-				sessionStorage.setItem("ferdinand_viewing_role", currentViewingRole);
-				sessionStorage.removeItem("ferdinand_viewing_user");
-			}
-		}
-	}, [currentViewingRole, currentViewingUser, user?.role]);
+  // Persist changes to sessionStorage
+  useEffect(() => {
+    if (user?.role === UserRole.SUPER_ADMIN) {
+      if (currentViewingUser) {
+        sessionStorage.setItem(
+          "ferdinand_viewing_user",
+          JSON.stringify(currentViewingUser)
+        );
+        sessionStorage.removeItem("ferdinand_viewing_role");
+      } else {
+        sessionStorage.setItem("ferdinand_viewing_role", currentViewingRole);
+        sessionStorage.removeItem("ferdinand_viewing_user");
+      }
+    }
+  }, [currentViewingRole, currentViewingUser, user?.role]);
 
-	const switchRole = (role: UserRoleType) => {
-		if (user?.role === UserRole.SUPER_ADMIN) {
-			setCurrentViewingRole(role);
-			setCurrentViewingUser(null);
-		}
-	};
+  const switchRole = (role: UserRoleType) => {
+    if (user?.role === UserRole.SUPER_ADMIN) {
+      setCurrentViewingRole(role);
+      setCurrentViewingUser(null);
+    }
+  };
 
-	const switchToUser = (viewingUser: ViewingUser) => {
-		if (user?.role === UserRole.SUPER_ADMIN) {
-			setCurrentViewingUser(viewingUser);
-			setCurrentViewingRole(viewingUser.role);
-		}
-	};
+  const switchToUser = (viewingUser: ViewingUser) => {
+    if (user?.role === UserRole.SUPER_ADMIN) {
+      setCurrentViewingUser(viewingUser);
+      setCurrentViewingRole(viewingUser.role);
+    }
+  };
 
-	const resetRole = useCallback(() => {
-		setCurrentViewingRole(actualUserRole);
-		setCurrentViewingUser(null);
-		sessionStorage.removeItem("ferdinand_viewing_role");
-		sessionStorage.removeItem("ferdinand_viewing_user");
-	}, [actualUserRole]);
+  const resetRole = useCallback(() => {
+    setCurrentViewingRole(actualUserRole);
+    setCurrentViewingUser(null);
+    sessionStorage.removeItem("ferdinand_viewing_role");
+    sessionStorage.removeItem("ferdinand_viewing_user");
+  }, [actualUserRole]);
 
-	const isRoleSwitched = currentViewingRole !== actualUserRole;
-	const isUserSwitched = currentViewingUser !== null;
+  const isRoleSwitched = currentViewingRole !== actualUserRole;
+  const isUserSwitched = currentViewingUser !== null;
 
-	// Determine if a role can access the current page
-	const canAccessCurrentPage = (role: UserRoleType): boolean => {
-		const currentPath = window.location.pathname;
+  // Determine if a role can access the current page
+  const canAccessCurrentPage = useCallback((role: UserRoleType): boolean => {
+    const currentPath = window.location.pathname;
 
-		// Dashboard is only accessible to super admins and admins
-		if (currentPath === "/dashboard") {
-			return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
-		}
+    // Dashboard is only accessible to super admins and admins
+    if (currentPath === "/dashboard") {
+      return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
+    }
 
-		// Users page is only accessible to admins and super admins
-		if (currentPath === "/users") {
-			return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
-		}
+    // Users page is only accessible to admins and super admins
+    if (currentPath === "/users") {
+      return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
+    }
 
-		// Clients page is only accessible to admins and super admins
-		if (currentPath === "/clients") {
-			return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
-		}
+    // Clients page is only accessible to admins and super admins
+    if (currentPath === "/clients") {
+      return role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN;
+    }
 
-		// Design builder is accessible to super admins, admins, and editors
-		if (currentPath === "/design-builder") {
-			return (
-				role === UserRole.SUPER_ADMIN ||
-				role === UserRole.ADMIN ||
-				role === UserRole.EDITOR
-			);
-		}
+    // Design builder is accessible to super admins, admins, and editors
+    if (currentPath === "/design-builder") {
+      return (
+        role === UserRole.SUPER_ADMIN ||
+        role === UserRole.ADMIN ||
+        role === UserRole.EDITOR
+      );
+    }
 
-		// Client-specific pages (brand guidelines) are accessible to all roles
-		if (currentPath.startsWith("/clients/")) {
-			return true;
-		}
+    // Client-specific pages (brand guidelines) are accessible to all roles
+    if (currentPath.startsWith("/clients/")) {
+      return true;
+    }
 
-		// Default: allow access
-		return true;
-	};
+    // Default: allow access
+    return true;
+  }, []);
 
-	// Auto-revert when navigating to restricted pages
-	useEffect(() => {
-		const handleRouteChange = () => {
-			if (
-				(isRoleSwitched || isUserSwitched) &&
-				!canAccessCurrentPage(currentViewingRole)
-			) {
-				resetRole();
-			}
-		};
+  // Auto-revert when navigating to restricted pages
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (
+        (isRoleSwitched || isUserSwitched) &&
+        !canAccessCurrentPage(currentViewingRole)
+      ) {
+        resetRole();
+      }
+    };
 
-		// Check on mount
-		handleRouteChange();
+    // Check on mount
+    handleRouteChange();
 
-		// Listen for route changes (for SPA navigation)
-		const handlePopState = () => {
-			handleRouteChange();
-		};
+    // Listen for route changes (for SPA navigation)
+    const handlePopState = () => {
+      handleRouteChange();
+    };
 
-		window.addEventListener("popstate", handlePopState);
+    window.addEventListener("popstate", handlePopState);
 
-		return () => {
-			window.removeEventListener("popstate", handlePopState);
-		};
-	}, [currentViewingRole, isRoleSwitched, isUserSwitched, resetRole]);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [
+    currentViewingRole,
+    isRoleSwitched,
+    isUserSwitched,
+    resetRole,
+    canAccessCurrentPage,
+  ]);
 
-	// Get the effective client ID for data filtering
-	const getEffectiveClientId = (): number | null => {
-		if (currentViewingUser) {
-			// If viewing as a specific user, use their client ID for filtering
-			return currentViewingUser.id;
-		}
+  // Get the effective client ID for data filtering
+  const getEffectiveClientId = (): number | null => {
+    if (currentViewingUser) {
+      // If viewing as a specific user, use their client ID for filtering
+      return currentViewingUser.id;
+    }
 
-		// If just role switching (not user switching), use actual user's client access
-		return user?.client_id || null;
-	};
+    // If just role switching (not user switching), use actual user's client access
+    return user?.client_id || null;
+  };
 
-	const value: RoleSwitchingContextType = {
-		currentViewingRole,
-		actualUserRole,
-		currentViewingUser,
-		switchRole,
-		switchToUser,
-		resetRole,
-		isRoleSwitched,
-		isUserSwitched,
-		canAccessCurrentPage,
-		getEffectiveClientId,
-	};
+  const value: RoleSwitchingContextType = {
+    currentViewingRole,
+    actualUserRole,
+    currentViewingUser,
+    switchRole,
+    switchToUser,
+    resetRole,
+    isRoleSwitched,
+    isUserSwitched,
+    canAccessCurrentPage,
+    getEffectiveClientId,
+  };
 
-	return (
-		<RoleSwitchingContext.Provider value={value}>
-			{children}
-		</RoleSwitchingContext.Provider>
-	);
+  return (
+    <RoleSwitchingContext.Provider value={value}>
+      {children}
+    </RoleSwitchingContext.Provider>
+  );
 }
 
 export function useRoleSwitching() {
-	const context = useContext(RoleSwitchingContext);
-	if (context === undefined) {
-		throw new Error(
-			"useRoleSwitching must be used within a RoleSwitchingProvider",
-		);
-	}
-	return context;
+  const context = useContext(RoleSwitchingContext);
+  if (context === undefined) {
+    throw new Error(
+      "useRoleSwitching must be used within a RoleSwitchingProvider"
+    );
+  }
+  return context;
 }

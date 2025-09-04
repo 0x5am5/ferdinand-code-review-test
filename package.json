@@ -9,7 +9,11 @@
 		"start": "NODE_ENV=production node dist/index.js",
 		"check": "tsc",
 		"lint": "eslint .",
-		"db:push": "drizzle-kit push"
+		"db:push": "drizzle-kit push",
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"biome:check": "biome check .",
+		"biome:fix": "biome check --write ."
 	},
 	"dependencies": {
 		"@hello-pangea/dnd": "^18.0.1",
@@ -94,6 +98,7 @@
 		"zod-validation-error": "^3.4.0"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "^2.2.2",
 		"@replit/vite-plugin-cartographer": "^0.0.2",
 		"@replit/vite-plugin-runtime-error-modal": "^0.0.3",
 		"@tailwindcss/typography": "^0.5.15",

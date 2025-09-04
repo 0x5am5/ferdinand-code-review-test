@@ -1,6 +1,7 @@
 import { UserRole } from "@shared/schema";
 import { motion } from "framer-motion";
 import { Copy, Edit2, Trash2 } from "lucide-react";
+import type React from "react";
 import { useState } from "react";
 import {
   AlertDialog,
