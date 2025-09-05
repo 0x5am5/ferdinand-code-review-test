@@ -1,9 +1,8 @@
+import { UserRole } from "@shared/schema";
 import { motion } from "framer-motion";
 import { Copy, Edit2, Trash2 } from "lucide-react";
+import type React from "react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,17 +14,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { UserRole } from "@shared/schema";
-import { ColorData } from "@/types/color";
-import { ColorBlock } from "./ColorBlock";
+import type { ColorData } from "@/types/color";
+import { ColorBlock } from "./color-block";
 
 interface ColorChipProps {
   color: ColorData;
   onEdit?: () => void;
   onDelete?: () => void;
-  onUpdate?: (
+  _onUpdate?: (
     colorId: number,
     updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }
   ) => void;
@@ -35,7 +36,7 @@ export function ColorChip({
   color,
   onEdit,
   onDelete,
-  onUpdate,
+  _onUpdate,
 }: ColorChipProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);

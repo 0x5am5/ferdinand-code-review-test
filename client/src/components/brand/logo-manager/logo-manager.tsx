@@ -1,0 +1,243 @@
+import {
+  type BrandAsset,
+  LogoType,
+  UserRole,
+} from "@shared/schema";
+import {
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
+  Plus,
+} from "lucide-react";
+import {
+  useEffect,
+  useState,
+} from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useAddHiddenSection,
+  useHiddenSections,
+  useRemoveHiddenSection,
+} from "@/lib/queries/hidden-sections";
+import { LogoSection } from "./logo-section";
+import { parseBrandAssetData } from "./logo-utils";
+
+interface LogoManagerProps {
+  clientId: number;
+  logos: BrandAsset[];
+}
+
+export function LogoManager({ clientId, logos }: LogoManagerProps) {
+  const { toast } = useToast();
+  const { user = null } = useAuth();
+  const queryClient = useQueryClient();
+  const [visibleSections, setVisibleSections] = useState<string[]>([]);
+  const [showAddSection, setShowAddSection] = useState(false);
+  const [availableSections, setAvailableSections] = useState<string[]>([]);
+
+  const { data: hiddenSections, isLoading: loadingHiddenSections } =
+    useHiddenSections(clientId);
+
+  const addHiddenSection = useAddHiddenSection(clientId);
+  const removeHiddenSection = useRemoveHiddenSection(clientId);
+
+  const isAdmin =
+    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+
+  useEffect(() => {
+    if (loadingHiddenSections) return;
+
+    const allLogoTypes: string[] = Object.values(LogoType);
+
+    if (hiddenSections && Array.isArray(hiddenSections)) {
+      const hiddenTypes: string[] = hiddenSections.map(
+        (section) => section.sectionType
+      );
+      const visible: string[] = allLogoTypes.filter(
+        (type) => !hiddenTypes.includes(type)
+      );
+      setVisibleSections(visible);
+    } else {
+      setVisibleSections(allLogoTypes);
+    }
+  }, [hiddenSections, loadingHiddenSections]);
+
+  useEffect(() => {
+    const available: string[] = Object.values(LogoType).filter(
+      (type) => !visibleSections.includes(type)
+    );
+    setAvailableSections(available);
+  }, [visibleSections]);
+
+  const deleteLogo = useMutation({
+    mutationFn: async ({
+      logoId,
+      variant,
+    }: {
+      logoId: number;
+      variant: "light" | "dark";
+    }) => {
+      const response = await fetch(
+        `/api/clients/${clientId}/assets/${logoId}${variant === "dark" ? "?variant=dark" : ""}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete logo");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
+      });
+      toast({
+        title: "Success",
+        description: "Logo deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const logosByType: Record<string, BrandAsset[]> = Object.values(
+    LogoType
+  ).reduce(
+    (acc, type) => {
+      acc[type] = logos.filter((logo) => {
+        const parsedData = parseBrandAssetData(logo);
+        return parsedData?.type === type;
+      });
+      return acc;
+    },
+    {} as Record<string, BrandAsset[]>
+  );
+
+  const handleRemoveSection = (type: string) => {
+    setVisibleSections((prev) => prev.filter((section) => section !== type));
+
+    addHiddenSection.mutate(type, {
+      onSuccess: () => {
+        toast({
+          title: "Section removed",
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed`,
+        });
+      },
+      onError: (error) => {
+        setVisibleSections((prev) => [...prev, type]);
+        toast({
+          title: "Error",
+          description: `Failed to remove section: ${error instanceof Error ? error.message : "Unknown error"}`,
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const handleAddSection = (type: string) => {
+    setVisibleSections((prev) => [...prev, type]);
+    setShowAddSection(false);
+
+    removeHiddenSection.mutate(type, {
+      onSuccess: () => {
+        toast({
+          title: "Section added",
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been added`,
+        });
+      },
+      onError: (error) => {
+        setVisibleSections((prev) =>
+          prev.filter((section) => section !== type)
+        );
+        toast({
+          title: "Error",
+          description: `Failed to add section: ${error instanceof Error ? error.message : "Unknown error"}`,
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  return (
+    <div className="logo-manager">
+      <div className="manager__header">
+        <div>
+          <h1>Logo System</h1>
+          <p>Manage and download the official logos for this brand</p>
+        </div>
+        {isAdmin && availableSections.length > 0 && (
+          <Button
+            onClick={() => setShowAddSection(true)}
+            variant="outline"
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Section</span>
+          </Button>
+        )}
+      </div>
+
+      {visibleSections.map((type) => (
+        <LogoSection
+          key={type}
+          type={type}
+          logos={logosByType[type] || []}
+          clientId={clientId}
+          onDeleteLogo={(logoId, variant) =>
+            deleteLogo.mutate({ logoId, variant })
+          }
+          queryClient={queryClient}
+          onRemoveSection={isAdmin ? handleRemoveSection : undefined}
+        />
+      ))}
+
+      {isAdmin && (
+        <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Logo Section</DialogTitle>
+              <DialogDescription>
+                Select a logo section to add to the page
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-3 py-4">
+              {availableSections.map((section) => (
+                <Button
+                  key={section}
+                  variant="outline"
+                  className="justify-start text-left"
+                  onClick={() => handleAddSection(section)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {section.charAt(0).toUpperCase() + section.slice(1)} Logo
+                </Button>
+              ))}
+              {availableSections.length === 0 && (
+                <p className="text-muted-foreground text-center py-2">
+                  All available sections are already displayed
+                </p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}

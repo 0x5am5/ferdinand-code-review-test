@@ -22,7 +22,12 @@ export function ColorBlock({ hex, onClick }: ColorBlockProps) {
   };
 
   return (
-    <div className="relative cursor-pointer group" onClick={handleClick}>
+    <button
+      className="relative cursor-pointer group border-0 bg-transparent p-0"
+      onClick={handleClick}
+      aria-label={`Copy color ${hex}`}
+      type="button"
+    >
       <div
         className="rounded-md transition-all duration-200 group-hover:ring-2 ring-primary/20"
         style={{ backgroundColor: hex, height: onClick ? "8rem" : "1.5rem" }}
@@ -47,6 +52,6 @@ export function ColorBlock({ hex, onClick }: ColorBlockProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </button>
   );
 }

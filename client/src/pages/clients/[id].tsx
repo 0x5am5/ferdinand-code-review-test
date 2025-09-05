@@ -6,7 +6,7 @@ import { ClientDashboard } from "@/components/brand/client-dashboard";
 import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
-import { LogoManager } from "@/components/brand/logo-manager";
+import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import FigmaIntegration from "@/components/figma/figma-integration";
 import { Button } from "@/components/ui/button";

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Check,
   Copy,
+  Download,
   Edit2,
   Info,
   Palette,
@@ -10,11 +11,20 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import type React from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import "../../styles/components/color-picker-popover.scss";
-import type { BrandAsset } from "@shared/schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { type BrandAsset, UserRole } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ColorPicker } from "@/components/ui/color-picker";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +44,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -47,67 +67,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-// Define types for color data structure
-type ColorData = {
-  hex: string;
-  rgb?: string;
-  hsl?: string;
-  cmyk?: string;
-  pantone?: string;
-};
-
-type GradientData = {
-  type: "linear" | "radial";
-  stops: { color: string; position: number }[];
-};
-
-type TintShadeData = {
-  percentage: number;
-  hex: string;
-};
-
-type ColorAssetData = {
-  type: "solid" | "gradient";
-  category: "brand" | "neutral" | "interactive";
-  colors: ColorData[];
-  gradient?: GradientData;
-  tints?: TintShadeData[];
-  shades?: TintShadeData[];
-};
-
-type ColorBrandAsset = BrandAsset & {
-  data: ColorAssetData;
-};
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { AssetDisplay } from "./asset-display";
 import { AssetSection } from "./logo-manager/asset-section";
 
 // ColorCard component for the color manager
 function ColorCard({
   color,
-  onEdit: _onEdit,
+  onEdit,
   onDelete,
   onGenerate,
   neutralColorsCount,
   onUpdate,
   clientId,
 }: {
-  color: ColorBrandAsset;
-  onEdit: (color: ColorBrandAsset) => void;
+  color: any;
+  onEdit: (color: any) => void;
   onDelete: (id: number) => void;
   onGenerate?: () => void;
   neutralColorsCount?: number;
@@ -119,7 +95,6 @@ function ColorCard({
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const hexInputId = useId();
   const [showTints, setShowTints] = useState(false);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [pantoneValue, setPantoneValue] = useState("");
@@ -147,7 +122,7 @@ function ColorCard({
       id: number;
       name: string;
       category: string;
-      data: ColorAssetData;
+      data: any;
     }) => {
       const response = await fetch(
         `/api/clients/${clientId}/assets/${data.id}`,
@@ -185,10 +160,10 @@ function ColorCard({
       // Optimistically update the cache
       queryClient.setQueryData(
         [`/api/clients/${clientId}/assets`],
-        (old: BrandAsset[] | undefined) => {
+        (old: any) => {
           if (!old) return old;
 
-          return old.map((asset: BrandAsset) => {
+          return old.map((asset: any) => {
             if (asset.id === newData.id) {
               return {
                 ...asset,
@@ -204,7 +179,7 @@ function ColorCard({
       // Return a context object with the snapshotted value
       return { previousAssets };
     },
-    onError: (err, _newData, context) => {
+    onError: (err, newData, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(
         [`/api/clients/${clientId}/assets`],
@@ -231,9 +206,7 @@ function ColorCard({
     },
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [tempColor, setTempColor] = useState(
-    color.data.colors[0]?.hex || "#000000"
-  );
+  const [tempColor, setTempColor] = useState(color.hex);
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(color.name);
   const [activeTab, setActiveTab] = useState<"color" | "gradient">("color");
@@ -245,7 +218,7 @@ function ColorCard({
     { color: "#737373", position: 100 },
   ]);
 
-  const _handleColorAreaClick = (e: React.MouseEvent) => {
+  const handleColorAreaClick = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
@@ -269,7 +242,7 @@ function ColorCard({
       return p;
     };
 
-    let r: number, g: number, b: number;
+    let r, g, b;
     if (s === 0) {
       r = g = b = l;
     } else {
@@ -282,14 +255,14 @@ function ColorCard({
 
     const toHex = (c: number) => {
       const hex = Math.round(c * 255).toString(16);
-      return hex.length === 1 ? `0${hex}` : hex;
+      return hex.length === 1 ? "0" + hex : hex;
     };
 
     const hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     setTempColor(hexColor);
   };
 
-  const _handleHueSliderClick = (e: React.MouseEvent) => {
+  const handleHueSliderClick = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const hue = Math.round(x * 360);
@@ -306,7 +279,7 @@ function ColorCard({
     // Extract RGB values and convert to hex
     const rgb = computedColor.match(/\d+/g);
     if (rgb) {
-      const hex = `#${parseInt(rgb[0], 10).toString(16).padStart(2, "0")}${parseInt(rgb[1], 10).toString(16).padStart(2, "0")}${parseInt(rgb[2], 10).toString(16).padStart(2, "0")}`;
+      const hex = `#${parseInt(rgb[0]).toString(16).padStart(2, "0")}${parseInt(rgb[1]).toString(16).padStart(2, "0")}${parseInt(rgb[2]).toString(16).padStart(2, "0")}`;
       setTempColor(hex);
     }
   };
@@ -319,11 +292,11 @@ function ColorCard({
   };
 
   // Color picker state
-  const [_hue, _setHue] = useState(0);
-  const [_saturation, _setSaturation] = useState(100);
-  const [_brightness, _setBrightness] = useState(50);
-  const _spectrumRef = useRef<HTMLDivElement>(null);
-  const [_isDragging, _setIsDragging] = useState(false);
+  const [hue, setHue] = useState(0);
+  const [saturation, setSaturation] = useState(100);
+  const [brightness, setBrightness] = useState(50);
+  const spectrumRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const copyHex = (hexValue: string) => {
     navigator.clipboard.writeText(hexValue);
@@ -333,7 +306,7 @@ function ColorCard({
     });
   };
 
-  const _handleColorChange = (newHex: string) => {
+  const handleColorChange = (newHex: string) => {
     setTempColor(newHex);
     // Only update the visual display, don't save to database until Save is clicked
   };
@@ -372,7 +345,7 @@ function ColorCard({
   };
 
   const handleStartEdit = () => {
-    setTempColor(color.data.colors[0]?.hex || "#000000");
+    setTempColor(color.hex);
     setIsEditing(true);
 
     // Load existing gradient data if available
@@ -390,7 +363,7 @@ function ColorCard({
     }
   };
 
-  const _handleEditColor = (colorToEdit: ColorData) => {
+  const handleEditColor = (colorToEdit: ColorData) => {
     setTempColor(colorToEdit.hex);
     setIsEditing(true);
   };
@@ -450,26 +423,10 @@ function ColorCard({
         category: currentData?.category || "brand",
         colors: [
           {
-            hex:
-              gradientStops[0]?.color || color.data.colors[0]?.hex || "#000000",
-            rgb:
-              hexToRgb(
-                gradientStops[0]?.color ||
-                  color.data.colors[0]?.hex ||
-                  "#000000"
-              ) || "",
-            hsl:
-              hexToHsl(
-                gradientStops[0]?.color ||
-                  color.data.colors[0]?.hex ||
-                  "#000000"
-              ) || "",
-            cmyk:
-              hexToCmyk(
-                gradientStops[0]?.color ||
-                  color.data.colors[0]?.hex ||
-                  "#000000"
-              ) || "",
+            hex: gradientStops[0]?.color || color.hex,
+            rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
+            hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
+            cmyk: hexToCmyk(color.hex) || "",
           },
         ],
         gradient: gradientData,
@@ -489,23 +446,10 @@ function ColorCard({
             // Update local color data immediately
             if (onUpdate) {
               onUpdate(color.id, {
-                hex:
-                  gradientStops[0]?.color ||
-                  color.data.colors[0]?.hex ||
-                  "#000000",
-                rgb:
-                  hexToRgb(
-                    gradientStops[0]?.color ||
-                      color.data.colors[0]?.hex ||
-                      "#000000"
-                  ) || "",
-                hsl:
-                  hexToHsl(
-                    gradientStops[0]?.color ||
-                      color.data.colors[0]?.hex ||
-                      "#000000"
-                  ) || "",
-                cmyk: hexToCmyk(color.data.colors[0]?.hex || "#000000") || "",
+                hex: gradientStops[0]?.color || color.hex,
+                rgb: hexToRgb(gradientStops[0]?.color || color.hex) || "",
+                hsl: hexToHsl(gradientStops[0]?.color || color.hex) || "",
+                cmyk: hexToCmyk(color.hex) || "",
               });
             }
           },
@@ -517,24 +461,22 @@ function ColorCard({
   };
 
   const handleCancelEdit = () => {
-    setTempColor(color.data.colors[0]?.hex || "#000000");
+    setTempColor(color.hex);
     setIsEditing(false);
     if (onUpdate) {
       // Revert to original color
       const updates = {
-        hex: color.data.colors[0]?.hex || "#000000",
-        rgb: hexToRgb(color.data.colors[0]?.hex || "#000000") || undefined,
-        hsl: hexToHsl(color.data.colors[0]?.hex || "#000000") || undefined,
-        cmyk: hexToCmyk(color.data.colors[0]?.hex || "#000000") || undefined,
+        hex: color.hex,
+        rgb: hexToRgb(color.hex) || undefined,
+        hsl: hexToHsl(color.hex) || undefined,
+        cmyk: hexToCmyk(color.hex) || undefined,
       };
       onUpdate(color.id, updates);
     }
   };
 
   // Generate tints and shades and handle gradient display
-  const displayHex = isEditing
-    ? tempColor
-    : color.data.colors[0]?.hex || "#000000";
+  const displayHex = isEditing ? tempColor : color.hex;
   const { tints, shades } = generateTintsAndShades(displayHex);
 
   // Create real-time gradient display
@@ -551,7 +493,7 @@ function ColorCard({
       return {
         background: `${color.data.gradient.type === "radial" ? "radial" : "linear"}-gradient(${
           color.data.gradient.type === "radial" ? "circle" : "to right"
-        }, ${color.data.gradient.stops.map((stop: { color: string; position: number }) => `${stop.color} ${stop.position}%`).join(", ")})`,
+        }, ${color.data.gradient.stops.map((stop) => `${stop.color} ${stop.position}%`).join(", ")})`,
       };
     } else {
       // Show solid color
@@ -584,11 +526,11 @@ function ColorCard({
                     ? "#000"
                     : "#fff",
               }}
+              autoFocus
             />
           ) : (
-            <button
-              type="button"
-              className="color-chip--title cursor-pointer font-semibold hover:opacity-80 transition-opacity bg-transparent border-none p-0 text-left"
+            <h5
+              className="color-chip--title cursor-pointer font-semibold hover:opacity-80 transition-opacity"
               style={{
                 color:
                   parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
@@ -599,11 +541,10 @@ function ColorCard({
               title="Click to edit name"
             >
               {color.name}
-            </button>
+            </h5>
           )}
-          <button
-            type="button"
-            className="text-xs font-mono cursor-pointer hover:bg-black/10 hover:bg-white/10 rounded px-1 py-0.5 transition-colors bg-transparent border-none"
+          <p
+            className="text-xs font-mono cursor-pointer hover:bg-black/10 hover:bg-white/10 rounded px-1 py-0.5 transition-colors"
             style={{
               color:
                 parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
@@ -614,11 +555,11 @@ function ColorCard({
             title="Click to edit color"
           >
             {displayHex}
-          </button>
+          </p>
         </div>
 
         <div className="color-chip__controls" style={{ position: "relative" }}>
-          {color.data.category === "neutral" &&
+          {color.category === "neutral" &&
             onGenerate &&
             !/^Grey \d+$/.test(color.name) && (
               <Button
@@ -671,31 +612,30 @@ function ColorCard({
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          {color.data.category !== "neutral" &&
-            color.data.type !== "gradient" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
-                onClick={() => setShowTints(!showTints)}
-                title={showTints ? "Hide tints/shades" : "Show tints/shades"}
-              >
-                <Palette
-                  className="h-6 w-6"
-                  style={{
-                    color:
-                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                        ? "#000"
-                        : "#fff",
-                  }}
-                />
-              </Button>
-            )}
+          {color.category !== "neutral" && color.data.type !== "gradient" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+              onClick={() => setShowTints(!showTints)}
+              title={showTints ? "Hide tints/shades" : "Show tints/shades"}
+            >
+              <Palette
+                className="h-6 w-6"
+                style={{
+                  color:
+                    parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                      ? "#000"
+                      : "#fff",
+                }}
+              />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
             className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
-            onClick={() => copyHex(color.data.colors[0]?.hex || "#000000")}
+            onClick={() => copyHex(color.hex)}
           >
             <Copy
               className="h-6 w-6"
@@ -774,7 +714,6 @@ function ColorCard({
           <div className="color-picker-popover__header">
             <h4>Edit Color</h4>
             <button
-              type="button"
               className="color-picker-popover__close-button"
               onClick={handleCancelEdit}
             >
@@ -785,14 +724,12 @@ function ColorCard({
           {/* Tabs */}
           <div className="color-picker-popover__tabs">
             <button
-              type="button"
               className={`color-picker-popover__tab ${activeTab === "color" ? "active" : ""}`}
               onClick={() => setActiveTab("color")}
             >
               Color
             </button>
             <button
-              type="button"
               className={`color-picker-popover__tab ${activeTab === "gradient" ? "active" : ""}`}
               onClick={() => setActiveTab("gradient")}
             >
@@ -815,9 +752,8 @@ function ColorCard({
 
                 {/* Hex input */}
                 <div className="color-picker-popover__hex-input">
-                  <label htmlFor={hexInputId}>Hex:</label>
+                  <label>Hex:</label>
                   <input
-                    id={hexInputId}
                     type="text"
                     value={tempColor}
                     onChange={handleHexInputChange}
@@ -842,8 +778,7 @@ function ColorCard({
                 </div>
 
                 {/* Gradient Preview Bar */}
-                <button
-                  type="button"
+                <div
                   className="color-picker-popover__gradient-preview"
                   style={{
                     background: `linear-gradient(to right, ${gradientStops.map((stop) => `${stop.color} ${stop.position}%`).join(", ")})`,
@@ -863,18 +798,11 @@ function ColorCard({
                       { color: newColor, position },
                     ]);
                   }}
-                  aria-label="Click to add gradient stops"
                 >
                   {/* Color Stop Handles */}
                   {gradientStops.map((stop, index) => (
                     <div
-                      key={`${stop.color}-${stop.position}-${index}`}
-                      role="slider"
-                      tabIndex={0}
-                      aria-label={`Gradient stop at ${stop.position}%`}
-                      aria-valuenow={stop.position}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
+                      key={index}
                       className="gradient-stop-handle"
                       style={{
                         left: `${stop.position}%`,
@@ -884,12 +812,11 @@ function ColorCard({
                         e.stopPropagation();
                         e.preventDefault();
 
-                        const _startPosition = stop.position;
+                        const startPosition = stop.position;
                         const rect =
-                          e.currentTarget.parentElement?.getBoundingClientRect();
+                          e.currentTarget.parentElement!.getBoundingClientRect();
 
                         const handleMouseMove = (moveEvent: MouseEvent) => {
-                          if (!rect) return;
                           const newPosition = Math.max(
                             0,
                             Math.min(
@@ -920,14 +847,13 @@ function ColorCard({
                       }}
                     />
                   ))}
-                </button>
+                </div>
 
                 {/* Stops Section */}
                 <div className="color-picker-popover__gradient-stops">
                   <div className="gradient-stops-header">
                     <span>Stops</span>
                     <button
-                      type="button"
                       className="add-stop-button"
                       onClick={() => {
                         const newPosition =
@@ -951,10 +877,7 @@ function ColorCard({
 
                   {/* Individual Stop Controls */}
                   {gradientStops.map((stop, index) => (
-                    <div
-                      key={`stop-${stop.position}-${stop.color}-${index}`}
-                      className="gradient-stop-control"
-                    >
+                    <div key={index} className="gradient-stop-control">
                       <div className="stop-position">
                         <input
                           type="number"
@@ -963,7 +886,7 @@ function ColorCard({
                             const newStops = [...gradientStops];
                             newStops[index].position = Math.max(
                               0,
-                              Math.min(100, parseInt(e.target.value, 10) || 0)
+                              Math.min(100, parseInt(e.target.value) || 0)
                             );
                             setGradientStops(newStops);
                           }}
@@ -973,8 +896,7 @@ function ColorCard({
                         <span>%</span>
                       </div>
 
-                      <button
-                        type="button"
+                      <div
                         className="stop-color-preview"
                         style={{ backgroundColor: stop.color }}
                         onClick={() => {
@@ -983,16 +905,6 @@ function ColorCard({
                           ) as HTMLInputElement;
                           if (colorInput) colorInput.click();
                         }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            const colorInput = document.querySelector(
-                              `input[data-stop-index="${index}"]`
-                            ) as HTMLInputElement;
-                            if (colorInput) colorInput.click();
-                          }
-                        }}
-                        aria-label={`Change gradient stop color: ${stop.color}`}
                       />
 
                       <input
@@ -1014,7 +926,7 @@ function ColorCard({
                           const newStops = [...gradientStops];
                           const hex = Math.max(
                             0,
-                            Math.min(255, parseInt(e.target.value, 10) || 0)
+                            Math.min(255, parseInt(e.target.value) || 0)
                           )
                             .toString(16)
                             .padStart(2, "0");
@@ -1029,7 +941,6 @@ function ColorCard({
 
                       {gradientStops.length > 2 && (
                         <button
-                          type="button"
                           className="remove-stop-button"
                           onClick={() => {
                             setGradientStops(
@@ -1050,7 +961,6 @@ function ColorCard({
           {/* Save button with icon - left aligned */}
           <div className="color-picker-popover__actions">
             <button
-              type="button"
               className="color-picker-popover__save-button"
               onClick={handleSaveEdit}
             >
@@ -1073,9 +983,9 @@ function ColorCard({
           >
             {/* Tints Row (Lighter) */}
             <div className="flex h-1/2">
-              {tints.map((tint, _index) => (
+              {tints.map((tint, index) => (
                 <motion.div
-                  key={`tint-${tint}`}
+                  key={`tint-${index}`}
                   className="flex-1 relative group cursor-pointer"
                   style={{ backgroundColor: tint }}
                   onClick={() => copyHex(tint)}
@@ -1089,14 +999,17 @@ function ColorCard({
 
             {/* Shades Row (Darker) */}
             <div className="flex h-1/2">
-              {shades.map((shade, _index) => (
+              {shades.map((shade, index) => (
                 <motion.div
-                  key={`shade-${shade}`}
+                  key={`shade-${index}`}
                   className="flex-1 relative group cursor-pointer"
                   style={{ backgroundColor: shade }}
                   onClick={() => copyHex(shade)}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 bg-black/20 group-hover:opacity-100 transition-opacity">
+                  <div
+                    className="absolute inset-0 flex items-center justify-center opacity-0```text
+ bg-black/20 group-hover:opacity-100 transition-opacity"
+                  >
                     <Copy className="h-3 w-3 text-white" />
                   </div>
                 </motion.div>
@@ -1110,18 +1023,52 @@ function ColorCard({
       <AnimatePresence>
         {isInfoPanelOpen && (
           <motion.div
-            className="absolute top-0 right-0 w-[40%] h-full bg-white/95 backdrop-blur-sm border-l border-gray-200 p-4 flex flex-col"
+            className="absolute top-0 right-0 w-[50%] h-full backdrop-blur-sm border-l p-2 flex flex-col"
+            style={{
+              backgroundColor: `${displayHex}E6`, // 90% opacity of the color
+              borderLeftColor:
+                parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                  ? "#00000020"
+                  : "#ffffff20",
+            }}
             initial={{ opacity: 0, x: "100%" }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: "100%" }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
           >
-            <div className="space-y-3">
+            {/* Close Button */}
+            <div className="flex justify-end mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 absolute top-5 left-[-50px] hover:bg-black/10 hover:bg-white/10"
+                onClick={() => setIsInfoPanelOpen(false)}
+                style={{
+                  color:
+                    parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                      ? "#000"
+                      : "#fff",
+                }}
+              >
+                <X className="h-7 w-7" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
               {/* RGB */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">RGB</span>
+                <span
+                  className="text-xs font-medium w-16"
+                  style={{
+                    color:
+                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                        ? "#000"
+                        : "#fff",
+                  }}
+                >
+                  RGB
+                </span>
                 <button
-                  type="button"
                   onClick={() => {
                     const rgb = hexToRgb(displayHex);
                     if (rgb) {
@@ -1144,9 +1091,35 @@ function ColorCard({
                       });
                     }
                   }}
-                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded transition-colors group"
+                  style={{
+                    backgroundColor: "transparent",
+                    ":hover": {
+                      backgroundColor:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#00000010"
+                          : "#ffffff10",
+                    },
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                        ? "#00000010"
+                        : "#ffffff10";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
                 >
-                  <span className="text-sm font-mono">
+                  <span
+                    className="text-xs font-mono"
+                    style={{
+                      color:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#000"
+                          : "#fff",
+                    }}
+                  >
                     {(() => {
                       const rgb = hexToRgb(displayHex);
                       return rgb
@@ -1155,18 +1128,45 @@ function ColorCard({
                     })()}
                   </span>
                   {copiedFormats[`${color.id}-rgb`] ? (
-                    <Check className="h-3 w-3 text-green-500" />
+                    <Check
+                      className="h-3 w-3"
+                      style={{
+                        color:
+                          parseInt(displayHex.replace("#", ""), 16) >
+                          0xffffff / 2
+                            ? "#22c55e"
+                            : "#4ade80",
+                      }}
+                    />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Copy
+                      className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{
+                        color:
+                          parseInt(displayHex.replace("#", ""), 16) >
+                          0xffffff / 2
+                            ? "#00000080"
+                            : "#ffffff80",
+                      }}
+                    />
                   )}
                 </button>
               </div>
 
               {/* HSL */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">HSL</span>
+                <span
+                  className="text-xs font-medium w-16"
+                  style={{
+                    color:
+                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                        ? "#000"
+                        : "#fff",
+                  }}
+                >
+                  HSL
+                </span>
                 <button
-                  type="button"
                   onClick={() => {
                     const hsl = hexToHsl(displayHex);
                     if (hsl) {
@@ -1189,9 +1189,26 @@ function ColorCard({
                       });
                     }
                   }}
-                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded transition-colors group"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                        ? "#00000010"
+                        : "#ffffff10";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
                 >
-                  <span className="text-sm font-mono">
+                  <span
+                    className="text-xs font-mono"
+                    style={{
+                      color:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#000"
+                          : "#fff",
+                    }}
+                  >
                     {(() => {
                       const hsl = hexToHsl(displayHex);
                       return hsl
@@ -1200,18 +1217,45 @@ function ColorCard({
                     })()}
                   </span>
                   {copiedFormats[`${color.id}-hsl`] ? (
-                    <Check className="h-3 w-3 text-green-500" />
+                    <Check
+                      className="h-3 w-3"
+                      style={{
+                        color:
+                          parseInt(displayHex.replace("#", ""), 16) >
+                          0xffffff / 2
+                            ? "#22c55e"
+                            : "#4ade80",
+                      }}
+                    />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Copy
+                      className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{
+                        color:
+                          parseInt(displayHex.replace("#", ""), 16) >
+                          0xffffff / 2
+                            ? "#00000080"
+                            : "#ffffff80",
+                      }}
+                    />
                   )}
                 </button>
               </div>
 
               {/* CMYK */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">CMYK</span>
+                <span
+                  className="text-xs font-medium w-16"
+                  style={{
+                    color:
+                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                        ? "#000"
+                        : "#fff",
+                  }}
+                >
+                  CMYK
+                </span>
                 <button
-                  type="button"
                   onClick={() => {
                     const cmyk = hexToCmyk(displayHex);
                     if (cmyk) {
@@ -1234,9 +1278,26 @@ function ColorCard({
                       });
                     }
                   }}
-                  className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 transition-colors group"
+                  className="flex-1 flex items-center justify-between px-2 py-1 rounded transition-colors group"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor =
+                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                        ? "#00000010"
+                        : "#ffffff10";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
                 >
-                  <span className="text-sm font-mono">
+                  <span
+                    className="text-xs font-mono"
+                    style={{
+                      color:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#000"
+                          : "#fff",
+                    }}
+                  >
                     {(() => {
                       const cmyk = hexToCmyk(displayHex);
                       return cmyk
@@ -1245,26 +1306,68 @@ function ColorCard({
                     })()}
                   </span>
                   {copiedFormats[`${color.id}-cmyk`] ? (
-                    <Check className="h-3 w-3 text-green-500" />
+                    <Check
+                      className="h-3 w-3"
+                      style={{
+                        color:
+                          parseInt(displayHex.replace("#", ""), 16) >
+                          0xffffff / 2
+                            ? "#22c55e"
+                            : "#4ade80",
+                      }}
+                    />
                   ) : (
-                    <Copy className="h-3 w-3 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Copy
+                      className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{
+                        color:
+                          parseInt(displayHex.replace("#", ""), 16) >
+                          0xffffff / 2
+                            ? "#00000080"
+                            : "#ffffff80",
+                      }}
+                    />
                   )}
                 </button>
               </div>
 
               {/* Pantone */}
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium w-16">Pantone</span>
-                <div className="flex-1 flex items-center gap-2">
+                <span
+                  className="text-xs font-medium w-16"
+                  style={{
+                    color:
+                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                        ? "#000"
+                        : "#fff",
+                  }}
+                >
+                  Pantone
+                </span>
+                <div className="flex flex-1 pl-2 items-center gap-2">
                   <input
                     type="text"
                     value={pantoneValue}
                     onChange={(e) => handlePantoneChange(e.target.value)}
-                    placeholder="Enter Pantone code"
-                    className="flex-1 px-2 py-1 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="PMS1234"
+                    className="px-2 text-xs py-1 w-full text-sm rounded focus:outline-none focus:ring-1"
+                    style={{
+                      backgroundColor:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#ffffff20"
+                          : "#00000020",
+                      border: `1px solid ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "#00000040" : "#ffffff40"}`,
+                      color:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#000"
+                          : "#fff",
+                      focusRingColor:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#0066cc"
+                          : "#66b3ff",
+                    }}
                   />
                   <button
-                    type="button"
                     onClick={() => {
                       if (pantoneValue) {
                         navigator.clipboard.writeText(pantoneValue);
@@ -1287,12 +1390,45 @@ function ColorCard({
                       }
                     }}
                     disabled={!pantoneValue}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+                    className="p-1 rounded transition-colors disabled:opacity-50"
+                    style={{
+                      backgroundColor: "transparent",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (pantoneValue) {
+                        e.currentTarget.style.backgroundColor =
+                          parseInt(displayHex.replace("#", ""), 16) >
+                          0xffffff / 2
+                            ? "#00000010"
+                            : "#ffffff10";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
                   >
                     {copiedFormats[`${color.id}-pantone`] ? (
-                      <Check className="h-3 w-3 text-green-500" />
+                      <Check
+                        className="h-3 w-3"
+                        style={{
+                          color:
+                            parseInt(displayHex.replace("#", ""), 16) >
+                            0xffffff / 2
+                              ? "#22c55e"
+                              : "#4ade80",
+                        }}
+                      />
                     ) : (
-                      <Copy className="h-3 w-3 text-gray-500" />
+                      <Copy
+                        className="h-3 w-3"
+                        style={{
+                          color:
+                            parseInt(displayHex.replace("#", ""), 16) >
+                            0xffffff / 2
+                              ? "#00000080"
+                              : "#ffffff80",
+                        }}
+                      />
                     )}
                   </button>
                 </div>
@@ -1327,9 +1463,9 @@ function hexToHsl(hex: string) {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h: number = 0;
-  let s: number;
-  const l: number = (max + min) / 2;
+  let h = 0,
+    s,
+    l = (max + min) / 2;
 
   if (max === min) {
     h = s = 0;
@@ -1400,14 +1536,14 @@ function generateTintsAndShades(
   return { tints, shades };
 }
 
-function _generateNeutralPalette(baseGrey: string) {
+function generateNeutralPalette(baseGrey: string) {
   // Generate 10 shades from white to black
   const tints = generateTintsAndShades(baseGrey, [90, 80, 70, 60, 50]).tints;
   const shades = generateTintsAndShades(baseGrey, [40, 30, 20, 10, 5]).shades;
   return [...tints, baseGrey, ...shades];
 }
 
-function _generateContainerColors(baseColor: string) {
+function generateContainerColors(baseColor: string) {
   // Updated to use 60% for both lighter and darker values
   const { tints, shades } = generateTintsAndShades(baseColor, [60], [60]);
   return {
@@ -1488,9 +1624,9 @@ function hexToHslValues(hex: string) {
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h: number = 0;
-  let s: number;
-  const l: number = (max + min) / 2;
+  let h = 0,
+    s,
+    l = (max + min) / 2;
 
   if (max === min) {
     h = s = 0; // achromatic
@@ -1639,6 +1775,271 @@ function generateInteractiveColors(brandColors: ColorData[]) {
   });
 }
 
+function ColorBlock({ hex, onClick }: { hex: string; onClick?: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleClick = async () => {
+    try {
+      await navigator.clipboard.writeText(hex);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      onClick?.();
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  return (
+    <div className="relative cursor-pointer group" onClick={handleClick}>
+      <div
+        className="rounded-md transition-all duration-200 group-hover:ring-2 ring-primary/20"
+        style={{ backgroundColor: hex, height: onClick ? "8rem" : "1.5rem" }}
+      />
+      <AnimatePresence>
+        {copied ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md"
+          >
+            <Check className="h-4 w-4 text-white" />
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded-md transition-colors"
+          >
+            <Copy className="h-4 w-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ColorChip({
+  color,
+  onEdit,
+  onDelete,
+  onUpdate,
+}: {
+  color: ColorData;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onUpdate?: (
+    colorId: number,
+    updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }
+  ) => void;
+}) {
+  const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState({
+    name: color.name,
+    hex: color.hex,
+  });
+
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  const handleCopy = (value: string) => {
+    navigator.clipboard.writeText(value);
+    toast({
+      title: "Copied!",
+      description: `${value} has been copied to your clipboard.`,
+    });
+  };
+
+  const handleQuickEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onEdit?.();
+    setIsEditing(false);
+  };
+
+  return (
+    <motion.div
+      layout
+      className="relative min-w-[280px] border rounded-lg bg-white overflow-hidden group"
+    >
+      {/* Quick edit hover menu */}
+      {user.role !== UserRole.STANDARD && (
+        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={() => setIsEditing(true)}
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-white/90 hover:bg-white"
+            onClick={() => handleCopy(color.hex)}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 bg-white/90 hover:bg-white"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Color</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this color? This action cannot
+                  be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+
+      {/* Color content */}
+      <div className="p-4">
+        {isEditing ? (
+          <form onSubmit={handleQuickEdit} className="space-y-2">
+            <Input
+              value={editValue.name}
+              onChange={(e) =>
+                setEditValue((prev) => ({ ...prev, name: e.target.value }))
+              }
+              className="font-medium"
+              autoFocus
+            />
+            <Input
+              value={editValue.hex}
+              onChange={(e) =>
+                setEditValue((prev) => ({ ...prev, hex: e.target.value }))
+              }
+              pattern="^#[0-9A-Fa-f]{6}$"
+              className="font-mono"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditing(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" size="sm">
+                Save
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <h4 className="font-medium mb-1">{color.name}</h4>
+            <ColorBlock hex={color.hex} onClick={() => handleCopy(color.hex)} />
+          </>
+        )}
+      </div>
+
+      {/* Color metadata */}
+      <div className="border-t p-4 space-y-4 bg-gray-50">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div>
+            <Label className="text-xs text-muted-foreground">HEX</Label>
+            <p className="font-mono">{color.hex}</p>
+          </div>
+          {color.rgb && (
+            <div>
+              <Label className="text-xs text-muted-foreground">RGB</Label>
+              <p className="font-mono">{color.rgb}</p>
+            </div>
+          )}
+          {color.cmyk && (
+            <div>
+              <Label className="text-xs text-muted-foreground">CMYK</Label>
+              <p className="font-mono">{color.cmyk}</p>
+            </div>
+          )}
+          {color.pantone && (
+            <div>
+              <Label className="text-xs text-muted-foreground">Pantone</Label>
+              <p className="font-mono">{color.pantone}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Tints and shades removed for simplicity with gradients */}
+      </div>
+    </motion.div>
+  );
+}
+
+function ColorSection({
+  title,
+  colors = [],
+  onAddColor,
+  deleteColor,
+  onEditColor,
+}: {
+  title: string;
+  colors: ColorData[];
+  onAddColor: () => void;
+  deleteColor: (colorId: number) => void;
+  onEditColor: (color: ColorData) => void;
+}) {
+  const { user } = useAuth();
+
+  if (!user) return null;
+
+  return (
+    <div className="space-y-4">
+      {colors.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AnimatePresence>
+            {colors.map((color) => (
+              <ColorChip
+                key={color.id || `color-${color.hex}-${color.name}`}
+                color={color}
+                onEdit={() => onEditColor(color)}
+                onDelete={() => color.id && deleteColor(color.id)}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-card text-card-foreground p-8 text-center">
+          <p className="text-muted-foreground">No colors added yet</p>
+          {user.role !== UserRole.STANDARD && (
+            <Button
+              variant="outline"
+              className="mt-4 flex items-center gap-1"
+              onClick={onAddColor}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add {title}</span>
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ColorManager({
   clientId,
   colors,
@@ -1653,14 +2054,12 @@ export function ColorManager({
   const [selectedCategory, setSelectedCategory] = useState<
     "brand" | "neutral" | "interactive"
   >("brand");
-  const [editingColor, setEditingColor] = useState<ColorBrandAsset | null>(
-    null
-  );
+  const [editingColor, setEditingColor] = useState<ColorData | null>(null);
   const [regenerationCount, setRegenerationCount] = useState(0);
   // We don't need an extra state since colors are derived from props
 
   // Color utility functions
-  const _ColorUtils = {
+  const ColorUtils = {
     // Analyze brightness of a hex color (returns 1-11 scale)
     analyzeBrightness(hex: string): number {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -1817,7 +2216,7 @@ export function ColorManager({
       id: number;
       name: string;
       category: string;
-      data: ColorAssetData;
+      data: any;
     }) => {
       const response = await fetch(
         `/api/clients/${clientId}/assets/${data.id}`,
@@ -1855,10 +2254,10 @@ export function ColorManager({
       // Optimistically update the cache
       queryClient.setQueryData(
         [`/api/clients/${clientId}/assets`],
-        (old: BrandAsset[] | undefined) => {
+        (old: any) => {
           if (!old) return old;
 
-          return old.map((asset: BrandAsset) => {
+          return old.map((asset: any) => {
             if (asset.id === newData.id) {
               return {
                 ...asset,
@@ -1874,7 +2273,7 @@ export function ColorManager({
       // Return a context object with the snapshotted value
       return { previousAssets };
     },
-    onError: (err, _newData, context) => {
+    onError: (err, newData, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(
         [`/api/clients/${clientId}/assets`],
@@ -1930,21 +2329,26 @@ export function ColorManager({
     }
   };
 
-  const parseColorAsset = (asset: BrandAsset): ColorBrandAsset | null => {
+  const parseColorAsset = (asset: BrandAsset): ColorData | null => {
     try {
       const data =
         typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
       if (!data?.colors?.[0]) return null;
 
       return {
-        ...asset,
+        id: asset.id,
+        hex: data.colors[0].hex,
+        rgb: data.colors[0].rgb,
+        hsl: data.colors[0].hsl,
+        cmyk: data.colors[0].cmyk,
+        pantone: data.colors[0].pantone,
+        name: asset.name,
+        category: data.category,
+        // Preserve the full data object including gradient information
         data: data,
-      } as ColorBrandAsset;
-    } catch (error: unknown) {
-      console.error(
-        "Error parsing color asset:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      };
+    } catch (error) {
+      console.error("Error parsing color asset:", error);
       return null;
     }
   };
@@ -1952,15 +2356,15 @@ export function ColorManager({
   const transformedColors = colors
     .filter((asset) => asset.category === "color")
     .map(parseColorAsset)
-    .filter((color): color is ColorBrandAsset => color !== null);
+    .filter((color): color is ColorData => color !== null);
 
   const brandColorsData = transformedColors.filter(
-    (c) => c.data.category === "brand"
+    (c) => c.category === "brand"
   );
 
   // Sort neutral colors: manual (base grey) first, then generated shades from light to dark (Grey 11 to Grey 1)
   const neutralColorsData = transformedColors
-    .filter((c) => c.data.category === "neutral")
+    .filter((c) => c.category === "neutral")
     .sort((a, b) => {
       // Check if colors are generated grey shades (names like "Grey 1", "Grey 2", etc.)
       const isAGeneratedGrey = /^Grey \d+$/.test(a.name);
@@ -1976,8 +2380,8 @@ export function ColorManager({
 
       // If both are generated greys, sort by number (Grey 11 first, Grey 1 last)
       if (isAGeneratedGrey && isBGeneratedGrey) {
-        const numA = parseInt(a.name.match(/^Grey (\d+)$/)?.[1] || "0", 10);
-        const numB = parseInt(b.name.match(/^Grey (\d+)$/)?.[1] || "0", 10);
+        const numA = parseInt(a.name.match(/^Grey (\d+)$/)?.[1] || "0");
+        const numB = parseInt(b.name.match(/^Grey (\d+)$/)?.[1] || "0");
         return numB - numA; // Higher numbers first (Grey 11, 10, 9... 2, 1)
       }
 
@@ -1986,18 +2390,18 @@ export function ColorManager({
     });
 
   const interactiveColorsData = transformedColors.filter(
-    (c) => c.data.category === "interactive"
+    (c) => c.category === "interactive"
   );
 
-  const handleEditColor = (color: ColorBrandAsset) => {
+  const handleEditColor = (color: ColorData) => {
     setEditingColor(color);
-    setSelectedCategory(color.data.category);
+    setSelectedCategory(color.category);
     form.reset({
       name: color.name,
-      hex: color.data.colors[0]?.hex || "#000000",
-      rgb: color.data.colors[0]?.rgb || "",
-      cmyk: color.data.colors[0]?.cmyk || "",
-      pantone: color.data.colors[0]?.pantone || "",
+      hex: color.hex,
+      rgb: color.rgb,
+      cmyk: color.cmyk,
+      pantone: color.pantone,
       type: "solid",
     });
     setIsAddingColor(true);
@@ -2023,19 +2427,8 @@ export function ColorManager({
   };
 
   const handleGenerateInteractiveColors = () => {
-    // Convert ColorBrandAsset to ColorData for the utility function
-    const brandColorsForGeneration = brandColorsData.map((asset) => ({
-      hex: asset.data.colors[0]?.hex || "#000000",
-      rgb: asset.data.colors[0]?.rgb,
-      hsl: asset.data.colors[0]?.hsl,
-      cmyk: asset.data.colors[0]?.cmyk,
-      pantone: asset.data.colors[0]?.pantone,
-    }));
-
     // Generate the four interactive colors based on brand colors
-    const interactiveColors = generateInteractiveColors(
-      brandColorsForGeneration
-    );
+    const interactiveColors = generateInteractiveColors(brandColorsData);
 
     // Create each color using the existing createColor mutation
     interactiveColors.forEach((colorData) => {
@@ -2054,7 +2447,7 @@ export function ColorManager({
     const manualColors = neutralColorsData.filter(
       (color) => !/^Grey \d+$/.test(color.name)
     );
-    manualColors.forEach((color, _index) => {
+    manualColors.forEach((color, index) => {
       if (color.name !== "Base grey" && color.id) {
         // Update the existing color to "Base grey"
         fetch(`/api/clients/${clientId}/assets/${color.id}`, {
@@ -2069,24 +2462,22 @@ export function ColorManager({
               category: "neutral",
               colors: [
                 {
-                  hex: color.data.colors[0]?.hex || "#000000",
-                  rgb: color.data.colors[0]?.rgb,
-                  cmyk: color.data.colors[0]?.cmyk,
-                  pantone: color.data.colors[0]?.pantone,
+                  hex: color.hex,
+                  rgb: color.rgb,
+                  cmyk: color.cmyk,
+                  pantone: color.pantone,
                 },
               ],
-              tints: generateTintsAndShades(
-                color.data.colors[0]?.hex || "#000000"
-              ).tints.map((hex, i) => ({
+              tints: generateTintsAndShades(color.hex).tints.map((hex, i) => ({
                 percentage: [60, 40, 20][i],
                 hex,
               })),
-              shades: generateTintsAndShades(
-                color.data.colors[0]?.hex || "#000000"
-              ).shades.map((hex, i) => ({
-                percentage: [20, 40, 60][i],
-                hex,
-              })),
+              shades: generateTintsAndShades(color.hex).shades.map(
+                (hex, i) => ({
+                  percentage: [20, 40, 60][i],
+                  hex,
+                })
+              ),
             },
           }),
         }).then(() => {
@@ -2104,20 +2495,11 @@ export function ColorManager({
     const baseGreyColor = neutralColorsData.find(
       (color) => !/^Grey \d+$/.test(color.name)
     );
-    const baseGreyHex = baseGreyColor?.data.colors[0]?.hex || null;
-
-    // Convert ColorBrandAsset to ColorData for the utility function
-    const brandColorsForExtraction = brandColorsData.map((asset) => ({
-      hex: asset.data.colors[0]?.hex || "#000000",
-      rgb: asset.data.colors[0]?.rgb,
-      hsl: asset.data.colors[0]?.hsl,
-      cmyk: asset.data.colors[0]?.cmyk,
-      pantone: asset.data.colors[0]?.pantone,
-    }));
+    const baseGreyHex = baseGreyColor?.hex || null;
 
     // Extract hue and base saturation from base grey or brand colors with variation
     const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(
-      brandColorsForExtraction,
+      brandColorsData,
       baseGreyHex,
       regenerationCount
     );
@@ -2126,7 +2508,7 @@ export function ColorManager({
     const allShades = [];
     for (let level = 1; level <= 11; level++) {
       // Generate lightness values with midpoint shifted to Grey 5 for more lighter shades
-      let baseLightness: number;
+      let baseLightness;
       if (level <= 5) {
         // Greys 1-5: 8% to 50% (compressed dark range)
         baseLightness = 8 + ((level - 1) / 4) * 42; // 8% to 50%
@@ -2139,7 +2521,7 @@ export function ColorManager({
         Math.min(98, baseLightness + lightnessShift)
       ); // Apply variation with bounds
 
-      // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
+      // Apply parabolic formula: saturation = maxSaturation * (1 - 4 * Math.pow(normalizedLightness - 0.5, 2));
       const normalizedLightness = lightness / 100; // Convert to 0-1 range
       const saturation =
         maxSaturation * (1 - 4 * (normalizedLightness - 0.5) ** 2);
@@ -2154,7 +2536,7 @@ export function ColorManager({
       .filter((color) => /^Grey \d+$/.test(color.name))
       .map((color) => {
         const match = color.name.match(/^Grey (\d+)$/);
-        return match ? parseInt(match[1], 10) : 0;
+        return match ? parseInt(match[1]) : 0;
       });
 
     const missingShades = allShades.filter(
@@ -2173,7 +2555,7 @@ export function ColorManager({
     });
   };
 
-  const _handleAddBrandColor = (name: string, hex: string) => {
+  const handleAddBrandColor = (name: string, hex: string) => {
     const colorKey = name.toLowerCase().replace(/\s+/g, "-");
     handleColorChange(colorKey, hex, true);
 
@@ -2182,16 +2564,40 @@ export function ColorManager({
   };
 
   const handleColorChange = (
-    _key: string,
-    _value: string,
-    _isBaseColor = false
+    key: string,
+    value: string,
+    isBaseColor = false
   ) => {
     //  Updated color change handling to dynamically generate container and neutral colors
-    const updatedDesignSystem = designSystem || [];
+    const updatedDesignSystem = {
+      ...(designSystem || {}),
+      colors: {
+        ...(designSystem?.colors || {}),
+        [key]: value,
+      },
+    };
+
+    if (isBaseColor) {
+      // Generate container colors
+      const { container, onContainer } = generateContainerColors(value);
+
+      // Update container colors
+      updatedDesignSystem.colors[`${key}-container`] = container;
+      updatedDesignSystem.colors[`on-${key}-container`] = onContainer;
+
+      // If it's a neutral base color, generate the palette
+      if (key === "neutral-base") {
+        const neutralPalette = generateNeutralPalette(value);
+        neutralPalette.forEach((color, index) => {
+          const colorKey = `neutral-${index * 100}`;
+          updatedDesignSystem.colors[colorKey] = color;
+        });
+      }
+    }
 
     // Only call these if the props are provided
     if (updateDraftDesignSystem) {
-      updateDraftDesignSystem(updatedDesignSystem);
+      updateDraftDesignSystem(updatedDesignSystem.colors);
     }
 
     if (addToHistory) {
@@ -2586,12 +2992,22 @@ export function ColorManager({
 interface ColorManagerProps {
   clientId: number;
   colors: BrandAsset[];
-  updateDraftDesignSystem?: (colors: BrandAsset[]) => void; // Made optional
-  addToHistory?: (designSystem: BrandAsset[]) => void; // Made optional
-  designSystem?: BrandAsset[]; // Made optional
+  updateDraftDesignSystem?: (colors: any) => void; // Made optional
+  addToHistory?: (designSystem: any) => void; // Made optional
+  designSystem?: any; // Made optional
 }
 
-// ColorData interface already defined at top of file
+interface ColorData {
+  id?: number;
+  hex: string;
+  rgb?: string;
+  hsl?: string;
+  cmyk?: string;
+  pantone?: string;
+  name: string;
+  category: "brand" | "neutral" | "interactive";
+  data?: any; // Include data property to preserve gradient information
+}
 
 // Color category descriptions
 const colorDescriptions = {

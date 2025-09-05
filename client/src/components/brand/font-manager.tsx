@@ -41,7 +41,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { TypeScaleManager } from "../type-scale/type-scale-manager";
-import { AssetSection } from "./asset-section";
+import { AssetSection } from "./logo-manager/asset-section";
 
 // Google Fonts interface
 interface GoogleFont {
