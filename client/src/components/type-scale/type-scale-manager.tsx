@@ -239,7 +239,7 @@ const ColorSelector = ({
 
   // Find the selected brand color for display
   const selectedBrandColor = brandColors.find(
-    (color: BrandColor) => color.value === value
+    (color: BrandColor) => color.value === value,
   );
 
   return (
@@ -279,7 +279,7 @@ const ColorSelector = ({
                     const groupedColors = brandColors.reduce(
                       (
                         acc: Record<string, BrandColor[]>,
-                        color: BrandColor
+                        color: BrandColor,
                       ) => {
                         if (!acc[color.name]) {
                           acc[color.name] = [];
@@ -287,7 +287,7 @@ const ColorSelector = ({
                         acc[color.name].push(color);
                         return acc;
                       },
-                      {}
+                      {},
                     );
 
                     return Object.entries(groupedColors).map(
@@ -343,7 +343,7 @@ const ColorSelector = ({
                               </CommandItem>
                             ))}
                         </CommandGroup>
-                      )
+                      ),
                     );
                   })()}
                 </CommandList>
@@ -434,7 +434,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       } catch (error: unknown) {
         console.error(
           "Error parsing font asset:",
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error",
         );
         return null;
       }
@@ -459,6 +459,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
           percentage?: number;
         }[] = [];
 
+        console.log("Parsing color asset:", colorData);
+
         // Add tints (lighter variations)
         if (colorData.tints && Array.isArray(colorData.tints)) {
           colorData.tints.forEach(
@@ -473,7 +475,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 type: "tint",
                 percentage: tint.percentage,
               });
-            }
+            },
           );
         }
 
@@ -488,7 +490,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 cmyk?: string;
                 pantone?: string;
               },
-              index: number
+              index: number,
             ) => {
               colors.push({
                 id: `${asset.id}-main-${index}`,
@@ -499,7 +501,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 category: colorData.category || "color",
                 type: "main",
               });
-            }
+            },
           );
         }
 
@@ -517,7 +519,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                 type: "shade",
                 percentage: shade.percentage,
               });
-            }
+            },
           );
         }
 
@@ -525,29 +527,26 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       } catch (error: unknown) {
         console.error(
           "Error parsing color asset:",
-          error instanceof Error ? error.message : "Unknown error"
+          error instanceof Error ? error.message : "Unknown error",
         );
         return [];
       }
     })
     .filter(Boolean);
 
-  // Debug brand colors structure
-  console.log("All brand colors:", brandColors);
-  console.log("Brand colors with roles:", brandColors.map(c => ({ name: c.name, role: c.role, category: c.category })));
-
   // Filter brand colors to only include those with a role of "brand"
   // If no colors have the "brand" role, fall back to showing all brand colors
   let filteredBrandColors = brandColors.filter(
-    (color) => color.role === "brand"
+    (color) => color.role === "brand",
   );
-  
-  // Fallback: if no colors with "brand" role, use all brand colors
+
   if (filteredBrandColors.length === 0) {
-    console.log("No colors with 'brand' role found, using all brand colors as fallback");
+    console.log(
+      "No colors with 'brand' role found, using all brand colors as fallback",
+    );
     filteredBrandColors = brandColors;
   }
-  
+
   console.log("Filtered brand colors:", filteredBrandColors);
 
   // brandFonts is already processed above
@@ -633,14 +632,14 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   useEffect(() => {
     if (currentScale?.individualHeaderStyles) {
       setActiveHeaderCustomizations(
-        new Set(Object.keys(currentScale.individualHeaderStyles))
+        new Set(Object.keys(currentScale.individualHeaderStyles)),
       );
     } else {
       setActiveHeaderCustomizations(new Set());
     }
     if (currentScale?.individualBodyStyles) {
       setActiveBodyCustomizations(
-        new Set(Object.keys(currentScale.individualBodyStyles))
+        new Set(Object.keys(currentScale.individualBodyStyles)),
       );
     } else {
       setActiveBodyCustomizations(new Set());
@@ -703,7 +702,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
           errorData = { error: errorText };
         }
         throw new Error(
-          `Failed to save type scale: ${errorData.error || errorText}`
+          `Failed to save type scale: ${errorData.error || errorText}`,
         );
       }
 
@@ -777,7 +776,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const updateIndividualHeaderStyle = (
     headerLevel: string,
-    styleUpdates: Partial<IndividualHeaderStyle>
+    styleUpdates: Partial<IndividualHeaderStyle>,
   ) => {
     const currentIndividualStyles = activeScale.individualHeaderStyles || {};
     const updatedStyles = {
@@ -794,7 +793,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const resetIndividualHeaderStyle = (
     headerLevel: string,
-    property: keyof IndividualHeaderStyle
+    property: keyof IndividualHeaderStyle,
   ) => {
     const currentIndividualStyles = activeScale.individualHeaderStyles || {};
     const headerStyle =
@@ -815,7 +814,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const updateIndividualBodyStyle = (
     bodyLevel: string,
-    styleUpdates: Partial<IndividualBodyStyle>
+    styleUpdates: Partial<IndividualBodyStyle>,
   ) => {
     const currentIndividualStyles = activeScale.individualBodyStyles || {};
     const updatedStyles = {
@@ -833,7 +832,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const resetIndividualBodyStyle = (
     bodyLevel: string,
-    property: keyof IndividualBodyStyle
+    property: keyof IndividualBodyStyle,
   ) => {
     const currentIndividualStyles = activeScale.individualBodyStyles || {};
     const bodyStyle =
@@ -1084,7 +1083,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                           <SelectItem key={weight.value} value={weight.value}>
                             {weight.label}
                           </SelectItem>
-                        )
+                        ),
                       )}
                     </SelectContent>
                   </Select>
@@ -1140,7 +1139,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               | "none"
                               | "uppercase"
                               | "lowercase"
-                              | "capitalize"
+                              | "capitalize",
                           ) => updateScale({ bodyTextTransform: value })}
                         >
                           <SelectTrigger>
@@ -1162,7 +1161,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <Select
                           value={activeScale.bodyFontStyle || "normal"}
                           onValueChange={(
-                            value: "normal" | "italic" | "oblique"
+                            value: "normal" | "italic" | "oblique",
                           ) => updateScale({ bodyFontStyle: value })}
                         >
                           <SelectTrigger>
@@ -1187,7 +1186,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               | "none"
                               | "underline"
                               | "overline"
-                              | "line-through"
+                              | "line-through",
                           ) => updateScale({ bodyTextDecoration: value })}
                         >
                           <SelectTrigger>
@@ -1284,7 +1283,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 onClick={() =>
                                   resetIndividualBodyStyle(
                                     bodyLevel,
-                                    "fontFamily"
+                                    "fontFamily",
                                   )
                                 }
                                 className="text-xs h-6 px-2"
@@ -1346,7 +1345,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 onClick={() =>
                                   resetIndividualBodyStyle(
                                     bodyLevel,
-                                    "fontWeight"
+                                    "fontWeight",
                                   )
                                 }
                                 className="text-xs h-6 px-2"
@@ -1371,7 +1370,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                             <SelectContent>
                               {getAvailableFontWeights(
                                 bodyStyle?.fontFamily ||
-                                  activeScale.bodyFontFamily
+                                  activeScale.bodyFontFamily,
                               ).map((weight: FontWeight) => (
                                 <SelectItem
                                   key={weight.value}
@@ -1396,7 +1395,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 onClick={() =>
                                   resetIndividualBodyStyle(
                                     bodyLevel,
-                                    "fontSize"
+                                    "fontSize",
                                   )
                                 }
                                 className="text-xs h-6 px-2"
@@ -1413,7 +1412,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                             value={
                               bodyStyle?.fontSize
                                 ? parseFloat(
-                                    bodyStyle.fontSize.replace("px", "")
+                                    bodyStyle.fontSize.replace("px", ""),
                                   )
                                 : ""
                             }
@@ -1513,7 +1512,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualBodyStyle(
                                           bodyLevel,
-                                          "letterSpacing"
+                                          "letterSpacing",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -1555,7 +1554,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualBodyStyle(
                                           bodyLevel,
-                                          "textTransform"
+                                          "textTransform",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -1571,7 +1570,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       | "none"
                                       | "uppercase"
                                       | "lowercase"
-                                      | "capitalize"
+                                      | "capitalize",
                                   ) =>
                                     updateIndividualBodyStyle(bodyLevel, {
                                       textTransform: value,
@@ -1608,7 +1607,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualBodyStyle(
                                           bodyLevel,
-                                          "fontStyle"
+                                          "fontStyle",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -1620,7 +1619,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 <Select
                                   value={bodyStyle?.fontStyle || ""}
                                   onValueChange={(
-                                    value: "normal" | "italic" | "oblique"
+                                    value: "normal" | "italic" | "oblique",
                                   ) =>
                                     updateIndividualBodyStyle(bodyLevel, {
                                       fontStyle: value,
@@ -1658,7 +1657,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualBodyStyle(
                                           bodyLevel,
-                                          "textDecoration"
+                                          "textDecoration",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -1674,7 +1673,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       | "none"
                                       | "underline"
                                       | "overline"
-                                      | "line-through"
+                                      | "line-through",
                                   ) =>
                                     updateIndividualBodyStyle(bodyLevel, {
                                       textDecoration: value,
@@ -1759,7 +1758,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     </SelectTrigger>
                     <SelectContent>
                       {getAvailableFontWeights(
-                        activeScale.headerFontFamily
+                        activeScale.headerFontFamily,
                       ).map((weight: FontWeight) => (
                         <SelectItem key={weight.value} value={weight.value}>
                           {weight.label}
@@ -1819,7 +1818,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               | "none"
                               | "uppercase"
                               | "lowercase"
-                              | "capitalize"
+                              | "capitalize",
                           ) => updateScale({ headerTextTransform: value })}
                         >
                           <SelectTrigger>
@@ -1841,7 +1840,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                         <Select
                           value={activeScale.headerFontStyle || "normal"}
                           onValueChange={(
-                            value: "normal" | "italic" | "oblique"
+                            value: "normal" | "italic" | "oblique",
                           ) => updateScale({ headerFontStyle: value })}
                         >
                           <SelectTrigger>
@@ -1866,7 +1865,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               | "none"
                               | "underline"
                               | "overline"
-                              | "line-through"
+                              | "line-through",
                           ) => updateScale({ headerTextDecoration: value })}
                         >
                           <SelectTrigger>
@@ -1953,7 +1952,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 onClick={() =>
                                   resetIndividualHeaderStyle(
                                     headerLevel,
-                                    "fontFamily"
+                                    "fontFamily",
                                   )
                                 }
                                 className="text-xs h-6 px-2"
@@ -2016,7 +2015,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 onClick={() =>
                                   resetIndividualHeaderStyle(
                                     headerLevel,
-                                    "fontWeight"
+                                    "fontWeight",
                                   )
                                 }
                                 className="text-xs h-6 px-2"
@@ -2041,7 +2040,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                             <SelectContent>
                               {getAvailableFontWeights(
                                 headerStyle?.fontFamily ||
-                                  activeScale.headerFontFamily
+                                  activeScale.headerFontFamily,
                               ).map((weight: FontWeight) => (
                                 <SelectItem
                                   key={weight.value}
@@ -2066,7 +2065,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 onClick={() =>
                                   resetIndividualHeaderStyle(
                                     headerLevel,
-                                    "fontSize"
+                                    "fontSize",
                                   )
                                 }
                                 className="text-xs h-6 px-2"
@@ -2083,7 +2082,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                             value={
                               headerStyle?.fontSize
                                 ? parseFloat(
-                                    headerStyle.fontSize.replace("px", "")
+                                    headerStyle.fontSize.replace("px", ""),
                                   )
                                 : ""
                             }
@@ -2096,7 +2095,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               } else {
                                 resetIndividualHeaderStyle(
                                   headerLevel,
-                                  "fontSize"
+                                  "fontSize",
                                 );
                               }
                             }}
@@ -2147,7 +2146,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 onClick={() =>
                                   resetIndividualHeaderStyle(
                                     headerLevel,
-                                    "color"
+                                    "color",
                                   )
                                 }
                                 className="text-xs h-6 px-2"
@@ -2196,7 +2195,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualHeaderStyle(
                                           headerLevel,
-                                          "letterSpacing"
+                                          "letterSpacing",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -2238,7 +2237,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualHeaderStyle(
                                           headerLevel,
-                                          "textTransform"
+                                          "textTransform",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -2254,7 +2253,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       | "none"
                                       | "uppercase"
                                       | "lowercase"
-                                      | "capitalize"
+                                      | "capitalize",
                                   ) =>
                                     updateIndividualHeaderStyle(headerLevel, {
                                       textTransform: value,
@@ -2291,7 +2290,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualHeaderStyle(
                                           headerLevel,
-                                          "fontStyle"
+                                          "fontStyle",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -2303,7 +2302,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                 <Select
                                   value={headerStyle?.fontStyle || ""}
                                   onValueChange={(
-                                    value: "normal" | "italic" | "oblique"
+                                    value: "normal" | "italic" | "oblique",
                                   ) =>
                                     updateIndividualHeaderStyle(headerLevel, {
                                       fontStyle: value,
@@ -2341,7 +2340,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       onClick={() =>
                                         resetIndividualHeaderStyle(
                                           headerLevel,
-                                          "textDecoration"
+                                          "textDecoration",
                                         )
                                       }
                                       className="text-xs h-6 px-2"
@@ -2357,7 +2356,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                                       | "none"
                                       | "underline"
                                       | "overline"
-                                      | "line-through"
+                                      | "line-through",
                                   ) =>
                                     updateIndividualHeaderStyle(headerLevel, {
                                       textDecoration: value,
