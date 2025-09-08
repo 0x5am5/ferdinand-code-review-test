@@ -991,6 +991,83 @@ export function registerAssetRoutes(app: Express) {
     }
   );
 
+  // New optimized asset serving endpoints for better caching
+  app.get(
+    "/api/assets/:assetId/light",
+    async (req: RequestWithClientId, res: Response) => {
+      // Redirect to the main file endpoint with proper query parameters
+      const assetId = req.params.assetId;
+      const queryParams = new URLSearchParams();
+      
+      // Forward any additional query parameters from the original request
+      for (const [key, value] of Object.entries(req.query)) {
+        if (typeof value === 'string') {
+          queryParams.set(key, value);
+        }
+      }
+      
+      const queryString = queryParams.toString();
+      const redirectUrl = `/api/assets/${assetId}/file${queryString ? `?${queryString}` : ''}`;
+      
+      // Use internal redirect to the existing file handler
+      req.url = redirectUrl;
+      req.path = `/api/assets/${assetId}/file`;
+      
+      // Call the existing file handler
+      return app._router.handle(req, res, () => {
+        res.status(404).json({ message: "Asset not found" });
+      });
+    }
+  );
+
+  app.get(
+    "/api/assets/:assetId/dark",
+    async (req: RequestWithClientId, res: Response) => {
+      // Redirect to the main file endpoint with dark variant
+      const assetId = req.params.assetId;
+      const queryParams = new URLSearchParams();
+      
+      // Set variant to dark
+      queryParams.set('variant', 'dark');
+      
+      // Forward any additional query parameters from the original request
+      for (const [key, value] of Object.entries(req.query)) {
+        if (typeof value === 'string' && key !== 'variant') {
+          queryParams.set(key, value);
+        }
+      }
+      
+      const queryString = queryParams.toString();
+      const redirectUrl = `/api/assets/${assetId}/file?${queryString}`;
+      
+      // Use internal redirect to the existing file handler
+      req.url = redirectUrl;
+      req.path = `/api/assets/${assetId}/file`;
+      req.query = { ...req.query, variant: 'dark' };
+      
+      // Call the existing file handler
+      return app._router.handle(req, res, () => {
+        res.status(404).json({ message: "Asset not found" });
+      });
+    }
+  );
+
+  // New optimized asset serving endpoints for better caching
+  app.get("/api/assets/:assetId/light", (req, res, next) => {
+    // Forward to the existing file handler without variant
+    req.url = `/api/assets/${req.params.assetId}/file`;
+    req.path = `/api/assets/${req.params.assetId}/file`;
+    next();
+  });
+
+  app.get("/api/assets/:assetId/dark", (req, res, next) => {
+    // Forward to the existing file handler with dark variant
+    req.url = `/api/assets/${req.params.assetId}/file`;
+    req.path = `/api/assets/${req.params.assetId}/file`;
+    req.query = { ...req.query, variant: 'dark' };
+    next();
+  });
+
   // Serve asset endpoint
   app.get(
     "/api/assets/:assetId/file",
