@@ -84,13 +84,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChangeEvent as EventListener
+      handleTabChangeEvent as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChangeEvent as EventListener
+        handleTabChangeEvent as EventListener,
       );
     };
   }, []);
@@ -110,7 +110,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     } catch (error: unknown) {
       console.error(
         "Logout error:",
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : "Unknown error",
       );
     }
   };
@@ -207,7 +207,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error"
+                e instanceof Error ? e.message : "Unknown error",
               );
               return false;
             }
@@ -223,7 +223,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error"
+                e instanceof Error ? e.message : "Unknown error",
               );
               return false;
             }
@@ -245,7 +245,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                     // On error, revert to the client name as fallback
                     e.currentTarget.insertAdjacentHTML(
                       "afterend",
-                      `<h2 class="font-bold">${clientName}</h2>`
+                      `<h2 class="font-bold">${clientName}</h2>`,
                     );
                   }}
                 />
@@ -277,35 +277,25 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       </div>
 
       {showSearch ? (
-        <div className="flex-1 flex flex-col">
-          <div className="mb-2 px-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center text-muted-foreground gap-1"
-              onClick={closeSearch}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </Button>
-          </div>
-          <SpotlightSearch className="flex-1" onClose={closeSearch} />
-        </div>
+        <SpotlightSearch className="flex-1" onClose={closeSearch} />
       ) : (
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
-            {(user?.role === UserRole.SUPER_ADMIN || user?.role === UserRole.ADMIN) && allClients && allClients.length > 1 && (
-              <div className="mb-3">
-                <Button
-                  variant="ghost"
-                  className="flex items-center text-muted-foreground gap-1 w-full justify-start"
-                  onClick={handleAllBrands}
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>All Brands</span>
-                </Button>
-              </div>
-            )}
+            {(user?.role === UserRole.SUPER_ADMIN ||
+              user?.role === UserRole.ADMIN) &&
+              allClients &&
+              allClients.length > 1 && (
+                <div className="mb-3">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center text-muted-foreground gap-1 w-full justify-start"
+                    onClick={handleAllBrands}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>All Brands</span>
+                  </Button>
+                </div>
+              )}
           </div>
 
           <Separator className="mb-2" />
