@@ -459,8 +459,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
           percentage?: number;
         }[] = [];
 
-        console.log("Parsing color asset:", colorData);
-
         // Add tints (lighter variations)
         if (colorData.tints && Array.isArray(colorData.tints)) {
           colorData.tints.forEach(
@@ -534,20 +532,10 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     })
     .filter(Boolean);
 
-  // Filter brand colors to only include those with a role of "brand"
-  // If no colors have the "brand" role, fall back to showing all brand colors
-  let filteredBrandColors = brandColors.filter(
-    (color) => color.role === "brand",
+  // Filter to show only brand colors (category = "brand")
+  const filteredBrandColors = brandColors.filter(
+    (color) => color.category === "brand",
   );
-
-  if (filteredBrandColors.length === 0) {
-    console.log(
-      "No colors with 'brand' role found, using all brand colors as fallback",
-    );
-    filteredBrandColors = brandColors;
-  }
-
-  console.log("Filtered brand colors:", filteredBrandColors);
 
   // brandFonts is already processed above
 
@@ -681,10 +669,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         headerColor: data.headerColor || "#000000",
       };
 
-      console.log("Saving type scale with data:", transformedData);
-      console.log("Current activeScale state:", activeScale);
-      console.log("Current currentScale state:", currentScale);
-
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -707,7 +691,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       }
 
       const result = await response.json();
-      console.log("Save response:", result);
       return result;
     },
     onSuccess: (data) => {
@@ -735,7 +718,6 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     const newScale = currentScale
       ? { ...currentScale, ...updates }
       : { ...activeScale, ...updates };
-    console.log("Updating scale with:", updates, "New scale:", newScale);
     setCurrentScale(newScale);
     setIsEditing(true);
   };
