@@ -532,6 +532,11 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     })
     .filter(Boolean);
 
+  // Filter brand colors to only include those with a role of "brand"
+  const filteredBrandColors = brandColors.filter(
+    (color) => color.role === "brand"
+  );
+
   // brandFonts is already processed above
 
   // Get available font weights from brand fonts
@@ -1079,7 +1084,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     value={activeScale.bodyColor || "#000000"}
                     onChange={(color) => updateScale({ bodyColor: color })}
                     placeholder="#000000"
-                    brandColors={brandColors}
+                    brandColors={filteredBrandColors}
                   />
                 </div>
 
@@ -1468,7 +1473,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               updateIndividualBodyStyle(bodyLevel, { color })
                             }
                             placeholder={`Inherits: ${activeScale.bodyColor || "#000000"}`}
-                            brandColors={brandColors}
+                            brandColors={filteredBrandColors}
                           />
                         </div>
 
@@ -1758,7 +1763,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                     value={activeScale.headerColor || "#000000"}
                     onChange={(color) => updateScale({ headerColor: color })}
                     placeholder="#000000"
-                    brandColors={brandColors}
+                    brandColors={filteredBrandColors}
                   />
                 </div>
 
@@ -2151,7 +2156,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                               })
                             }
                             placeholder={`Inherits: ${activeScale.headerColor || "#000000"}`}
-                            brandColors={brandColors}
+                            brandColors={filteredBrandColors}
                           />
                         </div>
 
