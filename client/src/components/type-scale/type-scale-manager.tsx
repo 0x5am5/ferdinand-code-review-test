@@ -394,7 +394,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const headerLetterSpacingId = useId();
 
   const { data: typeScales = [], isLoading } = useQuery({
-    queryKey: ["/api/clients", clientId, "type-scales"],
+    queryKey: [`/api/clients/${clientId}/type-scales`],
     queryFn: async () => {
       const response = await fetch(`/api/clients/${clientId}/type-scales`, {
         credentials: "include",
@@ -406,7 +406,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Fetch brand fonts for this client from brand assets
   const { data: brandAssets = [] } = useQuery({
-    queryKey: ["/api/clients", clientId, "assets"],
+    queryKey: [`/api/clients/${clientId}/assets`],
     queryFn: async () => {
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         credentials: "include",
@@ -701,7 +701,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
       setCurrentScale(data);
       setIsEditing(false);
       queryClient.invalidateQueries({
-        queryKey: ["/api/clients", clientId, "type-scales"],
+        queryKey: [`/api/clients/${clientId}/type-scales`],
       });
     },
     onError: (error: Error) => {
