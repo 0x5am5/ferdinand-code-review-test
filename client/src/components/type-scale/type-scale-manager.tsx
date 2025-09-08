@@ -532,10 +532,23 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     })
     .filter(Boolean);
 
+  // Debug brand colors structure
+  console.log("All brand colors:", brandColors);
+  console.log("Brand colors with roles:", brandColors.map(c => ({ name: c.name, role: c.role, category: c.category })));
+
   // Filter brand colors to only include those with a role of "brand"
-  const filteredBrandColors = brandColors.filter(
+  // If no colors have the "brand" role, fall back to showing all brand colors
+  let filteredBrandColors = brandColors.filter(
     (color) => color.role === "brand"
   );
+  
+  // Fallback: if no colors with "brand" role, use all brand colors
+  if (filteredBrandColors.length === 0) {
+    console.log("No colors with 'brand' role found, using all brand colors as fallback");
+    filteredBrandColors = brandColors;
+  }
+  
+  console.log("Filtered brand colors:", filteredBrandColors);
 
   // brandFonts is already processed above
 
