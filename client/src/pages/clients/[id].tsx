@@ -180,7 +180,6 @@ export default function ClientDetails() {
   let primaryColor: string | undefined;
   try {
     if (colorAssets && colorAssets.length > 0) {
-      // Find a color asset with 'primary' in its name
       const primaryColorAsset = colorAssets.find((asset: BrandAsset) => {
         if (!asset || !asset.data) return false;
         return asset.data.category === "brand";
