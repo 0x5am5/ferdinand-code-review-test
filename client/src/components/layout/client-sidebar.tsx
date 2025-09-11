@@ -1,24 +1,35 @@
-import React, { FC, useState, useEffect } from "react";
-import { Link, useLocation } from "wouter";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import type { BrandAsset } from "@shared/schema";
+import { UserRole } from "@shared/schema";
 import {
-  BuildingIcon,
-  PaletteIcon,
-  UsersIcon,
-  BookText,
-  Image,
   ArrowLeft,
-  Search,
-  LayoutDashboard,
+  BookText,
+  BuildingIcon,
+  ChevronDown,
+  CircleUserIcon,
   Figma,
+  Image,
+  LayoutDashboard,
+  LogOutIcon,
+  PaletteIcon,
+  Search,
+  Users,
+  UsersIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { type FC, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
-import { useSpotlight } from "@/hooks/use-spotlight";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useClientAssetsById } from "@/lib/queries/clients";
-import { BrandAsset } from "@shared/schema";
-import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useSpotlight } from "@/hooks/use-spotlight";
+import { useClientAssetsById, useClientsQuery } from "@/lib/queries/clients";
 
 interface ClientSidebarProps {
   clientId: number;
@@ -44,25 +55,29 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 }) => {
   const [, setLocation] = useLocation();
   const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
+  const { user, logout } = useAuth();
   const {
     isOpen: showSearch,
     open: openSearch,
     close: closeSearch,
   } = useSpotlight();
-  
+
   // Fetch logos for this client
   const { data: clientAssets = [] } = useClientAssetsById(clientId);
-  const logoAssets = clientAssets.filter(asset => asset.category === "logo");
-  
+
+  const logoAssets = clientAssets.filter((asset) => asset.category === "logo");
+
+  const { data: allClients, isLoading: clientsIsLoading } = useClientsQuery();
+
   // Keep internal state synced with prop
   useEffect(() => {
     setInternalActiveTab(activeTab);
   }, [activeTab]);
-  
+
   // Listen for tab changes from the dashboard or other components
   useEffect(() => {
     const handleTabChangeEvent = (e: CustomEvent) => {
-      if (e.detail && e.detail.tab) {
+      if (e.detail?.tab) {
         console.log("Sidebar received tab change event:", e.detail.tab);
         setInternalActiveTab(e.detail.tab);
       }
@@ -70,19 +85,35 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChangeEvent as EventListener,
+      handleTabChangeEvent as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChangeEvent as EventListener,
+        handleTabChangeEvent as EventListener
       );
     };
   }, []);
 
   const handleAllBrands = () => {
-    setLocation("/dashboard");
+    const currentUrl = new URL(window.location.href);
+    const currentTab = currentUrl.searchParams.get("tab");
+    const dashboardUrl = currentTab
+      ? `/dashboard?tab=${currentTab}`
+      : "/dashboard";
+    setLocation(dashboardUrl);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error: unknown) {
+      console.error(
+        "Logout error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
   };
 
   const tabs = [
@@ -91,6 +122,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       title: "Dashboard",
       icon: <LayoutDashboard className="h-4 w-4" />,
       enabled: true, // Dashboard is always enabled
+    },
+    {
+      id: "users",
+      title: "Users",
+      icon: <Users className="h-4 w-4" />,
+      enabled:
+        user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN,
     },
     {
       id: "logos",
@@ -132,8 +170,6 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
   const enabledTabs = tabs.filter((tab) => tab.enabled);
 
-
-
   // Handle tab change and dispatch custom event for client page
   const handleTabChange = (tabId: string) => {
     // Call the parent's callback
@@ -145,11 +181,18 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     });
     window.dispatchEvent(event);
 
+    const currentUrl =
+      tabId === "users"
+        ? window.location.href
+        : window.location.href.split("/users")[0];
+
     // Update URL without page reload
-    const url = new URL(window.location.href);
+    const url = new URL(currentUrl);
     url.searchParams.set("tab", tabId);
     window.history.replaceState({}, "", url.toString());
   };
+
+  const currentClient = allClients?.find((client) => client.id === clientId);
 
   return (
     <aside className="w-64 border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
@@ -159,39 +202,54 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
           // First try to find a main logo, then fall back to horizontal logo
           const mainLogo = logoAssets.find((logo: BrandAsset) => {
             try {
-              const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+              const data =
+                typeof logo.data === "string"
+                  ? JSON.parse(logo.data)
+                  : logo.data;
               return data?.type === "main";
-            } catch (e) {
-              console.error("Error parsing logo data:", e);
+            } catch (e: unknown) {
+              console.error(
+                "Error parsing logo data:",
+                e instanceof Error ? e.message : "Unknown error"
+              );
               return false;
             }
           });
-          
+
           const horizontalLogo = logoAssets.find((logo: BrandAsset) => {
             try {
-              const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+              const data =
+                typeof logo.data === "string"
+                  ? JSON.parse(logo.data)
+                  : logo.data;
               return data?.type === "horizontal";
-            } catch (e) {
-              console.error("Error parsing logo data:", e);
+            } catch (e: unknown) {
+              console.error(
+                "Error parsing logo data:",
+                e instanceof Error ? e.message : "Unknown error"
+              );
               return false;
             }
           });
-          
+
           // Use main logo if available, otherwise try horizontal
           const logoToUse = mainLogo || horizontalLogo;
 
           // If we found a usable logo, display it
-          if (logoToUse && logoToUse.id) {
+          if (logoToUse?.id) {
+            const imageUrl = `/api/assets/${logoToUse.id}/file?t=${logoToUse.updatedAt}`;
+
             return (
               <div className="w-[90%]">
                 <img
-                  src={`/api/assets/${logoToUse.id}/file`}
+                  src={imageUrl}
                   alt={clientName}
                   className="h-full w-auto object-contain"
                   onError={(e) => {
-                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.style.display = "none";
                     // On error, revert to the client name as fallback
-                    e.currentTarget.insertAdjacentHTML('afterend', 
+                    e.currentTarget.insertAdjacentHTML(
+                      "afterend",
                       `<h2 class="font-bold">${clientName}</h2>`
                     );
                   }}
@@ -224,33 +282,25 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       </div>
 
       {showSearch ? (
-        <div className="flex-1 flex flex-col">
-          <div className="mb-2 px-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center text-muted-foreground gap-1"
-              onClick={closeSearch}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </Button>
-          </div>
-          <SpotlightSearch className="flex-1" onClose={closeSearch} />
-        </div>
+        <SpotlightSearch className="flex-1" onClose={closeSearch} />
       ) : (
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
-            <div className="mb-3">
-              <Button
-                variant="ghost"
-                className="flex items-center text-muted-foreground gap-1 w-full justify-start"
-                onClick={handleAllBrands}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>All Brands</span>
-              </Button>
-            </div>
+            {(user?.role === UserRole.SUPER_ADMIN ||
+              user?.role === UserRole.ADMIN) &&
+              allClients &&
+              allClients.length > 1 && (
+                <div className="mb-3">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center text-muted-foreground gap-1 w-full justify-start"
+                    onClick={handleAllBrands}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    <span>All Brands</span>
+                  </Button>
+                </div>
+              )}
           </div>
 
           <Separator className="mb-2" />
@@ -290,8 +340,44 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
           <p className="mb-1">Brand last edited:</p>
-          <p className="mb-0">May 2, 2025</p>
+          <p className="mb-0">
+            {currentClient?.updatedAt
+              ? new Date(currentClient.updatedAt).toLocaleDateString("en-US", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : ""}
+          </p>
         </div>
+      </div>
+
+      <div className="border-t p-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 px-3 py-3"
+            >
+              <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
+              <div className="flex-1 min-w-0 text-left">
+                <p className="text-sm m-0 font-medium truncate">
+                  {user?.name || "User"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate m-0">
+                  {user?.email || "Unknown"}
+                </p>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 data-[state=open]:rotate-180" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56" side="top">
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOutIcon className="h-4 w-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   );

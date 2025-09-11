@@ -1,4 +1,12 @@
-import React, { createContext, useState, useCallback, useEffect, useMemo, useContext } from 'react';
+import type React from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 interface SpotlightContextType {
   isOpen: boolean;
@@ -21,19 +29,19 @@ export function SpotlightProvider({ children }: { children: React.ReactNode }) {
   // Add keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+      if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault();
         toggle();
-      } else if (event.key === 'Escape' && isOpen) {
+      } else if (event.key === "Escape" && isOpen) {
         event.preventDefault();
         close();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    
+    window.addEventListener("keydown", handleKeyDown);
+
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [close, isOpen, toggle]);
 
@@ -51,10 +59,10 @@ export function SpotlightProvider({ children }: { children: React.ReactNode }) {
 
 export function useSpotlight() {
   const context = useContext(SpotlightContext);
-  
+
   if (context === undefined) {
-    throw new Error('useSpotlight must be used within a SpotlightProvider');
+    throw new Error("useSpotlight must be used within a SpotlightProvider");
   }
-  
+
   return context;
 }

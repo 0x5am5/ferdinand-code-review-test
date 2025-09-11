@@ -1,13 +1,16 @@
 import type { Express } from "express";
-import { storage } from "../storage";
 import { auth as firebaseAuth } from "../firebase";
+import { storage } from "../storage";
 
 export function registerAuthRoutes(app: Express) {
   // Logout endpoint
   app.post("/api/auth/logout", (req, res) => {
     req.session.destroy((err) => {
       if (err) {
-        console.error("Error destroying session:", err);
+        console.error(
+          "Error destroying session:",
+          err instanceof Error ? err.message : "Unknown error"
+        );
         return res.status(500).json({ message: "Logout failed" });
       }
       res.json({ message: "Logged out successfully" });
@@ -47,8 +50,11 @@ export function registerAuthRoutes(app: Express) {
           // await firebaseAuth.deleteUser(decodedToken.uid);
           console.log(`Deleted Firebase user with UID: ${decodedToken.uid}`);
           return res.status(403).json({ message: "User not authorized" });
-        } catch (error) {
-          console.error("Error deleting Firebase user:", error);
+        } catch (error: unknown) {
+          console.error(
+            "Error deleting Firebase user:",
+            error instanceof Error ? error.message : "Unknown error"
+          );
           return res
             .status(500)
             .json({ message: "Failed to delete unauthorized user" });
@@ -67,20 +73,33 @@ export function registerAuthRoutes(app: Express) {
       req.session.userId = user.id;
 
       console.log(req.session, user.id);
-      
+
       await new Promise((resolve, reject) => {
         req.session.save((err) => {
           if (err) {
-            console.error("Error saving session:", err);
+            console.error(
+              "Error saving session:",
+              err instanceof Error ? err.message : "Unknown error"
+            );
             reject(err);
           } else resolve(undefined);
         });
       });
 
       console.log("Authentication successful, sending user data");
-      return res.json(user);
-    } catch (error) {
-      console.error("Auth error:", error);
+
+      // Get user's assigned clients to determine redirect
+      const userClients = await storage.getUserClients(user.id);
+
+      return res.json({
+        ...user,
+        assignedClients: userClients,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "Auth error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       return res.status(401).json({
         message: "Authentication failed",
         error: error instanceof Error ? error.message : "Unknown error",

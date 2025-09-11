@@ -1,11 +1,20 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Client, insertClientSchema } from "@shared/schema";
-import { 
-  Card, CardContent, CardHeader, 
-  CardTitle, CardDescription 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  type Client,
+  type InsertClient,
+  insertClientSchema,
+} from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +22,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Form,
   FormControl,
@@ -25,15 +32,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function Instances() {
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
-  
+
   const { toast } = useToast();
   const form = useForm({
     resolver: zodResolver(insertClientSchema),
@@ -42,9 +48,9 @@ export default function Instances() {
       description: "",
     },
   });
-  
+
   const createClient = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: InsertClient) => {
       await apiRequest("POST", "/api/clients", data);
     },
     onSuccess: () => {
@@ -61,7 +67,7 @@ export default function Instances() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold">Client Instances</h1>
-        
+
         <Dialog>
           <DialogTrigger asChild>
             <Button>
@@ -73,10 +79,12 @@ export default function Instances() {
             <DialogHeader>
               <DialogTitle>Create Client Instance</DialogTitle>
             </DialogHeader>
-            
+
             <Form {...form}>
-              <form 
-                onSubmit={form.handleSubmit((data) => createClient.mutate(data))} 
+              <form
+                onSubmit={form.handleSubmit((data) =>
+                  createClient.mutate(data)
+                )}
                 className="space-y-4"
               >
                 <FormField
@@ -92,7 +100,7 @@ export default function Instances() {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="description"
@@ -100,15 +108,15 @@ export default function Instances() {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea {...field} />
+                        <Textarea {...field} value={field.value ?? ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                <Button 
-                  type="submit" 
+
+                <Button
+                  type="submit"
                   className="w-full"
                   disabled={createClient.isPending}
                 >
@@ -119,7 +127,7 @@ export default function Instances() {
           </DialogContent>
         </Dialog>
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {clients?.map((client) => (
           <Card key={client.id}>
@@ -129,7 +137,10 @@ export default function Instances() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground">
-                Created {client.createdAt ? new Date(client.createdAt).toLocaleDateString() : 'N/A'}
+                Created{" "}
+                {client.createdAt
+                  ? new Date(client.createdAt).toLocaleDateString()
+                  : "N/A"}
               </p>
             </CardContent>
           </Card>

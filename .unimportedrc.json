@@ -1,0 +1,7 @@
+{
+  "entry": ["server/index.ts"],
+  "extensions": [".ts", ".tsx", ".js", ".jsx"],
+  "ignorePatterns": ["**/node_modules/**", "**/dist/**", "**/build/**"],
+  "ignoreUnresolved": ["@biomejs/biome"],
+  "ignoreUnimported": ["vite.config.ts", "postcss.config.js", "tailwind.config.ts"]
+}

@@ -1,31 +1,46 @@
-import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { QueryClient, type QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    let errorMessage = `HTTP ${res.status}`;
     try {
-      const errorData = await res.json();
+      // Clone the response so we can read it multiple times if needed
+      const responseClone = res.clone();
+      const errorData = await responseClone.json();
+      
       // Check if it's our standardized error format
-      if (errorData.error && errorData.error.message) {
-        throw new Error(errorData.error.message);
+      if (errorData.error?.message) {
+        errorMessage = errorData.error.message;
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else {
+        errorMessage = JSON.stringify(errorData) || errorMessage;
       }
-      // Fallback for other error formats
-      if (errorData.message) {
-        throw new Error(errorData.message);
+    } catch (jsonError: unknown) {
+      console.error(
+        "Error parsing JSON:",
+        jsonError instanceof Error ? jsonError.message : "Unknown error"
+      );
+      try {
+        // If JSON parsing fails, try to read as text using the original response
+        const text = await res.text();
+        errorMessage = text || res.statusText || errorMessage;
+      } catch (textError: unknown) {
+        console.error(
+          "Error reading response text:",
+          textError instanceof Error ? textError.message : "Unknown error"
+        );
+        // Keep the HTTP status message as fallback
       }
-      // Final fallback
-      throw new Error(errorData.toString());
-    } catch (parseError) {
-      // If JSON parsing fails, fall back to text
-      const text = await res.text() || res.statusText;
-      throw new Error(`${res.status}: ${text}`);
     }
+    throw new Error(errorMessage);
   }
 }
 
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown | undefined
 ): Promise<Response> {
   const res = await fetch(url, {
     method,
@@ -62,7 +77,7 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes instead of Infinity
+      staleTime: 0, // Data becomes stale immediately, allowing invalidateQueries to work properly
       retry: false,
     },
     mutations: {

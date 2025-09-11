@@ -1,31 +1,31 @@
-import React, { FC, useState, useEffect } from "react";
+import { type Client, type FeatureToggles, UserRole } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+import {
+  BuildingIcon,
+  ChevronDown,
+  CircleUserIcon,
+  HomeIcon,
+  LogOutIcon,
+  PaletteIcon,
+  Search,
+  UsersIcon,
+} from "lucide-react";
+import type React from "react";
+import { type FC, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { SpotlightSearch } from "@/components/search/spotlight-search";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  CircleUserIcon,
-  HomeIcon,
-  BuildingIcon,
-  UsersIcon,
-  PaletteIcon,
-  LogOutIcon,
-  ChevronDown,
-  Search,
-  ArrowLeft,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useTheme } from "@/contexts/ThemeContext";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
-import { SpotlightSearch } from "@/components/search/spotlight-search";
-import { UserRole } from "@shared/schema";
-import { ClientSidebar } from "./client-sidebar";
 import { useClientsQuery } from "@/lib/queries/clients";
+import { ClientSidebar } from "./client-sidebar";
 
 interface NavItem {
   title: string;
@@ -39,8 +39,7 @@ interface NavItem {
 export const Sidebar: FC = () => {
   const [location] = useLocation();
   const params = useParams();
-  const themeContext = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const {
     isOpen: showSearch,
     open: openSearch,
@@ -63,25 +62,25 @@ export const Sidebar: FC = () => {
         setActiveTab("dashboard"); // Default to dashboard if no tab parameter
       }
     }
-  }, [location, isClientDetailPage]);
+  }, [isClientDetailPage]);
 
   // Listen for tab change events from the client detail page
   useEffect(() => {
     const handleTabChange = (e: CustomEvent) => {
-      if (e.detail && e.detail.tab) {
+      if (e.detail?.tab) {
         setActiveTab(e.detail.tab);
       }
     };
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChange as EventListener,
+      handleTabChange as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChange as EventListener,
+        handleTabChange as EventListener
       );
     };
   }, []);
@@ -92,20 +91,27 @@ export const Sidebar: FC = () => {
   }
 
   // Fetch client data if we're on a client page
-  const { data: clients = [] } = useClientsQuery();
+  // For super_admins, use the admin clients query
+  // For other users, use their assigned clients
+  const { data: adminClients = [] } = useClientsQuery();
+  const { data: userClients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/user/clients"],
+    queryFn: async () => {
+      const response = await fetch("/api/user/clients");
+      if (!response.ok) {
+        throw new Error("Failed to fetch user clients");
+      }
+      return response.json();
+    },
+    enabled: !!user && user.role !== UserRole.SUPER_ADMIN,
+  });
+
+  // Use appropriate client list based on user role
+  const clients =
+    user?.role === UserRole.SUPER_ADMIN ? adminClients : userClients;
   const currentClient = clients.length
     ? clients.find((client) => client.id === clientId)
     : null;
-  console.log(
-    "Client ID:",
-    clientId,
-    "Found client?",
-    !!currentClient,
-    "Total clients:",
-    clients.length,
-  );
-
-  const { logout } = useAuth();
 
   // Default feature toggles
   const defaultFeatureToggles = {
@@ -116,24 +122,30 @@ export const Sidebar: FC = () => {
     inspiration: true,
   };
 
+  // Check if admin has multiple clients to determine nav items
+  const isMultiClientAdmin =
+    user?.role === UserRole.ADMIN && clients.length > 1;
+
   // Navigation items
   const navItems: NavItem[] = [
-    {
-      title: "Dashboard",
-      href: "/dashboard",
-      icon: <HomeIcon className="h-4 w-4" />,
-    },
-    ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
+    // Show Dashboard for super_admins and multi-client admins
+    ...(user?.role === UserRole.SUPER_ADMIN || isMultiClientAdmin
+      ? [
+          {
+            title: "Dashboard",
+            href: "/dashboard",
+            icon: <HomeIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
+    // Show Clients and Users for super_admins and multi-client admins
+    ...(user?.role === UserRole.SUPER_ADMIN || isMultiClientAdmin
       ? [
           {
             title: "Clients",
             href: "/clients",
             icon: <BuildingIcon className="h-4 w-4" />,
           },
-        ]
-      : []),
-    ...(user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN
-      ? [
           {
             title: "Users",
             href: "/users",
@@ -141,8 +153,9 @@ export const Sidebar: FC = () => {
           },
         ]
       : []),
-    ...(user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
+    // Only show Design Builder for single-client admins, editors, and super admins
+    ...(user?.role === UserRole.SUPER_ADMIN ||
+    (user?.role === UserRole.ADMIN && !isMultiClientAdmin) ||
     user?.role === UserRole.EDITOR
       ? [
           {
@@ -164,36 +177,19 @@ export const Sidebar: FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Logout error:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
     }
-  };
-
-  const toggleTheme = async () => {
-    if (
-      !themeContext ||
-      !themeContext.designSystem ||
-      !themeContext.updateDesignSystem
-    ) {
-      console.error("Theme context not properly initialized");
-      return;
-    }
-
-    const currentAppearance = themeContext.designSystem.theme.appearance;
-    const newAppearance = currentAppearance === "dark" ? "light" : "dark";
-
-    await themeContext.updateDesignSystem({
-      theme: {
-        ...themeContext.designSystem.theme,
-        appearance: newAppearance,
-      },
-    });
   };
 
   // If we're on a client detail page, render the client sidebar
   if (isClientDetailPage && clientId && currentClient) {
     // Safely handle feature toggles with proper type casting
-    const clientToggles = (currentClient.featureToggles || {}) as any;
+    const clientToggles = (currentClient.featureToggles ||
+      {}) as FeatureToggles;
 
     const featureToggles = {
       logoSystem:
@@ -238,15 +234,6 @@ export const Sidebar: FC = () => {
     <aside className="w-64 h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
         <h2 className="font-bold">Ferdinand</h2>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0"
-          onClick={openSearch}
-        >
-          <Search className="h-4 w-4" />
-          <span className="sr-only">Search</span>
-        </Button>
       </div>
 
       <div className="px-4 py-2">
@@ -269,17 +256,6 @@ export const Sidebar: FC = () => {
 
       {showSearch ? (
         <div className="flex-1 flex flex-col">
-          <div className="mb-2 px-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center text-muted-foreground gap-1"
-              onClick={closeSearch}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back</span>
-            </Button>
-          </div>
           <SpotlightSearch className="flex-1" onClose={closeSearch} />
         </div>
       ) : (
@@ -289,10 +265,10 @@ export const Sidebar: FC = () => {
               <Link key={item.href} href={item.href}>
                 <Button
                   variant="ghost"
-                  className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+                  className={`flex w-full justify-start items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors hover:bg-slate-100
                     ${
                       isActiveLink(item.href)
-                        ? "bg-muted font-medium"
+                        ? "bg-slate-100 font-medium"
                         : "hover:bg-muted/50"
                     }`}
                 >
@@ -310,14 +286,14 @@ export const Sidebar: FC = () => {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 px-3 py-2"
+              className="w-full justify-start gap-3 px-3 py-3"
             >
               <CircleUserIcon className="h-8 w-8 text-muted-foreground" />
               <div className="flex-1 min-w-0 text-left">
                 <p className="text-sm m-0 font-medium truncate">
                   {user?.name || "User"}
                 </p>
-                <p className="text-xs text-muted-foreground truncate">
+                <p className="text-xs text-muted-foreground truncate m-0">
                   {user?.email || "Unknown"}
                 </p>
               </div>

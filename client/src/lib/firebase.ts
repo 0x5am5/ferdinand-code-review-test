@@ -1,9 +1,8 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { type FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import {
-  getAuth,
-  GoogleAuthProvider,
-  connectAuthEmulator,
   browserLocalPersistence,
+  GoogleAuthProvider,
+  getAuth,
   setPersistence,
 } from "firebase/auth";
 
@@ -18,7 +17,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase - handling potential duplicate initialization
-let app;
+let app: FirebaseApp;
 try {
   if (getApps().length === 0) {
     app = initializeApp(firebaseConfig);
@@ -27,8 +26,11 @@ try {
     app = getApp();
     console.log("Using existing Firebase app instance");
   }
-} catch (error) {
-  console.error("Firebase initialization error:", error);
+} catch (error: unknown) {
+  console.error(
+    "Firebase initialization error:",
+    error instanceof Error ? error.message : "Unknown error"
+  );
   app = getApps()[0] || initializeApp(firebaseConfig);
 }
 
@@ -36,7 +38,10 @@ export const auth = getAuth(app);
 
 // Set persistent auth state
 setPersistence(auth, browserLocalPersistence).catch((error) => {
-  console.error("Auth persistence error:", error);
+  console.error(
+    "Auth persistence error:",
+    error instanceof Error ? error.message : "Unknown error"
+  );
 });
 
 export const googleProvider = new GoogleAuthProvider();
@@ -48,17 +53,6 @@ googleProvider.addScope("email");
 // Set custom parameters for Google Auth
 googleProvider.setCustomParameters({
   prompt: "select_account",
-});
-
-// Log the current domain for debugging
-console.log("Current domain:", window.location.hostname);
-console.log("Full domain with protocol:", window.location.origin);
-
-// Log Firebase config for debugging
-console.log("Firebase config (without sensitive data):", {
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
 });
 
 // Add persistent logging for debugging

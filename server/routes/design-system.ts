@@ -1,8 +1,8 @@
+import * as fs from "node:fs";
+import { UserRole } from "@shared/schema";
+import chroma from "chroma-js";
 import type { Express } from "express";
 import { storage } from "../storage";
-import * as fs from "fs";
-import { UserRole } from "@shared/schema";
-import chroma from 'chroma-js';
 
 interface RawTokens {
   typography: {
@@ -75,34 +75,103 @@ interface SemanticTokens {
     letterSpacingCode: number;
   };
   colors: {
-    neutral0: string; neutral1: string; neutral2: string; neutral3: string; neutral4: string;
-    neutral5: string; neutral6: string; neutral7: string; neutral8: string; neutral9: string; neutral10: string;
-    brandPrimaryXLight: string; brandPrimaryLight: string; brandPrimary: string; brandPrimaryDark: string; brandPrimaryXDark: string;
-    brandSecondaryXLight: string; brandSecondaryLight: string; brandSecondary: string; brandSecondaryDark: string; brandSecondaryXDark: string;
-    successLight: string; successDark: string; warningLight: string; warningDark: string;
-    errorLight: string; errorDark: string; infoLight: string; infoDark: string;
-    textHeading: string; textBody: string; textMuted: string; textInverted: string;
-    textLink: string; textLinkHover: string; textError: string; textSuccess: string;
-    backgroundPage: string; backgroundSurface: string; backgroundMuted: string; backgroundOverlay: string; backgroundInverted: string;
-    borderDefault: string; borderMuted: string; borderActive: string; borderError: string; borderSuccess: string;
-    buttonPrimaryBg: string; buttonPrimaryText: string; buttonSecondaryBg: string; buttonSecondaryText: string;
+    neutral0: string;
+    neutral1: string;
+    neutral2: string;
+    neutral3: string;
+    neutral4: string;
+    neutral5: string;
+    neutral6: string;
+    neutral7: string;
+    neutral8: string;
+    neutral9: string;
+    neutral10: string;
+    brandPrimaryXLight: string;
+    brandPrimaryLight: string;
+    brandPrimary: string;
+    brandPrimaryDark: string;
+    brandPrimaryXDark: string;
+    brandSecondaryXLight: string;
+    brandSecondaryLight: string;
+    brandSecondary: string;
+    brandSecondaryDark: string;
+    brandSecondaryXDark: string;
+    successLight: string;
+    successDark: string;
+    warningLight: string;
+    warningDark: string;
+    errorLight: string;
+    errorDark: string;
+    infoLight: string;
+    infoDark: string;
+    textHeading: string;
+    textBody: string;
+    textMuted: string;
+    textInverted: string;
+    textLink: string;
+    textLinkHover: string;
+    textError: string;
+    textSuccess: string;
+    backgroundPage: string;
+    backgroundSurface: string;
+    backgroundMuted: string;
+    backgroundOverlay: string;
+    backgroundInverted: string;
+    borderDefault: string;
+    borderMuted: string;
+    borderActive: string;
+    borderError: string;
+    borderSuccess: string;
+    buttonPrimaryBg: string;
+    buttonPrimaryText: string;
+    buttonSecondaryBg: string;
+    buttonSecondaryText: string;
   };
   spacing: {
-    xs: string; s: string; m: string; l: string; xl: string; xxl: string; xxxl: string; xxxxl: string;
-    paddingBody: string; paddingSection: string; paddingCard: string; paddingButton: string;
-    marginHeading: string; marginParagraph: string; gapUI: string;
+    xs: string;
+    s: string;
+    m: string;
+    l: string;
+    xl: string;
+    xxl: string;
+    xxxl: string;
+    xxxxl: string;
+    paddingBody: string;
+    paddingSection: string;
+    paddingCard: string;
+    paddingButton: string;
+    marginHeading: string;
+    marginParagraph: string;
+    gapUI: string;
   };
   borders: {
-    radiusXs: string; radiusS: string; radiusM: string; radiusL: string; radiusXl: string;
-    input: string; button: string; card: string;
-    radiusButton: string; radiusInput: string; radiusCard: string;
+    radiusXs: string;
+    radiusS: string;
+    radiusM: string;
+    radiusL: string;
+    radiusXl: string;
+    input: string;
+    button: string;
+    card: string;
+    radiusButton: string;
+    radiusInput: string;
+    radiusCard: string;
   };
   shadows: {
-    elevation0: string; elevation1: string; elevation2: string; elevation3: string; elevation4: string; elevation5: string;
-    elevationCard: string; elevationModal: string; elevationButtonHover: string;
+    elevation0: string;
+    elevation1: string;
+    elevation2: string;
+    elevation3: string;
+    elevation4: string;
+    elevation5: string;
+    elevationCard: string;
+    elevationModal: string;
+    elevationButtonHover: string;
   };
   transitions: {
-    ui: string; button: string; input: string;
+    ui: string;
+    button: string;
+    input: string;
   };
 }
 
@@ -134,6 +203,23 @@ interface DesignSystem {
     ring: string;
   };
   raw_tokens?: RawTokens;
+  variant: "professional" | "tint" | "vibrant";
+  primary: string;
+  appearance: "light" | "dark" | "system";
+  radius: number;
+  animation: string;
+  font: {
+    primary: string;
+    heading: string;
+  };
+  typography_extended: {
+    font_family_base: string;
+    font_family_secondary: string;
+    font_family_mono: string;
+    font_size_base: number;
+    font_scale_ratio: number;
+    line_height_ratio: number;
+  };
 }
 
 // Semantic token generation functions
@@ -146,14 +232,14 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     fontFamilyBody: typography.fontFamily2Base,
     fontFamilyCode: typography.fontFamilyMonoBase,
 
-    fontSizeH1: `${typography.fontSizeBase * Math.pow(typography.typeScaleBase, 3)}rem`,
-    fontSizeH2: `${typography.fontSizeBase * Math.pow(typography.typeScaleBase, 2)}rem`,
+    fontSizeH1: `${typography.fontSizeBase * typography.typeScaleBase ** 3}rem`,
+    fontSizeH2: `${typography.fontSizeBase * typography.typeScaleBase ** 2}rem`,
     fontSizeH3: `${typography.fontSizeBase * typography.typeScaleBase}rem`,
     fontSizeH4: `${typography.fontSizeBase}rem`,
     fontSizeH5: `${typography.fontSizeBase / typography.typeScaleBase}rem`,
-    fontSizeH6: `${typography.fontSizeBase / Math.pow(typography.typeScaleBase, 2)}rem`,
+    fontSizeH6: `${typography.fontSizeBase / typography.typeScaleBase ** 2}rem`,
     fontSizeBody: `${typography.fontSizeBase}rem`,
-    fontSizeCaption: `${typography.fontSizeBase / Math.pow(typography.typeScaleBase, 2)}rem`,
+    fontSizeCaption: `${typography.fontSizeBase / typography.typeScaleBase ** 2}rem`,
     fontSizeCode: `${typography.fontSizeBase / typography.typeScaleBase}rem`,
 
     lineHeightHeading: typography.lineHeightBase * 1.2,
@@ -176,21 +262,36 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
   const neutralScale = generateNeutralScale(colors.neutralBase);
 
   // Generate brand color variations
-  const brandPrimaryVariations = generateColorVariations(colors.brandPrimaryBase);
-  const brandSecondaryVariations = generateColorVariations(colors.brandSecondaryBase);
+  const brandPrimaryVariations = generateColorVariations(
+    colors.brandPrimaryBase
+  );
+  const brandSecondaryVariations = generateColorVariations(
+    colors.brandSecondaryBase
+  );
 
   // Generate interactive color variations
-  const successVariations = generateColorVariations(colors.interactiveSuccessBase);
-  const warningVariations = generateColorVariations(colors.interactiveWarningBase);
+  const successVariations = generateColorVariations(
+    colors.interactiveSuccessBase
+  );
+  const warningVariations = generateColorVariations(
+    colors.interactiveWarningBase
+  );
   const errorVariations = generateColorVariations(colors.interactiveErrorBase);
   const infoVariations = generateColorVariations(colors.interactiveInfoBase);
 
   const colorTokens = {
     // Neutral scale
-    neutral0: neutralScale[0], neutral1: neutralScale[1], neutral2: neutralScale[2], 
-    neutral3: neutralScale[3], neutral4: neutralScale[4], neutral5: neutralScale[5],
-    neutral6: neutralScale[6], neutral7: neutralScale[7], neutral8: neutralScale[8], 
-    neutral9: neutralScale[9], neutral10: neutralScale[10],
+    neutral0: neutralScale[0],
+    neutral1: neutralScale[1],
+    neutral2: neutralScale[2],
+    neutral3: neutralScale[3],
+    neutral4: neutralScale[4],
+    neutral5: neutralScale[5],
+    neutral6: neutralScale[6],
+    neutral7: neutralScale[7],
+    neutral8: neutralScale[8],
+    neutral9: neutralScale[9],
+    neutral10: neutralScale[10],
 
     // Brand variations
     brandPrimaryXLight: brandPrimaryVariations.xLight,
@@ -219,7 +320,7 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     textHeading: colors.brandSecondaryBase,
     textBody: neutralScale[9],
     textMuted: neutralScale[5],
-    textInverted: '#ffffff',
+    textInverted: "#ffffff",
     textLink: colors.brandPrimaryBase,
     textLinkHover: brandPrimaryVariations.dark,
     textError: errorVariations.dark,
@@ -228,35 +329,35 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
     backgroundPage: neutralScale[0],
     backgroundSurface: neutralScale[1],
     backgroundMuted: neutralScale[2],
-    backgroundOverlay: 'rgba(0, 0, 0, 0.6)',
+    backgroundOverlay: "rgba(0, 0, 0, 0.6)",
     backgroundInverted: brandPrimaryVariations.dark,
 
-    borderDefault: 'rgba(0, 0, 0, 0.1)',
+    borderDefault: "rgba(0, 0, 0, 0.1)",
     borderMuted: neutralScale[3],
     borderActive: colors.brandPrimaryBase,
     borderError: errorVariations.dark,
     borderSuccess: successVariations.dark,
 
     buttonPrimaryBg: colors.brandPrimaryBase,
-    buttonPrimaryText: '#ffffff',
+    buttonPrimaryText: "#ffffff",
     buttonSecondaryBg: neutralScale[2],
     buttonSecondaryText: colors.brandSecondaryBase,
   };
 
   // Generate spacing semantic tokens
   const spacingTokens = {
-    xs: `${spacing.spacingUnitBase / Math.pow(spacing.spacingScaleBase, 2)}rem`,
+    xs: `${spacing.spacingUnitBase / spacing.spacingScaleBase ** 2}rem`,
     s: `${spacing.spacingUnitBase / spacing.spacingScaleBase}rem`,
     m: `${spacing.spacingUnitBase}rem`,
     l: `${spacing.spacingUnitBase * spacing.spacingScaleBase}rem`,
-    xl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 2)}rem`,
-    xxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 3)}rem`,
-    xxxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 4)}rem`,
-    xxxxl: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 5)}rem`,
+    xl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 2}rem`,
+    xxl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 3}rem`,
+    xxxl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 4}rem`,
+    xxxxl: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 5}rem`,
 
     // Semantic spacing
     paddingBody: `${spacing.spacingUnitBase}rem`,
-    paddingSection: `${spacing.spacingUnitBase * Math.pow(spacing.spacingScaleBase, 2)}rem`,
+    paddingSection: `${spacing.spacingUnitBase * spacing.spacingScaleBase ** 2}rem`,
     paddingCard: `${spacing.spacingUnitBase * spacing.spacingScaleBase}rem`,
     paddingButton: `${spacing.spacingUnitBase / spacing.spacingScaleBase}rem ${spacing.spacingUnitBase}rem`,
     marginHeading: `${spacing.spacingUnitBase * spacing.spacingScaleBase}rem 0 ${spacing.spacingUnitBase}rem 0`,
@@ -283,24 +384,30 @@ function generateSemanticTokens(rawTokens: RawTokens): SemanticTokens {
 
   // Generate shadow tokens
   const shadowTokens = {
-    elevation0: 'none',
-    elevation1: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
-    elevation2: '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)',
-    elevation3: '0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)',
-    elevation4: '0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)',
-    elevation5: '0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)',
+    elevation0: "none",
+    elevation1: "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)",
+    elevation2: "0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)",
+    elevation3:
+      "0 10px 20px rgba(0, 0, 0, 0.19), 0 6px 6px rgba(0, 0, 0, 0.23)",
+    elevation4:
+      "0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22)",
+    elevation5:
+      "0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)",
 
     // Semantic shadows
-    elevationCard: '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)',
-    elevationModal: '0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)',
-    elevationButtonHover: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
+    elevationCard:
+      "0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)",
+    elevationModal:
+      "0 19px 38px rgba(0, 0, 0, 0.30), 0 15px 12px rgba(0, 0, 0, 0.22)",
+    elevationButtonHover:
+      "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)",
   };
 
   // Generate transition tokens
   const transitionTokens = {
-    ui: 'all 200ms ease-in-out',
-    button: 'background-color 200ms ease-in-out',
-    input: 'border-color 200ms ease-in-out',
+    ui: "all 200ms ease-in-out",
+    button: "background-color 200ms ease-in-out",
+    input: "border-color 200ms ease-in-out",
   };
 
   return {
@@ -320,29 +427,50 @@ function generateNeutralScale(neutralBase: string): string[] {
     if (!hslMatch) {
       // Fallback to default gray scale
       return [
-        '#ffffff', '#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da',
-        '#adb5bd', '#6c757d', '#495057', '#343a40', '#212529', '#000000'
+        "#ffffff",
+        "#f8f9fa",
+        "#e9ecef",
+        "#dee2e6",
+        "#ced4da",
+        "#adb5bd",
+        "#6c757d",
+        "#495057",
+        "#343a40",
+        "#212529",
+        "#000000",
       ];
     }
 
-    const [, h, s, l] = hslMatch;
-    const hue = parseInt(h);
-    const saturation = parseInt(s);
+    const [, h, s] = hslMatch;
+    const hue = parseInt(h, 10);
+    const saturation = parseInt(s, 10);
 
     // Generate 11 shades from light to dark
     const shades = [];
     for (let i = 0; i <= 10; i++) {
-      const lightness = 100 - (i * 10); // 100%, 90%, 80%, ..., 0%
+      const lightness = 100 - i * 10; // 100%, 90%, 80%, ..., 0%
       shades.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
     }
 
     return shades;
-  } catch (error) {
-    console.error('Error generating neutral scale:', error);
+  } catch (error: unknown) {
+    console.error(
+      "Error generating neutral scale:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
     // Fallback to default gray scale
     return [
-      '#ffffff', '#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da',
-      '#adb5bd', '#6c757d', '#495057', '#343a40', '#212529', '#000000'
+      "#ffffff",
+      "#f8f9fa",
+      "#e9ecef",
+      "#dee2e6",
+      "#ced4da",
+      "#adb5bd",
+      "#6c757d",
+      "#495057",
+      "#343a40",
+      "#212529",
+      "#000000",
     ];
   }
 }
@@ -361,8 +489,12 @@ function generateColorVariations(baseColor: string): {
       dark: color.darken(1.5).hex(),
       xDark: color.darken(3).hex(),
     };
-  } catch (error) {
-    console.error('Error generating color variations for', baseColor, error);
+  } catch (error: unknown) {
+    console.error(
+      "Error generating color variations for",
+      baseColor,
+      error instanceof Error ? error.message : "Unknown error"
+    );
     // Fallback variations
     return {
       xLight: baseColor,
@@ -498,8 +630,11 @@ export function registerDesignSystemRoutes(app: Express) {
       };
 
       res.json(designSystem);
-    } catch (error) {
-      console.error("Error fetching design system:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching design system:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching design system" });
     }
   });
@@ -520,9 +655,9 @@ export function registerDesignSystemRoutes(app: Express) {
 
       // Only allow editors, admins and super admins to modify the design system
       if (
-        ![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(
-          user.role,
-        )
+        user.role !== UserRole.EDITOR &&
+        user.role !== UserRole.ADMIN &&
+        user.role !== UserRole.SUPER_ADMIN
       ) {
         return res.status(403).json({
           message: "Insufficient permissions to modify design system",
@@ -609,7 +744,7 @@ export function registerDesignSystemRoutes(app: Express) {
                 // Convert underscores to hyphens for variable names
                 const formattedKey = key.replace(/_/g, "-");
                 rawTokensContent += `$color-neutral-${formattedKey}: ${value};\n`;
-              },
+              }
             );
             rawTokensContent += `\n`;
           }
@@ -621,7 +756,7 @@ export function registerDesignSystemRoutes(app: Express) {
                 // Convert underscores to hyphens for variable names
                 const formattedKey = key.replace(/_/g, "-");
                 rawTokensContent += `$color-interactive-${formattedKey}: ${value};\n`;
-              },
+              }
             );
             rawTokensContent += `\n`;
           }
@@ -629,7 +764,7 @@ export function registerDesignSystemRoutes(app: Express) {
 
         fs.writeFileSync(
           "./client/src/styles/_raw-tokens.scss",
-          rawTokensContent,
+          rawTokensContent
         );
       }
 
@@ -639,12 +774,15 @@ export function registerDesignSystemRoutes(app: Express) {
       }
 
       // Read existing theme.json to preserve any values not being updated
-      let existingTheme: any = {};
+      let existingTheme = {} as DesignSystem;
       try {
         const themeData = fs.readFileSync("./theme.json", "utf8");
         existingTheme = JSON.parse(themeData);
-      } catch (error) {
-        console.error("Error reading existing theme.json:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error reading existing theme.json:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
       }
 
       // Update the theme.json file
@@ -679,8 +817,11 @@ export function registerDesignSystemRoutes(app: Express) {
 
       // Return the updated design system
       res.json(req.body);
-    } catch (error) {
-      console.error("Error updating design system:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating design system:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error updating design system" });
     }
   });
@@ -700,12 +841,15 @@ export function registerDesignSystemRoutes(app: Express) {
       }
 
       // Read existing theme.json to get current settings
-      let existingTheme: any = {};
+      let existingTheme = {} as DesignSystem;
       try {
         const themeData = fs.readFileSync("./theme.json", "utf8");
         existingTheme = JSON.parse(themeData);
-      } catch (error) {
-        console.error("Error reading existing theme.json:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error reading existing theme.json:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         return res
           .status(500)
           .json({ message: "Error reading theme configuration" });
@@ -728,8 +872,11 @@ export function registerDesignSystemRoutes(app: Express) {
         message: "Typography settings updated successfully",
         settings: updatedTheme.typography_extended,
       });
-    } catch (error) {
-      console.error("Error updating typography settings:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating typography settings:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error updating typography settings" });
     }
   });
@@ -749,7 +896,11 @@ export function registerDesignSystemRoutes(app: Express) {
       }
 
       // Allow access for guests and above
-      if (!["super_admin", "admin", "editor", "standard", "guest"].includes(user.role)) {
+      if (
+        !["super_admin", "admin", "editor", "standard", "guest"].includes(
+          user.role
+        )
+      ) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -759,14 +910,17 @@ export function registerDesignSystemRoutes(app: Express) {
       const rawTokens = theme.raw_tokens;
 
       if (!rawTokens) {
-        return res.status(400).json({ message: "No design tokens found. Please configure your design system first." });
+        return res.status(400).json({
+          message:
+            "No design tokens found. Please configure your design system first.",
+        });
       }
 
       // Generate semantic tokens
       const semanticTokens = generateSemanticTokens(rawTokens);
 
       // Generate comprehensive CSS with semantic tokens
-      let css = `/* Design System - CSS Custom Properties */
+      const css = `/* Design System - CSS Custom Properties */
 /* Generated from Ferdinand Design System Builder */
 /* Client ID: ${clientId} */
 /* Generated at: ${new Date().toISOString()} */
@@ -1129,12 +1283,21 @@ a:hover {
 .rounded-xl { border-radius: var(--border-radius-xl); }
 `;
 
-      res.setHeader('Content-Type', 'text/css');
-      res.setHeader('Content-Disposition', 'attachment; filename="design-system-complete.css"');
+      res.setHeader("Content-Type", "text/css");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="design-system-complete.css"'
+      );
       res.send(css);
-    } catch (error) {
-      console.error("Error exporting CSS:", error);
-      res.status(500).json({ message: "Error exporting CSS", error: error.message });
+    } catch (error: unknown) {
+      console.error(
+        "Error exporting CSS:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({
+        message: "Error exporting CSS",
+        error: (error as Error).message,
+      });
     }
   });
 
@@ -1153,7 +1316,11 @@ a:hover {
       }
 
       // Allow access for guests and above
-      if (!["super_admin", "admin", "editor", "standard", "guest"].includes(user.role)) {
+      if (
+        !["super_admin", "admin", "editor", "standard", "guest"].includes(
+          user.role
+        )
+      ) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -1163,13 +1330,16 @@ a:hover {
       const rawTokens = theme.raw_tokens;
 
       if (!rawTokens) {
-        return res.status(400).json({ message: "No design tokens found. Please configure your design system first." });
+        return res.status(400).json({
+          message:
+            "No design tokens found. Please configure your design system first.",
+        });
       }
 
       // Generate semantic tokens
       const semanticTokens = generateSemanticTokens(rawTokens);
 
-      let scss = `// Design System - SCSS Variables
+      const scss = `// Design System - SCSS Variables
 // Generated from Ferdinand Design System Builder
 // Client ID: ${clientId}
 // Generated at: ${new Date().toISOString()}
@@ -1465,12 +1635,21 @@ $brand-secondary-colors: (
 );
 `;
 
-      res.setHeader('Content-Type', 'text/scss');
-      res.setHeader('Content-Disposition', 'attachment; filename="design-system-complete.scss"');
+      res.setHeader("Content-Type", "text/scss");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="design-system-complete.scss"'
+      );
       res.send(scss);
-    } catch (error) {
-      console.error("Error exporting SCSS:", error);
-      res.status(500).json({ message: "Error exporting SCSS", error: error.message });
+    } catch (error: unknown) {
+      console.error(
+        "Error exporting SCSS:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({
+        message: "Error exporting SCSS",
+        error: (error as Error).message,
+      });
     }
   });
 
@@ -1489,7 +1668,11 @@ $brand-secondary-colors: (
       }
 
       // Allow access for guests and above
-      if (!["super_admin", "admin", "editor", "standard", "guest"].includes(user.role)) {
+      if (
+        !["super_admin", "admin", "editor", "standard", "guest"].includes(
+          user.role
+        )
+      ) {
         return res.status(403).json({ message: "Access denied" });
       }
 
@@ -1499,7 +1682,10 @@ $brand-secondary-colors: (
       const rawTokens = theme.raw_tokens;
 
       if (!rawTokens) {
-        return res.status(400).json({ message: "No design tokens found. Please configure your design system first." });
+        return res.status(400).json({
+          message:
+            "No design tokens found. Please configure your design system first.",
+        });
       }
 
       // Generate semantic tokens
@@ -1524,17 +1710,17 @@ $brand-secondary-colors: (
             },
             fontSize: {
               // Semantic sizes
-              'h1': semanticTokens.typography.fontSizeH1,
-              'h2': semanticTokens.typography.fontSizeH2,
-              'h3': semanticTokens.typography.fontSizeH3,
-              'h4': semanticTokens.typography.fontSizeH4,
-              'h5': semanticTokens.typography.fontSizeH5,
-              'h6': semanticTokens.typography.fontSizeH6,
-              'body': semanticTokens.typography.fontSizeBody,
-              'caption': semanticTokens.typography.fontSizeCaption,
-              'code': semanticTokens.typography.fontSizeCode,
+              h1: semanticTokens.typography.fontSizeH1,
+              h2: semanticTokens.typography.fontSizeH2,
+              h3: semanticTokens.typography.fontSizeH3,
+              h4: semanticTokens.typography.fontSizeH4,
+              h5: semanticTokens.typography.fontSizeH5,
+              h6: semanticTokens.typography.fontSizeH6,
+              body: semanticTokens.typography.fontSizeBody,
+              caption: semanticTokens.typography.fontSizeCaption,
+              code: semanticTokens.typography.fontSizeCode,
               // Raw token aliases
-              'base': `${rawTokens.typography.fontSizeBase}rem`,
+              base: `${rawTokens.typography.fontSizeBase}rem`,
             },
             lineHeight: {
               heading: semanticTokens.typography.lineHeightHeading,
@@ -1573,18 +1759,18 @@ $brand-secondary-colors: (
               // Brand colors
               brand: {
                 primary: {
-                  'x-light': semanticTokens.colors.brandPrimaryXLight,
+                  "x-light": semanticTokens.colors.brandPrimaryXLight,
                   light: semanticTokens.colors.brandPrimaryLight,
                   DEFAULT: semanticTokens.colors.brandPrimary,
                   dark: semanticTokens.colors.brandPrimaryDark,
-                  'x-dark': semanticTokens.colors.brandPrimaryXDark,
+                  "x-dark": semanticTokens.colors.brandPrimaryXDark,
                 },
                 secondary: {
-                  'x-light': semanticTokens.colors.brandSecondaryXLight,
+                  "x-light": semanticTokens.colors.brandSecondaryXLight,
                   light: semanticTokens.colors.brandSecondaryLight,
                   DEFAULT: semanticTokens.colors.brandSecondary,
                   dark: semanticTokens.colors.brandSecondaryDark,
-                  'x-dark': semanticTokens.colors.brandSecondaryXDark,
+                  "x-dark": semanticTokens.colors.brandSecondaryXDark,
                 },
               },
               // Interactive colors
@@ -1615,7 +1801,7 @@ $brand-secondary-colors: (
                 muted: semanticTokens.colors.textMuted,
                 inverted: semanticTokens.colors.textInverted,
                 link: semanticTokens.colors.textLink,
-                'link-hover': semanticTokens.colors.textLinkHover,
+                "link-hover": semanticTokens.colors.textLinkHover,
                 error: semanticTokens.colors.textError,
                 success: semanticTokens.colors.textSuccess,
               },
@@ -1690,101 +1876,113 @@ $brand-secondary-colors: (
             },
             // Box shadow
             boxShadow: {
-              'elevation-0': semanticTokens.shadows.elevation0,
-              'elevation-1': semanticTokens.shadows.elevation1,
-              'elevation-2': semanticTokens.shadows.elevation2,
-              'elevation-3': semanticTokens.shadows.elevation3,
-              'elevation-4': semanticTokens.shadows.elevation4,
-              'elevation-5': semanticTokens.shadows.elevation5,
+              "elevation-0": semanticTokens.shadows.elevation0,
+              "elevation-1": semanticTokens.shadows.elevation1,
+              "elevation-2": semanticTokens.shadows.elevation2,
+              "elevation-3": semanticTokens.shadows.elevation3,
+              "elevation-4": semanticTokens.shadows.elevation4,
+              "elevation-5": semanticTokens.shadows.elevation5,
               // Component specific
               card: semanticTokens.shadows.elevationCard,
               modal: semanticTokens.shadows.elevationModal,
-              'button-hover': semanticTokens.shadows.elevationButtonHover,
+              "button-hover": semanticTokens.shadows.elevationButtonHover,
             },
             // Transitions
             transitionDuration: {
-              ui: '200ms',
-              button: '200ms',
-              input: '200ms',
+              ui: "200ms",
+              button: "200ms",
+              input: "200ms",
             },
             transitionTimingFunction: {
-              ui: 'ease-in-out',
-              button: 'ease-in-out',
-              input: 'ease-in-out',
+              ui: "ease-in-out",
+              button: "ease-in-out",
+              input: "ease-in-out",
             },
-          }
+          },
         },
         // Plugins for additional functionality
         plugins: [
           // Custom component classes
-          function({ addComponents, theme }) {
+          ({
+            addComponents,
+            theme,
+          }: {
+            addComponents: (obj: unknown) => void;
+            theme: (selector: string) => void;
+          }) => {
             addComponents({
-              '.btn': {
-                fontFamily: theme('fontFamily.body'),
-                fontSize: theme('fontSize.body'),
-                fontWeight: theme('fontWeight.body'),
-                padding: theme('padding.button'),
-                borderRadius: theme('borderRadius.button'),
-                border: 'none',
-                cursor: 'pointer',
-                transition: theme('transitionDuration.button') + ' ' + theme('transitionTimingFunction.button'),
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: theme('gap.ui'),
+              ".btn": {
+                fontFamily: theme("fontFamily.body"),
+                fontSize: theme("fontSize.body"),
+                fontWeight: theme("fontWeight.body"),
+                padding: theme("padding.button"),
+                borderRadius: theme("borderRadius.button"),
+                border: "none",
+                cursor: "pointer",
+                transition:
+                  theme("transitionDuration.button") +
+                  " " +
+                  theme("transitionTimingFunction.button"),
+                display: "inline-flex",
+                alignItems: "center",
+                gap: theme("gap.ui"),
               },
-              '.btn-primary': {
-                backgroundColor: theme('colors.button.primary.bg'),
-                color: theme('colors.button.primary.text'),
-                '&:hover': {
-                  boxShadow: theme('boxShadow.button-hover'),
-                }
+              ".btn-primary": {
+                backgroundColor: theme("colors.button.primary.bg"),
+                color: theme("colors.button.primary.text"),
+                "&:hover": {
+                  boxShadow: theme("boxShadow.button-hover"),
+                },
               },
-              '.btn-secondary': {
-                backgroundColor: theme('colors.button.secondary.bg'),
-                color: theme('colors.button.secondary.text'),
-                border: '2px solid ' + theme('colors.border.active'),
+              ".btn-secondary": {
+                backgroundColor: theme("colors.button.secondary.bg"),
+                color: theme("colors.button.secondary.text"),
+                border: `2px solid ${theme("colors.border.active")}`,
               },
-              '.input': {
-                fontFamily: theme('fontFamily.body'),
-                fontSize: theme('fontSize.body'),
-                padding: theme('spacing.s'),
-                border: '1px solid ' + theme('colors.border.DEFAULT'),
-                borderRadius: theme('borderRadius.input'),
-                backgroundColor: theme('colors.background.surface'),
-                color: theme('colors.text.body'),
-                transition: theme('transitionDuration.input') + ' ' + theme('transitionTimingFunction.input'),
-                '&:focus': {
-                  outline: 'none',
-                  borderColor: theme('colors.border.active'),
-                  boxShadow: '0 0 0 2px ' + theme('colors.brand.primary.light'),
-                }
+              ".input": {
+                fontFamily: theme("fontFamily.body"),
+                fontSize: theme("fontSize.body"),
+                padding: theme("spacing.s"),
+                border: `1px solid ${theme("colors.border.DEFAULT")}`,
+                borderRadius: theme("borderRadius.input"),
+                backgroundColor: theme("colors.background.surface"),
+                color: theme("colors.text.body"),
+                transition:
+                  theme("transitionDuration.input") +
+                  " " +
+                  theme("transitionTimingFunction.input"),
+                "&:focus": {
+                  outline: "none",
+                  borderColor: theme("colors.border.active"),
+                  boxShadow: `0 0 0 2px ${theme("colors.brand.primary.light")}`,
+                },
               },
-              '.card': {
-                backgroundColor: theme('colors.background.surface'),
-                border: '1px solid ' + theme('colors.border.DEFAULT'),
-                borderRadius: theme('borderRadius.card'),
-                padding: theme('padding.card'),
-                boxShadow: theme('boxShadow.card'),
+              ".card": {
+                backgroundColor: theme("colors.background.surface"),
+                border: `1px solid ${theme("colors.border.DEFAULT")}`,
+                borderRadius: theme("borderRadius.card"),
+                padding: theme("padding.card"),
+                boxShadow: theme("boxShadow.card"),
               },
-              '.heading': {
-                fontFamily: theme('fontFamily.heading'),
-                fontWeight: theme('fontWeight.heading'),
-                lineHeight: theme('lineHeight.heading'),
-                color: theme('colors.text.heading'),
-                letterSpacing: theme('letterSpacing.heading'),
-                margin: theme('margin.heading'),
+              ".heading": {
+                fontFamily: theme("fontFamily.heading"),
+                fontWeight: theme("fontWeight.heading"),
+                lineHeight: theme("lineHeight.heading"),
+                color: theme("colors.text.heading"),
+                letterSpacing: theme("letterSpacing.heading"),
+                margin: theme("margin.heading"),
               },
-              '.body-text': {
-                fontFamily: theme('fontFamily.body'),
-                fontSize: theme('fontSize.body'),
-                fontWeight: theme('fontWeight.body'),
-                lineHeight: theme('lineHeight.body'),
-                color: theme('colors.text.body'),
-                letterSpacing: theme('letterSpacing.body'),
-              }
-            })
-          }
-        ]
+              ".body-text": {
+                fontFamily: theme("fontFamily.body"),
+                fontSize: theme("fontSize.body"),
+                fontWeight: theme("fontWeight.body"),
+                lineHeight: theme("lineHeight.body"),
+                color: theme("colors.text.body"),
+                letterSpacing: theme("letterSpacing.body"),
+              },
+            });
+          },
+        ],
       };
 
       const configString = `/** @type {import('tailwindcss').Config} */
@@ -1819,12 +2017,21 @@ module.exports = ${JSON.stringify(config, null, 2)};
 // <div className="shadow-elevation-2 rounded-m">Elevated content</div>
 `;
 
-      res.setHeader('Content-Type', 'application/javascript');
-      res.setHeader('Content-Disposition', 'attachment; filename="tailwind.config.js"');
+      res.setHeader("Content-Type", "application/javascript");
+      res.setHeader(
+        "Content-Disposition",
+        'attachment; filename="tailwind.config.js"'
+      );
       res.send(configString);
-    } catch (error) {
-      console.error("Error exporting Tailwind config:", error);
-      res.status(500).json({ message: "Error exporting Tailwind config", error: (error as Error).message });
+    } catch (error: unknown) {
+      console.error(
+        "Error exporting Tailwind config:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({
+        message: "Error exporting Tailwind config",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   });
 }

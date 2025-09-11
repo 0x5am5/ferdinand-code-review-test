@@ -1,6 +1,16 @@
-import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useThemeManager } from "@/hooks/use-theme-manager";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  ArrowUpDown,
+  Code,
+  Moon,
+  Palette,
+  Save,
+  Sun,
+  Type,
+} from "lucide-react";
+import { useId, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +30,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -30,6 +39,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -37,25 +48,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useLocation } from "wouter";
-import {
-  Save,
-  ArrowUpDown,
-  Moon,
-  Sun,
-  Palette,
-  Type,
-  Check,
-  Code,
-} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
+import { useThemeManager } from "@/hooks/use-theme-manager";
+import { useToast } from "@/hooks/use-toast";
 
 // Form schema for validation
 const themeFormSchema = z.object({
@@ -76,9 +74,16 @@ const themeFormSchema = z.object({
   animation: z.enum(["none", "minimal", "smooth", "bounce"]),
 });
 
+// Color preview component
+const ColorPreview = ({ color }: { color: string | undefined }) => (
+  <div
+    className="h-6 w-6 rounded-full inline-block mr-2 border border-border"
+    style={{ backgroundColor: color || "#cccccc" }}
+  />
+);
+
 export default function DesignBuilder() {
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const {
     designSystem: appliedDesignSystem,
     draftDesignSystem,
@@ -91,12 +96,16 @@ export default function DesignBuilder() {
 
   // State for handling navigation confirmation
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
-  const [navTarget, setNavTarget] = useState("");
   const [activeTab, setActiveTab] = useState("theme");
   const [hasChanges, setHasChanges] = useState(false);
   const { user, isLoading } = useAuth();
   const userRole = user?.role; // Replace with actual user role fetch mechanism.
-  const canEdit = ["editor", "admin"].includes(userRole);
+  const canEdit = userRole ? ["editor", "admin"].includes(userRole) : false;
+
+  // Generate unique IDs for form inputs
+  const previewInputId = useId();
+  const previewSelectId = useId();
+  const previewCheckboxId = useId();
 
   // Initialize the form with current theme values
   const form = useForm<z.infer<typeof themeFormSchema>>({
@@ -126,7 +135,12 @@ export default function DesignBuilder() {
         description:
           "Your changes have been applied to the preview. Save to make them permanent.",
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error(
+        "Error applying changes:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+
       toast({
         title: "Error",
         description: "There was an error applying your changes.",
@@ -144,7 +158,12 @@ export default function DesignBuilder() {
         title: "Changes saved",
         description: "Your design changes have been saved successfully.",
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error(
+        "Error saving changes:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+
       toast({
         title: "Error saving changes",
         description: "There was an error saving your changes.",
@@ -155,18 +174,7 @@ export default function DesignBuilder() {
 
   const confirmNavigation = () => {
     setShowLeaveAlert(false);
-    if (navTarget) {
-      navigate(navTarget);
-    }
   };
-
-  // Color preview component
-  const ColorPreview = ({ color }: { color: string | undefined }) => (
-    <div
-      className="h-6 w-6 rounded-full inline-block mr-2 border border-border"
-      style={{ backgroundColor: color || "#cccccc" }}
-    />
-  );
 
   if (isLoading) return null;
 
@@ -244,7 +252,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -296,7 +304,7 @@ export default function DesignBuilder() {
                               {...field}
                               type="color"
                               className="w-10 h-10 p-1"
-                              readOnly={!canEdit}
+                              disabled={!canEdit}
                             />
                           </FormControl>
                           <FormControl>
@@ -304,7 +312,7 @@ export default function DesignBuilder() {
                               value={field.value}
                               onChange={field.onChange}
                               className="w-32"
-                              readOnly={!canEdit}
+                              disabled={!canEdit}
                             />
                           </FormControl>
                         </div>
@@ -331,7 +339,7 @@ export default function DesignBuilder() {
                                   {...field}
                                   type="color"
                                   className="w-10 h-10 p-1"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                               <FormControl>
@@ -339,7 +347,7 @@ export default function DesignBuilder() {
                                   value={field.value || "#666666"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                             </div>
@@ -365,7 +373,7 @@ export default function DesignBuilder() {
                                   {...field}
                                   type="color"
                                   className="w-10 h-10 p-1"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                               <FormControl>
@@ -373,7 +381,7 @@ export default function DesignBuilder() {
                                   value={field.value || "#444444"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  readOnly={!canEdit}
+                                  disabled={!canEdit}
                                 />
                               </FormControl>
                             </div>
@@ -397,7 +405,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -449,7 +457,7 @@ export default function DesignBuilder() {
                               field.onChange(values[0])
                             }
                             className="w-full"
-                            readOnly={!canEdit}
+                            disabled={!canEdit}
                           />
                         </FormControl>
                         <FormDescription>
@@ -469,7 +477,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -526,7 +534,7 @@ export default function DesignBuilder() {
                             });
                             setHasChanges(true);
                           }}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for body text throughout the application.
@@ -545,7 +553,7 @@ export default function DesignBuilder() {
                             });
                             setHasChanges(true);
                           }}
-                          readOnly={!canEdit}
+                          disabled={!canEdit}
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for headings and emphasized text.
@@ -618,17 +626,17 @@ export default function DesignBuilder() {
                   <h3 className="text-lg font-medium">Forms</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="preview-input">Input Field</Label>
+                      <Label htmlFor={previewInputId}>Input Field</Label>
                       <Input
-                        id="preview-input"
+                        id={previewInputId}
                         placeholder="Enter some text"
                         readOnly={!canEdit}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="preview-select">Select Menu</Label>
-                      <Select readOnly={!canEdit}>
-                        <SelectTrigger id="preview-select">
+                      <Label htmlFor={previewSelectId}>Select Menu</Label>
+                      <Select disabled={!canEdit}>
+                        <SelectTrigger id={previewSelectId}>
                           <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
                         <SelectContent>
@@ -639,10 +647,10 @@ export default function DesignBuilder() {
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="preview-checkbox">Checkbox</Label>
+                      <Label htmlFor={previewCheckboxId}>Checkbox</Label>
                       <div className="flex items-center space-x-2">
-                        <Switch id="preview-checkbox" readOnly={!canEdit} />
-                        <Label htmlFor="preview-checkbox">Toggle me</Label>
+                        <Switch id={previewCheckboxId} disabled={!canEdit} />
+                        <Label htmlFor={previewCheckboxId}>Toggle me</Label>
                       </div>
                     </div>
                   </div>
@@ -873,7 +881,7 @@ export default function DesignBuilder() {
                                 ></div>
                                 <span className="text-xs">{value}</span>
                               </div>
-                            ),
+                            )
                           )}
                         </div>
                       </div>

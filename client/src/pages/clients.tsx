@@ -1,15 +1,28 @@
-import { useState, useEffect, useRef } from "react";
+import type { Client, FeatureToggles, User } from "@shared/schema";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Client, User } from "@shared/schema";
+  Edit2,
+  Eye,
+  Figma,
+  Image,
+  LayoutGrid,
+  Mail,
+  MoreHorizontal,
+  Package,
+  Palette,
+  Plus,
+  Share,
+  Table,
+  Trash,
+  Type,
+  UserCircle,
+  User as UserIcon,
+  UserPlus,
+  X,
+} from "lucide-react";
+import { useEffect, useId, useState } from "react";
+import { Link } from "wouter";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -17,57 +30,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Link } from "wouter";
-import {
-  Share,
-  Edit2,
-  Eye,
-  Trash,
-  LayoutGrid,
-  Table,
-  Plus,
-  X,
-  Package,
-  Palette,
-  Type,
-  User as UserIcon,
-  Image,
-  UserCircle,
-  ChevronDown,
-  UserPlus,
-  Mail,
-  Search,
-  Check,
-  Figma,
-  MoreHorizontal,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { useAuth } from "@/hooks/use-auth";
-import {
-  useClientsQuery,
-  useDeleteClientMutation,
-  useUpdateClientMutation,
-  useClientUsersQuery,
-  useClientUserMutations,
-} from "@/lib/queries/clients";
-import { useUsersQuery } from "@/lib/queries/users";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -77,12 +39,47 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useClientsQuery,
+  useClientUserMutations,
+  useClientUsersQuery,
+  useDeleteClientMutation,
+  useUpdateClientMutation,
+} from "@/lib/queries/clients";
+import { useUsersQuery } from "@/lib/queries/users";
 
 export default function Clients() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,7 +98,9 @@ export default function Clients() {
     inspiration: true,
     figmaIntegration: false,
   });
-  const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>({});
+  const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>(
+    {}
+  );
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
@@ -109,56 +108,69 @@ export default function Clients() {
   const [activeClientId, setActiveClientId] = useState<number | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState("");
 
+  // Generate unique IDs for form inputs
+  const emailId = useId();
+  const nameId = useId();
+  const roleId = useId();
+
   const { data: clients = [] } = useClientsQuery();
   const { data: allUsers = [] } = useUsersQuery();
   const updateClient = useUpdateClientMutation();
   const deleteClient = useDeleteClientMutation();
-  
+
   // Load client users for active client
-  const { data: activeClientUsers = [] } = useClientUsersQuery(activeClientId || 0);
-  const { assignUser, removeUser, inviteUser } = useClientUserMutations(activeClientId || 0);
-  
+  const { data: activeClientUsers = [] } = useClientUsersQuery(
+    activeClientId || 0
+  );
+  const { assignUser, removeUser, inviteUser } = useClientUserMutations(
+    activeClientId || 0
+  );
+
   // Create a map to store client users with a default empty array for each client
-  const [clientUsersMap, setClientUsersMap] = useState<Map<number, User[]>>(new Map());
-  
+  const [clientUsersMap, setClientUsersMap] = useState<Map<number, User[]>>(
+    new Map()
+  );
+
   // When activeClientId changes, update the map with fetched users
   useEffect(() => {
     if (activeClientId && activeClientUsers.length > 0) {
-      setClientUsersMap(prevMap => {
+      setClientUsersMap((prevMap) => {
         const newMap = new Map(prevMap);
         newMap.set(activeClientId, activeClientUsers);
         return newMap;
       });
     }
   }, [activeClientId, activeClientUsers]);
-  
+
   // Filter users that are not already assigned to the active client
-  const availableUsers = allUsers.filter(user => 
-    !activeClientUsers.some(clientUser => clientUser.id === user.id)
+  const availableUsers = allUsers.filter(
+    (user) => !activeClientUsers.some((clientUser) => clientUser.id === user.id)
   );
-  
+
   // Filter users based on search query
-  const filteredAvailableUsers = availableUsers.filter(user => 
-    user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
-    user.email.toLowerCase().includes(userSearchQuery.toLowerCase())
+  const filteredAvailableUsers = availableUsers.filter(
+    (user) =>
+      user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
 
   // Function to check if current user can remove a specific user
   const canRemoveUser = (userToRemove: User): boolean => {
     if (!currentUser) return false;
-    
+
     // Users cannot remove themselves
     if (currentUser.id === userToRemove.id) return false;
-    
+
     // Super admins can remove anyone (except themselves)
     if (currentUser.role === "super_admin") return true;
-    
+
     // Admins cannot remove super admins
-    if (currentUser.role === "admin" && userToRemove.role === "super_admin") return false;
-    
+    if (currentUser.role === "admin" && userToRemove.role === "super_admin")
+      return false;
+
     // Admins can remove other roles
     if (currentUser.role === "admin") return true;
-    
+
     // Other roles cannot remove users
     return false;
   };
@@ -167,14 +179,14 @@ export default function Clients() {
   useEffect(() => {
     if (clients.length > 0) {
       const initialMap = new Map<number, User[]>();
-      clients.forEach(client => {
+      clients.forEach((client) => {
         // Initialize with an empty array for each client
         initialMap.set(client.id, []);
       });
       setClientUsersMap(initialMap);
     }
   }, [clients]);
-  
+
   // Load users for all clients after the map is initialized
   useEffect(() => {
     const loadAllClientUsers = async () => {
@@ -186,27 +198,30 @@ export default function Clients() {
             if (response.ok) {
               const users = await response.json();
               if (Array.isArray(users)) {
-                setClientUsersMap(prevMap => {
+                setClientUsersMap((prevMap) => {
                   const newMap = new Map(prevMap);
                   newMap.set(client.id, users);
                   return newMap;
                 });
               }
             }
-          } catch (error) {
-            console.error(`Error loading users for client ${client.id}:`, error);
+          } catch (error: unknown) {
+            console.error(
+              `Error loading users for client ${client.id}:`,
+              error
+            );
           }
         }
       }
     };
-    
+
     loadAllClientUsers();
   }, [clients, clientUsersMap.size]);
 
   const filteredClients = clients.filter(
     (client) =>
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+      client.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Update feature toggles when editing client
@@ -217,15 +232,21 @@ export default function Clients() {
         editingClient.featureToggles &&
         typeof editingClient.featureToggles === "object"
       ) {
-        // Make sure we have all expected properties
-        const featureTogglesObj = editingClient.featureToggles as any;
         const toggles = {
-          logoSystem: Boolean(featureTogglesObj.logoSystem ?? true),
-          colorSystem: Boolean(featureTogglesObj.colorSystem ?? true),
-          typeSystem: Boolean(featureTogglesObj.typeSystem ?? true),
-          userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
-          inspiration: Boolean(featureTogglesObj.inspiration ?? true),
-          figmaIntegration: Boolean(featureTogglesObj.figmaIntegration ?? false),
+          logoSystem: Boolean(editingClient.featureToggles.logoSystem ?? true),
+          colorSystem: Boolean(
+            editingClient.featureToggles.colorSystem ?? true
+          ),
+          typeSystem: Boolean(editingClient.featureToggles.typeSystem ?? true),
+          userPersonas: Boolean(
+            editingClient.featureToggles.userPersonas ?? true
+          ),
+          inspiration: Boolean(
+            editingClient.featureToggles.inspiration ?? true
+          ),
+          figmaIntegration: Boolean(
+            editingClient.featureToggles.figmaIntegration ?? false
+          ),
         };
         setFeatureToggles(toggles);
       } else {
@@ -274,15 +295,16 @@ export default function Clients() {
               <LayoutGrid className="h-4 w-4" />
             )}
           </Button>
-          <Link href="/clients/new">
-            <Button
-              variant="default"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
+          <Button
+            variant="default"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            asChild
+          >
+            <Link href="/clients/new">
               <Plus className="h-4 w-4 mr-2" />
               New Client
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -297,54 +319,56 @@ export default function Clients() {
               <CardContent>
                 {/* Feature Toggle Chips */}
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {(client.featureToggles as any)?.logoSystem && (
+                  {client.featureToggles?.logoSystem && (
                     <Badge className="bg-blue-100 text-blue-800">
                       <Package className="h-3 w-3 mr-1" />
                       Logo
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.colorSystem && (
+                  {client.featureToggles?.colorSystem && (
                     <Badge className="bg-green-100 text-green-800">
                       <Palette className="h-3 w-3 mr-1" />
                       Colors
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.typeSystem && (
+                  {client.featureToggles?.typeSystem && (
                     <Badge className="bg-purple-100 text-purple-800">
                       <Type className="h-3 w-3 mr-1" />
                       Type
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.userPersonas && (
+                  {client.featureToggles?.userPersonas && (
                     <Badge className="bg-amber-100 text-amber-800">
                       <UserIcon className="h-3 w-3 mr-1" />
                       Personas
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.inspiration && (
+                  {client.featureToggles?.inspiration && (
                     <Badge className="bg-red-100 text-red-800">
                       <Image className="h-3 w-3 mr-1" />
                       Inspo
                     </Badge>
                   )}
-                  {(client.featureToggles as any)?.figmaIntegration && (
+                  {client.featureToggles?.figmaIntegration && (
                     <Badge className="bg-gray-100 text-gray-800">
                       <Figma className="h-3 w-3 mr-1" />
                       Figma
                     </Badge>
                   )}
-                  
+
                   {/* Add buttons for disabled features (admin/super_admin only) */}
-                  {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
+                  {(currentUser?.role === "admin" ||
+                    currentUser?.role === "super_admin") && (
                     <>
-                      {!(client.featureToggles as any)?.logoSystem && (
+                      {!client.featureToggles?.logoSystem && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
                             const newToggles = {
                               ...currentFeatures,
                               logoSystem: true,
@@ -360,14 +384,15 @@ export default function Clients() {
                           Logo
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.colorSystem && (
+                      {!client.featureToggles?.colorSystem && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
                             const newToggles = {
                               ...currentFeatures,
                               colorSystem: true,
@@ -383,14 +408,15 @@ export default function Clients() {
                           Colors
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.typeSystem && (
+                      {!client.featureToggles?.typeSystem && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
                             const newToggles = {
                               ...currentFeatures,
                               typeSystem: true,
@@ -406,14 +432,15 @@ export default function Clients() {
                           Type
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.userPersonas && (
+                      {!client.featureToggles?.userPersonas && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
                             const newToggles = {
                               ...currentFeatures,
                               userPersonas: true,
@@ -429,14 +456,15 @@ export default function Clients() {
                           Personas
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.inspiration && (
+                      {!client.featureToggles?.inspiration && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
                             const newToggles = {
                               ...currentFeatures,
                               inspiration: true,
@@ -452,14 +480,15 @@ export default function Clients() {
                           Inspo
                         </Button>
                       )}
-                      {!(client.featureToggles as any)?.figmaIntegration && (
+                      {!client.featureToggles?.figmaIntegration && (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
                           onClick={async (e) => {
                             e.stopPropagation();
-                            const currentFeatures = (client.featureToggles as any) || {};
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
                             const newToggles = {
                               ...currentFeatures,
                               figmaIntegration: true,
@@ -501,7 +530,7 @@ export default function Clients() {
                       <DropdownMenuItem
                         onClick={() => {
                           navigator.clipboard.writeText(
-                            `${window.location.origin}/clients/${client.id}`,
+                            `${window.location.origin}/clients/${client.id}`
                           );
                           toast({
                             description: "Client link copied to clipboard",
@@ -533,7 +562,9 @@ export default function Clients() {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-4">Name</th>
-                {filteredClients.some((client: Client) => client.description) && <th className="text-left p-4">Description</th>}
+                {filteredClients.some(
+                  (client: Client) => client.description
+                ) && <th className="text-left p-4">Description</th>}
                 <th className="text-left p-4">Features</th>
                 <th className="text-left p-4">Users</th>
                 <th className="text-left p-4">Created</th>
@@ -543,14 +574,15 @@ export default function Clients() {
             <tbody>
               {filteredClients.map((client: Client) => {
                 // Get feature toggles for this client
-                const clientFeatures = (client.featureToggles as any) || {
-                  logoSystem: true,
-                  colorSystem: true,
-                  typeSystem: true,
-                  userPersonas: true,
-                  inspiration: true,
-                  figmaIntegration: false,
-                };
+                const clientFeatures =
+                  (client.featureToggles as FeatureToggles) || {
+                    logoSystem: true,
+                    colorSystem: true,
+                    typeSystem: true,
+                    userPersonas: true,
+                    inspiration: true,
+                    figmaIntegration: false,
+                  };
 
                 return (
                   <tr
@@ -558,7 +590,9 @@ export default function Clients() {
                     className={`border-b transition-all duration-300 ${animatingRows[client.id] ? "opacity-0 transform translate-x-full" : "opacity-100"}`}
                   >
                     <td className="p-4">{client.name}</td>
-                    {client.description && <td className="p-4">{client.description}</td>}
+                    {client.description && (
+                      <td className="p-4">{client.description}</td>
+                    )}
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
                         {clientFeatures.logoSystem && (
@@ -706,9 +740,10 @@ export default function Clients() {
                             </Button>
                           </Badge>
                         )}
-                        
+
                         {/* Add buttons for disabled features (admin/super_admin only) */}
-                        {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && (
+                        {(currentUser?.role === "admin" ||
+                          currentUser?.role === "super_admin") && (
                           <>
                             {!clientFeatures.logoSystem && (
                               <Button
@@ -847,7 +882,10 @@ export default function Clients() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex flex-wrap gap-1 border-0 bg-transparent p-0"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {/* Fetch and display client users or use cached ones */}
                         {(clientUsersMap.get(client.id) || []).map((user) => (
                           <Badge
@@ -871,19 +909,19 @@ export default function Clients() {
                             )}
                           </Badge>
                         ))}
-                        
+
                         {/* User management dropdown */}
                         <Popover
                           onOpenChange={(open) => {
                             if (open) {
                               setActiveClientId(client.id);
-                              setUserSearchQuery('');
+                              setUserSearchQuery("");
                             }
                           }}
                         >
                           <PopoverTrigger asChild>
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               className="h-6 text-xs p-2 flex items-center gap-1"
                               onClick={() => setActiveClientId(client.id)}
                             >
@@ -891,26 +929,32 @@ export default function Clients() {
                               <span>Add User</span>
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-80 p-0 bg-white border shadow-md" align="start">
+                          <PopoverContent
+                            className="w-80 p-0 bg-white border shadow-md"
+                            align="start"
+                          >
                             <Command>
-                              <CommandInput 
-                                placeholder="Search users..." 
+                              <CommandInput
+                                placeholder="Search users..."
                                 className="border-none focus:ring-0"
                                 value={userSearchQuery}
                                 onValueChange={setUserSearchQuery}
                               />
-                              
+
                               <CommandList>
                                 <CommandEmpty>
                                   {userSearchQuery ? (
                                     <div className="py-3 px-4 text-sm text-center">
-                                      <p>No users found matching <strong>{userSearchQuery}</strong></p>
-                                      <Button 
-                                        variant="link" 
+                                      <p>
+                                        No users found matching{" "}
+                                        <strong>{userSearchQuery}</strong>
+                                      </p>
+                                      <Button
+                                        variant="link"
                                         className="mt-2 h-auto p-0"
                                         onClick={() => {
                                           setInviteEmail(userSearchQuery);
-                                          setInviteName('');
+                                          setInviteName("");
                                           setInviteDialogOpen(true);
                                         }}
                                       >
@@ -924,7 +968,7 @@ export default function Clients() {
                                     </div>
                                   )}
                                 </CommandEmpty>
-                                
+
                                 {filteredAvailableUsers.length > 0 && (
                                   <CommandGroup heading="Select a user">
                                     {filteredAvailableUsers.map((user) => (
@@ -938,25 +982,31 @@ export default function Clients() {
                                       >
                                         <UserCircle className="h-4 w-4 opacity-70" />
                                         <div className="flex flex-col">
-                                          <span className="font-medium">{user.name}</span>
-                                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                                          <span className="font-medium">
+                                            {user.name}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {user.email}
+                                          </span>
                                         </div>
                                       </CommandItem>
                                     ))}
                                   </CommandGroup>
                                 )}
-                                
+
                                 <CommandGroup>
                                   <CommandItem
                                     onSelect={() => {
                                       setInviteEmail(userSearchQuery);
-                                      setInviteName('');
+                                      setInviteName("");
                                       setInviteDialogOpen(true);
                                     }}
                                     className="flex items-center gap-2 cursor-pointer hover:bg-gray-100"
                                   >
                                     <UserPlus className="h-4 w-4 text-primary" />
-                                    <span className="font-medium">Invite new user</span>
+                                    <span className="font-medium">
+                                      Invite new user
+                                    </span>
                                   </CommandItem>
                                 </CommandGroup>
                               </CommandList>
@@ -994,10 +1044,11 @@ export default function Clients() {
                             <DropdownMenuItem
                               onClick={() => {
                                 navigator.clipboard.writeText(
-                                  `${window.location.origin}/clients/${client.id}`,
+                                  `${window.location.origin}/clients/${client.id}`
                                 );
                                 toast({
-                                  description: "Client link copied to clipboard",
+                                  description:
+                                    "Client link copied to clipboard",
                                   duration: 2000,
                                 });
                               }}
@@ -1054,8 +1105,8 @@ export default function Clients() {
                 <Input
                   value={editingClient?.name || ""}
                   onChange={(e) =>
-                    setEditingClient((prev) =>
-                      prev ? { ...prev, name: e.target.value } : null,
+                    setEditingClient((prev: Client | null) =>
+                      prev ? { ...prev, name: e.target.value } : null
                     )
                   }
                 />
@@ -1065,8 +1116,8 @@ export default function Clients() {
                 <Textarea
                   value={editingClient?.description || ""}
                   onChange={(e) =>
-                    setEditingClient((prev) =>
-                      prev ? { ...prev, description: e.target.value } : null,
+                    setEditingClient((prev: Client | null) =>
+                      prev ? { ...prev, description: e.target.value } : null
                     )
                   }
                 />
@@ -1220,18 +1271,21 @@ export default function Clients() {
             <Button
               onClick={() =>
                 editingClient &&
-                updateClient.mutate({
-                  id: editingClient.id,
-                  data: {
-                    name: editingClient.name,
-                    description: editingClient.description,
-                    featureToggles: featureToggles,
+                updateClient.mutate(
+                  {
+                    id: editingClient.id,
+                    data: {
+                      name: editingClient.name,
+                      description: editingClient.description,
+                      featureToggles: featureToggles,
+                    },
                   },
-                }, {
-                  onSuccess: () => {
-                    setEditingClient(null);
+                  {
+                    onSuccess: () => {
+                      setEditingClient(null);
+                    },
                   }
-                })
+                )
               }
               disabled={updateClient.isPending}
             >
@@ -1287,38 +1341,39 @@ export default function Clients() {
           <DialogHeader>
             <DialogTitle>Invite User</DialogTitle>
             <DialogDescription>
-              Send an invitation to a new user to join the platform and this client.
+              Send an invitation to a new user to join the platform and this
+              client.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email"
-                value={inviteEmail} 
-                onChange={(e) => setInviteEmail(e.target.value)} 
+              <Label htmlFor={emailId}>Email</Label>
+              <Input
+                id={emailId}
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
                 placeholder="user@example.com"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Name (optional)</Label>
-              <Input 
-                id="name"
-                value={inviteName} 
-                onChange={(e) => setInviteName(e.target.value)} 
+              <Label htmlFor={nameId}>Name (optional)</Label>
+              <Input
+                id={nameId}
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
                 placeholder="User's name"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select 
-                defaultValue={inviteRole} 
+              <Label htmlFor={roleId}>Role</Label>
+              <Select
+                defaultValue={inviteRole}
                 onValueChange={(value) => setInviteRole(value)}
               >
-                <SelectTrigger id="role">
+                <SelectTrigger id={roleId}>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1331,25 +1386,25 @@ export default function Clients() {
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setInviteDialogOpen(false)}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 if (!activeClientId) return;
-                
+
                 inviteUser.mutate({
-                  email: inviteEmail, 
-                  name: inviteName, 
-                  role: inviteRole
+                  email: inviteEmail,
+                  name: inviteName,
+                  role: inviteRole,
                 });
-                
+
                 setInviteDialogOpen(false);
-                setInviteEmail('');
-                setInviteName('');
+                setInviteEmail("");
+                setInviteName("");
               }}
               disabled={!inviteEmail || inviteUser.isPending}
             >

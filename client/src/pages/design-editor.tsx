@@ -1,15 +1,15 @@
+import type { BrandAsset } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { FontManager } from "@/components/brand/font-manager";
-import { ColorManager } from "@/components/brand/color-manager";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
-import { BrandAsset } from "@shared/schema";
 import { useParams } from "wouter";
+import { ColorManager } from "@/components/brand/color-manager";
+import { FontManager } from "@/components/brand/font-manager/font-manager";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 interface DesignSettings {
   radius: number;
@@ -29,24 +29,9 @@ export default function DesignEditor() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { id } = useParams();
-  const clientId = id ? parseInt(id) : null;
+  const clientId = id ? parseInt(id, 10) : null;
   const [activeTab, setActiveTab] = useState("typography");
-
-  // Validate clientId
-  if (!clientId || isNaN(clientId)) {
-    return (
-      <div className="container py-8 max-w-6xl">
-        <Card>
-          <div className="p-6">
-            <h1>Invalid Client ID</h1>
-            <p className="text-muted-foreground">
-              Please provide a valid client ID to access the design editor.
-            </p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  const validClientId = Boolean(clientId && !Number.isNaN(clientId));
 
   // Fetch design settings and assets
   const { data: designSettings } = useQuery<DesignSettings>({
@@ -55,6 +40,7 @@ export default function DesignEditor() {
 
   const { data: brandAssets } = useQuery<BrandAsset[]>({
     queryKey: [`/api/clients/${clientId}/assets`],
+    enabled: validClientId,
   });
 
   // Update design settings mutation
@@ -84,7 +70,7 @@ export default function DesignEditor() {
     },
   });
 
-  const handleSettingChange = (key: keyof DesignSettings, value: any) => {
+  const handleSettingChange = (key: keyof DesignSettings, value: unknown) => {
     updateSettings.mutate({ [key]: value });
   };
 
@@ -111,10 +97,11 @@ export default function DesignEditor() {
             <Card>
               <div className="p-6">
                 <FontManager
-                  clientId={clientId}
+                  clientId={clientId || 0}
                   fonts={
-                    brandAssets?.filter((asset) => asset.category === "font") ||
-                    []
+                    brandAssets?.filter(
+                      (asset: BrandAsset) => asset.category === "font"
+                    ) || []
                   }
                 />
               </div>
@@ -125,10 +112,10 @@ export default function DesignEditor() {
             <Card>
               <div className="p-6">
                 <ColorManager
-                  clientId={clientId}
+                  clientId={clientId || 0}
                   colors={
                     brandAssets?.filter(
-                      (asset) => asset.category === "color",
+                      (asset: BrandAsset) => asset.category === "color"
                     ) || []
                   }
                 />
@@ -191,7 +178,10 @@ export default function DesignEditor() {
                     </div>
                     <Button
                       variant="outline"
-                      onClick={() => updateSettings.mutate(designSettings!)}
+                      onClick={() =>
+                        designSettings && updateSettings.mutate(designSettings)
+                      }
+                      disabled={!designSettings}
                     >
                       Save Changes
                     </Button>

@@ -1,80 +1,80 @@
 {
-  "variant": "professional",
-  "primary": "hsl(205, 100%, 50%)",
-  "appearance": "light",
-  "radius": 0.4,
-  "animation": "smooth",
-  "font": {
-    "primary": "roc-grotesk",
-    "heading": "ivypresto-display"
-  },
-  "colors": {
-    "primary": "hsl(205, 100%, 50%)",
-    "background": "#ffffff",
-    "foreground": "#000000",
-    "muted": "#f1f5f9",
-    "muted-foreground": "#64748b",
-    "card": "#ffffff",
-    "card-foreground": "#000000",
-    "accent": "#f1f5f9",
-    "accent-foreground": "#0f172a",
-    "destructive": "#ef4444",
-    "destructive-foreground": "#ffffff",
-    "border": "#e2e8f0",
-    "ring": "hsl(205, 100%, 50%)"
-  },
-  "raw_tokens": {
-    "typography": {
-      "fontSizeBase": 1,
-      "lineHeightBase": 1.4,
-      "typeScaleBase": 1.4,
-      "letterSpacingBase": 0,
-      "fontFamily1Base": "Rock Grotesque",
-      "fontFamily2Base": "Rock Grotesque Wide",
-      "fontFamilyMonoBase": "monospace"
-    },
-    "colors": {
-      "brandPrimaryBase": "#08192B",
-      "brandSecondaryBase": "#4563AE",
-      "neutralBase": "hsl(0, 0%, 69%)",
-      "interactiveSuccessBase": "#4BBB84",
-      "interactiveWarningBase": "#e2bf6c",
-      "interactiveErrorBase": "#e33b3b",
-      "interactiveInfoBase": "#458FCD"
-    },
-    "spacing": {
-      "spacingUnitBase": 1,
-      "spacingScaleBase": 1.5
-    },
-    "borders": {
-      "borderWidthBase": 1,
-      "borderRadiusBase": 8
-    },
-    "components": {
-      "button": {
-        "primaryBackgroundColor": "brandPrimaryBase",
-        "primaryTextColor": "#ffffff",
-        "secondaryBackgroundColor": "transparent",
-        "secondaryTextColor": "brandPrimaryBase",
-        "borderRadius": "borderRadiusBase"
-      },
-      "input": {
-        "backgroundColor": "#854747",
-        "borderColor": "#e5e7eb",
-        "textColor": "#374151",
-        "borderRadius": "borderRadiusBase"
-      },
-      "card": {
-        "backgroundColor": "#ffffff",
-        "borderColor": "#e5e7eb",
-        "borderRadius": "borderRadiusBase"
-      }
-    }
-  },
-  "typography_extended": {
-    "headingScale": 1.25,
-    "bodyTextSize": 1,
-    "lineHeight": 1.6,
-    "headingWeight": "600"
-  }
+	"variant": "professional",
+	"primary": "hsl(205, 100%, 50%)",
+	"appearance": "light",
+	"radius": 0.4,
+	"animation": "smooth",
+	"font": {
+		"primary": "roc-grotesk",
+		"heading": "ivypresto-display"
+	},
+	"colors": {
+		"primary": "hsl(205, 100%, 50%)",
+		"background": "#ffffff",
+		"foreground": "#000000",
+		"muted": "#f1f5f9",
+		"muted-foreground": "#64748b",
+		"card": "#ffffff",
+		"card-foreground": "#000000",
+		"accent": "#f1f5f9",
+		"accent-foreground": "#0f172a",
+		"destructive": "#ef4444",
+		"destructive-foreground": "#ffffff",
+		"border": "#e2e8f0",
+		"ring": "hsl(205, 100%, 50%)"
+	},
+	"raw_tokens": {
+		"typography": {
+			"fontSizeBase": 1,
+			"lineHeightBase": 1.4,
+			"typeScaleBase": 1.4,
+			"letterSpacingBase": 0,
+			"fontFamily1Base": "Rock Grotesque",
+			"fontFamily2Base": "Rock Grotesque Wide",
+			"fontFamilyMonoBase": "monospace"
+		},
+		"colors": {
+			"brandPrimaryBase": "#08192B",
+			"brandSecondaryBase": "#4563AE",
+			"neutralBase": "hsl(0, 0%, 69%)",
+			"interactiveSuccessBase": "#4BBB84",
+			"interactiveWarningBase": "#e2bf6c",
+			"interactiveErrorBase": "#e33b3b",
+			"interactiveInfoBase": "#458FCD"
+		},
+		"spacing": {
+			"spacingUnitBase": 1,
+			"spacingScaleBase": 1.5
+		},
+		"borders": {
+			"borderWidthBase": 1,
+			"borderRadiusBase": 8
+		},
+		"components": {
+			"button": {
+				"primaryBackgroundColor": "brandPrimaryBase",
+				"primaryTextColor": "#ffffff",
+				"secondaryBackgroundColor": "transparent",
+				"secondaryTextColor": "brandPrimaryBase",
+				"borderRadius": "borderRadiusBase"
+			},
+			"input": {
+				"backgroundColor": "#854747",
+				"borderColor": "#e5e7eb",
+				"textColor": "#374151",
+				"borderRadius": "borderRadiusBase"
+			},
+			"card": {
+				"backgroundColor": "#ffffff",
+				"borderColor": "#e5e7eb",
+				"borderRadius": "borderRadiusBase"
+			}
+		}
+	},
+	"typography_extended": {
+		"headingScale": 1.25,
+		"bodyTextSize": 1,
+		"lineHeight": 1.6,
+		"headingWeight": "600"
+	}
 }

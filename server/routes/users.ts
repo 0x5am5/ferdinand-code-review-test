@@ -1,18 +1,20 @@
-import type { Express } from "express";
-import { storage } from "../storage";
 import {
-  UserRole,
-  users,
-  userClients,
-  invitations,
-  insertUserClientSchema,
+  type Client,
   clients,
+  insertUserClientSchema,
+  invitations,
+  type User,
+  UserRole,
+  userClients,
+  users,
 } from "@shared/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
+import type { Express } from "express";
+import { validateClientId } from "server/middlewares/vaildateClientId";
+import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import { validateClientId } from "server/middlewares/vaildateClientId";
-import { RequestWithClientId } from "server/routes";
+import { storage } from "../storage";
 
 export function registerUserRoutes(app: Express) {
   // Get current user
@@ -26,9 +28,30 @@ export function registerUserRoutes(app: Express) {
         return res.status(404).json({ message: "User not found" });
       }
       res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching user:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching user" });
+    }
+  });
+
+  // Get current user's assigned clients
+  app.get("/api/user/clients", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const clients = await storage.getUserClients(req.session.userId);
+      res.json(clients);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching user clients:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error fetching user clients" });
     }
   });
 
@@ -44,7 +67,7 @@ export function registerUserRoutes(app: Express) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      let allUsers;
+      let allUsers: (typeof users.$inferSelect)[];
       if (currentUser.role === UserRole.SUPER_ADMIN) {
         allUsers = await db.select().from(users);
       } else if (currentUser.role === UserRole.ADMIN) {
@@ -57,11 +80,11 @@ export function registerUserRoutes(app: Express) {
           .where(
             inArray(
               userClients.clientId,
-              adminClients.map((c) => c.id),
-            ),
+              adminClients.map((c) => c.id)
+            )
           );
 
-        const userIds = [...new Set(clientUsers.map((uc) => uc.userId))];
+        const userIds = Array.from(new Set(clientUsers.map((uc) => uc.userId)));
         // Include the current admin user even if they don't have client assignments
         if (!userIds.includes(currentUser.id)) {
           userIds.push(currentUser.id);
@@ -76,8 +99,11 @@ export function registerUserRoutes(app: Express) {
       }
 
       res.json(allUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching users:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching users" });
     }
   });
@@ -128,7 +154,7 @@ export function registerUserRoutes(app: Express) {
 
       // Get client information if a clientId is provided
       let clientName = "our platform";
-      let logoUrl = undefined;
+      let logoUrl: string | undefined;
 
       if (invitationData.clientIds && invitationData.clientIds.length > 0) {
         try {
@@ -137,10 +163,10 @@ export function registerUserRoutes(app: Express) {
             clientName = client.name;
             logoUrl = client.logo || undefined;
           }
-        } catch (err) {
+        } catch (err: unknown) {
           console.error(
             "Error fetching client data for invitation email:",
-            err,
+            err instanceof Error ? err.message : "Unknown error"
           );
           // Continue with default values if client fetch fails
         }
@@ -158,8 +184,11 @@ export function registerUserRoutes(app: Express) {
         });
 
         console.log(`Invitation email sent to ${invitationData.email}`);
-      } catch (emailError) {
-        console.error("Failed to send invitation email:", emailError);
+      } catch (emailError: unknown) {
+        console.error(
+          "Failed to send invitation email:",
+          emailError instanceof Error ? emailError.message : "Unknown error"
+        );
         // We don't want to fail the entire invitation process if just the email fails
       }
 
@@ -172,8 +201,11 @@ export function registerUserRoutes(app: Express) {
         inviteLink,
         message: "User invited successfully",
       });
-    } catch (error) {
-      console.error("Error inviting user:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error inviting user:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error inviting user" });
     }
   });
@@ -192,11 +224,14 @@ export function registerUserRoutes(app: Express) {
 
       const updatedUser = await storage.updateUserRole(
         req.session.userId,
-        role,
+        role
       );
       res.json(updatedUser);
-    } catch (error) {
-      console.error("Error updating user role:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating user role:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error updating user role" });
     }
   });
@@ -208,8 +243,8 @@ export function registerUserRoutes(app: Express) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
@@ -235,34 +270,37 @@ export function registerUserRoutes(app: Express) {
         // Admins cannot assign super_admin or admin roles
         if (role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN) {
           return res.status(403).json({
-            message: "Only super admins can assign admin roles"
+            message: "Only super admins can assign admin roles",
           });
         }
 
         // Admins cannot modify super_admin users
         if (targetUser.role === UserRole.SUPER_ADMIN) {
           return res.status(403).json({
-            message: "You cannot modify super admin roles"
+            message: "You cannot modify super admin roles",
           });
         }
 
         // Admins cannot change their own role
         if (targetUser.id === currentUser.id) {
           return res.status(403).json({
-            message: "You cannot change your own role"
+            message: "You cannot change your own role",
           });
         }
       } else if (currentUser.role !== UserRole.SUPER_ADMIN) {
         // Only super admins and admins can change roles
         return res.status(403).json({
-          message: "Insufficient permissions to change user roles"
+          message: "Insufficient permissions to change user roles",
         });
       }
 
       const updatedUser = await storage.updateUserRole(id, role);
       res.json(updatedUser);
-    } catch (error) {
-      console.error("Error updating user role:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating user role:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error updating user role" });
     }
   });
@@ -270,8 +308,8 @@ export function registerUserRoutes(app: Express) {
   // Send password reset email
   app.post("/api/users/:id/reset-password", async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
-      if (isNaN(userId)) {
+      const userId = parseInt(req.params.id, 10);
+      if (Number.isNaN(userId)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
@@ -288,7 +326,7 @@ export function registerUserRoutes(app: Express) {
       };
 
       const resetToken = Buffer.from(JSON.stringify(tokenData)).toString(
-        "base64",
+        "base64"
       );
       const baseUrl = process.env.APP_URL || `http://${req.headers.host}`;
       const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
@@ -300,8 +338,11 @@ export function registerUserRoutes(app: Express) {
       });
 
       res.json({ success: true, message: "Password reset email sent" });
-    } catch (error) {
-      console.error("Error sending password reset:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error sending password reset:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Failed to send password reset email" });
     }
   });
@@ -347,8 +388,11 @@ export function registerUserRoutes(app: Express) {
       });
 
       res.json({ success: true });
-    } catch (error) {
-      console.error("Error processing reset:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error processing reset:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res
         .status(500)
         .json({ message: "An error occurred while resetting your password" });
@@ -358,39 +402,45 @@ export function registerUserRoutes(app: Express) {
   // Get clients for a user
   app.get("/api/users/:id/clients", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
+      const id = parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
       }
 
       const clients = await storage.getUserClients(id);
       res.json(clients);
-    } catch (error) {
-      console.error("Error fetching user clients:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching user clients:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching user clients" });
     }
   });
 
   // Get all client assignments for all users
-  app.get("/api/users/client-assignments", async (req, res) => {
+  app.get("/api/users/client-assignments", async (_req, res) => {
     try {
       // Get all users
       const userList = await storage.getUsers();
 
       // Create a map to store user assignments
-      const assignments: Record<number, any[]> = {};
+      const assignments: Record<number, Client[]> = {};
 
       // Get clients for each user
       await Promise.all(
-        userList.map(async (user) => {
+        userList.map(async (user: User) => {
           const userClients = await storage.getUserClients(user.id);
           assignments[user.id] = userClients;
-        }),
+        })
       );
 
       res.json(assignments);
-    } catch (error) {
-      console.error("Error fetching client assignments:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching client assignments:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching client assignments" });
     }
   });
@@ -416,8 +466,8 @@ export function registerUserRoutes(app: Express) {
         .where(
           and(
             eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId),
-          ),
+            eq(userClients.clientId, clientId)
+          )
         );
 
       if (existingRelationship.length > 0) {
@@ -465,8 +515,11 @@ export function registerUserRoutes(app: Express) {
         .returning();
 
       res.status(201).json(userClient);
-    } catch (error) {
-      console.error("Error creating user-client relationship:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error creating user-client relationship:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       // Return more detailed error message for debugging
       res.status(500).json({
         message: "Error creating user-client relationship",
@@ -478,10 +531,10 @@ export function registerUserRoutes(app: Express) {
   // Delete user-client relationship
   app.delete("/api/user-clients/:userId/:clientId", async (req, res) => {
     try {
-      const userId = parseInt(req.params.userId);
-      const clientId = parseInt(req.params.clientId);
+      const userId = parseInt(req.params.userId, 10);
+      const clientId = parseInt(req.params.clientId, 10);
 
-      if (isNaN(userId) || isNaN(clientId)) {
+      if (Number.isNaN(userId) || Number.isNaN(clientId)) {
         return res.status(400).json({ message: "Invalid user or client ID" });
       }
 
@@ -491,8 +544,8 @@ export function registerUserRoutes(app: Express) {
         .where(
           and(
             eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId),
-          ),
+            eq(userClients.clientId, clientId)
+          )
         )
         .execute();
 
@@ -503,8 +556,8 @@ export function registerUserRoutes(app: Express) {
         .where(
           and(
             eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId),
-          ),
+            eq(userClients.clientId, clientId)
+          )
         );
 
       if (verifyDeletion.length > 0) {
@@ -514,8 +567,11 @@ export function registerUserRoutes(app: Express) {
       res
         .status(200)
         .json({ message: "User-client relationship deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting user-client relationship:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error deleting user-client relationship:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res
         .status(500)
         .json({ message: "Error deleting user-client relationship" });
@@ -528,7 +584,10 @@ export function registerUserRoutes(app: Express) {
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
-        const clientId = req.clientId!;
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
 
         // Query all users who have this client assigned
         const userClientRows = await db
@@ -550,10 +609,13 @@ export function registerUserRoutes(app: Express) {
           .where(inArray(users.id, userIds));
 
         res.json(userList);
-      } catch (error) {
-        console.error("Error fetching client users:", error);
+      } catch (error: unknown) {
+        console.error(
+          "Error fetching client users:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
         res.status(500).json({ message: "Failed to fetch client users" });
       }
-    },
+    }
   );
 }

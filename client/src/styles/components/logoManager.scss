@@ -151,10 +151,6 @@
           padding: 0.25rem 0.5rem;
           transition: all 0.2s;
 
-          &:hover {
-            background-color: hsl(var(--muted));
-          }
-
           svg {
             width: 0.875rem;
             height: 0.875rem;
@@ -198,10 +194,6 @@
 
       &.dark {
         background: #fff;
-
-        &:hover {
-          background: hsl(var(--muted));
-        }
       }
     }
 

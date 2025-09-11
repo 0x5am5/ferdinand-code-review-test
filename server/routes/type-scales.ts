@@ -1,25 +1,30 @@
+import {
+  insertTypeScaleSchema,
+  type TypeScale,
+  type TypeStyle,
+} from "@shared/schema";
 import type { Express } from "express";
 import { storage } from "../storage";
-import { insertTypeScaleSchema, type InsertTypeScale } from "@shared/schema";
-import { z } from "zod";
 
 export function registerTypeScalesRoutes(app: Express) {
   // Get all type scales for a client
   app.get("/api/clients/:clientId/type-scales", async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = parseInt(req.params.clientId, 10);
 
-      if (isNaN(clientId)) {
+      if (Number.isNaN(clientId)) {
         return res.status(400).json({ error: "Invalid client ID" });
       }
 
       const typeScales = await storage.getClientTypeScales(clientId);
 
       // Migrate type scales to new hierarchy if they don't have the new structure
-      const migratedTypeScales = typeScales.map(typeScale => {
-        const currentTypeStyles = typeScale.typeStyles as any[] || [];
-        const hasNewStructure = currentTypeStyles.some(style => 
-          ['body-large', 'body-small', 'caption', 'quote', 'code'].includes(style.level)
+      const migratedTypeScales = typeScales.map((typeScale: TypeScale) => {
+        const currentTypeStyles = (typeScale.typeStyles as TypeStyle[]) || [];
+        const hasNewStructure = currentTypeStyles.some((style) =>
+          ["body-large", "body-small", "caption", "quote", "code"].includes(
+            style.level
+          )
         );
 
         if (!hasNewStructure) {
@@ -28,21 +33,24 @@ export function registerTypeScalesRoutes(app: Express) {
           // return migrateTypeScaleToNewHierarchy(typeScale);
           return {
             ...typeScale,
-            individualHeaderStyles: typeScale.individual_header_styles || {},
-            individualBodyStyles: typeScale.individual_body_styles || {},
+            individualHeaderStyles: typeScale.individualHeaderStyles || {},
+            individualBodyStyles: typeScale.individualBodyStyles || {},
           }; // Placeholder, replace with actual migration logic
         }
 
         return {
           ...typeScale,
-          individualHeaderStyles: typeScale.individual_header_styles || {},
-          individualBodyStyles: typeScale.individual_body_styles || {},
+          individualHeaderStyles: typeScale.individualHeaderStyles || {},
+          individualBodyStyles: typeScale.individualBodyStyles || {},
         };
       });
 
       res.json(migratedTypeScales);
-    } catch (error) {
-      console.error("Error fetching type scales:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching type scales:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to fetch type scales" });
     }
   });
@@ -50,9 +58,9 @@ export function registerTypeScalesRoutes(app: Express) {
   // Get a specific type scale
   app.get("/api/type-scales/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
 
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
 
@@ -63,8 +71,11 @@ export function registerTypeScalesRoutes(app: Express) {
       }
 
       res.json(typeScale);
-    } catch (error) {
-      console.error("Error fetching type scale:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching type scale:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to fetch type scale" });
     }
   });
@@ -72,29 +83,32 @@ export function registerTypeScalesRoutes(app: Express) {
   // Create a new type scale
   app.post("/api/clients/:clientId/type-scales", async (req, res) => {
     try {
-      const clientId = parseInt(req.params.clientId);
+      const clientId = parseInt(req.params.clientId, 10);
 
-      if (isNaN(clientId)) {
+      if (Number.isNaN(clientId)) {
         return res.status(400).json({ error: "Invalid client ID" });
       }
 
       // Validate the request body
       const validationResult = insertTypeScaleSchema.safeParse({
         ...req.body,
-        clientId
+        clientId,
       });
 
       if (!validationResult.success) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Invalid type scale data",
-          details: validationResult.error.errors
+          details: validationResult.error.errors,
         });
       }
 
       const typeScale = await storage.createTypeScale(validationResult.data);
       res.status(201).json(typeScale);
-    } catch (error) {
-      console.error("Error creating type scale:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error creating type scale:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to create type scale" });
     }
   });
@@ -102,9 +116,9 @@ export function registerTypeScalesRoutes(app: Express) {
   // Update a type scale
   app.patch("/api/type-scales/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
 
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
 
@@ -121,19 +135,25 @@ export function registerTypeScalesRoutes(app: Express) {
       delete updateData.createdAt; // Remove createdAt from updates
 
       // Ensure any timestamp strings are converted to Date objects
-      if (updateData.updatedAt && typeof updateData.updatedAt === 'string') {
+      if (updateData.updatedAt && typeof updateData.updatedAt === "string") {
         updateData.updatedAt = new Date(updateData.updatedAt);
       }
-      if (updateData.createdAt && typeof updateData.createdAt === 'string') {
+      if (updateData.createdAt && typeof updateData.createdAt === "string") {
         delete updateData.createdAt; // Don't update createdAt
       }
 
-      console.log("Updating type scale with data:", JSON.stringify(updateData, null, 2));
+      console.log(
+        "Updating type scale with data:",
+        JSON.stringify(updateData, null, 2)
+      );
 
       const updatedTypeScale = await storage.updateTypeScale(id, updateData);
       res.json(updatedTypeScale);
-    } catch (error) {
-      console.error("Error updating type scale:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error updating type scale:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to update type scale" });
     }
   });
@@ -141,9 +161,9 @@ export function registerTypeScalesRoutes(app: Express) {
   // Delete a type scale
   app.delete("/api/type-scales/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
 
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
 
@@ -155,8 +175,11 @@ export function registerTypeScalesRoutes(app: Express) {
 
       await storage.deleteTypeScale(id);
       res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting type scale:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error deleting type scale:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to delete type scale" });
     }
   });
@@ -164,9 +187,9 @@ export function registerTypeScalesRoutes(app: Express) {
   // Generate CSS export for a type scale
   app.post("/api/type-scales/:id/export/css", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
 
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
 
@@ -182,8 +205,8 @@ export function registerTypeScalesRoutes(app: Express) {
       const newExport = {
         format: "css" as const,
         content: css,
-        fileName: `${typeScale.name.toLowerCase().replace(/\s+/g, '-')}-type-scale.css`,
-        exportedAt: new Date().toISOString()
+        fileName: `${typeScale.name.toLowerCase().replace(/\s+/g, "-")}-type-scale.css`,
+        exportedAt: new Date().toISOString(),
       };
 
       const updatedExports = [...(typeScale.exports || []), newExport];
@@ -192,10 +215,13 @@ export function registerTypeScalesRoutes(app: Express) {
       res.json({
         content: css,
         fileName: newExport.fileName,
-        mimeType: "text/css"
+        mimeType: "text/css",
       });
-    } catch (error) {
-      console.error("Error generating CSS export:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error generating CSS export:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to generate CSS export" });
     }
   });
@@ -203,9 +229,9 @@ export function registerTypeScalesRoutes(app: Express) {
   // Generate SCSS export for a type scale
   app.post("/api/type-scales/:id/export/scss", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
 
-      if (isNaN(id)) {
+      if (Number.isNaN(id)) {
         return res.status(400).json({ error: "Invalid type scale ID" });
       }
 
@@ -221,8 +247,8 @@ export function registerTypeScalesRoutes(app: Express) {
       const newExport = {
         format: "scss" as const,
         content: scss,
-        fileName: `${typeScale.name.toLowerCase().replace(/\s+/g, '-')}-type-scale.scss`,
-        exportedAt: new Date().toISOString()
+        fileName: `${typeScale.name.toLowerCase().replace(/\s+/g, "-")}-type-scale.scss`,
+        exportedAt: new Date().toISOString(),
       };
 
       const updatedExports = [...(typeScale.exports || []), newExport];
@@ -231,24 +257,32 @@ export function registerTypeScalesRoutes(app: Express) {
       res.json({
         content: scss,
         fileName: newExport.fileName,
-        mimeType: "text/scss"
+        mimeType: "text/scss",
       });
-    } catch (error) {
-      console.error("Error generating SCSS export:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error generating SCSS export:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ error: "Failed to generate SCSS export" });
     }
   });
 }
 
 // Helper function to calculate font size based on scale ratio and step
-function calculateFontSize(baseSize: number, ratio: number, step: number, unit: string): string {
+function calculateFontSize(
+  baseSize: number,
+  ratio: number,
+  step: number,
+  unit: string
+): string {
   const actualRatio = ratio / 1000; // Convert from stored integer format
-  const size = Math.round(baseSize * Math.pow(actualRatio, step) * 100) / 100;
+  const size = Math.round(baseSize * actualRatio ** step * 100) / 100;
   return `${size}${unit}`;
 }
 
 // Helper function to generate CSS from type scale
-function generateCSS(typeScale: any): string {
+function generateCSS(typeScale: TypeScale): string {
   const { baseSize, scaleRatio, unit, typeStyles } = typeScale;
   const actualRatio = scaleRatio / 1000;
 
@@ -258,13 +292,13 @@ function generateCSS(typeScale: any): string {
   css += `  --type-scale-ratio: ${actualRatio};\n\n`;
 
   // Generate CSS custom properties for each type style
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
-    const varName = style.level.replace('-', '_');
+    const varName = style.level.replace("-", "_");
     css += `  --font-size-${varName}: ${size};\n`;
     css += `  --font-weight-${varName}: ${style.fontWeight};\n`;
     css += `  --line-height-${varName}: ${style.lineHeight};\n`;
-    css += `  --letter-spacing-${varName}: ${style.letterSpacing}${unit === 'px' ? 'px' : 'em'};\n`;
+    css += `  --letter-spacing-${varName}: ${style.letterSpacing}${unit === "px" ? "px" : "em"};\n`;
     css += `  --color-${varName}: ${style.color};\n`;
   });
 
@@ -272,10 +306,10 @@ function generateCSS(typeScale: any): string {
 
   // Add global body styles
   css += `body, .body {\n`;
-  css += `  font-family: ${typeScale.bodyFontFamily || 'inherit'};\n`;
-  css += `  font-weight: ${typeScale.bodyFontWeight || '400'};\n`;
-  css += `  letter-spacing: ${typeScale.bodyLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
-  css += `  color: ${typeScale.bodyColor || '#000000'};\n`;
+  css += `  font-family: ${typeScale.bodyFontFamily || "inherit"};\n`;
+  css += `  font-weight: ${typeScale.bodyFontWeight || "400"};\n`;
+  css += `  letter-spacing: ${typeScale.bodyLetterSpacing || 0}${unit === "px" ? "px" : "em"};\n`;
+  css += `  color: ${typeScale.bodyColor || "#000000"};\n`;
   if (typeScale.bodyTextTransform) {
     css += `  text-transform: ${typeScale.bodyTextTransform};\n`;
   }
@@ -289,10 +323,10 @@ function generateCSS(typeScale: any): string {
 
   // Add global header styles
   css += `h1, h2, h3, h4, h5, h6, .header {\n`;
-  css += `  font-family: ${typeScale.headerFontFamily || 'inherit'};\n`;
-  css += `  font-weight: ${typeScale.headerFontWeight || '700'};\n`;
-  css += `  letter-spacing: ${typeScale.headerLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
-  css += `  color: ${typeScale.headerColor || '#000000'};\n`;
+  css += `  font-family: ${typeScale.headerFontFamily || "inherit"};\n`;
+  css += `  font-weight: ${typeScale.headerFontWeight || "700"};\n`;
+  css += `  letter-spacing: ${typeScale.headerLetterSpacing || 0}${unit === "px" ? "px" : "em"};\n`;
+  css += `  color: ${typeScale.headerColor || "#000000"};\n`;
   if (typeScale.headerTextTransform) {
     css += `  text-transform: ${typeScale.headerTextTransform};\n`;
   }
@@ -305,18 +339,18 @@ function generateCSS(typeScale: any): string {
   css += `}\n\n`;
 
   // Generate utility classes
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     const className = style.level;
     css += `.${className} {\n`;
     css += `  font-size: ${size};\n`;
     css += `  font-weight: ${style.fontWeight};\n`;
     css += `  line-height: ${style.lineHeight};\n`;
-    css += `  letter-spacing: ${style.letterSpacing}${unit === 'px' ? 'px' : 'em'};\n`;
+    css += `  letter-spacing: ${style.letterSpacing}${unit === "px" ? "px" : "em"};\n`;
     css += `  color: ${style.color};\n`;
 
     // Add special styling for specific elements
-    if (style.level === 'code') {
+    if (style.level === "code") {
       css += `  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;\n`;
       css += `  background-color: rgba(0, 0, 0, 0.05);\n`;
       css += `  padding: 0.25rem 0.5rem;\n`;
@@ -324,14 +358,14 @@ function generateCSS(typeScale: any): string {
       css += `  border: 1px solid rgba(0, 0, 0, 0.1);\n`;
     }
 
-    if (style.level === 'quote') {
+    if (style.level === "quote") {
       css += `  font-style: italic;\n`;
       css += `  border-left: 4px solid rgba(0, 0, 0, 0.1);\n`;
       css += `  padding-left: 1rem;\n`;
       css += `  margin: 1rem 0;\n`;
     }
 
-    if (style.level === 'caption') {
+    if (style.level === "caption") {
       css += `  color: #666666;\n`;
     }
 
@@ -342,7 +376,7 @@ function generateCSS(typeScale: any): string {
 }
 
 // Helper function to generate SCSS from type scale
-function generateSCSS(typeScale: any): string {
+function generateSCSS(typeScale: TypeScale): string {
   const { baseSize, scaleRatio, unit, typeStyles } = typeScale;
   const actualRatio = scaleRatio / 1000;
 
@@ -351,27 +385,27 @@ function generateSCSS(typeScale: any): string {
   scss += `$type-scale-ratio: ${actualRatio};\n\n`;
 
   // Generate SCSS variables for each type style
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     scss += `$font-size-${style.level}: ${size};\n`;
   });
 
   scss += `\n// Type scale map\n`;
   scss += `$type-scale: (\n`;
-  typeStyles.forEach((style: any, index: number) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle, index: number) => {
     const size = calculateFontSize(baseSize, scaleRatio, style.size, unit);
     scss += `  "${style.level}": ${size}`;
-    if (index < typeStyles.length - 1) scss += ',';
+    if (index < (typeStyles as TypeStyle[]).length - 1) scss += ",";
     scss += `\n`;
   });
   scss += `);\n\n`;
 
   // Add global body styles
   scss += `body, .body {\n`;
-  scss += `  font-family: ${typeScale.bodyFontFamily || 'inherit'};\n`;
-  scss += `  font-weight: ${typeScale.bodyFontWeight || '400'};\n`;
-  scss += `  letter-spacing: ${typeScale.bodyLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
-  scss += `  color: ${typeScale.bodyColor || '#000000'};\n`;
+  scss += `  font-family: ${typeScale.bodyFontFamily || "inherit"};\n`;
+  scss += `  font-weight: ${typeScale.bodyFontWeight || "400"};\n`;
+  scss += `  letter-spacing: ${typeScale.bodyLetterSpacing || 0}${unit === "px" ? "px" : "em"};\n`;
+  scss += `  color: ${typeScale.bodyColor || "#000000"};\n`;
   if (typeScale.bodyTextTransform) {
     scss += `  text-transform: ${typeScale.bodyTextTransform};\n`;
   }
@@ -385,10 +419,10 @@ function generateSCSS(typeScale: any): string {
 
   // Add global header styles
   scss += `h1, h2, h3, h4, h5, h6, .header {\n`;
-  scss += `  font-family: ${typeScale.headerFontFamily || 'inherit'};\n`;
-  scss += `  font-weight: ${typeScale.headerFontWeight || '700'};\n`;
-  scss += `  letter-spacing: ${typeScale.headerLetterSpacing || 0}${unit === 'px' ? 'px' : 'em'};\n`;
-  scss += `  color: ${typeScale.headerColor || '#000000'};\n`;
+  scss += `  font-family: ${typeScale.headerFontFamily || "inherit"};\n`;
+  scss += `  font-weight: ${typeScale.headerFontWeight || "700"};\n`;
+  scss += `  letter-spacing: ${typeScale.headerLetterSpacing || 0}${unit === "px" ? "px" : "em"};\n`;
+  scss += `  color: ${typeScale.headerColor || "#000000"};\n`;
   if (typeScale.headerTextTransform) {
     scss += `  text-transform: ${typeScale.headerTextTransform};\n`;
   }
@@ -407,12 +441,12 @@ function generateSCSS(typeScale: any): string {
   scss += `}\n\n`;
 
   // Generate utility classes
-  typeStyles.forEach((style: any) => {
+  (typeStyles as TypeStyle[]).forEach((style: TypeStyle) => {
     scss += `.text-${style.level} {\n`;
     scss += `  @include type-scale("${style.level}");\n`;
     scss += `  font-weight: ${style.fontWeight};\n`;
     scss += `  line-height: ${style.lineHeight};\n`;
-    scss += `  letter-spacing: ${style.letterSpacing}${unit === 'px' ? 'px' : 'em'};\n`;
+    scss += `  letter-spacing: ${style.letterSpacing}${unit === "px" ? "px" : "em"};\n`;
     scss += `  color: ${style.color};\n`;
     if (style.backgroundColor) {
       scss += `  background-color: ${style.backgroundColor};\n`;

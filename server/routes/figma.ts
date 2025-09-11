@@ -1,7 +1,7 @@
+import { insertFigmaConnectionSchema, UserRole } from "@shared/schema";
 import type { Express } from "express";
-import { storage } from "../storage";
-import { UserRole, insertFigmaConnectionSchema, insertFigmaSyncLogSchema } from "@shared/schema";
 import { z } from "zod";
+import { storage } from "../storage";
 
 // Figma API Base URL
 const FIGMA_API_BASE = "https://api.figma.com/v1";
@@ -9,8 +9,8 @@ const FIGMA_API_BASE = "https://api.figma.com/v1";
 interface FigmaFile {
   key: string;
   name: string;
-  lastModified: string;
-  thumbnailUrl: string;
+  last_modified: string;
+  thumbnail_url: string;
 }
 
 interface FigmaFileResponse {
@@ -18,22 +18,18 @@ interface FigmaFileResponse {
     id: string;
     name: string;
     type: string;
-    children: any[];
+    children: FigmaFile[];
   };
-  styles: Record<string, {
-    key: string;
-    name: string;
-    styleType: string;
-    description: string;
-  }>;
+  styles: Record<
+    string,
+    {
+      key: string;
+      name: string;
+      styleType: string;
+      description: string;
+    }
+  >;
   lastModified: string;
-}
-
-interface FigmaStyle {
-  key: string;
-  name: string;
-  styleType: "FILL" | "TEXT" | "EFFECT" | "GRID";
-  description: string;
 }
 
 export function registerFigmaRoutes(app: Express) {
@@ -41,7 +37,7 @@ export function registerFigmaRoutes(app: Express) {
   app.get("/api/figma/connections/:clientId", async (req, res) => {
     try {
       const { clientId } = req.params;
-      
+
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -52,23 +48,28 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       // Check if user has access to this client
-      const client = await storage.getClient(parseInt(clientId));
+      const client = await storage.getClient(parseInt(clientId, 10));
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
 
-      const connections = await storage.getFigmaConnections(parseInt(clientId));
-      
+      const connections = await storage.getFigmaConnections(
+        parseInt(clientId, 10)
+      );
+
       // Remove sensitive access tokens from response
-      const sanitizedConnections = connections.map(conn => ({
+      const sanitizedConnections = connections.map((conn) => ({
         ...conn,
         accessToken: conn.accessToken ? "[REDACTED]" : null,
         refreshToken: conn.refreshToken ? "[REDACTED]" : null,
       }));
 
       res.json(sanitizedConnections);
-    } catch (error) {
-      console.error("Error fetching Figma connections:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching Figma connections:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching Figma connections" });
     }
   });
@@ -100,23 +101,26 @@ export function registerFigmaRoutes(app: Express) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        return res.status(response.status).json({ 
+        return res.status(response.status).json({
           message: "Invalid Figma access token",
-          error: errorText
+          error: errorText,
         });
       }
 
       const userData = await response.json();
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         user: {
           id: userData.id,
           email: userData.email,
-          handle: userData.handle
-        }
+          handle: userData.handle,
+        },
       });
-    } catch (error) {
-      console.error("Error testing Figma connection:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error testing Figma connection:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error testing Figma connection" });
     }
   });
@@ -135,8 +139,10 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       // Get files from team or user
-      let url = teamId ? `${FIGMA_API_BASE}/teams/${teamId}/projects` : `${FIGMA_API_BASE}/projects`;
-      
+      const url = teamId
+        ? `${FIGMA_API_BASE}/teams/${teamId}/projects`
+        : `${FIGMA_API_BASE}/projects`;
+
       const response = await fetch(url, {
         headers: {
           "X-Figma-Token": accessToken,
@@ -145,39 +151,47 @@ export function registerFigmaRoutes(app: Express) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        return res.status(response.status).json({ 
+        return res.status(response.status).json({
           message: "Failed to fetch Figma files",
-          error: errorText
+          error: errorText,
         });
       }
 
       const data = await response.json();
-      
+
       // Extract files from projects
       const files: FigmaFile[] = [];
       if (data.projects) {
         for (const project of data.projects) {
-          const projectResponse = await fetch(`${FIGMA_API_BASE}/projects/${project.id}/files`, {
-            headers: {
-              "X-Figma-Token": accessToken,
-            },
-          });
-          
+          const projectResponse = await fetch(
+            `${FIGMA_API_BASE}/projects/${project.id}/files`,
+            {
+              headers: {
+                "X-Figma-Token": accessToken,
+              },
+            }
+          );
+
           if (projectResponse.ok) {
             const projectData = await projectResponse.json();
-            files.push(...projectData.files.map((file: any) => ({
-              key: file.key,
-              name: file.name,
-              lastModified: file.last_modified,
-              thumbnailUrl: file.thumbnail_url,
-            })));
+            files.push(
+              ...projectData.files.map((file: FigmaFile) => ({
+                key: file.key,
+                name: file.name,
+                lastModified: file.last_modified,
+                thumbnailUrl: file.thumbnail_url,
+              }))
+            );
           }
         }
       }
 
       res.json({ files });
-    } catch (error) {
-      console.error("Error fetching Figma files:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching Figma files:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching Figma files" });
     }
   });
@@ -195,9 +209,13 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       // Only allow editors, admins, and super admins to create connections
-      if (![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role)) {
-        return res.status(403).json({ 
-          message: "Insufficient permissions to create Figma connections" 
+      if (
+        user.role !== UserRole.EDITOR &&
+        user.role !== UserRole.ADMIN &&
+        user.role !== UserRole.SUPER_ADMIN
+      ) {
+        return res.status(403).json({
+          message: "Insufficient permissions to create Figma connections",
         });
       }
 
@@ -207,25 +225,29 @@ export function registerFigmaRoutes(app: Express) {
       });
 
       // Test the connection before saving
-      const testResponse = await fetch(`${FIGMA_API_BASE}/files/${validatedData.figmaFileKey}`, {
-        headers: {
-          "X-Figma-Token": validatedData.accessToken,
-        },
-      });
+      const testResponse = await fetch(
+        `${FIGMA_API_BASE}/files/${validatedData.figmaFileKey}`,
+        {
+          headers: {
+            "X-Figma-Token": validatedData.accessToken,
+          },
+        }
+      );
 
       if (!testResponse.ok) {
-        return res.status(400).json({ 
-          message: "Unable to access Figma file with provided token" 
+        return res.status(400).json({
+          message: "Unable to access Figma file with provided token",
         });
       }
 
       const fileData = await testResponse.json();
-      
+
       // Update the connection with actual file name if different
-      validatedData.figmaFileName = fileData.name || validatedData.figmaFileName;
+      validatedData.figmaFileName =
+        fileData.name || validatedData.figmaFileName;
 
       const connection = await storage.createFigmaConnection(validatedData);
-      
+
       // Remove sensitive data from response
       const sanitizedConnection = {
         ...connection,
@@ -234,14 +256,17 @@ export function registerFigmaRoutes(app: Express) {
       };
 
       res.json(sanitizedConnection);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Invalid data", 
-          errors: error.errors 
+        return res.status(400).json({
+          message: "Invalid data",
+          errors: error.errors,
         });
       }
-      console.error("Error creating Figma connection:", error);
+      console.error(
+        "Error creating Figma connection:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error creating Figma connection" });
     }
   });
@@ -255,21 +280,26 @@ export function registerFigmaRoutes(app: Express) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const connection = await storage.getFigmaConnection(parseInt(connectionId));
+      const connection = await storage.getFigmaConnection(
+        parseInt(connectionId, 10)
+      );
       if (!connection) {
         return res.status(404).json({ message: "Figma connection not found" });
       }
 
       // Fetch styles from Figma
-      const response = await fetch(`${FIGMA_API_BASE}/files/${connection.figmaFileKey}/styles`, {
-        headers: {
-          "X-Figma-Token": connection.accessToken,
-        },
-      });
+      const response = await fetch(
+        `${FIGMA_API_BASE}/files/${connection.figmaFileKey}/styles`,
+        {
+          headers: {
+            "X-Figma-Token": connection.accessToken,
+          },
+        }
+      );
 
       if (!response.ok) {
-        return res.status(400).json({ 
-          message: "Failed to fetch styles from Figma file" 
+        return res.status(400).json({
+          message: "Failed to fetch styles from Figma file",
         });
       }
 
@@ -279,11 +309,14 @@ export function registerFigmaRoutes(app: Express) {
       // Get detailed style information
       const detailedStyles = [];
       for (const style of styles) {
-        const styleResponse = await fetch(`${FIGMA_API_BASE}/styles/${style.key}`, {
-          headers: {
-            "X-Figma-Token": connection.accessToken,
-          },
-        });
+        const styleResponse = await fetch(
+          `${FIGMA_API_BASE}/styles/${style.key}`,
+          {
+            headers: {
+              "X-Figma-Token": connection.accessToken,
+            },
+          }
+        );
 
         if (styleResponse.ok) {
           const styleData = await styleResponse.json();
@@ -298,149 +331,176 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       res.json({ styles: detailedStyles });
-    } catch (error) {
-      console.error("Error fetching Figma tokens:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching Figma tokens:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error fetching Figma tokens" });
     }
   });
 
   // Sync design tokens from Figma to Ferdinand
-  app.post("/api/figma/connections/:connectionId/sync-from-figma", async (req, res) => {
-    try {
-      const { connectionId } = req.params;
-
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Only allow editors, admins, and super admins to sync
-      if (![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role)) {
-        return res.status(403).json({ 
-          message: "Insufficient permissions to sync design tokens" 
-        });
-      }
-
-      const connection = await storage.getFigmaConnection(parseInt(connectionId));
-      if (!connection) {
-        return res.status(404).json({ message: "Figma connection not found" });
-      }
-
-      // Update connection sync status
-      await storage.updateFigmaConnection(connection.id, {
-        syncStatus: "syncing",
-        syncError: null,
-      });
-
-      // Create sync log
-      const syncLog = await storage.createFigmaSyncLog({
-        connectionId: connection.id,
-        syncType: "pull_from_figma",
-        syncDirection: "figma_to_ferdinand",
-        status: "started",
-      });
-
+  app.post(
+    "/api/figma/connections/:connectionId/sync-from-figma",
+    async (req, res) => {
       try {
-        // Fetch file data from Figma
-        const fileResponse = await fetch(`${FIGMA_API_BASE}/files/${connection.figmaFileKey}`, {
-          headers: {
-            "X-Figma-Token": connection.accessToken,
-          },
-        });
+        const { connectionId } = req.params;
 
-        if (!fileResponse.ok) {
-          throw new Error("Failed to fetch file from Figma");
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
         }
 
-        const fileData: FigmaFileResponse = await fileResponse.json();
-        
-        // Extract and process design tokens
-        const elementsChanged = [];
-        
-        // Process color styles
-        if (fileData.styles) {
-          for (const [styleId, style] of Object.entries(fileData.styles)) {
-            if (style.styleType === "FILL") {
-              // Get detailed style information
-              const styleResponse = await fetch(`${FIGMA_API_BASE}/styles/${style.key}`, {
-                headers: {
-                  "X-Figma-Token": connection.accessToken,
-                },
-              });
+        const user = await storage.getUser(req.session.userId);
+        if (!user) {
+          return res.status(404).json({ message: "User not found" });
+        }
 
-              if (styleResponse.ok) {
-                const styleData = await styleResponse.json();
-                
-                // Store or update design token
-                await storage.upsertFigmaDesignToken({
-                  connectionId: connection.id,
-                  tokenType: "color",
-                  tokenName: style.name,
-                  figmaId: style.key,
-                  ferdinandValue: styleData, // Store the complete style data
-                  figmaValue: styleData,
-                  syncStatus: "in_sync",
-                });
+        // Only allow editors, admins, and super admins to sync
+        if (
+          user.role !== UserRole.EDITOR &&
+          user.role !== UserRole.ADMIN &&
+          user.role !== UserRole.SUPER_ADMIN
+        ) {
+          return res.status(403).json({
+            message: "Insufficient permissions to sync design tokens",
+          });
+        }
 
-                elementsChanged.push({
-                  type: "color",
-                  name: style.name,
-                  action: "updated",
-                });
+        const connection = await storage.getFigmaConnection(
+          parseInt(connectionId, 10)
+        );
+        if (!connection) {
+          return res
+            .status(404)
+            .json({ message: "Figma connection not found" });
+        }
+
+        // Update connection sync status
+        await storage.updateFigmaConnection(connection.id, {
+          syncStatus: "syncing",
+          syncError: null,
+        });
+
+        // Create sync log
+        const syncLog = await storage.createFigmaSyncLog({
+          connectionId: connection.id,
+          syncType: "pull_from_figma",
+          syncDirection: "figma_to_ferdinand",
+          status: "started",
+        });
+
+        try {
+          // Fetch file data from Figma
+          const fileResponse = await fetch(
+            `${FIGMA_API_BASE}/files/${connection.figmaFileKey}`,
+            {
+              headers: {
+                "X-Figma-Token": connection.accessToken,
+              },
+            }
+          );
+
+          if (!fileResponse.ok) {
+            throw new Error("Failed to fetch file from Figma");
+          }
+
+          const fileData: FigmaFileResponse = await fileResponse.json();
+
+          // Extract and process design tokens
+          const elementsChanged = [];
+
+          // Process color styles
+          if (fileData.styles) {
+            for (const [, style] of Object.entries(fileData.styles)) {
+              if (style.styleType === "FILL") {
+                // Get detailed style information
+                const styleResponse = await fetch(
+                  `${FIGMA_API_BASE}/styles/${style.key}`,
+                  {
+                    headers: {
+                      "X-Figma-Token": connection.accessToken,
+                    },
+                  }
+                );
+
+                if (styleResponse.ok) {
+                  const styleData = await styleResponse.json();
+
+                  // Store or update design token
+                  await storage.upsertFigmaDesignToken({
+                    connectionId: connection.id,
+                    tokenType: "color",
+                    tokenName: style.name,
+                    figmaId: style.key,
+                    ferdinandValue: styleData, // Store the complete style data
+                    figmaValue: styleData,
+                    syncStatus: "in_sync",
+                  });
+
+                  elementsChanged.push({
+                    type: "color",
+                    name: style.name,
+                    action: "updated",
+                  });
+                }
               }
             }
           }
+
+          // Update sync log as completed
+          await storage.updateFigmaSyncLog(syncLog.id, {
+            status: "completed",
+            elementsChanged: elementsChanged.map((el) => ({
+              name: el.name,
+              type: el.type,
+              action: el.action as "created" | "updated" | "deleted",
+            })),
+            duration: syncLog.createdAt
+              ? Date.now() - new Date(syncLog.createdAt).getTime()
+              : null,
+          });
+
+          // Update connection sync status
+          await storage.updateFigmaConnection(connection.id, {
+            syncStatus: "success",
+            lastSyncAt: new Date(),
+          });
+
+          res.json({
+            message: "Sync completed successfully",
+            elementsChanged: elementsChanged.length,
+            syncLogId: syncLog.id,
+          });
+        } catch (syncError: unknown) {
+          // Update sync log as failed
+          await storage.updateFigmaSyncLog(syncLog.id, {
+            status: "failed",
+            errorMessage:
+              syncError instanceof Error ? syncError.message : "Unknown error",
+            duration: syncLog.createdAt
+              ? Date.now() - new Date(syncLog.createdAt).getTime()
+              : null,
+          });
+
+          // Update connection sync status
+          await storage.updateFigmaConnection(connection.id, {
+            syncStatus: "error",
+            syncError:
+              syncError instanceof Error ? syncError.message : "Unknown error",
+          });
+
+          throw syncError;
         }
-
-        // Update sync log as completed
-        await storage.updateFigmaSyncLog(syncLog.id, {
-          status: "completed",
-          elementsChanged: elementsChanged.map(el => ({
-            name: el.name,
-            type: el.type,
-            action: el.action as "created" | "updated" | "deleted"
-          })),
-          duration: syncLog.createdAt ? Date.now() - new Date(syncLog.createdAt).getTime() : null,
-        });
-
-        // Update connection sync status
-        await storage.updateFigmaConnection(connection.id, {
-          syncStatus: "success",
-          lastSyncAt: new Date(),
-        });
-
-        res.json({ 
-          message: "Sync completed successfully",
-          elementsChanged: elementsChanged.length,
-          syncLogId: syncLog.id,
-        });
-
-      } catch (syncError) {
-        // Update sync log as failed
-        await storage.updateFigmaSyncLog(syncLog.id, {
-          status: "failed",
-          errorMessage: syncError instanceof Error ? syncError.message : "Unknown error",
-          duration: syncLog.createdAt ? Date.now() - new Date(syncLog.createdAt).getTime() : null,
-        });
-
-        // Update connection sync status
-        await storage.updateFigmaConnection(connection.id, {
-          syncStatus: "error",
-          syncError: syncError instanceof Error ? syncError.message : "Unknown error",
-        });
-
-        throw syncError;
+      } catch (error: unknown) {
+        console.error(
+          "Error syncing from Figma:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error syncing from Figma" });
       }
-
-    } catch (error) {
-      console.error("Error syncing from Figma:", error);
-      res.status(500).json({ message: "Error syncing from Figma" });
     }
-  });
+  );
 
   // Delete a Figma connection
   app.delete("/api/figma/connections/:connectionId", async (req, res) => {
@@ -457,51 +517,70 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       // Only allow editors, admins, and super admins to delete connections
-      if (![UserRole.EDITOR, UserRole.ADMIN, UserRole.SUPER_ADMIN].includes(user.role)) {
-        return res.status(403).json({ 
-          message: "Insufficient permissions to delete Figma connections" 
+      if (
+        user.role !== UserRole.EDITOR &&
+        user.role !== UserRole.ADMIN &&
+        user.role !== UserRole.SUPER_ADMIN
+      ) {
+        return res.status(403).json({
+          message: "Insufficient permissions to delete Figma connections",
         });
       }
 
-      const connection = await storage.getFigmaConnection(parseInt(connectionId));
+      const connection = await storage.getFigmaConnection(
+        parseInt(connectionId, 10)
+      );
       if (!connection) {
         return res.status(404).json({ message: "Figma connection not found" });
       }
 
-      await storage.deleteFigmaConnection(parseInt(connectionId));
+      await storage.deleteFigmaConnection(parseInt(connectionId, 10));
 
       res.json({ message: "Figma connection deleted successfully" });
-    } catch (error) {
-      console.error("Error deleting Figma connection:", error);
+    } catch (error: unknown) {
+      console.error(
+        "Error deleting Figma connection:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
       res.status(500).json({ message: "Error deleting Figma connection" });
     }
   });
 
   // Get sync logs for a connection
-  app.get("/api/figma/connections/:connectionId/sync-logs", async (req, res) => {
-    try {
-      const { connectionId } = req.params;
-      const { limit = "10", offset = "0" } = req.query;
+  app.get(
+    "/api/figma/connections/:connectionId/sync-logs",
+    async (req, res) => {
+      try {
+        const { connectionId } = req.params;
+        const { limit = "10", offset = "0" } = req.query;
 
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const connection = await storage.getFigmaConnection(
+          parseInt(connectionId, 10)
+        );
+        if (!connection) {
+          return res
+            .status(404)
+            .json({ message: "Figma connection not found" });
+        }
+
+        const logs = await storage.getFigmaSyncLogs(
+          parseInt(connectionId, 10),
+          parseInt(limit as string, 10),
+          parseInt(offset as string, 10)
+        );
+
+        res.json(logs);
+      } catch (error: unknown) {
+        console.error(
+          "Error fetching sync logs:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error fetching sync logs" });
       }
-
-      const connection = await storage.getFigmaConnection(parseInt(connectionId));
-      if (!connection) {
-        return res.status(404).json({ message: "Figma connection not found" });
-      }
-
-      const logs = await storage.getFigmaSyncLogs(
-        parseInt(connectionId), 
-        parseInt(limit as string), 
-        parseInt(offset as string)
-      );
-
-      res.json(logs);
-    } catch (error) {
-      console.error("Error fetching sync logs:", error);
-      res.status(500).json({ message: "Error fetching sync logs" });
     }
-  });
+  );
 }

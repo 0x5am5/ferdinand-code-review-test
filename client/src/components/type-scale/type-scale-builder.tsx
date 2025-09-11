@@ -1,87 +1,150 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { TypeScale, TypeStyle } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import { Code, Download, Eye, Plus, Save } from "lucide-react";
+import { useId, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
-import { Download, Save, Plus, Trash2, Eye, Code } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { TypeScalePreview } from "./type-scale-preview";
 import { TypeStyleEditor } from "./type-style-editor";
-import { motion } from "framer-motion";
-
-interface TypeScale {
-  id: number;
-  clientId: number;
-  name: string;
-  unit: "px" | "rem" | "em";
-  baseSize: number;
-  scaleRatio: number;
-  customRatio?: number;
-  responsiveSizes: {
-    mobile: { baseSize: number; scaleRatio: number };
-    tablet: { baseSize: number; scaleRatio: number };
-    desktop: { baseSize: number; scaleRatio: number };
-  };
-  typeStyles: TypeStyle[];
-  exports: Export[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface TypeStyle {
-  level: string;
-  name: string;
-  size: number;
-  fontWeight: string;
-  lineHeight: number;
-  letterSpacing: number;
-  color: string;
-  backgroundColor?: string;
-  textDecoration?: string;
-  fontStyle?: string;
-}
-
-interface Export {
-  format: "css" | "scss" | "figma" | "adobe";
-  content: string;
-  fileName: string;
-  exportedAt: string;
-}
 
 const SCALE_RATIOS = {
   "Major Second": 1.125,
   "Minor Third": 1.2,
   "Major Third": 1.25,
   "Perfect Fourth": 1.333,
-  "Augmented Fourth": 1.414,
+  "Augmented Fourth": Math.SQRT2,
   "Perfect Fifth": 1.5,
   "Golden Ratio": 1.618,
   "Major Sixth": 1.667,
   "Minor Seventh": 1.778,
   "Major Seventh": 1.875,
-  "Octave": 2,
-  "Custom": 0,
+  Octave: 2,
+  Custom: 0,
 };
 
-const DEFAULT_TYPE_STYLES: TypeStyle[] = [
-  { level: "h1", name: "Heading 1", size: 3, fontWeight: "700", lineHeight: 1.2, letterSpacing: 0, color: "#000000" },
-  { level: "h2", name: "Heading 2", size: 2, fontWeight: "600", lineHeight: 1.3, letterSpacing: 0, color: "#000000" },
-  { level: "h3", name: "Heading 3", size: 1, fontWeight: "600", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-  { level: "h4", name: "Heading 4", size: 0, fontWeight: "500", lineHeight: 1.4, letterSpacing: 0, color: "#000000" },
-  { level: "h5", name: "Heading 5", size: -1, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-  { level: "h6", name: "Heading 6", size: -2, fontWeight: "500", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-  { level: "body-large", name: "Body Large", size: 0.5, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-  { level: "body", name: "Body Text", size: 0, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-  { level: "body-small", name: "Body Small", size: -0.5, fontWeight: "400", lineHeight: 1.5, letterSpacing: 0, color: "#000000" },
-  { level: "caption", name: "Caption", size: -1, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#666666" },
-  { level: "quote", name: "Quote", size: 1, fontWeight: "400", lineHeight: 1.6, letterSpacing: 0, color: "#000000" },
-  { level: "code", name: "Code", size: -0.5, fontWeight: "400", lineHeight: 1.4, letterSpacing: 0, color: "#000000" }
+const DEFAULT_TYPE_STYLES = [
+  {
+    level: "h1",
+    name: "Heading 1",
+    size: 3,
+    fontWeight: "700",
+    lineHeight: 1.2,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "h2",
+    name: "Heading 2",
+    size: 2,
+    fontWeight: "600",
+    lineHeight: 1.3,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "h3",
+    name: "Heading 3",
+    size: 1,
+    fontWeight: "600",
+    lineHeight: 1.4,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "h4",
+    name: "Heading 4",
+    size: 0,
+    fontWeight: "500",
+    lineHeight: 1.4,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "h5",
+    name: "Heading 5",
+    size: -1,
+    fontWeight: "500",
+    lineHeight: 1.5,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "h6",
+    name: "Heading 6",
+    size: -2,
+    fontWeight: "500",
+    lineHeight: 1.5,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "body-large",
+    name: "Body Large",
+    size: 0.5,
+    fontWeight: "400",
+    lineHeight: 1.6,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "body",
+    name: "Body Text",
+    size: 0,
+    fontWeight: "400",
+    lineHeight: 1.6,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "body-small",
+    name: "Body Small",
+    size: -0.5,
+    fontWeight: "400",
+    lineHeight: 1.5,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "caption",
+    name: "Caption",
+    size: -1,
+    fontWeight: "400",
+    lineHeight: 1.4,
+    letterSpacing: 0,
+    color: "#666666",
+  },
+  {
+    level: "quote",
+    name: "Quote",
+    size: 1,
+    fontWeight: "400",
+    lineHeight: 1.6,
+    letterSpacing: 0,
+    color: "#000000",
+  },
+  {
+    level: "code",
+    name: "Code",
+    size: -0.5,
+    fontWeight: "400",
+    lineHeight: 1.4,
+    letterSpacing: 0,
+    color: "#000000",
+  },
 ];
 
 interface TypeScaleBuilderProps {
@@ -91,21 +154,36 @@ interface TypeScaleBuilderProps {
   onCancel?: () => void;
 }
 
-export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: TypeScaleBuilderProps) {
+export function TypeScaleBuilder({
+  clientId,
+  typeScale,
+  onSave,
+  onCancel,
+}: TypeScaleBuilderProps) {
+  const nameId = useId();
+  const baseSizeId = useId();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const [name, setName] = useState(typeScale?.name || "New Type Scale");
-  const [unit, setUnit] = useState<"px" | "rem" | "em">(typeScale?.unit || "rem");
+  const [unit, setUnit] = useState<"px" | "rem" | "em">(
+    typeScale?.unit || "rem"
+  );
   const [baseSize, setBaseSize] = useState(typeScale?.baseSize || 16);
   const [selectedRatio, setSelectedRatio] = useState(() => {
     if (!typeScale) return "Major Third";
     const ratio = typeScale.scaleRatio / 1000;
-    const ratioEntry = Object.entries(SCALE_RATIOS).find(([_, value]) => Math.abs(value - ratio) < 0.001);
+    const ratioEntry = Object.entries(SCALE_RATIOS).find(
+      ([_, value]) => Math.abs(value - ratio) < 0.001
+    );
     return ratioEntry ? ratioEntry[0] : "Custom";
   });
-  const [customRatio, setCustomRatio] = useState(typeScale?.customRatio ? typeScale.customRatio / 1000 : 1.25);
-  const [typeStyles, setTypeStyles] = useState<TypeStyle[]>(typeScale?.typeStyles || DEFAULT_TYPE_STYLES);
+  const [customRatio, setCustomRatio] = useState(
+    typeScale?.customRatio ? typeScale.customRatio / 1000 : 1.25
+  );
+  const [typeStyles, setTypeStyles] = useState<TypeStyle[]>(
+    typeScale?.typeStyles || DEFAULT_TYPE_STYLES
+  );
   const [activeTab, setActiveTab] = useState("builder");
 
   const getCurrentRatio = () => {
@@ -115,21 +193,21 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
   const calculateFontSize = (step: number) => {
     const ratio = getCurrentRatio();
-    const size = Math.round(baseSize * Math.pow(ratio, step) * 100) / 100;
+    const size = Math.round(baseSize * ratio ** step * 100) / 100;
     return `${size}${unit}`;
   };
 
   const createTypeScaleMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: TypeScale) => {
       const response = await fetch(`/api/clients/${clientId}/type-scales`, {
         method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-        credentials: 'include',
+        credentials: "include",
       });
-      if (!response.ok) throw new Error('Failed to create type scale');
+      if (!response.ok) throw new Error("Failed to create type scale");
       return response.json();
     },
     onSuccess: (data) => {
@@ -137,10 +215,17 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
         title: "Type scale created",
         description: "Your type scale has been created successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "type-scales"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/clients", clientId, "type-scales"],
+      });
       onSave?.(data);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      console.error(
+        "Failed to create type scale",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+
       toast({
         title: "Error",
         description: "Failed to create type scale. Please try again.",
@@ -150,16 +235,16 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
   });
 
   const updateTypeScaleMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: TypeScale) => {
       const response = await fetch(`/api/type-scales/${typeScale?.id}`, {
         method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(data),
-        credentials: 'include',
+        credentials: "include",
       });
-      if (!response.ok) throw new Error('Failed to update type scale');
+      if (!response.ok) throw new Error("Failed to update type scale");
       return response.json();
     },
     onSuccess: (data) => {
@@ -167,10 +252,17 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
         title: "Type scale updated",
         description: "Your type scale has been updated successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId, "type-scales"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/clients", clientId, "type-scales"],
+      });
       onSave?.(data);
     },
-    onError: (error) => {
+    onError: (error: unknown) => {
+      console.error(
+        "Failed to update type scale",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+
       toast({
         title: "Error",
         description: "Failed to update type scale. Please try again.",
@@ -181,11 +273,14 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
   const exportMutation = useMutation({
     mutationFn: async ({ format }: { format: "css" | "scss" }) => {
-      const response = await fetch(`/api/type-scales/${typeScale?.id}/export/${format}`, {
-        method: "POST",
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to export type scale');
+      const response = await fetch(
+        `/api/type-scales/${typeScale?.id}/export/${format}`,
+        {
+          method: "POST",
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to export type scale");
       return response.json();
     },
     onSuccess: (data, variables) => {
@@ -198,7 +293,7 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       toast({
         title: "Export successful",
         description: `${variables.format.toUpperCase()} file downloaded successfully.`,
@@ -215,18 +310,37 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
   const handleSave = () => {
     const data = {
+      ...(typeScale?.id && { id: typeScale.id }),
+      clientId,
       name,
       unit,
       baseSize,
       scaleRatio: Math.round(getCurrentRatio() * 1000),
-      customRatio: selectedRatio === "Custom" ? Math.round(customRatio * 1000) : undefined,
+      customRatio:
+        selectedRatio === "Custom" ? Math.round(customRatio * 1000) : undefined,
+      bodyFontFamily: typeScale?.bodyFontFamily || "",
+      bodyFontWeight: typeScale?.bodyFontWeight || "400",
+      bodyLetterSpacing: typeScale?.bodyLetterSpacing || 0,
+      bodyColor: typeScale?.bodyColor || "#000000",
+      headerFontFamily: typeScale?.headerFontFamily || "",
+      headerFontWeight: typeScale?.headerFontWeight || "700",
+      headerLetterSpacing: typeScale?.headerLetterSpacing || 0,
+      headerColor: typeScale?.headerColor || "#000000",
       responsiveSizes: {
-        mobile: { baseSize: Math.round(baseSize * 0.875), scaleRatio: getCurrentRatio() * 0.9 },
-        tablet: { baseSize: Math.round(baseSize * 0.9375), scaleRatio: getCurrentRatio() * 0.95 },
-        desktop: { baseSize, scaleRatio: getCurrentRatio() }
+        mobile: {
+          baseSize: Math.round(baseSize * 0.875),
+          scaleRatio: getCurrentRatio() * 0.9,
+        },
+        tablet: {
+          baseSize: Math.round(baseSize * 0.9375),
+          scaleRatio: getCurrentRatio() * 0.95,
+        },
+        desktop: { baseSize, scaleRatio: getCurrentRatio() },
       },
       typeStyles,
       exports: typeScale?.exports || [],
+      ...(typeScale?.createdAt && { createdAt: typeScale.createdAt }),
+      ...(typeScale?.updatedAt && { updatedAt: typeScale.updatedAt }),
     };
 
     if (typeScale) {
@@ -254,14 +368,14 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
     css += `:root {\n`;
     css += `  --type-scale-base: ${baseSize}${unit};\n`;
     css += `  --type-scale-ratio: ${ratio};\n\n`;
-    
+
     typeStyles.forEach((style) => {
       const size = calculateFontSize(style.size);
       css += `  --font-size-${style.level}: ${size};\n`;
     });
-    
+
     css += `}\n\n`;
-    
+
     typeStyles.forEach((style) => {
       css += `.text-${style.level} {\n`;
       css += `  font-size: var(--font-size-${style.level});\n`;
@@ -270,7 +384,7 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
       css += `  color: ${style.color};\n`;
       css += `}\n\n`;
     });
-    
+
     return css;
   }
 
@@ -303,7 +417,10 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
           )}
           <Button
             onClick={handleSave}
-            disabled={createTypeScaleMutation.isPending || updateTypeScaleMutation.isPending}
+            disabled={
+              createTypeScaleMutation.isPending ||
+              updateTypeScaleMutation.isPending
+            }
           >
             <Save className="h-4 w-4 mr-2" />
             {typeScale ? "Update" : "Save"}
@@ -316,7 +433,11 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="builder" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
@@ -341,9 +462,9 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Scale Name</Label>
+                  <Label htmlFor={nameId}>Scale Name</Label>
                   <Input
-                    id="name"
+                    id={nameId}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Enter scale name"
@@ -352,9 +473,9 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="baseSize">Base Size</Label>
+                    <Label htmlFor={baseSizeId}>Base Size</Label>
                     <Input
-                      id="baseSize"
+                      id={baseSizeId}
                       type="number"
                       value={baseSize}
                       onChange={(e) => setBaseSize(Number(e.target.value))}
@@ -364,7 +485,12 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="unit">Unit</Label>
-                    <Select value={unit} onValueChange={(value: "px" | "rem" | "em") => setUnit(value)}>
+                    <Select
+                      value={unit}
+                      onValueChange={(value: "px" | "rem" | "em") =>
+                        setUnit(value)
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -379,7 +505,10 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
                 <div className="space-y-2">
                   <Label htmlFor="ratio">Scale Ratio</Label>
-                  <Select value={selectedRatio} onValueChange={setSelectedRatio}>
+                  <Select
+                    value={selectedRatio}
+                    onValueChange={setSelectedRatio}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -423,7 +552,9 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
                     {[-2, -1, 0, 1, 2, 3].map((step) => (
                       <div key={step} className="flex justify-between text-sm">
                         <span>Step {step}:</span>
-                        <Badge variant="outline">{calculateFontSize(step)}</Badge>
+                        <Badge variant="outline">
+                          {calculateFontSize(step)}
+                        </Badge>
                       </div>
                     ))}
                   </div>
@@ -449,8 +580,12 @@ export function TypeScaleBuilder({ clientId, typeScale, onSave, onCancel }: Type
 
         <TabsContent value="preview">
           <TypeScalePreview
-            typeStyles={typeStyles}
-            calculateFontSize={calculateFontSize}
+            typeScale={{
+              typeStyles,
+              baseSize,
+              scaleRatio: getCurrentRatio(),
+              unit,
+            }}
           />
         </TabsContent>
 

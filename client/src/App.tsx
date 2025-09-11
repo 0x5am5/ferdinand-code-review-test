@@ -1,24 +1,26 @@
-import { Toaster } from "@/components/ui/toaster";
+import { UserRole } from "@shared/schema";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Redirect, Route, Switch, useLocation } from "wouter";
+import { ClientProtectedRoute } from "@/components/auth/client-protected-route";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { AppLayout } from "@/components/layout/app-layout";
+import { Toaster } from "@/components/ui/toaster";
+import { RoleSwitchingProvider } from "@/contexts/RoleSwitchingContext";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SpotlightProvider } from "@/hooks/use-spotlight";
 import { queryClient } from "@/lib/queryClient";
-import { useLocation, Route, Switch, Redirect } from "wouter";
-import Login from "@/pages/login";
-import SignupPage from "@/pages/signup";
+import Instances from "@/pages/admin/instances";
+import ClientDetails from "@/pages/clients/[id]";
+import NewClientPage from "@/pages/clients/new";
+import ClientUsers from "@/pages/clients/users";
 import Dashboard from "@/pages/dashboard";
-import Users from "@/pages/users";
 import DesignBuilder from "@/pages/design-builder";
 import DesignEditor from "@/pages/design-editor";
-import Instances from "@/pages/admin/instances";
-import NewClientPage from "@/pages/clients/new";
-import ClientDetails from "@/pages/clients/[id]";
+import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
-import { ProtectedRoute } from "@/components/auth/protected-route";
-import { AppLayout } from "@/components/layout/app-layout";
-import { UserRole } from "@shared/schema";
+import SignupPage from "@/pages/signup";
+import Users from "@/pages/users";
 import Clients from "./pages/clients";
-import { RoleSwitchingProvider } from "@/contexts/RoleSwitchingContext";
 
 function Router() {
   const [location] = useLocation();
@@ -35,7 +37,7 @@ function Router() {
 
       {/* Protected routes that require authentication */}
       <Route path="/dashboard">
-        <ProtectedRoute>
+        <ProtectedRoute roles={[UserRole.SUPER_ADMIN, UserRole.ADMIN]}>
           <AppLayout pageKey="dashboard">
             <Dashboard />
           </AppLayout>
@@ -82,12 +84,20 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/clients/:id/users">
+        <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+          <AppLayout pageKey="client-users">
+            <ClientUsers />
+          </AppLayout>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/clients/:id">
-        <ProtectedRoute>
+        <ClientProtectedRoute>
           <AppLayout pageKey="client-details">
             <ClientDetails />
           </AppLayout>
-        </ProtectedRoute>
+        </ClientProtectedRoute>
       </Route>
 
       <Route path="/clients">

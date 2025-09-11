@@ -1,28 +1,51 @@
-import React, { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Check, Copy, Edit, Info, Palette, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Edit, Palette, Copy, Check, Info } from "lucide-react";
-import { Color } from "@/lib/api";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  type ColorFormats,
+  convertColor,
+  formatColorForCopy,
+  getPantoneValue,
+  setPantoneValue,
+} from "@/lib/color-utils";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { convertColor, formatColorForCopy, getPantoneValue, setPantoneValue, ColorFormats } from "@/lib/color-utils";
 
-export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: ColorCardProps) {
+interface Shade {
+  name: string;
+  hex: string;
+  id?: number;
+}
+
+export function ColorCard({
+  color,
+  onEdit,
+  onDelete,
+  onUpdate: _onUpdate,
+  clientId: _clientId,
+}: ColorCardProps) {
   const [isShadesOpen, setIsShadesOpen] = useState(false);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
-  const [pantoneValue, setPantoneValueState] = useState('');
+  const [pantoneValue, setPantoneValueState] = useState("");
   const [colorFormats, setColorFormats] = useState<ColorFormats | null>(null);
 
   useEffect(() => {
     if (color.shades && color.shades.length > 0) {
-      setShades(color.shades.map(shade => ({
-        name: shade.name,
-        hex: shade.hex,
-        colorId: shade.id
-      })));
+      setShades(
+        color.shades.map((shade: Shade) => ({
+          name: shade.name,
+          hex: shade.hex,
+          colorId: shade.id || 0,
+        }))
+      );
     }
 
     // Load Pantone value and convert colors when component mounts
@@ -54,16 +77,18 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
   const copyToClipboard = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopiedStates(prev => ({ ...prev, [key]: true }));
+      setCopiedStates((prev) => ({ ...prev, [key]: true }));
       setTimeout(() => {
-        setCopiedStates(prev => ({ ...prev, [key]: false }));
+        setCopiedStates((prev) => ({ ...prev, [key]: false }));
       }, 2000);
-    } catch (err) {
-      console.error('Failed to copy: ', err);
+    } catch (err: unknown) {
+      console.error("Failed to copy: ", err);
     }
   };
 
-  const copyColorFormat = async (format: 'rgb' | 'hsl' | 'cmyk' | 'hex' | 'pantone') => {
+  const copyColorFormat = async (
+    format: "rgb" | "hsl" | "cmyk" | "hex" | "pantone"
+  ) => {
     if (!colorFormats) return;
 
     const formattedValue = formatColorForCopy(format, colorFormats);
@@ -171,7 +196,9 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0 hover:bg-white/20"
-                    onClick={() => copyToClipboard(color.hex, color.id.toString())}
+                    onClick={() =>
+                      copyToClipboard(color.hex, color.id.toString())
+                    }
                   >
                     {copiedStates[color.id.toString()] ? (
                       <Check className="h-3 w-3 text-green-400" />
@@ -186,33 +213,45 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
               </Tooltip>
             </TooltipProvider>
           </div>
-          <div className="h-16 rounded-md bg-white" style={{ backgroundColor: color.hex }} />
+          <div
+            className="h-16 rounded-md bg-white"
+            style={{ backgroundColor: color.hex }}
+          />
           {color.hex}
         </div>
 
         {/* Shades Panel */}
-        <div className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
-          isShadesOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        )}>
+        <div
+          className={cn(
+            "overflow-hidden transition-all duration-300 ease-in-out",
+            isShadesOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
           <div className="pt-4 border-t border-white/20">
             <div className="space-y-2">
-              {shades.map((shade, index) => (
-                <div key={index} className="flex items-center justify-between">
+              {shades.map((shade) => (
+                <div
+                  key={`${shade.hex}-${shade.name}`}
+                  className="flex items-center justify-between"
+                >
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-6 h-6 rounded border border-white/20" 
+                    <div
+                      className="w-6 h-6 rounded border border-white/20"
                       style={{ backgroundColor: shade.hex }}
                     />
                     <span className="text-sm text-white">{shade.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/70 font-mono">{shade.hex}</span>
+                    <span className="text-xs text-white/70 font-mono">
+                      {shade.hex}
+                    </span>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 hover:bg-white/20"
-                      onClick={() => copyToClipboard(shade.hex, `shade-${shade.colorId}`)}
+                      onClick={() =>
+                        copyToClipboard(shade.hex, `shade-${shade.colorId}`)
+                      }
                     >
                       {copiedStates[`shade-${shade.colorId}`] ? (
                         <Check className="h-3 w-3 text-green-400" />
@@ -228,22 +267,28 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
         </div>
 
         {/* Info Panel */}
-        <div className={cn(
-          "overflow-hidden transition-all duration-300 ease-in-out",
-          isInfoPanelOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-        )}>
+        <div
+          className={cn(
+            "overflow-hidden transition-all duration-300 ease-in-out",
+            isInfoPanelOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          )}
+        >
           <div className="pt-4 border-t border-white/20">
             {colorFormats && (
-              <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 {/* RGB */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white font-medium w-16">RGB</span>
+                  <span className="text-sm text-white font-medium w-16">
+                    RGB
+                  </span>
                   <button
-                    onClick={() => copyColorFormat('rgb')}
+                    type="button"
+                    onClick={() => copyColorFormat("rgb")}
                     className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-white/10 transition-colors group"
                   >
                     <span className="text-sm text-white/90 font-mono">
-                      {colorFormats.rgb.r}, {colorFormats.rgb.g}, {colorFormats.rgb.b}
+                      {colorFormats.rgb.r}, {colorFormats.rgb.g},{" "}
+                      {colorFormats.rgb.b}
                     </span>
                     {copiedStates[`${color.id}-rgb`] ? (
                       <Check className="h-3 w-3 text-green-400" />
@@ -255,13 +300,17 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
 
                 {/* HSL */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white font-medium w-16">HSL</span>
+                  <span className="text-sm text-white font-medium w-16">
+                    HSL
+                  </span>
                   <button
-                    onClick={() => copyColorFormat('hsl')}
+                    type="button"
+                    onClick={() => copyColorFormat("hsl")}
                     className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-white/10 transition-colors group"
                   >
                     <span className="text-sm text-white/90 font-mono">
-                      {colorFormats.hsl.h}°, {colorFormats.hsl.s}%, {colorFormats.hsl.l}%
+                      {colorFormats.hsl.h}°, {colorFormats.hsl.s}%,{" "}
+                      {colorFormats.hsl.l}%
                     </span>
                     {copiedStates[`${color.id}-hsl`] ? (
                       <Check className="h-3 w-3 text-green-400" />
@@ -273,13 +322,17 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
 
                 {/* CMYK */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white font-medium w-16">CMYK</span>
+                  <span className="text-sm text-white font-medium w-16">
+                    CMYK
+                  </span>
                   <button
-                    onClick={() => copyColorFormat('cmyk')}
+                    type="button"
+                    onClick={() => copyColorFormat("cmyk")}
                     className="flex-1 flex items-center justify-between px-2 py-1 rounded hover:bg-white/10 transition-colors group"
                   >
                     <span className="text-sm text-white/90 font-mono">
-                      {colorFormats.cmyk.c}, {colorFormats.cmyk.m}, {colorFormats.cmyk.y}, {colorFormats.cmyk.k}
+                      {colorFormats.cmyk.c}, {colorFormats.cmyk.m},{" "}
+                      {colorFormats.cmyk.y}, {colorFormats.cmyk.k}
                     </span>
                     {copiedStates[`${color.id}-cmyk`] ? (
                       <Check className="h-3 w-3 text-green-400" />
@@ -291,7 +344,9 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
 
                 {/* Pantone */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-white font-medium w-16">Pantone</span>
+                  <span className="text-sm text-white font-medium w-16">
+                    Pantone
+                  </span>
                   <div className="flex-1 flex items-center gap-2">
                     <Input
                       value={pantoneValue}
@@ -303,7 +358,7 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
                       variant="ghost"
                       size="sm"
                       className="h-7 w-7 p-0 hover:bg-white/20"
-                      onClick={() => copyColorFormat('pantone')}
+                      onClick={() => copyColorFormat("pantone")}
                       disabled={!pantoneValue}
                     >
                       {copiedStates[`${color.id}-pantone`] ? (
@@ -321,6 +376,17 @@ export function ColorCard({ color, onEdit, onDelete, onUpdate, clientId }: Color
       </CardContent>
     </Card>
   );
+}
+
+interface Color {
+  id: number;
+  name: string;
+  hex: string;
+  shades?: Array<{
+    id: number;
+    name: string;
+    hex: string;
+  }>;
 }
 
 interface ColorCardProps {

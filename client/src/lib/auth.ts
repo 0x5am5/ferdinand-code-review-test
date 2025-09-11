@@ -1,8 +1,6 @@
+import { signOut as firebaseSignOut, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
-import { signInWithPopup, signOut as firebaseSignOut } from "firebase/auth";
-import { apiRequest } from "./queryClient";
-import { queryClient } from "./queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "./queryClient";
 
 export async function signInWithGoogle() {
   try {
@@ -21,28 +19,53 @@ export async function signInWithGoogle() {
     console.log("Authentication completed successfully");
     // Refresh the user data
     queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-  } catch (error: any) {
-    console.error("Google sign-in error:", error);
-    console.error("Error code:", error.code);
-    console.error("Error message:", error.message);
+  } catch (error: unknown) {
+    console.error(
+      "Google sign-in error:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+
+    // Type guard for Firebase Auth Error
+    const isFirebaseError = (
+      err: unknown
+    ): err is { code: string; message: string } => {
+      return (
+        typeof err === "object" &&
+        err !== null &&
+        "code" in err &&
+        "message" in err
+      );
+    };
+
+    if (isFirebaseError(error)) {
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+    }
 
     let errorMessage = "";
 
-    switch (error.code) {
-      case "auth/unauthorized-domain":
-        errorMessage = `This domain (${window.location.hostname}) is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains`;
-        break;
-      case "auth/operation-not-allowed":
-        errorMessage = "Google sign-in is not enabled. Please enable it in Firebase Console > Authentication > Sign-in method";
-        break;
-      case "auth/configuration-not-found":
-        errorMessage = "Firebase configuration is incorrect. Please check your Firebase project settings";
-        break;
-      case "auth/internal-error":
-        errorMessage = "Authentication service encountered an error. Please try again later";
-        break;
-      default:
-        errorMessage = error.message || "Failed to sign in with Google";
+    if (isFirebaseError(error)) {
+      switch (error.code) {
+        case "auth/unauthorized-domain":
+          errorMessage = `This domain (${window.location.hostname}) is not authorized. Please add it to Firebase Console > Authentication > Settings > Authorized domains`;
+          break;
+        case "auth/operation-not-allowed":
+          errorMessage =
+            "Google sign-in is not enabled. Please enable it in Firebase Console > Authentication > Sign-in method";
+          break;
+        case "auth/configuration-not-found":
+          errorMessage =
+            "Firebase configuration is incorrect. Please check your Firebase project settings";
+          break;
+        case "auth/internal-error":
+          errorMessage =
+            "Authentication service encountered an error. Please try again later";
+          break;
+        default:
+          errorMessage = error.message || "Failed to sign in with Google";
+      }
+    } else {
+      errorMessage = "Failed to sign in with Google";
     }
 
     throw new Error(errorMessage);
@@ -58,8 +81,13 @@ export async function signOut() {
     queryClient.setQueryData(["/api/user"], null);
     // Redirect to login page
     window.location.href = "/login";
-  } catch (error: any) {
-    console.error("Sign out error:", error);
-    throw new Error(error.message || "Failed to sign out");
+  } catch (error: unknown) {
+    console.error(
+      "Sign out error:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+    throw new Error(
+      error instanceof Error ? error.message : "Failed to sign out"
+    );
   }
 }

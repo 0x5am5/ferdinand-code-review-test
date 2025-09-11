@@ -1,14 +1,13 @@
-import { Plus, Edit2, X } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { Edit2, Plus, X } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { motion, AnimatePresence } from "framer-motion";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { UserRole } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
 
 interface Image {
   id: number;
@@ -71,12 +70,6 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  if (!user) return null;
-  const isAbleToEdit = [
-    UserRole.SUPER_ADMIN,
-    UserRole.ADMIN,
-    UserRole.EDITOR,
-  ].includes(user.role);
 
   // Fetch sections
   const { data: sections = [] } = useQuery<Section[]>({
@@ -98,7 +91,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
             label: "New Section",
             order: sections.length,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -140,7 +133,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
             label: newLabel,
             order: sections.find((s) => s.id === id)?.order || 0,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -187,7 +180,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
         {
           method: "POST",
           body: formData,
-        },
+        }
       );
 
       if (!response.ok) {
@@ -215,6 +208,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     },
   });
 
+  // Handle drop callback
   const handleDrop = useCallback(
     (files: File[], sectionId: number) => {
       const imageFiles = files.filter((file) => file.type.startsWith("image/"));
@@ -240,22 +234,31 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
         uploadImage.mutate({ sectionId, file });
       });
     },
-    [uploadImage, toast],
+    [uploadImage, toast]
+  );
+
+  if (!user) return null;
+
+  // This code can be conditional since it's just calculating a boolean, not a hook
+  const isAbleToEdit = ["super_admin", "admin", "editor"].includes(
+    user.role as string
   );
 
   return (
     <div className="space-y-8">
       {sections.length === 0 && isAbleToEdit ? (
-        <div
-          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
+        <button
+          type="button"
+          className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors w-full"
           onClick={() => createSection.mutate()}
+          aria-label="Add your first inspiration section"
         >
           <Plus className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
           <h3 className="font-medium mb-2">Add Your First Section</h3>
           <p className="text-sm text-muted-foreground">
             Create a section to start building your inspiration board
           </p>
-        </div>
+        </button>
       ) : (
         <div className="grid gap-8">
           <AnimatePresence>
@@ -274,7 +277,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
                       onSubmit={(e) => {
                         e.preventDefault();
                         const input = e.currentTarget.elements.namedItem(
-                          "label",
+                          "label"
                         ) as HTMLInputElement;
                         updateSection.mutate({
                           id: section.id,

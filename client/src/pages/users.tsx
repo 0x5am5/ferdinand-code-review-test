@@ -1,21 +1,37 @@
+import {
+  type Client,
+  type Invitation,
+  USER_ROLES,
+  UserRole,
+} from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
-
-import { UserRole, Client, USER_ROLES, Invitation } from "@shared/schema";
 import {
-  useUsersQuery,
-  usePendingInvitationsQuery,
-  useUserClientAssignmentsQuery,
-  useUpdateUserRoleMutation,
-  useInviteUserMutation,
-  useClientAssignmentMutations,
-  useRemoveInvitationMutation,
-} from "@/lib/queries/users";
-import { cn } from "@/lib/utils";
+  Building2,
+  Check,
+  ChevronDown,
+  Filter,
+  Loader2,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Shield,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { InviteUserDialog } from "@/components/auth/invite-user-dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Command,
   CommandEmpty,
@@ -25,20 +41,18 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -47,34 +61,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Search,
-  MoreHorizontal,
-  UserPlus,
-  Filter,
-  X,
-  RefreshCw,
-  Users,
-  Building2,
-  UserCheck,
-  Shield,
-  Loader2,
-  ChevronDown,
-  Check,
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   Tooltip,
   TooltipContent,
@@ -82,7 +75,18 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
-import { InviteUserDialog } from "@/components/auth/invite-user-dialog";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useClientAssignmentMutations,
+  useInviteUserMutation,
+  usePendingInvitationsQuery,
+  useRemoveInvitationMutation,
+  useUpdateUserRoleMutation,
+  useUserClientAssignmentsQuery,
+  useUsersQuery,
+} from "@/lib/queries/users";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 
 // Helper to get badge variant based on role
 const getRoleBadgeVariant = (role: string) => {
@@ -127,26 +131,24 @@ export interface PendingInvitation {
 }
 
 export default function UsersPage() {
+  // Move all hooks to the top level
   const { user: currentUser, isLoading: isAuthLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-
-  if (isAuthLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const { toast } = useToast();
 
-  // Get users - server already handles filtering based on role and client assignments
+  // Query hooks - use enabled flag to control when they run
   const { data: users = [], isLoading: isLoadingUsers } = useUsersQuery();
   const { data: pendingInvitations = [], isLoading: isLoadingInvitations } =
     usePendingInvitationsQuery();
   const { data: userClientAssignments = {}, isLoading: isLoadingAssignments } =
     useUserClientAssignmentsQuery(users.map((u) => u.id));
+  const { data: clients = [] } = useQuery<Client[]>({
+    queryKey: ["/api/clients"],
+  });
 
+  // Mutation hooks
   const { mutate: updateUserRole } = useUpdateUserRoleMutation();
   const { assignClient, removeClient } = useClientAssignmentMutations();
   const { mutate: resetPassword } = useMutation({
@@ -168,26 +170,27 @@ export default function UsersPage() {
     },
   });
 
-  // Get all clients for assignment
-  const { data: clients = [] } = useQuery<Client[]>({
-    queryKey: ["/api/clients"],
-  });
-
-  const { mutate: resendInvitation } = useInviteUserMutation();
+  const { mutate: resendInvitation, isPending: isResendingInvitationPending } =
+    useInviteUserMutation();
   const { mutate: removeInvitation } = useRemoveInvitationMutation();
 
-  // Debounced search implementation
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
-
+  // Effects
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Enhanced search with fuzzy matching - backend handles organization filtering
+  if (isAuthLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Derived state
   const filteredUsers = debouncedSearchQuery
     ? users.filter((user) => {
         const nameMatch = user.name
@@ -203,20 +206,10 @@ export default function UsersPage() {
         // Also match parts of names (first/last name)
         const nameParts = user.name?.toLowerCase().split(" ") || [];
         const namePartsMatch = nameParts.some((part) =>
-          part.startsWith(debouncedSearchQuery.toLowerCase()),
+          part.startsWith(debouncedSearchQuery.toLowerCase())
         );
 
-        // Also match client names if assigned to user
-        const clientMatch = userClientAssignments[user.id]?.some(
-          (client: Client) =>
-            client.name
-              .toLowerCase()
-              .includes(debouncedSearchQuery.toLowerCase()),
-        );
-
-        return (
-          nameMatch || emailMatch || roleMatch || namePartsMatch || clientMatch
-        );
+        return nameMatch || emailMatch || roleMatch || namePartsMatch;
       })
     : users;
 
@@ -321,8 +314,10 @@ export default function UsersPage() {
               </TableHeader>
               <TableBody>
                 {isLoadingInvitations
-                  ? Array.from({ length: 2 }).map((_, index) => (
-                      <TableRow key={index}>
+                  ? Array.from({ length: 2 }, (_, index) => (
+                      <TableRow
+                        key={`invitation-skeleton-${Date.now()}-${index}`}
+                      >
                         <TableCell>
                           <div className="h-4 w-48 bg-muted animate-pulse"></div>
                         </TableCell>
@@ -348,7 +343,7 @@ export default function UsersPage() {
                       const isExpired = expiresAt < now;
                       const daysLeft = Math.ceil(
                         (expiresAt.getTime() - now.getTime()) /
-                          (1000 * 3600 * 24),
+                          (1000 * 3600 * 24)
                       );
 
                       return (
@@ -362,30 +357,12 @@ export default function UsersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {invitation.clientData ? (
+                            {invitation ? (
                               <div className="flex items-center space-x-2">
-                                {invitation.clientData.logoUrl ? (
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarImage
-                                      src={invitation.clientData.logoUrl}
-                                      alt={invitation.clientData.name}
-                                    />
-                                    <AvatarFallback
-                                      style={{
-                                        backgroundColor:
-                                          invitation.clientData.primaryColor ||
-                                          "#e2e8f0",
-                                      }}
-                                    >
-                                      {getInitials(invitation.clientData.name)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                ) : (
-                                  <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs">
-                                    {getInitials(invitation.clientData.name)}
-                                  </div>
-                                )}
-                                <span>{invitation.clientData.name}</span>
+                                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs">
+                                  {getInitials(invitation.name)}
+                                </div>
+                                <span>{invitation.name}</span>
                               </div>
                             ) : (
                               <span className="text-muted-foreground">
@@ -413,24 +390,26 @@ export default function UsersPage() {
                               <DropdownMenuContent align="end" className="w-48">
                                 <DropdownMenuItem
                                   onClick={() =>
-                                    resendInvitation.mutate(invitation.id)
+                                    resendInvitation(invitation.id)
                                   }
-                                  disabled={resendInvitation.isPending}
+                                  disabled={isResendingInvitationPending}
                                 >
-                                  {resendInvitation.isPending ? (
+                                  {isResendingInvitationPending ? (
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   ) : (
                                     <RefreshCw className="mr-2 h-4 w-4" />
                                   )}
                                   <span>Resend Invitation</span>
                                 </DropdownMenuItem>
-                                
+
                                 {(currentUser?.role === UserRole.SUPER_ADMIN ||
                                   currentUser?.role === UserRole.ADMIN) && (
                                   <>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
-                                      onClick={() => removeInvitation(invitation.id)}
+                                      onClick={() =>
+                                        removeInvitation(invitation.id)
+                                      }
                                       className="text-red-600 focus:text-red-600"
                                     >
                                       <X className="mr-2 h-4 w-4" />
@@ -471,28 +450,30 @@ export default function UsersPage() {
             </TableHeader>
             <TableBody>
               {isLoadingUsers || isLoadingAssignments ? (
-                Array.from({ length: 3 }).map((_, index) => (
-                  <TableRow key={"loading-users-" + index}>
-                    <TableCell>
-                      <div className="flex items-center space-x-4">
-                        <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
-                        <div className="h-4 w-32 bg-muted animate-pulse" />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-4 w-48 bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-8 w-24 bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="h-6 w-32 bg-muted animate-pulse" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="h-8 w-8 bg-muted animate-pulse ml-auto" />
-                    </TableCell>
-                  </TableRow>
-                ))
+                Array.from({ length: 3 }, () => crypto.randomUUID()).map(
+                  (id) => (
+                    <TableRow key={id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-4">
+                          <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                          <div className="h-4 w-32 bg-muted animate-pulse" />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-4 w-48 bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-8 w-24 bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="h-6 w-32 bg-muted animate-pulse" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="h-8 w-8 bg-muted animate-pulse ml-auto" />
+                      </TableCell>
+                    </TableRow>
+                  )
+                )
               ) : filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
                   <TableRow key={user.id}>
@@ -512,9 +493,11 @@ export default function UsersPage() {
                         defaultValue={user.role}
                         disabled={
                           // Disable if current user is not super admin and target user is super admin
-                          (currentUser?.role !== UserRole.SUPER_ADMIN && user.role === UserRole.SUPER_ADMIN) ||
+                          (currentUser?.role !== UserRole.SUPER_ADMIN &&
+                            user.role === UserRole.SUPER_ADMIN) ||
                           // Disable if current user is admin and trying to modify their own role
-                          (currentUser?.role === UserRole.ADMIN && user.id === currentUser.id)
+                          (currentUser?.role === UserRole.ADMIN &&
+                            user.id === currentUser.id)
                         }
                         onValueChange={(value) => {
                           // Prevent non-super admins from performing any actions on super admins
@@ -530,7 +513,7 @@ export default function UsersPage() {
                             });
                             return;
                           }
-                          
+
                           // Prevent non-super admins from assigning admin roles
                           if (
                             currentUser?.role !== UserRole.SUPER_ADMIN &&
@@ -544,7 +527,7 @@ export default function UsersPage() {
                             });
                             return;
                           }
-                          
+
                           // Prevent admins from changing their own role
                           if (
                             currentUser?.role === UserRole.ADMIN &&
@@ -552,13 +535,12 @@ export default function UsersPage() {
                           ) {
                             toast({
                               title: "Permission denied",
-                              description:
-                                "You cannot change your own role",
+                              description: "You cannot change your own role",
                               variant: "destructive",
                             });
                             return;
                           }
-                          
+
                           updateUserRole({
                             id: user.id,
                             role: value as (typeof UserRole)[keyof typeof UserRole],
@@ -586,7 +568,7 @@ export default function UsersPage() {
                             ) {
                               return false;
                             }
-                            
+
                             // Admins cannot assign admin role to others
                             if (
                               role === "admin" &&
@@ -594,7 +576,7 @@ export default function UsersPage() {
                             ) {
                               return false;
                             }
-                            
+
                             return true;
                           }).map((role) => (
                             <SelectItem key={role} value={role}>
@@ -623,7 +605,7 @@ export default function UsersPage() {
                                   className={cn(
                                     "w-full justify-start text-left font-normal h-8",
                                     !userClientAssignments[user.id]?.length &&
-                                      "text-muted-foreground",
+                                      "text-muted-foreground"
                                   )}
                                 >
                                   <Building2 className="h-4 w-4 mr-2 opacity-70" />
@@ -666,7 +648,7 @@ export default function UsersPage() {
                                               <span>{client.name}</span>
                                               <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
                                             </CommandItem>
-                                          ),
+                                          )
                                         )}
                                       </CommandGroup>
                                     )}
@@ -677,7 +659,9 @@ export default function UsersPage() {
                                           (client) =>
                                             !userClientAssignments[
                                               user.id
-                                            ]?.some((c) => c.id === client.id),
+                                            ]?.some(
+                                              (c: Client) => c.id === client.id
+                                            )
                                         )
                                         .map((client) => (
                                           <CommandItem
@@ -699,39 +683,6 @@ export default function UsersPage() {
                                 </Command>
                               </PopoverContent>
                             </Popover>
-                            {/* Client chips for quick visual reference */}
-                            {userClientAssignments[user.id]?.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {userClientAssignments[user.id]?.map(
-                                  (client) => (
-                                    <Badge
-                                      key={client.id}
-                                      variant="outline"
-                                      className="flex items-center gap-1 bg-secondary/10 pl-1.5 pr-0.5 py-0.5 rounded-md border border-secondary/30 hover:border-secondary/50 transition-colors group"
-                                    >
-                                      <Building2 className="h-3 w-3 mr-1 text-muted-foreground" />
-                                      <span className="text-xs font-medium">
-                                        {client.name}
-                                      </span>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-4 w-4 p-0 ml-1 opacity-60 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 rounded-full transition-all"
-                                        onClick={() =>
-                                          removeClient.mutate({
-                                            userId: user.id,
-                                            clientId: client.id,
-                                          })
-                                        }
-                                      >
-                                        <span className="sr-only">Remove</span>
-                                        <X className="h-2.5 w-2.5" />
-                                      </Button>
-                                    </Badge>
-                                  ),
-                                )}
-                              </div>
-                            )}
                           </div>
                         </div>
                       </TableCell>
@@ -739,12 +690,12 @@ export default function UsersPage() {
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="icon"
                             disabled={
                               // Disable actions for super admins when current user is not super admin
-                              currentUser?.role !== UserRole.SUPER_ADMIN && 
+                              currentUser?.role !== UserRole.SUPER_ADMIN &&
                               user.role === UserRole.SUPER_ADMIN
                             }
                           >
@@ -753,20 +704,23 @@ export default function UsersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                           {/* Only show actions if current user can perform actions on this user */}
-                          {(currentUser?.role === UserRole.SUPER_ADMIN || user.role !== UserRole.SUPER_ADMIN) && (
+                          {(currentUser?.role === UserRole.SUPER_ADMIN ||
+                            user.role !== UserRole.SUPER_ADMIN) && (
                             <>
                               {/* Check if user has a pending invitation */}
                               {pendingInvitations.some(
                                 (invite: Invitation) =>
-                                  invite.email === user.email && !invite.used,
+                                  invite.email === user.email && !invite.used
                               ) ? (
                                 <DropdownMenuItem
                                   onClick={() => {
                                     // Look up the pending invitation for this user by email
-                                    const pendingInvite = pendingInvitations.find(
-                                      (invite: Invitation) =>
-                                        invite.email === user.email && !invite.used,
-                                    );
+                                    const pendingInvite =
+                                      pendingInvitations.find(
+                                        (invite: Invitation) =>
+                                          invite.email === user.email &&
+                                          !invite.used
+                                      );
 
                                     if (pendingInvite) {
                                       resendInvitation(pendingInvite.id);
@@ -852,12 +806,14 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      <InviteUserDialog
-        open={isInviteDialogOpen}
-        onOpenChange={setIsInviteDialogOpen}
-        currentUser={currentUser}
-        clients={clients}
-      />
+      {currentUser && (
+        <InviteUserDialog
+          open={isInviteDialogOpen}
+          onOpenChange={setIsInviteDialogOpen}
+          currentUser={currentUser}
+          clients={clients}
+        />
+      )}
     </div>
   );
 }
