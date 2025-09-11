@@ -2,21 +2,17 @@ import type { BrandAsset } from "@shared/schema";
 import { FILE_FORMATS } from "@shared/schema";
 import type { QueryClient } from "@tanstack/react-query";
 import { FileType, Trash2, Upload } from "lucide-react";
-import {
-  type DragEvent,
-  useCallback,
-  useState,
-} from "react";
+import { type DragEvent, useCallback, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { AssetDisplay } from "../asset-display";
 import { AssetSection } from "./asset-section";
+import { DarkVariantUploader } from "./dark-variant-uploader";
 import { LogoDownloadButton } from "./download-buttons/logo-download-button";
 import { FileUpload } from "./file-upload";
 import { logoDescriptions, logoUsageGuidance } from "./logo-constants";
-import { parseBrandAssetData, ParsedLogoData } from "./logo-utils";
-import { DarkVariantUploader } from "./dark-variant-uploader";
 import { LogoPreview } from "./logo-preview";
+import { type ParsedLogoData, parseBrandAssetData } from "./logo-utils";
 
 interface LogoSectionProps {
   type: string;
@@ -39,23 +35,151 @@ export function LogoSection({
   const hasLogos = logos.length > 0;
   const [isDarkVariantDragging, setIsDarkVariantDragging] = useState(false);
 
-  const handleDarkVariantDragEnter = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDarkVariantDragging(true);
-  }, []);
+  const handleDarkVariantDragEnter = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDarkVariantDragging(true);
+    },
+    []
+  );
 
-  const handleDarkVariantDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+  const handleDarkVariantDragLeave = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDarkVariantDragging(false);
+    },
+    []
+  );
+
+  const handleDarkVariantDragOver = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDarkVariantDragging(true);
+    },
+    []
+  );
+
+  const handleFileUpload = async (
+    file: File,
+    variant: "light" | "dark",
+    parsedData: ParsedLogoData,
+    logo: BrandAsset
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append(
+        "name",
+        `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`
+      );
+      formData.append("type", type);
+      formData.append("category", "logo");
+
+      if (variant === "dark") {
+        formData.append("isDarkVariant", "true");
+        formData.append(
+          "data",
+          JSON.stringify({
+            type,
+            format: file.name.split(".").pop()?.toLowerCase(),
+            hasDarkVariant: true,
+            isDarkVariant: true,
+          })
+        );
+        formData.append(
+          "name",
+          `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`
+        );
+      } else if (parsedData) {
+        formData.append("isDarkVariant", "false");
+        formData.append(
+          "data",
+          JSON.stringify({
+            type,
+            format: file.name.split(".").pop()?.toLowerCase(),
+            hasDarkVariant: parsedData.hasDarkVariant || false,
+          })
+        );
+      }
+
+      const endpoint =
+        variant === "dark"
+          ? `/api/clients/${clientId}/assets/${logo.id}?variant=dark`
+          : `/api/clients/${clientId}/assets/${logo.id}`;
+
+      const response = await fetch(endpoint, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/assets/${logo.id}`],
+      });
+      
+      // Force refetch to ensure UI updates immediately
+      await queryClient.refetchQueries({
+        queryKey: [`/api/clients/${clientId}/assets`],
+      });
+
+      toast({
+        title: "Success",
+        description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo ${variant === "dark" ? "dark variant" : ""} updated successfully`,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "Error updating logo:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to update logo",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDarkVariantDrop = (
+    e: DragEvent<HTMLDivElement>,
+    parsedData: ParsedLogoData,
+    logo: BrandAsset
+  ) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDarkVariantDragging(false);
-  }, []);
 
-  const handleDarkVariantDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDarkVariantDragging(true);
-  }, []);
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      const fileExtension = file.name.split(".").pop()?.toLowerCase();
+
+      if (
+        !fileExtension ||
+        !Object.values(FILE_FORMATS)
+          .map((f) => f.toLowerCase())
+          .includes(fileExtension)
+      ) {
+        toast({
+          title: "Invalid file type",
+          description: `File must be one of: ${Object.values(FILE_FORMATS).join(", ")}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      handleFileUpload(file, "dark", parsedData, logo);
+    }
+  };
 
   return (
     <AssetSection
@@ -83,117 +207,7 @@ export function LogoSection({
         logos.map((logo) => {
           const parsedData = parseBrandAssetData(logo);
           if (!parsedData) return null;
-          const imageUrl = `/api/assets/${logo.id}/file`;        
-
-          const handleFileUpload = async (
-            file: File,
-            variant: "light" | "dark",
-          ) => {
-            try {
-              const formData = new FormData();
-              formData.append("file", file);
-              formData.append(
-                "name",
-                `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`
-              );
-              formData.append("type", type);
-              formData.append("category", "logo");
-        
-              if (variant === "dark") {
-                formData.append("isDarkVariant", "true");
-                formData.append(
-                  "data",
-                  JSON.stringify({
-                    type,
-                    format: file.name.split(".").pop()?.toLowerCase(),
-                    hasDarkVariant: true,
-                    isDarkVariant: true,
-                  })
-                );
-                formData.append(
-                  "name",
-                  `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`
-                );
-              } else if (parsedData) {
-                formData.append("isDarkVariant", "false");
-                formData.append(
-                  "data",
-                  JSON.stringify({
-                    type,
-                    format: file.name.split(".").pop()?.toLowerCase(),
-                    hasDarkVariant: parsedData.hasDarkVariant || false,
-                  })
-                );
-              }
-        
-              const endpoint =
-                variant === "dark"
-                  ? `/api/clients/${clientId}/assets/${logo.id}?variant=dark`
-                  : `/api/clients/${clientId}/assets/${logo.id}`;
-        
-              const response = await fetch(endpoint, {
-                method: "PATCH",
-                body: formData,
-              });
-        
-              if (!response.ok) {
-                throw new Error(await response.text());
-              }
-        
-              await queryClient.invalidateQueries({
-                queryKey: [`/api/clients/${clientId}/assets`],
-              });
-              await queryClient.invalidateQueries({
-                queryKey: [`/api/assets/${logo.id}`],
-              });
-        
-              toast({
-                title: "Success",
-                description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo ${variant === "dark" ? "dark variant" : ""} updated successfully`,
-              });
-            } catch (error: unknown) {
-              console.error(
-                "Error updating logo:",
-                error instanceof Error ? error.message : "Unknown error"
-              );
-              toast({
-                title: "Error",
-                description:
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to update logo",
-                variant: "destructive",
-              });
-            }
-          };
-
-          const handleDarkVariantDrop = (e: DragEvent<HTMLDivElement>) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsDarkVariantDragging(false);
-        
-            const files = e.dataTransfer.files;
-            if (files && files.length > 0) {
-              const file = files[0];
-              const fileExtension = file.name.split(".").pop()?.toLowerCase();
-        
-              if (
-                !fileExtension ||
-                !Object.values(FILE_FORMATS)
-                  .map((f) => f.toLowerCase())
-                  .includes(fileExtension)
-              ) {
-                toast({
-                  title: "Invalid file type",
-                  description: `File must be one of: ${Object.values(FILE_FORMATS).join(", ")}`,
-                  variant: "destructive",
-                });
-                return;
-              }
-        
-              handleFileUpload(file, "dark");
-            }
-          };
+          const imageUrl = `/api/assets/${logo.id}/file`;
 
           return (
             <AssetDisplay
@@ -208,7 +222,12 @@ export function LogoSection({
                         .join(",")}
                       onChange={(e) => {
                         if (e.target.files?.[0]) {
-                          handleFileUpload(e.target.files[0], variant);
+                          handleFileUpload(
+                            e.target.files[0],
+                            variant,
+                            parsedData,
+                            logo
+                          );
                         }
                       }}
                       className="hidden"
@@ -262,7 +281,7 @@ export function LogoSection({
                     onDragEnter={handleDarkVariantDragEnter}
                     onDragLeave={handleDarkVariantDragLeave}
                     onDragOver={handleDarkVariantDragOver}
-                    onDrop={handleDarkVariantDrop}
+                    onDrop={(e) => handleDarkVariantDrop(e, parsedData, logo)}
                   />
                 ) : (
                   <LogoPreview

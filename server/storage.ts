@@ -298,7 +298,10 @@ export class DatabaseStorage implements IStorage {
   ): Promise<BrandAsset> {
     const [asset] = await db
       .update(brandAssets)
-      .set(updateAsset)
+      .set({
+        ...updateAsset,
+        updatedAt: new Date(), // Always update the timestamp on asset updates
+      })
       .where(eq(brandAssets.id, id))
       .returning();
     return asset;

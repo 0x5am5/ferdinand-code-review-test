@@ -64,6 +64,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
   // Fetch logos for this client
   const { data: clientAssets = [] } = useClientAssetsById(clientId);
+
   const logoAssets = clientAssets.filter((asset) => asset.category === "logo");
 
   const { data: allClients, isLoading: clientsIsLoading } = useClientsQuery();
@@ -84,13 +85,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChangeEvent as EventListener,
+      handleTabChangeEvent as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChangeEvent as EventListener,
+        handleTabChangeEvent as EventListener
       );
     };
   }, []);
@@ -110,7 +111,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     } catch (error: unknown) {
       console.error(
         "Logout error:",
-        error instanceof Error ? error.message : "Unknown error",
+        error instanceof Error ? error.message : "Unknown error"
       );
     }
   };
@@ -207,7 +208,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error",
+                e instanceof Error ? e.message : "Unknown error"
               );
               return false;
             }
@@ -223,7 +224,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error",
+                e instanceof Error ? e.message : "Unknown error"
               );
               return false;
             }
@@ -234,10 +235,12 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
           // If we found a usable logo, display it
           if (logoToUse?.id) {
+            const imageUrl = `/api/assets/${logoToUse.id}/file?t=${logoToUse.updatedAt}`;
+
             return (
               <div className="w-[90%]">
                 <img
-                  src={`/api/assets/${logoToUse.id}/file`}
+                  src={imageUrl}
                   alt={clientName}
                   className="h-full w-auto object-contain"
                   onError={(e) => {
@@ -245,7 +248,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                     // On error, revert to the client name as fallback
                     e.currentTarget.insertAdjacentHTML(
                       "afterend",
-                      `<h2 class="font-bold">${clientName}</h2>`,
+                      `<h2 class="font-bold">${clientName}</h2>`
                     );
                   }}
                 />

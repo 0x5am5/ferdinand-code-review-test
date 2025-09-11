@@ -179,7 +179,7 @@ export function ClientDashboard({
           {logoToShow ? (
             <div className="max-w-md max-h-40 mx-auto mb-4">
               <img
-                src={logoToShow?.id ? `/api/assets/${logoToShow.id}/file` : ""}
+                src={logoToShow?.id ? `/api/assets/${logoToShow.id}/file?t=${logoToShow.updatedAt ? new Date(logoToShow.updatedAt).getTime() : Date.now()}` : ""}
                 alt={clientName}
                 className="max-h-40 w-auto mx-auto object-contain"
                 style={{

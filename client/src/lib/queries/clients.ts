@@ -1,7 +1,7 @@
 import type { BrandAsset, Client, User, UserPersona } from "@shared/schema";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "../queryClient";
+import { apiRequest } from "../queryClient";
 
 export const useClientsQuery = () =>
   useQuery<Client[]>({
@@ -53,6 +53,8 @@ export const useClientUsersQuery = (clientId: number | null) =>
   });
 
 export function useDeleteClientMutation() {
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: async (id: number) => {
       // Wait for the animation to complete before deleting from the server
@@ -81,6 +83,8 @@ export function useDeleteClientMutation() {
 }
 
 export function useUpdateClientMutation() {
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Client> }) => {
       await apiRequest("PATCH", `/api/clients/${id}`, data);
@@ -107,6 +111,8 @@ export function useUpdateClientMutation() {
 export function useUpdateClientOrderMutation(
   setSortOrder: (order: "custom") => void
 ) {
+  const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: async (
       clientOrders: { id: number; displayOrder: number }[]
@@ -141,6 +147,8 @@ export function useUpdateClientOrderMutation(
 
 // Client user assignment mutations
 export function useClientUserMutations(clientId: number) {
+  const queryClient = useQueryClient();
+  
   const assignUser = useMutation({
     mutationFn: async (userId: number) => {
       return await apiRequest("POST", `/api/user-clients`, {

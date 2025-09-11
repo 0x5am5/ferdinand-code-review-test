@@ -1,8 +1,6 @@
 import "dotenv/config";
-import { exec } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { createServer } from "node:http";
-import { promisify } from "node:util";
 import connectPg from "connect-pg-simple";
 import express, {
   type NextFunction,
@@ -14,7 +12,6 @@ import { runMigrations } from "./migrations";
 import { registerRoutes } from "./routes";
 import { log, serveStatic, setupVite } from "./vite";
 
-const execAsync = promisify(exec);
 const app = express();
 let server: ReturnType<typeof createServer> | null = null;
 
@@ -60,47 +57,9 @@ app.get("/api/health", (_req, res) => {
 // Increase the maximum number of listeners to prevent warnings
 EventEmitter.defaultMaxListeners = 20;
 
-// Port configuration with Cloud Run compatibility
-const PORT = process.env.PORT
-  ? parseInt(process.env.PORT, 10)
-  : process.env.NODE_ENV === "production"
-    ? 5100
-    : 5000;
-const FALLBACK_PORTS =
-  process.env.NODE_ENV === "production" ? [] : [5001, 3000, 3001];
-const ALL_PORTS = [PORT, ...FALLBACK_PORTS];
+// Port configuration: default to 3001 (override with PORT env var)
+const PORT = parseInt(process.env.PORT ?? "3001", 10);
 
-// Enhanced cleanup function
-async function cleanup() {
-  try {
-    console.log("Starting port cleanup process...");
-
-    // Kill any processes on our target ports
-    for (const port of ALL_PORTS) {
-      console.log(`Cleaning up port ${port}...`);
-
-      try {
-        // Kill any existing process on the port
-        await execAsync(`npx kill-port ${port}`);
-        console.log(`✓ Port ${port} is now available`);
-      } catch (e: unknown) {
-        // Ignore errors as the port might not be in use
-        console.log(e);
-        console.log(`✓ Port ${port} already available`);
-      }
-    }
-
-    // Add a small delay to ensure ports are completely freed
-    console.log("Waiting for ports to be fully released...");
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    console.log("Port cleanup completed successfully");
-  } catch (err: unknown) {
-    console.error(
-      "Error during cleanup:",
-      err instanceof Error ? err.message : "Unknown error"
-    );
-  }
-}
 
 // Improved server startup function
 async function startServer(retries = 3) {
@@ -108,8 +67,6 @@ async function startServer(retries = 3) {
     try {
       console.log(`Starting server (attempt ${attempt}/${retries})...`);
 
-      // First ensure the ports are free
-      await cleanup();
 
       // Run database migrations
       console.log("Running database migrations...");
@@ -151,62 +108,23 @@ async function startServer(retries = 3) {
           });
         });
       } else {
-        // Development: Try multiple ports if needed
-        let serverStarted = false;
+        // Development: Use a single fixed port
+        console.log(`Starting development server on port ${PORT}`);
+        await new Promise<void>((resolve, reject) => {
+          server?.listen(PORT, "0.0.0.0", () => {
+            console.log(`✓ Server started successfully on port ${PORT}`);
+            log(`Server listening at http://0.0.0.0:${PORT}`);
+            resolve();
+          });
 
-        console.log(`Attempting to start server on port ${PORT}`);
-        const portsToTry = ALL_PORTS;
-
-        // Try each port in sequence
-        for (const port of portsToTry) {
-          if (serverStarted) break;
-
-          try {
-            // Start listening on the port
-            await new Promise<void>((resolve, reject) => {
-              const timeoutId = setTimeout(() => {
-                reject(
-                  new Error(`Timeout when trying to bind to port ${port}`)
-                );
-              }, 5000);
-
-              server?.listen(port, "0.0.0.0", () => {
-                clearTimeout(timeoutId);
-                console.log(`✓ Server started successfully on port ${port}`);
-                log(`Server listening at http://0.0.0.0:${port}`);
-                serverStarted = true;
-                resolve();
-              });
-
-              server?.on("error", (error: NodeJS.ErrnoException) => {
-                clearTimeout(timeoutId);
-                if (error.code === "EADDRINUSE") {
-                  console.error(
-                    `Port ${port} is already in use, trying next port...`
-                  );
-                  reject(new Error(`Port ${port} is in use`));
-                } else {
-                  console.error(
-                    "Server error:",
-                    error instanceof Error ? error.message : "Unknown error"
-                  );
-                  reject(error);
-                }
-              });
-            });
-          } catch (err: unknown) {
-            console.log(err);
-            console.log(`Failed to use port ${port}, trying next...`);
-            // Continue to the next port
-          }
-        }
-
-        // If no port worked, throw an error
-        if (!serverStarted) {
-          throw new Error(
-            `Could not start server on any of the ports: ${portsToTry.join(", ")}`
-          );
-        }
+          server?.on("error", (error: NodeJS.ErrnoException) => {
+            console.error(
+              "Server error:",
+              error instanceof Error ? error.message : "Unknown error"
+            );
+            reject(error);
+          });
+        });
       }
 
       // If we get here, the server started successfully
@@ -224,16 +142,6 @@ async function startServer(retries = 3) {
   }
 }
 
-// Handle cleanup for various signals
-process.on("SIGTERM", cleanup);
-process.on("SIGINT", cleanup);
-process.on("SIGUSR2", cleanup); // Handle nodemon restart
-
-// Handle unhandled promise rejections
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  cleanup().then(() => process.exit(1));
-});
 
 // Start the server
 console.log("Initiating server startup...");
