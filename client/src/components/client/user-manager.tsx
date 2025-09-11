@@ -206,7 +206,7 @@ export function UserManager({ clientId }: UserManagerProps) {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button onClick={() => setInviteDialogOpen(true)}>
+        <Button type="button" onClick={() => setInviteDialogOpen(true)}>
           <UserPlusIcon className="mr-2 h-4 w-4" />
           Invite User
         </Button>
@@ -252,6 +252,7 @@ export function UserManager({ clientId }: UserManagerProps) {
                     Try a different search term or clear the filter
                   </p>
                   <Button
+                    type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setSearchQuery("")}
@@ -268,7 +269,7 @@ export function UserManager({ clientId }: UserManagerProps) {
                   <p className="text-muted-foreground mt-2 mb-4">
                     Invite team members to collaborate on this client
                   </p>
-                  <Button size="sm" onClick={() => setInviteDialogOpen(true)}>
+                  <Button type="button" size="sm" onClick={() => setInviteDialogOpen(true)}>
                     Invite Users
                   </Button>
                 </>
@@ -314,6 +315,7 @@ export function UserManager({ clientId }: UserManagerProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleRemoveUser(user.id as number)}
@@ -375,6 +377,7 @@ export function UserManager({ clientId }: UserManagerProps) {
           </div>
           <DialogFooter>
             <Button
+              type="button"
               variant="outline"
               onClick={() => {
                 setInviteDialogOpen(false);
@@ -385,6 +388,7 @@ export function UserManager({ clientId }: UserManagerProps) {
               Cancel
             </Button>
             <Button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
