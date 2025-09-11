@@ -1,5 +1,5 @@
 import { type BrandAsset, FontSource } from "@shared/schema";
-import { GoogleFont, FontData } from "./types";
+import type { FontData } from "./types";
 
 // Convert Google Fonts variant format to readable weights
 export const convertGoogleFontVariants = (variants: string[]): string[] => {

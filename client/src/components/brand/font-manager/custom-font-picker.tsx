@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
-import React, { useId, useState } from "react";
+import type React from "react";
+import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CustomFontPickerProps } from "../types";
+import type { CustomFontPickerProps } from "./types";
 
 export function CustomFontPicker({
   onFontUpload,
@@ -17,6 +18,7 @@ export function CustomFontPicker({
   const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
     if (!selectedFiles || selectedFiles.length === 0 || !fontName.trim()) {
@@ -26,10 +28,7 @@ export function CustomFontPicker({
     setFontName("");
     setSelectedWeights(["400"]);
     setSelectedFiles(null);
-    const fileInput = document.querySelector(
-      'input[type="file"]'
-    ) as HTMLInputElement;
-    if (fileInput) fileInput.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -105,7 +104,7 @@ export function CustomFontPicker({
           />
         </div>
 
-        <div>
+        <div className="flex flex-col gap-2">
           <Label className="text-sm font-medium">Upload Font Files</Label>
           <button
             type="button"
@@ -129,22 +128,21 @@ export function CustomFontPicker({
               className="hidden"
               id={_fontUploadId}
               disabled={isLoading}
+              ref={fileInputRef}
             />
-            <label htmlFor={_fontUploadId} className="cursor-pointer">
-              <div className="space-y-2">
-                <Plus className="h-8 w-8 mx-auto text-gray-400" />
-                <div>
-                  <p className="text-sm font-medium">
-                    {selectedFiles && selectedFiles.length > 0
-                      ? `${selectedFiles.length} file(s) selected`
-                      : "Click to upload or drag and drop"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Supported formats: {allowedFormats.join(", ")}
-                  </p>
-                </div>
+            <div className="space-y-2">
+              <Plus className="h-8 w-8 mx-auto text-gray-400" />
+              <div>
+                <p className="text-sm font-medium">
+                  {selectedFiles && selectedFiles.length > 0
+                    ? `${selectedFiles.length} file(s) selected`
+                    : "Click to upload or drag and drop"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Supported formats: {allowedFormats.join(", ")}
+                </p>
               </div>
-            </label>
+            </div>
 
             {selectedFiles && selectedFiles.length > 0 && (
               <div className="mt-3 text-left">

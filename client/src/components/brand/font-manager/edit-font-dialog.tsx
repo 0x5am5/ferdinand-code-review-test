@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EditFontDialogProps, FontData } from "../types";
-import { WeightStyleSelector } from "./WeightStyleSelector";
+import type { EditFontDialogProps, FontData } from "./types";
+import { WeightStyleSelector } from "./weight-style-selector";
 
 export function EditFontDialog({
   editingFont,

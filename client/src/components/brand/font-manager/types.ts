@@ -1,4 +1,4 @@
-import { type BrandAsset, FontSource } from "@shared/schema";
+import type { BrandAsset, FontSource } from "@shared/schema";
 
 // Google Fonts interface
 export interface GoogleFont {
@@ -109,7 +109,9 @@ export interface WeightStyleSelectorProps {
 
 export interface EditFontDialogProps {
   editingFont: FontData | null;
-  setEditingFont: (font: FontData | null | ((prev: FontData | null) => FontData | null)) => void;
+  setEditingFont: (
+    font: FontData | null | ((prev: FontData | null) => FontData | null)
+  ) => void;
   selectedWeights: string[];
   selectedStyles: string[];
   setSelectedWeights: (weights: string[]) => void;

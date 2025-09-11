@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import { ClientDashboard } from "@/components/brand/client-dashboard";
 import { ColorManager } from "@/components/brand/color-manager";
-import { FontManager } from "@/components/brand/font-manager";
+import { FontManager } from "@/components/brand/font-manager/font-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
@@ -55,20 +55,20 @@ export default function ClientDetails() {
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChange as EventListener,
+      handleTabChange as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChange as EventListener,
+        handleTabChange as EventListener
       );
     };
   }, [clientId, setLocation]);
 
   const { data: client, isLoading: isLoadingClient } = useClientsById(clientId);
   const { isLoading: isLoadingAssets, data: assets = [] } = useClientAssetsById(
-    clientId ?? null,
+    clientId ?? null
   );
   const { data: personas = [], isLoading: isLoadingPersonas } =
     useClientPersonasById(clientId ?? null);
@@ -155,7 +155,7 @@ export default function ClientDetails() {
     };
 
   const anyFeatureEnabled = Object.values(featureToggles).some(
-    (value) => value === true,
+    (value) => value === true
   );
 
   if (!anyFeatureEnabled) {
@@ -182,7 +182,12 @@ export default function ClientDetails() {
     if (colorAssets && colorAssets.length > 0) {
       const primaryColorAsset = colorAssets.find((asset: BrandAsset) => {
         if (!asset || !asset.data) return false;
-        return asset.data.category === "brand";
+        try {
+          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          return data && typeof data === "object" && data.category === "brand";
+        } catch {
+          return false;
+        }
       });
 
       if (primaryColorAsset?.data) {
@@ -204,7 +209,7 @@ export default function ClientDetails() {
         } catch (parseErr: unknown) {
           console.error(
             "Error parsing color data:",
-            parseErr instanceof Error ? parseErr.message : "Unknown error",
+            parseErr instanceof Error ? parseErr.message : "Unknown error"
           );
         }
       }
@@ -212,7 +217,7 @@ export default function ClientDetails() {
   } catch (e: unknown) {
     console.error(
       "Error processing color assets:",
-      e instanceof Error ? e.message : "Unknown error",
+      e instanceof Error ? e.message : "Unknown error"
     );
   }
 

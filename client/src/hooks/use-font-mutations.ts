@@ -13,8 +13,6 @@ export function useFontMutations(clientId: number | null) {
         throw new Error("Client ID is required");
       }
 
-      console.log("Sending font data to server for client:", clientId);
-
       const response = await fetch(`/api/clients/${clientId}/assets`, {
         method: "POST",
         body: data,
@@ -27,8 +25,7 @@ export function useFontMutations(clientId: number | null) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch {
-          const errorText = await response.text();
-          errorMessage = errorText || errorMessage;
+          errorMessage = `HTTP ${response.status}`;
         }
         console.error("Server error:", response.status, errorMessage);
         throw new Error(errorMessage);
@@ -37,7 +34,6 @@ export function useFontMutations(clientId: number | null) {
       return response.json();
     },
     onSuccess: (data) => {
-      console.log("Font added successfully:", data);
       if (clientId) {
         queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
         queryClient.invalidateQueries({
@@ -124,7 +120,6 @@ export function useFontMutations(clientId: number | null) {
       }
       toast({
         title: "Font deleted successfully",
-        variant: "default",
       });
     },
     onError: (error: Error) => {

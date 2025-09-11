@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useParams } from "wouter";
 import { ColorManager } from "@/components/brand/color-manager";
-import { FontManager } from "@/components/brand/font-manager";
+import { FontManager } from "@/components/brand/font-manager/font-manager";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

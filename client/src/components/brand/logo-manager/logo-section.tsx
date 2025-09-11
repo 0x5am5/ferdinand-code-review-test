@@ -34,6 +34,7 @@ export function LogoSection({
   const { toast } = useToast();
   const hasLogos = logos.length > 0;
   const [isDarkVariantDragging, setIsDarkVariantDragging] = useState(false);
+  const currentType = type;
 
   const handleDarkVariantDragEnter = useCallback(
     (e: DragEvent<HTMLDivElement>) => {
@@ -69,13 +70,13 @@ export function LogoSection({
     logo: BrandAsset
   ) => {
     try {
-      const formData = new FormData();
+          const formData = new FormData();
       formData.append("file", file);
       formData.append(
         "name",
-        `${type.charAt(0).toUpperCase() + type.slice(1)} Logo`
+        `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Logo`
       );
-      formData.append("type", type);
+      formData.append("currentType", currentType);
       formData.append("category", "logo");
 
       if (variant === "dark") {
@@ -83,7 +84,7 @@ export function LogoSection({
         formData.append(
           "data",
           JSON.stringify({
-            type,
+            type: currentType,
             format: file.name.split(".").pop()?.toLowerCase(),
             hasDarkVariant: true,
             isDarkVariant: true,
@@ -91,14 +92,14 @@ export function LogoSection({
         );
         formData.append(
           "name",
-          `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`
+          `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Logo (Dark)`
         );
       } else if (parsedData) {
         formData.append("isDarkVariant", "false");
         formData.append(
           "data",
           JSON.stringify({
-            type,
+            type: currentType,
             format: file.name.split(".").pop()?.toLowerCase(),
             hasDarkVariant: parsedData.hasDarkVariant || false,
           })
@@ -125,7 +126,7 @@ export function LogoSection({
       queryClient.invalidateQueries({
         queryKey: [`/api/assets/${logo.id}`],
       });
-      
+
       // Force refetch to ensure UI updates immediately
       await queryClient.refetchQueries({
         queryKey: [`/api/clients/${clientId}/assets`],

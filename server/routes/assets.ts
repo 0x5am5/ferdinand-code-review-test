@@ -29,7 +29,155 @@ interface AdobeFontsFamily {
   css_names: string[];
 }
 
+// Helper function to fix logo data for assets that might have malformed type data
+async function fixLogoTypeData() {
+  try {
+    console.log("Starting logo type data fix...");
+    const clients = await storage.getClients();
+    
+    for (const client of clients) {
+      const clientAssets = await storage.getClientAssets(client.id);
+      const logoAssets = clientAssets.filter(asset => asset.category === "logo");
+      
+      for (const asset of logoAssets) {
+        let needsUpdate = false;
+        let assetData;
+        
+        try {
+          assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+        } catch (e) {
+          console.log(`Asset ${asset.id} has invalid JSON data, skipping`);
+          continue;
+        }
+        
+        // If the asset has no type or an undefined type, infer it from the name
+        if (!assetData?.type) {
+          console.log(`Asset ${asset.id} (${asset.name}) missing type, inferring from name...`);
+          
+          // Infer type from asset name
+          const name = asset.name.toLowerCase();
+          if (name.includes("main")) {
+            assetData.type = "main";
+            needsUpdate = true;
+          } else if (name.includes("square")) {
+            assetData.type = "square";
+            needsUpdate = true;
+          } else if (name.includes("favicon")) {
+            assetData.type = "favicon";
+            needsUpdate = true;
+          } else if (name.includes("vertical")) {
+            assetData.type = "vertical";
+            needsUpdate = true;
+          } else if (name.includes("horizontal")) {
+            assetData.type = "horizontal";
+            needsUpdate = true;
+          } else if (name.includes("app")) {
+            assetData.type = "app_icon";
+            needsUpdate = true;
+          } else {
+            // Default to main if we can't determine
+            assetData.type = "main";
+            needsUpdate = true;
+          }
+          
+          console.log(`Inferred type "${assetData.type}" for asset ${asset.id}`);
+        }
+        
+        if (needsUpdate) {
+          await storage.updateAsset(asset.id, {
+            ...asset,
+            data: assetData
+          });
+          console.log(`Updated asset ${asset.id} with type: ${assetData.type}`);
+        }
+      }
+    }
+    console.log("Completed logo type data fix");
+  } catch (error) {
+    console.error("Error in logo type data fix:", error);
+  }
+}
+
+// Helper function to update client logos based on existing square/favicon logos
+async function updateClientLogosFromAssets() {
+  try {
+    console.log("Starting retroactive client logo update...");
+    const clients = await storage.getClients();
+    
+    for (const client of clients) {
+      if (client.logo) {
+        continue; // Skip clients who already have a logo set
+      }
+      
+      const clientAssets = await storage.getClientAssets(client.id);
+      const logoAssets = clientAssets.filter(asset => asset.category === "logo");
+      
+      // Prioritize square logos first, then favicon logos
+      let selectedAsset = logoAssets.find(asset => {
+        const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+        return assetData?.type === "square";
+      });
+      
+      if (!selectedAsset) {
+        selectedAsset = logoAssets.find(asset => {
+          const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          return assetData?.type === "favicon";
+        });
+      }
+      
+      if (selectedAsset) {
+        const logoUrl = `/api/clients/${client.id}/assets/${selectedAsset.id}/download`;
+        await storage.updateClient(client.id, { logo: logoUrl });
+        console.log(`Updated client ${client.id} (${client.name}) logo to: ${logoUrl}`);
+      }
+    }
+    console.log("Completed retroactive client logo update");
+  } catch (error) {
+    console.error("Error in retroactive client logo update:", error);
+  }
+}
+
 export function registerAssetRoutes(app: Express) {
+  // Utility endpoint to fix logo type data
+  app.post("/api/utils/fix-logo-types", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user || user.role !== "super_admin") {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+      
+      await fixLogoTypeData();
+      res.json({ message: "Logo type data fixed successfully" });
+    } catch (error) {
+      console.error("Error in logo type data fix:", error);
+      res.status(500).json({ message: "Error fixing logo type data" });
+    }
+  });
+
+  // Utility endpoint to update client logos from existing assets
+  app.post("/api/utils/update-client-logos", async (req, res) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user || user.role !== "super_admin") {
+        return res.status(403).json({ message: "Super admin access required" });
+      }
+      
+      await updateClientLogosFromAssets();
+      res.json({ message: "Client logos updated successfully" });
+    } catch (error) {
+      console.error("Error in manual client logo update:", error);
+      res.status(500).json({ message: "Error updating client logos" });
+    }
+  });
+
   // Adobe Fonts API endpoint
   app.get("/api/adobe-fonts/:projectId", async (req, res: Response) => {
     try {
@@ -532,7 +680,9 @@ export function registerAssetRoutes(app: Express) {
 
         // Default to logo asset (only for non-font assets)
         if (category !== "font") {
-          const { name, type, isDarkVariant } = req.body;
+          const { name, type, currentType, isDarkVariant } = req.body;
+          // Use currentType if available (from updates), otherwise fall back to type
+          const logoType = currentType || type;
           const files = req.files as Express.Multer.File[];
 
           if (!files || files.length === 0) {
@@ -547,7 +697,7 @@ export function registerAssetRoutes(app: Express) {
 
           // Create proper data object instead of JSON string
           const logoData = {
-            type,
+            type: logoType,
             format: fileExtension || "png",
             fileName: file.originalname,
           };
@@ -604,6 +754,23 @@ export function registerAssetRoutes(app: Express) {
                 : "Unknown error"
             );
             // We'll continue even if conversion fails since the original asset was saved
+          }
+
+          // Update client logo if this is a square or favicon logo
+          try {
+            if (logoType === "square" || logoType === "favicon") {
+              const logoUrl = `/api/clients/${clientId}/assets/${asset.id}/download`;
+              await storage.updateClient(clientId, { logo: logoUrl });
+              console.log(`Updated client ${clientId} logo to: ${logoUrl}`);
+            }
+          } catch (logoUpdateError: unknown) {
+            console.error(
+              "Error updating client logo:",
+              logoUpdateError instanceof Error
+                ? logoUpdateError.message
+                : "Unknown error"
+            );
+            // Don't fail the request if logo update fails
           }
 
           return res.status(201).json(asset);
@@ -878,6 +1045,30 @@ export function registerAssetRoutes(app: Express) {
           assetId,
           parsed.data as InsertBrandAsset | InsertFontAsset | InsertColorAsset
         );
+
+        // Update client logo if this is a square or favicon logo update
+        try {
+          if (asset.category === "logo" && parsed.data) {
+            const data = parsed.data as any;
+            const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            const logoType = data.data?.type || assetData?.type;
+            
+            if (logoType === "square" || logoType === "favicon") {
+              const logoUrl = `/api/clients/${clientId}/assets/${asset.id}/download`;
+              await storage.updateClient(clientId, { logo: logoUrl });
+              console.log(`Updated client ${clientId} logo to: ${logoUrl} (via update)`);
+            }
+          }
+        } catch (logoUpdateError: unknown) {
+          console.error(
+            "Error updating client logo during asset update:",
+            logoUpdateError instanceof Error
+              ? logoUpdateError.message
+              : "Unknown error"
+          );
+          // Don't fail the request if logo update fails
+        }
+
         res.json(updatedAsset);
       } catch (error: unknown) {
         console.error(
@@ -1543,6 +1734,22 @@ export function registerAssetRoutes(app: Express) {
       );
     }
   }
+
+  // Add the missing /download endpoint that matches the URLs being generated
+  app.get(
+    "/api/clients/:clientId/assets/:assetId/download",
+    validateClientId,
+    async (req: RequestWithClientId, res: Response) => {
+      // Redirect to the existing /file endpoint with the same parameters
+      const assetId = req.params.assetId;
+      const query = new URLSearchParams(req.query as Record<string, string>);
+      const queryString = query.toString();
+      const redirectUrl = `/api/assets/${assetId}/file${queryString ? `?${queryString}` : ""}`;
+      
+      console.log(`Redirecting /download request to: ${redirectUrl}`);
+      return res.redirect(302, redirectUrl);
+    }
+  );
 
   // Get converted assets for a specific asset
   app.get("/api/assets/:assetId/converted", async (req, res: Response) => {

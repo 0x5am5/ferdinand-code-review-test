@@ -2,20 +2,20 @@ import { FontSource } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence } from "framer-motion";
 import { Type } from "lucide-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useFontMutations } from "@/hooks/use-font-mutations";
 import { useToast } from "@/hooks/use-toast";
-import { TypeScaleManager } from "../type-scale/type-scale-manager";
-import { AssetSection } from "../brand/logo-manager/asset-section";
-import { AdobeFontPicker } from "./components/AdobeFontPicker";
-import { CustomFontPicker } from "./components/CustomFontPicker";
-import { EditFontDialog } from "./components/EditFontDialog";
-import { FontCard } from "./components/FontCard";
-import { FontPickerButtons } from "./components/FontPickerButtons";
-import { GoogleFontPicker } from "./components/GoogleFontPicker";
-import {
+import { TypeScaleManager } from "../../type-scale/type-scale-manager";
+import { AssetSection } from "../logo-manager/asset-section";
+import { AdobeFontPicker } from "./adobe-font-picker";
+import { CustomFontPicker } from "./custom-font-picker";
+import { EditFontDialog } from "./edit-font-dialog";
+import { FontCard } from "./font-card";
+import { FontPickerButtons } from "./font-picker-buttons";
+import { GoogleFontPicker } from "./google-font-picker";
+import type {
   FontData,
   FontManagerProps,
   GoogleFont,
@@ -46,6 +46,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { data: googleFontsData, isLoading: isFontsLoading } = useQuery({
     queryKey: ["/api/google-fonts"],
     enabled: true,
+    retry: false,
+    throwOnError: false,
   });
 
   if (!user) return null;
@@ -302,12 +304,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
     const updateData = {
       name: editingFont.name,
-      data: JSON.stringify({
+      category: "font",
+      data: {
         source: editingFont.source,
         weights: selectedWeights,
         styles: selectedStyles,
         sourceData: editingFont.sourceData,
-      }),
+      },
     };
 
     editFont.mutate({ id: editingFont.id, data: updateData });

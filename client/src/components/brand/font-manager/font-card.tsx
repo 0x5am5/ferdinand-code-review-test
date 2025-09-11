@@ -5,8 +5,8 @@ import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { FontCardProps } from "../types";
-import { generateGoogleFontUrl } from "../utils";
+import type { FontCardProps } from "./types";
+import { generateGoogleFontUrl } from "./utils";
 
 export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
   const [selectedWeight, setSelectedWeight] = useState("400");

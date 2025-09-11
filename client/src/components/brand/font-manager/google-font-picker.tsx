@@ -15,8 +15,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { GoogleFontPickerProps } from "../types";
-import { generateGoogleFontUrl } from "../utils";
+import type { GoogleFontPickerProps } from "./types";
+import { generateGoogleFontUrl } from "./utils";
 
 export function GoogleFontPicker({
   onFontSelect,

@@ -1,7 +1,7 @@
 import { Lock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { WeightStyleSelectorProps } from "../types";
+import type { WeightStyleSelectorProps } from "./types";
 
 export function WeightStyleSelector({
   selectedWeights,

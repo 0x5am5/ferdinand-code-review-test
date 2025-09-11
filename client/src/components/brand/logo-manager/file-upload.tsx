@@ -127,26 +127,26 @@ export function FileUpload({
     },
   });
 
-  const handleDragEnter = useCallback((e: DragEvent<HTMLButtonElement>) => {
+  const handleDragEnter = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
   }, []);
 
-  const handleDragLeave = useCallback((e: DragEvent<HTMLButtonElement>) => {
+  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
   }, []);
 
-  const handleDragOver = useCallback((e: DragEvent<HTMLButtonElement>) => {
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(true);
   }, []);
 
   const handleDrop = useCallback(
-    (e: DragEvent<HTMLButtonElement>) => {
+    (e: DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       e.stopPropagation();
       setIsDragging(false);
@@ -239,78 +239,70 @@ export function FileUpload({
 
   return (
     <div className="logo-upload">
-      <button
-        type="button"
-        className={`logo-upload__dropzone ${isDragging ? "logo-upload__dropzone--active" : ""} ${createLogo.isPending ? "logo-upload__dropzone--loading" : ""}`}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        onClick={() => {
-          const input = document.querySelector(
-            `input[type="file"]`
-          ) as HTMLInputElement;
-          if (input) input.click();
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            const input = document.querySelector(
-              `input[type="file"]`
-            ) as HTMLInputElement;
-            if (input) input.click();
-          }
-        }}
-        aria-label="Drag and drop logo file or click to browse"
-      >
-        {createLogo.isPending ? (
+      {(() => {
+        const dropzoneInputId = `dropzone-file-input-${type}-${Math.random().toString(36).substring(7)}`;
+        return (
           <>
-            <div className="logo-upload__dropzone-icon logo-upload__dropzone-icon--loading">
-              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
-            </div>
-            <div className="logo-upload__dropzone-file-info">
-              <h4>Uploading logo...</h4>
-              <p>Please wait while your file is being processed</p>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="logo-upload__dropzone-icon">
-              <Upload className="h-8 w-8" />
-            </div>
-            <h4 className="logo-upload__dropzone-heading">
-              Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo
-            </h4>
-            <p className="logo-upload__dropzone-text">
-              Drag and drop your logo file here, or click to browse.
-              <br />
-              Supported formats: {Object.values(FILE_FORMATS).join(", ")}
-            </p>
-            <div className="logo-upload__dropzone-actions">
-              {(() => {
-                const inputId = `dropzone-file-input-${Math.random().toString(36).substring(7)}`;
-                return (
-                  <>
-                    <Input
-                      id={inputId}
-                      type="file"
-                      accept={Object.values(FILE_FORMATS)
-                        .map((format) => `.${format}`)
-                        .join(",")}
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <div className="cursor-pointer border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer"
-                    >
+            <Input
+              id={dropzoneInputId}
+              type="file"
+              accept={Object.values(FILE_FORMATS)
+                .map((format) => `.${format}`)
+                .join(",")}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <button
+              className={`logo-upload__dropzone ${isDragging ? "logo-upload__dropzone--active" : ""} ${createLogo.isPending ? "logo-upload__dropzone--loading" : ""}`}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              onClick={() => {
+                document.getElementById(dropzoneInputId)?.click();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  document.getElementById(dropzoneInputId)?.click();
+                }
+              }}
+              aria-label="Drag and drop logo file or click to browse"
+            >
+              {createLogo.isPending ? (
+                <>
+                  <div className="logo-upload__dropzone-icon logo-upload__dropzone-icon--loading">
+                    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                  </div>
+                  <div className="logo-upload__dropzone-file-info">
+                    <h4>Uploading logo...</h4>
+                    <p>Please wait while your file is being processed</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="logo-upload__dropzone-icon">
+                    <Upload className="h-8 w-8" />
+                  </div>
+                  <h4 className="logo-upload__dropzone-heading">
+                    Upload {type.charAt(0).toUpperCase() + type.slice(1)} Logo
+                  </h4>
+                  <p className="logo-upload__dropzone-text">
+                    Drag and drop your logo file here, or click to browse.
+                    <br />
+                    Supported formats: {Object.values(FILE_FORMATS).join(", ")}
+                  </p>
+                  <div className="logo-upload__dropzone-actions">
+                    <div className="cursor-pointer border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer">
                       Browse Files
                     </div>
-                  </>
-                );
-              })()}
-            </div>
+                  </div>
+                </>
+              )}
+            </button>
           </>
-        )}
-      </button>
+        );
+      })()}
     </div>
   );
 }

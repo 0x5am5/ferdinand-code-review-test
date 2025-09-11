@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Plus, Type } from "lucide-react";
-import { FontPickerButtonsProps } from "../types";
+import type { FontPickerButtonsProps } from "./types";
 
 export function FontPickerButtons({
   onGoogleFontClick,

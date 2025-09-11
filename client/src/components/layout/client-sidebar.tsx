@@ -192,6 +192,8 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     window.history.replaceState({}, "", url.toString());
   };
 
+  const currentClient = allClients?.find((client) => client.id === clientId);
+
   return (
     <aside className="w-64 border-border h-screen fixed left-0 top-0 bg-background flex flex-col z-50">
       <div className="p-4 flex justify-between items-center">
@@ -338,7 +340,15 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       <div className="border-t p-4">
         <div className="text-xs text-muted-foreground">
           <p className="mb-1">Brand last edited:</p>
-          <p className="mb-0">May 2, 2025</p>
+          <p className="mb-0">
+            {currentClient?.updatedAt
+              ? new Date(currentClient.updatedAt).toLocaleDateString("en-US", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : ""}
+          </p>
         </div>
       </div>
 

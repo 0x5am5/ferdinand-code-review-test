@@ -1,19 +1,7 @@
-import {
-  type BrandAsset,
-  LogoType,
-  UserRole,
-} from "@shared/schema";
-import {
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import {
-  Plus,
-} from "lucide-react";
-import {
-  useEffect,
-  useState,
-} from "react";
+import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

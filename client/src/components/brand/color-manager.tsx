@@ -2265,7 +2265,7 @@ export function ColorManager({
           uploadComponent={
             <div className="flex flex-col gap-2 w-full">
               <Button
-                onClick={handleAddBrandColor}
+                onClick={() => handleAddBrandColor()}
                 variant="outline"
                 className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
               >
