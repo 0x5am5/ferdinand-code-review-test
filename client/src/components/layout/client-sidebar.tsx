@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 import type { BrandAsset } from "@shared/schema";
 import { UserRole } from "@shared/schema";
+=======
+import React, { FC, useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { ScrollArea } from "@/components/ui/scroll-area";
+>>>>>>> 097e43f (Remove unused import statement from sidebar component)
 import {
   ArrowLeft,
   BookText,
@@ -27,9 +33,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+<<<<<<< HEAD
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { useClientAssetsById, useClientsQuery } from "@/lib/queries/clients";
+=======
+import { useClientAssetsById } from "@/lib/queries/clients";
+import { BrandAsset } from "@shared/schema";
+>>>>>>> 097e43f (Remove unused import statement from sidebar component)
 
 interface ClientSidebarProps {
   clientId: number;
