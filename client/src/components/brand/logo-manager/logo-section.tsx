@@ -42,7 +42,7 @@ export function LogoSection({
       e.stopPropagation();
       setIsDarkVariantDragging(true);
     },
-    []
+    [],
   );
 
   const handleDarkVariantDragLeave = useCallback(
@@ -51,7 +51,7 @@ export function LogoSection({
       e.stopPropagation();
       setIsDarkVariantDragging(false);
     },
-    []
+    [],
   );
 
   const handleDarkVariantDragOver = useCallback(
@@ -60,21 +60,21 @@ export function LogoSection({
       e.stopPropagation();
       setIsDarkVariantDragging(true);
     },
-    []
+    [],
   );
 
   const handleFileUpload = async (
     file: File,
     variant: "light" | "dark",
     parsedData: ParsedLogoData,
-    logo: BrandAsset
+    logo: BrandAsset,
   ) => {
     try {
-          const formData = new FormData();
+      const formData = new FormData();
       formData.append("file", file);
       formData.append(
         "name",
-        `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Logo`
+        `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Logo`,
       );
       formData.append("currentType", currentType);
       formData.append("category", "logo");
@@ -88,11 +88,11 @@ export function LogoSection({
             format: file.name.split(".").pop()?.toLowerCase(),
             hasDarkVariant: true,
             isDarkVariant: true,
-          })
+          }),
         );
         formData.append(
           "name",
-          `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Logo (Dark)`
+          `${currentType.charAt(0).toUpperCase() + currentType.slice(1)} Logo (Dark)`,
         );
       } else if (parsedData) {
         formData.append("isDarkVariant", "false");
@@ -102,7 +102,7 @@ export function LogoSection({
             type: currentType,
             format: file.name.split(".").pop()?.toLowerCase(),
             hasDarkVariant: parsedData.hasDarkVariant || false,
-          })
+          }),
         );
       }
 
@@ -127,11 +127,6 @@ export function LogoSection({
         queryKey: [`/api/assets/${logo.id}`],
       });
 
-      // Force refetch to ensure UI updates immediately
-      await queryClient.refetchQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
-      });
-
       toast({
         title: "Success",
         description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo ${variant === "dark" ? "dark variant" : ""} updated successfully`,
@@ -139,7 +134,7 @@ export function LogoSection({
     } catch (error: unknown) {
       console.error(
         "Error updating logo:",
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : "Unknown error",
       );
       toast({
         title: "Error",
@@ -153,7 +148,7 @@ export function LogoSection({
   const handleDarkVariantDrop = (
     e: DragEvent<HTMLDivElement>,
     parsedData: ParsedLogoData,
-    logo: BrandAsset
+    logo: BrandAsset,
   ) => {
     e.preventDefault();
     e.stopPropagation();
@@ -227,7 +222,7 @@ export function LogoSection({
                             e.target.files[0],
                             variant,
                             parsedData,
-                            logo
+                            logo,
                           );
                         }
                       }}
