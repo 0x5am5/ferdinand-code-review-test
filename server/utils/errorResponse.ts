@@ -169,6 +169,82 @@ export class EmailServiceError extends Error {
 }
 
 /**
+ * Parse Postmark errors and return appropriate error message and code
+ */
+export function parsePostmarkError(error: any): { message: string; code: string; details?: any } {
+  console.error('Parsing Postmark error:', error);
+  
+  // Handle network errors first (before checking for numeric status codes)
+  if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+    return {
+      message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
+      code: 'EMAIL_SERVICE_UNAVAILABLE',
+      details: { originalError: error.message }
+    };
+  }
+  
+  // Check if it's a Postmark API error with numeric status code
+  const statusCode = error.statusCode || (typeof error.code === 'number' ? error.code : null);
+  if (statusCode) {
+    const errorMessage = error.message || error.body?.Message;
+    
+    console.error('Postmark error code:', statusCode);
+    console.error('Postmark error message:', errorMessage);
+    
+    // Handle specific Postmark error codes
+    if (statusCode === 422) {
+      if (errorMessage?.includes('email') || errorMessage?.includes('invalid')) {
+        return {
+          message: ERROR_MESSAGES.EMAIL_INVALID_ADDRESS,
+          code: 'EMAIL_INVALID_ADDRESS',
+          details: { statusCode, message: errorMessage }
+        };
+      }
+    }
+    
+    if (statusCode === 401 || statusCode === 403) {
+      return {
+        message: ERROR_MESSAGES.EMAIL_INVALID_CREDENTIALS,
+        code: 'EMAIL_INVALID_CREDENTIALS',
+        details: { statusCode, message: errorMessage }
+      };
+    }
+    
+    if (statusCode === 429) {
+      return {
+        message: ERROR_MESSAGES.EMAIL_QUOTA_EXCEEDED,
+        code: 'EMAIL_QUOTA_EXCEEDED',
+        details: { statusCode, message: errorMessage }
+      };
+    }
+    
+    if (statusCode >= 500) {
+      return {
+        message: ERROR_MESSAGES.EMAIL_SERVICE_UNAVAILABLE,
+        code: 'EMAIL_SERVICE_UNAVAILABLE',
+        details: { statusCode, message: errorMessage }
+      };
+    }
+    
+    // Generic error with message
+    if (errorMessage) {
+      return {
+        message: `${ERROR_MESSAGES.EMAIL_SERVICE_FAILED} (${errorMessage})`,
+        code: 'EMAIL_SERVICE_FAILED',
+        details: { statusCode, message: errorMessage }
+      };
+    }
+  }
+  
+  // Generic fallback
+  return {
+    message: ERROR_MESSAGES.EMAIL_SERVICE_FAILED,
+    code: 'EMAIL_SERVICE_FAILED',
+    details: { originalError: error.message || error.toString() }
+  };
+}
+
+/**
  * Parse SendGrid errors and return appropriate error message and code
  */
 export function parseSendGridError(error: unknown): {

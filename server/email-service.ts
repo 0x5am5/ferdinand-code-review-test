@@ -1,8 +1,8 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import * as util from "node:util";
-import sgMail from "@sendgrid/mail";
-import { EmailServiceError, parseSendGridError } from "./utils/errorResponse";
+import * as fs from "fs";
+import * as path from "path";
+import * as util from "util";
+import { Client as PostmarkClient } from "postmark";
+import { EmailServiceError, parsePostmarkError } from "./utils/errorResponse";
 
 interface EmailOptions {
   to: string;
@@ -12,26 +12,27 @@ interface EmailOptions {
 }
 
 /**
- * Email service that sends emails via SendGrid
- * Falls back to generating email files in development if SendGrid API key is not available
+ * Email service that sends emails via Postmark
+ * Falls back to generating email files in development if Postmark API token is not available
  */
 export class EmailService {
   private emailDir: string;
-  private useSendGrid: boolean;
+  private usePostmark: boolean;
+  private postmarkClient?: PostmarkClient;
 
   constructor() {
-    // Check if SendGrid API key is available
-    const apiKey = process.env.SENDGRID_API_KEY;
-    this.useSendGrid = !!apiKey;
+    // Check if Postmark API token is available
+    const apiToken = process.env.POSTMARK_API_TOKEN;
+    this.usePostmark = !!apiToken;
 
-    if (this.useSendGrid && apiKey) {
-      sgMail.setApiKey(apiKey);
+    if (this.usePostmark) {
+      this.postmarkClient = new PostmarkClient(apiToken!);
       console.log(
-        "SendGrid API key detected. Using SendGrid for email delivery."
+        "Postmark API token detected. Using Postmark for email delivery.",
       );
     } else {
       console.log(
-        "No SendGrid API key found. Emails will be saved to files instead of being sent."
+        "No Postmark API token found. Emails will be saved to files instead of being sent.",
       );
     }
 
@@ -43,7 +44,7 @@ export class EmailService {
   }
 
   /**
-   * Send an email using SendGrid or fallback to file-based simulation
+   * Send an email using Postmark or fallback to file-based simulation
    */
   async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
@@ -80,48 +81,39 @@ export class EmailService {
         </html>
       `;
 
-      // If SendGrid is available, send the email via the API
-      if (this.useSendGrid) {
+      // If Postmark is available, send the email via the API
+      if (this.usePostmark && this.postmarkClient) {
         try {
           const fromEmail =
-            process.env.SENDGRID_FROM_EMAIL || "noreply@brandguidelines.com";
+            process.env.POSTMARK_FROM_EMAIL || "noreply@brandguidelines.com";
           console.log(`[EMAIL] Using sender email: ${fromEmail}`);
 
-          const msg = {
-            to: options.to,
-            from: fromEmail, // Set a fallback sender email
-            subject: options.subject,
-            text: options.text,
-            html: htmlContent,
-          };
-
           console.log(
-            `[EMAIL] Sending via SendGrid to: ${options.to}, from: ${fromEmail}`
+            `[EMAIL] Sending via Postmark to: ${options.to}, from: ${fromEmail}`,
           );
-          const [response] = await sgMail.send(msg);
+          const response = await this.postmarkClient.sendEmail({
+            From: fromEmail,
+            To: options.to,
+            Subject: options.subject,
+            TextBody: options.text,
+            HtmlBody: htmlContent,
+          });
 
-          console.log(
-            `[EMAIL] SendGrid response status code: ${response?.statusCode}`
-          );
+          console.log(`[EMAIL] Postmark response:`, response);
           console.log(`\n📧 =============================================`);
-          console.log(`📧 EMAIL SENT VIA SENDGRID`);
+          console.log(`📧 EMAIL SENT VIA POSTMARK`);
           console.log(`📧 To: ${options.to}`);
           console.log(`📧 Subject: ${options.subject}`);
+          console.log(`📧 Message ID: ${response.MessageID}`);
           console.log(`📧 =============================================\n`);
 
           return true;
-        } catch (error: unknown) {
-          const sendGridError = error as { response: { body: unknown } };
-          console.error("[EMAIL] SendGrid error:", sendGridError);
-          if (sendGridError.response) {
-            console.error(
-              "[EMAIL] SendGrid API error response:",
-              sendGridError.response.body
-            );
-          }
+        } catch (error) {
+          const postmarkError = error as any;
+          console.error("[EMAIL] Postmark error:", postmarkError);
 
-          // Parse the SendGrid error and throw a structured error
-          const { message, code, details } = parseSendGridError(sendGridError);
+          // Parse the Postmark error and throw a structured error
+          const { message, code, details } = parsePostmarkError(postmarkError);
           throw new EmailServiceError(message, code, details);
         }
       } else {
@@ -151,7 +143,7 @@ export class EmailService {
       throw new EmailServiceError(
         "Failed to send email due to an unexpected error.",
         "EMAIL_SERVICE_FAILED",
-        { originalError: error }
+        { originalError: error },
       );
     }
   }
@@ -411,7 +403,7 @@ export class EmailService {
 
     console.log(
       "[PASSWORD RESET] Sending password reset email with subject:",
-      subject
+      subject,
     );
 
     try {
@@ -427,7 +419,7 @@ export class EmailService {
     } catch (error: unknown) {
       console.error(
         "[PASSWORD RESET] Error sending password reset email:",
-        error
+        error,
       );
       // Re-throw the EmailServiceError so it can be handled by the caller
       if (error instanceof EmailServiceError) {
@@ -437,7 +429,7 @@ export class EmailService {
       throw new EmailServiceError(
         "Failed to send password reset email.",
         "EMAIL_SERVICE_FAILED",
-        { originalError: error }
+        { originalError: error },
       );
     }
   }
