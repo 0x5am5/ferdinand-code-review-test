@@ -105,12 +105,21 @@ async function updateClientLogosFromAssets() {
     const clients = await storage.getClients();
     
     for (const client of clients) {
-      if (client.logo) {
-        continue; // Skip clients who already have a logo set
-      }
-      
+      // Skip clients who already have favicon or square logo assets
       const clientAssets = await storage.getClientAssets(client.id);
       const logoAssets = clientAssets.filter(asset => asset.category === "logo");
+      const hasFaviconOrSquare = logoAssets.some(asset => {
+        try {
+          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          return data?.type === "favicon" || data?.type === "square";
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      if (hasFaviconOrSquare) {
+        continue; // Skip clients who already have favicon or square logos
+      }
       
       // Prioritize square logos first, then favicon logos
       let selectedAsset = logoAssets.find(asset => {
@@ -761,22 +770,6 @@ export function registerAssetRoutes(app: Express) {
             // We'll continue even if conversion fails since the original asset was saved
           }
 
-          // Update client logo if this is a square or favicon logo
-          try {
-            if (logoType === "square" || logoType === "favicon") {
-              const logoUrl = `/api/clients/${clientId}/assets/${asset.id}/download`;
-              await storage.updateClient(clientId, { logo: logoUrl });
-              console.log(`Updated client ${clientId} logo to: ${logoUrl}`);
-            }
-          } catch (logoUpdateError: unknown) {
-            console.error(
-              "Error updating client logo:",
-              logoUpdateError instanceof Error
-                ? logoUpdateError.message
-                : "Unknown error"
-            );
-            // Don't fail the request if logo update fails
-          }
 
           return res.status(201).json(asset);
         } else {

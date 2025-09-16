@@ -10,6 +10,37 @@ import {
   ErrorResponse,
 } from "../utils/errorResponse";
 
+// Helper function to get client favicon/logo for email invitations
+async function getClientLogoUrl(clientId: number): Promise<string | null> {
+  try {
+    const assets = await storage.getClientAssets(clientId);
+    const logoAssets = assets.filter(asset => asset.category === "logo");
+    
+    // Priority: favicon -> square -> horizontal -> main -> any logo
+    const findLogoByType = (types: string[]) => {
+      for (const type of types) {
+        const logo = logoAssets.find(asset => {
+          if (!asset.data) return false;
+          try {
+            const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            return data?.type === type;
+          } catch (e) {
+            return false;
+          }
+        });
+        if (logo) return logo;
+      }
+      return null;
+    };
+
+    const logoAsset = findLogoByType(["favicon", "square", "horizontal", "main"]) || logoAssets[0];
+    return logoAsset ? `/api/assets/${logoAsset.id}/file` : null;
+  } catch (error) {
+    console.error(`Error fetching logo for client ${clientId}:`, error);
+    return null;
+  }
+}
+
 export function registerInvitationRoutes(app: Express) {
   // Get all pending invitations
   app.get("/api/invitations", async (req, res) => {
@@ -46,9 +77,10 @@ export function registerInvitationRoutes(app: Express) {
             try {
               const client = await storage.getClient(invitation.clientIds[0]);
               if (client) {
+                const logoUrl = await getClientLogoUrl(invitation.clientIds[0]);
                 clientData = {
                   name: client.name,
-                  logoUrl: client.logo || undefined,
+                  logoUrl: logoUrl || undefined,
                   primaryColor: client.primaryColor || undefined,
                 };
               }
@@ -137,7 +169,7 @@ export function registerInvitationRoutes(app: Express) {
           const client = await storage.getClient(req.body.clientIds[0]);
           if (client) {
             clientName = client.name;
-            logoUrl = client.logo || undefined;
+            logoUrl = (await getClientLogoUrl(req.body.clientIds[0])) || undefined;
           }
         } catch (err: unknown) {
           console.error(
@@ -271,21 +303,8 @@ export function registerInvitationRoutes(app: Express) {
         return res.status(404).json({ message: "Client not found" });
       }
 
-      // Fetch logo asset if available
-      let logoUrl = null;
-      const assets = await storage.getClientAssets(clientId);
-      const logoAsset = assets.find(
-        (asset) =>
-          asset.category === "logo" &&
-          asset.data &&
-          typeof asset.data === "object" &&
-          "type" in asset.data &&
-          asset.data.type === "primary"
-      );
-
-      if (logoAsset) {
-        logoUrl = `/api/assets/${logoAsset.id}/file`;
-      }
+      // Fetch favicon logo asset for email display
+      const logoUrl = await getClientLogoUrl(clientId);
 
       // Return client data with logo URL
       res.json({
@@ -410,7 +429,7 @@ export function registerInvitationRoutes(app: Express) {
           const client = await storage.getClient(invitation.clientIds[0]);
           if (client) {
             clientName = client.name;
-            logoUrl = client.logo || undefined;
+            logoUrl = (await getClientLogoUrl(invitation.clientIds[0])) || undefined;
           }
         } catch (err: unknown) {
           console.error(
@@ -527,9 +546,10 @@ export function registerInvitationRoutes(app: Express) {
             try {
               const client = await storage.getClient(invitation.clientIds[0]);
               if (client) {
+                const logoUrl = await getClientLogoUrl(client.id);
                 clientData = {
                   name: client.name,
-                  logoUrl: client.logo || undefined,
+                  logoUrl: logoUrl || undefined,
                   primaryColor: client.primaryColor || undefined,
                 };
               }

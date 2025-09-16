@@ -161,7 +161,30 @@ export function registerUserRoutes(app: Express) {
           const client = await storage.getClient(invitationData.clientIds[0]);
           if (client) {
             clientName = client.name;
-            logoUrl = client.logo || undefined;
+            // Get favicon from brand assets for email
+            try {
+              const assets = await storage.getClientAssets(invitationData.clientIds[0]);
+              const logoAssets = assets.filter(asset => asset.category === "logo");
+              const findLogoByType = (types: string[]) => {
+                for (const type of types) {
+                  const logo = logoAssets.find(asset => {
+                    if (!asset.data) return false;
+                    try {
+                      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+                      return data?.type === type;
+                    } catch (e) {
+                      return false;
+                    }
+                  });
+                  if (logo) return logo;
+                }
+                return null;
+              };
+              const logoAsset = findLogoByType(["favicon", "square", "horizontal", "main"]) || logoAssets[0];
+              logoUrl = logoAsset ? `/api/assets/${logoAsset.id}/file` : undefined;
+            } catch (e) {
+              logoUrl = undefined;
+            }
           }
         } catch (err: unknown) {
           console.error(
