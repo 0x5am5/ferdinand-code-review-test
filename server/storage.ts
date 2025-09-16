@@ -61,6 +61,7 @@ export interface IStorage {
   getClients(): Promise<Client[]>;
   createClient(client: InsertClient): Promise<Client>;
   updateClient(id: number, data: Partial<InsertClient>): Promise<Client>;
+  touchClient(id: number): Promise<void>;
   deleteClient(id: number): Promise<void>;
   getClientAssets(clientId: number): Promise<BrandAsset[]>;
   getAsset(id: number): Promise<BrandAsset | undefined>;
@@ -191,10 +192,17 @@ export class DatabaseStorage implements IStorage {
   async updateClient(id: number, data: Partial<InsertClient>): Promise<Client> {
     const [client] = await db
       .update(clients)
-      .set(data)
+      .set({ ...data, updatedAt: new Date() })
       .where(eq(clients.id, id))
       .returning();
     return client as Client;
+  }
+
+  async touchClient(id: number): Promise<void> {
+    await db
+      .update(clients)
+      .set({ updatedAt: new Date() })
+      .where(eq(clients.id, id));
   }
   async deleteClient(id: number): Promise<void> {
     try {

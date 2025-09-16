@@ -103,6 +103,7 @@ export function registerTypeScalesRoutes(app: Express) {
       }
 
       const typeScale = await storage.createTypeScale(validationResult.data);
+      await storage.touchClient(clientId);
       res.status(201).json(typeScale);
     } catch (error: unknown) {
       console.error(
@@ -148,6 +149,7 @@ export function registerTypeScalesRoutes(app: Express) {
       );
 
       const updatedTypeScale = await storage.updateTypeScale(id, updateData);
+      await storage.touchClient(existingTypeScale.clientId);
       res.json(updatedTypeScale);
     } catch (error: unknown) {
       console.error(
@@ -174,6 +176,7 @@ export function registerTypeScalesRoutes(app: Express) {
       }
 
       await storage.deleteTypeScale(id);
+      await storage.touchClient(existingTypeScale.clientId);
       res.status(204).send();
     } catch (error: unknown) {
       console.error(
@@ -211,6 +214,7 @@ export function registerTypeScalesRoutes(app: Express) {
 
       const updatedExports = [...(typeScale.exports || []), newExport];
       await storage.updateTypeScale(id, { exports: updatedExports });
+      await storage.touchClient(typeScale.clientId);
 
       res.json({
         content: css,
@@ -253,6 +257,7 @@ export function registerTypeScalesRoutes(app: Express) {
 
       const updatedExports = [...(typeScale.exports || []), newExport];
       await storage.updateTypeScale(id, { exports: updatedExports });
+      await storage.touchClient(typeScale.clientId);
 
       res.json({
         content: scss,

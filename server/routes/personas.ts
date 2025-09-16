@@ -51,6 +51,7 @@ export function registerPersonasRoutes(app: Express) {
         }
 
         const persona = await storage.createPersona(parsed.data);
+        await storage.touchClient(clientId);
         res.status(201).json(persona);
       } catch (error: unknown) {
         console.error(
@@ -101,6 +102,7 @@ export function registerPersonasRoutes(app: Express) {
           personaId,
           parsed.data
         );
+        await storage.touchClient(clientId);
         res.json(updatedPersona);
       } catch (error: unknown) {
         console.error(
@@ -136,6 +138,7 @@ export function registerPersonasRoutes(app: Express) {
         }
 
         await storage.deletePersona(personaId);
+        await storage.touchClient(clientId);
         res.status(200).json({ message: "Persona deleted successfully" });
       } catch (error: unknown) {
         console.error(

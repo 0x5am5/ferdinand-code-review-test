@@ -65,6 +65,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
         }
 
         const section = await storage.createInspirationSection(parsed.data);
+        await storage.touchClient(clientId);
         res.status(201).json(section);
       } catch (error: unknown) {
         console.error(
@@ -104,6 +105,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
           sectionId,
           parsed.data
         );
+        await storage.touchClient(clientId);
         res.json(section);
       } catch (error: unknown) {
         console.error(
@@ -121,12 +123,17 @@ export function registerInspirationBoardsRoutes(app: Express) {
     requireAdminRole,
     async (req: RequestWithClientId, res) => {
       try {
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
         const sectionId = parseInt(req.params.sectionId, 10);
         if (Number.isNaN(sectionId)) {
           return res.status(400).json({ message: "Invalid section ID" });
         }
 
         await storage.deleteInspirationSection(sectionId);
+        await storage.touchClient(clientId);
         res.status(204).send();
       } catch (error: unknown) {
         console.error(
@@ -169,6 +176,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
         }
 
         const image = await storage.createInspirationImage(parsed.data);
+        await storage.touchClient(req.clientId!);
         res.status(201).json(image);
       } catch (error: unknown) {
         console.error(

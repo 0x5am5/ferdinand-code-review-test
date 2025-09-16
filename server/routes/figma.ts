@@ -247,6 +247,7 @@ export function registerFigmaRoutes(app: Express) {
         fileData.name || validatedData.figmaFileName;
 
       const connection = await storage.createFigmaConnection(validatedData);
+      await storage.touchClient(validatedData.clientId);
 
       // Remove sensitive data from response
       const sanitizedConnection = {
@@ -466,6 +467,7 @@ export function registerFigmaRoutes(app: Express) {
             syncStatus: "success",
             lastSyncAt: new Date(),
           });
+          await storage.touchClient(connection.clientId);
 
           res.json({
             message: "Sync completed successfully",
@@ -535,6 +537,7 @@ export function registerFigmaRoutes(app: Express) {
       }
 
       await storage.deleteFigmaConnection(parseInt(connectionId, 10));
+      await storage.touchClient(connection.clientId);
 
       res.json({ message: "Figma connection deleted successfully" });
     } catch (error: unknown) {

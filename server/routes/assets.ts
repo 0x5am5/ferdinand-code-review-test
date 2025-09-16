@@ -515,6 +515,7 @@ export function registerAssetRoutes(app: Express) {
 
             try {
               const asset = await storage.createAsset(fontAsset);
+              await storage.touchClient(clientId);
               console.log("Google Font asset created successfully:", asset.id);
               return res.status(201).json(asset);
             } catch (dbError: unknown) {
@@ -592,6 +593,7 @@ export function registerAssetRoutes(app: Express) {
 
             try {
               const asset = await storage.createAsset(fontAsset);
+              await storage.touchClient(clientId);
               console.log("Adobe Font asset created successfully:", asset.id);
               return res.status(201).json(asset);
             } catch (dbError: unknown) {
@@ -654,6 +656,7 @@ export function registerAssetRoutes(app: Express) {
           }
 
           const asset = await storage.createAsset(parsed.data);
+          await storage.touchClient(clientId);
           return res.status(201).json(asset);
         }
 
@@ -675,6 +678,7 @@ export function registerAssetRoutes(app: Express) {
           }
 
           const asset = await storage.createAsset(parsed.data);
+          await storage.touchClient(clientId);
           return res.status(201).json(asset);
         }
 
@@ -713,6 +717,7 @@ export function registerAssetRoutes(app: Express) {
 
           // Create the main asset
           const asset = await storage.createAsset(logoAsset);
+          await storage.touchClient(clientId);
 
           try {
             // Convert the file to multiple formats
@@ -1045,6 +1050,7 @@ export function registerAssetRoutes(app: Express) {
           assetId,
           parsed.data as InsertBrandAsset | InsertFontAsset | InsertColorAsset
         );
+        await storage.touchClient(clientId);
 
         // Update client logo if this is a square or favicon logo update
         try {
@@ -1150,6 +1156,7 @@ export function registerAssetRoutes(app: Express) {
         }
 
         await storage.deleteAsset(assetId);
+        await storage.touchClient(clientId);
         res.status(200).json({ message: "Asset deleted successfully" });
       } catch (error: unknown) {
         console.error(
