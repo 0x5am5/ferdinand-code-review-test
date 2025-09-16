@@ -84,19 +84,30 @@ import {
 } from "@/lib/queries/clients";
 
 // Component to fetch and display client logo from brand assets
-function ClientLogo({ clientId, clientName }: { clientId: number; clientName: string }) {
+function ClientLogo({
+  clientId,
+  clientName,
+}: {
+  clientId: number;
+  clientName: string;
+}) {
   const { data: assets } = useClientAssetsById(clientId);
-  
+
   // Find logo assets
-  const logoAssets = assets?.filter(asset => asset.category === "logo") || [];
-  
+  const logoAssets = assets?.filter((asset) => asset.category === "logo") || [];
+
+  console.log(logoAssets);
+
   // Find the best logo to display (horizontal/primary preferred, fallback to any logo)
   const findLogo = (preferredTypes: string[]) => {
     for (const type of preferredTypes) {
-      const logo = logoAssets.find(asset => {
+      const logo = logoAssets.find((asset) => {
         if (!asset.data) return false;
         try {
-          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          const data =
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
           return data?.type === type;
         } catch (e) {
           return false;
@@ -106,14 +117,15 @@ function ClientLogo({ clientId, clientName }: { clientId: number; clientName: st
     }
     return null;
   };
-  
+
   // Try to find horizontal, then main, then square (for favicon), then any logo
-  const logoToShow = findLogo(["horizontal", "main", "square"]) || logoAssets[0] || null;
-  
+  const logoToShow =
+    findLogo(["square", "horizontal", "main"]) || logoAssets[0] || null;
+
   if (!logoToShow) {
     return null;
   }
-  
+
   return (
     <div className="w-16 h-16 mr-4 flex-shrink-0">
       <img
@@ -131,7 +143,7 @@ export default function Dashboard() {
   const { currentViewingUser, isUserSwitched } = useRoleSwitching();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
-    "custom"
+    "custom",
   );
   const [, setLocation] = useLocation();
 
@@ -216,7 +228,7 @@ export default function Dashboard() {
       .filter(
         (client: Client) =>
           client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          client.description?.toLowerCase().includes(searchQuery.toLowerCase())
+          client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
       )
       .sort((a, b) => {
         if (sortOrder === "custom") {
@@ -291,7 +303,7 @@ export default function Dashboard() {
           userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
           inspiration: Boolean(featureTogglesObj.inspiration ?? true),
           figmaIntegration: Boolean(
-            featureTogglesObj.figmaIntegration ?? false
+            featureTogglesObj.figmaIntegration ?? false,
           ),
         };
         setFeatureToggles(toggles);
@@ -488,7 +500,10 @@ export default function Dashboard() {
                             className="block w-full relative"
                           >
                             <div className="flex items-start flex-direction--column">
-                              <ClientLogo clientId={client.id} clientName={client.name} />
+                              <ClientLogo
+                                clientId={client.id}
+                                clientName={client.name}
+                              />
                               <div className="">
                                 <CardTitle className="mb-2">
                                   {client.name}
@@ -527,7 +542,7 @@ export default function Dashboard() {
                                       <span>
                                         Last updated:{" "}
                                         {new Date(
-                                          client.updatedAt
+                                          client.updatedAt,
                                         ).toLocaleDateString()}
                                       </span>
                                     </div>
@@ -906,7 +921,7 @@ export default function Dashboard() {
                               onSuccess: () => {
                                 setEditingClient(null);
                               },
-                            }
+                            },
                           );
                         }
                       }}
