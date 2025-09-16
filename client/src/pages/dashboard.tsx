@@ -6,6 +6,7 @@ import {
 } from "@hello-pangea/dnd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  type BrandAsset,
   type Client,
   type FeatureToggles,
   insertClientSchema,
@@ -75,11 +76,54 @@ import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import {
+  useClientAssetsById,
   useClientsQuery,
   useDeleteClientMutation,
   useUpdateClientMutation,
   useUpdateClientOrderMutation,
 } from "@/lib/queries/clients";
+
+// Component to fetch and display client logo from brand assets
+function ClientLogo({ clientId, clientName }: { clientId: number; clientName: string }) {
+  const { data: assets } = useClientAssetsById(clientId);
+  
+  // Find logo assets
+  const logoAssets = assets?.filter(asset => asset.category === "logo") || [];
+  
+  // Find the best logo to display (horizontal/primary preferred, fallback to any logo)
+  const findLogo = (preferredTypes: string[]) => {
+    for (const type of preferredTypes) {
+      const logo = logoAssets.find(asset => {
+        if (!asset.data) return false;
+        try {
+          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          return data?.type === type;
+        } catch (e) {
+          return false;
+        }
+      });
+      if (logo) return logo;
+    }
+    return null;
+  };
+  
+  // Try to find horizontal, then main, then square (for favicon), then any logo
+  const logoToShow = findLogo(["horizontal", "main", "square"]) || logoAssets[0] || null;
+  
+  if (!logoToShow) {
+    return null;
+  }
+  
+  return (
+    <div className="w-16 h-16 mr-4 flex-shrink-0">
+      <img
+        src={`/api/assets/${logoToShow.id}/file`}
+        alt={`${clientName} logo`}
+        className="w-full h-full object-contain"
+      />
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -444,15 +488,7 @@ export default function Dashboard() {
                             className="block w-full relative"
                           >
                             <div className="flex items-start flex-direction--column">
-                              {client.logo && (
-                                <div className="w-16 h-16 mr-4 flex-shrink-0">
-                                  <img
-                                    src={client.logo}
-                                    alt={`${client.name} logo`}
-                                    className="w-full h-full object-contain"
-                                  />
-                                </div>
-                              )}
+                              <ClientLogo clientId={client.id} clientName={client.name} />
                               <div className="">
                                 <CardTitle className="mb-2">
                                   {client.name}

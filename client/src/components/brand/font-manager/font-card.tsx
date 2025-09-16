@@ -45,7 +45,6 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
         document.head.appendChild(link);
       }
     } else if (font.source === FontSource.ADOBE && font.sourceData?.url) {
-      console.log(font);
       const link = document.createElement("link");
       link.href = font.sourceData.url;
       link.rel = "stylesheet";
@@ -61,7 +60,7 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
     } else if (font.source === FontSource.FILE && font.id) {
       // Handle custom uploaded fonts
       const fontId = `font-${font.name.replace(/\s+/g, "-")}`;
-      
+
       // Remove existing font face rules if they exist
       const existingStyle = document.head.querySelector(`#${fontId}`);
       if (existingStyle) {
@@ -71,9 +70,9 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
       // Create @font-face CSS rules for custom fonts
       const style = document.createElement("style");
       style.id = fontId;
-      
+
       let cssRules = "";
-      
+
       // Generate @font-face rules for each weight
       font.weights.forEach((weight) => {
         font.styles.forEach((fontStyle) => {
@@ -82,13 +81,13 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
             `url('/api/assets/${font.id}/file?format=woff2') format('woff2')`,
             `url('/api/assets/${font.id}/file?format=woff') format('woff')`,
             `url('/api/assets/${font.id}/file?format=ttf') format('truetype')`,
-            `url('/api/assets/${font.id}/file') format('truetype')` // fallback to original
+            `url('/api/assets/${font.id}/file') format('truetype')`, // fallback to original
           ];
 
           cssRules += `
             @font-face {
               font-family: '${font.name}';
-              src: ${fontUrls.join(', ')};
+              src: ${fontUrls.join(", ")};
               font-weight: ${weight};
               font-style: ${fontStyle};
               font-display: swap;
@@ -100,7 +99,14 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
       style.textContent = cssRules;
       document.head.appendChild(style);
     }
-  }, [font.name, font.source, font.sourceData, font.weights, font.styles, font.id]);
+  }, [
+    font.name,
+    font.source,
+    font.sourceData,
+    font.weights,
+    font.styles,
+    font.id,
+  ]);
 
   return (
     <motion.div
