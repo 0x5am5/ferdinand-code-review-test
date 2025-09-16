@@ -23,7 +23,7 @@ The application follows a full-stack architecture with clear separation between 
 - **Authentication**: Firebase Admin SDK for token verification
 - **Session Management**: Express sessions with PostgreSQL store
 - **File Processing**: Sharp for image manipulation, multer for file uploads
-- **Email Service**: SendGrid with fallback to file-based email generation
+- **Email Service**: Postmark with fallback to file-based email generation
 
 ## Key Components
 
@@ -78,7 +78,7 @@ The application follows a full-stack architecture with clear separation between 
 ### Required Services
 - **Database**: PostgreSQL (configured via DATABASE_URL)
 - **Authentication**: Firebase project with Admin SDK credentials
-- **Email**: SendGrid API (optional, falls back to file generation)
+- **Email**: Postmark API (optional, falls back to file generation)
 - **Fonts**: Google Fonts API (optional, graceful degradation)
 
 ### Environment Variables
@@ -86,14 +86,14 @@ The application follows a full-stack architecture with clear separation between 
 - `FIREBASE_PROJECT_ID`: Firebase project identifier
 - `FIREBASE_PRIVATE_KEY`: Service account private key
 - `FIREBASE_CLIENT_EMAIL`: Service account email
-- `SENDGRID_API_KEY`: Email service API key (optional)
-- `SENDGRID_FROM_EMAIL`: Sender email address (optional)
+- `POSTMARK_API_TOKEN`: Postmark email service API token (optional)
+- `POSTMARK_FROM_EMAIL`: Sender email address for Postmark (optional)
 - `GOOGLE_FONTS_API_KEY`: Google Fonts access key (optional)
 - `SESSION_SECRET`: Session encryption secret
 
 ### Third-Party Integrations
 - **Firebase**: Authentication provider and admin services
-- **SendGrid**: Transactional email delivery
+- **Postmark**: Transactional email delivery
 - **Google Fonts**: Typography asset sourcing
 - **Neon**: Serverless PostgreSQL hosting
 
@@ -123,6 +123,13 @@ The application follows a full-stack architecture with clear separation between 
 
 ```
 Changelog:
+- September 16, 2025. Migrated email service from SendGrid to Postmark:
+  * Replaced SendGrid API integration with Postmark client library
+  * Updated EmailService class to use POSTMARK_API_TOKEN instead of SENDGRID_API_KEY
+  * Added comprehensive error handling for Postmark API responses with sanitized error details
+  * Updated environment variables to use POSTMARK_FROM_EMAIL for sender configuration
+  * Maintained backward compatibility with file-based email fallback for development
+  * Server logs now show "Postmark API token detected. Using Postmark for email delivery."
 - June 24, 2025. Debugged and fixed application startup issues:
   * Resolved persistent JSX syntax errors by recreating logos and pattern components
   * Added missing TypeScript interfaces (LogoProps, PatternProps) and BullLogo component
