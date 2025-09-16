@@ -1,11 +1,8 @@
-<<<<<<< HEAD
 import type { BrandAsset } from "@shared/schema";
 import { UserRole } from "@shared/schema";
-=======
 import React, { FC, useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { ScrollArea } from "@/components/ui/scroll-area";
->>>>>>> 097e43f (Remove unused import statement from sidebar component)
 import {
   ArrowLeft,
   BookText,
@@ -21,8 +18,6 @@ import {
   Users,
   UsersIcon,
 } from "lucide-react";
-import { type FC, useEffect, useState } from "react";
-import { useLocation } from "wouter";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,16 +26,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-<<<<<<< HEAD
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { useClientAssetsById, useClientsQuery } from "@/lib/queries/clients";
-=======
-import { useClientAssetsById } from "@/lib/queries/clients";
-import { BrandAsset } from "@shared/schema";
->>>>>>> 097e43f (Remove unused import statement from sidebar component)
 
 interface ClientSidebarProps {
   clientId: number;
@@ -96,13 +85,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChangeEvent as EventListener
+      handleTabChangeEvent as EventListener,
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChangeEvent as EventListener
+        handleTabChangeEvent as EventListener,
       );
     };
   }, []);
@@ -122,7 +111,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     } catch (error: unknown) {
       console.error(
         "Logout error:",
-        error instanceof Error ? error.message : "Unknown error"
+        error instanceof Error ? error.message : "Unknown error",
       );
     }
   };
@@ -221,7 +210,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error"
+                e instanceof Error ? e.message : "Unknown error",
               );
               return false;
             }
@@ -237,7 +226,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error"
+                e instanceof Error ? e.message : "Unknown error",
               );
               return false;
             }
@@ -261,7 +250,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                     // On error, revert to the client name as fallback
                     e.currentTarget.insertAdjacentHTML(
                       "afterend",
-                      `<h2 class="font-bold">${clientName}</h2>`
+                      `<h2 class="font-bold">${clientName}</h2>`,
                     );
                   }}
                 />

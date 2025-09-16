@@ -85,7 +85,7 @@ export class EmailService {
       if (this.usePostmark && this.postmarkClient) {
         try {
           const fromEmail =
-            process.env.POSTMARK_FROM_EMAIL || "noreply@brandguidelines.com";
+            process.env.POSTMARK_FROM_EMAIL || "hello@grnbull.com";
           console.log(`[EMAIL] Using sender email: ${fromEmail}`);
 
           console.log(

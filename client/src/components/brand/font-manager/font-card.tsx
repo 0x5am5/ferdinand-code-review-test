@@ -39,12 +39,13 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
 
       // Remove existing font link if it exists
       const existingLink = document.head.querySelector(
-        `#font-${font.name.replace(/\s+/g, "-")}`
+        `#font-${font.name.replace(/\s+/g, "-")}`,
       );
       if (!existingLink) {
         document.head.appendChild(link);
       }
     } else if (font.source === FontSource.ADOBE && font.sourceData?.url) {
+      console.log(font);
       const link = document.createElement("link");
       link.href = font.sourceData.url;
       link.rel = "stylesheet";
@@ -52,7 +53,7 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
 
       // Remove existing font link if it exists
       const existingLink = document.head.querySelector(
-        `#font-${font.name.replace(/\s+/g, "-")}`
+        `#font-${font.name.replace(/\s+/g, "-")}`,
       );
       if (!existingLink) {
         document.head.appendChild(link);

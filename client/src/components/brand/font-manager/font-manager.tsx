@@ -100,7 +100,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
             name: font.family,
             category: convertGoogleFontCategory(font.category),
             weights: convertGoogleFontVariants(font.variants),
-          })
+          }),
         )
       : allGoogleFonts;
 
@@ -182,7 +182,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
     console.log(
       `Creating Adobe Font: ${adobeFontData.fontFamily} with weights:`,
-      adobeFontData.weights
+      adobeFontData.weights,
     );
 
     // Create proper font data structure for Adobe fonts
@@ -201,7 +201,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     console.log("Sending Adobe font data to server for client:", clientId);
     console.log(
       "Adobe font data structure:",
-      JSON.stringify(fontData, null, 2)
+      JSON.stringify(fontData, null, 2),
     );
 
     const formData = new FormData();
@@ -217,7 +217,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const handleCustomFontUpload = (
     files: FileList,
     fontName: string,
-    weights: string[]
+    weights: string[],
   ) => {
     if (!files || files.length === 0) {
       toast({
@@ -281,7 +281,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append("source", FontSource.FILE);
     formData.append(
       "weights",
-      JSON.stringify(weights.length > 0 ? weights : ["400"])
+      JSON.stringify(weights.length > 0 ? weights : ["400"]),
     );
     formData.append("styles", JSON.stringify(["normal"]));
 
@@ -321,6 +321,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     .filter((asset) => asset.category === "font")
     .map(parseFontAsset)
     .filter((font): font is FontData => font !== null);
+
+  console.log(transformedFonts);
 
   const renderFontPicker = () => {
     if (showGoogleFontPicker) {
