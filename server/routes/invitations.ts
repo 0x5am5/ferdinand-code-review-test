@@ -531,24 +531,9 @@ export function registerInvitationRoutes(app: Express) {
       });
 
       // Filter invitations for the specific client
-      console.log(`Filtering invitations for client ${clientId}`);
-      console.log(`Total pending invitations:`, allPendingInvitations.length);
-      allPendingInvitations.forEach((inv, index) => {
-        console.log(`Invitation ${index}:`, {
-          id: inv.id,
-          email: inv.email,
-          clientIds: inv.clientIds,
-          clientIdsType: typeof inv.clientIds,
-          clientIdsIsArray: Array.isArray(inv.clientIds),
-          includesClient: inv.clientIds?.includes(clientId)
-        });
-      });
-      
       const clientInvitations = allPendingInvitations.filter((invitation) =>
         invitation.clientIds?.includes(clientId)
       );
-      
-      console.log(`Filtered invitations for client ${clientId}:`, clientInvitations.length);
 
       // Enhance invitations with client data
       const enhancedInvitations = await Promise.all(
