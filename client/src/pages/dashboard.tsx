@@ -96,8 +96,6 @@ function ClientLogo({
   // Find logo assets
   const logoAssets = assets?.filter((asset) => asset.category === "logo") || [];
 
-  console.log(logoAssets);
-
   // Find the best logo to display (horizontal/primary preferred, fallback to any logo)
   const findLogo = (preferredTypes: string[]) => {
     for (const type of preferredTypes) {
@@ -120,14 +118,16 @@ function ClientLogo({
 
   // Try to find horizontal, then main, then square (for favicon), then any logo
   const logoToShow =
-    findLogo(["square", "horizontal", "main"]) || logoAssets[0] || null;
+    findLogo(["favicon", "square", "horizontal", "main"]) ||
+    logoAssets[0] ||
+    null;
 
   if (!logoToShow) {
     return null;
   }
 
   return (
-    <div className="w-16 h-16 mr-4 flex-shrink-0">
+    <div className="w-16 h-16 mr-4 mb-4 flex-shrink-0">
       <img
         src={`/api/assets/${logoToShow.id}/file`}
         alt={`${clientName} logo`}
@@ -429,7 +429,7 @@ export default function Dashboard() {
                     >
                       <Card className="dashboard-card group h-full">
                         <CardHeader className="pb-5 relative">
-                          <div className="dashboard-card--nav">
+                          <div className="dashboard-card--nav z-10">
                             <GripVertical className="drag-and-drop--handle h-4 w-4 text-muted-foreground" />
 
                             <Button

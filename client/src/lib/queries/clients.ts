@@ -54,7 +54,7 @@ export const useClientUsersQuery = (clientId: number | null) =>
 
 export function useDeleteClientMutation() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: number) => {
       // Wait for the animation to complete before deleting from the server
@@ -84,7 +84,7 @@ export function useDeleteClientMutation() {
 
 export function useUpdateClientMutation() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Client> }) => {
       await apiRequest("PATCH", `/api/clients/${id}`, data);
@@ -109,13 +109,13 @@ export function useUpdateClientMutation() {
 
 // Update client order mutation
 export function useUpdateClientOrderMutation(
-  setSortOrder: (order: "custom") => void
+  setSortOrder: (order: "custom") => void,
 ) {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (
-      clientOrders: { id: number; displayOrder: number }[]
+      clientOrders: { id: number; displayOrder: number }[],
     ) => {
       const response = await apiRequest("PATCH", "/api/clients/order", {
         clientOrders,
@@ -128,10 +128,6 @@ export function useUpdateClientOrderMutation(
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/clients"] });
-      toast({
-        title: "Success",
-        description: "Client order updated successfully",
-      });
       // Ensure we stay in custom sort mode after reordering
       setSortOrder("custom");
     },
@@ -148,7 +144,7 @@ export function useUpdateClientOrderMutation(
 // Client user assignment mutations
 export function useClientUserMutations(clientId: number) {
   const queryClient = useQueryClient();
-  
+
   const assignUser = useMutation({
     mutationFn: async (userId: number) => {
       return await apiRequest("POST", `/api/user-clients`, {
@@ -179,7 +175,7 @@ export function useClientUserMutations(clientId: number) {
     mutationFn: async (userId: number) => {
       return await apiRequest(
         "DELETE",
-        `/api/user-clients/${userId}/${clientId}`
+        `/api/user-clients/${userId}/${clientId}`,
       );
     },
     onSuccess: () => {
