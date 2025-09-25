@@ -171,16 +171,16 @@ export class EmailService {
 
     // Create text version
     const text = `
-      Hello,
-      
-      You've been invited to join ${clientName} as a ${role}.
-      
-      Please click the following link to accept your invitation:
+      Hi,
+
+      You’ve been invited to access ${clientName}’s brand assets in Ferdinand.
+
+      Please click the following link to accept your invitation:  
       ${inviteLink}
-      
+
       This invitation will expire in ${expiration}.
-      
-      If you have any questions, please contact the person who sent you this invitation.
+      —  
+      This is an automated message. Replies will not reach us.
     `;
 
     // Create HTML version
@@ -196,27 +196,29 @@ export class EmailService {
           .header { padding: 20px; text-align: center; }
           .logo { max-height: 80px; max-width: 200px; }
           .content { padding: 20px; background-color: #f9f9f9; border-radius: 5px; }
-          .button { display: inline-block; padding: 12px 24px; background-color: #0f172a; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0; }
           .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            ${logoUrl ? `<img src="${logoUrl}" alt="${clientName} logo" class="logo">` : ""}
             <h2>${subject}</h2>
           </div>
           <div class="content">
-            <p>Hello,</p>
-            <p>You've been invited to join <strong>${clientName}</strong> as a <strong>${role}</strong>.</p>
-            <p>Please click the button below to accept your invitation:</p>
-            <p style="text-align: center;">
-              <a href="${inviteLink}" class="button">Accept Invitation</a>
-            </p>
-            <p>Or copy and paste this link into your browser:</p>
-            <p style="word-break: break-all;"><a href="${inviteLink}">${inviteLink}</a></p>
+            <p>Hi,</p>
+
+            <p>You’ve been invited to access ${clientName}’s brand assets in Ferdinand.</p>
+
+            <p>Click the button below to get started: </p>
+            <p><a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #0f172a; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Accept Invitation</a></p>
+
+            <p>If for whatever reason the button does not work, you can also use this link: 
+            <a href="${inviteLink}">${inviteLink}</a></p>
+
             <p>This invitation will expire in ${expiration}.</p>
-            <p>If you have any questions, please contact the person who sent you this invitation.</p>
+            <p>—</p>
+            <p>This is an automated message. Replies will not reach us.</p>
+            
           </div>
           <div class="footer">
             <p>This is a system-generated email. Please do not reply to this message.</p>
@@ -258,16 +260,18 @@ export class EmailService {
 
     // Create text version
     const text = `
-      Hello,
-      
-      This is a reminder about your invitation to join ${clientName} as a ${role}.
+      Hi,
+
+      Just a quick reminder, your invitation to access ${clientName}’s brand in Ferdinand is still pending.
       
       Please click the following link to accept your invitation:
       ${inviteLink}
       
       This invitation will expire in ${expiration}.
       
-      If you have any questions, please contact the person who sent you this invitation.
+      —  
+      
+      This is an automated message. Replies will not reach us.
     `;
 
     // Create HTML version with similar styling to the invitation email
@@ -295,18 +299,19 @@ export class EmailService {
           </div>
           <div class="content">
             <p>Hello,</p>
-            <p>This is a reminder about your invitation to join <strong>${clientName}</strong> as a <strong>${role}</strong>.</p>
-            <p>Please click the button below to accept your invitation:</p>
+            <p>Just a quick reminder, your invitation to access ${clientName}’s brand in Ferdinand is still pending.</p>
+            
+            <p>Click the button below to join:</p>
             <p style="text-align: center;">
-              <a href="${inviteLink}" class="button">Accept Invitation</a>
+              <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #0f172a; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Accept Invitation</a>
             </p>
-            <p>Or copy and paste this link into your browser:</p>
+            <p>Or use this link:</p>
             <p style="word-break: break-all;"><a href="${inviteLink}">${inviteLink}</a></p>
             <p>This invitation will expire in ${expiration}.</p>
-            <p>If you have any questions, please contact the person who sent you this invitation.</p>
+
           </div>
           <div class="footer">
-            <p>This is a system-generated email. Please do not reply to this message.</p>
+            <p>This is an automated message. Replies will not reach us.</p>
           </div>
         </div>
       </body>
@@ -348,7 +353,7 @@ export class EmailService {
     const text = `
       Hello,
       
-      We received a request to reset your password for ${clientName}.
+      We received a request to reset your Ferdinand password.
       
       Please click the following link to reset your password:
       ${resetLink}
@@ -378,12 +383,12 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            ${logoUrl ? `<img src="${logoUrl}" alt="${clientName} logo" class="logo">` : ""}
             <h2>${subject}</h2>
           </div>
           <div class="content">
             <p>Hello,</p>
-            <p>We received a request to reset your password for <strong>${clientName}</strong>.</p>
+            <p>We received a request to reset your Ferdinand password.</p>
+            
             <p>Please click the button below to reset your password:</p>
             <p style="text-align: center;">
               <a href="${resetLink}" class="button">Reset Password</a>
