@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   integer,
@@ -498,6 +498,54 @@ export const figmaDesignTokensRelations = relations(
     }),
   })
 );
+
+// Slack Integration Tables
+export const slackWorkspaces = pgTable("slack_workspaces", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  slackTeamId: text("slack_team_id").notNull().unique(),
+  teamName: text("team_name").notNull(),
+  botToken: text("bot_token").notNull(), // Encrypted
+  botUserId: text("bot_user_id").notNull(),
+  installedBy: integer("installed_by").references(() => users.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const slackUserMappings = pgTable("slack_user_mappings", {
+  id: serial("id").primaryKey(),
+  slackUserId: text("slack_user_id").notNull(),
+  slackTeamId: text("slack_team_id").notNull(),
+  ferdinandUserId: integer("ferdinand_user_id").references(() => users.id),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+});
+
+export const apiTokens = pgTable("api_tokens", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  tokenHash: text("token_hash").notNull().unique(),
+  tokenName: text("token_name").notNull(),
+  scopes: text("scopes").array().default(["read:assets"]),
+  createdBy: integer("created_by").references(() => users.id),
+  expiresAt: timestamp("expires_at"),
+  lastUsedAt: timestamp("last_used_at"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const slackConversations = pgTable("slack_conversations", {
+  id: serial("id").primaryKey(),
+  slackUserId: text("slack_user_id").notNull(),
+  slackChannelId: text("slack_channel_id").notNull(),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  context: jsonb("context").default("{}"),
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  expiresAt: timestamp("expires_at").default(sql`(NOW() + INTERVAL '1 hour')`),
+});
 
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users)
@@ -1028,3 +1076,79 @@ export const insertTypeScaleSchemaExtended = insertTypeScaleSchema.extend({
     )
     .optional(),
 });
+
+// Slack Integration Relations
+export const slackWorkspacesRelations = relations(slackWorkspaces, ({ one }) => ({
+  client: one(clients, {
+    fields: [slackWorkspaces.clientId],
+    references: [clients.id],
+  }),
+  installer: one(users, {
+    fields: [slackWorkspaces.installedBy],
+    references: [users.id],
+  }),
+}));
+
+export const slackUserMappingsRelations = relations(slackUserMappings, ({ one }) => ({
+  user: one(users, {
+    fields: [slackUserMappings.ferdinandUserId],
+    references: [users.id],
+  }),
+  client: one(clients, {
+    fields: [slackUserMappings.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
+  client: one(clients, {
+    fields: [apiTokens.clientId],
+    references: [clients.id],
+  }),
+  creator: one(users, {
+    fields: [apiTokens.createdBy],
+    references: [users.id],
+  }),
+}));
+
+// Slack Integration Insert Schemas
+export const insertSlackWorkspaceSchema = createInsertSchema(slackWorkspaces)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    slackTeamId: z.string().min(1),
+    teamName: z.string().min(1),
+    botToken: z.string().min(1),
+    botUserId: z.string().min(1),
+  });
+
+export const insertSlackUserMappingSchema = createInsertSchema(slackUserMappings)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    slackUserId: z.string().min(1),
+    slackTeamId: z.string().min(1),
+  });
+
+export const insertApiTokenSchema = createInsertSchema(apiTokens)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    tokenHash: z.string().min(1),
+    tokenName: z.string().min(1),
+    scopes: z.array(z.string()).optional(),
+  });
+
+export const insertSlackConversationSchema = createInsertSchema(slackConversations)
+  .omit({ id: true })
+  .extend({
+    slackUserId: z.string().min(1),
+    slackChannelId: z.string().min(1),
+  });
+
+// Slack Integration Types
+export type SlackWorkspace = typeof slackWorkspaces.$inferSelect;
+export type SlackUserMapping = typeof slackUserMappings.$inferSelect;
+export type ApiToken = typeof apiTokens.$inferSelect;
+export type SlackConversation = typeof slackConversations.$inferSelect;
+export type InsertSlackWorkspace = z.infer<typeof insertSlackWorkspaceSchema>;
+export type InsertSlackUserMapping = z.infer<typeof insertSlackUserMappingSchema>;
+export type InsertApiToken = z.infer<typeof insertApiTokenSchema>;
+export type InsertSlackConversation = z.infer<typeof insertSlackConversationSchema>;
