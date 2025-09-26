@@ -1,0 +1,1 @@
+- all slack endpoints added need to be added to the /ferdinand-help command too

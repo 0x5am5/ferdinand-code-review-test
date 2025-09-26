@@ -9,6 +9,7 @@ import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import FigmaIntegration from "@/components/figma/figma-integration";
+import { IntegrationsHub } from "@/components/integrations/IntegrationsHub";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -152,6 +153,7 @@ export default function ClientDetails() {
       userPersonas: true,
       inspiration: true,
       figmaIntegration: false,
+      slackIntegration: false,
     };
 
   const anyFeatureEnabled = Object.values(featureToggles).some(
@@ -307,17 +309,14 @@ export default function ClientDetails() {
         );
 
       case "design-system":
-        return featureToggles.figmaIntegration ? (
-          <FigmaIntegration clientId={client?.id || 0} />
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Feature Disabled</CardTitle>
-            </CardHeader>
-            <CardContent>
-              Design System feature is disabled for this client.
-            </CardContent>
-          </Card>
+        return (
+          <IntegrationsHub
+            clientId={client?.id || 0}
+            featureToggles={{
+              figmaIntegration: featureToggles.figmaIntegration,
+              slackIntegration: featureToggles.slackIntegration,
+            }}
+          />
         );
 
       default:

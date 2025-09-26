@@ -15,6 +15,7 @@ import {
   LogOutIcon,
   PaletteIcon,
   Search,
+  Settings,
   Users,
   UsersIcon,
 } from "lucide-react";
@@ -41,6 +42,7 @@ interface ClientSidebarProps {
     userPersonas: boolean;
     inspiration: boolean;
     figmaIntegration: boolean;
+    slackIntegration: boolean;
   };
   activeTab?: string;
   onTabChange: (tab: string) => void;
@@ -162,9 +164,10 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     },
     {
       id: "design-system",
-      title: "Design System",
-      icon: <Figma className="h-4 w-4" />,
-      enabled: featureToggles.figmaIntegration,
+      title: "Integrations",
+      icon: <Settings className="h-4 w-4" />,
+      enabled: (featureToggles.figmaIntegration || featureToggles.slackIntegration) &&
+        (user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN),
     },
   ];
 

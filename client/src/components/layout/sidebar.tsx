@@ -216,6 +216,10 @@ export const Sidebar: FC = () => {
         typeof clientToggles.figmaIntegration === "boolean"
           ? clientToggles.figmaIntegration
           : false,
+      slackIntegration:
+        typeof clientToggles.slackIntegration === "boolean"
+          ? clientToggles.slackIntegration
+          : false,
     };
 
     return (

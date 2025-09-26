@@ -15,8 +15,20 @@ import { log, serveStatic, setupVite } from "./vite";
 const app = express();
 let server: ReturnType<typeof createServer> | null = null;
 
-// Important: JSON middleware must come before session middleware
-app.use(express.json());
+// Important: Body parsing middleware must come before session middleware
+// Skip body parsing for Slack endpoints (ExpressReceiver handles its own parsing)
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/slack/events')) {
+    return next();
+  }
+  express.json()(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/slack/events')) {
+    return next();
+  }
+  express.urlencoded({ extended: true })(req, res, next);
+});
 
 // Set up PostgreSQL session store
 const PostgresStore = connectPg(session);
