@@ -86,10 +86,12 @@ function initializeSlackApp() {
         const auditLog = {
           userId: command.user_id,
           workspaceId: command.team_id,
+          ferdinandUserId: undefined as number | undefined,
           command: `/ferdinand-logo ${command.text}`,
           assetIds: [] as number[],
           clientId: 0,
           success: false,
+          responseTimeMs: 0,
           timestamp: new Date(),
         };
 

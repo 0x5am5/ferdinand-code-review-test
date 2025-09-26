@@ -27,6 +27,7 @@ import {
   Plus,
   Search,
   Share,
+  Slack,
   SortAsc,
   SortDesc,
   Trash,
@@ -165,6 +166,7 @@ export default function Dashboard() {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
+    slackIntegration: false,
   });
 
   // Define form before any useEffect hooks that use it
@@ -305,6 +307,9 @@ export default function Dashboard() {
           figmaIntegration: Boolean(
             featureTogglesObj.figmaIntegration ?? false,
           ),
+          slackIntegration: Boolean(
+            featureTogglesObj.slackIntegration ?? false,
+          ),
         };
         setFeatureToggles(toggles);
       } else {
@@ -316,6 +321,7 @@ export default function Dashboard() {
           userPersonas: true,
           inspiration: true,
           figmaIntegration: false,
+          slackIntegration: false,
         });
       }
     } else {
@@ -335,6 +341,7 @@ export default function Dashboard() {
         userPersonas: true,
         inspiration: true,
         figmaIntegration: false,
+        slackIntegration: false,
       });
     }
   }, [editingClient, form]);
@@ -887,6 +894,27 @@ export default function Dashboard() {
                             setFeatureToggles((prev) => ({
                               ...prev,
                               figmaIntegration: checked,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <Slack className="h-4 w-4 mr-2" />
+                            <div className="font-medium">Slack Integration</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Access brand assets directly from Slack workspace
+                          </div>
+                        </div>
+                        <Switch
+                          checked={featureToggles.slackIntegration}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              slackIntegration: checked,
                             }))
                           }
                         />

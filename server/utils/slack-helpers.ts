@@ -1,5 +1,7 @@
 import type { BrandAsset } from "@shared/schema";
+import { slackAuditLogs, insertSlackAuditLogSchema } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
+import { db } from "../db";
 import fetch from "node-fetch";
 
 interface SlackFileUpload {
@@ -290,20 +292,51 @@ setInterval(() => {
 export interface AuditLogEntry {
   userId: string;
   workspaceId: string;
+  ferdinandUserId?: number;
   command: string;
   assetIds: number[];
   clientId: number;
   success: boolean;
   error?: string;
+  responseTimeMs?: number;
+  metadata?: Record<string, any>;
   timestamp: Date;
 }
 
-// Simple audit logger (could be enhanced to write to database)
-export function logSlackActivity(entry: AuditLogEntry): void {
-  console.log(`[SLACK AUDIT] ${entry.timestamp.toISOString()} - User ${entry.userId} in workspace ${entry.workspaceId} executed "${entry.command}" - Success: ${entry.success} - Assets: [${entry.assetIds.join(", ")}] - Client: ${entry.clientId}`);
+// Enhanced audit logger that persists to database
+export async function logSlackActivity(entry: AuditLogEntry): Promise<void> {
+  // Log to console for immediate visibility
+  const timestamp = entry.timestamp.toISOString();
+  console.log(`[SLACK AUDIT] ${timestamp} - User ${entry.userId} in workspace ${entry.workspaceId} executed "${entry.command}" - Success: ${entry.success} - Assets: [${entry.assetIds.join(", ")}] - Client: ${entry.clientId}${entry.responseTimeMs ? ` - ${entry.responseTimeMs}ms` : ''}`);
 
   if (entry.error) {
     console.error(`[SLACK ERROR] ${entry.error}`);
+  }
+
+  // Persist to database
+  try {
+    const auditData = {
+      slackUserId: entry.userId,
+      slackWorkspaceId: entry.workspaceId,
+      ferdinandUserId: entry.ferdinandUserId || null,
+      clientId: entry.clientId,
+      command: entry.command,
+      assetIds: entry.assetIds.length > 0 ? entry.assetIds : null,
+      success: entry.success,
+      errorMessage: entry.error || null,
+      responseTimeMs: entry.responseTimeMs || null,
+      metadata: entry.metadata || {},
+    };
+
+    const parsed = insertSlackAuditLogSchema.safeParse(auditData);
+    if (parsed.success) {
+      await db.insert(slackAuditLogs).values(parsed.data);
+    } else {
+      console.error("[SLACK AUDIT] Failed to validate audit log data:", parsed.error.errors);
+    }
+  } catch (dbError) {
+    console.error("[SLACK AUDIT] Failed to persist audit log to database:", dbError);
+    // Don't throw error to avoid breaking the main functionality
   }
 }
 

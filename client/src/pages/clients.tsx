@@ -11,6 +11,7 @@ import {
   Palette,
   Plus,
   Share,
+  Slack,
   Table,
   Trash,
   Type,
@@ -97,6 +98,7 @@ export default function Clients() {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
+    slackIntegration: false,
   });
   const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>(
     {}
@@ -247,6 +249,9 @@ export default function Clients() {
           figmaIntegration: Boolean(
             editingClient.featureToggles.figmaIntegration ?? false
           ),
+          slackIntegration: Boolean(
+            editingClient.featureToggles.slackIntegration ?? false
+          ),
         };
         setFeatureToggles(toggles);
       } else {
@@ -258,6 +263,7 @@ export default function Clients() {
           userPersonas: true,
           inspiration: true,
           figmaIntegration: false,
+          slackIntegration: false,
         });
       }
     } else {
@@ -269,6 +275,7 @@ export default function Clients() {
         userPersonas: true,
         inspiration: true,
         figmaIntegration: false,
+        slackIntegration: false,
       });
     }
   }, [editingClient]);
@@ -353,6 +360,12 @@ export default function Clients() {
                     <Badge className="bg-gray-100 text-gray-800">
                       <Figma className="h-3 w-3 mr-1" />
                       Figma
+                    </Badge>
+                  )}
+                  {client.featureToggles?.slackIntegration && (
+                    <Badge className="bg-indigo-100 text-indigo-800">
+                      <Slack className="h-3 w-3 mr-1" />
+                      Slack
                     </Badge>
                   )}
 
@@ -504,6 +517,30 @@ export default function Clients() {
                           Figma
                         </Button>
                       )}
+                      {!client.featureToggles?.slackIntegration && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
+                            const newToggles = {
+                              ...currentFeatures,
+                              slackIntegration: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <Slack className="h-3 w-3" />
+                          Slack
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -582,6 +619,7 @@ export default function Clients() {
                     userPersonas: true,
                     inspiration: true,
                     figmaIntegration: false,
+                    slackIntegration: false,
                   };
 
                 return (
@@ -740,6 +778,30 @@ export default function Clients() {
                             </Button>
                           </Badge>
                         )}
+                        {clientFeatures.slackIntegration && (
+                          <Badge className="flex items-center gap-1 bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
+                            <Slack className="h-3 w-3" />
+                            Slack
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 p-0 ml-1 hover:bg-indigo-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newToggles = {
+                                  ...clientFeatures,
+                                  slackIntegration: false,
+                                };
+                                updateClient.mutate({
+                                  id: client.id,
+                                  data: { featureToggles: newToggles },
+                                });
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        )}
 
                         {/* Add buttons for disabled features (admin/super_admin only) */}
                         {(currentUser?.role === "admin" ||
@@ -875,6 +937,28 @@ export default function Clients() {
                                 <Plus className="h-3 w-3" />
                                 <Figma className="h-3 w-3" />
                                 Figma
+                              </Button>
+                            )}
+                            {!clientFeatures.slackIntegration && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    slackIntegration: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <Slack className="h-3 w-3" />
+                                Slack
                               </Button>
                             )}
                           </>
@@ -1255,6 +1339,27 @@ export default function Clients() {
                         setFeatureToggles((prev) => ({
                           ...prev,
                           figmaIntegration: checked,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center">
+                        <Slack className="h-4 w-4 mr-2" />
+                        <div className="font-medium">Slack Integration</div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Access brand assets directly from Slack workspace
+                      </div>
+                    </div>
+                    <Switch
+                      checked={featureToggles.slackIntegration}
+                      onCheckedChange={(checked) =>
+                        setFeatureToggles((prev) => ({
+                          ...prev,
+                          slackIntegration: checked,
                         }))
                       }
                     />

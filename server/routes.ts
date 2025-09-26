@@ -9,6 +9,8 @@ import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
 import { registerInvitationRoutes } from "./routes/invitations";
 import { registerPersonasRoutes } from "./routes/personas";
 import { registerSlackRoutes } from "./routes/slack";
+import { registerSlackOAuthRoutes } from "./routes/slack-oauth";
+import { registerApiTokenRoutes } from "./routes/api-tokens";
 import { registerTypeScalesRoutes } from "./routes/type-scales";
 import { registerUserRoutes } from "./routes/users";
 
@@ -81,4 +83,6 @@ export function registerRoutes(app: Express) {
   registerTypeScalesRoutes(app);
   registerFigmaRoutes(app);
   registerSlackRoutes(app);
+  registerSlackOAuthRoutes(app);
+  registerApiTokenRoutes(app);
 }

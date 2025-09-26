@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  index,
   integer,
   json,
   jsonb,
@@ -522,7 +523,18 @@ export const slackUserMappings = pgTable("slack_user_mappings", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   isActive: boolean("is_active").default(true),
-});
+}, (table) => ({
+  // Index for finding active user mappings by Slack user/team (most common query)
+  slackUserTeamIdx: index("idx_slack_user_mappings_user_team_active").on(
+    table.slackUserId,
+    table.slackTeamId,
+    table.isActive
+  ),
+  // Index for queries by client ID
+  clientIdIdx: index("idx_slack_user_mappings_client_id").on(table.clientId),
+  // Index for queries by Ferdinand user ID
+  ferdinandUserIdIdx: index("idx_slack_user_mappings_ferdinand_user").on(table.ferdinandUserId),
+}));
 
 export const apiTokens = pgTable("api_tokens", {
   id: serial("id").primaryKey(),
@@ -535,7 +547,12 @@ export const apiTokens = pgTable("api_tokens", {
   lastUsedAt: timestamp("last_used_at"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => ({
+  // Index for finding active tokens by client (for listing tokens)
+  clientActiveIdx: index("idx_api_tokens_client_active").on(table.clientId, table.isActive),
+  // Index for token validation queries
+  tokenHashIdx: index("idx_api_tokens_hash_active").on(table.tokenHash, table.isActive),
+}));
 
 export const slackConversations = pgTable("slack_conversations", {
   id: serial("id").primaryKey(),
@@ -546,6 +563,28 @@ export const slackConversations = pgTable("slack_conversations", {
   lastMessageAt: timestamp("last_message_at").defaultNow(),
   expiresAt: timestamp("expires_at").default(sql`(NOW() + INTERVAL '1 hour')`),
 });
+
+export const slackAuditLogs = pgTable("slack_audit_logs", {
+  id: serial("id").primaryKey(),
+  slackUserId: text("slack_user_id").notNull(),
+  slackWorkspaceId: text("slack_workspace_id").notNull(),
+  ferdinandUserId: integer("ferdinand_user_id").references(() => users.id),
+  clientId: integer("client_id").notNull().references(() => clients.id),
+  command: text("command").notNull(),
+  assetIds: integer("asset_ids").array(),
+  success: boolean("success").notNull(),
+  errorMessage: text("error_message"),
+  responseTimeMs: integer("response_time_ms"),
+  metadata: jsonb("metadata").default("{}"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  // Index for audit queries by client and time (most common for reports)
+  clientTimeIdx: index("idx_slack_audit_logs_client_time").on(table.clientId, table.createdAt),
+  // Index for finding logs by workspace
+  workspaceTimeIdx: index("idx_slack_audit_logs_workspace_time").on(table.slackWorkspaceId, table.createdAt),
+  // Index for error analysis
+  errorIdx: index("idx_slack_audit_logs_success_time").on(table.success, table.createdAt),
+}));
 
 // Insert Schemas
 export const insertUserSchema = createInsertSchema(users)
@@ -896,6 +935,7 @@ export interface FeatureToggles {
   userPersonas: boolean;
   inspiration: boolean;
   figmaIntegration: boolean;
+  slackIntegration: boolean;
 }
 
 // Constants from enums
@@ -1143,12 +1183,26 @@ export const insertSlackConversationSchema = createInsertSchema(slackConversatio
     slackChannelId: z.string().min(1),
   });
 
+export const insertSlackAuditLogSchema = createInsertSchema(slackAuditLogs)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    slackUserId: z.string().min(1),
+    slackWorkspaceId: z.string().min(1),
+    command: z.string().min(1),
+    success: z.boolean(),
+    assetIds: z.array(z.number()).optional(),
+    errorMessage: z.string().optional(),
+    responseTimeMs: z.number().optional(),
+  });
+
 // Slack Integration Types
 export type SlackWorkspace = typeof slackWorkspaces.$inferSelect;
 export type SlackUserMapping = typeof slackUserMappings.$inferSelect;
 export type ApiToken = typeof apiTokens.$inferSelect;
 export type SlackConversation = typeof slackConversations.$inferSelect;
+export type SlackAuditLog = typeof slackAuditLogs.$inferSelect;
 export type InsertSlackWorkspace = z.infer<typeof insertSlackWorkspaceSchema>;
 export type InsertSlackUserMapping = z.infer<typeof insertSlackUserMappingSchema>;
 export type InsertApiToken = z.infer<typeof insertApiTokenSchema>;
 export type InsertSlackConversation = z.infer<typeof insertSlackConversationSchema>;
+export type InsertSlackAuditLog = z.infer<typeof insertSlackAuditLogSchema>;
