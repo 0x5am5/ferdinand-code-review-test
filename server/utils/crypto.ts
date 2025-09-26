@@ -1,5 +1,4 @@
-import { createHash, randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
-import * as crypto from "node:crypto";
+import { createHash, randomBytes, createCipheriv, createDecipheriv } from "node:crypto";
 
 /**
  * Generate a cryptographically secure random API token
@@ -55,7 +54,7 @@ export function generateSecureRandom(
 
 /**
  * Simple encryption for sensitive data like bot tokens
- * Uses AES-256-GCM with a key derived from environment variable
+ * Uses AES-256-CBC with a key derived from environment variable
  * @param plaintext - Text to encrypt
  * @param key - Optional encryption key (uses ENCRYPTION_KEY env var if not provided)
  * @returns Object with encrypted data, IV, and auth tag

@@ -1,8 +1,9 @@
 import type { Express, Response, Request } from "express";
 import { eq, and } from "drizzle-orm";
-import { slackWorkspaces, insertSlackWorkspaceSchema } from "@shared/schema";
+import { slackWorkspaces, slackUserMappings, insertSlackWorkspaceSchema } from "@shared/schema";
 import { db } from "../db";
 import { validateClientId } from "../middlewares/vaildateClientId";
+import { requireAdminRole } from "../middlewares/requireAdminRole";
 import type { RequestWithClientId } from "../routes";
 import { encrypt, decrypt, generateSecureRandom } from "../utils/crypto";
 import fetch from "node-fetch";
@@ -50,10 +51,11 @@ setInterval(() => {
  * Register Slack OAuth routes
  */
 export function registerSlackOAuthRoutes(app: Express) {
-  // Initiate OAuth flow - redirect to Slack
+  // Initiate OAuth flow - redirect to Slack (admin only)
   app.get(
     "/api/clients/:clientId/slack/oauth/install",
     validateClientId,
+    requireAdminRole,
     async (req: RequestWithClientId, res: Response) => {
       try {
         if (!req.session.userId) {
@@ -296,9 +298,9 @@ export function registerSlackOAuthRoutes(app: Express) {
             <div class="info">
               <h3>Next Steps:</h3>
               <ol style="text-align: left;">
-                <li>Users in your Slack workspace need to be mapped to Ferdinand accounts</li>
-                <li>Your Ferdinand admin can manage user mappings in the settings</li>
-                <li>Users can now use Ferdinand commands in Slack</li>
+                <li>All users in your Slack workspace can now access Ferdinand commands</li>
+                <li>No individual user setup is required</li>
+                <li>Start using Ferdinand commands in any channel where the bot is invited</li>
               </ol>
             </div>
 
@@ -413,6 +415,58 @@ export function registerSlackOAuthRoutes(app: Express) {
       } catch (error) {
         console.error("Error deactivating workspace:", error);
         res.status(500).json({ message: "Error deactivating workspace" });
+      }
+    }
+  );
+
+  // Reactivate workspace installation
+  app.post(
+    "/api/clients/:clientId/slack/workspaces/:workspaceId/reactivate",
+    validateClientId,
+    requireAdminRole,
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        const clientId = req.clientId;
+        const workspaceId = parseInt(req.params.workspaceId);
+
+        if (!clientId || !workspaceId) {
+          return res.status(400).json({ message: "Client ID and workspace ID are required" });
+        }
+
+        // Verify workspace belongs to this client
+        const [workspace] = await db
+          .select()
+          .from(slackWorkspaces)
+          .where(
+            and(
+              eq(slackWorkspaces.id, workspaceId),
+              eq(slackWorkspaces.clientId, clientId)
+            )
+          );
+
+        if (!workspace) {
+          return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        // Reactivate the workspace
+        const [reactivated] = await db
+          .update(slackWorkspaces)
+          .set({ isActive: true, updatedAt: new Date() })
+          .where(eq(slackWorkspaces.id, workspaceId))
+          .returning({
+            id: slackWorkspaces.id,
+            teamName: slackWorkspaces.teamName,
+            isActive: slackWorkspaces.isActive,
+          });
+
+        res.json({
+          message: "Workspace reactivated successfully",
+          workspace: reactivated,
+        });
+
+      } catch (error) {
+        console.error("Error reactivating workspace:", error);
+        res.status(500).json({ message: "Error reactivating workspace" });
       }
     }
   );

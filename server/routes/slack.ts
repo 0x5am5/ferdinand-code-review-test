@@ -7,9 +7,10 @@ import {
   brandAssets,
   insertSlackUserMappingSchema,
   slackUserMappings,
+  slackWorkspaces,
 } from "@shared/schema";
 import * as dotenv from "dotenv";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
@@ -96,36 +97,35 @@ function initializeSlackApp() {
         };
 
         try {
-          // Find the user mapping
-          const [userMapping] = await db
+          // Find the workspace
+          const [workspace] = await db
             .select()
-            .from(slackUserMappings)
+            .from(slackWorkspaces)
             .where(
               and(
-                eq(slackUserMappings.slackUserId, command.user_id),
-                eq(slackUserMappings.slackTeamId, command.team_id),
-                eq(slackUserMappings.isActive, true)
+                eq(slackWorkspaces.slackTeamId, command.team_id),
+                eq(slackWorkspaces.isActive, true)
               )
             );
 
-          if (!userMapping) {
+          if (!workspace) {
             await respond({
-              text: "❌ You need to be connected to a Ferdinand account first. Please contact your admin to set up the integration.",
+              text: "❌ This Slack workspace is not connected to Ferdinand. Please contact your admin to set up the integration.",
               response_type: "ephemeral",
             });
-            logSlackActivity({ ...auditLog, error: "User mapping not found" });
+            logSlackActivity({ ...auditLog, error: "Workspace not found" });
             return;
           }
 
-          auditLog.clientId = userMapping.clientId;
+          auditLog.clientId = workspace.clientId;
 
-          // Fetch logo assets for the user's client
+          // Fetch logo assets for the workspace's client
           const logoAssets = await db
             .select()
             .from(brandAssets)
             .where(
               and(
-                eq(brandAssets.clientId, userMapping.clientId),
+                eq(brandAssets.clientId, workspace.clientId),
                 eq(brandAssets.category, "logo")
               )
             );
@@ -169,7 +169,7 @@ function initializeSlackApp() {
             const assetInfo = formatAssetInfo(asset);
             const downloadUrl = generateAssetDownloadUrl(
               asset.id,
-              userMapping.clientId,
+              workspace.clientId,
               baseUrl,
               {
                 format: "png", // Convert to PNG for better Slack compatibility
@@ -220,6 +220,7 @@ function initializeSlackApp() {
           });
 
           auditLog.success = true;
+          auditLog.responseTimeMs = Date.now() - startTime;
           logSlackActivity(auditLog);
         } catch (error) {
           console.error("Error handling /ferdinand-logo command:", error);
@@ -263,34 +264,34 @@ function initializeSlackApp() {
         };
 
         try {
-          const [userMapping] = await db
+          // Find the workspace
+          const [workspace] = await db
             .select()
-            .from(slackUserMappings)
+            .from(slackWorkspaces)
             .where(
               and(
-                eq(slackUserMappings.slackUserId, command.user_id),
-                eq(slackUserMappings.slackTeamId, command.team_id),
-                eq(slackUserMappings.isActive, true)
+                eq(slackWorkspaces.slackTeamId, command.team_id),
+                eq(slackWorkspaces.isActive, true)
               )
             );
 
-          if (!userMapping) {
+          if (!workspace) {
             await respond({
-              text: "❌ You need to be connected to a Ferdinand account first. Please contact your admin to set up the integration.",
+              text: "❌ This Slack workspace is not connected to Ferdinand. Please contact your admin to set up the integration.",
               response_type: "ephemeral",
             });
-            logSlackActivity({ ...auditLog, error: "User mapping not found" });
+            logSlackActivity({ ...auditLog, error: "Workspace not found" });
             return;
           }
 
-          auditLog.clientId = userMapping.clientId;
+          auditLog.clientId = workspace.clientId;
 
           const colorAssets = await db
             .select()
             .from(brandAssets)
             .where(
               and(
-                eq(brandAssets.clientId, userMapping.clientId),
+                eq(brandAssets.clientId, workspace.clientId),
                 eq(brandAssets.category, "color")
               )
             );
@@ -484,34 +485,34 @@ function initializeSlackApp() {
         };
 
         try {
-          const [userMapping] = await db
+          // Find the workspace
+          const [workspace] = await db
             .select()
-            .from(slackUserMappings)
+            .from(slackWorkspaces)
             .where(
               and(
-                eq(slackUserMappings.slackUserId, command.user_id),
-                eq(slackUserMappings.slackTeamId, command.team_id),
-                eq(slackUserMappings.isActive, true)
+                eq(slackWorkspaces.slackTeamId, command.team_id),
+                eq(slackWorkspaces.isActive, true)
               )
             );
 
-          if (!userMapping) {
+          if (!workspace) {
             await respond({
-              text: "❌ You need to be connected to a Ferdinand account first. Please contact your admin to set up the integration.",
+              text: "❌ This Slack workspace is not connected to Ferdinand. Please contact your admin to set up the integration.",
               response_type: "ephemeral",
             });
-            logSlackActivity({ ...auditLog, error: "User mapping not found" });
+            logSlackActivity({ ...auditLog, error: "Workspace not found" });
             return;
           }
 
-          auditLog.clientId = userMapping.clientId;
+          auditLog.clientId = workspace.clientId;
 
           const fontAssets = await db
             .select()
             .from(brandAssets)
             .where(
               and(
-                eq(brandAssets.clientId, userMapping.clientId),
+                eq(brandAssets.clientId, workspace.clientId),
                 eq(brandAssets.category, "font")
               )
             );
@@ -684,21 +685,20 @@ function initializeSlackApp() {
       }
 
       try {
-        // Find the user mapping
-        const [userMapping] = await db
+        // Find the workspace
+        const [workspace] = await db
           .select()
-          .from(slackUserMappings)
+          .from(slackWorkspaces)
           .where(
             and(
-              eq(slackUserMappings.slackUserId, command.user_id),
-              eq(slackUserMappings.slackTeamId, command.team_id),
-              eq(slackUserMappings.isActive, true)
+              eq(slackWorkspaces.slackTeamId, command.team_id),
+              eq(slackWorkspaces.isActive, true)
             )
           );
 
-        if (!userMapping) {
+        if (!workspace) {
           await respond({
-            text: "❌ You need to be connected to a Ferdinand account first. Please contact your admin to set up the integration.",
+            text: "❌ This Slack workspace is not connected to Ferdinand. Please contact your admin to set up the integration.",
             response_type: "ephemeral",
           });
           return;
@@ -708,7 +708,7 @@ function initializeSlackApp() {
         const allAssets = await db
           .select()
           .from(brandAssets)
-          .where(eq(brandAssets.clientId, userMapping.clientId));
+          .where(eq(brandAssets.clientId, workspace.clientId));
 
         if (allAssets.length === 0) {
           await respond({
@@ -821,7 +821,7 @@ function initializeSlackApp() {
           workspaceId: command.team_id,
           command: `/ferdinand-search ${query}`,
           assetIds: searchResults.map((asset) => asset.id),
-          clientId: userMapping.clientId,
+          clientId: workspace.clientId,
           success: true,
           timestamp: new Date(),
         });
@@ -921,13 +921,13 @@ Show this help message`,
 
     // Helper functions for unified /ferdinand command
     const handleColorSubcommand = async ({
-      command, respond, client, variant, userMapping, auditLog
+      command, respond, client, variant, workspace, auditLog
     }: {
       command: any;
       respond: any;
       client: any;
       variant: string;
-      userMapping: any;
+      workspace: any;
       auditLog: any;
     }) => {
       const colorAssets = await db
@@ -935,7 +935,7 @@ Show this help message`,
         .from(brandAssets)
         .where(
           and(
-            eq(brandAssets.clientId, userMapping.clientId),
+            eq(brandAssets.clientId, workspace.clientId),
             eq(brandAssets.category, "color")
           )
         );
@@ -1075,13 +1075,13 @@ Show this help message`,
     };
 
     const handleFontSubcommand = async ({
-      command, respond, client, variant, userMapping, auditLog
+      command, respond, client, variant, workspace, auditLog
     }: {
       command: any;
       respond: any;
       client: any;
       variant: string;
-      userMapping: any;
+      workspace: any;
       auditLog: any;
     }) => {
       const fontAssets = await db
@@ -1089,7 +1089,7 @@ Show this help message`,
         .from(brandAssets)
         .where(
           and(
-            eq(brandAssets.clientId, userMapping.clientId),
+            eq(brandAssets.clientId, workspace.clientId),
             eq(brandAssets.category, "font")
           )
         );
@@ -1213,24 +1213,24 @@ Show this help message`,
     };
 
     const handleLogoSubcommand = async ({
-      command, respond, client, variant, userMapping, auditLog
+      command, respond, client, variant, workspace, auditLog
     }: {
       command: any;
       respond: any;
       client: any;
       variant: string;
-      userMapping: any;
+      workspace: any;
       auditLog: any;
     }) => {
       const startTime = Date.now();
 
-      // Fetch logo assets for the user's client
+      // Fetch logo assets for the workspace's client
       const logoAssets = await db
         .select()
         .from(brandAssets)
         .where(
           and(
-            eq(brandAssets.clientId, userMapping.clientId),
+            eq(brandAssets.clientId, workspace.clientId),
             eq(brandAssets.category, "logo")
           )
         );
@@ -1274,7 +1274,7 @@ Show this help message`,
         const assetInfo = formatAssetInfo(asset);
         const downloadUrl = generateAssetDownloadUrl(
           asset.id,
-          userMapping.clientId,
+          workspace.clientId,
           baseUrl,
           {
             format: "png", // Convert to PNG for better Slack compatibility
@@ -1326,12 +1326,12 @@ Show this help message`,
     };
 
     const handleSearchSubcommand = async ({
-      command, respond, variant, userMapping, auditLog
+      command, respond, variant, workspace, auditLog
     }: {
       command: any;
       respond: any;
       variant: string;
-      userMapping: any;
+      workspace: any;
       auditLog: any;
     }) => {
       const query = variant; // variant contains the search query for search subcommand
@@ -1340,7 +1340,7 @@ Show this help message`,
       const allAssets = await db
         .select()
         .from(brandAssets)
-        .where(eq(brandAssets.clientId, userMapping.clientId));
+        .where(eq(brandAssets.clientId, workspace.clientId));
 
       if (allAssets.length === 0) {
         await respond({
@@ -1575,46 +1575,46 @@ Show this help message`,
         };
 
         try {
-          // Find the user mapping (common for all subcommands)
-          const [userMapping] = await db
-            .select()
-            .from(slackUserMappings)
-            .where(
-              and(
-                eq(slackUserMappings.slackUserId, command.user_id),
-                eq(slackUserMappings.slackTeamId, command.team_id),
-                eq(slackUserMappings.isActive, true)
-              )
-            );
+          // Find the workspace (common for all subcommands except help)
+          let workspace = null;
+          if (subcommand !== 'help') {
+            [workspace] = await db
+              .select()
+              .from(slackWorkspaces)
+              .where(
+                and(
+                  eq(slackWorkspaces.slackTeamId, command.team_id),
+                  eq(slackWorkspaces.isActive, true)
+                )
+              );
 
-          if (!userMapping && subcommand !== 'help') {
-            await respond({
-              text: "❌ You need to be connected to a Ferdinand account first. Please contact your admin to set up the integration.",
-              response_type: "ephemeral",
-            });
-            logSlackActivity({ ...auditLog, error: "User mapping not found" });
-            return;
-          }
+            if (!workspace) {
+              await respond({
+                text: "❌ This Slack workspace is not connected to Ferdinand. Please contact your admin to set up the integration.",
+                response_type: "ephemeral",
+              });
+              logSlackActivity({ ...auditLog, error: "Workspace not found" });
+              return;
+            }
 
-          if (userMapping) {
-            auditLog.clientId = userMapping.clientId;
+            auditLog.clientId = workspace.clientId;
           }
 
           // Route to appropriate handler based on subcommand
           switch (subcommand) {
             case 'color':
             case 'colors':
-              await handleColorSubcommand({ command, respond, client, variant, userMapping, auditLog });
+              await handleColorSubcommand({ command, respond, client, variant, workspace, auditLog });
               break;
 
             case 'font':
             case 'fonts':
-              await handleFontSubcommand({ command, respond, client, variant, userMapping, auditLog });
+              await handleFontSubcommand({ command, respond, client, variant, workspace, auditLog });
               break;
 
             case 'logo':
             case 'logos':
-              await handleLogoSubcommand({ command, respond, client, variant, userMapping, auditLog });
+              await handleLogoSubcommand({ command, respond, client, variant, workspace, auditLog });
               break;
 
             case 'search':
@@ -1625,7 +1625,7 @@ Show this help message`,
                 });
                 return;
               }
-              await handleSearchSubcommand({ command, respond, variant, userMapping, auditLog });
+              await handleSearchSubcommand({ command, respond, variant, workspace, auditLog });
               break;
 
             case 'help':
@@ -1706,7 +1706,9 @@ export function registerSlackRoutes(app: Express) {
     }
 
     try {
-      const { slackUserId, slackTeamId, clientId } = req.body;
+      const { slackUserId, slackTeamId, clientId, ferdinandUserId } = req.body;
+
+      console.log("Test mapping request:", { slackUserId, slackTeamId, clientId, ferdinandUserId });
 
       if (!slackUserId || !slackTeamId || !clientId) {
         return res.status(400).json({
@@ -1718,10 +1720,12 @@ export function registerSlackRoutes(app: Express) {
       const mappingData = {
         slackUserId,
         slackTeamId,
-        ferdinandUserId: null, // Allow null for testing
+        ferdinandUserId: ferdinandUserId || null, // Allow null for testing, but use provided value if available
         clientId,
         isActive: true,
       };
+
+      console.log("Mapping data:", mappingData);
 
       const parsed = insertSlackUserMappingSchema.safeParse(mappingData);
       if (!parsed.success) {
@@ -1747,6 +1751,7 @@ export function registerSlackRoutes(app: Express) {
         const [updated] = await db
           .update(slackUserMappings)
           .set({
+            ferdinandUserId: ferdinandUserId || null,
             clientId,
             isActive: true,
             updatedAt: new Date(),
@@ -1880,6 +1885,46 @@ export function registerSlackRoutes(app: Express) {
       }
     }
   );
+
+  // Check if current user's clients have Slack integration linked
+  app.get("/api/slack/user-status", async (req, res: Response) => {
+    try {
+      if (!req.session?.userId) {
+        return res.json({ linked: false });
+      }
+
+      // Get user's clients and check if any have active Slack workspaces
+      const userClients = await storage.getUserClients(req.session.userId);
+      const clientIds = userClients.map(uc => uc.id);
+
+      if (clientIds.length === 0) {
+        return res.json({ linked: false });
+      }
+
+      const [workspace] = await db
+        .select()
+        .from(slackWorkspaces)
+        .where(
+          and(
+            eq(slackWorkspaces.isActive, true),
+            // Check if any of user's clients have a workspace
+            clientIds.length === 1
+              ? eq(slackWorkspaces.clientId, clientIds[0])
+              : or(...clientIds.map(clientId => eq(slackWorkspaces.clientId, clientId)))
+          )
+        )
+        .limit(1);
+
+      res.json({
+        linked: !!workspace,
+        slackTeamId: workspace?.slackTeamId,
+        teamName: workspace?.teamName
+      });
+    } catch (error) {
+      console.error("Error checking Slack user status:", error);
+      res.status(500).json({ message: "Error checking Slack status" });
+    }
+  });
 
   // Health check for Slack integration
   app.get("/api/slack/health", (_req, res: Response) => {

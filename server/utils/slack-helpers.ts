@@ -313,30 +313,34 @@ export async function logSlackActivity(entry: AuditLogEntry): Promise<void> {
     console.error(`[SLACK ERROR] ${entry.error}`);
   }
 
-  // Persist to database
-  try {
-    const auditData = {
-      slackUserId: entry.userId,
-      slackWorkspaceId: entry.workspaceId,
-      ferdinandUserId: entry.ferdinandUserId || null,
-      clientId: entry.clientId,
-      command: entry.command,
-      assetIds: entry.assetIds.length > 0 ? entry.assetIds : null,
-      success: entry.success,
-      errorMessage: entry.error || null,
-      responseTimeMs: entry.responseTimeMs || null,
-      metadata: entry.metadata || {},
-    };
+  // Persist to database (skip for commands without valid client ID)
+  if (entry.clientId > 0) {
+    try {
+      const auditData = {
+        slackUserId: entry.userId,
+        slackWorkspaceId: entry.workspaceId,
+        ferdinandUserId: entry.ferdinandUserId || null,
+        clientId: entry.clientId,
+        command: entry.command,
+        assetIds: entry.assetIds.length > 0 ? entry.assetIds : undefined,
+        success: entry.success,
+        errorMessage: entry.error || undefined,
+        responseTimeMs: entry.responseTimeMs || undefined,
+        metadata: entry.metadata || {},
+      };
 
-    const parsed = insertSlackAuditLogSchema.safeParse(auditData);
-    if (parsed.success) {
-      await db.insert(slackAuditLogs).values(parsed.data);
-    } else {
-      console.error("[SLACK AUDIT] Failed to validate audit log data:", parsed.error.errors);
+      const parsed = insertSlackAuditLogSchema.safeParse(auditData);
+      if (parsed.success) {
+        await db.insert(slackAuditLogs).values(parsed.data);
+      } else {
+        console.error("[SLACK AUDIT] Failed to validate audit log data:", parsed.error.errors);
+      }
+    } catch (dbError) {
+      console.error("[SLACK AUDIT] Failed to persist audit log to database:", dbError);
+      // Don't throw error to avoid breaking the main functionality
     }
-  } catch (dbError) {
-    console.error("[SLACK AUDIT] Failed to persist audit log to database:", dbError);
-    // Don't throw error to avoid breaking the main functionality
+  } else {
+    console.log("[SLACK AUDIT] Skipping database persistence for command without valid client ID");
   }
 }
 

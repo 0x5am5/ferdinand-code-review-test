@@ -40,3 +40,13 @@ export async function apiRequest<T>(
     throw new Error(`Invalid JSON response: ${text} ${(e as Error).message}`);
   }
 }
+
+export interface SlackUserStatus {
+  linked: boolean;
+  slackTeamId?: string;
+  teamName?: string;
+}
+
+export async function getSlackUserStatus(): Promise<SlackUserStatus> {
+  return apiRequest<SlackUserStatus>("GET", "/api/slack/user-status");
+}

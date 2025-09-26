@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Plus, Settings, Trash2 } from "lucide-react";
+import { AlertTriangle, Plus, RotateCcw, Settings } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useSlackStatusPolling } from "@/hooks/use-slack-status";
 import { useToast } from "@/hooks/use-toast";
 
 interface SlackWorkspace {
@@ -21,16 +22,6 @@ interface SlackWorkspace {
   updatedAt: string;
 }
 
-interface SlackUserMapping {
-  id: number;
-  slackUserId: string;
-  slackTeamId: string;
-  ferdinandUserId: number;
-  clientId: number;
-  isActive: boolean;
-  createdAt: string;
-}
-
 interface SlackIntegrationProps {
   clientId: number;
 }
@@ -38,9 +29,10 @@ interface SlackIntegrationProps {
 export function SlackIntegration({ clientId }: SlackIntegrationProps) {
   const { toast } = useToast();
   const [workspaces, setWorkspaces] = useState<SlackWorkspace[]>([]);
-  const [userMappings, setUserMappings] = useState<SlackUserMapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [installing, setInstalling] = useState(false);
+  const [pollingForCompletion, setPollingForCompletion] = useState(false);
+  const { data: slackStatus } = useSlackStatusPolling(pollingForCompletion);
 
   const fetchSlackData = useCallback(async () => {
     try {
@@ -53,15 +45,6 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
       if (workspacesRes.ok) {
         const workspacesData = await workspacesRes.json();
         setWorkspaces(workspacesData);
-      }
-
-      // Fetch user mappings
-      const mappingsRes = await fetch(
-        `/api/clients/${clientId}/slack/mappings`
-      );
-      if (mappingsRes.ok) {
-        const mappingsData = await mappingsRes.json();
-        setUserMappings(mappingsData);
       }
     } catch (error) {
       console.error("Failed to fetch Slack data:", error);
@@ -79,6 +62,38 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
     fetchSlackData();
   }, [fetchSlackData]);
 
+  // Watch for successful OAuth completion and stop polling
+  useEffect(() => {
+    if (pollingForCompletion && slackStatus?.linked) {
+      setPollingForCompletion(false);
+      fetchSlackData(); // Refresh workspace data
+      toast({
+        title: "Slack Integration Complete!",
+        description: "Your Slack workspace has been successfully connected.",
+      });
+    }
+  }, [pollingForCompletion, slackStatus?.linked, fetchSlackData, toast]);
+
+  // Add timeout to stop polling after 5 minutes if user doesn't complete OAuth
+  useEffect(() => {
+    if (pollingForCompletion) {
+      const timeout = setTimeout(
+        () => {
+          setPollingForCompletion(false);
+          toast({
+            title: "OAuth Timeout",
+            description:
+              "The Slack installation process has timed out. Please try again if you didn't complete the setup.",
+            variant: "destructive",
+          });
+        },
+        5 * 60 * 1000
+      ); // 5 minutes
+
+      return () => clearTimeout(timeout);
+    }
+  }, [pollingForCompletion, toast]);
+
   const initiateSlackInstall = async () => {
     try {
       setInstalling(true);
@@ -92,13 +107,16 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
 
       const data = await response.json();
 
+      // Start polling for completion before opening the OAuth window
+      setPollingForCompletion(true);
+
       // Redirect to Slack OAuth URL
       window.open(data.authUrl, "_blank", "width=600,height=800");
 
       toast({
         title: "Slack Installation Started",
         description:
-          "Complete the installation in the new window, then refresh this page.",
+          "Complete the installation in the new window. We'll automatically detect when it's done.",
       });
     } catch (error) {
       console.error("Failed to initiate Slack install:", error);
@@ -107,6 +125,7 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
         description: "Unable to start Slack installation. Please try again.",
         variant: "destructive",
       });
+      setPollingForCompletion(false);
     } finally {
       setInstalling(false);
     }
@@ -136,6 +155,35 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
       toast({
         title: "Error",
         description: "Failed to deactivate workspace. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const reactivateWorkspace = async (workspaceId: number) => {
+    try {
+      const response = await fetch(
+        `/api/clients/${clientId}/slack/workspaces/${workspaceId}/reactivate`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to reactivate workspace");
+      }
+
+      toast({
+        title: "Workspace Reactivated",
+        description: "The Slack workspace has been reconnected successfully.",
+      });
+
+      fetchSlackData(); // Refresh data
+    } catch (error) {
+      console.error("Failed to reactivate workspace:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reactivate workspace. Please try again.",
         variant: "destructive",
       });
     }
@@ -185,11 +233,15 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
               </p>
               <Button
                 onClick={initiateSlackInstall}
-                disabled={installing}
+                disabled={installing || pollingForCompletion}
                 className="flex items-center gap-2 mx-auto"
               >
                 <Plus className="h-4 w-4" />
-                {installing ? "Starting Installation..." : "Add to Slack"}
+                {installing
+                  ? "Starting Installation..."
+                  : pollingForCompletion
+                    ? "Waiting for OAuth completion..."
+                    : "Add to Slack"}
               </Button>
             </div>
           ) : (
@@ -198,13 +250,15 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
                 <h3 className="text-lg font-medium">Connected Workspaces</h3>
                 <Button
                   onClick={initiateSlackInstall}
-                  disabled={installing}
+                  disabled={installing || pollingForCompletion}
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
-                  Add Another Workspace
+                  {pollingForCompletion
+                    ? "Connecting..."
+                    : "Add Another Workspace"}
                 </Button>
               </div>
 
@@ -229,14 +283,23 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {workspace.isActive && (
+                      {workspace.isActive ? (
                         <Button
                           onClick={() => deactivateWorkspace(workspace.id)}
                           variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          className="text-gray-600 hover:text-gray-700"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          Deactivate
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => reactivateWorkspace(workspace.id)}
+                          variant="outline"
+                          size="sm"
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <RotateCcw className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
@@ -247,51 +310,6 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
           )}
         </CardContent>
       </Card>
-
-      {userMappings.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>User Mappings</CardTitle>
-            <CardDescription>
-              Slack users connected to Ferdinand accounts ({userMappings.length}{" "}
-              active)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {userMappings.slice(0, 5).map((mapping) => (
-                <div
-                  key={mapping.id}
-                  className="flex items-center justify-between p-2 border rounded"
-                >
-                  <div className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">
-                      Slack User: {mapping.slackUserId}
-                    </span>
-                    {mapping.ferdinandUserId && (
-                      <Badge variant="outline" className="text-xs">
-                        Ferdinand User: {mapping.ferdinandUserId}
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge
-                    variant={mapping.isActive ? "default" : "secondary"}
-                    className="text-xs"
-                  >
-                    {mapping.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-              ))}
-              {userMappings.length > 5 && (
-                <p className="text-sm text-gray-500 text-center pt-2">
-                  ... and {userMappings.length - 5} more user mappings
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
@@ -344,16 +362,17 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
         </CardHeader>
         <CardContent className="text-sm text-orange-700 space-y-2">
           <p>
-            <strong>For Slack admins:</strong> After connecting a workspace,
-            users need to be mapped to Ferdinand accounts to access commands.
+            <strong>For Slack admins:</strong> Once a workspace is connected,
+            all users in your Slack workspace can immediately access Ferdinand
+            commands.
           </p>
           <p>
-            <strong>For team members:</strong> Type any Ferdinand command in
-            Slack to get started. The bot will guide you if setup is needed.
+            <strong>For team members:</strong> Start using Ferdinand commands in
+            any channel right away. No individual setup is required.
           </p>
           <p>
             <strong>Bot permissions:</strong> Invite the Ferdinand bot to
-            channels where you want to use in-channel file uploads.
+            channels where you want to use commands and file uploads.
           </p>
         </CardContent>
       </Card>

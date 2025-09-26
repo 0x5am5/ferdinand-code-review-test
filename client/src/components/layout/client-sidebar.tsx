@@ -166,7 +166,8 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       id: "design-system",
       title: "Integrations",
       icon: <Settings className="h-4 w-4" />,
-      enabled: featureToggles.figmaIntegration || featureToggles.slackIntegration,
+      enabled: (featureToggles.figmaIntegration || featureToggles.slackIntegration) &&
+        (user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN),
     },
   ];
 
