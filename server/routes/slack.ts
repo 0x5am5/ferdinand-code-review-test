@@ -234,11 +234,34 @@ function initializeSlackApp() {
               }
             } catch (backgroundError) {
               console.error("Background processing error:", backgroundError);
-              await client.chat.postEphemeral({
-                channel: command.channel_id,
-                user: command.user_id,
-                text: "❌ An error occurred while processing your request. Please try again.",
-              });
+              
+              // Try to send error message, but don't crash if this fails too
+              try {
+                await client.chat.postEphemeral({
+                  channel: command.channel_id,
+                  user: command.user_id,
+                  text: "❌ An error occurred while processing your request. Please try again.",
+                });
+              } catch (errorMessageError) {
+                console.log("Could not send error message to channel, likely bot access issue:", errorMessageError);
+                
+                // Try to send error via DM as last resort
+                try {
+                  const conversationResponse = await client.conversations.open({
+                    users: command.user_id,
+                  });
+                  
+                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                    await client.chat.postMessage({
+                      channel: conversationResponse.channel.id,
+                      text: "❌ An error occurred while processing your /ferdinand-logo request. Please try adding the bot to the channel or contact support.",
+                    });
+                  }
+                } catch (dmErrorError) {
+                  console.log("Could not send error message via DM either:", dmErrorError);
+                }
+              }
+              
               logSlackActivity({ ...auditLog, error: "Background processing failed" });
             }
           });

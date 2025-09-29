@@ -93,7 +93,8 @@ export function registerSlackOAuthRoutes(app: Express) {
         const scopes = [
           "commands",        // Slash commands
           "files:write",     // Upload files
-          "chat:write",      // Send messages
+          "chat:write",      // Send messages to channels
+          "im:write",        // Send DMs to users
           "users:read",      // Read user info for mapping
           "channels:read",   // Read channel info
           "groups:read",     // Read private channel info
