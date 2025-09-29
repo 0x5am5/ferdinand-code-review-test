@@ -151,9 +151,20 @@ export async function uploadFileToSlack(
         console.log(`Bot cannot access channel (${channelError.data?.error}), falling back to DM to user ${options.userId}`);
 
         try {
-          // Try uploading to user's DM using the legacy files.upload method
-          const dmResult = await client.files.upload({
-            channels: options.userId,
+          // Open DM conversation with user first
+          const conversationResponse = await client.conversations.open({
+            users: options.userId,
+          });
+          
+          if (!conversationResponse.ok || !conversationResponse.channel?.id) {
+            throw new Error("Failed to open DM conversation");
+          }
+          
+          const dmChannelId = conversationResponse.channel.id;
+          
+          // Try uploading to DM using the new uploadV2 method
+          const dmResult = await client.files.uploadV2({
+            channel_id: dmChannelId,
             file: fileBuffer,
             filename: options.filename,
             title: options.title,
@@ -165,13 +176,28 @@ export async function uploadFileToSlack(
         } catch (dmError: any) {
           console.log(`DM upload also failed, sending download link instead: ${dmError.message}`);
 
-          // If file upload fails completely, send a message with download link
-          const messageResult = await client.chat.postMessage({
-            channel: options.userId,
-            text: `📎 *${options.title || options.filename}*\n${options.initialComment}\n\n🔗 Download: ${options.fileUrl}\n\n💡 _The bot couldn't upload the file directly. Add the bot to the channel for file uploads._`,
-          });
+          try {
+            // Try opening DM conversation again for text message
+            const conversationResponse = await client.conversations.open({
+              users: options.userId,
+            });
+            
+            if (conversationResponse.ok && conversationResponse.channel?.id) {
+              // Send download link as message to DM
+              const messageResult = await client.chat.postMessage({
+                channel: conversationResponse.channel.id,
+                text: `📎 *${options.title || options.filename}*\n${options.initialComment}\n\n🔗 Download: ${options.fileUrl}\n\n💡 _The bot couldn't upload the file directly. Add the bot to the channel for file uploads._`,
+              });
 
-          return messageResult.ok === true;
+              return messageResult.ok === true;
+            } else {
+              console.log("Failed to open DM conversation for download link");
+              return false;
+            }
+          } catch (linkError: any) {
+            console.log(`Download link message also failed: ${linkError.message}`);
+            return false;
+          }
         }
       }
 
