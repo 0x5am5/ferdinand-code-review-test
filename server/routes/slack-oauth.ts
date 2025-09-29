@@ -127,6 +127,13 @@ export function registerSlackOAuthRoutes(app: Express) {
   app.get("/api/slack/oauth/callback", async (req: Request, res: Response) => {
     try {
       const { code, state, error } = req.query;
+      
+      // Debug logging
+      console.log("=== SLACK OAUTH CALLBACK ===");
+      console.log("Query params:", req.query);
+      console.log("Code:", code ? `Present (${typeof code})` : "Missing");
+      console.log("State:", state ? `Present (${typeof state})` : `Missing/Empty - value: "${state}"`);
+      console.log("Error:", error);
 
       if (error) {
         console.error("Slack OAuth error:", error);
@@ -142,11 +149,18 @@ export function registerSlackOAuthRoutes(app: Express) {
       }
 
       if (!code || !state) {
+        console.error("Missing OAuth parameters - Code:", !!code, "State:", !!state, "State value:", state);
         return res.status(400).send(`
           <html>
             <body>
               <h1>Invalid OAuth Response</h1>
               <p>Missing required parameters from Slack.</p>
+              <p><strong>Debug Info:</strong></p>
+              <ul>
+                <li>Code: ${code ? 'Present' : 'Missing'}</li>
+                <li>State: ${state ? `Present (${state})` : 'Missing/Empty'}</li>
+              </ul>
+              <p>This usually means the OAuth initiation was incomplete. Please try reinstalling from the Ferdinand dashboard.</p>
             </body>
           </html>
         `);
