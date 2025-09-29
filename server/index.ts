@@ -69,8 +69,8 @@ app.get("/api/health", (_req, res) => {
 // Increase the maximum number of listeners to prevent warnings
 EventEmitter.defaultMaxListeners = 20;
 
-// Port configuration: use PORT env var or default to 5000 (mapped to external port 80)
-const PORT = parseInt(process.env.PORT ?? "5000", 10);
+// Port configuration: use PORT env var or default to 3001
+const PORT = parseInt(process.env.PORT ?? "3001", 10);
 
 
 // Improved server startup function
