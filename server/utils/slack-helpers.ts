@@ -143,9 +143,12 @@ export async function uploadFileToSlack(
 
       return result.ok === true;
     } catch (channelError: any) {
-      // If channel upload fails due to not being in channel, try DM to user
-      if (channelError.data?.error === 'not_in_channel' && options.userId) {
-        console.log(`Bot not in channel, falling back to DM to user ${options.userId}`);
+      // If channel upload fails due to channel access issues, try DM to user
+      const isChannelAccessError = channelError.data?.error === 'not_in_channel' || 
+                                   channelError.data?.error === 'channel_not_found';
+      
+      if (isChannelAccessError && options.userId) {
+        console.log(`Bot cannot access channel (${channelError.data?.error}), falling back to DM to user ${options.userId}`);
 
         try {
           // Try uploading to user's DM using the legacy files.upload method
