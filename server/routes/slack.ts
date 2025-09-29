@@ -160,68 +160,90 @@ function initializeSlackApp() {
 
           // Respond immediately to avoid timeout
           await respond({
-            text: `🔄 Processing ${matchedLogos.length} logo${matchedLogos.length > 1 ? 's' : ''}${query ? ` (${query} variant)` : ''}...`,
+            text: `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? 's' : ''}${query ? ` for "${query}"` : ''}... Files will appear shortly!`,
             response_type: "ephemeral",
           });
 
-          // Upload files to Slack for matched logos (in background)
-          const uploadPromises = matchedLogos.slice(0, 3).map(async (asset) => {
-            const assetInfo = formatAssetInfo(asset);
-            const downloadUrl = generateAssetDownloadUrl(
-              asset.id,
-              workspace.clientId,
-              baseUrl,
-              {
-                format: "png", // Convert to PNG for better Slack compatibility
+          // Process file uploads asynchronously (don't wait for completion)
+          setImmediate(async () => {
+            try {
+              const uploadPromises = matchedLogos.slice(0, 3).map(async (asset) => {
+                const assetInfo = formatAssetInfo(asset);
+                const downloadUrl = generateAssetDownloadUrl(
+                  asset.id,
+                  workspace.clientId,
+                  baseUrl,
+                  {
+                    format: "png", // Convert to PNG for better Slack compatibility
+                  }
+                );
+
+                const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
+
+                try {
+                  return await uploadFileToSlack(client, {
+                    channelId: command.channel_id,
+                    userId: command.user_id,
+                    fileUrl: downloadUrl,
+                    filename,
+                    title: assetInfo.title,
+                    initialComment: `📋 **${assetInfo.title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
+                  });
+                } catch (uploadError) {
+                  console.error(`Failed to upload ${asset.name}:`, uploadError);
+                  return false;
+                }
+              });
+
+              const uploadResults = await Promise.all(uploadPromises);
+              const successfulUploads = uploadResults.filter(Boolean).length;
+              const responseTime = Date.now() - startTime;
+
+              // Send follow-up message with results
+              if (successfulUploads === 0) {
+                await client.chat.postEphemeral({
+                  channel: command.channel_id,
+                  user: command.user_id,
+                  text: "❌ Failed to upload logo files. This might be due to channel permissions. Please make sure the bot is added to this channel.",
+                });
+                logSlackActivity({ ...auditLog, error: "All file uploads failed" });
+                console.log("[SLACK ERROR] All file uploads failed");
+              } else {
+                // Success - files were uploaded successfully
+                let summaryText = `✅ **${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!**`;
+
+                if (query) {
+                  summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
+                }
+
+                if (matchedLogos.length > 3) {
+                  summaryText += `\n💡 Showing first 3 results. Be more specific to narrow down.`;
+                }
+
+                summaryText += `\n⏱️ Response time: ${responseTime}ms`;
+
+                await client.chat.postEphemeral({
+                  channel: command.channel_id,
+                  user: command.user_id,
+                  text: summaryText,
+                });
+
+                auditLog.success = true;
+                auditLog.responseTimeMs = responseTime;
+                logSlackActivity(auditLog);
               }
-            );
-
-            const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
-
-            return uploadFileToSlack(client, {
-              channelId: command.channel_id,
-              userId: command.user_id,
-              fileUrl: downloadUrl,
-              filename,
-              title: assetInfo.title,
-              initialComment: `📋 **${assetInfo.title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
-            });
+            } catch (backgroundError) {
+              console.error("Background processing error:", backgroundError);
+              await client.chat.postEphemeral({
+                channel: command.channel_id,
+                user: command.user_id,
+                text: "❌ An error occurred while processing your request. Please try again.",
+              });
+              logSlackActivity({ ...auditLog, error: "Background processing failed" });
+            }
           });
 
-          const uploadResults = await Promise.all(uploadPromises);
-          const successfulUploads = uploadResults.filter(Boolean).length;
-
-          if (successfulUploads === 0) {
-            await respond({
-              text: "❌ Failed to upload logo files. Please try again later.",
-              response_type: "ephemeral",
-            });
-            logSlackActivity({ ...auditLog, error: "All file uploads failed" });
-            return;
-          }
-
-          // Show summary message
-          const responseTime = Date.now() - startTime;
-          let summaryText = `✅ **${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!**`;
-
-          if (query) {
-            summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
-          }
-
-          if (matchedLogos.length > 3) {
-            summaryText += `\n💡 Showing first 3 results. Be more specific to narrow down.`;
-          }
-
-          summaryText += `\n⏱️ Response time: ${responseTime}ms`;
-
-          await respond({
-            text: summaryText,
-            response_type: "ephemeral",
-          });
-
-          auditLog.success = true;
-          auditLog.responseTimeMs = Date.now() - startTime;
-          logSlackActivity(auditLog);
+          // Command acknowledged successfully - actual processing happens in background
         } catch (error) {
           console.error("Error handling /ferdinand-logo command:", error);
           await respond({
