@@ -100,7 +100,7 @@ export function registerSlackOAuthRoutes(app: Express) {
           "im:read",         // Read DM info
         ];
 
-        const redirectUri = `${process.env.APP_BASE_URL || 'http://localhost:3001'}/api/slack/oauth/callback`;
+        const redirectUri = `${process.env.APP_BASE_URL || 'http://localhost:5000'}/api/slack/oauth/callback`;
 
         // Build Slack OAuth URL
         const slackOAuthUrl = new URL("https://slack.com/oauth/v2/authorize");
@@ -189,7 +189,7 @@ export function registerSlackOAuthRoutes(app: Express) {
           client_id: process.env.SLACK_CLIENT_ID!,
           client_secret: process.env.SLACK_CLIENT_SECRET!,
           code: code as string,
-          redirect_uri: `${process.env.APP_BASE_URL || 'http://localhost:3001'}/api/slack/oauth/callback`,
+          redirect_uri: `${process.env.APP_BASE_URL || 'http://localhost:5000'}/api/slack/oauth/callback`,
         }),
       });
 

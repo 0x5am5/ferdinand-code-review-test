@@ -156,7 +156,7 @@ function initializeSlackApp() {
             return;
           }
 
-          const baseUrl = process.env.APP_BASE_URL || "http://localhost:3001";
+          const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
           // Respond immediately to avoid timeout
           await respond({
@@ -1261,7 +1261,7 @@ Show this help message`,
         return;
       }
 
-      const baseUrl = process.env.APP_BASE_URL || "http://localhost:3001";
+      const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
       // Respond immediately to avoid timeout
       await respond({
