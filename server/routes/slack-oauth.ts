@@ -383,57 +383,6 @@ export function registerSlackOAuthRoutes(app: Express) {
     }
   );
 
-  // Deactivate workspace installation
-  app.delete(
-    "/api/clients/:clientId/slack/workspaces/:workspaceId",
-    validateClientId,
-    async (req: RequestWithClientId, res: Response) => {
-      try {
-        const clientId = req.clientId;
-        const workspaceId = parseInt(req.params.workspaceId);
-
-        if (!clientId || !workspaceId) {
-          return res.status(400).json({ message: "Client ID and workspace ID are required" });
-        }
-
-        // Verify workspace belongs to this client
-        const [workspace] = await db
-          .select()
-          .from(slackWorkspaces)
-          .where(
-            and(
-              eq(slackWorkspaces.id, workspaceId),
-              eq(slackWorkspaces.clientId, clientId)
-            )
-          );
-
-        if (!workspace) {
-          return res.status(404).json({ message: "Workspace not found" });
-        }
-
-        // Soft delete by deactivating
-        const [deactivated] = await db
-          .update(slackWorkspaces)
-          .set({ isActive: false, updatedAt: new Date() })
-          .where(eq(slackWorkspaces.id, workspaceId))
-          .returning({
-            id: slackWorkspaces.id,
-            teamName: slackWorkspaces.teamName,
-            isActive: slackWorkspaces.isActive,
-          });
-
-        res.json({
-          message: "Workspace deactivated successfully",
-          workspace: deactivated,
-        });
-
-      } catch (error) {
-        console.error("Error deactivating workspace:", error);
-        res.status(500).json({ message: "Error deactivating workspace" });
-      }
-    }
-  );
-
   // Reactivate workspace installation
   app.post(
     "/api/clients/:clientId/slack/workspaces/:workspaceId/reactivate",
@@ -482,6 +431,130 @@ export function registerSlackOAuthRoutes(app: Express) {
       } catch (error) {
         console.error("Error reactivating workspace:", error);
         res.status(500).json({ message: "Error reactivating workspace" });
+      }
+    }
+  );
+
+  // Permanently delete workspace installation and all related data
+  // IMPORTANT: This must be registered BEFORE the generic DELETE route to match the more specific path first
+  app.delete(
+    "/api/clients/:clientId/slack/workspaces/:workspaceId/delete",
+    validateClientId,
+    requireAdminRole,
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        const clientId = req.clientId;
+        const workspaceId = parseInt(req.params.workspaceId);
+
+        if (!clientId || !workspaceId) {
+          return res.status(400).json({ message: "Client ID and workspace ID are required" });
+        }
+
+        // Verify workspace belongs to this client
+        const [workspace] = await db
+          .select()
+          .from(slackWorkspaces)
+          .where(
+            and(
+              eq(slackWorkspaces.id, workspaceId),
+              eq(slackWorkspaces.clientId, clientId)
+            )
+          );
+
+        if (!workspace) {
+          return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        // Only allow deletion if workspace is already inactive
+        if (workspace.isActive) {
+          return res.status(400).json({
+            message: "Workspace must be deactivated before deletion. Please deactivate first."
+          });
+        }
+
+        // Delete related user mappings first (foreign key constraint)
+        await db
+          .delete(slackUserMappings)
+          .where(
+            and(
+              eq(slackUserMappings.slackTeamId, workspace.slackTeamId),
+              eq(slackUserMappings.clientId, clientId)
+            )
+          );
+
+        console.log(`Deleted user mappings for workspace: ${workspace.teamName}`);
+
+        // Delete the workspace
+        await db
+          .delete(slackWorkspaces)
+          .where(eq(slackWorkspaces.id, workspaceId));
+
+        console.log(`Permanently deleted Slack workspace: ${workspace.teamName} (${workspace.slackTeamId})`);
+
+        res.json({
+          message: "Workspace and all related data permanently deleted",
+          deletedWorkspace: {
+            id: workspace.id,
+            teamName: workspace.teamName,
+            slackTeamId: workspace.slackTeamId,
+          },
+        });
+
+      } catch (error) {
+        console.error("Error permanently deleting workspace:", error);
+        res.status(500).json({ message: "Error deleting workspace" });
+      }
+    }
+  );
+
+  // Deactivate workspace installation (soft delete)
+  // IMPORTANT: This generic route must come AFTER the more specific /delete route
+  app.delete(
+    "/api/clients/:clientId/slack/workspaces/:workspaceId",
+    validateClientId,
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        const clientId = req.clientId;
+        const workspaceId = parseInt(req.params.workspaceId);
+
+        if (!clientId || !workspaceId) {
+          return res.status(400).json({ message: "Client ID and workspace ID are required" });
+        }
+
+        // Verify workspace belongs to this client
+        const [workspace] = await db
+          .select()
+          .from(slackWorkspaces)
+          .where(
+            and(
+              eq(slackWorkspaces.id, workspaceId),
+              eq(slackWorkspaces.clientId, clientId)
+            )
+          );
+
+        if (!workspace) {
+          return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        // Soft delete by deactivating
+        const [deactivated] = await db
+          .update(slackWorkspaces)
+          .set({ isActive: false, updatedAt: new Date() })
+          .where(eq(slackWorkspaces.id, workspaceId))
+          .returning({
+            id: slackWorkspaces.id,
+            teamName: slackWorkspaces.teamName,
+            isActive: slackWorkspaces.isActive,
+          });
+
+        res.json({
+          message: "Workspace deactivated successfully",
+          workspace: deactivated,
+        });
+
+      } catch (error) {
+        console.error("Error deactivating workspace:", error);
+        res.status(500).json({ message: "Error deactivating workspace" });
       }
     }
   );

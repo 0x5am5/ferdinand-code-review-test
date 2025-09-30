@@ -18,13 +18,13 @@ let server: ReturnType<typeof createServer> | null = null;
 // Important: Body parsing middleware must come before session middleware
 // Skip body parsing for Slack endpoints (ExpressReceiver handles its own parsing)
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/slack/events')) {
+  if (req.path.startsWith("/api/slack/events")) {
     return next();
   }
   express.json()(req, res, next);
 });
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/slack/events')) {
+  if (req.path.startsWith("/api/slack/events")) {
     return next();
   }
   express.urlencoded({ extended: true })(req, res, next);
@@ -40,9 +40,8 @@ app.use(
   session({
     store: new PostgresStore({
       createTableIfMissing: true,
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-      },
+      conString: process.env.DATABASE_URL,
+      pruneSessionInterval: 60, // prune expired sessions every 60 seconds
     }),
     secret: process.env.SESSION_SECRET || "dev_secret_key",
     resave: false,
@@ -72,13 +71,11 @@ EventEmitter.defaultMaxListeners = 20;
 // Port configuration: use PORT env var or default to 3001
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
 
-
 // Improved server startup function
 async function startServer(retries = 3) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       console.log(`Starting server (attempt ${attempt}/${retries})...`);
-
 
       // Run database migrations
       console.log("Running database migrations...");
@@ -153,7 +150,6 @@ async function startServer(retries = 3) {
     }
   }
 }
-
 
 // Start the server
 console.log("Initiating server startup...");

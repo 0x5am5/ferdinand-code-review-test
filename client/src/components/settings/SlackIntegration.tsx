@@ -1,4 +1,4 @@
-import { AlertTriangle, Plus, RotateCcw, Settings } from "lucide-react";
+import { AlertTriangle, Plus, RotateCcw, Settings, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useSlackStatusPolling } from "@/hooks/use-slack-status";
 import { useToast } from "@/hooks/use-toast";
 
@@ -189,6 +200,35 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
     }
   };
 
+  const deleteWorkspace = async (workspaceId: number) => {
+    try {
+      const response = await fetch(
+        `/api/clients/${clientId}/slack/workspaces/${workspaceId}/delete`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete workspace");
+      }
+
+      toast({
+        title: "Integration Deleted",
+        description: "The Slack integration and all associated data have been permanently deleted.",
+      });
+
+      fetchSlackData(); // Refresh data
+    } catch (error) {
+      console.error("Failed to delete workspace:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete workspace. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -293,14 +333,64 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
                           Deactivate
                         </Button>
                       ) : (
-                        <Button
-                          onClick={() => reactivateWorkspace(workspace.id)}
-                          variant="outline"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => reactivateWorkspace(workspace.id)}
+                            variant="outline"
+                            size="sm"
+                            className="text-green-600 hover:text-green-700"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-red-600" />
+                                  Delete Slack Integration?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="space-y-3 text-left">
+                                  <p>
+                                    This action will permanently delete the Slack integration for{" "}
+                                    <strong>{workspace.teamName}</strong> and cannot be undone.
+                                  </p>
+                                  <div className="rounded-md bg-red-50 border border-red-200 p-3">
+                                    <p className="font-semibold text-red-900 mb-2">
+                                      The following data will be permanently deleted:
+                                    </p>
+                                    <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
+                                      <li>All activity logs and command history</li>
+                                      <li>User mappings between Slack and Ferdinand</li>
+                                      <li>Workspace authentication tokens</li>
+                                      <li>Integration configuration settings</li>
+                                    </ul>
+                                  </div>
+                                  <p className="text-sm">
+                                    To reconnect Slack in the future, you will need to complete the setup process again.
+                                  </p>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteWorkspace(workspace.id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  Delete Integration
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
                       )}
                     </div>
                   </CardContent>

@@ -1,4 +1,5 @@
 import pkg, { LogLevel } from "@slack/bolt";
+import { WebClient } from "@slack/web-api";
 import type { Express, Response } from "express";
 
 const { App, ExpressReceiver } = pkg;
@@ -17,6 +18,7 @@ import { db } from "../db";
 import { storage } from "../storage";
 import {
   checkRateLimit,
+  decryptBotToken,
   filterColorAssetsByVariant,
   filterFontAssetsByVariant,
   findBestLogoMatch,
@@ -166,7 +168,12 @@ function initializeSlackApp() {
 
           // Process file uploads asynchronously (don't wait for completion)
           setImmediate(async () => {
+            // Decrypt the workspace-specific bot token (outside try so it's in scope for error handling)
+            let botToken: string | undefined;
             try {
+              const decryptedToken = decryptBotToken(workspace.botToken);
+              botToken = decryptedToken;
+
               const uploadPromises = matchedLogos.slice(0, 3).map(async (asset) => {
                 const assetInfo = formatAssetInfo(asset);
                 const downloadUrl = generateAssetDownloadUrl(
@@ -181,7 +188,7 @@ function initializeSlackApp() {
                 const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
 
                 try {
-                  return await uploadFileToSlack(client, {
+                  return await uploadFileToSlack(decryptedToken, {
                     channelId: command.channel_id,
                     userId: command.user_id,
                     fileUrl: downloadUrl,
@@ -199,9 +206,12 @@ function initializeSlackApp() {
               const successfulUploads = uploadResults.filter(Boolean).length;
               const responseTime = Date.now() - startTime;
 
+              // Create WebClient with workspace token for follow-up messages
+              const workspaceClient = new WebClient(decryptedToken);
+
               // Send follow-up message with results
               if (successfulUploads === 0) {
-                await client.chat.postEphemeral({
+                await workspaceClient.chat.postEphemeral({
                   channel: command.channel_id,
                   user: command.user_id,
                   text: "❌ Failed to upload logo files. This might be due to channel permissions. Please make sure the bot is added to this channel.",
@@ -222,7 +232,7 @@ function initializeSlackApp() {
 
                 summaryText += `\n⏱️ Response time: ${responseTime}ms`;
 
-                await client.chat.postEphemeral({
+                await workspaceClient.chat.postEphemeral({
                   channel: command.channel_id,
                   user: command.user_id,
                   text: summaryText,
@@ -234,25 +244,29 @@ function initializeSlackApp() {
               }
             } catch (backgroundError) {
               console.error("Background processing error:", backgroundError);
-              
+
               // Try to send error message, but don't crash if this fails too
-              try {
-                await client.chat.postEphemeral({
+              // Only if we have a valid botToken
+              if (botToken) {
+                try {
+                  const workspaceClient = new WebClient(botToken);
+                  await workspaceClient.chat.postEphemeral({
                   channel: command.channel_id,
                   user: command.user_id,
                   text: "❌ An error occurred while processing your request. Please try again.",
                 });
               } catch (errorMessageError) {
                 console.log("Could not send error message to channel, likely bot access issue:", errorMessageError);
-                
+
                 // Try to send error via DM as last resort
                 try {
-                  const conversationResponse = await client.conversations.open({
+                  const workspaceClient = new WebClient(botToken);
+                  const conversationResponse = await workspaceClient.conversations.open({
                     users: command.user_id,
                   });
-                  
+
                   if (conversationResponse.ok && conversationResponse.channel?.id) {
-                    await client.chat.postMessage({
+                    await workspaceClient.chat.postMessage({
                       channel: conversationResponse.channel.id,
                       text: "❌ An error occurred while processing your /ferdinand-logo request. Please try adding the bot to the channel or contact support.",
                     });
@@ -261,10 +275,11 @@ function initializeSlackApp() {
                   console.log("Could not send error message via DM either:", dmErrorError);
                 }
               }
-              
-              logSlackActivity({ ...auditLog, error: "Background processing failed" });
             }
-          });
+
+            logSlackActivity({ ...auditLog, error: "Background processing failed" });
+          }
+        });
 
           // Command acknowledged successfully - actual processing happens in background
         } catch (error) {
@@ -1314,6 +1329,9 @@ Show this help message`,
         response_type: "ephemeral",
       });
 
+      // Decrypt the workspace-specific bot token
+      const botToken = decryptBotToken(workspace.botToken);
+
       // Upload files to Slack for matched logos (in background)
       const uploadPromises = matchedLogos.slice(0, 3).map(async (asset) => {
         const assetInfo = formatAssetInfo(asset);
@@ -1328,7 +1346,7 @@ Show this help message`,
 
         const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
 
-        return uploadFileToSlack(client, {
+        return uploadFileToSlack(botToken, {
           channelId: command.channel_id,
           userId: command.user_id,
           fileUrl: downloadUrl,

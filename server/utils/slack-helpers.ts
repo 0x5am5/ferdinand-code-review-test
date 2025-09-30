@@ -3,6 +3,7 @@ import { slackAuditLogs, insertSlackAuditLogSchema } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { db } from "../db";
 import fetch from "node-fetch";
+import { decrypt } from "../utils/crypto";
 
 interface SlackFileUpload {
   token: string;
@@ -107,9 +108,20 @@ export function generateAssetDownloadUrl(
   return url.toString();
 }
 
-// Upload file to Slack
+// Decrypt bot token from encrypted storage
+export function decryptBotToken(encryptedToken: string): string {
+  try {
+    const encryptedData = JSON.parse(encryptedToken);
+    return decrypt(encryptedData);
+  } catch (error) {
+    console.error("Failed to decrypt bot token:", error);
+    throw new Error("Invalid bot token format");
+  }
+}
+
+// Upload file to Slack using workspace-specific token
 export async function uploadFileToSlack(
-  client: WebClient,
+  botToken: string,
   options: {
     channelId: string;
     userId?: string;
@@ -121,6 +133,9 @@ export async function uploadFileToSlack(
   }
 ): Promise<boolean> {
   try {
+    // Create a new WebClient instance with the workspace-specific token
+    const client = new WebClient(botToken);
+
     // Fetch the file from the URL
     const response = await fetch(options.fileUrl);
     if (!response.ok) {
@@ -144,9 +159,9 @@ export async function uploadFileToSlack(
       return result.ok === true;
     } catch (channelError: any) {
       // If channel upload fails due to channel access issues, try DM to user
-      const isChannelAccessError = channelError.data?.error === 'not_in_channel' || 
+      const isChannelAccessError = channelError.data?.error === 'not_in_channel' ||
                                    channelError.data?.error === 'channel_not_found';
-      
+
       if (isChannelAccessError && options.userId) {
         console.log(`Bot cannot access channel (${channelError.data?.error}), falling back to DM to user ${options.userId}`);
 
@@ -204,8 +219,8 @@ export async function uploadFileToSlack(
       // Re-throw if it's not a channel access issue or no userId provided
       throw channelError;
     }
-  } catch (error) {
-    console.error("Error uploading file to Slack:", error);
+  } catch (error: any) {
+    console.error("Error uploading file to Slack:", error.message || error);
     return false;
   }
 }
