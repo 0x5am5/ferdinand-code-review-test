@@ -211,16 +211,41 @@ function initializeSlackApp() {
 
               // Send follow-up message with results
               if (successfulUploads === 0) {
-                await workspaceClient.chat.postEphemeral({
-                  channel: command.channel_id,
-                  user: command.user_id,
-                  text: "❌ Failed to upload logo files. This might be due to channel permissions. Please make sure the bot is added to this channel.",
-                });
+                // Try to send error message via channel first, then DM
+                try {
+                  await workspaceClient.chat.postEphemeral({
+                    channel: command.channel_id,
+                    user: command.user_id,
+                    text: "❌ Failed to upload logo files. Check your DMs for the files or download links.",
+                  });
+                } catch (ephemeralError: any) {
+                  console.log("Could not send ephemeral error message, trying DM...");
+                  
+                  try {
+                    const conversationResponse = await workspaceClient.conversations.open({
+                      users: command.user_id,
+                    });
+
+                    if (conversationResponse.ok && conversationResponse.channel?.id) {
+                      await workspaceClient.chat.postMessage({
+                        channel: conversationResponse.channel.id,
+                        text: "❌ Failed to upload logo files to the channel. This might be due to bot permissions. Please check with your admin or try inviting the bot to the channel with `/invite @Ferdinand`.",
+                      });
+                    }
+                  } catch (dmError) {
+                    console.log("Could not send error message via DM either:", dmError);
+                  }
+                }
+                
                 logSlackActivity({ ...auditLog, error: "All file uploads failed" });
                 console.log("[SLACK ERROR] All file uploads failed");
               } else {
                 // Success - files were uploaded successfully
                 let summaryText = `✅ **${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!**`;
+
+                if (successfulUploads < matchedLogos.slice(0, 3).length) {
+                  summaryText += `\n💡 Some files were sent via DM due to channel permissions.`;
+                }
 
                 if (query) {
                   summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
@@ -232,11 +257,30 @@ function initializeSlackApp() {
 
                 summaryText += `\n⏱️ Response time: ${responseTime}ms`;
 
-                await workspaceClient.chat.postEphemeral({
-                  channel: command.channel_id,
-                  user: command.user_id,
-                  text: summaryText,
-                });
+                try {
+                  await workspaceClient.chat.postEphemeral({
+                    channel: command.channel_id,
+                    user: command.user_id,
+                    text: summaryText,
+                  });
+                } catch (ephemeralError) {
+                  console.log("Could not send success message via ephemeral, trying DM...");
+                  
+                  try {
+                    const conversationResponse = await workspaceClient.conversations.open({
+                      users: command.user_id,
+                    });
+
+                    if (conversationResponse.ok && conversationResponse.channel?.id) {
+                      await workspaceClient.chat.postMessage({
+                        channel: conversationResponse.channel.id,
+                        text: summaryText,
+                      });
+                    }
+                  } catch (dmError) {
+                    console.log("Could not send success message via DM either:", dmError);
+                  }
+                }
 
                 auditLog.success = true;
                 auditLog.responseTimeMs = responseTime;
@@ -250,7 +294,7 @@ function initializeSlackApp() {
                 try {
                   const workspaceClient = new WebClient(botToken);
                   
-                  // Try to send error via DM first since channel access failed
+                  // Try to send error via DM first since channel access might have failed
                   const conversationResponse = await workspaceClient.conversations.open({
                     users: command.user_id,
                   });
@@ -258,7 +302,7 @@ function initializeSlackApp() {
                   if (conversationResponse.ok && conversationResponse.channel?.id) {
                     await workspaceClient.chat.postMessage({
                       channel: conversationResponse.channel.id,
-                      text: "❌ An error occurred while processing your /ferdinand-logo request. Please try adding the bot to the channel where you used the command, or contact support.",
+                      text: "❌ An error occurred while processing your /ferdinand-logo request. The bot might need additional permissions. Please try:\n• Inviting the bot to the channel: `/invite @Ferdinand`\n• Or contact your workspace admin to check bot permissions",
                     });
                   } else {
                     console.log("Could not open DM conversation with user");
