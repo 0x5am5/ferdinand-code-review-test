@@ -246,21 +246,11 @@ function initializeSlackApp() {
               console.error("Background processing error:", backgroundError);
 
               // Try to send error message, but don't crash if this fails too
-              // Only if we have a valid botToken
               if (botToken) {
                 try {
                   const workspaceClient = new WebClient(botToken);
-                  await workspaceClient.chat.postEphemeral({
-                  channel: command.channel_id,
-                  user: command.user_id,
-                  text: "❌ An error occurred while processing your request. Please try again.",
-                });
-              } catch (errorMessageError) {
-                console.log("Could not send error message to channel, likely bot access issue:", errorMessageError);
-
-                // Try to send error via DM as last resort
-                try {
-                  const workspaceClient = new WebClient(botToken);
+                  
+                  // Try to send error via DM first since channel access failed
                   const conversationResponse = await workspaceClient.conversations.open({
                     users: command.user_id,
                   });
@@ -268,17 +258,18 @@ function initializeSlackApp() {
                   if (conversationResponse.ok && conversationResponse.channel?.id) {
                     await workspaceClient.chat.postMessage({
                       channel: conversationResponse.channel.id,
-                      text: "❌ An error occurred while processing your /ferdinand-logo request. Please try adding the bot to the channel or contact support.",
+                      text: "❌ An error occurred while processing your /ferdinand-logo request. Please try adding the bot to the channel where you used the command, or contact support.",
                     });
+                  } else {
+                    console.log("Could not open DM conversation with user");
                   }
-                } catch (dmErrorError) {
-                  console.log("Could not send error message via DM either:", dmErrorError);
+                } catch (dmError) {
+                  console.log("Could not send error message via DM:", dmError);
                 }
               }
-            }
 
-            logSlackActivity({ ...auditLog, error: "Background processing failed" });
-          }
+              logSlackActivity({ ...auditLog, error: "Background processing failed" });
+            }
         });
 
           // Command acknowledged successfully - actual processing happens in background

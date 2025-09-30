@@ -160,7 +160,8 @@ export async function uploadFileToSlack(
     } catch (channelError: any) {
       // If channel upload fails due to channel access issues, try DM to user
       const isChannelAccessError = channelError.data?.error === 'not_in_channel' ||
-                                   channelError.data?.error === 'channel_not_found';
+                                   channelError.data?.error === 'channel_not_found' ||
+                                   channelError.data?.error === 'access_denied';
 
       if (isChannelAccessError && options.userId) {
         console.log(`Bot cannot access channel (${channelError.data?.error}), falling back to DM to user ${options.userId}`);
@@ -172,7 +173,8 @@ export async function uploadFileToSlack(
           });
           
           if (!conversationResponse.ok || !conversationResponse.channel?.id) {
-            throw new Error("Failed to open DM conversation");
+            console.log("Failed to open DM conversation:", conversationResponse.error);
+            return false;
           }
           
           const dmChannelId = conversationResponse.channel.id;
@@ -183,40 +185,42 @@ export async function uploadFileToSlack(
             file: fileBuffer,
             filename: options.filename,
             title: options.title,
-            initial_comment: options.initialComment + "\n\n💡 _File sent via DM since the bot isn't added to the channel. Add the bot to the channel for channel uploads._",
+            initial_comment: options.initialComment + "\n\n💡 _File sent via DM since the bot isn't added to the channel. To get files directly in channels, invite the Ferdinand bot to the channel first._",
             filetype: options.filetype,
           });
 
+          console.log(`Successfully uploaded file to DM for user ${options.userId}`);
           return dmResult.ok === true;
         } catch (dmError: any) {
-          console.log(`DM upload also failed, sending download link instead: ${dmError.message}`);
+          console.log(`DM upload failed: ${dmError.message || dmError}`);
 
+          // Final fallback: try to send just a message with download link
           try {
-            // Try opening DM conversation again for text message
             const conversationResponse = await client.conversations.open({
               users: options.userId,
             });
             
             if (conversationResponse.ok && conversationResponse.channel?.id) {
-              // Send download link as message to DM
               const messageResult = await client.chat.postMessage({
                 channel: conversationResponse.channel.id,
-                text: `📎 *${options.title || options.filename}*\n${options.initialComment}\n\n🔗 Download: ${options.fileUrl}\n\n💡 _The bot couldn't upload the file directly. Add the bot to the channel for file uploads._`,
+                text: `📎 **${options.title || options.filename}**\n\n🔗 Download: ${options.fileUrl}\n\n💡 _The bot couldn't upload the file directly. To enable file uploads, please invite the Ferdinand bot to the channel where you used the command._`,
               });
 
+              console.log(`Sent download link via DM to user ${options.userId}`);
               return messageResult.ok === true;
             } else {
-              console.log("Failed to open DM conversation for download link");
+              console.log("Failed to open DM conversation for download link:", conversationResponse.error);
               return false;
             }
           } catch (linkError: any) {
-            console.log(`Download link message also failed: ${linkError.message}`);
+            console.log(`Download link message also failed: ${linkError.message || linkError}`);
             return false;
           }
         }
       }
 
       // Re-throw if it's not a channel access issue or no userId provided
+      console.log(`Channel upload failed with non-access error or no userId: ${channelError.data?.error}`);
       throw channelError;
     }
   } catch (error: any) {
