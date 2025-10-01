@@ -456,8 +456,9 @@ export function generateColorSwatchUrl(colors: Array<{ name?: string; hex: strin
 // Format color information for Slack display
 export function formatColorInfo(colorAsset: BrandAsset): {
   title: string;
-  colors: Array<{ name: string; hex: string; rgb?: string; usage?: string; }>;
+  colors: Array<{ name: string; hex: string; rgb?: string; usage?: string; category?: string; }>;
   swatchUrl?: string;
+  category?: string;
 } {
   try {
     const data = typeof colorAsset.data === "string" ? JSON.parse(colorAsset.data) : colorAsset.data;
@@ -466,6 +467,7 @@ export function formatColorInfo(colorAsset: BrandAsset): {
       return {
         title: colorAsset.name,
         colors: [],
+        category: data?.category || 'color',
       };
     }
 
@@ -482,6 +484,7 @@ export function formatColorInfo(colorAsset: BrandAsset): {
         hex: color.hex || color.value || color.color || '#000000',
         rgb: color.rgb,
         usage: color.usage || color.description,
+        category: color.category || data.category || 'color',
       }));
 
     const swatchUrl = generateColorSwatchUrl(colors);
@@ -490,12 +493,14 @@ export function formatColorInfo(colorAsset: BrandAsset): {
       title: colorAsset.name,
       colors,
       swatchUrl,
+      category: data?.category || 'color',
     };
   } catch (error) {
     console.error("Error parsing color asset data:", error);
     return {
       title: colorAsset.name,
       colors: [],
+      category: 'color',
     };
   }
 }

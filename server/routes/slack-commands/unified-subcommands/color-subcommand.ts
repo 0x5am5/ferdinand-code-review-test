@@ -122,8 +122,27 @@ export async function handleColorSubcommand({
     return;
   }
 
-  // Build enhanced color blocks with visual swatches (reuse existing logic)
-  let headerText = `🎨 *Brand Color Palette*`;
+  // Group assets by category for better organization
+  const groupedAssets = displayAssets.reduce((groups: Record<string, typeof displayAssets>, asset) => {
+    try {
+      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+      const category = data?.category || 'color';
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(asset);
+      return groups;
+    } catch {
+      if (!groups['color']) {
+        groups['color'] = [];
+      }
+      groups['color'].push(asset);
+      return groups;
+    }
+  }, {});
+
+  // Build enhanced color blocks organized by category
+  let headerText = `🎨 *Brand Color System*`;
   if (variant) {
     headerText = `🎨 *${variant.charAt(0).toUpperCase() + variant.slice(1)} Colors*`;
   }
@@ -146,57 +165,133 @@ export async function handleColorSubcommand({
     },
   ];
 
-  for (const asset of displayAssets.slice(0, 3)) {
-    const colorInfo = formatColorInfo(asset);
+  // Category order and emojis
+  const categoryOrder = ['brand', 'neutral', 'interactive'];
+  const categoryEmojis: Record<string, string> = {
+    brand: '🎯',
+    neutral: '⚫',
+    interactive: '🔗',
+    color: '🎨'
+  };
 
-    if (colorInfo.colors.length === 0) {
-      continue;
-    }
+  const categoryNames: Record<string, string> = {
+    brand: 'Brand Colors',
+    neutral: 'Neutral Colors', 
+    interactive: 'Interactive Colors',
+    color: 'Other Colors'
+  };
 
+  // Process each category in order
+  for (const category of categoryOrder) {
+    if (!groupedAssets[category] || groupedAssets[category].length === 0) continue;
+
+    // Add category header
     colorBlocks.push({
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*${colorInfo.title}*`,
+        text: `${categoryEmojis[category]} *${categoryNames[category]}*`,
       },
     });
 
-    // Skip image blocks for now to avoid Slack validation errors
-    // if (colorInfo.swatchUrl) {
-    //   colorBlocks.push({
-    //     type: "image",
-    //     image_url: colorInfo.swatchUrl,
-    //     alt_text: `Color palette for ${colorInfo.title}`,
-    //   });
-    // }
+    // Process each asset in this category
+    for (const asset of groupedAssets[category].slice(0, 3)) {
+      const colorInfo = formatColorInfo(asset);
 
-    // Add detailed color information
+      if (colorInfo.colors.length === 0) {
+        continue;
+      }
+
+      // Add palette name
+      colorBlocks.push({
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `   *${colorInfo.title}*`,
+        },
+      });
+
+      // Add detailed color information
       const colorDetails = colorInfo.colors
         .map((color) => {
-          let details = `🎨 *${color.name}*: ${color.hex}`;
+          let details = `   🎨 *${color.name}*: \`${color.hex}\``;
           if (color.rgb) {
-            details += ` | RGB: ${color.rgb}`;
+            details += ` | RGB: \`${color.rgb}\``;
           }
           if (color.usage) {
-            details += `\n   _Usage: ${color.usage}_`;
+            details += `\n      _${color.usage}_`;
           }
           return details;
         })
         .join("\n\n");
 
+      colorBlocks.push({
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: colorDetails,
+        },
+      });
+    }
+
+    // Add spacing between categories
+    colorBlocks.push({
+      type: "divider",
+    });
+  }
+
+  // Handle any remaining categories not in the main order
+  for (const [category, assets] of Object.entries(groupedAssets)) {
+    if (categoryOrder.includes(category) || assets.length === 0) continue;
+
     colorBlocks.push({
       type: "section",
       text: {
         type: "mrkdwn",
-        text: colorDetails,
+        text: `${categoryEmojis[category] || '🎨'} *${categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1)}*`,
       },
     });
 
-    if (colorAssets.indexOf(asset) < Math.min(colorAssets.length - 1, 2)) {
+    for (const asset of assets.slice(0, 3)) {
+      const colorInfo = formatColorInfo(asset);
+
+      if (colorInfo.colors.length === 0) {
+        continue;
+      }
+
       colorBlocks.push({
-        type: "divider",
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `   *${colorInfo.title}*`,
+        },
+      });
+
+      const colorDetails = colorInfo.colors
+        .map((color) => {
+          let details = `   🎨 *${color.name}*: \`${color.hex}\``;
+          if (color.rgb) {
+            details += ` | RGB: \`${color.rgb}\``;
+          }
+          if (color.usage) {
+            details += `\n      _${color.usage}_`;
+          }
+          return details;
+        })
+        .join("\n\n");
+
+      colorBlocks.push({
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: colorDetails,
+        },
       });
     }
+
+    colorBlocks.push({
+      type: "divider",
+    });
   }
 
   const usageTips = variant
