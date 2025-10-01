@@ -1,4 +1,3 @@
-
 import { and, eq } from "drizzle-orm";
 import { brandAssets } from "@shared/schema";
 import { db } from "../../../db";

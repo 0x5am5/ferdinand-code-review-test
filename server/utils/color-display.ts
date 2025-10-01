@@ -99,7 +99,7 @@ export function buildColorBlocks(
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `   *${colorInfo.title}* ${colorInfor[0].hex}`,
+          text: `   *${colorInfo.title}* ${colorInfo.colors[0].hex}`,
         },
       });
 
@@ -166,7 +166,7 @@ export function buildColorBlocks(
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `   *${colorInfo.title}* ${colorInfor[0].hex}`,
+          text: `   *${colorInfo.title}* ${colorInfo.colors[0].hex}`,
         },
       });
 
