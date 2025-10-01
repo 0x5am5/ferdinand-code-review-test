@@ -138,32 +138,7 @@ export async function handleFontSubcommand({
     filteredFontAssets,
     fontAssets,
     variant,
-  );tInfo = formatFontInfo(asset);
-
-      // Add font details
-      let fontDetails = `   📝 *${fontInfo.title}*\n`;
-      fontDetails += `   • **Source:** ${fontInfo.source.charAt(0).toUpperCase() + fontInfo.source.slice(1)}\n`;
-      fontDetails += `   • **Weights:** ${fontInfo.weights.join(", ")}\n`;
-      fontDetails += `   • **Styles:** ${fontInfo.styles.join(", ")}`;
-      
-      if (fontInfo.usage) {
-        fontDetails += `\n   • **Usage:** ${fontInfo.usage}`;
-      }
-
-      fontBlocks.push({
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: fontDetails,
-        },
-      });
-    }
-
-    // Add spacing between categories
-    fontBlocks.push({
-      type: "divider",
-    });
-  }
+  );
 
   // Add footer with usage tips
   const usageTips = variant
