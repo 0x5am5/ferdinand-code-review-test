@@ -97,21 +97,124 @@ export async function handleFontSubcommand({
     filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
   auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
-  // Check if we have many results and should ask for confirmation
+  // Group fonts by category for better organization
+  const groupedFonts = displayAssets.reduce((groups: Record<string, typeof displayAssets>, asset) => {
+    const fontInfo = formatFontInfo(asset);
+    const category = fontInfo.category || 'other';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(asset);
+    return groups;
+  }, {});
+
+  // Build enhanced font blocks organized by category
+  let headerText = `📝 *Brand Typography System*`;
+  if (variant) {
+    headerText = `📝 *${variant.charAt(0).toUpperCase() + variant.slice(1)} Fonts*`;
+  }
+  headerText += ` (${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""})`;
+
+  const fontBlocks: any[] = [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: headerText,
+      },
+    },
+    {
+      type: "divider",
+    },
+  ];
+
+  // Category order and emojis
+  const categoryOrder = ['brand', 'body', 'header', 'other'];
+  const categoryEmojis: Record<string, string> = {
+    brand: '🎯',
+    body: '📖',
+    header: '📰',
+    other: '📝'
+  };
+
+  const categoryNames: Record<string, string> = {
+    brand: 'Brand Fonts',
+    body: 'Body Fonts',
+    header: 'Header Fonts',
+    other: 'Other Fonts'
+  };
+
+  // Process each category in order
+  for (const category of categoryOrder) {
+    if (!groupedFonts[category] || groupedFonts[category].length === 0) continue;
+
+    // Add category header
+    fontBlocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `${categoryEmojis[category]} *${categoryNames[category]}*`,
+      },
+    });
+
+    // Process each font in this category
+    for (const asset of groupedFonts[category]) {
+      const fontInfo = formatFontInfo(asset);
+
+      // Add font details
+      let fontDetails = `   📝 *${fontInfo.title}*\n`;
+      fontDetails += `   • **Source:** ${fontInfo.source.charAt(0).toUpperCase() + fontInfo.source.slice(1)}\n`;
+      fontDetails += `   • **Weights:** ${fontInfo.weights.join(", ")}\n`;
+      fontDetails += `   • **Styles:** ${fontInfo.styles.join(", ")}`;
+      
+      if (fontInfo.usage) {
+        fontDetails += `\n   • **Usage:** ${fontInfo.usage}`;
+      }
+
+      fontBlocks.push({
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: fontDetails,
+        },
+      });
+    }
+
+    // Add spacing between categories
+    fontBlocks.push({
+      type: "divider",
+    });
+  }
+
+  // Add footer with usage tips
+  const usageTips = variant
+    ? `💡 *Usage Tips:* Files and CSS will be sent separately | Try \`/ferdinand font brand\`, \`body\`, or \`header\` for specific font types`
+    : `💡 *Usage Tips:* Files and CSS will be sent separately | Try \`/ferdinand font brand\`, \`body\`, or \`header\` for specific font types`;
+
+  fontBlocks.push({
+    type: "context",
+    elements: [
+      {
+        type: "mrkdwn",
+        text: usageTips,
+      },
+    ],
+  });
+
+  // Send the organized font information first
+  await respond({
+    blocks: fontBlocks,
+    response_type: "ephemeral",
+  });
+
+  // Check if we have many results and should ask for confirmation for file processing
   if (displayAssets.length > 5) {
     const confirmationBlocks = [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `📝 Found **${displayAssets.length} font assets**${variant ? ` for "${variant}"` : ""}.`,
-        },
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `📋 This is a large collection. Would you like to:\n\n• **Process all ${displayAssets.length} fonts** (may send many messages)\n• **Narrow your search** with terms like "body", "header", or "display"\n• **Process just the first 3** for a quick overview`,
+          text: `📋 Would you also like to process font files and usage instructions?\n\n• **Process all ${displayAssets.length} fonts** (may send many files)\n• **Process just the first 3** for a quick overview\n• **Skip file processing** (font info shown above)`,
         },
       },
       {
@@ -125,7 +228,7 @@ export async function handleFontSubcommand({
             },
             style: "primary",
             action_id: "process_all_fonts",
-            value: `${workspace.clientId}|${variant || ""}|all`,
+            value: `${workspace.clientId}|${variant || ""}`,
           },
           {
             type: "button",
@@ -134,7 +237,7 @@ export async function handleFontSubcommand({
               text: "Process First 3",
             },
             action_id: "process_limited_fonts",
-            value: `${workspace.clientId}|${variant || ""}|3`,
+            value: `${workspace.clientId}|${variant || ""}`,
           },
         ],
       },
@@ -143,7 +246,7 @@ export async function handleFontSubcommand({
         elements: [
           {
             type: "mrkdwn",
-            text: "💡 *Tip:* Try `/ferdinand font body` or `/ferdinand font header` for more targeted results.",
+            text: "💡 *Tip:* Try `/ferdinand font brand`, `/ferdinand font body`, or `/ferdinand font header` for more targeted results.",
           },
         ],
       },

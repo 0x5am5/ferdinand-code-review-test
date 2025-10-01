@@ -563,7 +563,7 @@ export function filterColorAssetsByVariant(
   });
 }
 
-// Filter font assets by variant (body, header)
+// Filter font assets by variant (brand, body, header)
 export function filterFontAssetsByVariant(
   fontAssets: BrandAsset[],
   variant: string = ""
@@ -574,6 +574,9 @@ export function filterFontAssetsByVariant(
 
   const variantLower = variant.toLowerCase();
 
+  // Brand fonts - primary brand typography, logo fonts, brand identity
+  const brandKeywords = ['brand', 'primary', 'main', 'identity', 'logo', 'wordmark'];
+
   // Body fonts - typically for body text, paragraphs, readable content
   const bodyKeywords = ['body', 'text', 'paragraph', 'content', 'readable', 'sans', 'regular'];
 
@@ -582,7 +585,9 @@ export function filterFontAssetsByVariant(
 
   let targetKeywords: string[] = [];
 
-  if (bodyKeywords.some(keyword => variantLower.includes(keyword))) {
+  if (brandKeywords.some(keyword => variantLower.includes(keyword))) {
+    targetKeywords = brandKeywords;
+  } else if (bodyKeywords.some(keyword => variantLower.includes(keyword))) {
     targetKeywords = bodyKeywords;
   } else if (headerKeywords.some(keyword => variantLower.includes(keyword))) {
     targetKeywords = headerKeywords;
@@ -606,9 +611,10 @@ export function filterFontAssetsByVariant(
       const usage = data?.usage?.toLowerCase() || '';
       const type = data?.type?.toLowerCase() || '';
       const category = data?.category?.toLowerCase() || '';
+      const subcategory = data?.subcategory?.toLowerCase() || '';
 
       const dataMatch = targetKeywords.some(keyword =>
-        usage.includes(keyword) || type.includes(keyword) || category.includes(keyword)
+        usage.includes(keyword) || type.includes(keyword) || category.includes(keyword) || subcategory.includes(keyword)
       );
 
       return nameMatch || dataMatch;
@@ -625,18 +631,47 @@ export function formatFontInfo(fontAsset: BrandAsset): {
   weights: string[];
   styles: string[];
   usage?: string;
+  category?: string;
   files?: Array<{ format: string; weight: string; style: string; }>;
 } {
   try {
     const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
 
+    // Handle different data structures
+    const source = data?.source || 'custom';
+    const weights = data?.weights || ['400'];
+    const styles = data?.styles || ['normal'];
+    const usage = data?.usage || data?.subcategory || '';
+    
+    // Extract files information for custom fonts
+    let files = [];
+    if (data?.sourceData?.files) {
+      files = data.sourceData.files;
+    } else if (data?.files) {
+      files = data.files;
+    }
+
+    // Determine category based on asset name and data
+    let category = '';
+    const assetName = fontAsset.name.toLowerCase();
+    const subcategory = data?.subcategory?.toLowerCase() || '';
+    
+    if (assetName.includes('brand') || assetName.includes('primary') || assetName.includes('logo')) {
+      category = 'brand';
+    } else if (assetName.includes('body') || assetName.includes('text') || subcategory.includes('body')) {
+      category = 'body';
+    } else if (assetName.includes('header') || assetName.includes('heading') || assetName.includes('display') || subcategory.includes('header')) {
+      category = 'header';
+    }
+
     return {
       title: fontAsset.name,
-      source: data?.source || 'unknown',
-      weights: data?.weights || ['400'],
-      styles: data?.styles || ['normal'],
-      usage: data?.usage,
-      files: data?.sourceData?.files || [],
+      source,
+      weights,
+      styles,
+      usage,
+      category,
+      files,
     };
   } catch (error) {
     console.error("Error parsing font asset data:", error);
@@ -645,6 +680,7 @@ export function formatFontInfo(fontAsset: BrandAsset): {
       source: 'unknown',
       weights: ['400'],
       styles: ['normal'],
+      category: 'unknown',
     };
   }
 }
