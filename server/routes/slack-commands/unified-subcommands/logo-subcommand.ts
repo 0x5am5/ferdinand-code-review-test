@@ -1,4 +1,3 @@
-
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
 import { brandAssets } from "@shared/schema";
@@ -180,8 +179,8 @@ export async function handleLogoSubcommand({
     summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
   }
 
-  if (matchedLogos.length > 3) {
-    summaryText += `\n💡 Showing first 3 results. Be more specific to narrow down.`;
+  if (successfulUploads < matchedLogos.length) {
+    summaryText += `\n💡 Some uploads may have failed. Try narrowing your search for better results.`;
   }
 
   summaryText += `\n⏱️ Response time: ${responseTime}ms`;

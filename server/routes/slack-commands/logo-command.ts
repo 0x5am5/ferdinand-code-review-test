@@ -101,6 +101,65 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
 
     const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
+    // Check if we have many results and should ask for confirmation
+    if (matchedLogos.length > 3) {
+      const confirmationBlocks = [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `🏷️ Found *${matchedLogos.length} logo files*${query ? ` matching "${query}"` : ""}.`,
+          },
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `📁 This will upload many files to your channel. Would you like to:\n\n• *Upload all ${matchedLogos.length} logos* (may flood the channel)\n• *Narrow your search* with terms like "dark", "square", "horizontal"\n• *Upload just the first 3* for a quick preview`,
+          },
+        },
+        {
+          type: "actions",
+          elements: [
+            {
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: `Upload All ${matchedLogos.length}`,
+              },
+              style: "primary",
+              action_id: "upload_all_logos",
+              value: `${workspace.clientId}|${query || ""}|all`,
+            },
+            {
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: "Upload First 3",
+              },
+              action_id: "upload_limited_logos",
+              value: `${workspace.clientId}|${query || ""}|3`,
+            },
+          ],
+        },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: "💡 *Tip:* Try `/ferdinand-logo dark` or `/ferdinand-logo square` for more specific results.",
+            },
+          ],
+        },
+      ];
+
+      await respond({
+        blocks: confirmationBlocks,
+        response_type: "ephemeral",
+      });
+      return;
+    }
+
     // Respond immediately to avoid timeout
     await respond({
       text: `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}... Files will appear shortly!`,
@@ -116,7 +175,6 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
         botToken = decryptedToken;
 
         const uploadPromises = matchedLogos
-          .slice(0, 3)
           .map(async (asset) => {
             const assetInfo = formatAssetInfo(asset);
             const downloadUrl = generateAssetDownloadUrl(
@@ -201,7 +259,7 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
           // Success - files were uploaded successfully
           let summaryText = `✅ **${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!**`;
 
-          if (successfulUploads < matchedLogos.slice(0, 3).length) {
+          if (successfulUploads < matchedLogos.length) {
             summaryText += `\n💡 Some files were sent via DM due to channel permissions.`;
           }
 
@@ -209,8 +267,8 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
             summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
           }
 
-          if (matchedLogos.length > 3) {
-            summaryText += `\n💡 Showing first 3 results. Be more specific to narrow down.`;
+          if (successfulUploads < matchedLogos.length) {
+            summaryText += `\n💡 Some uploads may have failed. Try narrowing your search for better results.`;
           }
 
           summaryText += `\n⏱️ Response time: ${responseTime}ms`;
