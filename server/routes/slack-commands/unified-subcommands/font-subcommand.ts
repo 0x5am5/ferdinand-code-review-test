@@ -20,7 +20,6 @@ import {
 export async function handleFontSubcommand({
   command,
   respond,
-  client,
   variant,
   workspace,
   auditLog,
