@@ -24,10 +24,10 @@ import { handleFontCommand } from "./slack-commands/font-command";
 import { handleSearchCommand } from "./slack-commands/search-command";
 import { handleHelpCommand } from "./slack-commands/help-command";
 import { handleUnifiedCommand } from "./slack-commands/unified-command";
-import { 
+import {
   handleColorSubcommandWithLimit,
   handleLogoSubcommandWithLimit,
-  handleFontSubcommandWithLimit
+  handleFontSubcommandWithLimit,
 } from "./slack-commands/action-handlers";
 
 dotenv.config();
@@ -125,6 +125,43 @@ function initializeSlackApp() {
       const [clientId, variant] = body.actions[0].value.split("|");
       // Re-trigger font command with limit of 3
       await handleFontSubcommandWithLimit(body, respond, variant, parseInt(clientId), 3);
+    });
+
+
+    // Unified action handler to manage all interactive button events
+    slackApp.action(/.*/, async ({ ack, body, respond }: any) => {
+      await ack();
+      const actionId = body.actions[0].action_id;
+      const actionValue = body.actions[0].value;
+
+      if (actionId === "show_all_colors" || actionId === "show_limited_colors") {
+        const [clientId, variant, limit] = actionValue.split("|");
+        await handleColorSubcommandWithLimit(
+          body,
+          respond,
+          variant,
+          parseInt(clientId),
+          limit === "all" ? "all" : parseInt(limit)
+        );
+      } else if (actionId === "show_all_logos" || actionId === "show_limited_logos") {
+        const [clientId, query, limit] = actionValue.split("|");
+        await handleLogoSubcommandWithLimit(
+          body,
+          respond,
+          query,
+          parseInt(clientId),
+          limit === "all" ? "all" : parseInt(limit)
+        );
+      } else if (actionId === "process_all_fonts" || actionId === "process_limited_fonts") {
+        const [clientId, variant, limit] = actionValue.split("|");
+        await handleFontSubcommandWithLimit(
+          body,
+          respond,
+          variant,
+          parseInt(clientId),
+          limit === "all" ? "all" : parseInt(limit)
+        );
+      }
     });
 
     return slackApp;

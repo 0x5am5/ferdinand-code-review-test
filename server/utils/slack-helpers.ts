@@ -565,83 +565,43 @@ export function filterColorAssetsByVariant(
 
 // Filter font assets by variant (brand, body, header)
 export function filterFontAssetsByVariant(
-  fontAssets: BrandAsset[],
-  variant: string = ""
-): BrandAsset[] {
-  if (!variant.trim()) {
-    return fontAssets;
-  }
+  assets: any[],
+  variant: string
+): any[] {
+  if (!variant || variant.trim() === "") return assets;
 
-  const variantLower = variant.toLowerCase();
+  const normalizedVariant = variant.toLowerCase().trim();
 
-  // Brand fonts - typically primary brand typography, logo fonts, brand identity
-  const brandKeywords = ['brand', 'primary', 'main', 'identity', 'logo', 'wordmark', 'display'];
-
-  // Body fonts - typically for body text, paragraphs, readable content
-  const bodyKeywords = ['body', 'text', 'paragraph', 'content', 'readable', 'sans', 'regular', 'inter', 'arial', 'helvetica'];
-
-  // Header fonts - typically for headlines, titles, display text
-  const headerKeywords = ['header', 'heading', 'title', 'display', 'headline', 'hero', 'serif', 'bold'];
-
-  let targetKeywords: string[] = [];
-
-  if (brandKeywords.some(keyword => variantLower.includes(keyword))) {
-    targetKeywords = brandKeywords;
-  } else if (bodyKeywords.some(keyword => variantLower.includes(keyword))) {
-    targetKeywords = bodyKeywords;
-  } else if (headerKeywords.some(keyword => variantLower.includes(keyword))) {
-    targetKeywords = headerKeywords;
-  } else {
-    // If no match found, try direct variant matching
-    return fontAssets.filter((asset) => {
-      const assetName = asset.name.toLowerCase();
-      return assetName.includes(variantLower);
-    });
-  }
-
-  return fontAssets.filter((asset) => {
-    const assetName = asset.name.toLowerCase();
-
-    // Check asset name against keywords
-    const nameMatch = targetKeywords.some(keyword => assetName.includes(keyword));
-
-    // Also check inside the font data for usage, category, or type
+  return assets.filter((asset) => {
     try {
       const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-      const usage = data?.usage?.toLowerCase() || '';
-      const type = data?.type?.toLowerCase() || '';
-      const category = data?.category?.toLowerCase() || '';
-      const subcategory = data?.subcategory?.toLowerCase() || '';
-      const source = data?.source?.toLowerCase() || '';
-      const fontFamily = data?.sourceData?.fontFamily?.toLowerCase() || data?.fontFamily?.toLowerCase() || '';
+      const fontInfo = formatFontInfo(asset);
 
-      const dataMatch = targetKeywords.some(keyword =>
-        usage.includes(keyword) ||
-        type.includes(keyword) ||
-        category.includes(keyword) ||
-        subcategory.includes(keyword) ||
-        fontFamily.includes(keyword)
+      // Check various font properties for the variant
+      const name = asset.name.toLowerCase();
+      const category = fontInfo.category?.toLowerCase() || "";
+      const usage = fontInfo.usage?.toLowerCase() || "";
+      const source = fontInfo.source?.toLowerCase() || "";
+      const subcategory = asset.subcategory?.toLowerCase() || "";
+
+      return (
+        name.includes(normalizedVariant) ||
+        category.includes(normalizedVariant) ||
+        usage.includes(normalizedVariant) ||
+        source.includes(normalizedVariant) ||
+        subcategory.includes(normalizedVariant) ||
+        // Check for common font type variants
+        (normalizedVariant === "body" && (category.includes("body") || usage.includes("body") || name.includes("body") || subcategory.includes("body"))) ||
+        (normalizedVariant === "header" && (category.includes("header") || usage.includes("header") || name.includes("header") || category.includes("heading") || usage.includes("heading") || name.includes("heading") || subcategory.includes("header"))) ||
+        (normalizedVariant === "brand" && (category.includes("brand") || usage.includes("brand") || name.includes("brand") || subcategory.includes("brand"))) ||
+        (normalizedVariant === "display" && (category.includes("display") || usage.includes("display") || name.includes("display") || subcategory.includes("display"))) ||
+        (normalizedVariant === "google" && source === "google") ||
+        (normalizedVariant === "adobe" && source === "adobe") ||
+        (normalizedVariant === "custom" && (source === "file" || subcategory === "custom"))
       );
-
-      // Special case: if searching for "body" and it's a common body font like Inter
-      if (variantLower.includes('body') && (
-        assetName.includes('inter') ||
-        fontFamily.includes('inter') ||
-        assetName.includes('arial') ||
-        assetName.includes('helvetica') ||
-        source === 'google'
-      )) {
-        return true;
-      }
-
-      // Special case: if searching for "brand" and it's a custom uploaded font
-      if (variantLower.includes('brand') && (source === 'file' || source === 'custom')) {
-        return true;
-      }
-
-      return nameMatch || dataMatch;
-    } catch {
-      return nameMatch;
+    } catch (error) {
+      console.error("Error filtering font asset:", error);
+      return false;
     }
   });
 }
@@ -739,7 +699,7 @@ export function generateAdobeFontCSS(projectId: string, fontFamily: string): str
 // Check if font has uploadable files
 export function hasUploadableFiles(fontAsset: BrandAsset): boolean {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
+    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : asset.data;
     return data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
   } catch {
     return false;
