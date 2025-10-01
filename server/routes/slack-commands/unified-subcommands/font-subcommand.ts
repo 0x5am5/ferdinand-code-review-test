@@ -97,6 +97,65 @@ export async function handleFontSubcommand({
     filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
   auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
+  // Check if we have many results and should ask for confirmation
+  if (displayAssets.length > 5) {
+    const confirmationBlocks = [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `📝 Found **${displayAssets.length} font assets**${variant ? ` for "${variant}"` : ""}.`,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `📋 This is a large collection. Would you like to:\n\n• **Process all ${displayAssets.length} fonts** (may send many messages)\n• **Narrow your search** with terms like "body", "header", or "display"\n• **Process just the first 3** for a quick overview`,
+        },
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: `Process All ${displayAssets.length}`,
+            },
+            style: "primary",
+            action_id: "process_all_fonts",
+            value: `${workspace.clientId}|${variant || ""}|all`,
+          },
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Process First 3",
+            },
+            action_id: "process_limited_fonts",
+            value: `${workspace.clientId}|${variant || ""}|3`,
+          },
+        ],
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: "💡 *Tip:* Try `/ferdinand font body` or `/ferdinand font header` for more targeted results.",
+          },
+        ],
+      },
+    ];
+
+    await respond({
+      blocks: confirmationBlocks,
+      response_type: "ephemeral",
+    });
+    return;
+  }
+
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
   // Respond immediately to avoid timeout

@@ -24,6 +24,11 @@ import { handleFontCommand } from "./slack-commands/font-command";
 import { handleSearchCommand } from "./slack-commands/search-command";
 import { handleHelpCommand } from "./slack-commands/help-command";
 import { handleUnifiedCommand } from "./slack-commands/unified-command";
+import { 
+  handleColorSubcommandWithLimit,
+  handleLogoSubcommandWithLimit,
+  handleFontSubcommandWithLimit
+} from "./slack-commands/action-handlers";
 
 dotenv.config();
 
@@ -71,6 +76,49 @@ function initializeSlackApp() {
     slackApp.command("/ferdinand-search", handleSearchCommand);
     slackApp.command("/ferdinand-help", handleHelpCommand);
     slackApp.command("/ferdinand", handleUnifiedCommand);
+
+    // Register interactive button handlers
+    slackApp.action("show_all_colors", async ({ ack, body, respond }: any) => {
+      await ack();
+      const [clientId, variant] = body.actions[0].value.split("|");
+      // Re-trigger color command with override to show all
+      await handleColorSubcommandWithLimit(body, respond, variant, parseInt(clientId), "all");
+    });
+
+    slackApp.action("show_limited_colors", async ({ ack, body, respond }: any) => {
+      await ack();
+      const [clientId, variant] = body.actions[0].value.split("|");
+      // Re-trigger color command with limit of 3
+      await handleColorSubcommandWithLimit(body, respond, variant, parseInt(clientId), 3);
+    });
+
+    slackApp.action("upload_all_logos", async ({ ack, body, respond }: any) => {
+      await ack();
+      const [clientId, query] = body.actions[0].value.split("|");
+      // Re-trigger logo command with override to upload all
+      await handleLogoSubcommandWithLimit(body, respond, query, parseInt(clientId), "all");
+    });
+
+    slackApp.action("upload_limited_logos", async ({ ack, body, respond }: any) => {
+      await ack();
+      const [clientId, query] = body.actions[0].value.split("|");
+      // Re-trigger logo command with limit of 3
+      await handleLogoSubcommandWithLimit(body, respond, query, parseInt(clientId), 3);
+    });
+
+    slackApp.action("process_all_fonts", async ({ ack, body, respond }: any) => {
+      await ack();
+      const [clientId, variant] = body.actions[0].value.split("|");
+      // Re-trigger font command with override to process all
+      await handleFontSubcommandWithLimit(body, respond, variant, parseInt(clientId), "all");
+    });
+
+    slackApp.action("process_limited_fonts", async ({ ack, body, respond }: any) => {
+      await ack();
+      const [clientId, variant] = body.actions[0].value.split("|");
+      // Re-trigger font command with limit of 3
+      await handleFontSubcommandWithLimit(body, respond, variant, parseInt(clientId), 3);
+    });
 
     return slackApp;
   } else {

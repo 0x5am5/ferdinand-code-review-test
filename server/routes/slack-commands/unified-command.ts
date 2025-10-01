@@ -16,6 +16,12 @@ import { handleHelpSubcommand } from "./unified-subcommands/help-subcommand";
 export async function handleUnifiedCommand({ command, ack, respond, client }: any) {
   await ack();
 
+  // Send immediate acknowledgment to prevent timeout
+  await respond({
+    text: "🔄 Processing your request...",
+    response_type: "ephemeral",
+  });
+
   // Rate limiting
   const rateLimit = checkRateLimit(command.team_id, 15, 60000);
   if (!rateLimit.allowed) {
