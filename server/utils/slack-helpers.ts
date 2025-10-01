@@ -619,7 +619,7 @@ export function formatFontInfo(fontAsset: BrandAsset): {
   files?: Array<{ format: string; weight: string; style: string; }>;
 } {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
 
     // Handle different data structures
     const source = data?.source || 'custom';
@@ -701,7 +701,7 @@ export function generateAdobeFontCSS(projectId: string, fontFamily: string): str
 // Check if font has uploadable files
 export function hasUploadableFiles(fontAsset: BrandAsset): boolean {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
     return data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
   } catch {
     return false;
