@@ -63,6 +63,65 @@ export async function handleColorSubcommand({
     filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
   auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
+  // Check if we have many results and should ask for confirmation
+  if (displayAssets.length > 5) {
+    const confirmationBlocks = [
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `🎨 Found **${displayAssets.length} color palettes**${variant ? ` for "${variant}"` : ""}.`,
+        },
+      },
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `📋 This is a large number of results. Would you like to:\n\n• **See all ${displayAssets.length} palettes** (may be overwhelming)\n• **Narrow your search** with more specific terms like "brand", "neutral", or "interactive"\n• **See just the first 3** for a quick overview`,
+        },
+      },
+      {
+        type: "actions",
+        elements: [
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: `Show All ${displayAssets.length}`,
+            },
+            style: "primary",
+            action_id: "show_all_colors",
+            value: `${workspace.clientId}|${variant || ""}|all`,
+          },
+          {
+            type: "button",
+            text: {
+              type: "plain_text",
+              text: "Show First 3",
+            },
+            action_id: "show_limited_colors",
+            value: `${workspace.clientId}|${variant || ""}|3`,
+          },
+        ],
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: "💡 *Tip:* Try `/ferdinand color brand` or `/ferdinand color neutral` for more targeted results.",
+          },
+        ],
+      },
+    ];
+
+    await respond({
+      blocks: confirmationBlocks,
+      response_type: "ephemeral",
+    });
+    return;
+  }
+
   // Build color blocks using shared utility
   const colorBlocks = buildColorBlocks(
     displayAssets,
