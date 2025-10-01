@@ -185,7 +185,83 @@ export async function handleFontSubcommand({
     return;
   }
 
-  // Simple response like color command - just show count and names
+  // For 1-2 fonts, include CSS directly in response
+  if (displayAssets.length <= 2) {
+    let responseText = variant 
+      ? `📝 Found **${displayAssets.length} fonts** for "${variant}":\n\n`
+      : `📝 Found **${displayAssets.length} fonts**:\n\n`;
+
+    for (const asset of displayAssets) {
+      const fontInfo = formatFontInfo(asset);
+      
+      if (hasUploadableFiles(asset)) {
+        responseText += `**${fontInfo.title}** - Custom Font Files\n`;
+        responseText += `• Weights: ${fontInfo.weights.join(", ")}\n`;
+        responseText += `• Styles: ${fontInfo.styles.join(", ")}\n`;
+        responseText += `• Source: Custom Upload\n\n`;
+      } else {
+        let codeBlock = "";
+        if (fontInfo.source === "google") {
+          codeBlock = generateGoogleFontCSS(fontInfo.title, fontInfo.weights);
+        } else if (fontInfo.source === "adobe") {
+          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          const projectId = data?.sourceData?.projectId || "your-project-id";
+          codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
+        } else {
+          codeBlock = `/* Font: ${fontInfo.title} */
+.your-element {
+  font-family: '${fontInfo.title}', sans-serif;
+  font-weight: ${fontInfo.weights[0] || "400"};
+}`;
+        }
+
+        responseText += `**${fontInfo.title}**\n`;
+        responseText += `• Weights: ${fontInfo.weights.join(", ")}\n`;
+        responseText += `• Styles: ${fontInfo.styles.join(", ")}\n`;
+        responseText += `• Source: ${fontInfo.source === "google" ? "Google Fonts" : fontInfo.source === "adobe" ? "Adobe Fonts" : fontInfo.source}\n\n`;
+        responseText += `\`\`\`css\n${codeBlock}\n\`\`\`\n\n`;
+      }
+    }
+
+    await respond({
+      text: responseText,
+      response_type: "ephemeral",
+    });
+
+    // Still process file uploads asynchronously for custom fonts
+    if (displayAssets.some(asset => hasUploadableFiles(asset))) {
+      setImmediate(async () => {
+        try {
+          const botToken = decryptBotToken(workspace.botToken);
+          const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
+
+          for (const asset of displayAssets.filter(asset => hasUploadableFiles(asset))) {
+            const fontInfo = formatFontInfo(asset);
+            const downloadUrl = generateAssetDownloadUrl(asset.id, workspace.clientId, baseUrl);
+            const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
+
+            await uploadFileToSlack(botToken, {
+              channelId: command.channel_id,
+              userId: command.user_id,
+              fileUrl: downloadUrl,
+              filename,
+              title: `${fontInfo.title} - Font Files`,
+              initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload`,
+            });
+          }
+        } catch (error) {
+          console.error("Error uploading font files:", error);
+        }
+      });
+    }
+
+    auditLog.assetIds = displayAssets.map((asset) => asset.id);
+    auditLog.success = true;
+    auditLog.responseTimeMs = Date.now() - startTime;
+    return;
+  }
+
+  // For 3+ fonts, show processing message and handle async
   const fontNames = displayAssets.map(asset => asset.name).join(", ");
   const responseText = variant 
     ? `📝 Found **${displayAssets.length} fonts** for "${variant}": ${fontNames}\n\n🔄 Processing font files and usage code...`
