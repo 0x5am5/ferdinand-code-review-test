@@ -1,0 +1,104 @@
+
+export interface LogoDisplayOptions {
+  query?: string;
+  showConfirmation?: boolean;
+  workspaceClientId: number;
+}
+
+// Build confirmation blocks for large logo result sets
+export function buildLogoConfirmationBlocks(
+  matchedLogos: any[],
+  query: string,
+  workspaceClientId: number
+) {
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `🏷️ Found *${matchedLogos.length} logo files*${query ? ` matching "${query}"` : ""}.`,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `📁 This will upload many files to your channel. Would you like to:\n\n• *Upload all ${matchedLogos.length} logos* (may flood the channel)\n• *Narrow your search* with terms like "dark", "square", "horizontal"\n• *Upload just the first 3* for a quick preview`,
+      },
+    },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: `Upload All ${matchedLogos.length}`,
+          },
+          style: "primary",
+          action_id: "upload_all_logos",
+          value: `${workspaceClientId}|${query || ""}|all`,
+        },
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Upload First 3",
+          },
+          action_id: "upload_limited_logos",
+          value: `${workspaceClientId}|${query || ""}|3`,
+        },
+      ],
+    },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: "💡 *Tip:* Try `/ferdinand-logo dark` or `/ferdinand-logo square` for more specific results.",
+        },
+      ],
+    },
+  ];
+}
+
+// Build processing message for logo uploads
+export function buildLogoProcessingMessage(
+  matchedLogos: any[],
+  query?: string
+): string {
+  return `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}... Files will appear shortly!`;
+}
+
+// Build summary message after logo uploads
+export function buildLogoSummaryMessage(
+  successfulUploads: number,
+  totalLogos: number,
+  query?: string,
+  responseTime?: number
+): string {
+  let summaryText = `✅ **${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!**`;
+
+  if (successfulUploads < totalLogos) {
+    summaryText += `\n💡 Some files were sent via DM due to channel permissions.`;
+  }
+
+  if (query) {
+    summaryText += `\n🔍 Search: "${query}" (${totalLogos} match${totalLogos > 1 ? "es" : ""})`;
+  }
+
+  if (successfulUploads < totalLogos) {
+    summaryText += `\n💡 Some uploads may have failed. Try narrowing your search for better results.`;
+  }
+
+  if (responseTime) {
+    summaryText += `\n⏱️ Response time: ${responseTime}ms`;
+  }
+
+  return summaryText;
+}
+
+// Check if we should show confirmation for large result sets
+export function shouldShowLogoConfirmation(logoCount: number): boolean {
+  return logoCount > 3;
+}

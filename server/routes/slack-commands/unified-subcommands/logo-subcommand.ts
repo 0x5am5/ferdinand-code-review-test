@@ -10,6 +10,12 @@ import {
   logSlackActivity,
   uploadFileToSlack,
 } from "../../../utils/slack-helpers";
+import {
+  buildLogoConfirmationBlocks,
+  buildLogoProcessingMessage,
+  buildLogoSummaryMessage,
+  shouldShowLogoConfirmation,
+} from "../../../utils/logo-display";
 
 export async function handleLogoSubcommand({
   command,
@@ -66,56 +72,12 @@ export async function handleLogoSubcommand({
   }
 
   // Check if we have many results and should ask for confirmation
-  if (matchedLogos.length > 5) {
-    const confirmationBlocks = [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `🏷️ Found **${matchedLogos.length} logo files**${query ? ` matching "${query}"` : ""}.`,
-        },
-      },
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `📁 This will upload many files to your channel. Would you like to:\n\n• **Upload all ${matchedLogos.length} logos** (may flood the channel)\n• **Narrow your search** with terms like "dark", "square", "horizontal"\n• **Upload just the first 3** for a quick preview`,
-        },
-      },
-      {
-        type: "actions",
-        elements: [
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: `Upload All ${matchedLogos.length}`,
-            },
-            style: "primary",
-            action_id: "upload_all_logos",
-            value: `${workspace.clientId}|${query || ""}|all`,
-          },
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: "Upload First 3",
-            },
-            action_id: "upload_limited_logos",
-            value: `${workspace.clientId}|${query || ""}|3`,
-          },
-        ],
-      },
-      {
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: "💡 *Tip:* Try `/ferdinand logo dark` or `/ferdinand logo square` for more specific results.",
-          },
-        ],
-      },
-    ];
+  if (shouldShowLogoConfirmation(matchedLogos.length)) {
+    const confirmationBlocks = buildLogoConfirmationBlocks(
+      matchedLogos,
+      query,
+      workspace.clientId
+    );
 
     await respond({
       blocks: confirmationBlocks,
@@ -127,8 +89,9 @@ export async function handleLogoSubcommand({
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
   // Respond immediately to avoid timeout
+  const processingMessage = buildLogoProcessingMessage(matchedLogos, query);
   await respond({
-    text: `🔄 Processing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` (${query} variant)` : ""}...`,
+    text: processingMessage,
     response_type: "ephemeral",
   });
 
@@ -136,7 +99,7 @@ export async function handleLogoSubcommand({
   const botToken = decryptBotToken(workspace.botToken);
 
   // Upload files to Slack for matched logos (in background)
-  const uploadPromises = matchedLogos.slice(0, 3).map(async (asset) => {
+  const uploadPromises = matchedLogos.map(async (asset) => {
     const assetInfo = formatAssetInfo(asset);
     const downloadUrl = generateAssetDownloadUrl(
       asset.id,
@@ -173,17 +136,12 @@ export async function handleLogoSubcommand({
 
   // Show summary message
   const responseTime = Date.now() - startTime;
-  let summaryText = `✅ **${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!**`;
-
-  if (query) {
-    summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
-  }
-
-  if (successfulUploads < matchedLogos.length) {
-    summaryText += `\n💡 Some uploads may have failed. Try narrowing your search for better results.`;
-  }
-
-  summaryText += `\n⏱️ Response time: ${responseTime}ms`;
+  const summaryText = buildLogoSummaryMessage(
+    successfulUploads,
+    matchedLogos.length,
+    query,
+    responseTime
+  );
 
   await respond({
     text: summaryText,
