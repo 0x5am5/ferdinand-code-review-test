@@ -76,7 +76,7 @@ export async function handleLogoSubcommand({
     const confirmationBlocks = buildLogoConfirmationBlocks(
       matchedLogos,
       query,
-      workspace.clientId
+      workspace.clientId,
     );
 
     await respond({
@@ -101,21 +101,25 @@ export async function handleLogoSubcommand({
   // Upload files to Slack for matched logos (in background)
   const uploadPromises = matchedLogos.map(async (asset) => {
     const assetInfo = formatAssetInfo(asset);
-    
+
     // Check if we should upload dark variant
-    const isDarkQuery = query.toLowerCase() === "dark" || query.toLowerCase() === "white" || query.toLowerCase() === "inverse";
-    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    const isDarkQuery =
+      query.toLowerCase() === "dark" ||
+      query.toLowerCase() === "white" ||
+      query.toLowerCase() === "inverse";
+    const data =
+      typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
     const hasDarkVariant = data?.hasDarkVariant === true;
-    
+
     // Build download URL with variant parameter if needed
     const downloadParams: any = {
       format: "png", // Convert to PNG for better Slack compatibility
     };
-    
+
     if (isDarkQuery && hasDarkVariant) {
       downloadParams.variant = "dark";
     }
-    
+
     const downloadUrl = generateAssetDownloadUrl(
       asset.id,
       workspace.clientId,
@@ -125,7 +129,7 @@ export async function handleLogoSubcommand({
 
     const variantSuffix = isDarkQuery && hasDarkVariant ? "_dark" : "";
     const filename = `${asset.name.replace(/\s+/g, "_")}${variantSuffix}.png`;
-    
+
     const variantNote = isDarkQuery && hasDarkVariant ? " (Dark Variant)" : "";
     const title = `${assetInfo.title}${variantNote}`;
 
@@ -135,7 +139,7 @@ export async function handleLogoSubcommand({
       fileUrl: downloadUrl,
       filename,
       title,
-      initialComment: `📋 **${title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}${variantNote ? `\n• Variant: Dark` : ""}`,
+      initialComment: `📋 *${title}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}${variantNote ? `\n• Variant: Dark` : ""}`,
     });
   });
 
@@ -157,7 +161,7 @@ export async function handleLogoSubcommand({
     successfulUploads,
     matchedLogos.length,
     query,
-    responseTime
+    responseTime,
   );
 
   await respond({

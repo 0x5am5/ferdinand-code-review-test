@@ -1,4 +1,3 @@
-
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
 import { brandAssets, slackWorkspaces } from "@shared/schema";
@@ -19,7 +18,12 @@ import {
   shouldShowLogoConfirmation,
 } from "../../utils/logo-display";
 
-export async function handleLogoCommand({ command, ack, respond, client }: any) {
+export async function handleLogoCommand({
+  command,
+  ack,
+  respond,
+  client,
+}: any) {
   const startTime = Date.now();
   await ack();
 
@@ -112,7 +116,7 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
       const confirmationBlocks = buildLogoConfirmationBlocks(
         matchedLogos,
         query,
-        workspace.clientId
+        workspace.clientId,
       );
 
       await respond({
@@ -137,37 +141,33 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
         const decryptedToken = decryptBotToken(workspace.botToken);
         botToken = decryptedToken;
 
-        const uploadPromises = matchedLogos
-          .map(async (asset) => {
-            const assetInfo = formatAssetInfo(asset);
-            const downloadUrl = generateAssetDownloadUrl(
-              asset.id,
-              workspace.clientId,
-              baseUrl,
-              {
-                format: "png", // Convert to PNG for better Slack compatibility
-              },
-            );
+        const uploadPromises = matchedLogos.map(async (asset) => {
+          const assetInfo = formatAssetInfo(asset);
+          const downloadUrl = generateAssetDownloadUrl(
+            asset.id,
+            workspace.clientId,
+            baseUrl,
+            {
+              format: "png", // Convert to PNG for better Slack compatibility
+            },
+          );
 
-            const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
+          const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
 
-            try {
-              return await uploadFileToSlack(decryptedToken, {
-                channelId: command.channel_id,
-                userId: command.user_id,
-                fileUrl: downloadUrl,
-                filename,
-                title: assetInfo.title,
-                initialComment: `📋 **${assetInfo.title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
-              });
-            } catch (uploadError) {
-              console.error(
-                `Failed to upload ${asset.name}:`,
-                uploadError,
-              );
-              return false;
-            }
-          });
+          try {
+            return await uploadFileToSlack(decryptedToken, {
+              channelId: command.channel_id,
+              userId: command.user_id,
+              fileUrl: downloadUrl,
+              filename,
+              title: assetInfo.title,
+              initialComment: `📋 *${assetInfo.title}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
+            });
+          } catch (uploadError) {
+            console.error(`Failed to upload ${asset.name}:`, uploadError);
+            return false;
+          }
+        });
 
         const uploadResults = await Promise.all(uploadPromises);
         const successfulUploads = uploadResults.filter(Boolean).length;
@@ -186,9 +186,7 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
               text: "❌ Failed to upload logo files. Check your DMs for the files or download links.",
             });
           } catch (ephemeralError: any) {
-            console.log(
-              "Could not send ephemeral error message, trying DM...",
-            );
+            console.log("Could not send ephemeral error message, trying DM...");
 
             try {
               const conversationResponse =
@@ -196,10 +194,7 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
                   users: command.user_id,
                 });
 
-              if (
-                conversationResponse.ok &&
-                conversationResponse.channel?.id
-              ) {
+              if (conversationResponse.ok && conversationResponse.channel?.id) {
                 await workspaceClient.chat.postMessage({
                   channel: conversationResponse.channel.id,
                   text: "❌ Failed to upload logo files to the channel. This might be due to bot permissions. Please check with your admin or try inviting the bot to the channel with `/invite @Ferdinand`.",
@@ -224,7 +219,7 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
             successfulUploads,
             matchedLogos.length,
             query,
-            responseTime
+            responseTime,
           );
 
           try {
@@ -244,10 +239,7 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
                   users: command.user_id,
                 });
 
-              if (
-                conversationResponse.ok &&
-                conversationResponse.channel?.id
-              ) {
+              if (conversationResponse.ok && conversationResponse.channel?.id) {
                 await workspaceClient.chat.postMessage({
                   channel: conversationResponse.channel.id,
                   text: summaryText,
@@ -279,10 +271,7 @@ export async function handleLogoCommand({ command, ack, respond, client }: any) 
                 users: command.user_id,
               });
 
-            if (
-              conversationResponse.ok &&
-              conversationResponse.channel?.id
-            ) {
+            if (conversationResponse.ok && conversationResponse.channel?.id) {
               await workspaceClient.chat.postMessage({
                 channel: conversationResponse.channel.id,
                 text: "❌ An error occurred while processing your /ferdinand-logo request. The bot might need additional permissions. Please try:\n• Inviting the bot to the channel: `/invite @Ferdinand`\n• Or contact your workspace admin to check bot permissions",
