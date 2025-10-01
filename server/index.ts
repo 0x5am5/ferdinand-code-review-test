@@ -16,15 +16,15 @@ const app = express();
 let server: ReturnType<typeof createServer> | null = null;
 
 // Important: Body parsing middleware must come before session middleware
-// Skip body parsing for Slack endpoints (ExpressReceiver handles its own parsing)
+// Skip ALL body parsing for Slack endpoints (ExpressReceiver handles its own parsing)
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api/slack/events")) {
+  if (req.path.startsWith("/api/slack/")) {
     return next();
   }
   express.json()(req, res, next);
 });
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api/slack/events")) {
+  if (req.path.startsWith("/api/slack/")) {
     return next();
   }
   express.urlencoded({ extended: true })(req, res, next);

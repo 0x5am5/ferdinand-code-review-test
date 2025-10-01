@@ -59,6 +59,13 @@ function initializeSlackApp() {
         events: "/api/slack/events",
       },
       processBeforeResponse: true,
+      // Ensure proper request handling
+      customPropertiesExtractor: (req) => {
+        return {
+          headers: req.headers,
+          rawBody: req.rawBody,
+        };
+      },
     });
 
     slackApp = new App({
