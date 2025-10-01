@@ -12,23 +12,46 @@ export function hasUploadableFiles(asset: any): boolean {
 }
 
 export function generateGoogleFontCSS(fontFamily: string, weights: string[]): string {
-  const weightParam = weights.join(";");
+  // Clean and format weights
+  const cleanWeights = weights.filter(w => w && w.trim()).map(w => w.trim());
+  const weightParam = cleanWeights.length > 0 ? cleanWeights.join(";") : "400";
+  const familyParam = fontFamily.replace(/\s+/g, "+");
+  
+  const importUrl = `https://fonts.googleapis.com/css2?family=${familyParam}:wght@${weightParam}&display=swap`;
+  
   return `/* Google Font: ${fontFamily} */
-@import url('https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, "+")}:wght@${weightParam}&display=swap');
+@import url('${importUrl}');
 
-.your-element {
+/* Usage Examples */
+.heading {
   font-family: '${fontFamily}', sans-serif;
-  font-weight: ${weights[0] || "400"};
-}`;
+  font-weight: ${cleanWeights[0] || "400"};
+}
+
+.body-text {
+  font-family: '${fontFamily}', sans-serif;
+  font-weight: ${cleanWeights.includes("400") ? "400" : cleanWeights[0] || "400"};
+}
+
+/* Available weights: ${cleanWeights.join(", ")} */`;
 }
 
 export function generateAdobeFontCSS(projectId: string, fontFamily: string): string {
   return `/* Adobe Font: ${fontFamily} */
-<link rel="stylesheet" href="https://use.typekit.net/${projectId}.css">
+/* Add this to your HTML <head> section: */
+/* <link rel="stylesheet" href="https://use.typekit.net/${projectId}.css"> */
 
-.your-element {
+/* CSS Usage: */
+.heading {
   font-family: '${fontFamily}', sans-serif;
-}`;
+}
+
+.body-text {
+  font-family: '${fontFamily}', sans-serif;
+}
+
+/* Or load via CSS import: */
+@import url('https://use.typekit.net/${projectId}.css');`;
 }
 
 // Font processing constants

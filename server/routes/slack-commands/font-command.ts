@@ -283,6 +283,8 @@ export async function handleFontCommand({
               let codeBlock = "";
               let fontDescription = `📝 *${fontInfo.title}*\n• *Weights:* ${fontInfo.weights.join(", ")}\n• *Styles:* ${fontInfo.styles.join(", ")}`;
 
+              console.log(`[FONT DEBUG] Processing ${fontInfo.title} with source: ${fontInfo.source}`);
+
               if (fontInfo.source === "google") {
                 console.log(
                   `[FONT DEBUG] Generating Google Font CSS for ${fontInfo.title} with weights: ${fontInfo.weights.join(",")}`,
@@ -299,9 +301,11 @@ export async function handleFontCommand({
                     : asset.data;
                 const projectId =
                   data?.sourceData?.projectId || "your-project-id";
+                console.log(`[FONT DEBUG] Generating Adobe Font CSS for ${fontInfo.title} with project ID: ${projectId}`);
                 codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
                 fontDescription += `\n• *Source:* Adobe Fonts (Typekit)`;
               } else {
+                console.log(`[FONT DEBUG] Generating generic CSS for ${fontInfo.title}`);
                 codeBlock = `/* Font: ${fontInfo.title} */
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
@@ -310,18 +314,40 @@ export async function handleFontCommand({
                 fontDescription += `\n• *Source:* ${fontInfo.source}`;
               }
 
-              // Send code block as a message
-              const conversationResponse =
-                await workspaceClient.conversations.open({
-                  users: command.user_id,
-                });
+              console.log(`[FONT DEBUG] Generated CSS block:`, codeBlock);
 
-              if (conversationResponse.ok && conversationResponse.channel?.id) {
-                await workspaceClient.chat.postMessage({
-                  channel: conversationResponse.channel.id,
+              // Try to send via ephemeral message first (more reliable)
+              try {
+                await workspaceClient.chat.postEphemeral({
+                  channel: command.channel_id,
+                  user: command.user_id,
                   text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
                 });
                 sentCodeBlocks++;
+                console.log(`[FONT DEBUG] Sent CSS via ephemeral message for ${fontInfo.title}`);
+              } catch (ephemeralError) {
+                console.log(`[FONT DEBUG] Ephemeral message failed, trying DM...`);
+                
+                // Fallback to DM
+                try {
+                  const conversationResponse =
+                    await workspaceClient.conversations.open({
+                      users: command.user_id,
+                    });
+
+                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                    await workspaceClient.chat.postMessage({
+                      channel: conversationResponse.channel.id,
+                      text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
+                    });
+                    sentCodeBlocks++;
+                    console.log(`[FONT DEBUG] Sent CSS via DM for ${fontInfo.title}`);
+                  } else {
+                    console.error(`[FONT DEBUG] Failed to open conversation:`, conversationResponse);
+                  }
+                } catch (dmError) {
+                  console.error(`[FONT DEBUG] DM failed for ${fontInfo.title}:`, dmError);
+                }
               }
             }
           } catch (fontError) {

@@ -1,4 +1,3 @@
-
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
 import { brandAssets } from "@shared/schema";
@@ -50,12 +49,12 @@ export async function handleFontSubcommand({
     try {
       const data = typeof f.data === "string" ? JSON.parse(f.data) : f.data;
       source = data?.source || 'custom';
-      
+
       // If source is not explicitly set, try to infer from the data structure or name
       if (source === 'custom' || !source) {
         const fontName = f.name.toLowerCase();
         const commonGoogleFonts = ['inter', 'roboto', 'open sans', 'lato', 'montserrat', 'poppins', 'source sans pro', 'raleway', 'nunito', 'ubuntu'];
-        
+
         if (commonGoogleFonts.some(gFont => fontName.includes(gFont))) {
           source = 'google';
         } else if (data?.sourceData?.projectId) {
@@ -67,7 +66,7 @@ export async function handleFontSubcommand({
     } catch (error) {
       console.error(`[FONT SUBCOMMAND DEBUG] Error parsing font data for ${f.name}:`, error);
     }
-    
+
     return { id: f.id, name: f.name, subcategory: f.subcategory, source };
   }));
 
@@ -90,12 +89,12 @@ export async function handleFontSubcommand({
     try {
       const data = typeof f.data === "string" ? JSON.parse(f.data) : f.data;
       source = data?.source || 'custom';
-      
+
       // If source is not explicitly set, try to infer from the data structure or name
       if (source === 'custom' || !source) {
         const fontName = f.name.toLowerCase();
         const commonGoogleFonts = ['inter', 'roboto', 'open sans', 'lato', 'montserrat', 'poppins', 'source sans pro', 'raleway', 'nunito', 'ubuntu'];
-        
+
         if (commonGoogleFonts.some(gFont => fontName.includes(gFont))) {
           source = 'google';
         } else if (data?.sourceData?.projectId) {
@@ -107,7 +106,7 @@ export async function handleFontSubcommand({
     } catch (error) {
       console.error(`[FONT SUBCOMMAND DEBUG] Error parsing filtered font data for ${f.name}:`, error);
     }
-    
+
     return { id: f.id, name: f.name, source };
   }));
 
@@ -241,7 +240,10 @@ export async function handleFontSubcommand({
             let codeBlock = "";
             let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}`;
 
+            console.log(`[FONT SUBCOMMAND DEBUG] Processing ${fontInfo.title} with source: ${fontInfo.source}`);
+
             if (fontInfo.source === "google") {
+              console.log(`[FONT SUBCOMMAND DEBUG] Generating Google Font CSS for ${fontInfo.title} with weights: ${fontInfo.weights.join(",")}`);
               codeBlock = generateGoogleFontCSS(
                 fontInfo.title,
                 fontInfo.weights,
@@ -254,9 +256,11 @@ export async function handleFontSubcommand({
                   : asset.data;
               const projectId =
                 data?.sourceData?.projectId || "your-project-id";
+              console.log(`[FONT SUBCOMMAND DEBUG] Generating Adobe Font CSS for ${fontInfo.title} with project ID: ${projectId}`);
               codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
               fontDescription += `\n• **Source:** Adobe Fonts (Typekit)`;
             } else {
+              console.log(`[FONT SUBCOMMAND DEBUG] Generating generic CSS for ${fontInfo.title}`);
               codeBlock = `/* Font: ${fontInfo.title} */
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
@@ -265,21 +269,43 @@ export async function handleFontSubcommand({
               fontDescription += `\n• **Source:** ${fontInfo.source}`;
             }
 
-            // Send code block as a message
-            const conversationResponse =
-              await workspaceClient.conversations.open({
-                users: command.user_id,
-              });
+            console.log(`[FONT SUBCOMMAND DEBUG] Generated CSS block:`, codeBlock);
 
-            if (
-              conversationResponse.ok &&
-              conversationResponse.channel?.id
-            ) {
-              await workspaceClient.chat.postMessage({
-                channel: conversationResponse.channel.id,
+            // Try to send via ephemeral message first (more reliable)
+            try {
+              await workspaceClient.chat.postEphemeral({
+                channel: command.channel_id,
+                user: command.user_id,
                 text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
               });
               sentCodeBlocks++;
+              console.log(`[FONT SUBCOMMAND DEBUG] Sent CSS via ephemeral message for ${fontInfo.title}`);
+            } catch (ephemeralError) {
+              console.log(`[FONT SUBCOMMAND DEBUG] Ephemeral message failed, trying DM...`);
+
+              // Fallback to DM
+              try {
+                const conversationResponse =
+                  await workspaceClient.conversations.open({
+                    users: command.user_id,
+                  });
+
+                if (
+                  conversationResponse.ok &&
+                  conversationResponse.channel?.id
+                ) {
+                  await workspaceClient.chat.postMessage({
+                    channel: conversationResponse.channel.id,
+                    text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
+                  });
+                  sentCodeBlocks++;
+                  console.log(`[FONT SUBCOMMAND DEBUG] Sent CSS via DM for ${fontInfo.title}`);
+                } else {
+                  console.error(`[FONT SUBCOMMAND DEBUG] Failed to open conversation:`, conversationResponse);
+                }
+              } catch (dmError) {
+                console.error(`[FONT SUBCOMMAND DEBUG] DM failed for ${fontInfo.title}:`, dmError);
+              }
             }
           }
         } catch (fontError) {
@@ -304,7 +330,7 @@ export async function handleFontSubcommand({
         summaryText += `🔍 Filtered by: "${variant}"\n`;
       }
 
-      
+
 
       summaryText += `⏱️ Response time: ${responseTime}ms`;
 
