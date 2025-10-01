@@ -620,11 +620,32 @@ export function formatFontInfo(fontAsset: BrandAsset): {
 } {
   try {
     const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
+    
+    console.log(`[FONT DEBUG] Processing font ${fontAsset.name}, data:`, JSON.stringify(data, null, 2));
 
-    // Handle different data structures
-    const source = data?.source || 'custom';
-    const weights = data?.weights || ['400'];
-    const styles = data?.styles || ['normal'];
+    // Handle different data structures - be more flexible with source detection
+    let source = data?.source || 'custom';
+    
+    // If source is not explicitly set, try to infer from the data structure or name
+    if (source === 'custom' || !source) {
+      // Check if it's likely a Google font
+      const fontName = fontAsset.name.toLowerCase();
+      const commonGoogleFonts = ['inter', 'roboto', 'open sans', 'lato', 'montserrat', 'poppins', 'source sans pro', 'raleway', 'nunito', 'ubuntu'];
+      
+      if (commonGoogleFonts.some(gFont => fontName.includes(gFont))) {
+        source = 'google';
+        console.log(`[FONT DEBUG] Inferred Google font for ${fontAsset.name}`);
+      } else if (data?.sourceData?.projectId) {
+        source = 'adobe';
+        console.log(`[FONT DEBUG] Detected Adobe font for ${fontAsset.name}`);
+      } else if (data?.sourceData?.files && data.sourceData.files.length > 0) {
+        source = 'file';
+        console.log(`[FONT DEBUG] Detected custom file font for ${fontAsset.name}`);
+      }
+    }
+
+    const weights = Array.isArray(data?.weights) ? data.weights : ['400'];
+    const styles = Array.isArray(data?.styles) ? data.styles : ['normal'];
     const usage = data?.usage || data?.subcategory || '';
 
     // Extract files information for custom fonts
@@ -647,6 +668,8 @@ export function formatFontInfo(fontAsset: BrandAsset): {
     } else if (assetName.includes('header') || assetName.includes('heading') || assetName.includes('display') || subcategory.includes('header')) {
       category = 'header';
     }
+
+    console.log(`[FONT DEBUG] Final font info for ${fontAsset.name}: source=${source}, weights=${weights.join(',')}, styles=${styles.join(',')}`);
 
     return {
       title: fontAsset.name,
@@ -672,10 +695,11 @@ export function formatFontInfo(fontAsset: BrandAsset): {
 // Generate CSS code for Google Fonts
 export function generateGoogleFontCSS(fontFamily: string, weights: string[]): string {
   const familyParam = fontFamily.replace(/\s+/g, '+');
-  const weightsParam = weights.join(',');
+  const weightsParam = weights.join(';');
   const url = `https://fonts.googleapis.com/css2?family=${familyParam}:wght@${weightsParam}&display=swap`;
 
-  return `/* Add this to your HTML <head> */
+  return `/* Google Font: ${fontFamily} */
+/* Add this to your HTML <head> */
 <link href="${url}" rel="stylesheet">
 
 /* Or add this to your CSS */
@@ -684,6 +708,7 @@ export function generateGoogleFontCSS(fontFamily: string, weights: string[]): st
 /* Use in CSS */
 .your-element {
   font-family: '${fontFamily}', sans-serif;
+  font-weight: ${weights[0] || '400'};
 }`;
 }
 
@@ -702,7 +727,14 @@ export function generateAdobeFontCSS(projectId: string, fontFamily: string): str
 export function hasUploadableFiles(fontAsset: BrandAsset): boolean {
   try {
     const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
-    return data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
+    
+    // Check multiple conditions for uploadable files
+    const hasSourceFiles = data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
+    const hasCustomFiles = data?.sourceData?.files && data.sourceData.files.length > 0 && data?.source !== 'google' && data?.source !== 'adobe';
+    
+    console.log(`[FONT DEBUG] hasUploadableFiles for ${fontAsset.name}: source=${data?.source}, hasFiles=${!!(data?.sourceData?.files && data.sourceData.files.length > 0)}, result=${hasSourceFiles || hasCustomFiles}`);
+    
+    return hasSourceFiles || hasCustomFiles;
   } catch {
     return false;
   }

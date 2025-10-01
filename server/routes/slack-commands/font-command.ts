@@ -203,6 +203,9 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
 
         for (const asset of displayAssets) {
           const fontInfo = formatFontInfo(asset);
+          
+          console.log(`[FONT DEBUG] Processing asset ${asset.name} (ID: ${asset.id})`);
+          console.log(`[FONT DEBUG] Font info:`, { source: fontInfo.source, hasUploadableFiles: hasUploadableFiles(asset) });
 
           try {
             // Check if font has uploadable files (custom fonts)
@@ -232,6 +235,7 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
               let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}`;
 
               if (fontInfo.source === "google") {
+                console.log(`[FONT DEBUG] Generating Google Font CSS for ${fontInfo.title} with weights: ${fontInfo.weights.join(',')}`);
                 codeBlock = generateGoogleFontCSS(
                   fontInfo.title,
                   fontInfo.weights,
