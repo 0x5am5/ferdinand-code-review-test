@@ -86,8 +86,8 @@ export function buildColorBlocks(
       },
     });
 
-    // Process each asset in this category (show up to 3 palettes)
-    for (const asset of groupedAssets[category].slice(0, 3)) {
+    // Process each asset in this category
+    for (const asset of groupedAssets[category]) {
       const colorInfo = formatColorInfo(asset);
 
       if (colorInfo.colors.length === 0) {
@@ -155,7 +155,7 @@ export function buildColorBlocks(
       },
     });
 
-    for (const asset of assets.slice(0, 3)) {
+    for (const asset of assets) {
       const colorInfo = formatColorInfo(asset);
 
       if (colorInfo.colors.length === 0) {
@@ -222,17 +222,7 @@ export function buildColorBlocks(
     ],
   });
 
-  if (displayAssets.length > 3) {
-    colorBlocks.push({
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: `📋 Showing first 3 palettes. Total available: ${displayAssets.length}`,
-        },
-      ],
-    });
-  }
+  // Remove the "showing first 3" message since we now show all palettes
 
   return colorBlocks;
 }
