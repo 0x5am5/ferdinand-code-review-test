@@ -1,10 +1,9 @@
-
-import OpenAI from 'openai';
-import type { BrandAsset } from '@shared/schema';
-import { costMonitor } from './nlp-cost-monitor';
+import OpenAI from "openai";
+import type { BrandAsset } from "@shared/schema";
+import { costMonitor } from "./nlp-cost-monitor";
 
 interface ProcessedCommand {
-  intent: 'logo' | 'color' | 'font' | 'search' | 'help' | 'unknown';
+  intent: "logo" | "color" | "font" | "search" | "help" | "unknown";
   variant?: string;
   query?: string;
   confidence: number;
@@ -21,7 +20,9 @@ export class NLPProcessor {
 
   constructor() {
     if (!process.env.OPENAI_API_KEY) {
-      console.warn('OpenAI API key not configured. Natural language processing will be disabled.');
+      console.warn(
+        "OpenAI API key not configured. Natural language processing will be disabled.",
+      );
       this.openai = null as any;
     } else {
       this.openai = new OpenAI({
@@ -30,7 +31,11 @@ export class NLPProcessor {
     }
   }
 
-  async processCommand(input: string, assetContext: AssetContext, workspaceId?: string): Promise<ProcessedCommand> {
+  async processCommand(
+    input: string,
+    assetContext: AssetContext,
+    workspaceId?: string,
+  ): Promise<ProcessedCommand> {
     // If OpenAI is not configured, fall back to basic parsing
     if (!this.openai) {
       return this.fallbackProcessing(input);
@@ -40,7 +45,9 @@ export class NLPProcessor {
     if (workspaceId) {
       const limitCheck = costMonitor.checkLimits(workspaceId);
       if (!limitCheck.allowed) {
-        console.warn(`NLP request blocked for workspace ${workspaceId}: ${limitCheck.reason}`);
+        console.warn(
+          `NLP request blocked for workspace ${workspaceId}: ${limitCheck.reason}`,
+        );
         return this.fallbackProcessing(input);
       }
     }
@@ -50,10 +57,10 @@ export class NLPProcessor {
       const userPrompt = `Parse this brand asset request: "${input}"`;
 
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: "gpt-3.5-turbo",
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         temperature: 0.1,
         max_tokens: 150,
@@ -69,9 +76,9 @@ export class NLPProcessor {
         costMonitor.recordUsage(workspaceId);
       }
 
-      return this.parseAIResponse(result, input);</old_str>
+      return this.parseAIResponse(result, input);
     } catch (error) {
-      console.error('OpenAI API error:', error);
+      console.error("OpenAI API error:", error);
       return this.fallbackProcessing(input);
     }
   }
@@ -90,9 +97,9 @@ export class NLPProcessor {
 }
 
 Available assets for this organization:
-LOGOS: ${logoTypes.join(', ') || 'main, horizontal, vertical, square, dark, light'}
-COLORS: ${colorTypes.join(', ') || 'brand, neutral, interactive'}
-FONTS: ${fontTypes.join(', ') || 'body, header, display'}
+LOGOS: ${logoTypes.join(", ") || "main, horizontal, vertical, square, dark, light"}
+COLORS: ${colorTypes.join(", ") || "brand, neutral, interactive"}
+FONTS: ${fontTypes.join(", ") || "body, header, display"}
 
 Rules:
 - Intent MUST be one of: logo, color, font, search, help
@@ -107,10 +114,11 @@ Rules:
 
   private extractAssetVariants(assets: BrandAsset[]): string[] {
     const variants = new Set<string>();
-    
-    assets.forEach(asset => {
+
+    assets.forEach((asset) => {
       try {
-        const data = typeof asset.data === 'string' ? JSON.parse(asset.data) : asset.data;
+        const data =
+          typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
         if (data?.type) {
           variants.add(data.type);
         }
@@ -120,10 +128,10 @@ Rules:
         if (data?.usage) {
           variants.add(data.usage);
         }
-        
+
         // Add asset name variants
         const nameWords = asset.name.toLowerCase().split(/\s+/);
-        nameWords.forEach(word => {
+        nameWords.forEach((word) => {
           if (word.length > 2) {
             variants.add(word);
           }
@@ -136,12 +144,18 @@ Rules:
     return Array.from(variants).slice(0, 10); // Limit to prevent prompt bloat
   }
 
-  private parseAIResponse(response: string, originalInput: string): ProcessedCommand {
+  private parseAIResponse(
+    response: string,
+    originalInput: string,
+  ): ProcessedCommand {
     try {
       const parsed = JSON.parse(response.trim());
-      
+
       // Validate the response structure
-      if (!parsed.intent || !['logo', 'color', 'font', 'search', 'help'].includes(parsed.intent)) {
+      if (
+        !parsed.intent ||
+        !["logo", "color", "font", "search", "help"].includes(parsed.intent)
+      ) {
         return this.fallbackProcessing(originalInput);
       }
 
@@ -149,7 +163,7 @@ Rules:
         intent: parsed.intent,
         variant: parsed.variant || undefined,
         query: originalInput,
-        confidence: Math.max(0, Math.min(1, parsed.confidence || 0.5))
+        confidence: Math.max(0, Math.min(1, parsed.confidence || 0.5)),
       };
     } catch {
       return this.fallbackProcessing(originalInput);
@@ -158,49 +172,80 @@ Rules:
 
   private fallbackProcessing(input: string): ProcessedCommand {
     const lowerInput = input.toLowerCase();
-    
+
     // Logo detection
-    if (lowerInput.includes('logo') || lowerInput.includes('brand mark') || lowerInput.includes('icon')) {
+    if (
+      lowerInput.includes("logo") ||
+      lowerInput.includes("brand mark") ||
+      lowerInput.includes("icon")
+    ) {
       const variant = this.extractLogoVariant(lowerInput);
-      return { intent: 'logo', variant, query: input, confidence: 0.7 };
+      return { intent: "logo", variant, query: input, confidence: 0.7 };
     }
-    
+
     // Color detection
-    if (lowerInput.includes('color') || lowerInput.includes('palette') || lowerInput.includes('hex') || 
-        lowerInput.includes('rgb') || lowerInput.includes('brand colors')) {
+    if (
+      lowerInput.includes("color") ||
+      lowerInput.includes("palette") ||
+      lowerInput.includes("hex") ||
+      lowerInput.includes("rgb") ||
+      lowerInput.includes("brand colors")
+    ) {
       const variant = this.extractColorVariant(lowerInput);
-      return { intent: 'color', variant, query: input, confidence: 0.7 };
+      return { intent: "color", variant, query: input, confidence: 0.7 };
     }
-    
+
     // Font detection
-    if (lowerInput.includes('font') || lowerInput.includes('typography') || lowerInput.includes('typeface') ||
-        lowerInput.includes('text style')) {
+    if (
+      lowerInput.includes("font") ||
+      lowerInput.includes("typography") ||
+      lowerInput.includes("typeface") ||
+      lowerInput.includes("text style")
+    ) {
       const variant = this.extractFontVariant(lowerInput);
-      return { intent: 'font', variant, query: input, confidence: 0.7 };
+      return { intent: "font", variant, query: input, confidence: 0.7 };
     }
-    
+
     // Help detection
-    if (lowerInput.includes('help') || lowerInput.includes('how') || lowerInput.includes('what can')) {
-      return { intent: 'help', query: input, confidence: 0.9 };
+    if (
+      lowerInput.includes("help") ||
+      lowerInput.includes("how") ||
+      lowerInput.includes("what can")
+    ) {
+      return { intent: "help", query: input, confidence: 0.9 };
     }
-    
+
     // Default to search for everything else
-    return { intent: 'search', query: input, confidence: 0.5 };
+    return { intent: "search", query: input, confidence: 0.5 };
   }
 
   private extractLogoVariant(input: string): string | undefined {
-    const variants = ['dark', 'light', 'square', 'horizontal', 'vertical', 'main', 'primary'];
-    return variants.find(variant => input.includes(variant));
+    const variants = [
+      "dark",
+      "light",
+      "square",
+      "horizontal",
+      "vertical",
+      "main",
+      "primary",
+    ];
+    return variants.find((variant) => input.includes(variant));
   }
 
   private extractColorVariant(input: string): string | undefined {
-    const variants = ['brand', 'primary', 'neutral', 'interactive', 'secondary'];
-    return variants.find(variant => input.includes(variant));
+    const variants = [
+      "brand",
+      "primary",
+      "neutral",
+      "interactive",
+      "secondary",
+    ];
+    return variants.find((variant) => input.includes(variant));
   }
 
   private extractFontVariant(input: string): string | undefined {
-    const variants = ['body', 'header', 'heading', 'display', 'text'];
-    return variants.find(variant => input.includes(variant));
+    const variants = ["body", "header", "heading", "display", "text"];
+    return variants.find((variant) => input.includes(variant));
   }
 }
 

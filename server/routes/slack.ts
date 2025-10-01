@@ -43,11 +43,11 @@ function initializeSlackApp() {
   console.log("🔍 Slack environment check:");
   console.log(
     "SLACK_BOT_TOKEN:",
-    process.env.SLACK_BOT_TOKEN ? "✅ Found" : "❌ Missing"
+    process.env.SLACK_BOT_TOKEN ? "✅ Found" : "❌ Missing",
   );
   console.log(
     "SLACK_SIGNING_SECRET:",
-    process.env.SLACK_SIGNING_SECRET ? "✅ Found" : "❌ Missing"
+    process.env.SLACK_SIGNING_SECRET ? "✅ Found" : "❌ Missing",
   );
 
   if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET) {
@@ -107,8 +107,8 @@ function initializeSlackApp() {
             .where(
               and(
                 eq(slackWorkspaces.slackTeamId, command.team_id),
-                eq(slackWorkspaces.isActive, true)
-              )
+                eq(slackWorkspaces.isActive, true),
+              ),
             );
 
           if (!workspace) {
@@ -129,8 +129,8 @@ function initializeSlackApp() {
             .where(
               and(
                 eq(brandAssets.clientId, workspace.clientId),
-                eq(brandAssets.category, "logo")
-              )
+                eq(brandAssets.category, "logo"),
+              ),
             );
 
           if (logoAssets.length === 0) {
@@ -163,7 +163,7 @@ function initializeSlackApp() {
 
           // Respond immediately to avoid timeout
           await respond({
-            text: `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? 's' : ''}${query ? ` for "${query}"` : ''}... Files will appear shortly!`,
+            text: `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}... Files will appear shortly!`,
             response_type: "ephemeral",
           });
 
@@ -175,33 +175,38 @@ function initializeSlackApp() {
               const decryptedToken = decryptBotToken(workspace.botToken);
               botToken = decryptedToken;
 
-              const uploadPromises = matchedLogos.slice(0, 3).map(async (asset) => {
-                const assetInfo = formatAssetInfo(asset);
-                const downloadUrl = generateAssetDownloadUrl(
-                  asset.id,
-                  workspace.clientId,
-                  baseUrl,
-                  {
-                    format: "png", // Convert to PNG for better Slack compatibility
+              const uploadPromises = matchedLogos
+                .slice(0, 3)
+                .map(async (asset) => {
+                  const assetInfo = formatAssetInfo(asset);
+                  const downloadUrl = generateAssetDownloadUrl(
+                    asset.id,
+                    workspace.clientId,
+                    baseUrl,
+                    {
+                      format: "png", // Convert to PNG for better Slack compatibility
+                    },
+                  );
+
+                  const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
+
+                  try {
+                    return await uploadFileToSlack(decryptedToken, {
+                      channelId: command.channel_id,
+                      userId: command.user_id,
+                      fileUrl: downloadUrl,
+                      filename,
+                      title: assetInfo.title,
+                      initialComment: `📋 **${assetInfo.title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
+                    });
+                  } catch (uploadError) {
+                    console.error(
+                      `Failed to upload ${asset.name}:`,
+                      uploadError,
+                    );
+                    return false;
                   }
-                );
-
-                const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
-
-                try {
-                  return await uploadFileToSlack(decryptedToken, {
-                    channelId: command.channel_id,
-                    userId: command.user_id,
-                    fileUrl: downloadUrl,
-                    filename,
-                    title: assetInfo.title,
-                    initialComment: `📋 **${assetInfo.title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
-                  });
-                } catch (uploadError) {
-                  console.error(`Failed to upload ${asset.name}:`, uploadError);
-                  return false;
-                }
-              });
+                });
 
               const uploadResults = await Promise.all(uploadPromises);
               const successfulUploads = uploadResults.filter(Boolean).length;
@@ -220,25 +225,37 @@ function initializeSlackApp() {
                     text: "❌ Failed to upload logo files. Check your DMs for the files or download links.",
                   });
                 } catch (ephemeralError: any) {
-                  console.log("Could not send ephemeral error message, trying DM...");
-                  
-                  try {
-                    const conversationResponse = await workspaceClient.conversations.open({
-                      users: command.user_id,
-                    });
+                  console.log(
+                    "Could not send ephemeral error message, trying DM...",
+                  );
 
-                    if (conversationResponse.ok && conversationResponse.channel?.id) {
+                  try {
+                    const conversationResponse =
+                      await workspaceClient.conversations.open({
+                        users: command.user_id,
+                      });
+
+                    if (
+                      conversationResponse.ok &&
+                      conversationResponse.channel?.id
+                    ) {
                       await workspaceClient.chat.postMessage({
                         channel: conversationResponse.channel.id,
                         text: "❌ Failed to upload logo files to the channel. This might be due to bot permissions. Please check with your admin or try inviting the bot to the channel with `/invite @Ferdinand`.",
                       });
                     }
                   } catch (dmError) {
-                    console.log("Could not send error message via DM either:", dmError);
+                    console.log(
+                      "Could not send error message via DM either:",
+                      dmError,
+                    );
                   }
                 }
-                
-                logSlackActivity({ ...auditLog, error: "All file uploads failed" });
+
+                logSlackActivity({
+                  ...auditLog,
+                  error: "All file uploads failed",
+                });
                 console.log("[SLACK ERROR] All file uploads failed");
               } else {
                 // Success - files were uploaded successfully
@@ -265,21 +282,30 @@ function initializeSlackApp() {
                     text: summaryText,
                   });
                 } catch (ephemeralError) {
-                  console.log("Could not send success message via ephemeral, trying DM...");
-                  
-                  try {
-                    const conversationResponse = await workspaceClient.conversations.open({
-                      users: command.user_id,
-                    });
+                  console.log(
+                    "Could not send success message via ephemeral, trying DM...",
+                  );
 
-                    if (conversationResponse.ok && conversationResponse.channel?.id) {
+                  try {
+                    const conversationResponse =
+                      await workspaceClient.conversations.open({
+                        users: command.user_id,
+                      });
+
+                    if (
+                      conversationResponse.ok &&
+                      conversationResponse.channel?.id
+                    ) {
                       await workspaceClient.chat.postMessage({
                         channel: conversationResponse.channel.id,
                         text: summaryText,
                       });
                     }
                   } catch (dmError) {
-                    console.log("Could not send success message via DM either:", dmError);
+                    console.log(
+                      "Could not send success message via DM either:",
+                      dmError,
+                    );
                   }
                 }
 
@@ -294,13 +320,17 @@ function initializeSlackApp() {
               if (botToken) {
                 try {
                   const workspaceClient = new WebClient(botToken);
-                  
-                  // Try to send error via DM first since channel access might have failed
-                  const conversationResponse = await workspaceClient.conversations.open({
-                    users: command.user_id,
-                  });
 
-                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                  // Try to send error via DM first since channel access might have failed
+                  const conversationResponse =
+                    await workspaceClient.conversations.open({
+                      users: command.user_id,
+                    });
+
+                  if (
+                    conversationResponse.ok &&
+                    conversationResponse.channel?.id
+                  ) {
                     await workspaceClient.chat.postMessage({
                       channel: conversationResponse.channel.id,
                       text: "❌ An error occurred while processing your /ferdinand-logo request. The bot might need additional permissions. Please try:\n• Inviting the bot to the channel: `/invite @Ferdinand`\n• Or contact your workspace admin to check bot permissions",
@@ -313,9 +343,12 @@ function initializeSlackApp() {
                 }
               }
 
-              logSlackActivity({ ...auditLog, error: "Background processing failed" });
+              logSlackActivity({
+                ...auditLog,
+                error: "Background processing failed",
+              });
             }
-        });
+          });
 
           // Command acknowledged successfully - actual processing happens in background
         } catch (error) {
@@ -330,7 +363,7 @@ function initializeSlackApp() {
             error: error instanceof Error ? error.message : "Unknown error",
           });
         }
-      }
+      },
     );
 
     slackApp.command(
@@ -367,8 +400,8 @@ function initializeSlackApp() {
             .where(
               and(
                 eq(slackWorkspaces.slackTeamId, command.team_id),
-                eq(slackWorkspaces.isActive, true)
-              )
+                eq(slackWorkspaces.isActive, true),
+              ),
             );
 
           if (!workspace) {
@@ -388,8 +421,8 @@ function initializeSlackApp() {
             .where(
               and(
                 eq(brandAssets.clientId, workspace.clientId),
-                eq(brandAssets.category, "color")
-              )
+                eq(brandAssets.category, "color"),
+              ),
             );
 
           if (colorAssets.length === 0) {
@@ -404,7 +437,7 @@ function initializeSlackApp() {
           // Filter by variant if specified
           const filteredColorAssets = filterColorAssetsByVariant(
             colorAssets,
-            variant
+            variant,
           );
 
           if (filteredColorAssets.length === 0 && variant) {
@@ -551,7 +584,7 @@ function initializeSlackApp() {
             error: error instanceof Error ? error.message : "Unknown error",
           });
         }
-      }
+      },
     );
 
     slackApp.command(
@@ -590,8 +623,8 @@ function initializeSlackApp() {
             .where(
               and(
                 eq(slackWorkspaces.slackTeamId, command.team_id),
-                eq(slackWorkspaces.isActive, true)
-              )
+                eq(slackWorkspaces.isActive, true),
+              ),
             );
 
           if (!workspace) {
@@ -611,8 +644,8 @@ function initializeSlackApp() {
             .where(
               and(
                 eq(brandAssets.clientId, workspace.clientId),
-                eq(brandAssets.category, "font")
-              )
+                eq(brandAssets.category, "font"),
+              ),
             );
 
           if (fontAssets.length === 0) {
@@ -627,7 +660,7 @@ function initializeSlackApp() {
           // Filter by variant if specified
           const filteredFontAssets = filterFontAssetsByVariant(
             fontAssets,
-            variant
+            variant,
           );
 
           if (filteredFontAssets.length === 0 && variant) {
@@ -650,7 +683,7 @@ function initializeSlackApp() {
 
           // Respond immediately to avoid timeout
           await respond({
-            text: `🔄 Preparing ${displayAssets.length} font${displayAssets.length > 1 ? 's' : ''}${variant ? ` for "${variant}"` : ''}... Files and usage instructions will appear shortly!`,
+            text: `🔄 Preparing ${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""}${variant ? ` for "${variant}"` : ""}... Files and usage instructions will appear shortly!`,
             response_type: "ephemeral",
           });
 
@@ -677,7 +710,7 @@ function initializeSlackApp() {
                     const downloadUrl = generateAssetDownloadUrl(
                       asset.id,
                       workspace.clientId,
-                      baseUrl
+                      baseUrl,
                     );
 
                     const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
@@ -688,7 +721,7 @@ function initializeSlackApp() {
                       fileUrl: downloadUrl,
                       filename,
                       title: `${fontInfo.title} - Font Files`,
-                      initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map(f => f.format.toUpperCase()).join(", ") || "Various"}`,
+                      initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map((f) => f.format.toUpperCase()).join(", ") || "Various"}`,
                     });
 
                     if (uploaded) uploadedFiles++;
@@ -697,29 +730,43 @@ function initializeSlackApp() {
                     let codeBlock = "";
                     let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}`;
 
-                    if (fontInfo.source === 'google') {
-                      codeBlock = generateGoogleFontCSS(fontInfo.title, fontInfo.weights);
+                    if (fontInfo.source === "google") {
+                      codeBlock = generateGoogleFontCSS(
+                        fontInfo.title,
+                        fontInfo.weights,
+                      );
                       fontDescription += `\n• **Source:** Google Fonts`;
-                    } else if (fontInfo.source === 'adobe') {
-                      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-                      const projectId = data?.sourceData?.projectId || "your-project-id";
-                      codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
+                    } else if (fontInfo.source === "adobe") {
+                      const data =
+                        typeof asset.data === "string"
+                          ? JSON.parse(asset.data)
+                          : asset.data;
+                      const projectId =
+                        data?.sourceData?.projectId || "your-project-id";
+                      codeBlock = generateAdobeFontCSS(
+                        projectId,
+                        fontInfo.title,
+                      );
                       fontDescription += `\n• **Source:** Adobe Fonts (Typekit)`;
                     } else {
                       codeBlock = `/* Font: ${fontInfo.title} */
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
-  font-weight: ${fontInfo.weights[0] || '400'};
+  font-weight: ${fontInfo.weights[0] || "400"};
 }`;
                       fontDescription += `\n• **Source:** ${fontInfo.source}`;
                     }
 
                     // Send code block as a message
-                    const conversationResponse = await workspaceClient.conversations.open({
-                      users: command.user_id,
-                    });
+                    const conversationResponse =
+                      await workspaceClient.conversations.open({
+                        users: command.user_id,
+                      });
 
-                    if (conversationResponse.ok && conversationResponse.channel?.id) {
+                    if (
+                      conversationResponse.ok &&
+                      conversationResponse.channel?.id
+                    ) {
                       await workspaceClient.chat.postMessage({
                         channel: conversationResponse.channel.id,
                         text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
@@ -728,7 +775,10 @@ function initializeSlackApp() {
                     }
                   }
                 } catch (fontError) {
-                  console.error(`Failed to process font ${asset.name}:`, fontError);
+                  console.error(
+                    `Failed to process font ${asset.name}:`,
+                    fontError,
+                  );
                 }
               }
 
@@ -736,13 +786,13 @@ function initializeSlackApp() {
 
               // Send summary message
               let summaryText = `✅ **Font processing complete!**\n`;
-              
+
               if (uploadedFiles > 0) {
-                summaryText += `📁 ${uploadedFiles} font file${uploadedFiles > 1 ? 's' : ''} uploaded\n`;
+                summaryText += `📁 ${uploadedFiles} font file${uploadedFiles > 1 ? "s" : ""} uploaded\n`;
               }
-              
+
               if (sentCodeBlocks > 0) {
-                summaryText += `💻 ${sentCodeBlocks} usage code${sentCodeBlocks > 1 ? 's' : ''} provided\n`;
+                summaryText += `💻 ${sentCodeBlocks} usage code${sentCodeBlocks > 1 ? "s" : ""} provided\n`;
               }
 
               if (variant) {
@@ -762,41 +812,56 @@ function initializeSlackApp() {
                   text: summaryText,
                 });
               } catch (ephemeralError) {
-                console.log("Could not send summary message via ephemeral, trying DM...");
-                
-                try {
-                  const conversationResponse = await workspaceClient.conversations.open({
-                    users: command.user_id,
-                  });
+                console.log(
+                  "Could not send summary message via ephemeral, trying DM...",
+                );
 
-                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                try {
+                  const conversationResponse =
+                    await workspaceClient.conversations.open({
+                      users: command.user_id,
+                    });
+
+                  if (
+                    conversationResponse.ok &&
+                    conversationResponse.channel?.id
+                  ) {
                     await workspaceClient.chat.postMessage({
                       channel: conversationResponse.channel.id,
                       text: summaryText,
                     });
                   }
                 } catch (dmError) {
-                  console.log("Could not send summary message via DM either:", dmError);
+                  console.log(
+                    "Could not send summary message via DM either:",
+                    dmError,
+                  );
                 }
               }
 
               auditLog.success = true;
               auditLog.responseTimeMs = responseTime;
               logSlackActivity(auditLog);
-
             } catch (backgroundError) {
-              console.error("Background font processing error:", backgroundError);
+              console.error(
+                "Background font processing error:",
+                backgroundError,
+              );
 
               // Try to send error message
               if (botToken) {
                 try {
                   const workspaceClient = new WebClient(botToken);
-                  
-                  const conversationResponse = await workspaceClient.conversations.open({
-                    users: command.user_id,
-                  });
 
-                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                  const conversationResponse =
+                    await workspaceClient.conversations.open({
+                      users: command.user_id,
+                    });
+
+                  if (
+                    conversationResponse.ok &&
+                    conversationResponse.channel?.id
+                  ) {
                     await workspaceClient.chat.postMessage({
                       channel: conversationResponse.channel.id,
                       text: "❌ An error occurred while processing your /ferdinand-fonts request. The bot might need additional permissions. Please try:\n• Inviting the bot to the channel: `/invite @Ferdinand`\n• Or contact your workspace admin to check bot permissions",
@@ -807,10 +872,12 @@ function initializeSlackApp() {
                 }
               }
 
-              logSlackActivity({ ...auditLog, error: "Background processing failed" });
+              logSlackActivity({
+                ...auditLog,
+                error: "Background processing failed",
+              });
             }
           });
-
         } catch (error) {
           console.error("Error handling /ferdinand-fonts command:", error);
           await respond({
@@ -823,7 +890,7 @@ function initializeSlackApp() {
             error: error instanceof Error ? error.message : "Unknown error",
           });
         }
-      }
+      },
     );
 
     // Search command
@@ -857,8 +924,8 @@ function initializeSlackApp() {
           .where(
             and(
               eq(slackWorkspaces.slackTeamId, command.team_id),
-              eq(slackWorkspaces.isActive, true)
-            )
+              eq(slackWorkspaces.isActive, true),
+            ),
           );
 
         if (!workspace) {
@@ -906,7 +973,7 @@ function initializeSlackApp() {
             acc[asset.category].push(asset);
             return acc;
           },
-          {} as Record<string, typeof searchResults>
+          {} as Record<string, typeof searchResults>,
         );
 
         const blocks: any[] = [
@@ -1086,7 +1153,12 @@ Show this help message`,
 
     // Helper functions for unified /ferdinand command
     const handleColorSubcommand = async ({
-      command, respond, client, variant, workspace, auditLog
+      command,
+      respond,
+      client,
+      variant,
+      workspace,
+      auditLog,
     }: {
       command: any;
       respond: any;
@@ -1101,8 +1173,8 @@ Show this help message`,
         .where(
           and(
             eq(brandAssets.clientId, workspace.clientId),
-            eq(brandAssets.category, "color")
-          )
+            eq(brandAssets.category, "color"),
+          ),
         );
 
       if (colorAssets.length === 0) {
@@ -1115,7 +1187,10 @@ Show this help message`,
       }
 
       // Filter by variant if specified
-      const filteredColorAssets = filterColorAssetsByVariant(colorAssets, variant);
+      const filteredColorAssets = filterColorAssetsByVariant(
+        colorAssets,
+        variant,
+      );
 
       if (filteredColorAssets.length === 0 && variant) {
         await respond({
@@ -1129,7 +1204,8 @@ Show this help message`,
         return;
       }
 
-      const displayAssets = filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
+      const displayAssets =
+        filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
       auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
       // Build enhanced color blocks with visual swatches (reuse existing logic)
@@ -1240,7 +1316,12 @@ Show this help message`,
     };
 
     const handleFontSubcommand = async ({
-      command, respond, client, variant, workspace, auditLog
+      command,
+      respond,
+      client,
+      variant,
+      workspace,
+      auditLog,
     }: {
       command: any;
       respond: any;
@@ -1257,8 +1338,8 @@ Show this help message`,
         .where(
           and(
             eq(brandAssets.clientId, workspace.clientId),
-            eq(brandAssets.category, "font")
-          )
+            eq(brandAssets.category, "font"),
+          ),
         );
 
       if (fontAssets.length === 0) {
@@ -1285,14 +1366,15 @@ Show this help message`,
         return;
       }
 
-      const displayAssets = filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
+      const displayAssets =
+        filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
       auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
       const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
       // Respond immediately to avoid timeout
       await respond({
-        text: `🔄 Processing ${displayAssets.length} font${displayAssets.length > 1 ? 's' : ''}${variant ? ` (${variant} variant)` : ''}...`,
+        text: `🔄 Processing ${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""}${variant ? ` (${variant} variant)` : ""}...`,
         response_type: "ephemeral",
       });
 
@@ -1316,7 +1398,7 @@ Show this help message`,
                 const downloadUrl = generateAssetDownloadUrl(
                   asset.id,
                   workspace.clientId,
-                  baseUrl
+                  baseUrl,
                 );
 
                 const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
@@ -1327,7 +1409,7 @@ Show this help message`,
                   fileUrl: downloadUrl,
                   filename,
                   title: `${fontInfo.title} - Font Files`,
-                  initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map(f => f.format.toUpperCase()).join(", ") || "Various"}`,
+                  initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map((f) => f.format.toUpperCase()).join(", ") || "Various"}`,
                 });
 
                 if (uploaded) uploadedFiles++;
@@ -1336,29 +1418,40 @@ Show this help message`,
                 let codeBlock = "";
                 let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}`;
 
-                if (fontInfo.source === 'google') {
-                  codeBlock = generateGoogleFontCSS(fontInfo.title, fontInfo.weights);
+                if (fontInfo.source === "google") {
+                  codeBlock = generateGoogleFontCSS(
+                    fontInfo.title,
+                    fontInfo.weights,
+                  );
                   fontDescription += `\n• **Source:** Google Fonts`;
-                } else if (fontInfo.source === 'adobe') {
-                  const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-                  const projectId = data?.sourceData?.projectId || "your-project-id";
+                } else if (fontInfo.source === "adobe") {
+                  const data =
+                    typeof asset.data === "string"
+                      ? JSON.parse(asset.data)
+                      : asset.data;
+                  const projectId =
+                    data?.sourceData?.projectId || "your-project-id";
                   codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
                   fontDescription += `\n• **Source:** Adobe Fonts (Typekit)`;
                 } else {
                   codeBlock = `/* Font: ${fontInfo.title} */
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
-  font-weight: ${fontInfo.weights[0] || '400'};
+  font-weight: ${fontInfo.weights[0] || "400"};
 }`;
                   fontDescription += `\n• **Source:** ${fontInfo.source}`;
                 }
 
                 // Send code block as a message
-                const conversationResponse = await workspaceClient.conversations.open({
-                  users: command.user_id,
-                });
+                const conversationResponse =
+                  await workspaceClient.conversations.open({
+                    users: command.user_id,
+                  });
 
-                if (conversationResponse.ok && conversationResponse.channel?.id) {
+                if (
+                  conversationResponse.ok &&
+                  conversationResponse.channel?.id
+                ) {
                   await workspaceClient.chat.postMessage({
                     channel: conversationResponse.channel.id,
                     text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
@@ -1375,13 +1468,13 @@ Show this help message`,
 
           // Send summary message
           let summaryText = `✅ **Font processing complete!**\n`;
-          
+
           if (uploadedFiles > 0) {
-            summaryText += `📁 ${uploadedFiles} font file${uploadedFiles > 1 ? 's' : ''} uploaded\n`;
+            summaryText += `📁 ${uploadedFiles} font file${uploadedFiles > 1 ? "s" : ""} uploaded\n`;
           }
-          
+
           if (sentCodeBlocks > 0) {
-            summaryText += `💻 ${sentCodeBlocks} usage code${sentCodeBlocks > 1 ? 's' : ''} provided\n`;
+            summaryText += `💻 ${sentCodeBlocks} usage code${sentCodeBlocks > 1 ? "s" : ""} provided\n`;
           }
 
           if (variant) {
@@ -1401,12 +1494,15 @@ Show this help message`,
               text: summaryText,
             });
           } catch (ephemeralError) {
-            console.log("Could not send summary message via ephemeral, trying DM...");
-            
+            console.log(
+              "Could not send summary message via ephemeral, trying DM...",
+            );
+
             try {
-              const conversationResponse = await workspaceClient.conversations.open({
-                users: command.user_id,
-              });
+              const conversationResponse =
+                await workspaceClient.conversations.open({
+                  users: command.user_id,
+                });
 
               if (conversationResponse.ok && conversationResponse.channel?.id) {
                 await workspaceClient.chat.postMessage({
@@ -1415,22 +1511,32 @@ Show this help message`,
                 });
               }
             } catch (dmError) {
-              console.log("Could not send summary message via DM either:", dmError);
+              console.log(
+                "Could not send summary message via DM either:",
+                dmError,
+              );
             }
           }
 
           auditLog.success = true;
           auditLog.responseTimeMs = responseTime;
-
         } catch (backgroundError) {
           console.error("Background font processing error:", backgroundError);
-          logSlackActivity({ ...auditLog, error: "Background processing failed" });
+          logSlackActivity({
+            ...auditLog,
+            error: "Background processing failed",
+          });
         }
       });
     };
 
     const handleLogoSubcommand = async ({
-      command, respond, client, variant, workspace, auditLog
+      command,
+      respond,
+      client,
+      variant,
+      workspace,
+      auditLog,
     }: {
       command: any;
       respond: any;
@@ -1448,8 +1554,8 @@ Show this help message`,
         .where(
           and(
             eq(brandAssets.clientId, workspace.clientId),
-            eq(brandAssets.category, "logo")
-          )
+            eq(brandAssets.category, "logo"),
+          ),
         );
 
       if (logoAssets.length === 0) {
@@ -1482,7 +1588,7 @@ Show this help message`,
 
       // Respond immediately to avoid timeout
       await respond({
-        text: `🔄 Processing ${matchedLogos.length} logo${matchedLogos.length > 1 ? 's' : ''}${query ? ` (${query} variant)` : ''}...`,
+        text: `🔄 Processing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` (${query} variant)` : ""}...`,
         response_type: "ephemeral",
       });
 
@@ -1498,7 +1604,7 @@ Show this help message`,
           baseUrl,
           {
             format: "png", // Convert to PNG for better Slack compatibility
-          }
+          },
         );
 
         const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
@@ -1546,7 +1652,11 @@ Show this help message`,
     };
 
     const handleSearchSubcommand = async ({
-      command, respond, variant, workspace, auditLog
+      command,
+      respond,
+      variant,
+      workspace,
+      auditLog,
     }: {
       command: any;
       respond: any;
@@ -1593,7 +1703,7 @@ Show this help message`,
           acc[asset.category].push(asset);
           return acc;
         },
-        {} as Record<string, typeof searchResults>
+        {} as Record<string, typeof searchResults>,
       );
 
       const blocks: any[] = [
@@ -1608,12 +1718,13 @@ Show this help message`,
 
       // Add results by category
       Object.entries(groupedResults).forEach(([category, assets]) => {
-        const categoryIcon = {
-          logo: "🏷️",
-          color: "🎨",
-          font: "📝",
-          typography: "📝",
-        }[category] || "📁";
+        const categoryIcon =
+          {
+            logo: "🏷️",
+            color: "🎨",
+            font: "📝",
+            typography: "📝",
+          }[category] || "📁";
 
         blocks.push({
           type: "section",
@@ -1627,7 +1738,10 @@ Show this help message`,
           .slice(0, 5)
           .map((asset) => {
             try {
-              const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+              const data =
+                typeof asset.data === "string"
+                  ? JSON.parse(asset.data)
+                  : asset.data;
               const type = data?.type ? ` - ${data.type}` : "";
               return `• ${asset.name}${type}`;
             } catch {
@@ -1640,7 +1754,9 @@ Show this help message`,
           type: "section",
           text: {
             type: "mrkdwn",
-            text: assetList + (assets.length > 5 ? `\n... and ${assets.length - 5} more` : ""),
+            text:
+              assetList +
+              (assets.length > 5 ? `\n... and ${assets.length - 5} more` : ""),
           },
         });
       });
@@ -1664,7 +1780,9 @@ Show this help message`,
     };
 
     const handleHelpSubcommand = async ({
-      command, respond, auditLog
+      command,
+      respond,
+      auditLog,
     }: {
       command: any;
       respond: any;
@@ -1731,7 +1849,7 @@ Show this help message`,
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*💡 Pro Tips:*\n• **Be specific:** \"dark logo\" works better than just \"logo\"\n• **Ask naturally:** Ferdinand understands conversational requests\n• **Multiple formats:** Get assets in different sizes and formats\n• **File delivery:** Assets are uploaded directly to your channel\n• **Smart search:** Ferdinand knows your brand's available assets",
+            text: '*💡 Pro Tips:*\n• **Be specific:** "dark logo" works better than just "logo"\n• **Ask naturally:** Ferdinand understands conversational requests\n• **Multiple formats:** Get assets in different sizes and formats\n• **File delivery:** Assets are uploaded directly to your channel\n• **Smart search:** Ferdinand knows your brand\'s available assets',
           },
         },
         {
@@ -1773,21 +1891,22 @@ Show this help message`,
         if (!input) {
           // Show help if no arguments provided
           await respond({
-            text: "🎨 **Ferdinand - Your AI Brand Assistant**\n\n" +
-                  "Ask me for brand assets in natural language! Examples:\n\n" +
-                  "• `\"I need our dark logo for a presentation\"`\n" +
-                  "• `\"Show me our brand colors with hex codes\"`\n" +
-                  "• `\"What fonts should I use for headers?\"`\n" +
-                  "• `\"Get me the square version of our logo\"`\n" +
-                  "• `\"Find me typography for body text\"`\n" +
-                  "• `\"I need our main logo in high quality\"`\n\n" +
-                  "**Traditional commands still work:**\n" +
-                  "• `/ferdinand logo [variant]` - Get logo files\n" +
-                  "• `/ferdinand color [variant]` - Get brand colors\n" +
-                  "• `/ferdinand font [variant]` - Get typography info\n" +
-                  "• `/ferdinand search <query>` - Search all assets\n" +
-                  "• `/ferdinand help` - Show detailed help\n\n" +
-                  "💡 **Tip:** Just describe what you need - Ferdinand understands natural language!",
+            text:
+              "🎨 **Ferdinand - Your AI Brand Assistant**\n\n" +
+              "Ask me for brand assets in natural language! Examples:\n\n" +
+              '• `"I need our dark logo for a presentation"`\n' +
+              '• `"Show me our brand colors with hex codes"`\n' +
+              '• `"What fonts should I use for headers?"`\n' +
+              '• `"Get me the square version of our logo"`\n' +
+              '• `"Find me typography for body text"`\n' +
+              '• `"I need our main logo in high quality"`\n\n' +
+              "**Traditional commands still work:**\n" +
+              "• `/ferdinand logo [variant]` - Get logo files\n" +
+              "• `/ferdinand color [variant]` - Get brand colors\n" +
+              "• `/ferdinand font [variant]` - Get typography info\n" +
+              "• `/ferdinand search <query>` - Search all assets\n" +
+              "• `/ferdinand help` - Show detailed help\n\n" +
+              "💡 **Tip:** Just describe what you need - Ferdinand understands natural language!",
             response_type: "ephemeral",
           });
           return;
@@ -1796,12 +1915,23 @@ Show this help message`,
         // First try traditional parsing for backwards compatibility
         const parts = input.split(/\s+/);
         const firstWord = parts[0].toLowerCase();
-        let subcommand = '';
-        let variant = '';
+        let subcommand = "";
+        let variant = "";
         let isTraditionalCommand = false;
 
         // Check if it's a traditional command format
-        if (['color', 'colors', 'font', 'fonts', 'logo', 'logos', 'search', 'help'].includes(firstWord)) {
+        if (
+          [
+            "color",
+            "colors",
+            "font",
+            "fonts",
+            "logo",
+            "logos",
+            "search",
+            "help",
+          ].includes(firstWord)
+        ) {
           subcommand = firstWord;
           variant = parts.slice(1).join(" ").trim();
           isTraditionalCommand = true;
@@ -1820,15 +1950,15 @@ Show this help message`,
         try {
           // Find the workspace (common for all subcommands except help)
           let workspace = null;
-          if (!isTraditionalCommand || subcommand !== 'help') {
+          if (!isTraditionalCommand || subcommand !== "help") {
             [workspace] = await db
               .select()
               .from(slackWorkspaces)
               .where(
                 and(
                   eq(slackWorkspaces.slackTeamId, command.team_id),
-                  eq(slackWorkspaces.isActive, true)
-                )
+                  eq(slackWorkspaces.isActive, true),
+                ),
               );
 
             if (!workspace) {
@@ -1847,59 +1977,78 @@ Show this help message`,
           if (!isTraditionalCommand) {
             // Gather asset context for the NLP processor
             const [logoAssets, colorAssets, fontAssets] = await Promise.all([
-              db.select().from(brandAssets).where(
-                and(
-                  eq(brandAssets.clientId, workspace.clientId),
-                  eq(brandAssets.category, "logo")
-                )
-              ),
-              db.select().from(brandAssets).where(
-                and(
-                  eq(brandAssets.clientId, workspace.clientId),
-                  eq(brandAssets.category, "color")
-                )
-              ),
-              db.select().from(brandAssets).where(
-                and(
-                  eq(brandAssets.clientId, workspace.clientId),
-                  eq(brandAssets.category, "font")
-                )
-              )
+              db
+                .select()
+                .from(brandAssets)
+                .where(
+                  and(
+                    eq(brandAssets.clientId, workspace.clientId),
+                    eq(brandAssets.category, "logo"),
+                  ),
+                ),
+              db
+                .select()
+                .from(brandAssets)
+                .where(
+                  and(
+                    eq(brandAssets.clientId, workspace.clientId),
+                    eq(brandAssets.category, "color"),
+                  ),
+                ),
+              db
+                .select()
+                .from(brandAssets)
+                .where(
+                  and(
+                    eq(brandAssets.clientId, workspace.clientId),
+                    eq(brandAssets.category, "font"),
+                  ),
+                ),
             ]);
 
             // Process natural language input
-            const processedCommand = await nlpProcessor.processCommand(input, {
-              logos: logoAssets,
-              colors: colorAssets,
-              fonts: fontAssets
-            }, command.team_id);</old_str>
+            const processedCommand = await nlpProcessor.processCommand(
+              input,
+              {
+                logos: logoAssets,
+                colors: colorAssets,
+                fonts: fontAssets,
+              },
+              command.team_id,
+            );
 
             // Map processed command to traditional format
             subcommand = processedCommand.intent;
-            variant = processedCommand.variant || '';
+            variant = processedCommand.variant || "";
 
             // Log the NLP processing for debugging
-            console.log(`[NLP] Input: "${input}" -> Intent: ${processedCommand.intent}, Variant: ${processedCommand.variant}, Confidence: ${processedCommand.confidence}`);
+            console.log(
+              `[NLP] Input: "${input}" -> Intent: ${processedCommand.intent}, Variant: ${processedCommand.variant}, Confidence: ${processedCommand.confidence}`,
+            );
 
             // If confidence is very low, suggest better phrasing
             if (processedCommand.confidence < 0.4) {
               await respond({
-                text: `🤔 I'm not quite sure what you're looking for. Try being more specific:\n\n` +
-                      `• "show me our dark logo" or "I need the square logo"\n` +
-                      `• "what are our brand colors?" or "show me our color palette"\n` +
-                      `• "what fonts do we use?" or "typography for headers"\n` +
-                      `• "help" for more examples\n\n` +
-                      `Your request: "${input}"`,
+                text:
+                  `🤔 I'm not quite sure what you're looking for. Try being more specific:\n\n` +
+                  `• "show me our dark logo" or "I need the square logo"\n` +
+                  `• "what are our brand colors?" or "show me our color palette"\n` +
+                  `• "what fonts do we use?" or "typography for headers"\n` +
+                  `• "help" for more examples\n\n` +
+                  `Your request: "${input}"`,
                 response_type: "ephemeral",
               });
-              logSlackActivity({ ...auditLog, error: `Low confidence NLP result: ${processedCommand.confidence}` });
+              logSlackActivity({
+                ...auditLog,
+                error: `Low confidence NLP result: ${processedCommand.confidence}`,
+              });
               return;
             }
 
             // Add confidence info to response for medium confidence
             if (processedCommand.confidence < 0.7) {
               await respond({
-                text: `🔍 I think you're asking for **${subcommand}** assets${variant ? ` (${variant})` : ''}. Processing your request...`,
+                text: `🔍 I think you're asking for **${subcommand}** assets${variant ? ` (${variant})` : ""}. Processing your request...`,
                 response_type: "ephemeral",
               });
             }
@@ -1907,22 +2056,43 @@ Show this help message`,
 
           // Route to appropriate handler based on subcommand
           switch (subcommand) {
-            case 'color':
-            case 'colors':
-              await handleColorSubcommand({ command, respond, client, variant, workspace, auditLog });
+            case "color":
+            case "colors":
+              await handleColorSubcommand({
+                command,
+                respond,
+                client,
+                variant,
+                workspace,
+                auditLog,
+              });
               break;
 
-            case 'font':
-            case 'fonts':
-              await handleFontSubcommand({ command, respond, client, variant, workspace, auditLog });
+            case "font":
+            case "fonts":
+              await handleFontSubcommand({
+                command,
+                respond,
+                client,
+                variant,
+                workspace,
+                auditLog,
+              });
               break;
 
-            case 'logo':
-            case 'logos':
-              await handleLogoSubcommand({ command, respond, client, variant, workspace, auditLog });
+            case "logo":
+            case "logos":
+              await handleLogoSubcommand({
+                command,
+                respond,
+                client,
+                variant,
+                workspace,
+                auditLog,
+              });
               break;
 
-            case 'search':
+            case "search":
               if (!variant) {
                 await respond({
                   text: "🔍 Please provide a search term. Example: `/ferdinand search blue logo`",
@@ -1930,27 +2100,36 @@ Show this help message`,
                 });
                 return;
               }
-              await handleSearchSubcommand({ command, respond, variant, workspace, auditLog });
+              await handleSearchSubcommand({
+                command,
+                respond,
+                variant,
+                workspace,
+                auditLog,
+              });
               break;
 
-            case 'help':
+            case "help":
               await handleHelpSubcommand({ command, respond, auditLog });
               break;
 
             default:
               await respond({
-                text: `❌ Unknown command: "${subcommand}"\n\n` +
-                      "Available commands: `color`, `font`, `logo`, `search`, `help`\n" +
-                      "Type `/ferdinand` with no arguments to see usage examples.",
+                text:
+                  `❌ Unknown command: "${subcommand}"\n\n` +
+                  "Available commands: `color`, `font`, `logo`, `search`, `help`\n" +
+                  "Type `/ferdinand` with no arguments to see usage examples.",
                 response_type: "ephemeral",
               });
-              logSlackActivity({ ...auditLog, error: `Unknown subcommand: ${subcommand}` });
+              logSlackActivity({
+                ...auditLog,
+                error: `Unknown subcommand: ${subcommand}`,
+              });
               return;
           }
 
           auditLog.success = true;
           logSlackActivity(auditLog);
-
         } catch (error) {
           console.error("Error handling /ferdinand command:", error);
           await respond({
@@ -1963,7 +2142,7 @@ Show this help message`,
             error: error instanceof Error ? error.message : "Unknown error",
           });
         }
-      }
+      },
     );
 
     return slackApp;
@@ -2013,7 +2192,12 @@ export function registerSlackRoutes(app: Express) {
     try {
       const { slackUserId, slackTeamId, clientId, ferdinandUserId } = req.body;
 
-      console.log("Test mapping request:", { slackUserId, slackTeamId, clientId, ferdinandUserId });
+      console.log("Test mapping request:", {
+        slackUserId,
+        slackTeamId,
+        clientId,
+        ferdinandUserId,
+      });
 
       if (!slackUserId || !slackTeamId || !clientId) {
         return res.status(400).json({
@@ -2047,8 +2231,8 @@ export function registerSlackRoutes(app: Express) {
         .where(
           and(
             eq(slackUserMappings.slackUserId, slackUserId),
-            eq(slackUserMappings.slackTeamId, slackTeamId)
-          )
+            eq(slackUserMappings.slackTeamId, slackTeamId),
+          ),
         );
 
       if (existingMapping) {
@@ -2129,8 +2313,8 @@ export function registerSlackRoutes(app: Express) {
         .where(
           and(
             eq(slackUserMappings.slackUserId, slackUserId),
-            eq(slackUserMappings.slackTeamId, slackTeamId)
-          )
+            eq(slackUserMappings.slackTeamId, slackTeamId),
+          ),
         );
 
       if (existingMapping) {
@@ -2179,8 +2363,8 @@ export function registerSlackRoutes(app: Express) {
           .where(
             and(
               eq(slackUserMappings.clientId, clientId),
-              eq(slackUserMappings.isActive, true)
-            )
+              eq(slackUserMappings.isActive, true),
+            ),
           );
 
         res.json(mappings);
@@ -2188,7 +2372,7 @@ export function registerSlackRoutes(app: Express) {
         console.error("Error fetching Slack mappings:", error);
         res.status(500).json({ message: "Error fetching mappings" });
       }
-    }
+    },
   );
 
   // Check if current user's clients have Slack integration linked
@@ -2200,7 +2384,7 @@ export function registerSlackRoutes(app: Express) {
 
       // Get user's clients and check if any have active Slack workspaces
       const userClients = await storage.getUserClients(req.session.userId);
-      const clientIds = userClients.map(uc => uc.id);
+      const clientIds = userClients.map((uc) => uc.id);
 
       if (clientIds.length === 0) {
         return res.json({ linked: false });
@@ -2215,15 +2399,19 @@ export function registerSlackRoutes(app: Express) {
             // Check if any of user's clients have a workspace
             clientIds.length === 1
               ? eq(slackWorkspaces.clientId, clientIds[0])
-              : or(...clientIds.map(clientId => eq(slackWorkspaces.clientId, clientId)))
-          )
+              : or(
+                  ...clientIds.map((clientId) =>
+                    eq(slackWorkspaces.clientId, clientId),
+                  ),
+                ),
+          ),
         )
         .limit(1);
 
       res.json({
         linked: !!workspace,
         slackTeamId: workspace?.slackTeamId,
-        teamName: workspace?.teamName
+        teamName: workspace?.teamName,
       });
     } catch (error) {
       console.error("Error checking Slack user status:", error);
