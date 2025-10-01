@@ -29,6 +29,7 @@ import {
   logSlackActivity,
   uploadFileToSlack,
 } from "../utils/slack-helpers";
+import { nlpProcessor } from "../utils/nlp-processor";
 
 dotenv.config();
 
@@ -1674,7 +1675,7 @@ Show this help message`,
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*🎨 Ferdinand Brand Asset Bot*\nAccess your brand assets directly in Slack!",
+            text: "*🎨 Ferdinand Brand Asset Bot*\nYour AI-powered brand assistant in Slack!",
           },
         },
         {
@@ -1684,33 +1685,22 @@ Show this help message`,
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*📋 Available Commands:*",
+            text: "*🗣️ Natural Language Commands:*",
           },
         },
         {
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `🏷️ \`/ferdinand logo [variant]\`
-Get logo files. Optional variants: \`dark\`, \`light\`, \`square\`, \`horizontal\`, \`vertical\`, \`main\`
-Example: \`/ferdinand logo dark\`
+            text: `Just ask Ferdinand naturally! Examples:
 
-🎨 \`/ferdinand color [variant]\`
-View your brand color palette with visual swatches
-Optional variants: \`brand\`, \`neutral\`, \`interactive\` or leave empty for all colors
-Example: \`/ferdinand color brand\`
-
-📝 \`/ferdinand font [variant]\`
-Get typography specifications and font information
-Optional variants: \`body\`, \`header\` or leave empty for all fonts
-Example: \`/ferdinand font body\`
-
-🔍 \`/ferdinand search <query>\`
-Search across all your brand assets
-Example: \`/ferdinand search blue logo\`
-
-❓ \`/ferdinand help\`
-Show this help message`,
+💬 \`"I need our dark logo for a presentation"\`
+💬 \`"Show me our brand colors"\`
+💬 \`"What fonts do we use for headers?"\`
+💬 \`"Find me the square version of our logo"\`
+💬 \`"I need our color palette with hex codes"\`
+💬 \`"Get me our main logo in high quality"\`
+💬 \`"What typography should I use for body text?"\``,
           },
         },
         {
@@ -1720,7 +1710,28 @@ Show this help message`,
           type: "section",
           text: {
             type: "mrkdwn",
-            text: "*💡 Tips:*\n• **Logo variants:** Use 'dark', 'square', 'horizontal', etc. for specific logo types\n• **Color variants:** Use 'brand', 'neutral', 'interactive' to filter color palettes\n• **Font variants:** Use 'body' for text fonts or 'header' for display fonts\n• **Search:** Try searching by color names, asset types, or specific terms\n• **Files:** Logo files are automatically uploaded to your channel for easy access",
+            text: "*📋 Traditional Commands (Still Work):*",
+          },
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `🏷️ \`/ferdinand logo [variant]\` - Get logo files
+🎨 \`/ferdinand color [variant]\` - View color palettes  
+📝 \`/ferdinand font [variant]\` - Get typography info
+🔍 \`/ferdinand search <query>\` - Search all assets
+❓ \`/ferdinand help\` - Show this help`,
+          },
+        },
+        {
+          type: "divider",
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*💡 Pro Tips:*\n• **Be specific:** \"dark logo\" works better than just \"logo\"\n• **Ask naturally:** Ferdinand understands conversational requests\n• **Multiple formats:** Get assets in different sizes and formats\n• **File delivery:** Assets are uploaded directly to your channel\n• **Smart search:** Ferdinand knows your brand's available assets",
           },
         },
         {
@@ -1728,7 +1739,7 @@ Show this help message`,
           elements: [
             {
               type: "mrkdwn",
-              text: "⚡ Powered by Ferdinand Brand Management System",
+              text: "🤖 Powered by Ferdinand Brand Management System + AI",
             },
           ],
         },
@@ -1762,26 +1773,39 @@ Show this help message`,
         if (!input) {
           // Show help if no arguments provided
           await respond({
-            text: "🎨 **Ferdinand Commands**\n\n" +
-                  "• `/ferdinand color [variant]` - Get brand colors (variants: brand, neutral, interactive)\n" +
-                  "• `/ferdinand font [variant]` - Get typography info (variants: body, header)\n" +
-                  "• `/ferdinand logo [variant]` - Get logo files (variants: dark, light, square, horizontal, vertical, main)\n" +
-                  "• `/ferdinand search <query>` - Search all brand assets\n" +
+            text: "🎨 **Ferdinand - Your AI Brand Assistant**\n\n" +
+                  "Ask me for brand assets in natural language! Examples:\n\n" +
+                  "• `\"I need our dark logo for a presentation\"`\n" +
+                  "• `\"Show me our brand colors with hex codes\"`\n" +
+                  "• `\"What fonts should I use for headers?\"`\n" +
+                  "• `\"Get me the square version of our logo\"`\n" +
+                  "• `\"Find me typography for body text\"`\n" +
+                  "• `\"I need our main logo in high quality\"`\n\n" +
+                  "**Traditional commands still work:**\n" +
+                  "• `/ferdinand logo [variant]` - Get logo files\n" +
+                  "• `/ferdinand color [variant]` - Get brand colors\n" +
+                  "• `/ferdinand font [variant]` - Get typography info\n" +
+                  "• `/ferdinand search <query>` - Search all assets\n" +
                   "• `/ferdinand help` - Show detailed help\n\n" +
-                  "Examples:\n" +
-                  "• `/ferdinand color brand`\n" +
-                  "• `/ferdinand font body`\n" +
-                  "• `/ferdinand logo dark`\n" +
-                  "• `/ferdinand search blue`",
+                  "💡 **Tip:** Just describe what you need - Ferdinand understands natural language!",
             response_type: "ephemeral",
           });
           return;
         }
 
-        // Parse subcommand and variant
+        // First try traditional parsing for backwards compatibility
         const parts = input.split(/\s+/);
-        const subcommand = parts[0].toLowerCase();
-        const variant = parts.slice(1).join(" ").trim();
+        const firstWord = parts[0].toLowerCase();
+        let subcommand = '';
+        let variant = '';
+        let isTraditionalCommand = false;
+
+        // Check if it's a traditional command format
+        if (['color', 'colors', 'font', 'fonts', 'logo', 'logos', 'search', 'help'].includes(firstWord)) {
+          subcommand = firstWord;
+          variant = parts.slice(1).join(" ").trim();
+          isTraditionalCommand = true;
+        }
 
         const auditLog = {
           userId: command.user_id,
@@ -1796,7 +1820,7 @@ Show this help message`,
         try {
           // Find the workspace (common for all subcommands except help)
           let workspace = null;
-          if (subcommand !== 'help') {
+          if (!isTraditionalCommand || subcommand !== 'help') {
             [workspace] = await db
               .select()
               .from(slackWorkspaces)
@@ -1817,6 +1841,68 @@ Show this help message`,
             }
 
             auditLog.clientId = workspace.clientId;
+          }
+
+          // If not a traditional command, use natural language processing
+          if (!isTraditionalCommand) {
+            // Gather asset context for the NLP processor
+            const [logoAssets, colorAssets, fontAssets] = await Promise.all([
+              db.select().from(brandAssets).where(
+                and(
+                  eq(brandAssets.clientId, workspace.clientId),
+                  eq(brandAssets.category, "logo")
+                )
+              ),
+              db.select().from(brandAssets).where(
+                and(
+                  eq(brandAssets.clientId, workspace.clientId),
+                  eq(brandAssets.category, "color")
+                )
+              ),
+              db.select().from(brandAssets).where(
+                and(
+                  eq(brandAssets.clientId, workspace.clientId),
+                  eq(brandAssets.category, "font")
+                )
+              )
+            ]);
+
+            // Process natural language input
+            const processedCommand = await nlpProcessor.processCommand(input, {
+              logos: logoAssets,
+              colors: colorAssets,
+              fonts: fontAssets
+            }, command.team_id);</old_str>
+
+            // Map processed command to traditional format
+            subcommand = processedCommand.intent;
+            variant = processedCommand.variant || '';
+
+            // Log the NLP processing for debugging
+            console.log(`[NLP] Input: "${input}" -> Intent: ${processedCommand.intent}, Variant: ${processedCommand.variant}, Confidence: ${processedCommand.confidence}`);
+
+            // If confidence is very low, suggest better phrasing
+            if (processedCommand.confidence < 0.4) {
+              await respond({
+                text: `🤔 I'm not quite sure what you're looking for. Try being more specific:\n\n` +
+                      `• "show me our dark logo" or "I need the square logo"\n` +
+                      `• "what are our brand colors?" or "show me our color palette"\n` +
+                      `• "what fonts do we use?" or "typography for headers"\n` +
+                      `• "help" for more examples\n\n` +
+                      `Your request: "${input}"`,
+                response_type: "ephemeral",
+              });
+              logSlackActivity({ ...auditLog, error: `Low confidence NLP result: ${processedCommand.confidence}` });
+              return;
+            }
+
+            // Add confidence info to response for medium confidence
+            if (processedCommand.confidence < 0.7) {
+              await respond({
+                text: `🔍 I think you're asking for **${subcommand}** assets${variant ? ` (${variant})` : ''}. Processing your request...`,
+                response_type: "ephemeral",
+              });
+            }
           }
 
           // Route to appropriate handler based on subcommand
