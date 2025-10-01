@@ -20,6 +20,10 @@ import {
   generateGoogleFontCSS,
   generateAdobeFontCSS,
 } from "../../utils/font-helpers";
+import {
+  buildFontProcessingMessage,
+  buildFontSummaryMessage,
+} from "../../utils/font-display";
 
 export async function handleColorSubcommandWithLimit(
   body: any,
@@ -307,14 +311,11 @@ export async function handleFontSubcommandWithLimit(
     const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
 
-    // Simple response like color command - just show count and names
-    const fontNames = assetsToShow.map(asset => asset.name).join(", ");
-    const responseText = variant 
-      ? `📝 Found **${assetsToShow.length} fonts** for "${variant}": ${fontNames}\n\n🔄 Processing font files and usage code...`
-      : `📝 Found **${assetsToShow.length} fonts**: ${fontNames}\n\n🔄 Processing font files and usage code...`;
+    // Use utility function for processing message
+    const processingMessage = buildFontProcessingMessage(assetsToShow, variant);
 
     await respond({
-      text: responseText,
+      text: processingMessage,
       response_type: "ephemeral",
       replace_original: true,
     });
@@ -408,26 +409,15 @@ export async function handleFontSubcommandWithLimit(
           }
         }
 
-        // Send summary
-        let summaryText = `✅ **Font processing complete!**\n`;
-
-        if (uploadedFiles > 0) {
-          summaryText += `📁 ${uploadedFiles} font file${uploadedFiles > 1 ? "s" : ""} uploaded\n`;
-        }
-
-        if (sentCodeBlocks > 0) {
-          summaryText += `💻 ${sentCodeBlocks} usage code${sentCodeBlocks > 1 ? "s" : ""} provided\n`;
-        }
-
-        if (variant) {
-          summaryText += `🔍 Filtered by: "${variant}"\n`;
-        }
-
-        if (limit !== "all" && displayAssets.length > (limit as number)) {
-          summaryText += `💡 Showing ${limit} of ${displayAssets.length} results.\n`;
-        }
-
-        summaryText += `⏱️ Total fonts processed: ${uploadedFiles + sentCodeBlocks}`;
+        // Use utility function for summary message
+        const summaryText = buildFontSummaryMessage(
+          uploadedFiles,
+          sentCodeBlocks,
+          variant,
+          undefined, // no response time for background processing
+          displayAssets.length,
+          limit
+        );
 
         await workspaceClient.chat.postEphemeral({
           channel: body.channel.id,
