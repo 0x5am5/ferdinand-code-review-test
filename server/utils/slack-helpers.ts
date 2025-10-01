@@ -134,7 +134,7 @@ export async function uploadFileToSlack(
 ): Promise<boolean> {
   try {
     console.log(`[SLACK UPLOAD] Attempting to upload ${options.filename} to channel ${options.channelId}`);
-    
+
     // Create a new WebClient instance with the workspace-specific token
     const client = new WebClient(botToken);
 
@@ -192,20 +192,20 @@ export async function uploadFileToSlack(
           const conversationResponse = await client.conversations.open({
             users: options.userId,
           });
-          
-          console.log(`[SLACK UPLOAD] DM conversation result:`, { 
-            ok: conversationResponse.ok, 
+
+          console.log(`[SLACK UPLOAD] DM conversation result:`, {
+            ok: conversationResponse.ok,
             channelId: conversationResponse.channel?.id,
-            error: conversationResponse.error 
+            error: conversationResponse.error
           });
-          
+
           if (!conversationResponse.ok || !conversationResponse.channel?.id) {
             console.log(`[SLACK UPLOAD] Failed to open DM conversation:`, conversationResponse.error);
             return false;
           }
-          
+
           const dmChannelId = conversationResponse.channel.id;
-          
+
           // Try uploading to DM using the new uploadV2 method
           console.log(`[SLACK UPLOAD] Attempting DM upload to ${dmChannelId}...`);
           const dmResult = await client.files.uploadV2({
@@ -233,7 +233,7 @@ export async function uploadFileToSlack(
             const conversationResponse = await client.conversations.open({
               users: options.userId,
             });
-            
+
             if (conversationResponse.ok && conversationResponse.channel?.id) {
               const messageResult = await client.chat.postMessage({
                 channel: conversationResponse.channel.id,
@@ -251,7 +251,7 @@ export async function uploadFileToSlack(
           } catch (linkError: any) {
             console.error(`[SLACK UPLOAD] Download link message also failed:`, linkError.message || linkError);
           }
-          
+
           return false;
         }
       }
@@ -574,14 +574,14 @@ export function filterFontAssetsByVariant(
 
   const variantLower = variant.toLowerCase();
 
-  // Brand fonts - primary brand typography, logo fonts, brand identity
-  const brandKeywords = ['brand', 'primary', 'main', 'identity', 'logo', 'wordmark'];
+  // Brand fonts - typically primary brand typography, logo fonts, brand identity
+  const brandKeywords = ['brand', 'primary', 'main', 'identity', 'logo', 'wordmark', 'display'];
 
   // Body fonts - typically for body text, paragraphs, readable content
-  const bodyKeywords = ['body', 'text', 'paragraph', 'content', 'readable', 'sans', 'regular'];
+  const bodyKeywords = ['body', 'text', 'paragraph', 'content', 'readable', 'sans', 'regular', 'inter', 'arial', 'helvetica'];
 
   // Header fonts - typically for headlines, titles, display text
-  const headerKeywords = ['header', 'heading', 'title', 'display', 'headline', 'hero', 'serif'];
+  const headerKeywords = ['header', 'heading', 'title', 'display', 'headline', 'hero', 'serif', 'bold'];
 
   let targetKeywords: string[] = [];
 
@@ -605,17 +605,39 @@ export function filterFontAssetsByVariant(
     // Check asset name against keywords
     const nameMatch = targetKeywords.some(keyword => assetName.includes(keyword));
 
-    // Also check inside the font data for usage or type
+    // Also check inside the font data for usage, category, or type
     try {
       const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
       const usage = data?.usage?.toLowerCase() || '';
       const type = data?.type?.toLowerCase() || '';
       const category = data?.category?.toLowerCase() || '';
       const subcategory = data?.subcategory?.toLowerCase() || '';
+      const source = data?.source?.toLowerCase() || '';
+      const fontFamily = data?.sourceData?.fontFamily?.toLowerCase() || data?.fontFamily?.toLowerCase() || '';
 
       const dataMatch = targetKeywords.some(keyword =>
-        usage.includes(keyword) || type.includes(keyword) || category.includes(keyword) || subcategory.includes(keyword)
+        usage.includes(keyword) ||
+        type.includes(keyword) ||
+        category.includes(keyword) ||
+        subcategory.includes(keyword) ||
+        fontFamily.includes(keyword)
       );
+
+      // Special case: if searching for "body" and it's a common body font like Inter
+      if (variantLower.includes('body') && (
+        assetName.includes('inter') ||
+        fontFamily.includes('inter') ||
+        assetName.includes('arial') ||
+        assetName.includes('helvetica') ||
+        source === 'google'
+      )) {
+        return true;
+      }
+
+      // Special case: if searching for "brand" and it's a custom uploaded font
+      if (variantLower.includes('brand') && (source === 'file' || source === 'custom')) {
+        return true;
+      }
 
       return nameMatch || dataMatch;
     } catch {
@@ -635,14 +657,14 @@ export function formatFontInfo(fontAsset: BrandAsset): {
   files?: Array<{ format: string; weight: string; style: string; }>;
 } {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
+    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : asset.data;
 
     // Handle different data structures
     const source = data?.source || 'custom';
     const weights = data?.weights || ['400'];
     const styles = data?.styles || ['normal'];
     const usage = data?.usage || data?.subcategory || '';
-    
+
     // Extract files information for custom fonts
     let files = [];
     if (data?.sourceData?.files) {
@@ -655,7 +677,7 @@ export function formatFontInfo(fontAsset: BrandAsset): {
     let category = '';
     const assetName = fontAsset.name.toLowerCase();
     const subcategory = data?.subcategory?.toLowerCase() || '';
-    
+
     if (assetName.includes('brand') || assetName.includes('primary') || assetName.includes('logo')) {
       category = 'brand';
     } else if (assetName.includes('body') || assetName.includes('text') || subcategory.includes('body')) {
@@ -690,7 +712,7 @@ export function generateGoogleFontCSS(fontFamily: string, weights: string[]): st
   const familyParam = fontFamily.replace(/\s+/g, '+');
   const weightsParam = weights.join(',');
   const url = `https://fonts.googleapis.com/css2?family=${familyParam}:wght@${weightsParam}&display=swap`;
-  
+
   return `/* Add this to your HTML <head> */
 <link href="${url}" rel="stylesheet">
 
@@ -717,7 +739,7 @@ export function generateAdobeFontCSS(projectId: string, fontFamily: string): str
 // Check if font has uploadable files
 export function hasUploadableFiles(fontAsset: BrandAsset): boolean {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
+    const data = typeof fontAsset.data === "string" ? JSON.parse(asset.data) : asset.data;
     return data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
   } catch {
     return false;
