@@ -16,10 +16,8 @@ import {
   hasUploadableFiles,
   generateGoogleFontCSS,
   generateAdobeFontCSS,
-  FONT_CATEGORY_ORDER,
-  FONT_CATEGORY_EMOJIS,
-  FONT_CATEGORY_NAMES,
 } from "../../utils/font-helpers";
+import { buildFontBlocks } from "../../utils/font-display";
 
 export async function handleFontCommand({ command, ack, respond, client }: any) {
   const startTime = Date.now();
@@ -170,95 +168,15 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
       return;
     }
 
-    // Group fonts by category for better organization
-    const groupedFonts = displayAssets.reduce((groups: Record<string, typeof displayAssets>, asset) => {
-      const fontInfo = formatFontInfo(asset);
-      const category = fontInfo.category || 'other';
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push(asset);
-      return groups;
-    }, {});
-
     const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
-    // Build enhanced font blocks organized by category
-    let headerText = `📝 *Brand Typography System*`;
-    if (variant) {
-      headerText = `📝 *${variant.charAt(0).toUpperCase() + variant.slice(1)} Fonts*`;
-    }
-    headerText += ` (${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""})`;
-
-    const fontBlocks: any[] = [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: headerText,
-        },
-      },
-      {
-        type: "divider",
-      },
-    ];
-
-    // Process each category in order
-    for (const category of FONT_CATEGORY_ORDER) {
-      if (!groupedFonts[category] || groupedFonts[category].length === 0) continue;
-
-      // Add category header
-      fontBlocks.push({
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `${FONT_CATEGORY_EMOJIS[category]} *${FONT_CATEGORY_NAMES[category]}*`,
-        },
-      });
-
-      // Process each font in this category
-      for (const asset of groupedFonts[category]) {
-        const fontInfo = formatFontInfo(asset);
-
-        // Add font details
-        let fontDetails = `   📝 *${fontInfo.title}*\n`;
-        fontDetails += `   • **Source:** ${fontInfo.source.charAt(0).toUpperCase() + fontInfo.source.slice(1)}\n`;
-        fontDetails += `   • **Weights:** ${fontInfo.weights.join(", ")}\n`;
-        fontDetails += `   • **Styles:** ${fontInfo.styles.join(", ")}`;
-        
-        if (fontInfo.usage) {
-          fontDetails += `\n   • **Usage:** ${fontInfo.usage}`;
-        }
-
-        fontBlocks.push({
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: fontDetails,
-          },
-        });
-      }
-
-      // Add spacing between categories
-      fontBlocks.push({
-        type: "divider",
-      });
-    }
-
-    // Add footer with usage tips
-    const usageTips = variant
-      ? `💡 *Usage Tips:* Font files and CSS will be processed separately | Try \`/ferdinand-fonts brand\`, \`body\`, or \`header\` for specific font types`
-      : `💡 *Usage Tips:* Font files and CSS will be processed separately | Try \`/ferdinand-fonts brand\`, \`body\`, or \`header\` for specific font types`;
-
-    fontBlocks.push({
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: usageTips,
-        },
-      ],
-    });
+    // Build font blocks using unified display system
+    const fontBlocks = buildFontBlocks(
+      displayAssets,
+      filteredFontAssets,
+      fontAssets,
+      variant,
+    );
 
     // Send the organized font information first - this must happen within 3 seconds
     await respond({

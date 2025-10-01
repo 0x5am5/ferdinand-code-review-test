@@ -15,10 +15,8 @@ import {
   hasUploadableFiles,
   generateGoogleFontCSS,
   generateAdobeFontCSS,
-  FONT_CATEGORY_ORDER,
-  FONT_CATEGORY_EMOJIS,
-  FONT_CATEGORY_NAMES,
 } from "../../../utils/font-helpers";
+import { buildFontBlocks } from "../../../utils/font-display";
 
 export async function handleFontSubcommand({
   command,
@@ -134,53 +132,13 @@ export async function handleFontSubcommand({
     return;
   }
 
-  // Group fonts by category for better organization
-  const groupedFonts = displayAssets.reduce((groups: Record<string, typeof displayAssets>, asset) => {
-    const fontInfo = formatFontInfo(asset);
-    const category = fontInfo.category || 'other';
-    if (!groups[category]) {
-      groups[category] = [];
-    }
-    groups[category].push(asset);
-    return groups;
-  }, {});
-
-  // Build enhanced font blocks organized by category
-  let headerText = `📝 *Brand Typography System*`;
-  if (variant) {
-    headerText = `📝 *${variant.charAt(0).toUpperCase() + variant.slice(1)} Fonts*`;
-  }
-  headerText += ` (${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""})`;
-
-  const fontBlocks: any[] = [
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: headerText,
-      },
-    },
-    {
-      type: "divider",
-    },
-  ];
-
-  // Process each category in order
-  for (const category of FONT_CATEGORY_ORDER) {
-    if (!groupedFonts[category] || groupedFonts[category].length === 0) continue;
-
-    // Add category header
-    fontBlocks.push({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `${FONT_CATEGORY_EMOJIS[category]} *${FONT_CATEGORY_NAMES[category]}*`,
-      },
-    });
-
-    // Process each font in this category
-    for (const asset of groupedFonts[category]) {
-      const fontInfo = formatFontInfo(asset);
+  // Build font blocks using unified display system
+  const fontBlocks = buildFontBlocks(
+    displayAssets,
+    filteredFontAssets,
+    fontAssets,
+    variant,
+  );tInfo = formatFontInfo(asset);
 
       // Add font details
       let fontDetails = `   📝 *${fontInfo.title}*\n`;

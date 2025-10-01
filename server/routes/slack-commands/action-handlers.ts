@@ -15,6 +15,12 @@ import {
 } from "../../utils/slack-helpers";
 import { buildColorBlocks } from "../../utils/color-display";
 import { WebClient } from "@slack/web-api";
+import {
+  hasUploadableFiles,
+  generateGoogleFontCSS,
+  generateAdobeFontCSS,
+} from "../../utils/font-helpers";
+import { buildFontBlocks } from "../../utils/font-display";
 
 export async function handleColorSubcommandWithLimit(
   body: any,
@@ -302,9 +308,16 @@ export async function handleFontSubcommandWithLimit(
     const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
 
-    // Update the original message
+    // Build font blocks using unified display system
+    const fontBlocks = buildFontBlocks(
+      assetsToShow,
+      assetsToShow, // filtered and display are the same in this context
+      displayAssets, // all available assets
+      variant,
+    );
+
     await respond({
-      text: `🔄 Processing ${assetsToShow.length} font${assetsToShow.length > 1 ? "s" : ""}${variant ? ` (${variant} variant)` : ""}...`,
+      blocks: fontBlocks,
       response_type: "ephemeral",
       replace_original: true,
     });
