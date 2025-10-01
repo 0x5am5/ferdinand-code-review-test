@@ -26,6 +26,22 @@ export function findBestLogoMatch(
 
   const queryLower = query.toLowerCase();
 
+  // Handle dark variant queries specially
+  if (queryLower === "dark" || queryLower === "white" || queryLower === "inverse") {
+    const darkVariantMatches = assets.filter((asset) => {
+      try {
+        const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+        return data?.hasDarkVariant === true;
+      } catch {
+        return false;
+      }
+    });
+    
+    if (darkVariantMatches.length > 0) {
+      return darkVariantMatches;
+    }
+  }
+
   // Direct type matches (highest priority)
   const typeMatches = assets.filter((asset) => {
     try {

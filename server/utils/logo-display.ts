@@ -10,12 +10,24 @@ export function buildLogoConfirmationBlocks(
   query: string,
   workspaceClientId: number,
 ) {
+  // Check if any logos have dark variants
+  const darkVariantCount = matchedLogos.filter((logo) => {
+    try {
+      const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+      return data?.hasDarkVariant === true;
+    } catch {
+      return false;
+    }
+  }).length;
+
+  const variantInfo = darkVariantCount > 0 ? ` (${darkVariantCount} with dark variants)` : "";
+
   return [
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `🏷️ Found *${matchedLogos.length} logo files*${query ? ` matching "${query}"` : ""}.`,
+        text: `🏷️ Found *${matchedLogos.length} logo files*${query ? ` matching "${query}"` : ""}${variantInfo}.`,
       },
     },
     {
@@ -54,7 +66,7 @@ export function buildLogoConfirmationBlocks(
       elements: [
         {
           type: "mrkdwn",
-          text: "💡 *Tip:* Try `/ferdinand-logo dark` or `/ferdinand-logo square` for more specific results.",
+          text: "💡 *Tip:* Try `/ferdinand-logo dark`, `/ferdinand-logo square`, or `/ferdinand-logo horizontal` for specific variants.",
         },
       ],
     },
@@ -66,7 +78,20 @@ export function buildLogoProcessingMessage(
   matchedLogos: any[],
   query?: string,
 ): string {
-  return `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}... Files will appear shortly!`;
+  // Check for dark variants in the matched logos
+  const darkVariantCount = matchedLogos.filter((logo) => {
+    try {
+      const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+      return data?.hasDarkVariant === true;
+    } catch {
+      return false;
+    }
+  }).length;
+
+  const variantNote = query === "dark" && darkVariantCount > 0 ? " (dark variants)" : 
+                     darkVariantCount > 0 ? ` (${darkVariantCount} with dark variants)` : "";
+
+  return `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}${variantNote}... Files will appear shortly!`;
 }
 
 // Build summary message after logo uploads

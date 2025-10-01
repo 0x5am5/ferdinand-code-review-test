@@ -101,24 +101,41 @@ export async function handleLogoSubcommand({
   // Upload files to Slack for matched logos (in background)
   const uploadPromises = matchedLogos.map(async (asset) => {
     const assetInfo = formatAssetInfo(asset);
+    
+    // Check if we should upload dark variant
+    const isDarkQuery = query.toLowerCase() === "dark" || query.toLowerCase() === "white" || query.toLowerCase() === "inverse";
+    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    const hasDarkVariant = data?.hasDarkVariant === true;
+    
+    // Build download URL with variant parameter if needed
+    const downloadParams: any = {
+      format: "png", // Convert to PNG for better Slack compatibility
+    };
+    
+    if (isDarkQuery && hasDarkVariant) {
+      downloadParams.variant = "dark";
+    }
+    
     const downloadUrl = generateAssetDownloadUrl(
       asset.id,
       workspace.clientId,
       baseUrl,
-      {
-        format: "png", // Convert to PNG for better Slack compatibility
-      },
+      downloadParams,
     );
 
-    const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
+    const variantSuffix = isDarkQuery && hasDarkVariant ? "_dark" : "";
+    const filename = `${asset.name.replace(/\s+/g, "_")}${variantSuffix}.png`;
+    
+    const variantNote = isDarkQuery && hasDarkVariant ? " (Dark Variant)" : "";
+    const title = `${assetInfo.title}${variantNote}`;
 
     return uploadFileToSlack(botToken, {
       channelId: command.channel_id,
       userId: command.user_id,
       fileUrl: downloadUrl,
       filename,
-      title: assetInfo.title,
-      initialComment: `📋 **${assetInfo.title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
+      title,
+      initialComment: `📋 **${title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}${variantNote ? `\n• Variant: Dark` : ""}`,
     });
   });
 
