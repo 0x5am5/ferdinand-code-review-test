@@ -16,7 +16,7 @@ import {
   generateGoogleFontCSS,
   generateAdobeFontCSS,
 } from "../../../utils/font-helpers";
-import { buildFontBlocks } from "../../../utils/font-display";
+import { buildFontBlocks } from "../../../utils/font-helpers";
 
 export async function handleFontSubcommand({
   command,
