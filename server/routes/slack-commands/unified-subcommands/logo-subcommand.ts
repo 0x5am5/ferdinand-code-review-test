@@ -110,6 +110,11 @@ export async function handleLogoSubcommand({
     const data =
       typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
     const hasDarkVariant = data?.hasDarkVariant === true;
+    
+    console.log(`[DARK VARIANT] Asset ${asset.id} (${asset.name}): isDarkQuery=${isDarkQuery}, hasDarkVariant=${hasDarkVariant}, query="${query}"`);
+    if (isDarkQuery && !hasDarkVariant) {
+      console.log(`[DARK VARIANT] Asset ${asset.id} requested as dark but has no dark variant, skipping dark upload`);
+    }
 
     // Build download URL with variant parameter if needed
     const downloadParams: any = {

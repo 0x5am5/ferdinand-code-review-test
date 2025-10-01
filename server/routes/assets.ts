@@ -1335,130 +1335,152 @@ export function registerAssetRoutes(app: Express) {
         if (format && asset.category === "logo") {
           const isDarkVariant = variant === "dark";
 
-          // CRITICAL FIX: Log the client ID we're checking for
+          // Log the asset and variant details
           console.log(
-            `Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}`
+            `Asset details - Name: ${asset.name}, ID: ${asset.id}, Client ID: ${asset.clientId}, Variant: ${variant}, Dark: ${isDarkVariant}`
           );
 
-          // Get the converted asset specifically for this asset ID
-          // CRITICAL FIX: Get converted asset, ensuring it's the right one
-          console.log(
-            `Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`
-          );
-          const convertedAsset = await storage.getConvertedAsset(
-            assetId,
-            format,
-            isDarkVariant
-          );
+          // For dark variants, check if the asset actually has a dark variant
+          if (isDarkVariant) {
+            const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            const hasDarkVariant = data?.hasDarkVariant === true;
+            
+            if (!hasDarkVariant) {
+              console.log(`Asset ${assetId} does not have a dark variant, falling back to light variant`);
+              // Fall back to light variant
+              const convertedAsset = await storage.getConvertedAsset(
+                assetId,
+                format,
+                false
+              );
+              
+              if (convertedAsset && convertedAsset.originalAssetId === assetId) {
+                mimeType = convertedAsset.mimeType;
+                fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
+              } else {
+                // Convert on-the-fly from light variant
+                const sourceBuffer = Buffer.from(asset.fileData, "base64");
+                const sourceFormat = data.format;
+                
+                try {
+                  const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
+                  fileBuffer = result.data;
+                  mimeType = result.mimeType;
+                } catch (conversionError) {
+                  console.error("Format conversion failed:", conversionError);
+                  return res.status(400).json({ message: "Format conversion failed" });
+                }
+              }
+            } else {
+              // Get the converted asset specifically for this asset ID
+              console.log(
+                `Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`
+              );
+              const convertedAsset = await storage.getConvertedAsset(
+                assetId,
+                format,
+                isDarkVariant
+              );
 
           if (convertedAsset) {
-            console.log(
-              `Found converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`
-            );
-            // CRITICAL: Verify this converted asset actually belongs to the requested asset
-            if (convertedAsset.originalAssetId !== assetId) {
-              console.error(
-                `ERROR: Converted asset ${convertedAsset.id} belongs to original asset ${convertedAsset.originalAssetId}, but we requested ${assetId}`
-              );
-              // Don't use this converted asset, fall back to on-the-fly conversion
-            } else {
-              console.log(
-                `✓ Converted asset correctly belongs to requested asset ${assetId}`
-              );
-            }
-          } else {
-            console.log(
-              `No converted asset found for Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`
-            );
-          }
-
-          if (convertedAsset && convertedAsset.originalAssetId === assetId) {
-            console.log(
-              `Serving converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`
-            );
-            mimeType = convertedAsset.mimeType;
-            fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
-          } else {
-            // If the requested format is not found, convert on-the-fly
-            console.log(
-              `Requested format ${format} not found, converting on-the-fly`
-            );
-
-            // Get the source buffer
-            let sourceBuffer: Buffer | null = null;
-            if (isDarkVariant && asset.category === "logo") {
-              sourceBuffer = getDarkVariantBuffer(asset);
-            } else if (asset.fileData) {
-              sourceBuffer = Buffer.from(asset.fileData, "base64");
-            }
-
-            if (!sourceBuffer) {
-              return res
-                .status(404)
-                .json({ message: "Source file data not found" });
-            }
-
-            // Get the source format
-            const data =
-              typeof asset.data === "string"
-                ? JSON.parse(asset.data)
-                : asset.data;
-            const sourceFormat = isDarkVariant
-              ? data.darkVariantFormat || data.format
-              : data.format;
-
-            console.log(`Converting asset ${assetId} to ${format}:`);
-            console.log(`- Client ID: ${asset.clientId}`);
-            console.log(`- Asset name: ${asset.name}`);
-            console.log(`- Source format: ${sourceFormat}`);
-            console.log(`- Source buffer size: ${sourceBuffer.length} bytes`);
-
-            try {
-              // Convert the file
-              const result = await convertToFormat(
-                sourceBuffer,
-                sourceFormat,
-                format,
-                assetId
-              );
-              fileBuffer = result.data;
-              mimeType = result.mimeType;
-
-              // CRITICAL FIX: Store the converted asset for future use
-              // This ensures we associate the converted asset with the correct original asset
-              try {
                 console.log(
-                  `Storing converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}, Client: ${asset.clientId}`
+                  `Found converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`
                 );
-                await storage.createConvertedAsset({
-                  originalAssetId: assetId,
-                  format,
-                  fileData: fileBuffer.toString("base64"),
-                  mimeType,
-                  isDarkVariant,
-                });
-                console.log(
-                  `Successfully stored converted asset format ${format} for asset ID ${assetId} (Client: ${asset.clientId})`
-                );
-              } catch (storeError: unknown) {
-                console.error(
-                  "Failed to store converted asset:",
-                  storeError instanceof Error
-                    ? storeError.message
-                    : "Unknown error"
-                );
-                // Continue serving the file even if storage fails
+                // Verify this converted asset actually belongs to the requested asset
+                if (convertedAsset.originalAssetId !== assetId) {
+                  console.error(
+                    `ERROR: Converted asset ${convertedAsset.id} belongs to original asset ${convertedAsset.originalAssetId}, but we requested ${assetId}`
+                  );
+                } else {
+                  console.log(
+                    `✓ Converted asset correctly belongs to requested asset ${assetId}`
+                  );
+                  mimeType = convertedAsset.mimeType;
+                  fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
+                }
               }
-            } catch (conversionError: unknown) {
-              console.error(
-                "Format conversion failed:",
-                conversionError instanceof Error
-                  ? conversionError.message
-                  : "Unknown error"
+
+              if (!fileBuffer) {
+                // Convert on-the-fly from dark variant
+                console.log(`Converting dark variant on-the-fly for asset ${assetId}`);
+                
+                const darkBuffer = getDarkVariantBuffer(asset);
+                if (!darkBuffer) {
+                  return res.status(404).json({ message: "Dark variant file data not found" });
+                }
+
+                const sourceFormat = data.darkVariantFormat || data.format;
+                
+                try {
+                  const result = await convertToFormat(darkBuffer, sourceFormat, format, assetId);
+                  fileBuffer = result.data;
+                  mimeType = result.mimeType;
+
+                  // Store the converted dark variant for future use
+                  try {
+                    await storage.createConvertedAsset({
+                      originalAssetId: assetId,
+                      format,
+                      fileData: fileBuffer.toString("base64"),
+                      mimeType,
+                      isDarkVariant: true,
+                    });
+                    console.log(`Successfully stored dark variant converted asset format ${format} for asset ID ${assetId}`);
+                  } catch (storeError) {
+                    console.error("Failed to store dark variant converted asset:", storeError);
+                  }
+                } catch (conversionError) {
+                  console.error("Dark variant format conversion failed:", conversionError);
+                  return res.status(400).json({ message: "Dark variant format conversion failed" });
+                }
+              }
+            }
+          } else {
+            // Light variant or regular format conversion
+            console.log(
+              `Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`
+            );
+            const convertedAsset = await storage.getConvertedAsset(
+              assetId,
+              format,
+              isDarkVariant
+            );
+
+            if (convertedAsset && convertedAsset.originalAssetId === assetId) {
+              console.log(
+                `Serving converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`
               );
-              return res
-                .status(400)
-                .json({ message: "Format conversion failed" });
+              mimeType = convertedAsset.mimeType;
+              fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
+            } else {
+              // Convert on-the-fly
+              console.log(`Requested format ${format} not found, converting on-the-fly`);
+
+              const sourceBuffer = Buffer.from(asset.fileData, "base64");
+              const sourceFormat = data.format;
+
+              try {
+                const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
+                fileBuffer = result.data;
+                mimeType = result.mimeType;
+
+                // Store the converted asset for future use
+                try {
+                  await storage.createConvertedAsset({
+                    originalAssetId: assetId,
+                    format,
+                    fileData: fileBuffer.toString("base64"),
+                    mimeType,
+                    isDarkVariant: false,
+                  });
+                  console.log(`Successfully stored converted asset format ${format} for asset ID ${assetId}`);
+                } catch (storeError) {
+                  console.error("Failed to store converted asset:", storeError);
+                }
+              } catch (conversionError) {
+                console.error("Format conversion failed:", conversionError);
+                return res.status(400).json({ message: "Format conversion failed" });
+              }
             }
           }
         }
