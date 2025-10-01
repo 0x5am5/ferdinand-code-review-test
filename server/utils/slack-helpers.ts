@@ -469,12 +469,18 @@ export function formatColorInfo(colorAsset: BrandAsset): {
       };
     }
 
-    const colors = data.colors.map((color: any) => ({
-      name: color.name || color.label || 'Unnamed',
-      hex: color.hex || color.value || '#000000',
-      rgb: color.rgb,
-      usage: color.usage || color.description,
-    }));
+    // Filter to only show colors that have proper names (not "Unnamed" or similar)
+    const colors = data.colors
+      .filter((color: any) => {
+        const name = color.name || color.label || '';
+        return name && name.toLowerCase() !== 'unnamed' && name.trim() !== '';
+      })
+      .map((color: any) => ({
+        name: color.name || color.label,
+        hex: color.hex || color.value || '#000000',
+        rgb: color.rgb,
+        usage: color.usage || color.description,
+      }));
 
     const swatchUrl = generateColorSwatchUrl(colors);
 

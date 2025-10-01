@@ -151,9 +151,9 @@ export async function handleColorCommand({ command, ack, respond, client }: any)
       // Add detailed color information
       const colorDetails = colorInfo.colors
         .map((color) => {
-          let details = `🎨 *${color.name}*: \`${color.hex}\``;
+          let details = `🎨 *${color.name}*: ${color.hex}`;
           if (color.rgb) {
-            details += ` | RGB: \`${color.rgb}\``;
+            details += ` | RGB: ${color.rgb}`;
           }
           if (color.usage) {
             details += `\n   _Usage: ${color.usage}_`;

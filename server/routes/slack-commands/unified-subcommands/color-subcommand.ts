@@ -1,4 +1,3 @@
-
 import { and, eq } from "drizzle-orm";
 import { brandAssets } from "@shared/schema";
 import { db } from "../../../db";
@@ -171,18 +170,19 @@ export async function handleColorSubcommand({
     //   });
     // }
 
-    const colorDetails = colorInfo.colors
-      .map((color) => {
-        let details = `🎨 *${color.name}*: \`${color.hex}\``;
-        if (color.rgb) {
-          details += ` | RGB: \`${color.rgb}\``;
-        }
-        if (color.usage) {
-          details += `\n   _Usage: ${color.usage}_`;
-        }
-        return details;
-      })
-      .join("\n\n");
+    // Add detailed color information
+      const colorDetails = colorInfo.colors
+        .map((color) => {
+          let details = `🎨 *${color.name}*: ${color.hex}`;
+          if (color.rgb) {
+            details += ` | RGB: ${color.rgb}`;
+          }
+          if (color.usage) {
+            details += `\n   _Usage: ${color.usage}_`;
+          }
+          return details;
+        })
+        .join("\n\n");
 
     colorBlocks.push({
       type: "section",
