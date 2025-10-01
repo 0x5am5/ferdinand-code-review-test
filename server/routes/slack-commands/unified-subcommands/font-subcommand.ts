@@ -207,65 +207,8 @@ export async function handleFontSubcommand({
     response_type: "ephemeral",
   });
 
-  // Check if we have many results and should ask for confirmation for file processing
-  if (displayAssets.length > 5) {
-    const confirmationBlocks = [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `📋 Would you also like to process font files and usage instructions?\n\n• **Process all ${displayAssets.length} fonts** (may send many files)\n• **Process just the first 3** for a quick overview\n• **Skip file processing** (font info shown above)`,
-        },
-      },
-      {
-        type: "actions",
-        elements: [
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: `Process All ${displayAssets.length}`,
-            },
-            style: "primary",
-            action_id: "process_all_fonts",
-            value: `${workspace.clientId}|${variant || ""}`,
-          },
-          {
-            type: "button",
-            text: {
-              type: "plain_text",
-              text: "Process First 3",
-            },
-            action_id: "process_limited_fonts",
-            value: `${workspace.clientId}|${variant || ""}`,
-          },
-        ],
-      },
-      {
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: "💡 *Tip:* Try `/ferdinand font brand`, `/ferdinand font body`, or `/ferdinand font header` for more targeted results.",
-          },
-        ],
-      },
-    ];
-
-    await respond({
-      blocks: confirmationBlocks,
-      response_type: "ephemeral",
-    });
-    return;
-  }
-
+  // For all font requests, immediately start processing asynchronously
   const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
-
-  // Respond immediately to avoid timeout
-  await respond({
-    text: `🔄 Processing ${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""}${variant ? ` (${variant} variant)` : ""}...`,
-    response_type: "ephemeral",
-  });
 
   // Process fonts asynchronously
   setImmediate(async () => {

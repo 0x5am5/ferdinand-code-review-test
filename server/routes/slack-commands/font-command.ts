@@ -144,65 +144,6 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
       return groups;
     }, {});
 
-    // Check if we have many results and should ask for confirmation
-    if (displayAssets.length > 5) {
-      const confirmationBlocks = [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: `📝 Found **${displayAssets.length} font assets**${variant ? ` for "${variant}"` : ""}.`,
-          },
-        },
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: `📋 This is a large collection. Would you like to:\n\n• **Process all ${displayAssets.length} fonts** (may send many messages)\n• **Narrow your search** with terms like "brand", "body", or "header"\n• **Process just the first 3** for a quick overview`,
-          },
-        },
-        {
-          type: "actions",
-          elements: [
-            {
-              type: "button",
-              text: {
-                type: "plain_text",
-                text: `Process All ${displayAssets.length}`,
-              },
-              style: "primary",
-              action_id: "process_all_fonts",
-              value: `${workspace.clientId}|${variant || ""}`,
-            },
-            {
-              type: "button",
-              text: {
-                type: "plain_text",
-                text: "Process First 3",
-              },
-              action_id: "process_limited_fonts",
-              value: `${workspace.clientId}|${variant || ""}`,
-            },
-          ],
-        },
-        {
-          type: "context",
-          elements: [
-            {
-              type: "mrkdwn",
-              text: "💡 *Tip:* Try `/ferdinand-fonts brand`, `/ferdinand-fonts body`, or `/ferdinand-fonts header` for more targeted results.",
-            },
-          ],
-        },
-      ];
-
-      await respond({
-        blocks: confirmationBlocks,
-        response_type: "ephemeral",
-      });
-      return;
-    }
-
     const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
     // Build enhanced font blocks organized by category
@@ -285,8 +226,8 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
 
     // Add footer with usage tips
     const usageTips = variant
-      ? `💡 *Usage Tips:* Files and CSS will be sent separately | Try \`/ferdinand-fonts brand\`, \`body\`, or \`header\` for specific font types`
-      : `💡 *Usage Tips:* Files and CSS will be sent separately | Try \`/ferdinand-fonts brand\`, \`body\`, or \`header\` for specific font types`;
+      ? `💡 *Usage Tips:* Font files and CSS will be processed separately | Try \`/ferdinand-fonts brand\`, \`body\`, or \`header\` for specific font types`
+      : `💡 *Usage Tips:* Font files and CSS will be processed separately | Try \`/ferdinand-fonts brand\`, \`body\`, or \`header\` for specific font types`;
 
     fontBlocks.push({
       type: "context",
@@ -298,15 +239,9 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
       ],
     });
 
-    // Send the organized font information first
+    // Send the organized font information first - this must happen within 3 seconds
     await respond({
       blocks: fontBlocks,
-      response_type: "ephemeral",
-    });
-
-    // Then process fonts for file uploads/CSS asynchronously
-    await respond({
-      text: `🔄 Processing font files and usage instructions...`,
       response_type: "ephemeral",
     });
 
