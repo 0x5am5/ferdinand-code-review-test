@@ -30,7 +30,7 @@ export async function handleColorSubcommandWithLimit(
   respond: any,
   variant: string,
   clientId: number,
-  limit: number | "all"
+  limit: number | "all",
 ) {
   try {
     // Find workspace by client ID
@@ -82,19 +82,26 @@ export async function handleColorSubcommandWithLimit(
     }
 
     // Filter by variant if specified
-    const filteredColorAssets = filterColorAssetsByVariant(colorAssets, variant);
-    const displayAssets = filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
+    const filteredColorAssets = filterColorAssetsByVariant(
+      colorAssets,
+      variant,
+    );
+    const displayAssets =
+      filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
 
     // Apply limit
-    const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
+    const assetsToShow =
+      limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
 
     // Build color blocks using the same shared utility as the main commands
     const colorBlocks = buildColorBlocks(
       assetsToShow,
-      filteredColorAssets.length > 0 ? filteredColorAssets.slice(0, assetsToShow.length) : assetsToShow,
+      filteredColorAssets.length > 0
+        ? filteredColorAssets.slice(0, assetsToShow.length)
+        : assetsToShow,
       colorAssets,
-      variant
+      variant,
     );
 
     await respond({
@@ -119,7 +126,7 @@ export async function handleLogoSubcommandWithLimit(
   respond: any,
   query: string,
   clientId: number,
-  limit: number | "all"
+  limit: number | "all",
 ) {
   try {
     // Find workspace by client ID
@@ -174,7 +181,8 @@ export async function handleLogoSubcommandWithLimit(
     const matchedLogos = findBestLogoMatch(logoAssets, query);
 
     // Apply limit
-    const logosToUpload = limit === "all" ? matchedLogos : matchedLogos.slice(0, limit as number);
+    const logosToUpload =
+      limit === "all" ? matchedLogos : matchedLogos.slice(0, limit as number);
     auditLog.assetIds = logosToUpload.map((asset) => asset.id);
 
     const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
@@ -200,7 +208,7 @@ export async function handleLogoSubcommandWithLimit(
             asset.id,
             workspace.clientId,
             baseUrl,
-            { format: "png" }
+            { format: "png" },
           );
 
           const filename = `${asset.name.replace(/\s+/g, "_")}.png`;
@@ -211,14 +219,14 @@ export async function handleLogoSubcommandWithLimit(
             fileUrl: downloadUrl,
             filename,
             title: assetInfo.title,
-            initialComment: `📋 **${assetInfo.title}**\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
+            initialComment: `📋 *${assetInfo.title}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
           });
 
           if (uploaded) uploadedFiles++;
         }
 
         // Send summary
-        let summaryText = `✅ **${uploadedFiles} logo${uploadedFiles > 1 ? "s" : ""} uploaded successfully!**`;
+        let summaryText = `✅ *${uploadedFiles} logo${uploadedFiles > 1 ? "s" : ""} uploaded successfully!*`;
         if (query) {
           summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
         }
@@ -252,7 +260,7 @@ export async function handleFontSubcommandWithLimit(
   respond: any,
   variant: string,
   clientId: number,
-  limit: number | "all"
+  limit: number | "all",
 ) {
   try {
     // Find workspace by client ID
@@ -305,10 +313,12 @@ export async function handleFontSubcommandWithLimit(
 
     // Filter by variant if specified
     const filteredFontAssets = filterFontAssetsByVariant(fontAssets, variant);
-    const displayAssets = filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
+    const displayAssets =
+      filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
 
     // Apply limit
-    const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
+    const assetsToShow =
+      limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
 
     // Use utility function for processing message
@@ -351,21 +361,21 @@ export async function handleFontSubcommandWithLimit(
                 fileUrl: downloadUrl,
                 filename,
                 title: `${fontInfo.title} - Font Files`,
-                initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map((f) => f.format.toUpperCase()).join(", ") || "Various"}`,
+                initialComment: `📝 *${fontInfo.title}* - Custom Font Files\n• *Weights:* ${fontInfo.weights.join(", ")}\n• *Styles:* ${fontInfo.styles.join(", ")}\n• *Source:* Custom Upload\n• *Formats:* ${fontInfo.files?.map((f) => f.format.toUpperCase()).join(", ") || "Various"}`,
               });
 
               if (uploaded) uploadedFiles++;
             } else {
               // For Google/Adobe fonts, send usage code
               let codeBlock = "";
-              let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}`;
+              let fontDescription = `📝 *${fontInfo.title}*\n• *Weights:* ${fontInfo.weights.join(", ")}\n• *Styles:* ${fontInfo.styles.join(", ")}`;
 
               if (fontInfo.source === "google") {
                 codeBlock = generateGoogleFontCSS(
                   fontInfo.title,
                   fontInfo.weights,
                 );
-                fontDescription += `\n• **Source:** Google Fonts`;
+                fontDescription += `\n• *Source:* Google Fonts`;
               } else if (fontInfo.source === "adobe") {
                 const data =
                   typeof asset.data === "string"
@@ -374,14 +384,14 @@ export async function handleFontSubcommandWithLimit(
                 const projectId =
                   data?.sourceData?.projectId || "your-project-id";
                 codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
-                fontDescription += `\n• **Source:** Adobe Fonts (Typekit)`;
+                fontDescription += `\n• *Source:* Adobe Fonts (Typekit)`;
               } else {
                 codeBlock = `/* Font: ${fontInfo.title} */
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
   font-weight: ${fontInfo.weights[0] || "400"};
 }`;
-                fontDescription += `\n• **Source:** ${fontInfo.source}`;
+                fontDescription += `\n• *Source:* ${fontInfo.source}`;
               }
 
               // Send code block as a message
@@ -390,10 +400,7 @@ export async function handleFontSubcommandWithLimit(
                   users: body.user.id,
                 });
 
-              if (
-                conversationResponse.ok &&
-                conversationResponse.channel?.id
-              ) {
+              if (conversationResponse.ok && conversationResponse.channel?.id) {
                 await workspaceClient.chat.postMessage({
                   channel: conversationResponse.channel.id,
                   text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
@@ -402,10 +409,7 @@ export async function handleFontSubcommandWithLimit(
               }
             }
           } catch (fontError) {
-            console.error(
-              `Failed to process font ${asset.name}:`,
-              fontError,
-            );
+            console.error(`Failed to process font ${asset.name}:`, fontError);
           }
         }
 
@@ -416,7 +420,7 @@ export async function handleFontSubcommandWithLimit(
           variant,
           undefined, // no response time for background processing
           displayAssets.length,
-          limit
+          limit,
         );
 
         await workspaceClient.chat.postEphemeral({
@@ -443,8 +447,13 @@ export async function handleFontSubcommandWithLimit(
 // Helper function needed for action handlers
 function hasUploadableFiles(asset: any): boolean {
   try {
-    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-    return data?.source === "file" && data?.sourceData?.files && data.sourceData.files.length > 0;
+    const data =
+      typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    return (
+      data?.source === "file" &&
+      data?.sourceData?.files &&
+      data.sourceData.files.length > 0
+    );
   } catch {
     return false;
   }

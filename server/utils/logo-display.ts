@@ -1,4 +1,3 @@
-
 export interface LogoDisplayOptions {
   query?: string;
   showConfirmation?: boolean;
@@ -9,7 +8,7 @@ export interface LogoDisplayOptions {
 export function buildLogoConfirmationBlocks(
   matchedLogos: any[],
   query: string,
-  workspaceClientId: number
+  workspaceClientId: number,
 ) {
   return [
     {
@@ -65,7 +64,7 @@ export function buildLogoConfirmationBlocks(
 // Build processing message for logo uploads
 export function buildLogoProcessingMessage(
   matchedLogos: any[],
-  query?: string
+  query?: string,
 ): string {
   return `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}... Files will appear shortly!`;
 }
@@ -75,9 +74,9 @@ export function buildLogoSummaryMessage(
   successfulUploads: number,
   totalLogos: number,
   query?: string,
-  responseTime?: number
+  responseTime?: number,
 ): string {
-  let summaryText = `✅ **${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!**`;
+  let summaryText = `✅ *${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!*`;
 
   if (successfulUploads < totalLogos) {
     summaryText += `\n💡 Some files were sent via DM due to channel permissions.`;
