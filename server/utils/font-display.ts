@@ -1,4 +1,3 @@
-
 import { formatFontInfo } from "./slack-helpers";
 
 // Font display constants
@@ -6,14 +5,14 @@ export const FONT_CATEGORY_ORDER = ["brand", "body", "header", "other"];
 
 export const FONT_CATEGORY_EMOJIS: Record<string, string> = {
   brand: "🎯",
-  body: "📖", 
+  body: "📖",
   header: "📰",
   other: "📝",
 };
 
 export const FONT_CATEGORY_NAMES: Record<string, string> = {
   brand: "Brand Fonts",
-  body: "Body Fonts", 
+  body: "Body Fonts",
   header: "Header Fonts",
   other: "Other Fonts",
 };
@@ -91,16 +90,16 @@ export function buildFontBlocks(
 
       // Add font details
       let fontDetails = `   📝 *${fontInfo.title}*\n`;
-      fontDetails += `   • **Source:** ${fontInfo.source.charAt(0).toUpperCase() + fontInfo.source.slice(1)}\n`;
-      fontDetails += `   • **Weights:** ${fontInfo.weights.join(", ")}\n`;
-      fontDetails += `   • **Styles:** ${fontInfo.styles.join(", ")}`;
-      
+      fontDetails += `   • *Source:* ${fontInfo.source.charAt(0).toUpperCase() + fontInfo.source.slice(1)}\n`;
+      fontDetails += `   • *Weights:* ${fontInfo.weights.join(", ")}\n`;
+      fontDetails += `   • *Styles:* ${fontInfo.styles.join(", ")}`;
+
       if (fontInfo.usage) {
-        fontDetails += `\n   • **Usage:** ${fontInfo.usage}`;
+        fontDetails += `\n   • *Usage:* ${fontInfo.usage}`;
       }
 
       fontBlocks.push({
-        type: "section", 
+        type: "section",
         text: {
           type: "mrkdwn",
           text: fontDetails,
@@ -116,8 +115,7 @@ export function buildFontBlocks(
 
   // Handle any remaining categories not in the main order
   for (const [category, assets] of Object.entries(groupedAssets)) {
-    if (FONT_CATEGORY_ORDER.includes(category) || assets.length === 0)
-      continue;
+    if (FONT_CATEGORY_ORDER.includes(category) || assets.length === 0) continue;
 
     fontBlocks.push({
       type: "section",
@@ -131,18 +129,18 @@ export function buildFontBlocks(
       const fontInfo = formatFontInfo(asset);
 
       let fontDetails = `   📝 *${fontInfo.title}*\n`;
-      fontDetails += `   • **Source:** ${fontInfo.source.charAt(0).toUpperCase() + fontInfo.source.slice(1)}\n`;
-      fontDetails += `   • **Weights:** ${fontInfo.weights.join(", ")}\n`;
-      fontDetails += `   • **Styles:** ${fontInfo.styles.join(", ")}`;
-      
+      fontDetails += `   • *Source:* ${fontInfo.source.charAt(0).toUpperCase() + fontInfo.source.slice(1)}\n`;
+      fontDetails += `   • *Weights:* ${fontInfo.weights.join(", ")}\n`;
+      fontDetails += `   • *Styles:* ${fontInfo.styles.join(", ")}`;
+
       if (fontInfo.usage) {
-        fontDetails += `\n   • **Usage:** ${fontInfo.usage}`;
+        fontDetails += `\n   • *Usage:* ${fontInfo.usage}`;
       }
 
       fontBlocks.push({
         type: "section",
         text: {
-          type: "mrkdwn", 
+          type: "mrkdwn",
           text: fontDetails,
         },
       });
