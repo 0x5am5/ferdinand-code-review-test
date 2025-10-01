@@ -1,4 +1,3 @@
-
 import { hexToRgb, hexToHsl, hexToCmyk } from "./color-conversion";
 import { formatColorInfo } from "./slack-helpers";
 
@@ -24,7 +23,7 @@ export function buildColorBlocks(
   displayAssets: any[],
   filteredColorAssets: any[],
   colorAssets: any[],
-  variant?: string
+  variant?: string,
 ) {
   // Group assets by category for better organization
   const groupedAssets = displayAssets.reduce(
@@ -100,7 +99,7 @@ export function buildColorBlocks(
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `   *${colorInfo.title}*`,
+          text: `   *${colorInfo.title}* ${colorInfor[0].hex}`,
         },
       });
 
@@ -145,7 +144,8 @@ export function buildColorBlocks(
 
   // Handle any remaining categories not in the main order
   for (const [category, assets] of Object.entries(groupedAssets)) {
-    if (COLOR_CATEGORY_ORDER.includes(category) || assets.length === 0) continue;
+    if (COLOR_CATEGORY_ORDER.includes(category) || assets.length === 0)
+      continue;
 
     colorBlocks.push({
       type: "section",
@@ -166,7 +166,7 @@ export function buildColorBlocks(
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `   *${colorInfo.title}*`,
+          text: `   *${colorInfo.title}* ${colorInfor[0].hex}`,
         },
       });
 
