@@ -13,6 +13,7 @@ import {
   filterFontAssetsByVariant,
   formatFontInfo,
 } from "../../utils/slack-helpers";
+import { buildColorBlocks } from "../../utils/color-display";
 import { WebClient } from "@slack/web-api";
 
 export async function handleColorSubcommandWithLimit(
@@ -79,85 +80,13 @@ export async function handleColorSubcommandWithLimit(
     const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
 
-    // Build color blocks
-    let headerText = `🎨 *Color Palette${variant ? ` - ${variant.charAt(0).toUpperCase() + variant.slice(1)}` : ""}*`;
-    headerText += ` (${assetsToShow.length} palette${assetsToShow.length > 1 ? "s" : ""})`;
-
-    if (limit !== "all" && displayAssets.length > (limit as number)) {
-      headerText += ` from ${displayAssets.length} total`;
-    }
-
-    const colorBlocks: any[] = [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: headerText,
-        },
-      },
-      {
-        type: "divider",
-      },
-    ];
-
-    for (const asset of assetsToShow) {
-      const colorInfo = formatColorInfo(asset);
-
-      if (colorInfo.colors.length === 0) {
-        continue;
-      }
-
-      // Add palette title
-      colorBlocks.push({
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `*${colorInfo.title}*`,
-        },
-      });
-
-      // Add detailed color information
-      const colorDetails = colorInfo.colors
-        .map((color) => {
-          let details = `🎨 *${color.name}*: ${color.hex}`;
-          if (color.rgb) {
-            details += ` | RGB: ${color.rgb}`;
-          }
-          if (color.usage) {
-            details += `\n   _Usage: ${color.usage}_`;
-          }
-          return details;
-        })
-        .join("\n\n");
-
-      colorBlocks.push({
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: colorDetails,
-        },
-      });
-
-      // Add divider between palettes (except last one)
-      if (assetsToShow.indexOf(asset) < assetsToShow.length - 1) {
-        colorBlocks.push({
-          type: "divider",
-        });
-      }
-    }
-
-    // Add footer
-    const usageTips = `💡 *Usage Tips:* Copy hex codes for design tools | Try specific variants like \`brand\`, \`neutral\`, or \`interactive\``;
-
-    colorBlocks.push({
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: usageTips,
-        },
-      ],
-    });
+    // Build color blocks using the same shared utility as the main commands
+    const colorBlocks = buildColorBlocks(
+      assetsToShow,
+      filteredColorAssets.length > 0 ? filteredColorAssets.slice(0, assetsToShow.length) : assetsToShow,
+      colorAssets,
+      variant
+    );
 
     await respond({
       blocks: colorBlocks,
