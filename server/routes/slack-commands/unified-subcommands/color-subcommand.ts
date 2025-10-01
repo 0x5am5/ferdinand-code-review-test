@@ -1,3 +1,4 @@
+
 import { and, eq } from "drizzle-orm";
 import { brandAssets } from "@shared/schema";
 import { db } from "../../../db";
@@ -192,23 +193,27 @@ export async function handleColorSubcommand({
   }
 
   // Group assets by category for better organization
-  const groupedAssets = displayAssets.reduce((groups: Record<string, typeof displayAssets>, asset) => {
-    try {
-      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-      const category = data?.category || 'color';
-      if (!groups[category]) {
-        groups[category] = [];
+  const groupedAssets = displayAssets.reduce(
+    (groups: Record<string, typeof displayAssets>, asset) => {
+      try {
+        const data =
+          typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+        const category = data?.category || "color";
+        if (!groups[category]) {
+          groups[category] = [];
+        }
+        groups[category].push(asset);
+        return groups;
+      } catch {
+        if (!groups["color"]) {
+          groups["color"] = [];
+        }
+        groups["color"].push(asset);
+        return groups;
       }
-      groups[category].push(asset);
-      return groups;
-    } catch {
-      if (!groups['color']) {
-        groups['color'] = [];
-      }
-      groups['color'].push(asset);
-      return groups;
-    }
-  }, {});
+    },
+    {},
+  );
 
   // Build enhanced color blocks organized by category
   let headerText = `🎨 *Brand Color System*`;
@@ -235,24 +240,25 @@ export async function handleColorSubcommand({
   ];
 
   // Category order and emojis
-  const categoryOrder = ['brand', 'neutral', 'interactive'];
+  const categoryOrder = ["brand", "neutral", "interactive"];
   const categoryEmojis: Record<string, string> = {
-    brand: '🎯',
-    neutral: '⚫',
-    interactive: '🔗',
-    color: '🎨'
+    brand: "🎯",
+    neutral: "⚫",
+    interactive: "🔗",
+    color: "🎨",
   };
 
   const categoryNames: Record<string, string> = {
-    brand: 'Brand Colors',
-    neutral: 'Neutral Colors', 
-    interactive: 'Interactive Colors',
-    color: 'Other Colors'
+    brand: "Brand Colors",
+    neutral: "Neutral Colors",
+    interactive: "Interactive Colors",
+    color: "Other Colors",
   };
 
   // Process each category in order
   for (const category of categoryOrder) {
-    if (!groupedAssets[category] || groupedAssets[category].length === 0) continue;
+    if (!groupedAssets[category] || groupedAssets[category].length === 0)
+      continue;
 
     // Add category header
     colorBlocks.push({
@@ -263,7 +269,7 @@ export async function handleColorSubcommand({
       },
     });
 
-    // Process each asset in this category
+    // Process each asset in this category (show up to 3 palettes)
     for (const asset of groupedAssets[category].slice(0, 3)) {
       const colorInfo = formatColorInfo(asset);
 
@@ -287,15 +293,14 @@ export async function handleColorSubcommand({
           const hsl = hexToHsl(color.hex);
           const cmyk = hexToCmyk(color.hex);
 
-          let details = `   🎨 *${color.name}*\n`;
-          details += `      • *HEX:* ${color.hex}\n`;
-          details += `      • *RGB:* \`${rgb}\`\n`;
-          details += `      • *HSL:* \`${hsl}\`\n`;
-          details += `      • *CMYK:* \`${cmyk}\``;
+          let details = `• *HEX:* \`${color.hex}\`\n`;
+          details += `• *RGB:* \`${rgb}\`\n`;
+          details += `• *HSL:* \`${hsl}\`\n`;
+          details += `• *CMYK:* \`${cmyk}\``;
 
           // Add Pantone if available
           if (color.pantone) {
-            details += `\n      • *Pantone:* \`${color.pantone}\``;
+            details += `\n• *Pantone:* \`${color.pantone}\``;
           }
 
           if (color.usage) {
@@ -328,7 +333,7 @@ export async function handleColorSubcommand({
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `${categoryEmojis[category] || '🎨'} *${categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1)}*`,
+        text: `${categoryEmojis[category] || "🎨"} *${categoryNames[category] || category.charAt(0).toUpperCase() + category.slice(1)}*`,
       },
     });
 
@@ -338,6 +343,8 @@ export async function handleColorSubcommand({
       if (colorInfo.colors.length === 0) {
         continue;
       }
+
+      console.log("Color Info:", colorInfo);
 
       colorBlocks.push({
         type: "section",
@@ -353,15 +360,14 @@ export async function handleColorSubcommand({
           const hsl = hexToHsl(color.hex);
           const cmyk = hexToCmyk(color.hex);
 
-          let details = `   🎨 *${color.name}*\n`;
-          details += `      • *HEX:* ${color.hex}\n`;
-          details += `      • *RGB:* \`${rgb}\`\n`;
-          details += `      • *HSL:* \`${hsl}\`\n`;
-          details += `      • *CMYK:* \`${cmyk}\``;
+          let details = `• *HEX:* \`${color.hex}\`\n`;
+          details += `• *RGB:* \`${rgb}\`\n`;
+          details += `• *HSL:* \`${hsl}\`\n`;
+          details += `• *CMYK:* \`${cmyk}\``;
 
           // Add Pantone if available
           if (color.pantone) {
-            details += `\n      • *Pantone:* \`${color.pantone}\``;
+            details += `\n• *Pantone:* \`${color.pantone}\``;
           }
 
           if (color.usage) {
@@ -385,6 +391,7 @@ export async function handleColorSubcommand({
     });
   }
 
+  // Add footer with usage and variant tips
   const usageTips = variant
     ? `💡 *Usage Tips:* Copy color values (HEX, RGB, HSL, CMYK) for design tools | Try \`/ferdinand color brand\`, \`neutral\`, or \`interactive\` for specific color types`
     : `💡 *Usage Tips:* Copy color values (HEX, RGB, HSL, CMYK) for design tools | Try \`/ferdinand color brand\`, \`neutral\`, or \`interactive\` for specific color types`;
