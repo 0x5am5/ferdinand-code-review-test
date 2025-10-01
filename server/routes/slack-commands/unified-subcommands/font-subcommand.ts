@@ -45,6 +45,34 @@ export async function handleFontSubcommand({
       ),
     );
 
+  console.log(`[FONT SUBCOMMAND DEBUG] Found ${fontAssets.length} total font assets for client ${workspace.clientId}`);
+  console.log(`[FONT SUBCOMMAND DEBUG] Font assets:`, fontAssets.map(f => {
+    // Parse data to get source for better debugging
+    let source = 'unknown';
+    try {
+      const data = typeof f.data === "string" ? JSON.parse(f.data) : f.data;
+      source = data?.source || 'custom';
+      
+      // If source is not explicitly set, try to infer from the data structure or name
+      if (source === 'custom' || !source) {
+        const fontName = f.name.toLowerCase();
+        const commonGoogleFonts = ['inter', 'roboto', 'open sans', 'lato', 'montserrat', 'poppins', 'source sans pro', 'raleway', 'nunito', 'ubuntu'];
+        
+        if (commonGoogleFonts.some(gFont => fontName.includes(gFont))) {
+          source = 'google';
+        } else if (data?.sourceData?.projectId) {
+          source = 'adobe';
+        } else if (data?.sourceData?.files && data.sourceData.files.length > 0) {
+          source = 'file';
+        }
+      }
+    } catch (error) {
+      console.error(`[FONT SUBCOMMAND DEBUG] Error parsing font data for ${f.name}:`, error);
+    }
+    
+    return { id: f.id, name: f.name, subcategory: f.subcategory, source };
+  }));
+
   if (fontAssets.length === 0) {
     await respond({
       text: "📝 No font assets found for your organization. Please add some fonts in Ferdinand first.",
@@ -56,6 +84,34 @@ export async function handleFontSubcommand({
 
   // Filter by variant if specified
   const filteredFontAssets = filterFontAssetsByVariant(fontAssets, variant);
+
+  console.log(`[FONT SUBCOMMAND DEBUG] After filtering by variant "${variant}": ${filteredFontAssets.length} fonts`);
+  console.log(`[FONT SUBCOMMAND DEBUG] Filtered fonts:`, filteredFontAssets.map(f => {
+    // Parse data to get source for filtered results
+    let source = 'unknown';
+    try {
+      const data = typeof f.data === "string" ? JSON.parse(f.data) : f.data;
+      source = data?.source || 'custom';
+      
+      // If source is not explicitly set, try to infer from the data structure or name
+      if (source === 'custom' || !source) {
+        const fontName = f.name.toLowerCase();
+        const commonGoogleFonts = ['inter', 'roboto', 'open sans', 'lato', 'montserrat', 'poppins', 'source sans pro', 'raleway', 'nunito', 'ubuntu'];
+        
+        if (commonGoogleFonts.some(gFont => fontName.includes(gFont))) {
+          source = 'google';
+        } else if (data?.sourceData?.projectId) {
+          source = 'adobe';
+        } else if (data?.sourceData?.files && data.sourceData.files.length > 0) {
+          source = 'file';
+        }
+      }
+    } catch (error) {
+      console.error(`[FONT SUBCOMMAND DEBUG] Error parsing filtered font data for ${f.name}:`, error);
+    }
+    
+    return { id: f.id, name: f.name, source };
+  }));
 
   if (filteredFontAssets.length === 0 && variant) {
     await respond({
