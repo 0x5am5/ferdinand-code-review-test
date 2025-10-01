@@ -431,23 +431,26 @@ export async function logSlackActivity(entry: AuditLogEntry): Promise<void> {
 
 // Generate a simple color palette image URL using a placeholder service
 export function generateColorSwatchUrl(colors: Array<{ name?: string; hex: string; }>): string {
-  // Use a simple placeholder service to generate color swatches
-  // Format: https://via.placeholder.com/600x100/FF0000/FFFFFF?text=Red+%23FF0000
+  if (colors.length === 0) {
+    return "https://via.placeholder.com/400x100/CCCCCC/000000?text=No+Colors";
+  }
 
   if (colors.length === 1) {
     const color = colors[0];
     const hexClean = color.hex.replace('#', '');
-    const text = encodeURIComponent(`${color.name || 'Color'} ${color.hex}`);
-    return `https://via.placeholder.com/400x100/${hexClean}/FFFFFF?text=${text}`;
+    // Ensure hex is valid 6-character format
+    const validHex = hexClean.length === 6 ? hexClean : 'CCCCCC';
+    const colorName = (color.name || 'Color').replace(/[^a-zA-Z0-9\s]/g, '');
+    const text = encodeURIComponent(`${colorName}`);
+    return `https://via.placeholder.com/400x100/${validHex}/FFFFFF?text=${text}`;
   }
 
-  // For multiple colors, create a combined palette
-  const colorStripes = colors.slice(0, 5).map(c => c.hex.replace('#', '')).join('-');
-  const colorNames = colors.slice(0, 5).map(c => c.name || c.hex).join(', ');
-  const text = encodeURIComponent(`Palette: ${colorNames}`);
-
-  // Create a multi-color gradient effect
-  return `https://via.placeholder.com/600x120/${colorStripes.split('-')[0]}/FFFFFF?text=${text}`;
+  // For multiple colors, just use the first color as background
+  const firstColor = colors[0];
+  const hexClean = firstColor.hex.replace('#', '');
+  const validHex = hexClean.length === 6 ? hexClean : 'CCCCCC';
+  const text = encodeURIComponent(`${colors.length} Colors`);
+  return `https://via.placeholder.com/600x120/${validHex}/FFFFFF?text=${text}`;
 }
 
 // Format color information for Slack display

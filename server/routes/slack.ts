@@ -497,14 +497,15 @@ function initializeSlackApp() {
               },
             });
 
-            // Add color swatch image if available
-            if (colorInfo.swatchUrl) {
-              colorBlocks.push({
-                type: "image",
-                image_url: colorInfo.swatchUrl,
-                alt_text: `Color palette for ${colorInfo.title}`,
-              });
-            }
+            // Add color swatch image if available (but skip for now to avoid Slack errors)
+            // Slack has strict requirements for image URLs
+            // if (colorInfo.swatchUrl) {
+            //   colorBlocks.push({
+            //     type: "image",
+            //     image_url: colorInfo.swatchUrl,
+            //     alt_text: `Color palette for ${colorInfo.title}`,
+            //   });
+            // }
 
             // Add detailed color information
             const colorDetails = colorInfo.colors
@@ -1247,13 +1248,14 @@ Show this help message`,
           },
         });
 
-        if (colorInfo.swatchUrl) {
-          colorBlocks.push({
-            type: "image",
-            image_url: colorInfo.swatchUrl,
-            alt_text: `Color palette for ${colorInfo.title}`,
-          });
-        }
+        // Skip image blocks for now to avoid Slack validation errors
+        // if (colorInfo.swatchUrl) {
+        //   colorBlocks.push({
+        //     type: "image",
+        //     image_url: colorInfo.swatchUrl,
+        //     alt_text: `Color palette for ${colorInfo.title}`,
+        //   });
+        // }
 
         const colorDetails = colorInfo.colors
           .map((color) => {
