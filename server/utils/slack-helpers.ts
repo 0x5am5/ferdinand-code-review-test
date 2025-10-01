@@ -568,41 +568,43 @@ export function filterFontAssetsByVariant(
   assets: any[],
   variant: string
 ): any[] {
-  if (!variant || variant.trim() === "") return assets;
+  if (!variant) return assets;
 
-  const normalizedVariant = variant.toLowerCase().trim();
-
+  const lowerVariant = variant.toLowerCase();
   return assets.filter((asset) => {
+    const name = asset.name.toLowerCase();
+    const subcategory = asset.subcategory?.toLowerCase() || "";
+
+    // Try to parse data to get additional context
+    let fontCategory = "";
+    let fontUsage = "";
+    let fontFamily = "";
+    let fontSource = "";
     try {
       const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-      const fontInfo = formatFontInfo(asset);
-
-      // Check various font properties for the variant
-      const name = asset.name.toLowerCase();
-      const category = fontInfo.category?.toLowerCase() || "";
-      const usage = fontInfo.usage?.toLowerCase() || "";
-      const source = fontInfo.source?.toLowerCase() || "";
-      const subcategory = asset.subcategory?.toLowerCase() || "";
-
-      return (
-        name.includes(normalizedVariant) ||
-        category.includes(normalizedVariant) ||
-        usage.includes(normalizedVariant) ||
-        source.includes(normalizedVariant) ||
-        subcategory.includes(normalizedVariant) ||
-        // Check for common font type variants
-        (normalizedVariant === "body" && (category.includes("body") || usage.includes("body") || name.includes("body") || subcategory.includes("body"))) ||
-        (normalizedVariant === "header" && (category.includes("header") || usage.includes("header") || name.includes("header") || category.includes("heading") || usage.includes("heading") || name.includes("heading") || subcategory.includes("header"))) ||
-        (normalizedVariant === "brand" && (category.includes("brand") || usage.includes("brand") || name.includes("brand") || subcategory.includes("brand"))) ||
-        (normalizedVariant === "display" && (category.includes("display") || usage.includes("display") || name.includes("display") || subcategory.includes("display"))) ||
-        (normalizedVariant === "google" && source === "google") ||
-        (normalizedVariant === "adobe" && source === "adobe") ||
-        (normalizedVariant === "custom" && (source === "file" || subcategory === "custom"))
-      );
-    } catch (error) {
-      console.error("Error filtering font asset:", error);
-      return false;
+      fontCategory = data?.category?.toLowerCase() || "";
+      fontUsage = data?.usage?.toLowerCase() || "";
+      fontFamily = data?.sourceData?.fontFamily?.toLowerCase() || "";
+      fontSource = data?.source?.toLowerCase() || "";
+    } catch {
+      // Ignore parsing errors
     }
+
+    // Broader matching for font variants including source and family
+    return (
+      name.includes(lowerVariant) ||
+      subcategory.includes(lowerVariant) ||
+      fontCategory.includes(lowerVariant) ||
+      fontUsage.includes(lowerVariant) ||
+      fontFamily.includes(lowerVariant) ||
+      fontSource.includes(lowerVariant) ||
+      // Common font type mappings
+      (lowerVariant === "body" && (name.includes("body") || fontUsage.includes("body") || fontCategory.includes("body"))) ||
+      (lowerVariant === "header" && (name.includes("header") || name.includes("heading") || fontUsage.includes("header") || fontCategory.includes("header"))) ||
+      (lowerVariant === "brand" && (name.includes("brand") || fontUsage.includes("brand") || fontCategory.includes("brand"))) ||
+      (lowerVariant === "google" && fontSource === "google") ||
+      (lowerVariant === "adobe" && fontSource === "adobe")
+    );
   });
 }
 
@@ -617,7 +619,7 @@ export function formatFontInfo(fontAsset: BrandAsset): {
   files?: Array<{ format: string; weight: string; style: string; }>;
 } {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
+    const data = typeof fontAsset.data === "string" ? JSON.parse(asset.data) : asset.data;
 
     // Handle different data structures
     const source = data?.source || 'custom';
@@ -699,7 +701,7 @@ export function generateAdobeFontCSS(projectId: string, fontFamily: string): str
 // Check if font has uploadable files
 export function hasUploadableFiles(fontAsset: BrandAsset): boolean {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : asset.data;
+    const data = typeof fontAsset.data === "string" ? JSON.parse(asset.data) : asset.data;
     return data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
   } catch {
     return false;

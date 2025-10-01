@@ -78,6 +78,9 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
         ),
       );
 
+    console.log(`[FONT DEBUG] Found ${fontAssets.length} total font assets for client ${workspace.clientId}`);
+    console.log(`[FONT DEBUG] Font assets:`, fontAssets.map(f => ({ id: f.id, name: f.name, subcategory: f.subcategory })));
+
     if (fontAssets.length === 0) {
       await respond({
         text: "📝 No font assets found for your organization. Please add some fonts in Ferdinand first.",
@@ -92,6 +95,9 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
       fontAssets,
       variant,
     );
+
+    console.log(`[FONT DEBUG] After filtering by variant "${variant}": ${filteredFontAssets.length} fonts`);
+    console.log(`[FONT DEBUG] Filtered fonts:`, filteredFontAssets.map(f => ({ id: f.id, name: f.name })));
 
     if (filteredFontAssets.length === 0 && variant) {
       await respond({
@@ -170,17 +176,15 @@ export async function handleFontCommand({ command, ack, respond, client }: any) 
 
     const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
-    // Build font blocks using unified display system
-    const fontBlocks = buildFontBlocks(
-      displayAssets,
-      filteredFontAssets,
-      fontAssets,
-      variant,
-    );
+    // Simple response like color command - just show count and names
+    const fontNames = displayAssets.map(asset => asset.name).join(", ");
+    const responseText = variant 
+      ? `📝 Found **${displayAssets.length} fonts** for "${variant}": ${fontNames}\n\n🔄 Processing font files and usage code...`
+      : `📝 Found **${displayAssets.length} fonts**: ${fontNames}\n\n🔄 Processing font files and usage code...`;
 
-    // Send the organized font information first - this must happen within 3 seconds
+    // Send simple response first - matching color command pattern
     await respond({
-      blocks: fontBlocks,
+      text: responseText,
       response_type: "ephemeral",
     });
 

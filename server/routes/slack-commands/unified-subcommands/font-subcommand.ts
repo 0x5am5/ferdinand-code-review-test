@@ -132,32 +132,15 @@ export async function handleFontSubcommand({
     return;
   }
 
-  // Build font blocks using unified display system
-  const fontBlocks = buildFontBlocks(
-    displayAssets,
-    filteredFontAssets,
-    fontAssets,
-    variant,
-  );
+  // Simple response like color command - just show count and names
+  const fontNames = displayAssets.map(asset => asset.name).join(", ");
+  const responseText = variant 
+    ? `📝 Found **${displayAssets.length} fonts** for "${variant}": ${fontNames}\n\n🔄 Processing font files and usage code...`
+    : `📝 Found **${displayAssets.length} fonts**: ${fontNames}\n\n🔄 Processing font files and usage code...`;
 
-  // Add footer with usage tips
-  const usageTips = variant
-    ? `💡 *Usage Tips:* Files and CSS will be sent separately | Try \`/ferdinand font brand\`, \`body\`, or \`header\` for specific font types`
-    : `💡 *Usage Tips:* Files and CSS will be sent separately | Try \`/ferdinand font brand\`, \`body\`, or \`header\` for specific font types`;
-
-  fontBlocks.push({
-    type: "context",
-    elements: [
-      {
-        type: "mrkdwn",
-        text: usageTips,
-      },
-    ],
-  });
-
-  // Send the organized font information first
+  // Send simple response first - matching color command pattern
   await respond({
-    blocks: fontBlocks,
+    text: responseText,
     response_type: "ephemeral",
   });
 

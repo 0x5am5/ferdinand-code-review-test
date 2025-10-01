@@ -308,16 +308,14 @@ export async function handleFontSubcommandWithLimit(
     const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
 
-    // Build font blocks using unified display system
-    const fontBlocks = buildFontBlocks(
-      assetsToShow,
-      assetsToShow, // filtered and display are the same in this context
-      displayAssets, // all available assets
-      variant,
-    );
+    // Simple response like color command - just show count and names
+    const fontNames = assetsToShow.map(asset => asset.name).join(", ");
+    const responseText = variant 
+      ? `📝 Found **${assetsToShow.length} fonts** for "${variant}": ${fontNames}\n\n🔄 Processing font files and usage code...`
+      : `📝 Found **${assetsToShow.length} fonts**: ${fontNames}\n\n🔄 Processing font files and usage code...`;
 
     await respond({
-      blocks: fontBlocks,
+      text: responseText,
       response_type: "ephemeral",
       replace_original: true,
     });
