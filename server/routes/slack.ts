@@ -556,6 +556,7 @@ function initializeSlackApp() {
     slackApp.command(
       "/ferdinand-fonts",
       async ({ command, ack, respond, client }) => {
+        const startTime = Date.now();
         await ack();
 
         // Rate limiting
@@ -576,6 +577,7 @@ function initializeSlackApp() {
           assetIds: [] as number[],
           clientId: 0,
           success: false,
+          responseTimeMs: 0,
           timestamp: new Date(),
         };
 
@@ -643,104 +645,171 @@ function initializeSlackApp() {
             filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
           auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
-          // Build enhanced font blocks
-          let headerText = `📝 *Brand Typography*`;
-          if (variant) {
-            headerText = `📝 *${variant.charAt(0).toUpperCase() + variant.slice(1)} Fonts*`;
-          }
-          headerText += ` (${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""})`;
+          const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
-          if (filteredFontAssets.length < fontAssets.length && variant) {
-            headerText += ` from ${fontAssets.length} total`;
-          }
-
-          const fontBlocks: any[] = [
-            {
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: headerText,
-              },
-            },
-            {
-              type: "divider",
-            },
-          ];
-
-          for (const asset of displayAssets.slice(0, 5)) {
-            // Show up to 5 fonts
-            const fontInfo = formatFontInfo(asset);
-
-            let fontDetails = `📝 *${fontInfo.title}*`;
-            if (fontInfo.source !== "unknown") {
-              fontDetails += ` (${fontInfo.source})`;
-            }
-
-            fontDetails += `\n• **Weights:** ${fontInfo.weights.join(", ")}`;
-            fontDetails += `\n• **Styles:** ${fontInfo.styles.join(", ")}`;
-
-            if (fontInfo.usage) {
-              fontDetails += `\n• **Usage:** ${fontInfo.usage}`;
-            }
-
-            if (fontInfo.files && fontInfo.files.length > 0) {
-              const formats = Array.from(new Set(fontInfo.files.map((f) => f.format)));
-              fontDetails += `\n• **Formats:** ${formats.join(", ").toUpperCase()}`;
-            }
-
-            fontBlocks.push({
-              type: "section",
-              text: {
-                type: "mrkdwn",
-                text: fontDetails,
-              },
-            });
-
-            // Add divider between fonts (except for the last one)
-            if (
-              displayAssets.indexOf(asset) <
-              Math.min(displayAssets.length - 1, 4)
-            ) {
-              fontBlocks.push({
-                type: "divider",
-              });
-            }
-          }
-
-          // Add footer with usage and variant tips
-          const usageTips = variant
-            ? `💡 *Usage Tips:* Check font licensing for web use | Try \`/ferdinand-fonts body\` or \`header\` for specific font types`
-            : `💡 *Usage Tips:* Check font licensing for web use | Try \`/ferdinand-fonts body\` or \`header\` for specific font types`;
-
-          fontBlocks.push({
-            type: "context",
-            elements: [
-              {
-                type: "mrkdwn",
-                text: usageTips,
-              },
-            ],
-          });
-
-          if (displayAssets.length > 5) {
-            fontBlocks.push({
-              type: "context",
-              elements: [
-                {
-                  type: "mrkdwn",
-                  text: `📋 Showing first 5 fonts. Total available: ${displayAssets.length}`,
-                },
-              ],
-            });
-          }
-
+          // Respond immediately to avoid timeout
           await respond({
-            blocks: fontBlocks,
+            text: `🔄 Preparing ${displayAssets.length} font${displayAssets.length > 1 ? 's' : ''}${variant ? ` for "${variant}"` : ''}... Files and usage instructions will appear shortly!`,
             response_type: "ephemeral",
           });
 
-          auditLog.success = true;
-          logSlackActivity(auditLog);
+          // Process fonts asynchronously
+          setImmediate(async () => {
+            let botToken: string | undefined;
+            try {
+              const decryptedToken = decryptBotToken(workspace.botToken);
+              botToken = decryptedToken;
+
+              // Create WebClient with workspace token
+              const workspaceClient = new WebClient(decryptedToken);
+
+              let uploadedFiles = 0;
+              let sentCodeBlocks = 0;
+
+              for (const asset of displayAssets.slice(0, 3)) {
+                const fontInfo = formatFontInfo(asset);
+
+                try {
+                  // Check if font has uploadable files (custom fonts)
+                  if (hasUploadableFiles(asset)) {
+                    // Upload actual font files for custom fonts
+                    const downloadUrl = generateAssetDownloadUrl(
+                      asset.id,
+                      workspace.clientId,
+                      baseUrl
+                    );
+
+                    const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
+
+                    const uploaded = await uploadFileToSlack(decryptedToken, {
+                      channelId: command.channel_id,
+                      userId: command.user_id,
+                      fileUrl: downloadUrl,
+                      filename,
+                      title: `${fontInfo.title} - Font Files`,
+                      initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map(f => f.format.toUpperCase()).join(", ") || "Various"}`,
+                    });
+
+                    if (uploaded) uploadedFiles++;
+                  } else {
+                    // For Google/Adobe fonts, send usage code
+                    let codeBlock = "";
+                    let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}`;
+
+                    if (fontInfo.source === 'google') {
+                      codeBlock = generateGoogleFontCSS(fontInfo.title, fontInfo.weights);
+                      fontDescription += `\n• **Source:** Google Fonts`;
+                    } else if (fontInfo.source === 'adobe') {
+                      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+                      const projectId = data?.sourceData?.projectId || "your-project-id";
+                      codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
+                      fontDescription += `\n• **Source:** Adobe Fonts (Typekit)`;
+                    } else {
+                      codeBlock = `/* Font: ${fontInfo.title} */
+.your-element {
+  font-family: '${fontInfo.title}', sans-serif;
+  font-weight: ${fontInfo.weights[0] || '400'};
+}`;
+                      fontDescription += `\n• **Source:** ${fontInfo.source}`;
+                    }
+
+                    // Send code block as a message
+                    const conversationResponse = await workspaceClient.conversations.open({
+                      users: command.user_id,
+                    });
+
+                    if (conversationResponse.ok && conversationResponse.channel?.id) {
+                      await workspaceClient.chat.postMessage({
+                        channel: conversationResponse.channel.id,
+                        text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
+                      });
+                      sentCodeBlocks++;
+                    }
+                  }
+                } catch (fontError) {
+                  console.error(`Failed to process font ${asset.name}:`, fontError);
+                }
+              }
+
+              const responseTime = Date.now() - startTime;
+
+              // Send summary message
+              let summaryText = `✅ **Font processing complete!**\n`;
+              
+              if (uploadedFiles > 0) {
+                summaryText += `📁 ${uploadedFiles} font file${uploadedFiles > 1 ? 's' : ''} uploaded\n`;
+              }
+              
+              if (sentCodeBlocks > 0) {
+                summaryText += `💻 ${sentCodeBlocks} usage code${sentCodeBlocks > 1 ? 's' : ''} provided\n`;
+              }
+
+              if (variant) {
+                summaryText += `🔍 Filtered by: "${variant}"\n`;
+              }
+
+              if (displayAssets.length > 3) {
+                summaryText += `💡 Showing first 3 results. Be more specific to narrow down.\n`;
+              }
+
+              summaryText += `⏱️ Response time: ${responseTime}ms`;
+
+              try {
+                await workspaceClient.chat.postEphemeral({
+                  channel: command.channel_id,
+                  user: command.user_id,
+                  text: summaryText,
+                });
+              } catch (ephemeralError) {
+                console.log("Could not send summary message via ephemeral, trying DM...");
+                
+                try {
+                  const conversationResponse = await workspaceClient.conversations.open({
+                    users: command.user_id,
+                  });
+
+                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                    await workspaceClient.chat.postMessage({
+                      channel: conversationResponse.channel.id,
+                      text: summaryText,
+                    });
+                  }
+                } catch (dmError) {
+                  console.log("Could not send summary message via DM either:", dmError);
+                }
+              }
+
+              auditLog.success = true;
+              auditLog.responseTimeMs = responseTime;
+              logSlackActivity(auditLog);
+
+            } catch (backgroundError) {
+              console.error("Background font processing error:", backgroundError);
+
+              // Try to send error message
+              if (botToken) {
+                try {
+                  const workspaceClient = new WebClient(botToken);
+                  
+                  const conversationResponse = await workspaceClient.conversations.open({
+                    users: command.user_id,
+                  });
+
+                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                    await workspaceClient.chat.postMessage({
+                      channel: conversationResponse.channel.id,
+                      text: "❌ An error occurred while processing your /ferdinand-fonts request. The bot might need additional permissions. Please try:\n• Inviting the bot to the channel: `/invite @Ferdinand`\n• Or contact your workspace admin to check bot permissions",
+                    });
+                  }
+                } catch (dmError) {
+                  console.log("Could not send error message via DM:", dmError);
+                }
+              }
+
+              logSlackActivity({ ...auditLog, error: "Background processing failed" });
+            }
+          });
+
         } catch (error) {
           console.error("Error handling /ferdinand-fonts command:", error);
           await respond({
@@ -1179,6 +1248,8 @@ Show this help message`,
       workspace: any;
       auditLog: any;
     }) => {
+      const startTime = Date.now();
+
       const fontAssets = await db
         .select()
         .from(brandAssets)
@@ -1203,7 +1274,7 @@ Show this help message`,
 
       if (filteredFontAssets.length === 0 && variant) {
         await respond({
-          text: `📝 No font assets found for variant "${variant}". Available fonts: ${fontAssets.map((a) => a.name).join(", ")}.\n\n💡 Try: \`body\`, \`header\` or leave empty for all fonts.`,
+          text: `📝 No font assets found for variant "${variant}". Available fonts: ${fontAssets.map((a) => a.name).join(", ")}.\n\n💡 Try: \`/ferdinand font body\` or \`header\` for specific font types.`,
           response_type: "ephemeral",
         });
         logSlackActivity({
@@ -1216,94 +1287,144 @@ Show this help message`,
       const displayAssets = filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
       auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
-      // Build enhanced font blocks (reuse existing logic)
-      let headerText = `📝 *Brand Typography*`;
-      if (variant) {
-        headerText = `📝 *${variant.charAt(0).toUpperCase() + variant.slice(1)} Fonts*`;
-      }
-      headerText += ` (${displayAssets.length} font${displayAssets.length > 1 ? "s" : ""})`;
+      const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
-      if (filteredFontAssets.length < fontAssets.length && variant) {
-        headerText += ` from ${fontAssets.length} total`;
-      }
-
-      const fontBlocks: any[] = [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: headerText,
-          },
-        },
-        {
-          type: "divider",
-        },
-      ];
-
-      for (const asset of displayAssets.slice(0, 5)) {
-        const fontInfo = formatFontInfo(asset);
-
-        let fontDetails = `📝 *${fontInfo.title}*`;
-        if (fontInfo.source !== "unknown") {
-          fontDetails += ` (${fontInfo.source})`;
-        }
-
-        fontDetails += `\n• **Weights:** ${fontInfo.weights.join(", ")}`;
-        fontDetails += `\n• **Styles:** ${fontInfo.styles.join(", ")}`;
-
-        if (fontInfo.usage) {
-          fontDetails += `\n• **Usage:** ${fontInfo.usage}`;
-        }
-
-        if (fontInfo.files && fontInfo.files.length > 0) {
-          const formats = Array.from(new Set(fontInfo.files.map((f) => f.format)));
-          fontDetails += `\n• **Formats:** ${formats.join(", ").toUpperCase()}`;
-        }
-
-        fontBlocks.push({
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: fontDetails,
-          },
-        });
-
-        if (displayAssets.indexOf(asset) < Math.min(displayAssets.length - 1, 4)) {
-          fontBlocks.push({
-            type: "divider",
-          });
-        }
-      }
-
-      const usageTips = variant
-        ? `💡 *Usage Tips:* Check font licensing for web use | Try \`/ferdinand font body\` or \`header\` for specific font types`
-        : `💡 *Usage Tips:* Check font licensing for web use | Try \`/ferdinand font body\` or \`header\` for specific font types`;
-
-      fontBlocks.push({
-        type: "context",
-        elements: [
-          {
-            type: "mrkdwn",
-            text: usageTips,
-          },
-        ],
+      // Respond immediately to avoid timeout
+      await respond({
+        text: `🔄 Processing ${displayAssets.length} font${displayAssets.length > 1 ? 's' : ''}${variant ? ` (${variant} variant)` : ''}...`,
+        response_type: "ephemeral",
       });
 
-      if (displayAssets.length > 5) {
-        fontBlocks.push({
-          type: "context",
-          elements: [
-            {
-              type: "mrkdwn",
-              text: `📋 Showing first 5 fonts. Total available: ${displayAssets.length}`,
-            },
-          ],
-        });
-      }
+      // Process fonts asynchronously
+      setImmediate(async () => {
+        try {
+          // Decrypt the workspace-specific bot token
+          const botToken = decryptBotToken(workspace.botToken);
+          const workspaceClient = new WebClient(botToken);
 
-      await respond({
-        blocks: fontBlocks,
-        response_type: "ephemeral",
+          let uploadedFiles = 0;
+          let sentCodeBlocks = 0;
+
+          for (const asset of displayAssets.slice(0, 3)) {
+            const fontInfo = formatFontInfo(asset);
+
+            try {
+              // Check if font has uploadable files (custom fonts)
+              if (hasUploadableFiles(asset)) {
+                // Upload actual font files for custom fonts
+                const downloadUrl = generateAssetDownloadUrl(
+                  asset.id,
+                  workspace.clientId,
+                  baseUrl
+                );
+
+                const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
+
+                const uploaded = await uploadFileToSlack(botToken, {
+                  channelId: command.channel_id,
+                  userId: command.user_id,
+                  fileUrl: downloadUrl,
+                  filename,
+                  title: `${fontInfo.title} - Font Files`,
+                  initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map(f => f.format.toUpperCase()).join(", ") || "Various"}`,
+                });
+
+                if (uploaded) uploadedFiles++;
+              } else {
+                // For Google/Adobe fonts, send usage code
+                let codeBlock = "";
+                let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}`;
+
+                if (fontInfo.source === 'google') {
+                  codeBlock = generateGoogleFontCSS(fontInfo.title, fontInfo.weights);
+                  fontDescription += `\n• **Source:** Google Fonts`;
+                } else if (fontInfo.source === 'adobe') {
+                  const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+                  const projectId = data?.sourceData?.projectId || "your-project-id";
+                  codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
+                  fontDescription += `\n• **Source:** Adobe Fonts (Typekit)`;
+                } else {
+                  codeBlock = `/* Font: ${fontInfo.title} */
+.your-element {
+  font-family: '${fontInfo.title}', sans-serif;
+  font-weight: ${fontInfo.weights[0] || '400'};
+}`;
+                  fontDescription += `\n• **Source:** ${fontInfo.source}`;
+                }
+
+                // Send code block as a message
+                const conversationResponse = await workspaceClient.conversations.open({
+                  users: command.user_id,
+                });
+
+                if (conversationResponse.ok && conversationResponse.channel?.id) {
+                  await workspaceClient.chat.postMessage({
+                    channel: conversationResponse.channel.id,
+                    text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
+                  });
+                  sentCodeBlocks++;
+                }
+              }
+            } catch (fontError) {
+              console.error(`Failed to process font ${asset.name}:`, fontError);
+            }
+          }
+
+          const responseTime = Date.now() - startTime;
+
+          // Send summary message
+          let summaryText = `✅ **Font processing complete!**\n`;
+          
+          if (uploadedFiles > 0) {
+            summaryText += `📁 ${uploadedFiles} font file${uploadedFiles > 1 ? 's' : ''} uploaded\n`;
+          }
+          
+          if (sentCodeBlocks > 0) {
+            summaryText += `💻 ${sentCodeBlocks} usage code${sentCodeBlocks > 1 ? 's' : ''} provided\n`;
+          }
+
+          if (variant) {
+            summaryText += `🔍 Filtered by: "${variant}"\n`;
+          }
+
+          if (displayAssets.length > 3) {
+            summaryText += `💡 Showing first 3 results. Be more specific to narrow down.\n`;
+          }
+
+          summaryText += `⏱️ Response time: ${responseTime}ms`;
+
+          try {
+            await workspaceClient.chat.postEphemeral({
+              channel: command.channel_id,
+              user: command.user_id,
+              text: summaryText,
+            });
+          } catch (ephemeralError) {
+            console.log("Could not send summary message via ephemeral, trying DM...");
+            
+            try {
+              const conversationResponse = await workspaceClient.conversations.open({
+                users: command.user_id,
+              });
+
+              if (conversationResponse.ok && conversationResponse.channel?.id) {
+                await workspaceClient.chat.postMessage({
+                  channel: conversationResponse.channel.id,
+                  text: summaryText,
+                });
+              }
+            } catch (dmError) {
+              console.log("Could not send summary message via DM either:", dmError);
+            }
+          }
+
+          auditLog.success = true;
+          auditLog.responseTimeMs = responseTime;
+
+        } catch (backgroundError) {
+          console.error("Background font processing error:", backgroundError);
+          logSlackActivity({ ...auditLog, error: "Background processing failed" });
+        }
       });
     };
 

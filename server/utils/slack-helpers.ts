@@ -632,3 +632,42 @@ export function formatFontInfo(fontAsset: BrandAsset): {
     };
   }
 }
+
+// Generate CSS code for Google Fonts
+export function generateGoogleFontCSS(fontFamily: string, weights: string[]): string {
+  const familyParam = fontFamily.replace(/\s+/g, '+');
+  const weightsParam = weights.join(',');
+  const url = `https://fonts.googleapis.com/css2?family=${familyParam}:wght@${weightsParam}&display=swap`;
+  
+  return `/* Add this to your HTML <head> */
+<link href="${url}" rel="stylesheet">
+
+/* Or add this to your CSS */
+@import url('${url}');
+
+/* Use in CSS */
+.your-element {
+  font-family: '${fontFamily}', sans-serif;
+}`;
+}
+
+// Generate CSS code for Adobe Fonts
+export function generateAdobeFontCSS(projectId: string, fontFamily: string): string {
+  return `/* Add this to your HTML <head> */
+<link rel="stylesheet" href="https://use.typekit.net/${projectId}.css">
+
+/* Use in CSS */
+.your-element {
+  font-family: '${fontFamily}', sans-serif;
+}`;
+}
+
+// Check if font has uploadable files
+export function hasUploadableFiles(fontAsset: BrandAsset): boolean {
+  try {
+    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
+    return data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
+  } catch {
+    return false;
+  }
+}
