@@ -11,36 +11,14 @@ import {
   logSlackActivity,
   uploadFileToSlack,
 } from "../../../utils/slack-helpers";
-
-// Helper functions
-function hasUploadableFiles(asset: any): boolean {
-  try {
-    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-    return data?.source === "file" && data?.sourceData?.files && data.sourceData.files.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-function generateGoogleFontCSS(fontFamily: string, weights: string[]): string {
-  const weightParam = weights.join(";");
-  return `/* Google Font: ${fontFamily} */
-@import url('https://fonts.googleapis.com/css2?family=${fontFamily.replace(/\s+/g, "+")}:wght@${weightParam}&display=swap');
-
-.your-element {
-  font-family: '${fontFamily}', sans-serif;
-  font-weight: ${weights[0] || "400"};
-}`;
-}
-
-function generateAdobeFontCSS(projectId: string, fontFamily: string): string {
-  return `/* Adobe Font: ${fontFamily} */
-<link rel="stylesheet" href="https://use.typekit.net/${projectId}.css">
-
-.your-element {
-  font-family: '${fontFamily}', sans-serif;
-}`;
-}
+import {
+  hasUploadableFiles,
+  generateGoogleFontCSS,
+  generateAdobeFontCSS,
+  FONT_CATEGORY_ORDER,
+  FONT_CATEGORY_EMOJIS,
+  FONT_CATEGORY_NAMES,
+} from "../../../utils/font-helpers";
 
 export async function handleFontSubcommand({
   command,
@@ -128,24 +106,8 @@ export async function handleFontSubcommand({
     },
   ];
 
-  // Category order and emojis
-  const categoryOrder = ['brand', 'body', 'header', 'other'];
-  const categoryEmojis: Record<string, string> = {
-    brand: '🎯',
-    body: '📖',
-    header: '📰',
-    other: '📝'
-  };
-
-  const categoryNames: Record<string, string> = {
-    brand: 'Brand Fonts',
-    body: 'Body Fonts',
-    header: 'Header Fonts',
-    other: 'Other Fonts'
-  };
-
   // Process each category in order
-  for (const category of categoryOrder) {
+  for (const category of FONT_CATEGORY_ORDER) {
     if (!groupedFonts[category] || groupedFonts[category].length === 0) continue;
 
     // Add category header
@@ -153,7 +115,7 @@ export async function handleFontSubcommand({
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `${categoryEmojis[category]} *${categoryNames[category]}*`,
+        text: `${FONT_CATEGORY_EMOJIS[category]} *${FONT_CATEGORY_NAMES[category]}*`,
       },
     });
 

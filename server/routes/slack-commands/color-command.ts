@@ -4,10 +4,9 @@ import { db } from "../../db";
 import {
   checkRateLimit,
   filterColorAssetsByVariant,
-  formatColorInfo,
   logSlackActivity,
 } from "../../utils/slack-helpers";
-import { buildColorBlocks } from "./shared/color-utils";
+import { buildColorBlocks } from "../../utils/color-display";
 
 export async function handleColorCommand({
   command,
@@ -107,8 +106,7 @@ export async function handleColorCommand({
       displayAssets,
       filteredColorAssets,
       colorAssets,
-      variant,
-      formatColorInfo
+      variant
     );
 
     await respond({
