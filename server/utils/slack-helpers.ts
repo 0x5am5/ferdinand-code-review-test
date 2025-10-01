@@ -469,15 +469,17 @@ export function formatColorInfo(colorAsset: BrandAsset): {
       };
     }
 
-    // Filter to only show colors that have proper names (not "Unnamed" or similar)
+    // Map all colors, handling various color data formats
     const colors = data.colors
       .filter((color: any) => {
-        const name = color.name || color.label || '';
-        return name && name.toLowerCase() !== 'unnamed' && name.trim() !== '';
+        // Only filter out colors that are truly empty or explicitly unnamed
+        const name = color.name || color.label || color.title || '';
+        const hex = color.hex || color.value || color.color || '';
+        return hex && hex.trim() !== '' && hex !== '#000000';
       })
       .map((color: any) => ({
-        name: color.name || color.label,
-        hex: color.hex || color.value || '#000000',
+        name: color.name || color.label || color.title || 'Color',
+        hex: color.hex || color.value || color.color || '#000000',
         rgb: color.rgb,
         usage: color.usage || color.description,
       }));
