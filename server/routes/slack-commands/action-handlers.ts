@@ -20,7 +20,6 @@ import {
   generateGoogleFontCSS,
   generateAdobeFontCSS,
 } from "../../utils/font-helpers";
-import { buildFontBlocks } from "../../utils/font-helpers";
 
 export async function handleColorSubcommandWithLimit(
   body: any,

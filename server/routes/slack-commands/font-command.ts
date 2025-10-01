@@ -17,7 +17,6 @@ import {
   generateGoogleFontCSS,
   generateAdobeFontCSS,
 } from "../../utils/font-helpers";
-import { buildFontBlocks } from "../../utils/font-helpers";
 
 export async function handleFontCommand({ command, ack, respond, client }: any) {
   const startTime = Date.now();
