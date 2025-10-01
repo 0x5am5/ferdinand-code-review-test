@@ -1,4 +1,3 @@
-
 import { and, eq } from "drizzle-orm";
 import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { db } from "../../db";
@@ -75,7 +74,7 @@ export async function handleColorSubcommandWithLimit(
     // Filter by variant if specified
     const filteredColorAssets = filterColorAssetsByVariant(colorAssets, variant);
     const displayAssets = filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
-    
+
     // Apply limit
     const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
@@ -235,7 +234,7 @@ export async function handleLogoSubcommandWithLimit(
 
     // Find matching logos
     const matchedLogos = findBestLogoMatch(logoAssets, query);
-    
+
     // Apply limit
     const logosToUpload = limit === "all" ? matchedLogos : matchedLogos.slice(0, limit as number);
     auditLog.assetIds = logosToUpload.map((asset) => asset.id);
@@ -369,7 +368,7 @@ export async function handleFontSubcommandWithLimit(
     // Filter by variant if specified
     const filteredFontAssets = filterFontAssetsByVariant(fontAssets, variant);
     const displayAssets = filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
-    
+
     // Apply limit
     const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit as number);
     auditLog.assetIds = assetsToShow.map((asset) => asset.id);
@@ -388,51 +387,80 @@ export async function handleFontSubcommandWithLimit(
         const workspaceClient = new WebClient(botToken);
 
         let processedFonts = 0;
+        const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
+        const decryptedToken = botToken; // Assuming botToken is already decrypted
 
         for (const asset of assetsToShow) {
           const fontInfo = formatFontInfo(asset);
 
-          // Send font information as a message
-          let fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** ${fontInfo.source}`;
+          // Check if font has uploadable files (custom fonts)
+          if (hasUploadableFiles(asset)) {
+            // Upload actual font files for custom fonts
+            const downloadUrl = generateAssetDownloadUrl(
+              asset.id,
+              workspace.clientId,
+              baseUrl,
+            );
 
-          // Generate CSS code based on source
-          let codeBlock = "";
-          if (fontInfo.source === "google") {
-            const weightParam = fontInfo.weights.join(";");
-            const familyParam = fontInfo.title.replace(/\s+/g, "+");
-            codeBlock = `/* Google Font: ${fontInfo.title} */
+            const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
+
+            const uploaded = await uploadFileToSlack(decryptedToken, {
+              channelId: body.channel.id,
+              userId: body.user.id,
+              fileUrl: downloadUrl,
+              filename,
+              title: `${fontInfo.title} - Font Files`,
+              initialComment: `📝 **${fontInfo.title}** - Custom Font Files\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** Custom Upload\n• **Formats:** ${fontInfo.files?.map((f) => f.format.toUpperCase()).join(", ") || "Various"}`,
+            });
+
+            if (uploaded) {
+              processedFonts++;
+            }
+          } else {
+            // For Google/Adobe fonts, send usage code
+            const fontDescription = `📝 **${fontInfo.title}**\n• **Weights:** ${fontInfo.weights.join(", ")}\n• **Styles:** ${fontInfo.styles.join(", ")}\n• **Source:** ${fontInfo.source}`;
+
+            // Generate CSS code based on source
+            let codeBlock = "";
+            if (fontInfo.source === "google") {
+              const weightParam = fontInfo.weights.join(";");
+              const familyParam = fontInfo.title.replace(/\s+/g, "+");
+              codeBlock = `/* Google Font: ${fontInfo.title} */
 @import url('https://fonts.googleapis.com/css2?family=${familyParam}:wght@${weightParam}&display=swap');
 
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
   font-weight: ${fontInfo.weights[0] || "400"};
 }`;
-          } else if (fontInfo.source === "adobe") {
-            codeBlock = `/* Adobe Font: ${fontInfo.title} */
-<link rel="stylesheet" href="https://use.typekit.net/your-project-id.css">
+            } else if (fontInfo.source === "adobe") {
+              const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+              const projectId = data?.sourceData?.projectId || "your-project-id";
+              codeBlock = `/* Adobe Font: ${fontInfo.title} */
+<link rel="stylesheet" href="https://use.typekit.net/${projectId}.css">
 
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
 }`;
-          } else {
-            codeBlock = `/* Font: ${fontInfo.title} */
+            } else {
+              codeBlock = `/* Font: ${fontInfo.title} */
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
   font-weight: ${fontInfo.weights[0] || "400"};
 }`;
-          }
+            }
 
-          // Send to DM
-          const conversationResponse = await workspaceClient.conversations.open({
-            users: body.user.id,
-          });
-
-          if (conversationResponse.ok && conversationResponse.channel?.id) {
-            await workspaceClient.chat.postMessage({
-              channel: conversationResponse.channel.id,
-              text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
+            // Send to DM
+            const conversationResponse = await workspaceClient.conversations.open({
+              users: body.user.id,
             });
-            processedFonts++;
+
+            if (conversationResponse.ok && conversationResponse.channel?.id) {
+              await workspaceClient.chat.postMessage({
+                channel: conversationResponse.channel.id,
+                text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
+              });
+              processedFonts++;
+            }
           }
         }
 
@@ -463,5 +491,15 @@ export async function handleFontSubcommandWithLimit(
       text: "❌ An error occurred while processing your request.",
       response_type: "ephemeral",
     });
+  }
+}
+
+// Helper function needed for action handlers
+function hasUploadableFiles(asset: any): boolean {
+  try {
+    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    return data?.source === "file" && data?.sourceData?.files && data.sourceData.files.length > 0;
+  } catch {
+    return false;
   }
 }
