@@ -1272,10 +1272,6 @@ export function registerAssetRoutes(app: Express) {
           ? parseInt(req.query.clientId as string, 10)
           : null;
 
-        // Enhanced logging for dark variant debugging
-        if (variant === "dark") {
-          console.log(`[DARK VARIANT REQUEST] Asset ${assetId}: variant=${variant}, format=${format}`);
-        }
 
         // Parse size as percentage or exact pixels
         let size: number | undefined;
@@ -1360,10 +1356,7 @@ export function registerAssetRoutes(app: Express) {
             const hasDarkVariant = data?.hasDarkVariant === true;
             const hasDarkVariantFileData = data?.darkVariantFileData ? true : false;
 
-            console.log(`[DARK VARIANT CHECK] Asset ${assetId}: hasDarkVariant=${hasDarkVariant}, hasDarkVariantFileData=${hasDarkVariantFileData}`);
-
             if (!hasDarkVariant && !hasDarkVariantFileData) {
-              console.log(`[DARK VARIANT] Asset ${assetId} does not have a dark variant, falling back to light variant`);
               // Fall back to light variant
               const convertedAsset = await storage.getConvertedAsset(
                 assetId,
@@ -1394,9 +1387,6 @@ export function registerAssetRoutes(app: Express) {
               }
             } else {
               // Get the converted asset specifically for this asset ID
-              console.log(
-                `[DARK VARIANT CONVERSION] Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`
-              );
               const convertedAsset = await storage.getConvertedAsset(
                 assetId,
                 format,
@@ -1423,23 +1413,18 @@ export function registerAssetRoutes(app: Express) {
 
               if (!fileBuffer) {
                 // Convert on-the-fly from dark variant
-                console.log(`[DARK VARIANT CONVERSION] Converting dark variant on-the-fly for asset ${assetId} to format ${format}`);
-
                 const darkBuffer = getDarkVariantBuffer(asset);
                 if (!darkBuffer) {
-                  console.error(`[DARK VARIANT CONVERSION] No dark variant buffer found for asset ${assetId}`);
                   return res.status(404).json({ message: "Dark variant file data not found" });
                 }
 
                 const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
                 const sourceFormat = data.darkVariantFormat || data.format;
-                console.log(`[DARK VARIANT CONVERSION] Source format: ${sourceFormat}, Target format: ${format}`);
 
                 try {
                   const result = await convertToFormat(darkBuffer, sourceFormat, format, assetId);
                   fileBuffer = result.data;
                   mimeType = result.mimeType;
-                  console.log(`[DARK VARIANT CONVERSION] Successfully converted dark variant to ${format}, buffer size: ${fileBuffer.length}`);
 
                   // Store the converted dark variant for future use
                   try {
@@ -1516,11 +1501,9 @@ export function registerAssetRoutes(app: Express) {
         }
         // For logos with dark variants using the old method (backward compatibility)
         else if (variant === "dark" && asset.category === "logo" && !format) {
-          console.log(`[DARK VARIANT] Serving dark variant without format conversion for asset ${assetId}`);
           const darkBuffer = getDarkVariantBuffer(asset);
 
           if (darkBuffer) {
-            console.log(`[DARK VARIANT] Found dark variant buffer for asset ${assetId}, size: ${darkBuffer.length} bytes`);
             const data =
               typeof asset.data === "string"
                 ? JSON.parse(asset.data)
@@ -1531,9 +1514,6 @@ export function registerAssetRoutes(app: Express) {
               "application/octet-stream";
             fileBuffer = darkBuffer;
           } else {
-            console.log(`[DARK VARIANT] No dark variant buffer found for asset ${assetId}`);
-            const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-            console.log(`[DARK VARIANT] Asset data: hasDarkVariant=${data?.hasDarkVariant}, hasFileData=${!!data?.darkVariantFileData}`);
 
             return res
               .status(404)
@@ -1728,7 +1708,6 @@ export function registerAssetRoutes(app: Express) {
   // Helper function to get dark variant buffer
   function getDarkVariantBuffer(asset: BrandAsset): Buffer | null {
     if (!asset) {
-      console.log("[getDarkVariantBuffer] No asset provided");
       return null;
     }
 
@@ -1736,15 +1715,9 @@ export function registerAssetRoutes(app: Express) {
       const data =
         typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
 
-      console.log(`[getDarkVariantBuffer] Asset ${asset.id}: checking for dark variant`);
-      console.log(`[getDarkVariantBuffer] hasDarkVariant=${data?.hasDarkVariant}, hasFileData=${!!data?.darkVariantFileData}`);
-
       if (data?.darkVariantFileData) {
         const buffer = Buffer.from(data.darkVariantFileData, "base64");
-        console.log(`[getDarkVariantBuffer] Created buffer of size ${buffer.length} bytes`);
         return buffer;
-      } else {
-        console.log(`[getDarkVariantBuffer] No darkVariantFileData found in asset data`);
       }
     } catch (error: unknown) {
       console.error(

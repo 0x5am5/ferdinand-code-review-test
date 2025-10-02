@@ -156,8 +156,6 @@ export async function handleLogoCommand({
             typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
           const hasDarkVariant = data?.hasDarkVariant === true;
 
-          console.log(`[DARK VARIANT] Asset ${asset.id} (${asset.name}): isDarkQuery=${isDarkQuery}, hasDarkVariant=${hasDarkVariant}, query="${query}"`);
-
           // If dark query specifically requested, only upload dark (or light if no dark available)
           if (isDarkQuery) {
             const downloadParams: any = {
@@ -166,9 +164,6 @@ export async function handleLogoCommand({
 
             if (hasDarkVariant) {
               downloadParams.variant = "dark";
-              console.log(`[DARK VARIANT] Adding dark variant parameter to download URL for asset ${asset.id}`);
-            } else {
-              console.log(`[DARK VARIANT] Asset ${asset.id} requested as dark but has no dark variant, using light variant`);
             }
 
             const downloadUrl = generateAssetDownloadUrl(
@@ -239,9 +234,6 @@ export async function handleLogoCommand({
               const darkFilename = `${asset.name.replace(/\s+/g, "_")}_dark.png`;
               const darkTitle = `${assetInfo.title} (Dark Variant)`;
 
-              console.log(`[DARK VARIANT] Also uploading dark variant for asset ${asset.id}`);
-              console.log(`[DARK VARIANT] Dark variant URL: ${darkUrl}`);
-
               allUploads.push(uploadFileToSlack(decryptedToken, {
                 channelId: command.channel_id,
                 userId: command.user_id,
@@ -257,7 +249,6 @@ export async function handleLogoCommand({
           }
         }
 
-        console.log(`[DARK VARIANT] Total uploads queued: ${allUploads.length}`);
         const uploadResults = await Promise.all(allUploads);
         const successfulUploads = uploadResults.filter(Boolean).length;
         const responseTime = Date.now() - startTime;
