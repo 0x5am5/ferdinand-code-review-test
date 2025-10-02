@@ -87,7 +87,7 @@ async function fixLogoTypeData() {
           await storage.updateAsset(asset.id, {
             ...asset,
             data: assetData
-          });
+          } as any);
           console.log(`Updated asset ${asset.id} with type: ${assetData.type}`);
         }
       }
@@ -708,11 +708,18 @@ export function registerAssetRoutes(app: Express) {
             .pop()
             ?.toLowerCase();
 
+          // Check if this is supposed to be a dark variant
+          const isDark = isDarkVariant === "true" || isDarkVariant === true;
+
           // Create proper data object instead of JSON string
           const logoData = {
             type: logoType,
             format: fileExtension || "png",
             fileName: file.originalname,
+            // Mark this asset as a dark variant if applicable
+            // This is used when uploading a dark variant as a separate asset
+            // (though usually dark variants are added via PATCH to existing assets)
+            ...(isDark && { isStandaloneDarkVariant: true }),
           };
 
           const logoAsset = {
@@ -732,7 +739,6 @@ export function registerAssetRoutes(app: Express) {
             // Convert the file to multiple formats
             const fileBuffer = file.buffer;
             const originalFormat = fileExtension || "png";
-            const isDark = isDarkVariant === "true" || isDarkVariant === true;
 
             console.log(
               `Converting ${originalFormat} file to multiple formats. Dark variant: ${isDark}`
@@ -862,6 +868,9 @@ export function registerAssetRoutes(app: Express) {
               : asset.data;
 
           if (isDarkVariant) {
+            console.log(`[DARK VARIANT UPLOAD] Uploading dark variant for asset ${assetId}`);
+            console.log(`[DARK VARIANT UPLOAD] File size: ${file.buffer.length} bytes, format: ${fileExtension}`);
+
             parsed = {
               success: true,
               data: {
@@ -1263,6 +1272,11 @@ export function registerAssetRoutes(app: Express) {
           ? parseInt(req.query.clientId as string, 10)
           : null;
 
+        // Enhanced logging for dark variant debugging
+        if (variant === "dark") {
+          console.log(`[DARK VARIANT REQUEST] Asset ${assetId}: variant=${variant}, format=${format}`);
+        }
+
         // Parse size as percentage or exact pixels
         let size: number | undefined;
         if (sizeParam) {
@@ -1328,8 +1342,8 @@ export function registerAssetRoutes(app: Express) {
           }
         }
 
-        let fileBuffer: Buffer;
-        let mimeType: string;
+        let fileBuffer: Buffer | undefined;
+        let mimeType: string | undefined;
 
         // Check if requesting a specific format conversion
         if (format && asset.category === "logo") {
@@ -1344,24 +1358,31 @@ export function registerAssetRoutes(app: Express) {
           if (isDarkVariant) {
             const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
             const hasDarkVariant = data?.hasDarkVariant === true;
-            
-            if (!hasDarkVariant) {
-              console.log(`Asset ${assetId} does not have a dark variant, falling back to light variant`);
+            const hasDarkVariantFileData = data?.darkVariantFileData ? true : false;
+
+            console.log(`[DARK VARIANT CHECK] Asset ${assetId}: hasDarkVariant=${hasDarkVariant}, hasDarkVariantFileData=${hasDarkVariantFileData}`);
+
+            if (!hasDarkVariant && !hasDarkVariantFileData) {
+              console.log(`[DARK VARIANT] Asset ${assetId} does not have a dark variant, falling back to light variant`);
               // Fall back to light variant
               const convertedAsset = await storage.getConvertedAsset(
                 assetId,
                 format,
                 false
               );
-              
+
               if (convertedAsset && convertedAsset.originalAssetId === assetId) {
                 mimeType = convertedAsset.mimeType;
                 fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
               } else {
                 // Convert on-the-fly from light variant
+                if (!asset.fileData) {
+                  console.error("Asset fileData is null");
+                  return res.status(400).json({ message: "Asset file data not found" });
+                }
                 const sourceBuffer = Buffer.from(asset.fileData, "base64");
                 const sourceFormat = data.format;
-                
+
                 try {
                   const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
                   fileBuffer = result.data;
@@ -1403,7 +1424,7 @@ export function registerAssetRoutes(app: Express) {
               if (!fileBuffer) {
                 // Convert on-the-fly from dark variant
                 console.log(`Converting dark variant on-the-fly for asset ${assetId}`);
-                
+
                 const darkBuffer = getDarkVariantBuffer(asset);
                 if (!darkBuffer) {
                   return res.status(404).json({ message: "Dark variant file data not found" });
@@ -1456,8 +1477,13 @@ export function registerAssetRoutes(app: Express) {
               // Convert on-the-fly
               console.log(`Requested format ${format} not found, converting on-the-fly`);
 
+              if (!asset.fileData) {
+                console.error("Asset fileData is null");
+                return res.status(400).json({ message: "Asset file data not found" });
+              }
               const sourceBuffer = Buffer.from(asset.fileData, "base64");
-              const sourceFormat = data.format;
+              const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+              const sourceFormat = assetData?.format || "png";
 
               try {
                 const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
@@ -1486,8 +1512,11 @@ export function registerAssetRoutes(app: Express) {
         }
         // For logos with dark variants using the old method (backward compatibility)
         else if (variant === "dark" && asset.category === "logo" && !format) {
+          console.log(`[DARK VARIANT] Serving dark variant without format conversion for asset ${assetId}`);
           const darkBuffer = getDarkVariantBuffer(asset);
+
           if (darkBuffer) {
+            console.log(`[DARK VARIANT] Found dark variant buffer for asset ${assetId}, size: ${darkBuffer.length} bytes`);
             const data =
               typeof asset.data === "string"
                 ? JSON.parse(asset.data)
@@ -1498,6 +1527,10 @@ export function registerAssetRoutes(app: Express) {
               "application/octet-stream";
             fileBuffer = darkBuffer;
           } else {
+            console.log(`[DARK VARIANT] No dark variant buffer found for asset ${assetId}`);
+            const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            console.log(`[DARK VARIANT] Asset data: hasDarkVariant=${data?.hasDarkVariant}, hasFileData=${!!data?.darkVariantFileData}`);
+
             return res
               .status(404)
               .json({ message: "Dark variant file data not found" });
@@ -1518,9 +1551,9 @@ export function registerAssetRoutes(app: Express) {
         // Skip resizing for vector formats like SVG, AI, EPS, and PDF
         // preserveVector is already declared above
         const isVectorFormat =
-          ["image/svg+xml", "application/postscript", "application/pdf"].some(
+          (mimeType && ["image/svg+xml", "application/postscript", "application/pdf"].some(
             (type) => mimeType.includes(type)
-          ) ||
+          )) ||
           ["svg", "ai", "eps", "pdf"].includes(format?.toLowerCase() || "");
 
         // Fix content type for specific vector formats to ensure proper download
@@ -1618,6 +1651,7 @@ export function registerAssetRoutes(app: Express) {
         if (
           size &&
           size > 0 &&
+          mimeType &&
           isImageFormat(mimeType) &&
           !isVectorFormat &&
           !preserveVector
@@ -1670,6 +1704,11 @@ export function registerAssetRoutes(app: Express) {
           );
         }
 
+        if (!fileBuffer || !mimeType) {
+          console.error("Failed to prepare file buffer or mime type");
+          return res.status(500).json({ message: "Failed to serve asset file" });
+        }
+
         res.setHeader("Content-Type", mimeType);
         return res.send(fileBuffer);
       } catch (error: unknown) {
@@ -1684,13 +1723,24 @@ export function registerAssetRoutes(app: Express) {
 
   // Helper function to get dark variant buffer
   function getDarkVariantBuffer(asset: BrandAsset): Buffer | null {
-    if (!asset) return null;
+    if (!asset) {
+      console.log("[getDarkVariantBuffer] No asset provided");
+      return null;
+    }
 
     try {
       const data =
         typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+
+      console.log(`[getDarkVariantBuffer] Asset ${asset.id}: checking for dark variant`);
+      console.log(`[getDarkVariantBuffer] hasDarkVariant=${data?.hasDarkVariant}, hasFileData=${!!data?.darkVariantFileData}`);
+
       if (data?.darkVariantFileData) {
-        return Buffer.from(data.darkVariantFileData, "base64");
+        const buffer = Buffer.from(data.darkVariantFileData, "base64");
+        console.log(`[getDarkVariantBuffer] Created buffer of size ${buffer.length} bytes`);
+        return buffer;
+      } else {
+        console.log(`[getDarkVariantBuffer] No darkVariantFileData found in asset data`);
       }
     } catch (error: unknown) {
       console.error(
