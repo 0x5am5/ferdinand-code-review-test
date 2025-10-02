@@ -472,7 +472,7 @@ export function generateColorSwatchUrl(colors: Array<{ name?: string; hex: strin
 // Format color information for Slack display
 export function formatColorInfo(colorAsset: BrandAsset): {
   title: string;
-  colors: Array<{ name: string; hex: string; rgb?: string; usage?: string; category?: string; }>;
+  colors: Array<{ name: string; hex: string; rgb?: string; usage?: string; category?: string; pantone?: string; }>;
   swatchUrl?: string;
   category?: string;
 } {
@@ -501,6 +501,7 @@ export function formatColorInfo(colorAsset: BrandAsset): {
         rgb: color.rgb,
         usage: color.usage || color.description,
         category: color.category || data.category || 'color',
+        pantone: color.pantone,
       }));
 
     const swatchUrl = generateColorSwatchUrl(colors);

@@ -461,17 +461,3 @@ export async function handleFontSubcommandWithLimit(
   }
 }
 
-// Helper function needed for action handlers
-function hasUploadableFiles(asset: any): boolean {
-  try {
-    const data =
-      typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-    return (
-      data?.source === "file" &&
-      data?.sourceData?.files &&
-      data.sourceData.files.length > 0
-    );
-  } catch {
-    return false;
-  }
-}

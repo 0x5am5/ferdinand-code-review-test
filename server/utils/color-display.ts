@@ -226,3 +226,105 @@ export function buildColorBlocks(
 
   return colorBlocks;
 }
+
+export interface ColorDisplayOptions {
+  variant?: string;
+  showConfirmation?: boolean;
+  workspaceClientId: number;
+}
+
+// Build confirmation blocks for large color result sets
+export function buildColorConfirmationBlocks(
+  displayAssets: any[],
+  variant: string,
+  workspaceClientId: number,
+) {
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `🎨 Found **${displayAssets.length} color palettes**${variant ? ` for "${variant}"` : ""}.`,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `📋 This is a large number of results. Would you like to:\n\n• **See all ${displayAssets.length} palettes** (may be overwhelming)\n• **Narrow your search** with more specific terms like "brand", "neutral", or "interactive"\n• **See just the first 3** for a quick overview`,
+      },
+    },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: `Show All ${displayAssets.length}`,
+          },
+          style: "primary",
+          action_id: "show_all_colors",
+          value: `${workspaceClientId}|${variant || ""}|all`,
+        },
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "Show First 3",
+          },
+          action_id: "show_limited_colors",
+          value: `${workspaceClientId}|${variant || ""}|3`,
+        },
+      ],
+    },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: "💡 *Tip:* Try `/ferdinand-color brand` or `/ferdinand-color neutral` for more targeted results.",
+        },
+      ],
+    },
+  ];
+}
+
+// Build processing message for color display
+export function buildColorProcessingMessage(
+  displayAssets: any[],
+  variant?: string,
+): string {
+  return variant
+    ? `🎨 Processing *${displayAssets.length} color palettes* for "${variant}"...`
+    : `🎨 Processing *${displayAssets.length} color palettes*...`;
+}
+
+// Build summary message after color display
+export function buildColorSummaryMessage(
+  displayedCount: number,
+  totalCount: number,
+  variant?: string,
+  responseTime?: number,
+): string {
+  let summaryText = `✅ *${displayedCount} color palette${displayedCount > 1 ? "s" : ""} displayed successfully!*`;
+
+  if (variant) {
+    summaryText += `\n🔍 Filtered by: "${variant}"`;
+  }
+
+  if (displayedCount < totalCount) {
+    summaryText += `\n💡 Showing ${displayedCount} of ${totalCount} results.`;
+  }
+
+  if (responseTime) {
+    summaryText += `\n⏱️ Response time: ${responseTime}ms`;
+  }
+
+  return summaryText;
+}
+
+// Check if we should show confirmation for large result sets
+export function shouldShowColorConfirmation(colorCount: number): boolean {
+  return colorCount > 5;
+}
