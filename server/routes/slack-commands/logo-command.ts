@@ -141,9 +141,11 @@ export async function handleLogoCommand({
         const decryptedToken = decryptBotToken(workspace.botToken);
         botToken = decryptedToken;
 
-        const uploadPromises = matchedLogos.flatMap(async (asset) => {
+        // Build all upload promises
+        const allUploads: Promise<boolean>[] = [];
+
+        for (const asset of matchedLogos) {
           const assetInfo = formatAssetInfo(asset);
-          const uploads = [];
 
           // Check if we should upload dark variant
           const isDarkQuery =
@@ -181,7 +183,7 @@ export async function handleLogoCommand({
             const variantNote = hasDarkVariant ? " (Dark Variant)" : "";
             const title = `${assetInfo.title}${variantNote}`;
 
-            uploads.push(uploadFileToSlack(decryptedToken, {
+            allUploads.push(uploadFileToSlack(decryptedToken, {
               channelId: command.channel_id,
               userId: command.user_id,
               fileUrl: downloadUrl,
@@ -208,7 +210,7 @@ export async function handleLogoCommand({
             const lightFilename = `${asset.name.replace(/\s+/g, "_")}.png`;
             const lightTitle = assetInfo.title;
 
-            uploads.push(uploadFileToSlack(decryptedToken, {
+            allUploads.push(uploadFileToSlack(decryptedToken, {
               channelId: command.channel_id,
               userId: command.user_id,
               fileUrl: lightUrl,
@@ -238,8 +240,9 @@ export async function handleLogoCommand({
               const darkTitle = `${assetInfo.title} (Dark Variant)`;
 
               console.log(`[DARK VARIANT] Also uploading dark variant for asset ${asset.id}`);
+              console.log(`[DARK VARIANT] Dark variant URL: ${darkUrl}`);
 
-              uploads.push(uploadFileToSlack(decryptedToken, {
+              allUploads.push(uploadFileToSlack(decryptedToken, {
                 channelId: command.channel_id,
                 userId: command.user_id,
                 fileUrl: darkUrl,
@@ -252,11 +255,10 @@ export async function handleLogoCommand({
               }));
             }
           }
+        }
 
-          return uploads;
-        });
-
-        const uploadResults = await Promise.all(uploadPromises);
+        console.log(`[DARK VARIANT] Total uploads queued: ${allUploads.length}`);
+        const uploadResults = await Promise.all(allUploads);
         const successfulUploads = uploadResults.filter(Boolean).length;
         const responseTime = Date.now() - startTime;
 

@@ -99,9 +99,10 @@ export async function handleLogoSubcommand({
   const botToken = decryptBotToken(workspace.botToken);
 
   // Upload files to Slack for matched logos (in background)
-  const uploadPromises = matchedLogos.flatMap(async (asset) => {
+  const allUploads: Promise<boolean>[] = [];
+
+  for (const asset of matchedLogos) {
     const assetInfo = formatAssetInfo(asset);
-    const uploads = [];
 
     // Check if we should upload dark variant
     const isDarkQuery =
@@ -139,7 +140,7 @@ export async function handleLogoSubcommand({
       const variantNote = hasDarkVariant ? " (Dark Variant)" : "";
       const title = `${assetInfo.title}${variantNote}`;
 
-      uploads.push(uploadFileToSlack(botToken, {
+      allUploads.push(uploadFileToSlack(botToken, {
         channelId: command.channel_id,
         userId: command.user_id,
         fileUrl: downloadUrl,
@@ -166,7 +167,7 @@ export async function handleLogoSubcommand({
       const lightFilename = `${asset.name.replace(/\s+/g, "_")}.png`;
       const lightTitle = assetInfo.title;
 
-      uploads.push(uploadFileToSlack(botToken, {
+      allUploads.push(uploadFileToSlack(botToken, {
         channelId: command.channel_id,
         userId: command.user_id,
         fileUrl: lightUrl,
@@ -196,8 +197,9 @@ export async function handleLogoSubcommand({
         const darkTitle = `${assetInfo.title} (Dark Variant)`;
 
         console.log(`[DARK VARIANT] Also uploading dark variant for asset ${asset.id}`);
+        console.log(`[DARK VARIANT] Dark variant URL: ${darkUrl}`);
 
-        uploads.push(uploadFileToSlack(botToken, {
+        allUploads.push(uploadFileToSlack(botToken, {
           channelId: command.channel_id,
           userId: command.user_id,
           fileUrl: darkUrl,
@@ -210,11 +212,10 @@ export async function handleLogoSubcommand({
         }));
       }
     }
+  }
 
-    return uploads;
-  });
-
-  const uploadResults = await Promise.all(uploadPromises);
+  console.log(`[DARK VARIANT] Total uploads queued: ${allUploads.length}`);
+  const uploadResults = await Promise.all(allUploads);
   const successfulUploads = uploadResults.filter(Boolean).length;
 
   if (successfulUploads === 0) {
