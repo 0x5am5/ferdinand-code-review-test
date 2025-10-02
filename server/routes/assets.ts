@@ -1552,7 +1552,7 @@ export function registerAssetRoutes(app: Express) {
         // preserveVector is already declared above
         const isVectorFormat =
           (mimeType && ["image/svg+xml", "application/postscript", "application/pdf"].some(
-            (type) => mimeType.includes(type)
+            (type) => mimeType!.includes(type)
           )) ||
           ["svg", "ai", "eps", "pdf"].includes(format?.toLowerCase() || "");
 

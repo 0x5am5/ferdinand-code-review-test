@@ -132,6 +132,9 @@ export async function handleLogoSubcommand({
       downloadParams,
     );
 
+    console.log(`[DARK VARIANT] Generated download URL for asset ${asset.id}: ${downloadUrl}`);
+    console.log(`[DARK VARIANT] Download params:`, downloadParams);
+
     const variantSuffix = isDarkQuery && hasDarkVariant ? "_dark" : "";
     const filename = `${asset.name.replace(/\s+/g, "_")}${variantSuffix}.png`;
 

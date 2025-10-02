@@ -127,7 +127,7 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.clientId, workspace!.clientId),
               eq(brandAssets.category, "logo"),
             ),
           ),
@@ -136,7 +136,7 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.clientId, workspace!.clientId),
               eq(brandAssets.category, "color"),
             ),
           ),
@@ -145,7 +145,7 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.clientId, workspace!.clientId),
               eq(brandAssets.category, "font"),
             ),
           ),

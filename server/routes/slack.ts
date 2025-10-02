@@ -63,7 +63,7 @@ function initializeSlackApp() {
       customPropertiesExtractor: (req) => {
         return {
           headers: req.headers,
-          rawBody: req.rawBody,
+          rawBody: (req as any).rawBody,
         };
       },
     });

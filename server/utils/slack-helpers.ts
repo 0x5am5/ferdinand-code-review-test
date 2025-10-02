@@ -163,6 +163,7 @@ export async function uploadFileToSlack(
     }
 
     // Fetch the file from the URL
+    console.log(`[SLACK UPLOAD] Fetching file from URL: ${options.fileUrl}`);
     const response = await fetch(options.fileUrl);
     if (!response.ok) {
       console.error(`[SLACK UPLOAD] Failed to fetch file from ${options.fileUrl}: ${response.statusText}`);

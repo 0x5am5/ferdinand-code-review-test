@@ -66,7 +66,7 @@ export function useFontMutations(clientId: number | null) {
       data,
     }: {
       id: number;
-      data: { name: string; data: string };
+      data: { name: string; category: string; data: { source: string; weights: string[]; styles: string[]; sourceData: any } };
     }) => {
       if (!clientId) {
         throw new Error("Client ID is required");
