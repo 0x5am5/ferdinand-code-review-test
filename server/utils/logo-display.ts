@@ -88,10 +88,15 @@ export function buildLogoProcessingMessage(
     }
   }).length;
 
-  const variantNote = query === "dark" && darkVariantCount > 0 ? " (dark variants)" : 
+  // Calculate total files to upload
+  const isDarkQuery = query === "dark" || query === "white" || query === "inverse";
+  const totalFiles = isDarkQuery ? matchedLogos.length :
+                     matchedLogos.length + darkVariantCount; // Light + dark variants
+
+  const variantNote = isDarkQuery && darkVariantCount > 0 ? " (dark variants)" :
                      darkVariantCount > 0 ? ` (${darkVariantCount} with dark variants)` : "";
 
-  return `🔄 Preparing ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}${variantNote}... Files will appear shortly!`;
+  return `🔄 Preparing ${totalFiles} file${totalFiles > 1 ? "s" : ""} from ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}${variantNote}... Files will appear shortly!`;
 }
 
 // Build summary message after logo uploads
