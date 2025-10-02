@@ -163,6 +163,7 @@ export async function handleLogoCommand({
           if (isDarkQuery && hasDarkVariant) {
             downloadParams.variant = "dark";
             console.log(`[DARK VARIANT] Adding dark variant parameter to download URL for asset ${asset.id}`);
+            console.log(`[DARK VARIANT] Full downloadParams being passed:`, downloadParams);
           } else if (isDarkQuery && !hasDarkVariant) {
             console.log(`[DARK VARIANT] Asset ${asset.id} requested as dark but has no dark variant, using light variant`);
           }

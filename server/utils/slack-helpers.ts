@@ -121,6 +121,9 @@ export function generateAssetDownloadUrl(
     url.searchParams.append("size", options.size.toString());
   }
 
+  console.log(`[generateAssetDownloadUrl] Generated URL for asset ${assetId}:`, url.toString());
+  console.log(`[generateAssetDownloadUrl] Options:`, options);
+
   return url.toString();
 }
 
@@ -164,6 +167,11 @@ export async function uploadFileToSlack(
 
     // Fetch the file from the URL
     console.log(`[SLACK UPLOAD] Fetching file from URL: ${options.fileUrl}`);
+
+    // Parse URL to check parameters
+    const urlObj = new URL(options.fileUrl);
+    console.log(`[SLACK UPLOAD] URL params:`, Object.fromEntries(urlObj.searchParams));
+
     const response = await fetch(options.fileUrl);
     if (!response.ok) {
       console.error(`[SLACK UPLOAD] Failed to fetch file from ${options.fileUrl}: ${response.statusText}`);

@@ -1395,7 +1395,7 @@ export function registerAssetRoutes(app: Express) {
             } else {
               // Get the converted asset specifically for this asset ID
               console.log(
-                `Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`
+                `[DARK VARIANT CONVERSION] Looking for converted asset - Original ID: ${assetId}, Format: ${format}, Dark: ${isDarkVariant}`
               );
               const convertedAsset = await storage.getConvertedAsset(
                 assetId,
@@ -1423,19 +1423,23 @@ export function registerAssetRoutes(app: Express) {
 
               if (!fileBuffer) {
                 // Convert on-the-fly from dark variant
-                console.log(`Converting dark variant on-the-fly for asset ${assetId}`);
+                console.log(`[DARK VARIANT CONVERSION] Converting dark variant on-the-fly for asset ${assetId} to format ${format}`);
 
                 const darkBuffer = getDarkVariantBuffer(asset);
                 if (!darkBuffer) {
+                  console.error(`[DARK VARIANT CONVERSION] No dark variant buffer found for asset ${assetId}`);
                   return res.status(404).json({ message: "Dark variant file data not found" });
                 }
 
+                const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
                 const sourceFormat = data.darkVariantFormat || data.format;
-                
+                console.log(`[DARK VARIANT CONVERSION] Source format: ${sourceFormat}, Target format: ${format}`);
+
                 try {
                   const result = await convertToFormat(darkBuffer, sourceFormat, format, assetId);
                   fileBuffer = result.data;
                   mimeType = result.mimeType;
+                  console.log(`[DARK VARIANT CONVERSION] Successfully converted dark variant to ${format}, buffer size: ${fileBuffer.length}`);
 
                   // Store the converted dark variant for future use
                   try {
