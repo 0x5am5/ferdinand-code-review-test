@@ -141,9 +141,12 @@ export async function handleLogoCommand({
         const decryptedToken = decryptBotToken(workspace.botToken);
         botToken = decryptedToken;
 
-        const uploadPromises = matchedLogos.map(async (asset) => {
+        // Build all upload promises
+        const allUploads: Promise<boolean>[] = [];
+
+        for (const asset of matchedLogos) {
           const assetInfo = formatAssetInfo(asset);
-          
+
           // Check if we should upload dark variant
           const isDarkQuery =
             query.toLowerCase() === "dark" ||
@@ -152,50 +155,101 @@ export async function handleLogoCommand({
           const data =
             typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
           const hasDarkVariant = data?.hasDarkVariant === true;
-          
-          console.log(`[DARK VARIANT] Asset ${asset.id} (${asset.name}): isDarkQuery=${isDarkQuery}, hasDarkVariant=${hasDarkVariant}, query="${query}"`);
-          
-          // Build download URL with variant parameter if needed
-          const downloadParams: any = {
-            format: "png", // Convert to PNG for better Slack compatibility
-          };
 
-          if (isDarkQuery && hasDarkVariant) {
-            downloadParams.variant = "dark";
-            console.log(`[DARK VARIANT] Adding dark variant parameter to download URL for asset ${asset.id}`);
-          } else if (isDarkQuery && !hasDarkVariant) {
-            console.log(`[DARK VARIANT] Asset ${asset.id} requested as dark but has no dark variant, using light variant`);
-          }
+          // If dark query specifically requested, only upload dark (or light if no dark available)
+          if (isDarkQuery) {
+            const downloadParams: any = {
+              format: "png",
+            };
 
-          const downloadUrl = generateAssetDownloadUrl(
-            asset.id,
-            workspace.clientId,
-            baseUrl,
-            downloadParams,
-          );
+            if (hasDarkVariant) {
+              downloadParams.variant = "dark";
+            }
 
-          const variantSuffix = isDarkQuery && hasDarkVariant ? "_dark" : "";
-          const filename = `${asset.name.replace(/\s+/g, "_")}${variantSuffix}.png`;
-          
-          const variantNote = isDarkQuery && hasDarkVariant ? " (Dark Variant)" : "";
-          const title = `${assetInfo.title}${variantNote}`;
+            const downloadUrl = generateAssetDownloadUrl(
+              asset.id,
+              workspace.clientId,
+              baseUrl,
+              downloadParams,
+            );
 
-          try {
-            return await uploadFileToSlack(decryptedToken, {
+            const variantSuffix = hasDarkVariant ? "_dark" : "";
+            const filename = `${asset.name.replace(/\s+/g, "_")}${variantSuffix}.png`;
+            const variantNote = hasDarkVariant ? " (Dark Variant)" : "";
+            const title = `${assetInfo.title}${variantNote}`;
+
+            allUploads.push(uploadFileToSlack(decryptedToken, {
               channelId: command.channel_id,
               userId: command.user_id,
               fileUrl: downloadUrl,
               filename,
               title,
               initialComment: `📋 *${title}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}${variantNote ? `\n• Variant: Dark` : ""}`,
-            });
-          } catch (uploadError) {
-            console.error(`Failed to upload ${asset.name}:`, uploadError);
-            return false;
-          }
-        });
+            }).catch(error => {
+              console.error(`Failed to upload ${asset.name}:`, error);
+              return false;
+            }));
+          } else {
+            // For non-dark queries, upload light variant always
+            const lightParams: any = {
+              format: "png",
+            };
 
-        const uploadResults = await Promise.all(uploadPromises);
+            const lightUrl = generateAssetDownloadUrl(
+              asset.id,
+              workspace.clientId,
+              baseUrl,
+              lightParams,
+            );
+
+            const lightFilename = `${asset.name.replace(/\s+/g, "_")}.png`;
+            const lightTitle = assetInfo.title;
+
+            allUploads.push(uploadFileToSlack(decryptedToken, {
+              channelId: command.channel_id,
+              userId: command.user_id,
+              fileUrl: lightUrl,
+              filename: lightFilename,
+              title: lightTitle,
+              initialComment: `📋 *${lightTitle}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
+            }).catch(error => {
+              console.error(`Failed to upload light variant of ${asset.name}:`, error);
+              return false;
+            }));
+
+            // If asset has dark variant and we're showing all, also upload dark
+            if (hasDarkVariant) {
+              const darkParams: any = {
+                format: "png",
+                variant: "dark",
+              };
+
+              const darkUrl = generateAssetDownloadUrl(
+                asset.id,
+                workspace.clientId,
+                baseUrl,
+                darkParams,
+              );
+
+              const darkFilename = `${asset.name.replace(/\s+/g, "_")}_dark.png`;
+              const darkTitle = `${assetInfo.title} (Dark Variant)`;
+
+              allUploads.push(uploadFileToSlack(decryptedToken, {
+                channelId: command.channel_id,
+                userId: command.user_id,
+                fileUrl: darkUrl,
+                filename: darkFilename,
+                title: darkTitle,
+                initialComment: `📋 *${darkTitle}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}\n• Variant: Dark`,
+              }).catch(error => {
+                console.error(`Failed to upload dark variant of ${asset.name}:`, error);
+                return false;
+              }));
+            }
+          }
+        }
+
+        const uploadResults = await Promise.all(allUploads);
         const successfulUploads = uploadResults.filter(Boolean).length;
         const responseTime = Date.now() - startTime;
 

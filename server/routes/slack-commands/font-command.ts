@@ -133,7 +133,7 @@ export async function handleFontCommand({
           );
         }
 
-        return { id: f.id, name: f.name, subcategory: f.subcategory, source };
+        return { id: f.id, name: f.name, category: f.category, source };
       }),
     );
 

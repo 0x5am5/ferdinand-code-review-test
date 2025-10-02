@@ -1,34 +1,27 @@
 import pkg, { LogLevel } from "@slack/bolt";
-import { WebClient } from "@slack/web-api";
 import type { Express, Response } from "express";
 
 const { App, ExpressReceiver } = pkg;
 
-import {
-  brandAssets,
-  insertSlackUserMappingSchema,
-  slackUserMappings,
-  slackWorkspaces,
-} from "@shared/schema";
+import { slackUserMappings, slackWorkspaces } from "@shared/schema";
 import * as dotenv from "dotenv";
 import { and, eq, or } from "drizzle-orm";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { storage } from "../storage";
-
-// Import command handlers
-import { handleLogoCommand } from "./slack-commands/logo-command";
-import { handleColorCommand } from "./slack-commands/color-command";
-import { handleFontCommand } from "./slack-commands/font-command";
-import { handleSearchCommand } from "./slack-commands/search-command";
-import { handleHelpCommand } from "./slack-commands/help-command";
-import { handleUnifiedCommand } from "./slack-commands/unified-command";
 import {
   handleColorSubcommandWithLimit,
-  handleLogoSubcommandWithLimit,
   handleFontSubcommandWithLimit,
+  handleLogoSubcommandWithLimit,
 } from "./slack-commands/action-handlers";
+import { handleColorCommand } from "./slack-commands/color-command";
+import { handleFontCommand } from "./slack-commands/font-command";
+import { handleHelpCommand } from "./slack-commands/help-command";
+// Import command handlers
+import { handleLogoCommand } from "./slack-commands/logo-command";
+import { handleSearchCommand } from "./slack-commands/search-command";
+import { handleUnifiedCommand } from "./slack-commands/unified-command";
 
 dotenv.config();
 
@@ -42,11 +35,11 @@ function initializeSlackApp() {
   console.log("🔍 Slack environment check:");
   console.log(
     "SLACK_BOT_TOKEN:",
-    process.env.SLACK_BOT_TOKEN ? "✅ Found" : "❌ Missing",
+    process.env.SLACK_BOT_TOKEN ? "✅ Found" : "❌ Missing"
   );
   console.log(
     "SLACK_SIGNING_SECRET:",
-    process.env.SLACK_SIGNING_SECRET ? "✅ Found" : "❌ Missing",
+    process.env.SLACK_SIGNING_SECRET ? "✅ Found" : "❌ Missing"
   );
 
   if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_SIGNING_SECRET) {
@@ -63,7 +56,7 @@ function initializeSlackApp() {
       customPropertiesExtractor: (req) => {
         return {
           headers: req.headers,
-          rawBody: req.rawBody,
+          rawBody: (req as any).rawBody,
         };
       },
     });
@@ -77,7 +70,7 @@ function initializeSlackApp() {
     console.log("✅ Slack App initialized successfully");
 
     // Register Slack command handlers
-    slackApp.command("/ferdinand-logo", handleLogoCommand);
+    slackApp.command("/ferdinand-logos", handleLogoCommand);
     slackApp.command("/ferdinand-colors", handleColorCommand);
     slackApp.command("/ferdinand-fonts", handleFontCommand);
     slackApp.command("/ferdinand-search", handleSearchCommand);
@@ -89,44 +82,91 @@ function initializeSlackApp() {
       await ack();
       const [clientId, variant] = body.actions[0].value.split("|");
       // Re-trigger color command with override to show all
-      await handleColorSubcommandWithLimit(body, respond, variant, parseInt(clientId), "all");
+      await handleColorSubcommandWithLimit(
+        body,
+        respond,
+        variant,
+        parseInt(clientId, 10),
+        "all"
+      );
     });
 
-    slackApp.action("show_limited_colors", async ({ ack, body, respond }: any) => {
-      await ack();
-      const [clientId, variant] = body.actions[0].value.split("|");
-      // Re-trigger color command with limit of 3
-      await handleColorSubcommandWithLimit(body, respond, variant, parseInt(clientId), 3);
-    });
+    slackApp.action(
+      "show_limited_colors",
+      async ({ ack, body, respond }: any) => {
+        await ack();
+        const [clientId, variant] = body.actions[0].value.split("|");
+        // Re-trigger color command with limit of 3
+        await handleColorSubcommandWithLimit(
+          body,
+          respond,
+          variant,
+          parseInt(clientId, 10),
+          3
+        );
+      }
+    );
 
     slackApp.action("upload_all_logos", async ({ ack, body, respond }: any) => {
       await ack();
       const [clientId, query] = body.actions[0].value.split("|");
       // Re-trigger logo command with override to upload all
-      await handleLogoSubcommandWithLimit(body, respond, query, parseInt(clientId), "all");
+      await handleLogoSubcommandWithLimit(
+        body,
+        respond,
+        query,
+        parseInt(clientId, 10),
+        "all"
+      );
     });
 
-    slackApp.action("upload_limited_logos", async ({ ack, body, respond }: any) => {
-      await ack();
-      const [clientId, query] = body.actions[0].value.split("|");
-      // Re-trigger logo command with limit of 3
-      await handleLogoSubcommandWithLimit(body, respond, query, parseInt(clientId), 3);
-    });
+    slackApp.action(
+      "upload_limited_logos",
+      async ({ ack, body, respond }: any) => {
+        await ack();
+        const [clientId, query] = body.actions[0].value.split("|");
+        // Re-trigger logo command with limit of 3
+        await handleLogoSubcommandWithLimit(
+          body,
+          respond,
+          query,
+          parseInt(clientId, 10),
+          3
+        );
+      }
+    );
 
-    slackApp.action("process_all_fonts", async ({ ack, body, respond }: any) => {
-      await ack();
-      const [clientId, variant] = body.actions[0].value.split("|");
-      // Re-trigger font command with override to process all
-      await handleFontSubcommandWithLimit(body, respond, variant, parseInt(clientId), "all");
-    });
+    slackApp.action(
+      "process_all_fonts",
+      async ({ ack, body, respond }: any) => {
+        await ack();
+        const [clientId, variant] = body.actions[0].value.split("|");
+        // Re-trigger font command with override to process all
+        await handleFontSubcommandWithLimit(
+          body,
+          respond,
+          variant,
+          parseInt(clientId, 10),
+          "all"
+        );
+      }
+    );
 
-    slackApp.action("process_limited_fonts", async ({ ack, body, respond }: any) => {
-      await ack();
-      const [clientId, variant] = body.actions[0].value.split("|");
-      // Re-trigger font command with limit of 3
-      await handleFontSubcommandWithLimit(body, respond, variant, parseInt(clientId), 3);
-    });
-
+    slackApp.action(
+      "process_limited_fonts",
+      async ({ ack, body, respond }: any) => {
+        await ack();
+        const [clientId, variant] = body.actions[0].value.split("|");
+        // Re-trigger font command with limit of 3
+        await handleFontSubcommandWithLimit(
+          body,
+          respond,
+          variant,
+          parseInt(clientId, 10),
+          3
+        );
+      }
+    );
 
     // Unified action handler to manage all interactive button events
     slackApp.action(/.*/, async ({ ack, body, respond }: any) => {
@@ -134,32 +174,41 @@ function initializeSlackApp() {
       const actionId = body.actions[0].action_id;
       const actionValue = body.actions[0].value;
 
-      if (actionId === "show_all_colors" || actionId === "show_limited_colors") {
+      if (
+        actionId === "show_all_colors" ||
+        actionId === "show_limited_colors"
+      ) {
         const [clientId, variant, limit] = actionValue.split("|");
         await handleColorSubcommandWithLimit(
           body,
           respond,
           variant,
-          parseInt(clientId),
-          limit === "all" ? "all" : parseInt(limit)
+          parseInt(clientId, 10),
+          limit === "all" ? "all" : parseInt(limit, 10)
         );
-      } else if (actionId === "show_all_logos" || actionId === "show_limited_logos") {
+      } else if (
+        actionId === "show_all_logos" ||
+        actionId === "show_limited_logos"
+      ) {
         const [clientId, query, limit] = actionValue.split("|");
         await handleLogoSubcommandWithLimit(
           body,
           respond,
           query,
-          parseInt(clientId),
-          limit === "all" ? "all" : parseInt(limit)
+          parseInt(clientId, 10),
+          limit === "all" ? "all" : parseInt(limit, 10)
         );
-      } else if (actionId === "process_all_fonts" || actionId === "process_limited_fonts") {
+      } else if (
+        actionId === "process_all_fonts" ||
+        actionId === "process_limited_fonts"
+      ) {
         const [clientId, variant, limit] = actionValue.split("|");
         await handleFontSubcommandWithLimit(
           body,
           respond,
           variant,
-          parseInt(clientId),
-          limit === "all" ? "all" : parseInt(limit)
+          parseInt(clientId, 10),
+          limit === "all" ? "all" : parseInt(limit, 10)
         );
       }
     });
@@ -250,8 +299,8 @@ export function registerSlackRoutes(app: Express) {
         .where(
           and(
             eq(slackUserMappings.slackUserId, slackUserId),
-            eq(slackUserMappings.slackTeamId, slackTeamId),
-          ),
+            eq(slackUserMappings.slackTeamId, slackTeamId)
+          )
         );
 
       if (existingMapping) {
@@ -332,8 +381,8 @@ export function registerSlackRoutes(app: Express) {
         .where(
           and(
             eq(slackUserMappings.slackUserId, slackUserId),
-            eq(slackUserMappings.slackTeamId, slackTeamId),
-          ),
+            eq(slackUserMappings.slackTeamId, slackTeamId)
+          )
         );
 
       if (existingMapping) {
@@ -382,8 +431,8 @@ export function registerSlackRoutes(app: Express) {
           .where(
             and(
               eq(slackUserMappings.clientId, clientId),
-              eq(slackUserMappings.isActive, true),
-            ),
+              eq(slackUserMappings.isActive, true)
+            )
           );
 
         res.json(mappings);
@@ -391,7 +440,7 @@ export function registerSlackRoutes(app: Express) {
         console.error("Error fetching Slack mappings:", error);
         res.status(500).json({ message: "Error fetching mappings" });
       }
-    },
+    }
   );
 
   // Check if current user's clients have Slack integration linked
@@ -420,10 +469,10 @@ export function registerSlackRoutes(app: Express) {
               ? eq(slackWorkspaces.clientId, clientIds[0])
               : or(
                   ...clientIds.map((clientId) =>
-                    eq(slackWorkspaces.clientId, clientId),
-                  ),
-                ),
-          ),
+                    eq(slackWorkspaces.clientId, clientId)
+                  )
+                )
+          )
         )
         .limit(1);
 
