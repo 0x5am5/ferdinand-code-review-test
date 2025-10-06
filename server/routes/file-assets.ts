@@ -10,7 +10,7 @@ import {
 
 type Asset = typeof assets.$inferSelect;
 
-import { and, eq, inArray, isNull, or, ilike, SQL } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, ilike, SQL, sql } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
 import { upload, virusScan } from "../middlewares/upload";
@@ -149,16 +149,6 @@ export function registerFileAssetRoutes(app: Express) {
         conditions.push(eq(assets.visibility, visibility));
       }
 
-      // Add search filter (searches in fileName and originalFileName)
-      if (search) {
-        conditions.push(
-          or(
-            ilike(assets.fileName, `%${search}%`),
-            ilike(assets.originalFileName, `%${search}%`)
-          )!
-        );
-      }
-
       let assetList: Asset[];
 
       // Filter by category if specified
@@ -232,9 +222,84 @@ export function registerFileAssetRoutes(app: Express) {
           .where(and(...conditions));
       }
 
+      // Fetch categories and tags for each asset
+      const assetsWithDetails = await Promise.all(
+        assetList.map(async (asset) => {
+          // Get categories
+          const categoryRows = await db
+            .select({
+              id: (await import("@shared/schema")).assetCategories.id,
+              name: (await import("@shared/schema")).assetCategories.name,
+              slug: (await import("@shared/schema")).assetCategories.slug,
+              isDefault: (await import("@shared/schema")).assetCategories.isDefault,
+              clientId: (await import("@shared/schema")).assetCategories.clientId,
+            })
+            .from(assetCategoryAssignments)
+            .innerJoin(
+              (await import("@shared/schema")).assetCategories,
+              eq(assetCategoryAssignments.categoryId, (await import("@shared/schema")).assetCategories.id)
+            )
+            .where(eq(assetCategoryAssignments.assetId, asset.id));
+
+          // Get tags
+          const tagRows = await db
+            .select({
+              id: assetTags.id,
+              name: assetTags.name,
+              slug: assetTags.slug,
+              clientId: assetTags.clientId,
+            })
+            .from(assetTagAssignments)
+            .innerJoin(assetTags, eq(assetTagAssignments.tagId, assetTags.id))
+            .where(eq(assetTagAssignments.assetId, asset.id));
+
+          return {
+            ...asset,
+            categories: categoryRows,
+            tags: tagRows,
+          };
+        })
+      );
+
+      // Apply search filter across all asset fields if search is provided
+      let filteredAssets = assetsWithDetails;
+      if (search) {
+        const searchLower = search.toLowerCase().trim();
+        filteredAssets = assetsWithDetails.filter((asset) => {
+          // Create searchable text from all asset fields
+          const searchableFields = [
+            asset.fileName,
+            asset.originalFileName,
+            asset.fileType,
+            // Format dates for natural language searching
+            asset.createdAt ? new Date(asset.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : '',
+            asset.updatedAt ? new Date(asset.updatedAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            }) : '',
+            // Add category names
+            ...(asset.categories?.map(c => c.name) || []),
+            // Add tag names
+            ...(asset.tags?.map(t => t.name) || []),
+          ];
+
+          const searchableText = searchableFields.join(' ').toLowerCase();
+          return searchableText.includes(searchLower);
+        });
+      }
+
       // Sort by creation date (newest first)
-      const sortedAssets = assetList.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      const sortedAssets = filteredAssets.sort(
+        (a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        }
       );
 
       res.json(sortedAssets);
@@ -244,6 +309,130 @@ export function registerFileAssetRoutes(app: Express) {
         error instanceof Error ? error.message : "Unknown error"
       );
       res.status(500).json({ message: "Error fetching assets" });
+    }
+  });
+
+  // Dedicated search endpoint with ranking and grouped results
+  app.get("/api/assets/search", async (req, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const search = req.query.q as string | undefined;
+      if (!search || search.trim().length === 0) {
+        return res.json({ results: [], total: 0 });
+      }
+
+      // Get user's clients to determine which assets they can see
+      const userClients = await db
+        .select()
+        .from((await import("@shared/schema")).userClients)
+        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+
+      if (userClients.length === 0) {
+        return res.json({ results: [], total: 0 });
+      }
+
+      const clientIds = userClients.map(uc => uc.clientId);
+
+      // Get user role for visibility filtering
+      const [user] = await db
+        .select()
+        .from((await import("@shared/schema")).users)
+        .where(eq((await import("@shared/schema")).users.id, req.session.userId));
+
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Prepare search query for PostgreSQL full-text search
+      const searchQuery = search.trim().replace(/\s+/g, ' & ');
+
+      // Build base conditions
+      const conditions: SQL[] = [
+        isNull(assets.deletedAt),
+        inArray(assets.clientId, clientIds),
+        sql`to_tsvector('english', ${assets.fileName} || ' ' || ${assets.originalFileName}) @@ to_tsquery('english', ${searchQuery})`
+      ];
+
+      // Guest users can only see shared assets
+      if (user.role === UserRole.GUEST) {
+        conditions.push(eq(assets.visibility, "shared"));
+      }
+
+      // Query with relevance ranking
+      const searchResults = await db
+        .select({
+          asset: assets,
+          rank: sql<number>`ts_rank(to_tsvector('english', ${assets.fileName} || ' ' || ${assets.originalFileName}), to_tsquery('english', ${searchQuery}))`,
+        })
+        .from(assets)
+        .where(and(...conditions))
+        .orderBy(sql`ts_rank(to_tsvector('english', ${assets.fileName} || ' ' || ${assets.originalFileName}), to_tsquery('english', ${searchQuery})) DESC`);
+
+      // Get category information for each asset
+      const assetIds = searchResults.map(r => r.asset.id);
+      const categoryAssignments = assetIds.length > 0
+        ? await db
+            .select({
+              assetId: assetCategoryAssignments.assetId,
+              category: (await import("@shared/schema")).assetCategories,
+            })
+            .from(assetCategoryAssignments)
+            .innerJoin(
+              (await import("@shared/schema")).assetCategories,
+              eq(assetCategoryAssignments.categoryId, (await import("@shared/schema")).assetCategories.id)
+            )
+            .where(inArray(assetCategoryAssignments.assetId, assetIds))
+        : [];
+
+      // Group results by category
+      const categoryMap = new Map<string, typeof searchResults>();
+      const uncategorized: typeof searchResults = [];
+
+      for (const result of searchResults) {
+        const assetCategories = categoryAssignments
+          .filter(ca => ca.assetId === result.asset.id)
+          .map(ca => ca.category);
+
+        if (assetCategories.length === 0) {
+          uncategorized.push(result);
+        } else {
+          for (const category of assetCategories) {
+            const key = category.name;
+            if (!categoryMap.has(key)) {
+              categoryMap.set(key, []);
+            }
+            categoryMap.get(key)!.push(result);
+          }
+        }
+      }
+
+      // Format response
+      const groupedResults = Array.from(categoryMap.entries()).map(([categoryName, results]) => ({
+        category: categoryName,
+        assets: results.map(r => ({ ...r.asset, relevance: r.rank })),
+      }));
+
+      if (uncategorized.length > 0) {
+        groupedResults.push({
+          category: "Uncategorized",
+          assets: uncategorized.map(r => ({ ...r.asset, relevance: r.rank })),
+        });
+      }
+
+      res.json({
+        results: groupedResults,
+        total: searchResults.length,
+        query: search,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "Error searching assets:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error searching assets" });
     }
   });
 
@@ -294,7 +483,39 @@ export function registerFileAssetRoutes(app: Express) {
         return res.status(403).json({ message: "Not authorized to view this asset" });
       }
 
-      res.json(asset);
+      // Get categories
+      const categoryRows = await db
+        .select({
+          id: (await import("@shared/schema")).assetCategories.id,
+          name: (await import("@shared/schema")).assetCategories.name,
+          slug: (await import("@shared/schema")).assetCategories.slug,
+          isDefault: (await import("@shared/schema")).assetCategories.isDefault,
+          clientId: (await import("@shared/schema")).assetCategories.clientId,
+        })
+        .from(assetCategoryAssignments)
+        .innerJoin(
+          (await import("@shared/schema")).assetCategories,
+          eq(assetCategoryAssignments.categoryId, (await import("@shared/schema")).assetCategories.id)
+        )
+        .where(eq(assetCategoryAssignments.assetId, asset.id));
+
+      // Get tags
+      const tagRows = await db
+        .select({
+          id: assetTags.id,
+          name: assetTags.name,
+          slug: assetTags.slug,
+          clientId: assetTags.clientId,
+        })
+        .from(assetTagAssignments)
+        .innerJoin(assetTags, eq(assetTagAssignments.tagId, assetTags.id))
+        .where(eq(assetTagAssignments.assetId, asset.id));
+
+      res.json({
+        ...asset,
+        categories: categoryRows,
+        tags: tagRows,
+      });
     } catch (error: unknown) {
       console.error(
         "Error fetching asset:",

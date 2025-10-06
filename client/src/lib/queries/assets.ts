@@ -159,6 +159,49 @@ export const useUpdateAssetMutation = () => {
       const response = await apiRequest("PATCH", `/api/assets/${id}`, data);
       return response.json();
     },
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: [`/api/assets/${id}`] });
+      await queryClient.cancelQueries({ queryKey: ["/api/assets"] });
+
+      // Snapshot the previous values
+      const previousAsset = queryClient.getQueryData<Asset>([`/api/assets/${id}`]);
+      const previousAssetsList = queryClient.getQueryData<Asset[]>(["/api/assets"]);
+
+      // Optimistically update the individual asset
+      if (previousAsset) {
+        queryClient.setQueryData<Asset>([`/api/assets/${id}`], {
+          ...previousAsset,
+          ...data,
+        });
+      }
+
+      // Optimistically update the asset in the list
+      if (previousAssetsList) {
+        queryClient.setQueryData<Asset[]>(["/api/assets"],
+          previousAssetsList.map(asset =>
+            asset.id === id ? { ...asset, ...data } : asset
+          )
+        );
+      }
+
+      // Return a context with the snapshots
+      return { previousAsset, previousAssetsList, id };
+    },
+    onError: (error: Error, _variables, context) => {
+      // Rollback on error
+      if (context?.previousAsset) {
+        queryClient.setQueryData([`/api/assets/${context.id}`], context.previousAsset);
+      }
+      if (context?.previousAssetsList) {
+        queryClient.setQueryData(["/api/assets"], context.previousAssetsList);
+      }
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
       queryClient.invalidateQueries({
@@ -167,13 +210,6 @@ export const useUpdateAssetMutation = () => {
       toast({
         title: "Success",
         description: "Asset updated successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Update failed",
-        description: error.message,
-        variant: "destructive",
       });
     },
   });

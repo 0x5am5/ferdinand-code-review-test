@@ -56,6 +56,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
   const [files, setFiles] = useState<FilePreview[]>([]);
   const [visibility, setVisibility] = useState<"private" | "shared">("shared");
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState<string>("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -133,11 +134,13 @@ export const AssetUpload: FC<AssetUploadProps> = ({
     setUploadProgress(0);
     const progressIncrement = 100 / files.length;
 
-    // Parse tag input into array of tag names
-    const tagNames = tagInput
+    // Combine selected tags and manual input
+    const manualTags = tagInput
       .split(',')
       .map(tag => tag.trim())
       .filter(tag => tag.length > 0);
+
+    const allTags = [...new Set([...selectedTags, ...manualTags])];
 
     for (const { file } of files) {
       const formData = new FormData();
@@ -146,8 +149,8 @@ export const AssetUpload: FC<AssetUploadProps> = ({
       if (selectedCategories.length > 0) {
         formData.append("categoryIds", JSON.stringify(selectedCategories));
       }
-      if (tagNames.length > 0) {
-        formData.append("tags", JSON.stringify(tagNames));
+      if (allTags.length > 0) {
+        formData.append("tags", JSON.stringify(allTags));
       }
 
       await uploadMutation.mutateAsync(formData);
@@ -161,6 +164,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
 
     setFiles([]);
     setSelectedCategories([]);
+    setSelectedTags([]);
     setTagInput("");
     setUploadProgress(0);
     setVisibility("shared");
@@ -174,6 +178,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
     });
     setFiles([]);
     setSelectedCategories([]);
+    setSelectedTags([]);
     setTagInput("");
     setUploadProgress(0);
     setVisibility("shared");
@@ -350,23 +355,50 @@ export const AssetUpload: FC<AssetUploadProps> = ({
           {/* Tags */}
           <div className="space-y-2">
             <Label>Tags (Optional)</Label>
+            <Select
+              onValueChange={(value) => {
+                if (!selectedTags.includes(value)) {
+                  setSelectedTags([...selectedTags, value]);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select existing tags" />
+              </SelectTrigger>
+              <SelectContent>
+                {tags.map((tag) => (
+                  <SelectItem key={tag.id} value={tag.name}>
+                    {tag.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedTags.map((tagName) => (
+                  <Badge key={tagName} variant="secondary">
+                    {tagName}
+                    <X
+                      className="h-3 w-3 ml-1 cursor-pointer"
+                      onClick={() =>
+                        setSelectedTags((prev) =>
+                          prev.filter((name) => name !== tagName)
+                        )
+                      }
+                    />
+                  </Badge>
+                ))}
+              </div>
+            )}
             <div className="relative">
               <Input
-                placeholder="Enter tags separated by commas (e.g. marketing, social, 2024)"
+                placeholder="Or enter new tags separated by commas (e.g. marketing, social, 2024)"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
-                list="tag-suggestions"
               />
-              {tags.length > 0 && (
-                <datalist id="tag-suggestions">
-                  {tags.map((tag) => (
-                    <option key={tag.id} value={tag.name} />
-                  ))}
-                </datalist>
-              )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Separate tags with commas. New tags will be created automatically.
+              Select existing tags above or enter new tags separated by commas. New tags will be created automatically.
             </p>
           </div>
 

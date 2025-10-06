@@ -1,5 +1,13 @@
-import { Calendar, Download, FileIcon, Trash2, User, X } from "lucide-react";
-import { type FC, useState } from "react";
+import {
+  Calendar,
+  Download,
+  FileIcon,
+  Plus,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
+import React, { type FC, useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +26,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -31,6 +40,7 @@ import {
   type Asset,
   useAssetCategoriesQuery,
   useAssetTagsQuery,
+  useCreateTagMutation,
   useDeleteAssetMutation,
   useUpdateAssetMutation,
 } from "@/lib/queries/assets";
@@ -47,18 +57,26 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
   onClose,
 }) => {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
-  const [editingVisibility, setEditingVisibility] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<number[]>(
-    asset?.categories?.map((c) => c.id) || []
-  );
-  const [selectedTags, setSelectedTags] = useState<number[]>(
-    asset?.tags?.map((t) => t.id) || []
-  );
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
+  const [selectedTags, setSelectedTags] = useState<number[]>([]);
+  const [newTagInput, setNewTagInput] = useState("");
+  const [isCreatingTag, setIsCreatingTag] = useState(false);
+  const [visibility, setVisibility] = useState<"private" | "shared">("shared");
+
+  // Update state when asset changes
+  useEffect(() => {
+    if (asset) {
+      setSelectedCategories(asset.categories?.map((c) => c.id) || []);
+      setSelectedTags(asset.tags?.map((t) => t.id) || []);
+      setVisibility(asset.visibility);
+    }
+  }, [asset]);
 
   const { data: categories = [] } = useAssetCategoriesQuery();
   const { data: tags = [] } = useAssetTagsQuery();
   const updateMutation = useUpdateAssetMutation();
   const deleteMutation = useDeleteAssetMutation();
+  const createTagMutation = useCreateTagMutation();
 
   if (!asset) return null;
 
@@ -88,12 +106,12 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
     onClose();
   };
 
-  const handleVisibilityChange = async (visibility: "private" | "shared") => {
+  const handleVisibilityChange = async (newVisibility: "private" | "shared") => {
+    setVisibility(newVisibility);
     await updateMutation.mutateAsync({
       id: asset.id,
-      data: { visibility },
+      data: { visibility: newVisibility },
     });
-    setEditingVisibility(false);
   };
 
   const handleCategoryToggle = async (categoryId: number) => {
@@ -122,6 +140,38 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
     });
   };
 
+  const handleCreateTag = async () => {
+    if (!newTagInput.trim()) return;
+
+    setIsCreatingTag(true);
+    try {
+      const slug = newTagInput.toLowerCase().replace(/\s+/g, "-");
+      const newTag = await createTagMutation.mutateAsync({
+        name: newTagInput.trim(),
+        slug,
+      });
+
+      // Add the new tag to the asset
+      const newTags = [...selectedTags, newTag.id];
+      setSelectedTags(newTags);
+      await updateMutation.mutateAsync({
+        id: asset.id,
+        data: { tags: newTags.map((id) => ({ id })) as Asset["tags"] },
+      });
+
+      setNewTagInput("");
+    } finally {
+      setIsCreatingTag(false);
+    }
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      handleCreateTag();
+    }
+  };
+
   const isImage = asset.fileType.startsWith("image/");
 
   return (
@@ -129,7 +179,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle className="flex items-center justify-between pt-4">
               <span className="truncate pr-4">{asset.originalFileName}</span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={handleDownload}>
@@ -217,49 +267,22 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
             {/* Visibility */}
             <div className="space-y-2">
               <Label>Visibility</Label>
-              {editingVisibility ? (
-                <div className="flex gap-2">
-                  <Select
-                    defaultValue={asset.visibility}
-                    onValueChange={(value: "private" | "shared") =>
-                      handleVisibilityChange(value)
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="shared">
-                        Shared (All team members)
-                      </SelectItem>
-                      <SelectItem value="private">Private (Only me)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    onClick={() => setEditingVisibility(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={
-                      asset.visibility === "private" ? "secondary" : "default"
-                    }
-                  >
-                    {asset.visibility}
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditingVisibility(true)}
-                  >
-                    Edit
-                  </Button>
-                </div>
-              )}
+              <Select
+                value={visibility}
+                onValueChange={(value: "private" | "shared") =>
+                  handleVisibilityChange(value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="shared">
+                    Shared (All team members)
+                  </SelectItem>
+                  <SelectItem value="private">Private (Only me)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Separator />
@@ -288,6 +311,8 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
             {/* Tags */}
             <div className="space-y-2">
               <Label>Tags</Label>
+
+              {/* Existing tags */}
               <div className="flex flex-wrap gap-2">
                 {tags.map((tag) => {
                   const isSelected = selectedTags.includes(tag.id);
@@ -303,6 +328,26 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     </Badge>
                   );
                 })}
+              </div>
+
+              {/* Create new tag */}
+              <div className="flex gap-2 mt-3">
+                <Input
+                  placeholder="Create new tag (press Enter or comma)..."
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  onKeyDown={handleTagInputKeyDown}
+                  disabled={isCreatingTag}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCreateTag}
+                  disabled={!newTagInput.trim() || isCreatingTag}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
               </div>
             </div>
           </div>
