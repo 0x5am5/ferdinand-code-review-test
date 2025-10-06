@@ -517,7 +517,7 @@ function RoleBadge({
                 key={r}
                 className={`
                   border rounded-md p-2 transition-all cursor-pointer text-left w-full
-                  ${isSelected ? `${color} border-2` : "border bg-background hover:bg-muted"}
+                  ${isSelected ? `${color} border-2` : "border hover:bg-muted"}
                   ${isCurrentRole && !isSelected ? "border-primary border-dashed" : ""}
                 `}
                 onClick={() => handleRoleSelect(r)}

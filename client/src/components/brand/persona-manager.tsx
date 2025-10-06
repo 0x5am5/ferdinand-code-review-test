@@ -144,34 +144,6 @@ function PersonaCard({
   );
 }
 
-function AddPersonaCard({ onClick }: { onClick: () => void }) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      style={{ minHeight: "300px" }}
-    >
-      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-        <Plus className="h-6 w-6 text-primary" />
-      </div>
-      <div className="text-center">
-        <h3 className="font-medium">Add New Persona</h3>
-        <p className="text-sm text-muted-foreground">
-          Create a new user persona profile
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export function PersonaManager({
   clientId,
   personas,
@@ -411,19 +383,46 @@ export function PersonaManager({
       </div>
 
       <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {personas.map((persona) => (
-            <PersonaCard
-              key={persona.id}
-              persona={persona}
-              onEdit={() => setEditingPersona(persona)}
-              onDelete={() => deletePersona.mutate(persona.id)}
-            />
-          ))}
-          {isAbleToEdit && (
-            <AddPersonaCard onClick={() => setIsAddingPersona(true)} />
-          )}
-        </div>
+        {personas.length === 0 && isAbleToEdit ? (
+          <button
+            type="button"
+            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors w-full"
+            onClick={() => setIsAddingPersona(true)}
+            aria-label="Add your first user persona"
+          >
+            <Plus className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="font-medium mb-2">Add Your First Persona</h3>
+            <p className="text-sm text-muted-foreground">
+              Create a user persona profile to define your audience
+            </p>
+          </button>
+        ) : (
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {personas.map((persona) => (
+                <PersonaCard
+                  key={persona.id}
+                  persona={persona}
+                  onEdit={() => setEditingPersona(persona)}
+                  onDelete={() => deletePersona.mutate(persona.id)}
+                />
+              ))}
+            </div>
+
+            {isAbleToEdit && (
+              <button
+                type="button"
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                onClick={() => setIsAddingPersona(true)}
+              >
+                <Plus className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Add Another Persona
+                </p>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {isAbleToEdit && (

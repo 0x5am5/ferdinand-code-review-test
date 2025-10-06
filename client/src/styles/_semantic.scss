@@ -162,38 +162,39 @@ $color-on-surface-variant:       $color-neutral-700;
 $color-outline:                  $color-neutral-500;
 
 :root {
-  // Tailwind required variables
-  --background: #{$background};
-  --foreground: #{$foreground};
-  --card: #{$card};
-  --card-foreground: #{$card-foreground};
-  --popover: #{$popover};
-  --popover-foreground: #{$popover-foreground};
-  --primary: #{$primary};
-  --primary-foreground: #{$primary-foreground};
-  --primary-light: #{$primary-light};
-  --secondary: #{$secondary};
-  --secondary-foreground: #{$secondary-foreground};
-  --muted: #{$muted};
-  --muted-foreground: #{$muted-foreground};
-  --accent: #{$accent};
-  --accent-foreground: #{$accent-foreground};
-  --destructive: #{$destructive};
-  --destructive-foreground: #{$destructive-foreground};
-  --border: #{$border};
-  --input: #{$input};
-  --ring: #{$ring};
-  --radius: #{$radius};
-  --transition: #{$transition};
-  --font-sans: #{$font-sans};
-  --font-heading: #{$font-heading};
-  --heading-1-size: #{$heading-1-size};
-  --heading-2-size: #{$heading-2-size};
-  --heading-3-size: #{$heading-3-size};
-  --body-size: #{$body-size};
-  --line-height: #{$line-height};
-  --heading-weight: #{$heading-weight};
-  --body-weight: #{$body-weight};
+  // NOTE: Tailwind color variables are now managed in index.css and ThemeContext.tsx
+  // Commenting out to avoid conflicts with dynamic theming
+  // --background: #{$background};
+  // --foreground: #{$foreground};
+  // --card: #{$card};
+  // --card-foreground: #{$card-foreground};
+  // --popover: #{$popover};
+  // --popover-foreground: #{$popover-foreground};
+  // --primary: #{$primary};
+  // --primary-foreground: #{$primary-foreground};
+  // --primary-light: #{$primary-light};
+  // --secondary: #{$secondary};
+  // --secondary-foreground: #{$secondary-foreground};
+  // --muted: #{$muted};
+  // --muted-foreground: #{$muted-foreground};
+  // --accent: #{$accent};
+  // --accent-foreground: #{$accent-foreground};
+  // --destructive: #{$destructive};
+  // --destructive-foreground: #{$destructive-foreground};
+  // --border: #{$border};
+  // --input: #{$input};
+  // --ring: #{$ring};
+  // --radius: #{$radius};
+  // --transition: #{$transition};
+  // --font-sans: #{$font-sans};
+  // --font-heading: #{$font-heading};
+  // --heading-1-size: #{$heading-1-size};
+  // --heading-2-size: #{$heading-2-size};
+  // --heading-3-size: #{$heading-3-size};
+  // --body-size: #{$body-size};
+  // --line-height: #{$line-height};
+  // --heading-weight: #{$heading-weight};
+  // --body-weight: #{$body-weight};
   
   // Semantic color tokens
   --color-primary: #{$color-primary};

@@ -71,6 +71,45 @@ export function registerFileAssetTagRoutes(app: Express) {
     }
   });
 
+  // Create a new tag (global endpoint - infers clientId from user's first client)
+  app.post("/api/asset-tags", async (req, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get user's first client (could be enhanced to require clientId in body)
+      const userClients = await db
+        .select()
+        .from((await import("@shared/schema")).userClients)
+        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+
+      if (userClients.length === 0) {
+        return res.status(400).json({ message: "No client associated with user" });
+      }
+
+      const clientId = userClients[0].clientId;
+      const { name, slug } = req.body;
+
+      const tagData = {
+        name,
+        slug,
+        clientId,
+      };
+
+      const validated = insertAssetTagSchema.parse(tagData);
+      const [tag] = await db.insert(assetTags).values(validated).returning();
+
+      res.status(201).json(tag);
+    } catch (error: unknown) {
+      console.error(
+        "Error creating asset tag:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error creating asset tag" });
+    }
+  });
+
   // Get all tags for a client
   app.get(
     "/api/clients/:clientId/file-asset-tags",

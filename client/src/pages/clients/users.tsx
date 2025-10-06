@@ -75,15 +75,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 const getRoleBadgeVariant = (role: string) => {
   switch (role) {
     case UserRole.SUPER_ADMIN:
-      return "destructive";
+      return "superadmin";
     case UserRole.ADMIN:
-      return "default";
+      return "admin";
     case UserRole.EDITOR:
-      return "secondary";
+      return "editor";
     case UserRole.STANDARD:
-      return "secondary";
+      return "standard";
     case UserRole.GUEST:
-      return "outline";
+      return "guest";
     default:
       return "outline";
   }
@@ -501,11 +501,20 @@ export default function ClientUsersPage() {
                             // Disable if current user is not super admin and target user is super admin
                             (currentUser?.role !== UserRole.SUPER_ADMIN &&
                               user.role === UserRole.SUPER_ADMIN) ||
-                            // Disable if current user is admin and trying to modify their own role
-                            (currentUser?.role === UserRole.ADMIN &&
-                              user.id === currentUser.id)
+                            // Disable if trying to modify your own role
+                            user.id === currentUser?.id
                           }
                           onValueChange={(value) => {
+                            // Check if user is trying to modify their own role
+                            if (user.id === currentUser?.id) {
+                              toast({
+                                title: "Permission denied",
+                                description: "You cannot change your own role",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
                             // Permission checks similar to main users page
                             if (
                               currentUser?.role !== UserRole.SUPER_ADMIN &&
@@ -533,18 +542,6 @@ export default function ClientUsersPage() {
                               return;
                             }
 
-                            if (
-                              currentUser?.role === UserRole.ADMIN &&
-                              user.id === currentUser.id
-                            ) {
-                              toast({
-                                title: "Permission denied",
-                                description: "You cannot change your own role",
-                                variant: "destructive",
-                              });
-                              return;
-                            }
-
                             updateUserRole({
                               id: user.id,
                               role: value as (typeof UserRole)[keyof typeof UserRole],
@@ -553,10 +550,7 @@ export default function ClientUsersPage() {
                         >
                           <SelectTrigger className="h-8 w-[130px]">
                             <SelectValue>
-                              <Badge
-                                variant={getRoleBadgeVariant(user.role)}
-                                className="bg-secondary/10 text-secondary"
-                              >
+                              <Badge variant={getRoleBadgeVariant(user.role)}>
                                 {user.role.replace("_", " ")}
                               </Badge>
                             </SelectValue>
@@ -582,10 +576,7 @@ export default function ClientUsersPage() {
                               return true;
                             }).map((role) => (
                               <SelectItem key={role} value={role}>
-                                <Badge
-                                  variant={getRoleBadgeVariant(role)}
-                                  className="bg-secondary/10 text-secondary"
-                                >
+                                <Badge variant={getRoleBadgeVariant(role)}>
                                   {role.replace("_", " ")}
                                 </Badge>
                               </SelectItem>

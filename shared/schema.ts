@@ -664,12 +664,16 @@ export const assets = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
     deletedAt: timestamp("deleted_at"), // soft delete
+    // Full-text search vector column for search functionality
+    searchVector: text("search_vector"),
   },
   (table) => ({
     clientIdIdx: index("idx_assets_client_id").on(table.clientId),
     uploadedByIdx: index("idx_assets_uploaded_by").on(table.uploadedBy),
     visibilityIdx: index("idx_assets_visibility").on(table.visibility),
     deletedAtIdx: index("idx_assets_deleted_at").on(table.deletedAt),
+    // GIN index for full-text search
+    searchVectorIdx: index("idx_assets_search_vector").using("gin", sql`to_tsvector('english', ${table.fileName} || ' ' || ${table.originalFileName})`),
   })
 );
 
