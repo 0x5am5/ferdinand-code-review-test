@@ -13,6 +13,9 @@ import { registerSlackOAuthRoutes } from "./routes/slack-oauth";
 import { registerApiTokenRoutes } from "./routes/api-tokens";
 import { registerTypeScalesRoutes } from "./routes/type-scales";
 import { registerUserRoutes } from "./routes/users";
+import { registerFileAssetRoutes } from "./routes/file-assets";
+import { registerFileAssetCategoryRoutes } from "./routes/file-asset-categories";
+import { registerFileAssetTagRoutes } from "./routes/file-asset-tags";
 
 // Add session augmentation for TypeScript
 declare module "express-session" {
@@ -85,4 +88,7 @@ export function registerRoutes(app: Express) {
   registerSlackRoutes(app);
   registerSlackOAuthRoutes(app);
   registerApiTokenRoutes(app);
+  registerFileAssetRoutes(app);
+  registerFileAssetCategoryRoutes(app);
+  registerFileAssetTagRoutes(app);
 }

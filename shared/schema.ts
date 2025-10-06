@@ -9,6 +9,7 @@ import {
   serial,
   text,
   timestamp,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -36,6 +37,11 @@ export const ColorCategory = {
   BRAND: "brand",
   NEUTRAL: "neutral",
   INTERACTIVE: "interactive",
+} as const;
+
+export const AssetVisibility = {
+  PRIVATE: "private",
+  SHARED: "shared",
 } as const;
 
 export const FontSource = {
@@ -99,6 +105,12 @@ export const TypeScaleRatio = {
 } as const;
 
 // Database Tables
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
+});
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -106,6 +118,7 @@ export const users = pgTable("users", {
   role: text("role", {
     enum: ["super_admin", "admin", "editor", "standard", "guest"],
   }).notNull(),
+  password: text("password"), // Legacy field, kept for backward compatibility
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLogin: timestamp("last_login"),
@@ -123,7 +136,7 @@ export const clients = pgTable("clients", {
   displayOrder: integer("display_order"),
   userId: integer("user_id"),
   // Feature toggles
-  featureToggles: json("feature_toggles").default({
+  featureToggles: jsonb("feature_toggles").default({
     logoSystem: true,
     colorSystem: true,
     typeSystem: true,
@@ -353,8 +366,8 @@ export const typeScales = pgTable("type_scales", {
   exports: json("exports").default([]),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  individual_header_styles: jsonb("individual_header_styles").default("{}"),
-  individual_body_styles: jsonb("individual_body_styles").default("{}"),
+  individual_header_styles: text("individual_header_styles").default("{}"),
+  individual_body_styles: text("individual_body_styles").default("{}"),
 });
 
 // Figma Integration Tables
@@ -584,6 +597,86 @@ export const slackAuditLogs = pgTable("slack_audit_logs", {
   workspaceTimeIdx: index("idx_slack_audit_logs_workspace_time").on(table.slackWorkspaceId, table.createdAt),
   // Index for error analysis
   errorIdx: index("idx_slack_audit_logs_success_time").on(table.success, table.createdAt),
+}));
+
+// Asset Management Tables
+export const assets = pgTable("assets", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
+  uploadedBy: integer("uploaded_by")
+    .notNull()
+    .references(() => users.id),
+  fileName: text("file_name").notNull(),
+  originalFileName: text("original_file_name").notNull(),
+  fileType: text("file_type").notNull(), // MIME type
+  fileSize: integer("file_size").notNull(), // bytes
+  storagePath: text("storage_path").notNull(), // S3 or local path
+  visibility: text("visibility", {
+    enum: ["private", "shared"],
+  })
+    .notNull()
+    .default("shared"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"), // soft delete
+}, (table) => ({
+  clientIdIdx: index("idx_assets_client_id").on(table.clientId),
+  uploadedByIdx: index("idx_assets_uploaded_by").on(table.uploadedBy),
+  visibilityIdx: index("idx_assets_visibility").on(table.visibility),
+  deletedAtIdx: index("idx_assets_deleted_at").on(table.deletedAt),
+}));
+
+export const assetCategories = pgTable("asset_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  isDefault: boolean("is_default").default(false),
+  clientId: integer("client_id").references(() => clients.id), // null for system defaults
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_asset_categories_client_id").on(table.clientId),
+  slugIdx: index("idx_asset_categories_slug").on(table.slug),
+}));
+
+export const assetTags = pgTable("asset_tags", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  clientIdIdx: index("idx_asset_tags_client_id").on(table.clientId),
+  slugIdx: index("idx_asset_tags_slug").on(table.slug),
+}));
+
+export const assetCategoryAssignments = pgTable("asset_category_assignments", {
+  assetId: integer("asset_id")
+    .notNull()
+    .references(() => assets.id),
+  categoryId: integer("category_id")
+    .notNull()
+    .references(() => assetCategories.id),
+}, (table) => ({
+  pk: index("pk_asset_category_assignments").on(table.assetId, table.categoryId),
+  assetIdIdx: index("idx_asset_category_assignments_asset").on(table.assetId),
+  categoryIdIdx: index("idx_asset_category_assignments_category").on(table.categoryId),
+}));
+
+export const assetTagAssignments = pgTable("asset_tag_assignments", {
+  assetId: integer("asset_id")
+    .notNull()
+    .references(() => assets.id),
+  tagId: integer("tag_id")
+    .notNull()
+    .references(() => assetTags.id),
+}, (table) => ({
+  pk: index("pk_asset_tag_assignments").on(table.assetId, table.tagId),
+  assetIdIdx: index("idx_asset_tag_assignments_asset").on(table.assetId),
+  tagIdIdx: index("idx_asset_tag_assignments_tag").on(table.tagId),
 }));
 
 // Insert Schemas
@@ -1151,6 +1244,58 @@ export const apiTokensRelations = relations(apiTokens, ({ one }) => ({
   }),
 }));
 
+// Asset Management Relations
+export const assetsRelations = relations(assets, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [assets.clientId],
+    references: [clients.id],
+  }),
+  uploadedByUser: one(users, {
+    fields: [assets.uploadedBy],
+    references: [users.id],
+  }),
+  categoryAssignments: many(assetCategoryAssignments),
+  tagAssignments: many(assetTagAssignments),
+}));
+
+export const assetCategoriesRelations = relations(assetCategories, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [assetCategories.clientId],
+    references: [clients.id],
+  }),
+  assetAssignments: many(assetCategoryAssignments),
+}));
+
+export const assetTagsRelations = relations(assetTags, ({ one, many }) => ({
+  client: one(clients, {
+    fields: [assetTags.clientId],
+    references: [clients.id],
+  }),
+  assetAssignments: many(assetTagAssignments),
+}));
+
+export const assetCategoryAssignmentsRelations = relations(assetCategoryAssignments, ({ one }) => ({
+  asset: one(assets, {
+    fields: [assetCategoryAssignments.assetId],
+    references: [assets.id],
+  }),
+  category: one(assetCategories, {
+    fields: [assetCategoryAssignments.categoryId],
+    references: [assetCategories.id],
+  }),
+}));
+
+export const assetTagAssignmentsRelations = relations(assetTagAssignments, ({ one }) => ({
+  asset: one(assets, {
+    fields: [assetTagAssignments.assetId],
+    references: [assets.id],
+  }),
+  tag: one(assetTags, {
+    fields: [assetTagAssignments.tagId],
+    references: [assetTags.id],
+  }),
+}));
+
 // Slack Integration Insert Schemas
 export const insertSlackWorkspaceSchema = createInsertSchema(slackWorkspaces)
   .omit({ id: true, createdAt: true, updatedAt: true })
@@ -1195,6 +1340,47 @@ export const insertSlackAuditLogSchema = createInsertSchema(slackAuditLogs)
     responseTimeMs: z.number().optional(),
   });
 
+// Asset Management Insert Schemas
+export const insertAssetSchema = createInsertSchema(assets)
+  .omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true })
+  .extend({
+    fileName: z.string().min(1),
+    originalFileName: z.string().min(1),
+    fileType: z.string().min(1),
+    fileSize: z.number().min(1),
+    storagePath: z.string().min(1),
+    visibility: z.enum(["private", "shared"]).default("shared"),
+  });
+
+export const insertAssetCategorySchema = createInsertSchema(assetCategories)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    name: z.string().min(1),
+    slug: z.string().min(1),
+    isDefault: z.boolean().default(false),
+    clientId: z.number().optional(),
+  });
+
+export const insertAssetTagSchema = createInsertSchema(assetTags)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    name: z.string().min(1),
+    slug: z.string().min(1),
+    clientId: z.number(),
+  });
+
+export const insertAssetCategoryAssignmentSchema = createInsertSchema(assetCategoryAssignments)
+  .extend({
+    assetId: z.number(),
+    categoryId: z.number(),
+  });
+
+export const insertAssetTagAssignmentSchema = createInsertSchema(assetTagAssignments)
+  .extend({
+    assetId: z.number(),
+    tagId: z.number(),
+  });
+
 // Slack Integration Types
 export type SlackWorkspace = typeof slackWorkspaces.$inferSelect;
 export type SlackUserMapping = typeof slackUserMappings.$inferSelect;
@@ -1206,3 +1392,15 @@ export type InsertSlackUserMapping = z.infer<typeof insertSlackUserMappingSchema
 export type InsertApiToken = z.infer<typeof insertApiTokenSchema>;
 export type InsertSlackConversation = z.infer<typeof insertSlackConversationSchema>;
 export type InsertSlackAuditLog = z.infer<typeof insertSlackAuditLogSchema>;
+
+// Asset Management Types
+export type Asset = typeof assets.$inferSelect;
+export type AssetCategory = typeof assetCategories.$inferSelect;
+export type AssetTag = typeof assetTags.$inferSelect;
+export type AssetCategoryAssignment = typeof assetCategoryAssignments.$inferSelect;
+export type AssetTagAssignment = typeof assetTagAssignments.$inferSelect;
+export type InsertAsset = z.infer<typeof insertAssetSchema>;
+export type InsertAssetCategory = z.infer<typeof insertAssetCategorySchema>;
+export type InsertAssetTag = z.infer<typeof insertAssetTagSchema>;
+export type InsertAssetCategoryAssignment = z.infer<typeof insertAssetCategoryAssignmentSchema>;
+export type InsertAssetTagAssignment = z.infer<typeof insertAssetTagAssignmentSchema>;
