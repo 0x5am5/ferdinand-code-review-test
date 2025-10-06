@@ -55,11 +55,11 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Validate clientId is available
   if (!clientId) {
     return (
-      <div className="font-manager">
-        <div className="manager__header">
+      <div>
+        <div className="flex justify-between items-start mb-6">
           <div>
-            <h1>Typography System</h1>
-            <p className="text-muted-foreground text-red-500">
+            <h1 className="text-3xl font-bold tracking-tight">Typography System</h1>
+            <p className="text-muted-foreground text-red-500 mt-1">
               Error: Client ID is missing. Please refresh the page.
             </p>
           </div>
@@ -409,17 +409,17 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   };
 
   return (
-    <div className="font-manager">
-      <div className="manager__header">
+    <div>
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h1>Typography System</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">Typography System</h1>
+          <p className="text-muted-foreground mt-1">
             Manage fonts and typography for this brand
           </p>
         </div>
       </div>
 
-      <div className="font-manager__sections space-y-8">
+      <div className="space-y-8">
         <AssetSection
           title="Brand Fonts"
           description="Typography assets that define the brand's visual identity and should be used consistently across all materials."

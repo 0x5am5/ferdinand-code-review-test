@@ -164,11 +164,11 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   };
 
   return (
-    <div className="logo-manager">
-      <div className="manager__header">
+    <div>
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h1>Logo System</h1>
-          <p>Manage and download the official logos for this brand</p>
+          <h1 className="text-3xl font-bold tracking-tight">Logo System</h1>
+          <p className="text-muted-foreground mt-1">Manage and download the official logos for this brand</p>
         </div>
         {isAdmin && availableSections.length > 0 && (
           <Button

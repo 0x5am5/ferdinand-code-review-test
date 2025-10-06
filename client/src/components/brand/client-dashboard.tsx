@@ -8,6 +8,7 @@ import {
   UsersIcon,
 } from "lucide-react";
 import { useId } from "react";
+import { getContrastingTextColor } from "@/lib/color-utils";
 
 interface BrandAsset {
   id: number;
@@ -137,12 +138,15 @@ export function ClientDashboard({
     }, 10);
   };
 
+  const backgroundColor = primaryColor || "#ffffff";
+  const textColor = getContrastingTextColor(backgroundColor);
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
       style={{
-        backgroundColor: primaryColor || "hsl(var(--primary))",
-        color: "white",
+        backgroundColor,
+        color: textColor,
       }}
     >
       {/* Background pattern */}
@@ -183,7 +187,10 @@ export function ClientDashboard({
                 alt={clientName}
                 className="max-h-40 w-auto mx-auto object-contain"
                 style={{
-                  filter: "brightness(0) invert(1)", // Make logo white
+                  filter:
+                    textColor === "#ffffff"
+                      ? "brightness(0) invert(1)"
+                      : "none",
                 }}
                 onError={(e) => {
                   // Handle image loading errors
@@ -193,10 +200,15 @@ export function ClientDashboard({
               />
             </div>
           ) : (
-            <h1 className="text-5xl font-bold text-white mb-4">{clientName}</h1>
+            <h1 className="text-5xl font-bold mb-4" style={{ color: textColor }}>
+              {clientName}
+            </h1>
           )}
 
-          <h2 className="text-2xl font-light text-white opacity-90 mt-6">
+          <h2
+            className="text-2xl font-light opacity-90 mt-6"
+            style={{ color: textColor }}
+          >
             Brand Management Dashboard
           </h2>
         </div>
@@ -208,21 +220,56 @@ export function ClientDashboard({
               <button
                 type="button"
                 key={feature.id}
-                className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-6 hover:bg-white/15 transition-all group cursor-pointer text-left w-full"
+                className="backdrop-blur-sm rounded-lg p-6 transition-all group cursor-pointer text-left w-full"
+                style={{
+                  backgroundColor:
+                    textColor === "#ffffff"
+                      ? "rgba(255, 255, 255, 0.1)"
+                      : "rgba(0, 0, 0, 0.1)",
+                  borderColor:
+                    textColor === "#ffffff"
+                      ? "rgba(255, 255, 255, 0.2)"
+                      : "rgba(0, 0, 0, 0.2)",
+                  borderWidth: "1px",
+                  color: textColor,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    textColor === "#ffffff"
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "rgba(0, 0, 0, 0.15)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    textColor === "#ffffff"
+                      ? "rgba(255, 255, 255, 0.1)"
+                      : "rgba(0, 0, 0, 0.1)";
+                }}
                 onClick={() => handleNavigate(feature.id)}
                 aria-label={`Navigate to ${feature.title}`}
               >
                 <div className="flex flex-col h-full">
-                  <div className="mb-4 bg-white/20 w-12 h-12 flex items-center justify-center rounded-full">
+                  <div
+                    className="mb-4 w-12 h-12 flex items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor:
+                        textColor === "#ffffff"
+                          ? "rgba(255, 255, 255, 0.2)"
+                          : "rgba(0, 0, 0, 0.2)",
+                    }}
+                  >
                     {feature.icon}
                   </div>
                   <h3 className="text-xl font-semibold mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-white/80 text-sm mb-6 flex-grow">
+                  <p
+                    className="text-sm mb-6 flex-grow"
+                    style={{ opacity: 0.8 }}
+                  >
                     {feature.description}
                   </p>
-                  <span className="inline-flex items-center justify-start p-0 text-white group-hover:translate-x-1 transition-transform">
+                  <span className="inline-flex items-center justify-start p-0 group-hover:translate-x-1 transition-transform">
                     Explore <ArrowRight className="ml-2 h-4 w-4" />
                   </span>
                 </div>

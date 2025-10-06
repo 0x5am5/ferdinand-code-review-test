@@ -281,7 +281,7 @@ export default function Clients() {
   }, [editingClient]);
 
   return (
-    <div className="p-8">
+    <div className="p-8 pt-4">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-bold">Clients</h1>
         <div className="flex items-center gap-4">

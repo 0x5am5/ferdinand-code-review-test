@@ -35,14 +35,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<Error | null>(null);
 
   // Fetch user data from our backend
-  const fetchUser = useCallback(async () => {
+  const fetchUser = useCallback(async (): Promise<boolean> => {
     try {
       const response = await fetch("/api/user");
       if (response.ok) {
         const data = await response.json();
         setUser(data);
+        return true;
       } else {
         setUser(null);
+        return false;
       }
     } catch (e: unknown) {
       console.error(
@@ -50,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         e instanceof Error ? e.message : "Unknown error"
       );
       setUser(null);
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -58,50 +61,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Handle Firebase auth state changes
   useEffect(() => {
     setIsLoading(true);
+    let unsubscribe: (() => void) | undefined;
 
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      setFirebaseUser(fbUser);
+    // First, try to fetch user from existing session (for dev auth bypass)
+    fetchUser().then((hasUser) => {
+      // Set up Firebase auth listener regardless of whether we have a session
+      // This ensures Firebase auth still works when bypass is disabled
+      unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+        setFirebaseUser(fbUser);
 
-      if (fbUser) {
-        try {
-          // Get the ID token
-          const idToken = await fbUser.getIdToken();
+        if (fbUser) {
+          try {
+            // Get the ID token
+            const idToken = await fbUser.getIdToken();
 
-          // Create session on backend
-          const response = await fetch("/api/auth/google", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ idToken }),
-          });
+            // Create session on backend
+            const response = await fetch("/api/auth/google", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ idToken }),
+            });
 
-          if (response.ok) {
-            // Fetch user data
-            await fetchUser();
-          } else {
-            const data = await response.json();
-            console.error("Failed to create session:", data);
-            setError(new Error(data.message || "Authentication failed"));
+            if (response.ok) {
+              // Fetch user data
+              await fetchUser();
+            } else {
+              const data = await response.json();
+              console.error("Failed to create session:", data);
+              setError(new Error(data.message || "Authentication failed"));
+              setIsLoading(false);
+            }
+          } catch (e: unknown) {
+            console.error(
+              "Auth processing error:",
+              e instanceof Error ? e.message : "Unknown error"
+            );
+            setError(e instanceof Error ? e : new Error("Authentication failed"));
             setIsLoading(false);
           }
-        } catch (e: unknown) {
-          console.error(
-            "Auth processing error:",
-            e instanceof Error ? e.message : "Unknown error"
-          );
-          setError(e instanceof Error ? e : new Error("Authentication failed"));
+        } else if (!hasUser) {
+          // User is not authenticated via Firebase and no existing session
+          setUser(null);
           setIsLoading(false);
         }
-      } else {
-        // User is not authenticated
-        setUser(null);
-        setIsLoading(false);
-      }
+      });
     });
 
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [fetchUser]);
 

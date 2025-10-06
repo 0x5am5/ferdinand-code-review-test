@@ -289,8 +289,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       ) : (
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
-            {(user?.role === UserRole.SUPER_ADMIN ||
-              user?.role === UserRole.ADMIN) &&
+            {user?.role === UserRole.SUPER_ADMIN &&
               allClients &&
               allClients.length > 1 && (
                 <div className="mb-3">

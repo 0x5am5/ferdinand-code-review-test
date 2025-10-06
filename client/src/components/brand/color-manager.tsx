@@ -2229,12 +2229,12 @@ export function ColorManager({
   if (!user) return null;
 
   return (
-    <div className="color-manager">
+    <div>
       {" "}
-      <div className="manager__header ">
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h1>Color System</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">Color System</h1>
+          <p className="text-muted-foreground mt-1">
             Manage and use the official color palette for this brand
           </p>
         </div>
@@ -2256,7 +2256,7 @@ export function ColorManager({
           </div>
         )} */}
       </div>
-      <div className="color-manager__sections space-y-8">
+      <div className="space-y-8">
         <AssetSection
           title="Brand Colors"
           description={colorDescriptions.brand}
@@ -2267,10 +2267,10 @@ export function ColorManager({
               <Button
                 onClick={() => handleAddBrandColor()}
                 variant="outline"
-                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
               >
-                <RotateCcw className="h-12 w-12 text-muted-foreground/50" />
-                <span className="text-muted-foreground/50">Generate</span>
+                <Palette className="h-8 w-8 text-muted-foreground/70" />
+                <span className="text-sm font-medium text-muted-foreground/70">Generate Brand Colors</span>
               </Button>
 
               <Button
@@ -2281,10 +2281,10 @@ export function ColorManager({
                   setIsAddingColor(true);
                 }}
                 variant="outline"
-                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
               >
-                <Plus className="h-12 w-12 text-muted-foreground/50" />
-                <span className="text-muted-foreground/50">Add Color</span>
+                <Plus className="h-8 w-8 text-muted-foreground/70" />
+                <span className="text-sm font-medium text-muted-foreground/70">Add Color</span>
               </Button>
             </div>
           }
@@ -2321,11 +2321,11 @@ export function ColorManager({
                     setIsAddingColor(true);
                   }}
                   variant="outline"
-                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                  className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
                 >
-                  <Plus className="h-12 w-12 text-muted-foreground/50" />
-                  <span className="text-muted-foreground/50">
-                    Add New Color
+                  <Plus className="h-8 w-8 text-muted-foreground/70" />
+                  <span className="text-sm font-medium text-muted-foreground/70">
+                    Add Color
                   </span>
                 </Button>
               </div>
@@ -2339,19 +2339,34 @@ export function ColorManager({
           isEmpty={neutralColorsData.length === 0}
           sectionType="neutral-colors"
           uploadComponent={
-            <Button
-              onClick={() => {
-                setSelectedCategory("neutral");
-                setEditingColor(null);
-                form.reset();
-                setIsAddingColor(true);
-              }}
-              variant="outline"
-              className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
-            >
-              <Plus className="h-4 w-4" />
-              Add Color
-            </Button>
+            <div className="space-y-4 w-full">
+              <Button
+                onClick={handleGenerateGreyShades}
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
+                disabled={createColor.isPending}
+              >
+                <Palette className="h-8 w-8 text-muted-foreground/70" />
+                <span className="text-sm font-medium text-muted-foreground/70">
+                  {createColor.isPending ? "Generating..." : "Generate Neutral Colors"}
+                </span>
+              </Button>
+              <Button
+                onClick={() => {
+                  setSelectedCategory("neutral");
+                  setEditingColor(null);
+                  form.reset();
+                  setIsAddingColor(true);
+                }}
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
+              >
+                <Plus className="h-8 w-8 text-muted-foreground/70" />
+                <span className="text-sm font-medium text-muted-foreground/70">
+                  Add Color
+                </span>
+              </Button>
+            </div>
           }
           emptyPlaceholder={
             <div className="text-center py-12 text-muted-foreground">
@@ -2415,12 +2430,14 @@ export function ColorManager({
             <div className="space-y-4 w-full">
               <Button
                 onClick={handleGenerateInteractiveColors}
-                variant="default"
-                className="flex flex-col items-center justify-center gap-2 p-6 w-full h-[120px] transition-colors"
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
                 disabled={createColor.isPending}
               >
-                <Palette className="h-4 w-4" />
-                {createColor.isPending ? "Generating..." : "Generate Colors"}
+                <Palette className="h-8 w-8 text-muted-foreground/70" />
+                <span className="text-sm font-medium text-muted-foreground/70">
+                  {createColor.isPending ? "Generating..." : "Generate Interactive Colors"}
+                </span>
               </Button>
               <Button
                 onClick={() => {
@@ -2430,10 +2447,12 @@ export function ColorManager({
                   setIsAddingColor(true);
                 }}
                 variant="outline"
-                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/10 hover:border-muted-foreground/25 w-full h-[120px] transition-colors bg-muted/5"
+                className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
               >
-                <Plus className="h-4 w-4" />
-                Add Color
+                <Plus className="h-8 w-8 text-muted-foreground/70" />
+                <span className="text-sm font-medium text-muted-foreground/70">
+                  Add Color
+                </span>
               </Button>
             </div>
           }

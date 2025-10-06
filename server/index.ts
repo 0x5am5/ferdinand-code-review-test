@@ -11,6 +11,7 @@ import session from "express-session";
 import { runMigrations } from "./migrations";
 import { registerRoutes } from "./routes";
 import { log, serveStatic, setupVite } from "./vite";
+import { devAuthBypass } from "./middlewares/devAuth";
 
 const app = express();
 let server: ReturnType<typeof createServer> | null = null;
@@ -53,6 +54,9 @@ app.use(
     },
   })
 );
+
+// Development auth bypass middleware (must come after session middleware)
+app.use(devAuthBypass);
 
 // Add error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
