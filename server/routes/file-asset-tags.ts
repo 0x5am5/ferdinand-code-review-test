@@ -1,9 +1,5 @@
-import {
-  assetTags,
-  insertAssetTagSchema,
-  UserRole,
-} from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { assetTags, insertAssetTagSchema, UserRole } from "@shared/schema";
+import { eq, inArray } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
 import { validateClientId } from "../middlewares/vaildateClientId";
@@ -41,6 +37,40 @@ const checkTagDeletePermission = async (
 };
 
 export function registerFileAssetTagRoutes(app: Express) {
+  // Get all tags (global endpoint for frontend queries - returns tags from all user's clients)
+  app.get("/api/asset-tags", async (req, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get user's clients to determine which tags they can see
+      const userClients = await db
+        .select()
+        .from((await import("@shared/schema")).userClients)
+        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+
+      if (userClients.length === 0) {
+        return res.json([]);
+      }
+
+      // Get tags for all user's clients
+      const clientIds = userClients.map(uc => uc.clientId);
+      const tags = await db
+        .select()
+        .from(assetTags)
+        .where(inArray(assetTags.clientId, clientIds));
+
+      res.json(tags);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching asset tags:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error fetching asset tags" });
+    }
+  });
+
   // Get all tags for a client
   app.get(
     "/api/clients/:clientId/file-asset-tags",
@@ -96,10 +126,7 @@ export function registerFileAssetTagRoutes(app: Express) {
         };
 
         const validated = insertAssetTagSchema.parse(tagData);
-        const [tag] = await db
-          .insert(assetTags)
-          .values(validated)
-          .returning();
+        const [tag] = await db.insert(assetTags).values(validated).returning();
 
         res.status(201).json(tag);
       } catch (error: unknown) {

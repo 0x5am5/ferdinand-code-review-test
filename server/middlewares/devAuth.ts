@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { storage } from "../storage";
 
 /**
@@ -23,9 +23,11 @@ export async function devAuthBypass(
 
   // Safety check: never allow in production
   if (process.env.NODE_ENV === "production") {
-    console.error("⚠️  BYPASS_AUTH_FOR_LOCAL_DEV is enabled in production! This is a security risk.");
+    console.error(
+      "⚠️  BYPASS_AUTH_FOR_LOCAL_DEV is enabled in production! This is a security risk."
+    );
     res.status(500).json({
-      message: "Invalid configuration"
+      message: "Invalid configuration",
     });
     return;
   }
@@ -35,9 +37,11 @@ export async function devAuthBypass(
     const devUserEmail = process.env.DEV_USER_EMAIL;
 
     if (!devUserEmail) {
-      console.error("BYPASS_AUTH_FOR_LOCAL_DEV is enabled but DEV_USER_EMAIL is not set");
+      console.error(
+        "BYPASS_AUTH_FOR_LOCAL_DEV is enabled but DEV_USER_EMAIL is not set"
+      );
       res.status(500).json({
-        message: "Dev user email not configured"
+        message: "Dev user email not configured",
       });
       return;
     }
@@ -53,7 +57,7 @@ export async function devAuthBypass(
     if (!user) {
       console.error(`Dev user not found: ${devUserEmail}`);
       res.status(500).json({
-        message: `Dev user not found: ${devUserEmail}`
+        message: `Dev user not found: ${devUserEmail}`,
       });
       return;
     }
@@ -72,13 +76,15 @@ export async function devAuthBypass(
       });
     });
 
-    console.log(`🔓 Dev auth bypass: Logged in as ${devUserEmail} (ID: ${user.id})`);
+    console.log(
+      `🔓 Dev auth bypass: Logged in as ${devUserEmail} (ID: ${user.id})`
+    );
 
     next();
   } catch (error) {
     console.error("Dev auth bypass error:", error);
     res.status(500).json({
-      message: "Dev auth bypass failed"
+      message: "Dev auth bypass failed",
     });
     return;
   }

@@ -3,6 +3,7 @@ import {
   BookText,
   BuildingIcon,
   Figma,
+  FolderOpen,
   Image,
   PaletteIcon,
   UsersIcon,
@@ -34,6 +35,7 @@ interface ClientDashboardProps {
     userPersonas: boolean;
     inspiration: boolean;
     figmaIntegration: boolean;
+    assetManagement: boolean;
   };
   onTabChange: (tab: string) => void;
 }
@@ -103,6 +105,13 @@ export function ClientDashboard({
       description: "Browse inspiration boards and reference materials",
       icon: <Image className="h-5 w-5" />,
       enabled: featureToggles.inspiration,
+    },
+    {
+      id: "assets",
+      title: "Brand Assets",
+      description: "Manage and organize all your brand assets in one place",
+      icon: <FolderOpen className="h-5 w-5" />,
+      enabled: featureToggles.assetManagement,
     },
     {
       id: "design-system",
@@ -183,7 +192,11 @@ export function ClientDashboard({
           {logoToShow ? (
             <div className="max-w-md max-h-40 mx-auto mb-4">
               <img
-                src={logoToShow?.id ? `/api/assets/${logoToShow.id}/file?t=${logoToShow.updatedAt ? new Date(logoToShow.updatedAt).getTime() : Date.now()}` : ""}
+                src={
+                  logoToShow?.id
+                    ? `/api/assets/${logoToShow.id}/file?t=${logoToShow.updatedAt ? new Date(logoToShow.updatedAt).getTime() : Date.now()}`
+                    : ""
+                }
                 alt={clientName}
                 className="max-h-40 w-auto mx-auto object-contain"
                 style={{
@@ -200,7 +213,10 @@ export function ClientDashboard({
               />
             </div>
           ) : (
-            <h1 className="text-5xl font-bold mb-4" style={{ color: textColor }}>
+            <h1
+              className="text-5xl font-bold mb-4"
+              style={{ color: textColor }}
+            >
               {clientName}
             </h1>
           )}

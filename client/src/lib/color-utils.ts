@@ -145,7 +145,7 @@ export function setPantoneValue(colorId: string, value: string): void {
 function getLuminance(r: number, g: number, b: number): number {
   const [rs, gs, bs] = [r, g, b].map((c) => {
     const val = c / 255;
-    return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+    return val <= 0.03928 ? val / 12.92 : ((val + 0.055) / 1.055) ** 2.4;
   });
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }

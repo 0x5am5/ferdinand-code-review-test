@@ -248,7 +248,9 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     <div>
       <div className="flex justify-between items-start mb-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inspiration Board</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Inspiration Board
+          </h1>
           <p className="text-muted-foreground mt-1">
             Collect and organize visual inspiration for your brand
           </p>

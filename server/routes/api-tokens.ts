@@ -1,10 +1,14 @@
-import type { Express, Response } from "express";
-import { eq, and, desc } from "drizzle-orm";
 import { apiTokens, insertApiTokenSchema } from "@shared/schema";
+import { and, desc, eq } from "drizzle-orm";
+import type { Express, Response } from "express";
 import { db } from "../db";
 import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
-import { generateApiToken, hashToken, maskSensitiveData } from "../utils/crypto";
+import {
+  generateApiToken,
+  hashToken,
+  maskSensitiveData,
+} from "../utils/crypto";
 
 /**
  * Register API token management routes
@@ -48,9 +52,8 @@ export function registerApiTokenRoutes(app: Express) {
         }
 
         // Default scopes if none provided
-        const tokenScopes = scopes && Array.isArray(scopes)
-          ? scopes
-          : ["read:assets"];
+        const tokenScopes =
+          scopes && Array.isArray(scopes) ? scopes : ["read:assets"];
 
         const tokenData = {
           clientId,
@@ -81,7 +84,6 @@ export function registerApiTokenRoutes(app: Express) {
           token: plainTextToken, // This is the only time the plain text token is shown
           tokenHash: maskSensitiveData(created.tokenHash), // Mask the hash for security
         });
-
       } catch (error) {
         console.error("Error generating API token:", error);
         res.status(500).json({ message: "Error generating token" });
@@ -118,7 +120,7 @@ export function registerApiTokenRoutes(app: Express) {
           .orderBy(desc(apiTokens.createdAt));
 
         // Mask token hashes in response
-        const maskedTokens = tokens.map(token => ({
+        const maskedTokens = tokens.map((token) => ({
           ...token,
           tokenHash: maskSensitiveData(token.tokenHash),
         }));
@@ -142,10 +144,12 @@ export function registerApiTokenRoutes(app: Express) {
         }
 
         const clientId = req.clientId;
-        const tokenId = parseInt(req.params.tokenId);
+        const tokenId = parseInt(req.params.tokenId, 10);
 
         if (!clientId || !tokenId) {
-          return res.status(400).json({ message: "Client ID and token ID are required" });
+          return res
+            .status(400)
+            .json({ message: "Client ID and token ID are required" });
         }
 
         const { tokenName, scopes, isActive } = req.body;
@@ -155,10 +159,7 @@ export function registerApiTokenRoutes(app: Express) {
           .select()
           .from(apiTokens)
           .where(
-            and(
-              eq(apiTokens.id, tokenId),
-              eq(apiTokens.clientId, clientId)
-            )
+            and(eq(apiTokens.id, tokenId), eq(apiTokens.clientId, clientId))
           );
 
         if (!existingToken) {
@@ -194,7 +195,6 @@ export function registerApiTokenRoutes(app: Express) {
           ...updated,
           tokenHash: maskSensitiveData(updated.tokenHash),
         });
-
       } catch (error) {
         console.error("Error updating API token:", error);
         res.status(500).json({ message: "Error updating token" });
@@ -209,10 +209,12 @@ export function registerApiTokenRoutes(app: Express) {
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
-        const tokenId = parseInt(req.params.tokenId);
+        const tokenId = parseInt(req.params.tokenId, 10);
 
         if (!clientId || !tokenId) {
-          return res.status(400).json({ message: "Client ID and token ID are required" });
+          return res
+            .status(400)
+            .json({ message: "Client ID and token ID are required" });
         }
 
         // Verify token belongs to this client
@@ -220,10 +222,7 @@ export function registerApiTokenRoutes(app: Express) {
           .select()
           .from(apiTokens)
           .where(
-            and(
-              eq(apiTokens.id, tokenId),
-              eq(apiTokens.clientId, clientId)
-            )
+            and(eq(apiTokens.id, tokenId), eq(apiTokens.clientId, clientId))
           );
 
         if (!existingToken) {
@@ -244,7 +243,6 @@ export function registerApiTokenRoutes(app: Express) {
             tokenHash: maskSensitiveData(deactivated.tokenHash),
           },
         });
-
       } catch (error) {
         console.error("Error deactivating API token:", error);
         res.status(500).json({ message: "Error deactivating token" });
@@ -259,10 +257,12 @@ export function registerApiTokenRoutes(app: Express) {
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
-        const tokenId = parseInt(req.params.tokenId);
+        const tokenId = parseInt(req.params.tokenId, 10);
 
         if (!clientId || !tokenId) {
-          return res.status(400).json({ message: "Client ID and token ID are required" });
+          return res
+            .status(400)
+            .json({ message: "Client ID and token ID are required" });
         }
 
         // Get token info
@@ -276,10 +276,7 @@ export function registerApiTokenRoutes(app: Express) {
           })
           .from(apiTokens)
           .where(
-            and(
-              eq(apiTokens.id, tokenId),
-              eq(apiTokens.clientId, clientId)
-            )
+            and(eq(apiTokens.id, tokenId), eq(apiTokens.clientId, clientId))
           );
 
         if (!token) {
@@ -288,11 +285,15 @@ export function registerApiTokenRoutes(app: Express) {
 
         // Calculate usage statistics
         const daysSinceCreated = token.createdAt
-          ? Math.floor((Date.now() - token.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+          ? Math.floor(
+              (Date.now() - token.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+            )
           : 0;
 
         const daysSinceLastUsed = token.lastUsedAt
-          ? Math.floor((Date.now() - token.lastUsedAt.getTime()) / (1000 * 60 * 60 * 24))
+          ? Math.floor(
+              (Date.now() - token.lastUsedAt.getTime()) / (1000 * 60 * 60 * 24)
+            )
           : null;
 
         res.json({
@@ -307,7 +308,6 @@ export function registerApiTokenRoutes(app: Express) {
             hasBeenUsed: !!token.lastUsedAt,
           },
         });
-
       } catch (error) {
         console.error("Error fetching token stats:", error);
         res.status(500).json({ message: "Error fetching token statistics" });

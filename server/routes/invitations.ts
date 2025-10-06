@@ -14,17 +14,20 @@ import {
 async function getClientLogoUrl(clientId: number): Promise<string | null> {
   try {
     const assets = await storage.getClientAssets(clientId);
-    const logoAssets = assets.filter(asset => asset.category === "logo");
-    
+    const logoAssets = assets.filter((asset) => asset.category === "logo");
+
     // Priority: favicon -> square -> horizontal -> main -> any logo
     const findLogoByType = (types: string[]) => {
       for (const type of types) {
-        const logo = logoAssets.find(asset => {
+        const logo = logoAssets.find((asset) => {
           if (!asset.data) return false;
           try {
-            const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            const data =
+              typeof asset.data === "string"
+                ? JSON.parse(asset.data)
+                : asset.data;
             return data?.type === type;
-          } catch (e) {
+          } catch (_e) {
             return false;
           }
         });
@@ -33,7 +36,9 @@ async function getClientLogoUrl(clientId: number): Promise<string | null> {
       return null;
     };
 
-    const logoAsset = findLogoByType(["favicon", "square", "horizontal", "main"]) || logoAssets[0];
+    const logoAsset =
+      findLogoByType(["favicon", "square", "horizontal", "main"]) ||
+      logoAssets[0];
     return logoAsset ? `/api/assets/${logoAsset.id}/file` : null;
   } catch (error) {
     console.error(`Error fetching logo for client ${clientId}:`, error);
@@ -62,13 +67,14 @@ export function registerInvitationRoutes(app: Express) {
       }
 
       // Get all pending invitations
-      const pendingInvitations = await db.query.invitations.findMany({
-        where: eq(invitations.used, false),
-      });
+      const pendingInvitations = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.used, false));
 
       // Enhance invitations with client data
       const enhancedInvitations = await Promise.all(
-        pendingInvitations.map(async (invitation) => {
+        pendingInvitations.map(async (invitation: typeof invitations.$inferSelect) => {
           let clientData:
             | { name: string; logoUrl?: string; primaryColor?: string }
             | undefined;
@@ -136,12 +142,13 @@ export function registerInvitationRoutes(app: Express) {
       }
 
       // Check if an invitation with this email already exists
-      const existingInvitations = await db.query.invitations.findMany({
-        where: eq(invitations.email, parsed.data.email),
-      });
+      const existingInvitations = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.email, parsed.data.email));
 
       // Only consider unused invitations as duplicates
-      const pendingInvitation = existingInvitations.find((inv) => !inv.used);
+      const pendingInvitation = existingInvitations.find((inv: typeof invitations.$inferSelect) => !inv.used);
       if (pendingInvitation) {
         return ErrorResponse.conflict(
           res,
@@ -169,7 +176,8 @@ export function registerInvitationRoutes(app: Express) {
           const client = await storage.getClient(req.body.clientIds[0]);
           if (client) {
             clientName = client.name;
-            logoUrl = (await getClientLogoUrl(req.body.clientIds[0])) || undefined;
+            logoUrl =
+              (await getClientLogoUrl(req.body.clientIds[0])) || undefined;
           }
         } catch (err: unknown) {
           console.error(
@@ -371,9 +379,11 @@ export function registerInvitationRoutes(app: Express) {
       }
 
       // Check if invitation exists
-      const invitation = await db.query.invitations.findFirst({
-        where: eq(invitations.id, id),
-      });
+      const [invitation] = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.id, id))
+        .limit(1);
 
       if (!invitation) {
         return res.status(404).json({ message: "Invitation not found" });
@@ -402,9 +412,11 @@ export function registerInvitationRoutes(app: Express) {
       }
 
       // Get the invitation from database
-      const invitation = await db.query.invitations.findFirst({
-        where: eq(invitations.id, id),
-      });
+      const [invitation] = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.id, id))
+        .limit(1);
 
       if (!invitation) {
         return res.status(404).json({ message: "Invitation not found" });
@@ -429,7 +441,8 @@ export function registerInvitationRoutes(app: Express) {
           const client = await storage.getClient(invitation.clientIds[0]);
           if (client) {
             clientName = client.name;
-            logoUrl = (await getClientLogoUrl(invitation.clientIds[0])) || undefined;
+            logoUrl =
+              (await getClientLogoUrl(invitation.clientIds[0])) || undefined;
           }
         } catch (err: unknown) {
           console.error(
@@ -526,18 +539,19 @@ export function registerInvitationRoutes(app: Express) {
       }
 
       // Get all pending invitations for this client
-      const allPendingInvitations = await db.query.invitations.findMany({
-        where: eq(invitations.used, false),
-      });
+      const allPendingInvitations = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.used, false));
 
       // Filter invitations for the specific client
-      const clientInvitations = allPendingInvitations.filter((invitation) =>
+      const clientInvitations = allPendingInvitations.filter((invitation: typeof invitations.$inferSelect) =>
         invitation.clientIds?.includes(clientId)
       );
 
       // Enhance invitations with client data
       const enhancedInvitations = await Promise.all(
-        clientInvitations.map(async (invitation) => {
+        clientInvitations.map(async (invitation: typeof invitations.$inferSelect) => {
           let clientData:
             | { name: string; logoUrl?: string; primaryColor?: string }
             | undefined;

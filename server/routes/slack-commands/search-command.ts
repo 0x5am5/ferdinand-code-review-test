@@ -1,11 +1,7 @@
-
-import { and, eq, or } from "drizzle-orm";
 import { brandAssets, slackWorkspaces } from "@shared/schema";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import {
-  checkRateLimit,
-  logSlackActivity,
-} from "../../utils/slack-helpers";
+import { checkRateLimit, logSlackActivity } from "../../utils/slack-helpers";
 
 export async function handleSearchCommand({ command, ack, respond }: any) {
   await ack();
@@ -37,8 +33,8 @@ export async function handleSearchCommand({ command, ack, respond }: any) {
       .where(
         and(
           eq(slackWorkspaces.slackTeamId, command.team_id),
-          eq(slackWorkspaces.isActive, true),
-        ),
+          eq(slackWorkspaces.isActive, true)
+        )
       );
 
     if (!workspace) {
@@ -86,7 +82,7 @@ export async function handleSearchCommand({ command, ack, respond }: any) {
         acc[asset.category].push(asset);
         return acc;
       },
-      {} as Record<string, typeof searchResults>,
+      {} as Record<string, typeof searchResults>
     );
 
     const blocks: any[] = [
@@ -139,9 +135,7 @@ export async function handleSearchCommand({ command, ack, respond }: any) {
           type: "mrkdwn",
           text:
             assetList +
-            (assets.length > 5
-              ? `\n... and ${assets.length - 5} more`
-              : ""),
+            (assets.length > 5 ? `\n... and ${assets.length - 5} more` : ""),
         },
       });
     });

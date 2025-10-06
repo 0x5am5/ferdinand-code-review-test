@@ -98,7 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               "Auth processing error:",
               e instanceof Error ? e.message : "Unknown error"
             );
-            setError(e instanceof Error ? e : new Error("Authentication failed"));
+            setError(
+              e instanceof Error ? e : new Error("Authentication failed")
+            );
             setIsLoading(false);
           }
         } else if (!hasUser) {

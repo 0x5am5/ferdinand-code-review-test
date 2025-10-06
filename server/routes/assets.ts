@@ -34,26 +34,33 @@ async function fixLogoTypeData() {
   try {
     console.log("Starting logo type data fix...");
     const clients = await storage.getClients();
-    
+
     for (const client of clients) {
       const clientAssets = await storage.getClientAssets(client.id);
-      const logoAssets = clientAssets.filter(asset => asset.category === "logo");
-      
+      const logoAssets = clientAssets.filter(
+        (asset) => asset.category === "logo"
+      );
+
       for (const asset of logoAssets) {
         let needsUpdate = false;
         let assetData;
-        
+
         try {
-          assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-        } catch (e) {
+          assetData =
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
+        } catch (_e) {
           console.log(`Asset ${asset.id} has invalid JSON data, skipping`);
           continue;
         }
-        
+
         // If the asset has no type or an undefined type, infer it from the name
         if (!assetData?.type) {
-          console.log(`Asset ${asset.id} (${asset.name}) missing type, inferring from name...`);
-          
+          console.log(
+            `Asset ${asset.id} (${asset.name}) missing type, inferring from name...`
+          );
+
           // Infer type from asset name
           const name = asset.name.toLowerCase();
           if (name.includes("main")) {
@@ -79,14 +86,16 @@ async function fixLogoTypeData() {
             assetData.type = "main";
             needsUpdate = true;
           }
-          
-          console.log(`Inferred type "${assetData.type}" for asset ${asset.id}`);
+
+          console.log(
+            `Inferred type "${assetData.type}" for asset ${asset.id}`
+          );
         }
-        
+
         if (needsUpdate) {
           await storage.updateAsset(asset.id, {
             ...asset,
-            data: assetData
+            data: assetData,
           } as any);
           console.log(`Updated asset ${asset.id} with type: ${assetData.type}`);
         }
@@ -103,41 +112,52 @@ async function updateClientLogosFromAssets() {
   try {
     console.log("Starting retroactive client logo update...");
     const clients = await storage.getClients();
-    
+
     for (const client of clients) {
       // Skip clients who already have favicon or square logo assets
       const clientAssets = await storage.getClientAssets(client.id);
-      const logoAssets = clientAssets.filter(asset => asset.category === "logo");
-      const hasFaviconOrSquare = logoAssets.some(asset => {
+      const logoAssets = clientAssets.filter(
+        (asset) => asset.category === "logo"
+      );
+      const hasFaviconOrSquare = logoAssets.some((asset) => {
         try {
-          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          const data =
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
           return data?.type === "favicon" || data?.type === "square";
-        } catch (e) {
+        } catch (_e) {
           return false;
         }
       });
-      
+
       if (hasFaviconOrSquare) {
         continue; // Skip clients who already have favicon or square logos
       }
-      
+
       // Prioritize square logos first, then favicon logos
-      let selectedAsset = logoAssets.find(asset => {
-        const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+      let selectedAsset = logoAssets.find((asset) => {
+        const assetData =
+          typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
         return assetData?.type === "square";
       });
-      
+
       if (!selectedAsset) {
-        selectedAsset = logoAssets.find(asset => {
-          const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+        selectedAsset = logoAssets.find((asset) => {
+          const assetData =
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
           return assetData?.type === "favicon";
         });
       }
-      
+
       if (selectedAsset) {
         const logoUrl = `/api/clients/${client.id}/assets/${selectedAsset.id}/download`;
         await storage.updateClient(client.id, { logo: logoUrl });
-        console.log(`Updated client ${client.id} (${client.name}) logo to: ${logoUrl}`);
+        console.log(
+          `Updated client ${client.id} (${client.name}) logo to: ${logoUrl}`
+        );
       }
     }
     console.log("Completed retroactive client logo update");
@@ -153,12 +173,12 @@ export function registerAssetRoutes(app: Express) {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      
+
       const user = await storage.getUser(req.session.userId);
       if (!user || user.role !== "super_admin") {
         return res.status(403).json({ message: "Super admin access required" });
       }
-      
+
       await fixLogoTypeData();
       res.json({ message: "Logo type data fixed successfully" });
     } catch (error) {
@@ -173,12 +193,12 @@ export function registerAssetRoutes(app: Express) {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      
+
       const user = await storage.getUser(req.session.userId);
       if (!user || user.role !== "super_admin") {
         return res.status(403).json({ message: "Super admin access required" });
       }
-      
+
       await updateClientLogosFromAssets();
       res.json({ message: "Client logos updated successfully" });
     } catch (error) {
@@ -776,7 +796,6 @@ export function registerAssetRoutes(app: Express) {
             // We'll continue even if conversion fails since the original asset was saved
           }
 
-
           return res.status(201).json(asset);
         } else {
           // Font category but not Google - should not happen with current UI
@@ -868,8 +887,12 @@ export function registerAssetRoutes(app: Express) {
               : asset.data;
 
           if (isDarkVariant) {
-            console.log(`[DARK VARIANT UPLOAD] Uploading dark variant for asset ${assetId}`);
-            console.log(`[DARK VARIANT UPLOAD] File size: ${file.buffer.length} bytes, format: ${fileExtension}`);
+            console.log(
+              `[DARK VARIANT UPLOAD] Uploading dark variant for asset ${assetId}`
+            );
+            console.log(
+              `[DARK VARIANT UPLOAD] File size: ${file.buffer.length} bytes, format: ${fileExtension}`
+            );
 
             parsed = {
               success: true,
@@ -1058,13 +1081,18 @@ export function registerAssetRoutes(app: Express) {
         try {
           if (asset.category === "logo" && parsed.data) {
             const data = parsed.data as any;
-            const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            const assetData =
+              typeof asset.data === "string"
+                ? JSON.parse(asset.data)
+                : asset.data;
             const logoType = data.data?.type || assetData?.type;
-            
+
             if (logoType === "square" || logoType === "favicon") {
               const logoUrl = `/api/clients/${clientId}/assets/${asset.id}/download`;
               await storage.updateClient(clientId, { logo: logoUrl });
-              console.log(`Updated client ${clientId} logo to: ${logoUrl} (via update)`);
+              console.log(
+                `Updated client ${clientId} logo to: ${logoUrl} (via update)`
+              );
             }
           }
         } catch (logoUpdateError: unknown) {
@@ -1192,69 +1220,91 @@ export function registerAssetRoutes(app: Express) {
   );
 
   // New optimized asset serving endpoints for better caching
-  app.get("/api/assets/:assetId/light", async (req: RequestWithClientId, res: Response) => {
-    // Call the file handler directly with the same logic but without variant
-    const assetId = parseInt(req.params.assetId, 10);
-    
-    try {
-      const asset = await storage.getAsset(assetId);
+  app.get(
+    "/api/assets/:assetId/light",
+    async (req: RequestWithClientId, res: Response) => {
+      // Call the file handler directly with the same logic but without variant
+      const assetId = parseInt(req.params.assetId, 10);
 
-      if (!asset) {
-        return res.status(404).json({ message: "Asset not found" });
-      }
+      try {
+        const asset = await storage.getAsset(assetId);
 
-      if (!asset.fileData) {
-        return res.status(404).json({ message: "Asset file data not found" });
-      }
-
-      const mimeType = asset.mimeType || "application/octet-stream";
-      const fileBuffer = Buffer.from(asset.fileData, "base64");
-
-      res.setHeader("Content-Type", mimeType);
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      return res.send(fileBuffer);
-    } catch (error: unknown) {
-      console.error("Error serving light asset:", error instanceof Error ? error.message : "Unknown error");
-      res.status(500).json({ message: "Error serving asset file" });
-    }
-  });
-
-  app.get("/api/assets/:assetId/dark", async (req: RequestWithClientId, res: Response) => {
-    // Call the file handler directly with dark variant logic
-    const assetId = parseInt(req.params.assetId, 10);
-    
-    try {
-      const asset = await storage.getAsset(assetId);
-
-      if (!asset) {
-        return res.status(404).json({ message: "Asset not found" });
-      }
-
-      // Get dark variant buffer
-      let fileBuffer: Buffer;
-      let mimeType: string;
-
-      if (asset.category === "logo") {
-        const darkBuffer = getDarkVariantBuffer(asset);
-        if (darkBuffer) {
-          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-          mimeType = data.darkVariantMimeType || asset.mimeType || "application/octet-stream";
-          fileBuffer = darkBuffer;
-        } else {
-          return res.status(404).json({ message: "Dark variant file data not found" });
+        if (!asset) {
+          return res.status(404).json({ message: "Asset not found" });
         }
-      } else {
-        return res.status(400).json({ message: "Dark variant only available for logo assets" });
-      }
 
-      res.setHeader("Content-Type", mimeType);
-      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-      return res.send(fileBuffer);
-    } catch (error: unknown) {
-      console.error("Error serving dark asset:", error instanceof Error ? error.message : "Unknown error");
-      res.status(500).json({ message: "Error serving asset file" });
+        if (!asset.fileData) {
+          return res.status(404).json({ message: "Asset file data not found" });
+        }
+
+        const mimeType = asset.mimeType || "application/octet-stream";
+        const fileBuffer = Buffer.from(asset.fileData, "base64");
+
+        res.setHeader("Content-Type", mimeType);
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.send(fileBuffer);
+      } catch (error: unknown) {
+        console.error(
+          "Error serving light asset:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error serving asset file" });
+      }
     }
-  });
+  );
+
+  app.get(
+    "/api/assets/:assetId/dark",
+    async (req: RequestWithClientId, res: Response) => {
+      // Call the file handler directly with dark variant logic
+      const assetId = parseInt(req.params.assetId, 10);
+
+      try {
+        const asset = await storage.getAsset(assetId);
+
+        if (!asset) {
+          return res.status(404).json({ message: "Asset not found" });
+        }
+
+        // Get dark variant buffer
+        let fileBuffer: Buffer;
+        let mimeType: string;
+
+        if (asset.category === "logo") {
+          const darkBuffer = getDarkVariantBuffer(asset);
+          if (darkBuffer) {
+            const data =
+              typeof asset.data === "string"
+                ? JSON.parse(asset.data)
+                : asset.data;
+            mimeType =
+              data.darkVariantMimeType ||
+              asset.mimeType ||
+              "application/octet-stream";
+            fileBuffer = darkBuffer;
+          } else {
+            return res
+              .status(404)
+              .json({ message: "Dark variant file data not found" });
+          }
+        } else {
+          return res
+            .status(400)
+            .json({ message: "Dark variant only available for logo assets" });
+        }
+
+        res.setHeader("Content-Type", mimeType);
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        return res.send(fileBuffer);
+      } catch (error: unknown) {
+        console.error(
+          "Error serving dark asset:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error serving asset file" });
+      }
+    }
+  );
 
   // Serve asset endpoint
   app.get(
@@ -1271,7 +1321,6 @@ export function registerAssetRoutes(app: Express) {
         const clientIdParam = req.query.clientId
           ? parseInt(req.query.clientId as string, 10)
           : null;
-
 
         // Parse size as percentage or exact pixels
         let size: number | undefined;
@@ -1352,9 +1401,12 @@ export function registerAssetRoutes(app: Express) {
 
           // For dark variants, check if the asset actually has a dark variant
           if (isDarkVariant) {
-            const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            const data =
+              typeof asset.data === "string"
+                ? JSON.parse(asset.data)
+                : asset.data;
             const hasDarkVariant = data?.hasDarkVariant === true;
-            const hasDarkVariantFileData = data?.darkVariantFileData ? true : false;
+            const hasDarkVariantFileData = !!data?.darkVariantFileData;
 
             if (!hasDarkVariant && !hasDarkVariantFileData) {
               // Fall back to light variant
@@ -1364,25 +1416,37 @@ export function registerAssetRoutes(app: Express) {
                 false
               );
 
-              if (convertedAsset && convertedAsset.originalAssetId === assetId) {
+              if (
+                convertedAsset &&
+                convertedAsset.originalAssetId === assetId
+              ) {
                 mimeType = convertedAsset.mimeType;
                 fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
               } else {
                 // Convert on-the-fly from light variant
                 if (!asset.fileData) {
                   console.error("Asset fileData is null");
-                  return res.status(400).json({ message: "Asset file data not found" });
+                  return res
+                    .status(400)
+                    .json({ message: "Asset file data not found" });
                 }
                 const sourceBuffer = Buffer.from(asset.fileData, "base64");
                 const sourceFormat = data.format;
 
                 try {
-                  const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
+                  const result = await convertToFormat(
+                    sourceBuffer,
+                    sourceFormat,
+                    format,
+                    assetId
+                  );
                   fileBuffer = result.data;
                   mimeType = result.mimeType;
                 } catch (conversionError) {
                   console.error("Format conversion failed:", conversionError);
-                  return res.status(400).json({ message: "Format conversion failed" });
+                  return res
+                    .status(400)
+                    .json({ message: "Format conversion failed" });
                 }
               }
             } else {
@@ -1393,7 +1457,7 @@ export function registerAssetRoutes(app: Express) {
                 isDarkVariant
               );
 
-          if (convertedAsset) {
+              if (convertedAsset) {
                 console.log(
                   `Found converted asset - ID: ${convertedAsset.id}, Original ID: ${convertedAsset.originalAssetId}, Format: ${convertedAsset.format}, Dark: ${convertedAsset.isDarkVariant}`
                 );
@@ -1415,14 +1479,24 @@ export function registerAssetRoutes(app: Express) {
                 // Convert on-the-fly from dark variant
                 const darkBuffer = getDarkVariantBuffer(asset);
                 if (!darkBuffer) {
-                  return res.status(404).json({ message: "Dark variant file data not found" });
+                  return res
+                    .status(404)
+                    .json({ message: "Dark variant file data not found" });
                 }
 
-                const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+                const data =
+                  typeof asset.data === "string"
+                    ? JSON.parse(asset.data)
+                    : asset.data;
                 const sourceFormat = data.darkVariantFormat || data.format;
 
                 try {
-                  const result = await convertToFormat(darkBuffer, sourceFormat, format, assetId);
+                  const result = await convertToFormat(
+                    darkBuffer,
+                    sourceFormat,
+                    format,
+                    assetId
+                  );
                   fileBuffer = result.data;
                   mimeType = result.mimeType;
 
@@ -1435,13 +1509,23 @@ export function registerAssetRoutes(app: Express) {
                       mimeType,
                       isDarkVariant: true,
                     });
-                    console.log(`Successfully stored dark variant converted asset format ${format} for asset ID ${assetId}`);
+                    console.log(
+                      `Successfully stored dark variant converted asset format ${format} for asset ID ${assetId}`
+                    );
                   } catch (storeError) {
-                    console.error("Failed to store dark variant converted asset:", storeError);
+                    console.error(
+                      "Failed to store dark variant converted asset:",
+                      storeError
+                    );
                   }
                 } catch (conversionError) {
-                  console.error("Dark variant format conversion failed:", conversionError);
-                  return res.status(400).json({ message: "Dark variant format conversion failed" });
+                  console.error(
+                    "Dark variant format conversion failed:",
+                    conversionError
+                  );
+                  return res
+                    .status(400)
+                    .json({ message: "Dark variant format conversion failed" });
                 }
               }
             }
@@ -1464,18 +1548,30 @@ export function registerAssetRoutes(app: Express) {
               fileBuffer = Buffer.from(convertedAsset.fileData, "base64");
             } else {
               // Convert on-the-fly
-              console.log(`Requested format ${format} not found, converting on-the-fly`);
+              console.log(
+                `Requested format ${format} not found, converting on-the-fly`
+              );
 
               if (!asset.fileData) {
                 console.error("Asset fileData is null");
-                return res.status(400).json({ message: "Asset file data not found" });
+                return res
+                  .status(400)
+                  .json({ message: "Asset file data not found" });
               }
               const sourceBuffer = Buffer.from(asset.fileData, "base64");
-              const assetData = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+              const assetData =
+                typeof asset.data === "string"
+                  ? JSON.parse(asset.data)
+                  : asset.data;
               const sourceFormat = assetData?.format || "png";
 
               try {
-                const result = await convertToFormat(sourceBuffer, sourceFormat, format, assetId);
+                const result = await convertToFormat(
+                  sourceBuffer,
+                  sourceFormat,
+                  format,
+                  assetId
+                );
                 fileBuffer = result.data;
                 mimeType = result.mimeType;
 
@@ -1488,13 +1584,17 @@ export function registerAssetRoutes(app: Express) {
                     mimeType,
                     isDarkVariant: false,
                   });
-                  console.log(`Successfully stored converted asset format ${format} for asset ID ${assetId}`);
+                  console.log(
+                    `Successfully stored converted asset format ${format} for asset ID ${assetId}`
+                  );
                 } catch (storeError) {
                   console.error("Failed to store converted asset:", storeError);
                 }
               } catch (conversionError) {
                 console.error("Format conversion failed:", conversionError);
-                return res.status(400).json({ message: "Format conversion failed" });
+                return res
+                  .status(400)
+                  .json({ message: "Format conversion failed" });
               }
             }
           }
@@ -1514,7 +1614,6 @@ export function registerAssetRoutes(app: Express) {
               "application/octet-stream";
             fileBuffer = darkBuffer;
           } else {
-
             return res
               .status(404)
               .json({ message: "Dark variant file data not found" });
@@ -1535,9 +1634,10 @@ export function registerAssetRoutes(app: Express) {
         // Skip resizing for vector formats like SVG, AI, EPS, and PDF
         // preserveVector is already declared above
         const isVectorFormat =
-          (mimeType && ["image/svg+xml", "application/postscript", "application/pdf"].some(
-            (type) => mimeType!.includes(type)
-          )) ||
+          (mimeType &&
+            ["image/svg+xml", "application/postscript", "application/pdf"].some(
+              (type) => mimeType?.includes(type)
+            )) ||
           ["svg", "ai", "eps", "pdf"].includes(format?.toLowerCase() || "");
 
         // Fix content type for specific vector formats to ensure proper download
@@ -1690,7 +1790,9 @@ export function registerAssetRoutes(app: Express) {
 
         if (!fileBuffer || !mimeType) {
           console.error("Failed to prepare file buffer or mime type");
-          return res.status(500).json({ message: "Failed to serve asset file" });
+          return res
+            .status(500)
+            .json({ message: "Failed to serve asset file" });
         }
 
         res.setHeader("Content-Type", mimeType);
@@ -1784,6 +1886,21 @@ export function registerAssetRoutes(app: Express) {
     }
   }
 
+  // Direct download endpoint without client ID (for public/direct access)
+  app.get(
+    "/api/assets/:assetId/download",
+    async (req, res: Response) => {
+      // Redirect to the existing /file endpoint with the same parameters
+      const assetId = req.params.assetId;
+      const query = new URLSearchParams(req.query as Record<string, string>);
+      const queryString = query.toString();
+      const redirectUrl = `/api/assets/${assetId}/file${queryString ? `?${queryString}` : ""}`;
+
+      console.log(`Redirecting direct /download request to: ${redirectUrl}`);
+      return res.redirect(302, redirectUrl);
+    }
+  );
+
   // Add the missing /download endpoint that matches the URLs being generated
   app.get(
     "/api/clients/:clientId/assets/:assetId/download",
@@ -1794,7 +1911,7 @@ export function registerAssetRoutes(app: Express) {
       const query = new URLSearchParams(req.query as Record<string, string>);
       const queryString = query.toString();
       const redirectUrl = `/api/assets/${assetId}/file${queryString ? `?${queryString}` : ""}`;
-      
+
       console.log(`Redirecting /download request to: ${redirectUrl}`);
       return res.redirect(302, redirectUrl);
     }

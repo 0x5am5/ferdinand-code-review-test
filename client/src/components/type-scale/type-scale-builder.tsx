@@ -1,6 +1,5 @@
 import type { TypeScale, TypeStyle } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
 import { Code, Download, Eye, Plus, Save } from "lucide-react";
 import { useId, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -523,12 +522,7 @@ export function TypeScaleBuilder({
                 </div>
 
                 {selectedRatio === "Custom" && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-2"
-                  >
+                  <div className="space-y-2">
                     <Label htmlFor="customRatio">Custom Ratio</Label>
                     <div className="space-y-2">
                       <Slider
@@ -543,7 +537,7 @@ export function TypeScaleBuilder({
                         {customRatio.toFixed(3)}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 )}
 
                 <div className="space-y-2">

@@ -253,6 +253,7 @@ export function FileUpload({
               className="hidden"
             />
             <button
+              type="button"
               className={`logo-upload__dropzone ${isDragging ? "logo-upload__dropzone--active" : ""} ${createLogo.isPending ? "logo-upload__dropzone--loading" : ""}`}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragLeave}

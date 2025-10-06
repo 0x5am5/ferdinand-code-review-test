@@ -242,6 +242,8 @@ export function DarkVariantUploader({
       </div>
 
       <div
+        role="button"
+        tabIndex={0}
         className={`logo-upload__dropzone logo-upload__dropzone--dark flex flex-col items-center justify-center ${
           isDarkVariantDragging ? "logo-upload__dropzone--active" : ""
         }`}

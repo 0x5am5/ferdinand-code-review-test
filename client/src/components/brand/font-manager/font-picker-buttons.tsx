@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { Plus, Type } from "lucide-react";
 import type { FontPickerButtonsProps } from "./types";
 
@@ -9,10 +8,16 @@ export function FontPickerButtons({
 }: FontPickerButtonsProps) {
   return (
     <div className="grid grid-cols-3 gap-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onGoogleFontClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onGoogleFontClick();
+          }
+        }}
         className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
         style={{ minHeight: "200px" }}
       >
@@ -25,12 +30,18 @@ export function FontPickerButtons({
             Browse Google Fonts
           </p>
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onAdobeFontClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onAdobeFontClick();
+          }
+        }}
         className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
         style={{ minHeight: "200px" }}
       >
@@ -43,12 +54,18 @@ export function FontPickerButtons({
             Browse Adobe Fonts
           </p>
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onCustomFontClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onCustomFontClick();
+          }
+        }}
         className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
         style={{ minHeight: "200px" }}
       >
@@ -61,7 +78,7 @@ export function FontPickerButtons({
             Upload font files
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

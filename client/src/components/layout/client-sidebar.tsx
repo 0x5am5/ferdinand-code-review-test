@@ -1,15 +1,12 @@
 import type { BrandAsset } from "@shared/schema";
 import { UserRole } from "@shared/schema";
-import React, { FC, useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft,
   BookText,
   BuildingIcon,
   ChevronDown,
   CircleUserIcon,
-  Figma,
+  FolderOpen,
   Image,
   LayoutDashboard,
   LogOutIcon,
@@ -19,6 +16,8 @@ import {
   Users,
   UsersIcon,
 } from "lucide-react";
+import { type FC, useEffect, useState } from "react";
+import { useLocation } from "wouter";
 import { SpotlightSearch } from "@/components/search/spotlight-search";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { useSpotlight } from "@/hooks/use-spotlight";
@@ -43,6 +43,7 @@ interface ClientSidebarProps {
     inspiration: boolean;
     figmaIntegration: boolean;
     slackIntegration: boolean;
+    assetManagement: boolean;
   };
   activeTab?: string;
   onTabChange: (tab: string) => void;
@@ -69,7 +70,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
   const logoAssets = clientAssets.filter((asset) => asset.category === "logo");
 
-  const { data: allClients, isLoading: clientsIsLoading } = useClientsQuery();
+  const { data: allClients } = useClientsQuery();
 
   // Keep internal state synced with prop
   useEffect(() => {
@@ -87,13 +88,13 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
 
     window.addEventListener(
       "client-tab-change",
-      handleTabChangeEvent as EventListener,
+      handleTabChangeEvent as EventListener
     );
 
     return () => {
       window.removeEventListener(
         "client-tab-change",
-        handleTabChangeEvent as EventListener,
+        handleTabChangeEvent as EventListener
       );
     };
   }, []);
@@ -113,7 +114,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
     } catch (error: unknown) {
       console.error(
         "Logout error:",
-        error instanceof Error ? error.message : "Unknown error",
+        error instanceof Error ? error.message : "Unknown error"
       );
     }
   };
@@ -163,10 +164,17 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       enabled: featureToggles.inspiration,
     },
     {
+      id: "assets",
+      title: "Brand Assets",
+      icon: <FolderOpen className="h-4 w-4" />,
+      enabled: featureToggles.assetManagement,
+    },
+    {
       id: "design-system",
       title: "Integrations",
       icon: <Settings className="h-4 w-4" />,
-      enabled: (featureToggles.figmaIntegration || featureToggles.slackIntegration) &&
+      enabled:
+        (featureToggles.figmaIntegration || featureToggles.slackIntegration) &&
         (user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN),
     },
   ];
@@ -213,7 +221,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error",
+                e instanceof Error ? e.message : "Unknown error"
               );
               return false;
             }
@@ -229,7 +237,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
             } catch (e: unknown) {
               console.error(
                 "Error parsing logo data:",
-                e instanceof Error ? e.message : "Unknown error",
+                e instanceof Error ? e.message : "Unknown error"
               );
               return false;
             }
@@ -253,7 +261,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
                     // On error, revert to the client name as fallback
                     e.currentTarget.insertAdjacentHTML(
                       "afterend",
-                      `<h2 class="font-bold">${clientName}</h2>`,
+                      `<h2 class="font-bold">${clientName}</h2>`
                     );
                   }}
                 />

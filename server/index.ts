@@ -8,10 +8,10 @@ import express, {
   type Response,
 } from "express";
 import session from "express-session";
+import { devAuthBypass } from "./middlewares/devAuth";
 import { runMigrations } from "./migrations";
 import { registerRoutes } from "./routes";
 import { log, serveStatic, setupVite } from "./vite";
-import { devAuthBypass } from "./middlewares/devAuth";
 
 const app = express();
 let server: ReturnType<typeof createServer> | null = null;

@@ -22,7 +22,18 @@ export function ColorBlock({ hex, onClick }: ColorBlockProps) {
   };
 
   return (
-    <div className="relative cursor-pointer group" onClick={handleClick}>
+    <div
+      role="button"
+      tabIndex={0}
+      className="relative cursor-pointer group"
+      onClick={handleClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+    >
       <div
         className="rounded-md transition-all duration-200 group-hover:ring-2 ring-primary/20"
         style={{ backgroundColor: hex, height: onClick ? "8rem" : "1.5rem" }}

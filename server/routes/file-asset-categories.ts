@@ -3,7 +3,7 @@ import {
   insertAssetCategorySchema,
   UserRole,
 } from "@shared/schema";
-import { and, eq, isNull, or } from "drizzle-orm";
+import { eq, isNull, or } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
 import { validateClientId } from "../middlewares/vaildateClientId";
@@ -20,12 +20,33 @@ const checkAdminPermission = async (userId: number): Promise<boolean> => {
     return false;
   }
 
-  return (
-    user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN
-  );
+  return user.role === UserRole.SUPER_ADMIN || user.role === UserRole.ADMIN;
 };
 
 export function registerFileAssetCategoryRoutes(app: Express) {
+  // Get all categories (global endpoint for frontend queries)
+  app.get("/api/asset-categories", async (req, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get all system default categories (clientId is null)
+      const categories = await db
+        .select()
+        .from(assetCategories)
+        .where(isNull(assetCategories.clientId));
+
+      res.json(categories);
+    } catch (error: unknown) {
+      console.error(
+        "Error fetching asset categories:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error fetching asset categories" });
+    }
+  });
+
   // Get all categories (system defaults + client-specific)
   app.get(
     "/api/clients/:clientId/file-asset-categories",
@@ -81,9 +102,7 @@ export function registerFileAssetCategoryRoutes(app: Express) {
         // Check if user is admin
         const isAdmin = await checkAdminPermission(req.session.userId);
         if (!isAdmin) {
-          return res
-            .status(403)
-            .json({ message: "Admin access required" });
+          return res.status(403).json({ message: "Admin access required" });
         }
 
         const { name, slug, isDefault } = req.body;
@@ -130,9 +149,7 @@ export function registerFileAssetCategoryRoutes(app: Express) {
         // Check if user is admin
         const isAdmin = await checkAdminPermission(req.session.userId);
         if (!isAdmin) {
-          return res
-            .status(403)
-            .json({ message: "Admin access required" });
+          return res.status(403).json({ message: "Admin access required" });
         }
 
         const categoryId = parseInt(req.params.categoryId, 10);
@@ -205,9 +222,7 @@ export function registerFileAssetCategoryRoutes(app: Express) {
         // Check if user is admin
         const isAdmin = await checkAdminPermission(req.session.userId);
         if (!isAdmin) {
-          return res
-            .status(403)
-            .json({ message: "Admin access required" });
+          return res.status(403).json({ message: "Admin access required" });
         }
 
         const categoryId = parseInt(req.params.categoryId, 10);

@@ -107,7 +107,7 @@ function ClientLogo({
               ? JSON.parse(asset.data)
               : asset.data;
           return data?.type === type;
-        } catch (e) {
+        } catch (_e) {
           return false;
         }
       });
@@ -166,6 +166,7 @@ export default function Dashboard() {
     inspiration: true,
     figmaIntegration: false,
     slackIntegration: false,
+    assetManagement: false,
   });
 
   // Define form before any useEffect hooks that use it
@@ -309,6 +310,7 @@ export default function Dashboard() {
           slackIntegration: Boolean(
             featureTogglesObj.slackIntegration ?? false
           ),
+          assetManagement: Boolean(featureTogglesObj.assetManagement ?? false),
         };
         setFeatureToggles(toggles);
       } else {
@@ -321,6 +323,7 @@ export default function Dashboard() {
           inspiration: true,
           figmaIntegration: false,
           slackIntegration: false,
+          assetManagement: false,
         });
       }
     } else {
@@ -341,6 +344,7 @@ export default function Dashboard() {
         inspiration: true,
         figmaIntegration: false,
         slackIntegration: false,
+        assetManagement: false,
       });
     }
   }, [editingClient, form]);

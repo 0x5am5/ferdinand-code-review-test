@@ -20,7 +20,6 @@ interface PersonaMetrics {
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -74,13 +73,7 @@ function PersonaCard({
   );
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      className="relative p-6 border rounded-lg bg-white shadow-sm group"
-    >
+    <div className="relative p-6 border rounded-lg bg-white shadow-sm group">
       {isAbleToEdit && (
         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="icon" onClick={onEdit}>
@@ -147,18 +140,23 @@ function PersonaCard({
           <p className="text-sm">{persona.painPoints?.join(", ")}</p>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 function AddPersonaCard({ onClick }: { onClick: () => void }) {
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
+    <div
+      role="button"
+      tabIndex={0}
       className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       style={{ minHeight: "300px" }}
     >
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -170,7 +168,7 @@ function AddPersonaCard({ onClick }: { onClick: () => void }) {
           Create a new user persona profile
         </p>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -414,16 +412,14 @@ export function PersonaManager({
 
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AnimatePresence>
-            {personas.map((persona) => (
-              <PersonaCard
-                key={persona.id}
-                persona={persona}
-                onEdit={() => setEditingPersona(persona)}
-                onDelete={() => deletePersona.mutate(persona.id)}
-              />
-            ))}
-          </AnimatePresence>
+          {personas.map((persona) => (
+            <PersonaCard
+              key={persona.id}
+              persona={persona}
+              onEdit={() => setEditingPersona(persona)}
+              onDelete={() => deletePersona.mutate(persona.id)}
+            />
+          ))}
           {isAbleToEdit && (
             <AddPersonaCard onClick={() => setIsAddingPersona(true)} />
           )}

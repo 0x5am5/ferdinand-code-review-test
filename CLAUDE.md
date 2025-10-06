@@ -122,4 +122,5 @@ Create appropriate tests for any new features, workflows, helpers. Focus on test
 make sure all typescript errors are resolved
 CLAUDE.md file and replit.md file should be in sync
 Any authentication/permission should ALWAYS be enforced on the backend
+run biome checks after each tasks to fix linting and coding errors
 ```

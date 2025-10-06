@@ -11,7 +11,7 @@ import {
   X,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import "../../styles/components/color-picker-popover.scss";
 import type { BrandAsset } from "@shared/schema";
@@ -113,7 +113,7 @@ function ColorCard({
   neutralColorsCount?: number;
   onUpdate?: (
     colorId: number,
-    updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string },
+    updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }
   ) => void;
   clientId: number;
 }) {
@@ -124,7 +124,7 @@ function ColorCard({
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
   const [pantoneValue, setPantoneValue] = useState("");
   const [copiedFormats, setCopiedFormats] = useState<Record<string, boolean>>(
-    {},
+    {}
   );
 
   // Load saved Pantone value on mount
@@ -161,7 +161,7 @@ function ColorCard({
             category: data.category,
             data: data.data,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -198,7 +198,7 @@ function ColorCard({
             }
             return asset;
           });
-        },
+        }
       );
 
       // Return a context object with the snapshotted value
@@ -208,7 +208,7 @@ function ColorCard({
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(
         [`/api/clients/${clientId}/assets`],
-        context?.previousAssets,
+        context?.previousAssets
       );
 
       toast({
@@ -232,13 +232,13 @@ function ColorCard({
   });
   const [isEditing, setIsEditing] = useState(false);
   const [tempColor, setTempColor] = useState(
-    color.data.colors[0]?.hex || "#000000",
+    color.data.colors[0]?.hex || "#000000"
   );
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempName, setTempName] = useState(color.name);
   const [activeTab, setActiveTab] = useState<"color" | "gradient">("color");
   const [gradientType, setGradientType] = useState<"linear" | "radial">(
-    "linear",
+    "linear"
   );
   const [gradientStops, setGradientStops] = useState([
     { color: "#D9D9D9", position: 0 },
@@ -382,7 +382,7 @@ function ColorCard({
         color.data.gradient.stops || [
           { color: "#D9D9D9", position: 0 },
           { color: "#737373", position: 100 },
-        ],
+        ]
       );
     } else {
       setActiveTab("color");
@@ -435,7 +435,7 @@ function ColorCard({
               });
             }
           },
-        },
+        }
       );
     } else if (activeTab === "gradient") {
       // Save gradient data
@@ -455,19 +455,19 @@ function ColorCard({
               hexToRgb(
                 gradientStops[0]?.color ||
                   color.data.colors[0]?.hex ||
-                  "#000000",
+                  "#000000"
               ) || "",
             hsl:
               hexToHsl(
                 gradientStops[0]?.color ||
                   color.data.colors[0]?.hex ||
-                  "#000000",
+                  "#000000"
               ) || "",
             cmyk:
               hexToCmyk(
                 gradientStops[0]?.color ||
                   color.data.colors[0]?.hex ||
-                  "#000000",
+                  "#000000"
               ) || "",
           },
         ],
@@ -496,19 +496,19 @@ function ColorCard({
                   hexToRgb(
                     gradientStops[0]?.color ||
                       color.data.colors[0]?.hex ||
-                      "#000000",
+                      "#000000"
                   ) || "",
                 hsl:
                   hexToHsl(
                     gradientStops[0]?.color ||
                       color.data.colors[0]?.hex ||
-                      "#000000",
+                      "#000000"
                   ) || "",
                 cmyk: hexToCmyk(color.data.colors[0]?.hex || "#000000") || "",
               });
             }
           },
-        },
+        }
       );
     }
 
@@ -851,7 +851,7 @@ function ColorCard({
                     e.preventDefault();
                     const rect = e.currentTarget.getBoundingClientRect();
                     const position = Math.round(
-                      ((e.clientX - rect.left) / rect.width) * 100,
+                      ((e.clientX - rect.left) / rect.width) * 100
                     );
                     const newColor =
                       gradientStops.length > 0
@@ -894,8 +894,8 @@ function ColorCard({
                             Math.min(
                               100,
                               ((moveEvent.clientX - rect.left) / rect.width) *
-                                100,
-                            ),
+                                100
+                            )
                           );
 
                           const newStops = [...gradientStops];
@@ -906,11 +906,11 @@ function ColorCard({
                         const handleMouseUp = () => {
                           document.removeEventListener(
                             "mousemove",
-                            handleMouseMove,
+                            handleMouseMove
                           );
                           document.removeEventListener(
                             "mouseup",
-                            handleMouseUp,
+                            handleMouseUp
                           );
                         };
 
@@ -934,8 +934,8 @@ function ColorCard({
                             ? Math.min(
                                 100,
                                 Math.max(
-                                  ...gradientStops.map((s) => s.position),
-                                ) + 20,
+                                  ...gradientStops.map((s) => s.position)
+                                ) + 20
                               )
                             : 50;
                         setGradientStops([
@@ -962,7 +962,7 @@ function ColorCard({
                             const newStops = [...gradientStops];
                             newStops[index].position = Math.max(
                               0,
-                              Math.min(100, parseInt(e.target.value, 10) || 0),
+                              Math.min(100, parseInt(e.target.value, 10) || 0)
                             );
                             setGradientStops(newStops);
                           }}
@@ -978,7 +978,7 @@ function ColorCard({
                         style={{ backgroundColor: stop.color }}
                         onClick={() => {
                           const colorInput = document.querySelector(
-                            `input[data-stop-index="${index}"]`,
+                            `input[data-stop-index="${index}"]`
                           ) as HTMLInputElement;
                           if (colorInput) colorInput.click();
                         }}
@@ -986,7 +986,7 @@ function ColorCard({
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
                             const colorInput = document.querySelector(
-                              `input[data-stop-index="${index}"]`,
+                              `input[data-stop-index="${index}"]`
                             ) as HTMLInputElement;
                             if (colorInput) colorInput.click();
                           }
@@ -1013,7 +1013,7 @@ function ColorCard({
                           const newStops = [...gradientStops];
                           const hex = Math.max(
                             0,
-                            Math.min(255, parseInt(e.target.value, 10) || 0),
+                            Math.min(255, parseInt(e.target.value, 10) || 0)
                           )
                             .toString(16)
                             .padStart(2, "0");
@@ -1032,7 +1032,7 @@ function ColorCard({
                           className="remove-stop-button"
                           onClick={() => {
                             setGradientStops(
-                              gradientStops.filter((_, i) => i !== index),
+                              gradientStops.filter((_, i) => i !== index)
                             );
                           }}
                         >
@@ -1135,7 +1135,7 @@ function ColorCard({
                             ...prev,
                             [`${color.id}-rgb`]: false,
                           })),
-                        2000,
+                        2000
                       );
                       toast({
                         title: "Copied!",
@@ -1180,7 +1180,7 @@ function ColorCard({
                             ...prev,
                             [`${color.id}-hsl`]: false,
                           })),
-                        2000,
+                        2000
                       );
                       toast({
                         title: "Copied!",
@@ -1225,7 +1225,7 @@ function ColorCard({
                             ...prev,
                             [`${color.id}-cmyk`]: false,
                           })),
-                        2000,
+                        2000
                       );
                       toast({
                         title: "Copied!",
@@ -1277,7 +1277,7 @@ function ColorCard({
                               ...prev,
                               [`${color.id}-pantone`]: false,
                             })),
-                          2000,
+                          2000
                         );
                         toast({
                           title: "Copied!",
@@ -1376,7 +1376,7 @@ function hexToCmyk(hex: string) {
 function generateTintsAndShades(
   hex: string,
   tintPercents = [60, 40, 20],
-  shadePercents = [20, 40, 60],
+  shadePercents = [20, 40, 60]
 ) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -1419,7 +1419,7 @@ function _generateContainerColors(baseColor: string) {
 function extractBrandColorProperties(
   brandColors: ColorData[],
   baseGreyHex: string | null = null,
-  regenerationCount = 0,
+  regenerationCount = 0
 ) {
   let baseHue = 0;
   let baseSaturation = 0.02;
@@ -1466,7 +1466,7 @@ function extractBrandColorProperties(
   const adjustedHue = (baseHue + variation.hueShift + 360) % 360;
   const adjustedSaturation = Math.min(
     baseSaturation * variation.saturationMultiplier,
-    0.07,
+    0.07
   );
 
   return {
@@ -1531,7 +1531,7 @@ function hslToHex(h: number, s: number, l: number) {
 // Check if a brand color matches a specific color family
 function isColorFamily(
   hex: string,
-  family: "green" | "yellow" | "red" | "blue",
+  family: "green" | "yellow" | "red" | "blue"
 ): boolean {
   const hsl = hexToHslValues(hex);
   if (!hsl) return false;
@@ -1556,16 +1556,16 @@ function isColorFamily(
 function generateInteractiveColors(brandColors: ColorData[]) {
   // First, check if any brand colors match our target families
   const existingGreen = brandColors.find((color) =>
-    isColorFamily(color.hex, "green"),
+    isColorFamily(color.hex, "green")
   );
   const existingYellow = brandColors.find((color) =>
-    isColorFamily(color.hex, "yellow"),
+    isColorFamily(color.hex, "yellow")
   );
   const existingRed = brandColors.find((color) =>
-    isColorFamily(color.hex, "red"),
+    isColorFamily(color.hex, "red")
   );
   const existingBlue = brandColors.find((color) =>
-    isColorFamily(color.hex, "blue"),
+    isColorFamily(color.hex, "blue")
   );
 
   // Extract average saturation and lightness from brand colors
@@ -1653,7 +1653,7 @@ export function ColorManager({
     "brand" | "neutral" | "interactive"
   >("brand");
   const [editingColor, setEditingColor] = useState<ColorBrandAsset | null>(
-    null,
+    null
   );
   const [regenerationCount, setRegenerationCount] = useState(0);
   // We don't need an extra state since colors are derived from props
@@ -1678,7 +1678,7 @@ export function ColorManager({
 
     // Generate missing grey shades based on existing ones
     generateGreyShades(
-      existingColors: Array<ColorData & { brightness: number }>,
+      existingColors: Array<ColorData & { brightness: number }>
     ) {
       const existingLevels = existingColors.map((c) => c.brightness);
       const newShades: Array<{ level: number; hex: string }> = [];
@@ -1746,7 +1746,7 @@ export function ColorManager({
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payload),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -1785,7 +1785,7 @@ export function ColorManager({
         `/api/clients/${clientId}/assets/${colorId}`,
         {
           method: "DELETE",
-        },
+        }
       );
 
       if (!response.ok) {
@@ -1830,7 +1830,7 @@ export function ColorManager({
             category: data.category,
             data: data.data,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -1867,7 +1867,7 @@ export function ColorManager({
             }
             return asset;
           });
-        },
+        }
       );
 
       // Return a context object with the snapshotted value
@@ -1877,7 +1877,7 @@ export function ColorManager({
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(
         [`/api/clients/${clientId}/assets`],
-        context?.previousAssets,
+        context?.previousAssets
       );
 
       toast({
@@ -1896,7 +1896,7 @@ export function ColorManager({
 
   const handleUpdateColor = (
     colorId: number,
-    updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string },
+    updates: { hex: string; rgb?: string; hsl?: string; cmyk?: string }
   ) => {
     const currentColor = colors.find((c) => c.id === colorId);
     if (currentColor) {
@@ -1942,7 +1942,7 @@ export function ColorManager({
     } catch (error: unknown) {
       console.error(
         "Error parsing color asset:",
-        error instanceof Error ? error.message : "Unknown error",
+        error instanceof Error ? error.message : "Unknown error"
       );
       return null;
     }
@@ -1954,7 +1954,7 @@ export function ColorManager({
     .filter((color): color is ColorBrandAsset => color !== null);
 
   const brandColorsData = transformedColors.filter(
-    (c) => c.data.category === "brand",
+    (c) => c.data.category === "brand"
   );
 
   // Sort neutral colors: manual (base grey) first, then generated shades from light to dark (Grey 11 to Grey 1)
@@ -1985,7 +1985,7 @@ export function ColorManager({
     });
 
   const interactiveColorsData = transformedColors.filter(
-    (c) => c.data.category === "interactive",
+    (c) => c.data.category === "interactive"
   );
 
   const handleEditColor = (color: ColorBrandAsset) => {
@@ -2033,7 +2033,7 @@ export function ColorManager({
 
     // Generate the four interactive colors based on brand colors
     const interactiveColors = generateInteractiveColors(
-      brandColorsForGeneration,
+      brandColorsForGeneration
     );
 
     // Create each color using the existing createColor mutation
@@ -2051,7 +2051,7 @@ export function ColorManager({
   const handleGenerateGreyShades = () => {
     // First, update any manually added neutral colors to "Base grey" if they don't have that name
     const manualColors = neutralColorsData.filter(
-      (color) => !/^Grey \d+$/.test(color.name),
+      (color) => !/^Grey \d+$/.test(color.name)
     );
     manualColors.forEach((color, _index) => {
       if (color.name !== "Base grey" && color.id) {
@@ -2075,13 +2075,13 @@ export function ColorManager({
                 },
               ],
               tints: generateTintsAndShades(
-                color.data.colors[0]?.hex || "#000000",
+                color.data.colors[0]?.hex || "#000000"
               ).tints.map((hex, i) => ({
                 percentage: [60, 40, 20][i],
                 hex,
               })),
               shades: generateTintsAndShades(
-                color.data.colors[0]?.hex || "#000000",
+                color.data.colors[0]?.hex || "#000000"
               ).shades.map((hex, i) => ({
                 percentage: [20, 40, 60][i],
                 hex,
@@ -2101,7 +2101,7 @@ export function ColorManager({
 
     // Find the base grey color to use as reference
     const baseGreyColor = neutralColorsData.find(
-      (color) => !/^Grey \d+$/.test(color.name),
+      (color) => !/^Grey \d+$/.test(color.name)
     );
     const baseGreyHex = baseGreyColor?.data.colors[0]?.hex || null;
 
@@ -2118,7 +2118,7 @@ export function ColorManager({
     const { hue, maxSaturation, lightnessShift } = extractBrandColorProperties(
       brandColorsForExtraction,
       baseGreyHex,
-      regenerationCount,
+      regenerationCount
     );
 
     // Generate all 11 shades using new parabolic algorithm
@@ -2135,7 +2135,7 @@ export function ColorManager({
       }
       const lightness = Math.max(
         8,
-        Math.min(98, baseLightness + lightnessShift),
+        Math.min(98, baseLightness + lightnessShift)
       ); // Apply variation with bounds
 
       // Apply parabolic formula: saturation = maxSaturation × (1 - 4 × (lightness - 0.5)²)
@@ -2157,7 +2157,7 @@ export function ColorManager({
       });
 
     const missingShades = allShades.filter(
-      (shade) => !existingGeneratedShades.includes(shade.level),
+      (shade) => !existingGeneratedShades.includes(shade.level)
     );
 
     // Create missing shades
@@ -2197,8 +2197,8 @@ export function ColorManager({
     }));
 
     // For brand colors, we should use colors with category "brand"
-    const filteredBrandColors = brandColors.filter(
-      (color) => color.category === "brand",
+    const _filteredBrandColors = brandColors.filter(
+      (color) => color.category === "brand"
     );
 
     // This part of the logic seems incomplete or redundant if the UI handles
@@ -2208,10 +2208,10 @@ export function ColorManager({
     // For now, assuming the UI handles the addition flow.
   };
 
-  const handleColorChange = (
+  const _handleColorChange = (
     _key: string,
     _value: string,
-    _isBaseColor = false,
+    _isBaseColor = false
   ) => {
     //  Updated color change handling to dynamically generate container and neutral colors
     const updatedDesignSystem = designSystem || [];
@@ -2270,7 +2270,9 @@ export function ColorManager({
                 className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
               >
                 <Palette className="h-8 w-8 text-muted-foreground/70" />
-                <span className="text-sm font-medium text-muted-foreground/70">Generate Brand Colors</span>
+                <span className="text-sm font-medium text-muted-foreground/70">
+                  Generate Brand Colors
+                </span>
               </Button>
 
               <Button
@@ -2284,7 +2286,9 @@ export function ColorManager({
                 className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-muted-foreground/25 hover:border-muted-foreground/50 w-full h-[120px] transition-colors bg-muted/5 hover:bg-muted/10"
               >
                 <Plus className="h-8 w-8 text-muted-foreground/70" />
-                <span className="text-sm font-medium text-muted-foreground/70">Add Color</span>
+                <span className="text-sm font-medium text-muted-foreground/70">
+                  Add Color
+                </span>
               </Button>
             </div>
           }
@@ -2348,7 +2352,9 @@ export function ColorManager({
               >
                 <Palette className="h-8 w-8 text-muted-foreground/70" />
                 <span className="text-sm font-medium text-muted-foreground/70">
-                  {createColor.isPending ? "Generating..." : "Generate Neutral Colors"}
+                  {createColor.isPending
+                    ? "Generating..."
+                    : "Generate Neutral Colors"}
                 </span>
               </Button>
               <Button
@@ -2436,7 +2442,9 @@ export function ColorManager({
               >
                 <Palette className="h-8 w-8 text-muted-foreground/70" />
                 <span className="text-sm font-medium text-muted-foreground/70">
-                  {createColor.isPending ? "Generating..." : "Generate Interactive Colors"}
+                  {createColor.isPending
+                    ? "Generating..."
+                    : "Generate Interactive Colors"}
                 </span>
               </Button>
               <Button

@@ -1,8 +1,18 @@
-
+import { brandAssets } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
-import { brandAssets } from "@shared/schema";
 import { db } from "../../../db";
+import {
+  buildFontConfirmationBlocks,
+  buildFontProcessingMessage,
+  buildFontSummaryMessage,
+  shouldShowFontConfirmation,
+} from "../../../utils/font-display";
+import {
+  generateAdobeFontCSS,
+  generateGoogleFontCSS,
+  hasUploadableFiles,
+} from "../../../utils/font-helpers";
 import {
   decryptBotToken,
   filterFontAssetsByVariant,
@@ -11,17 +21,6 @@ import {
   logSlackActivity,
   uploadFileToSlack,
 } from "../../../utils/slack-helpers";
-import {
-  hasUploadableFiles,
-  generateGoogleFontCSS,
-  generateAdobeFontCSS,
-} from "../../../utils/font-helpers";
-import {
-  buildFontConfirmationBlocks,
-  buildFontProcessingMessage,
-  buildFontSummaryMessage,
-  shouldShowFontConfirmation,
-} from "../../../utils/font-display";
 
 export async function handleFontSubcommand({
   command,
@@ -47,8 +46,8 @@ export async function handleFontSubcommand({
     .where(
       and(
         eq(brandAssets.clientId, workspace.clientId),
-        eq(brandAssets.category, "font"),
-      ),
+        eq(brandAssets.category, "font")
+      )
     );
 
   if (fontAssets.length === 0) {
@@ -75,7 +74,8 @@ export async function handleFontSubcommand({
     return;
   }
 
-  const displayAssets = filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
+  const displayAssets =
+    filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
   auditLog.assetIds = displayAssets.map((asset) => asset.id);
 
   // Check if we have many results and should ask for confirmation
@@ -122,7 +122,7 @@ export async function handleFontSubcommand({
             const downloadUrl = generateAssetDownloadUrl(
               asset.id,
               workspace.clientId,
-              baseUrl,
+              baseUrl
             );
 
             const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
@@ -145,7 +145,7 @@ export async function handleFontSubcommand({
             if (fontInfo.source === "google") {
               codeBlock = generateGoogleFontCSS(
                 fontInfo.title,
-                fontInfo.weights,
+                fontInfo.weights
               );
               fontDescription += `\n• *Source:* Google Fonts`;
             } else if (fontInfo.source === "adobe") {
@@ -174,7 +174,7 @@ export async function handleFontSubcommand({
                 text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
               });
               sentCodeBlocks++;
-            } catch (ephemeralError) {
+            } catch (_ephemeralError) {
               // Fallback to DM
               try {
                 const conversationResponse =
@@ -182,7 +182,10 @@ export async function handleFontSubcommand({
                     users: command.user_id,
                   });
 
-                if (conversationResponse.ok && conversationResponse.channel?.id) {
+                if (
+                  conversationResponse.ok &&
+                  conversationResponse.channel?.id
+                ) {
                   await workspaceClient.chat.postMessage({
                     channel: conversationResponse.channel.id,
                     text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
@@ -190,7 +193,10 @@ export async function handleFontSubcommand({
                   sentCodeBlocks++;
                 }
               } catch (dmError) {
-                console.error(`Failed to send font code via DM for ${fontInfo.title}:`, dmError);
+                console.error(
+                  `Failed to send font code via DM for ${fontInfo.title}:`,
+                  dmError
+                );
               }
             }
           }

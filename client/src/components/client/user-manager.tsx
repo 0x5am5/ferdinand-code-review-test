@@ -269,7 +269,11 @@ export function UserManager({ clientId }: UserManagerProps) {
                   <p className="text-muted-foreground mt-2 mb-4">
                     Invite team members to collaborate on this client
                   </p>
-                  <Button type="button" size="sm" onClick={() => setInviteDialogOpen(true)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setInviteDialogOpen(true)}
+                  >
                     Invite Users
                   </Button>
                 </>

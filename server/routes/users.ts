@@ -163,16 +163,23 @@ export function registerUserRoutes(app: Express) {
             clientName = client.name;
             // Get favicon from brand assets for email
             try {
-              const assets = await storage.getClientAssets(invitationData.clientIds[0]);
-              const logoAssets = assets.filter(asset => asset.category === "logo");
+              const assets = await storage.getClientAssets(
+                invitationData.clientIds[0]
+              );
+              const logoAssets = assets.filter(
+                (asset) => asset.category === "logo"
+              );
               const findLogoByType = (types: string[]) => {
                 for (const type of types) {
-                  const logo = logoAssets.find(asset => {
+                  const logo = logoAssets.find((asset) => {
                     if (!asset.data) return false;
                     try {
-                      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+                      const data =
+                        typeof asset.data === "string"
+                          ? JSON.parse(asset.data)
+                          : asset.data;
                       return data?.type === type;
-                    } catch (e) {
+                    } catch (_e) {
                       return false;
                     }
                   });
@@ -180,9 +187,13 @@ export function registerUserRoutes(app: Express) {
                 }
                 return null;
               };
-              const logoAsset = findLogoByType(["favicon", "square", "horizontal", "main"]) || logoAssets[0];
-              logoUrl = logoAsset ? `/api/assets/${logoAsset.id}/file` : undefined;
-            } catch (e) {
+              const logoAsset =
+                findLogoByType(["favicon", "square", "horizontal", "main"]) ||
+                logoAssets[0];
+              logoUrl = logoAsset
+                ? `/api/assets/${logoAsset.id}/file`
+                : undefined;
+            } catch (_e) {
               logoUrl = undefined;
             }
           }

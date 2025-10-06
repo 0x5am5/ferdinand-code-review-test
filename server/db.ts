@@ -1,4 +1,4 @@
-import { neonConfig, Pool as NeonPool } from "@neondatabase/serverless";
+import { Pool as NeonPool, neonConfig } from "@neondatabase/serverless";
 import * as schema from "@shared/schema";
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
 import { drizzle as drizzleNode } from "drizzle-orm/node-postgres";
@@ -12,9 +12,10 @@ if (!process.env.DATABASE_URL) {
 }
 
 // Determine if we're using a local PostgreSQL or Neon
-const isLocalPostgres = process.env.DATABASE_URL.includes("localhost") || 
-                        process.env.DATABASE_URL.includes("127.0.0.1") ||
-                        process.env.DATABASE_URL.includes("@localhost");
+const isLocalPostgres =
+  process.env.DATABASE_URL.includes("localhost") ||
+  process.env.DATABASE_URL.includes("127.0.0.1") ||
+  process.env.DATABASE_URL.includes("@localhost");
 
 let pool: NeonPool | PgPool;
 let db: ReturnType<typeof drizzleNeon> | ReturnType<typeof drizzleNode>;
@@ -26,12 +27,12 @@ if (isLocalPostgres) {
     connectionString: process.env.DATABASE_URL,
     connectionTimeoutMillis: 5000,
     idleTimeoutMillis: 30000,
-    max: 20
+    max: 20,
   });
 
   // Test the connection
-  pool.on('error', (err) => {
-    console.error('Unexpected error on idle client', err);
+  pool.on("error", (err) => {
+    console.error("Unexpected error on idle client", err);
   });
 
   db = drizzleNode(pool, { schema });
@@ -48,7 +49,7 @@ if (isLocalPostgres) {
   try {
     console.log("Testing database connection...");
     const client = await pool.connect();
-    await client.query('SELECT 1');
+    await client.query("SELECT 1");
     client.release();
     console.log("✓ Database connection successful");
   } catch (err) {

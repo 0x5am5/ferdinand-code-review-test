@@ -1,4 +1,9 @@
-import { createHash, randomBytes, createCipheriv, createDecipheriv } from "node:crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  createHash,
+  randomBytes,
+} from "node:crypto";
 
 /**
  * Generate a cryptographically secure random API token
@@ -15,7 +20,10 @@ export function generateApiToken(length: number = 32): string {
  * @param salt - Optional salt (will generate one if not provided)
  * @returns Object with hash and salt
  */
-export function hashToken(token: string, salt?: string): { hash: string; salt: string } {
+export function hashToken(
+  token: string,
+  salt?: string
+): { hash: string; salt: string } {
   const tokenSalt = salt || randomBytes(16).toString("base64url");
   const hash = createHash("sha256")
     .update(token + tokenSalt)
@@ -31,7 +39,11 @@ export function hashToken(token: string, salt?: string): { hash: string; salt: s
  * @param salt - Salt used for hashing
  * @returns Boolean indicating if token is valid
  */
-export function verifyToken(token: string, hash: string, salt: string): boolean {
+export function verifyToken(
+  token: string,
+  hash: string,
+  salt: string
+): boolean {
   const computedHash = createHash("sha256")
     .update(token + salt)
     .digest("base64url");
@@ -59,15 +71,19 @@ export function generateSecureRandom(
  * @param key - Optional encryption key (uses ENCRYPTION_KEY env var if not provided)
  * @returns Object with encrypted data, IV, and auth tag
  */
-export function encrypt(plaintext: string, key?: string): {
+export function encrypt(
+  plaintext: string,
+  key?: string
+): {
   encrypted: string;
   iv: string;
   authTag: string;
 } {
-
   const encryptionKey = key || process.env.ENCRYPTION_KEY;
   if (!encryptionKey) {
-    throw new Error("Encryption key not provided and ENCRYPTION_KEY environment variable not set");
+    throw new Error(
+      "Encryption key not provided and ENCRYPTION_KEY environment variable not set"
+    );
   }
 
   // Derive a 32-byte key from the provided key
@@ -92,15 +108,19 @@ export function encrypt(plaintext: string, key?: string): {
  * @param key - Optional decryption key (uses ENCRYPTION_KEY env var if not provided)
  * @returns Decrypted plaintext
  */
-export function decrypt(encryptedData: {
-  encrypted: string;
-  iv: string;
-  authTag: string;
-}, key?: string): string {
-
+export function decrypt(
+  encryptedData: {
+    encrypted: string;
+    iv: string;
+    authTag: string;
+  },
+  key?: string
+): string {
   const encryptionKey = key || process.env.ENCRYPTION_KEY;
   if (!encryptionKey) {
-    throw new Error("Decryption key not provided and ENCRYPTION_KEY environment variable not set");
+    throw new Error(
+      "Decryption key not provided and ENCRYPTION_KEY environment variable not set"
+    );
   }
 
   // Derive the same 32-byte key

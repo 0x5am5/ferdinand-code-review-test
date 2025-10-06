@@ -1,4 +1,3 @@
-
 import { logSlackActivity } from "../../utils/slack-helpers";
 
 export async function handleHelpCommand({ command, ack, respond }: any) {

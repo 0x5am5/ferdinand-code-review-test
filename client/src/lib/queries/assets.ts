@@ -1,0 +1,280 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
+import { apiRequest } from "../queryClient";
+
+// Types for assets
+export interface Asset {
+  id: number;
+  clientId: number;
+  uploadedBy: number;
+  fileName: string;
+  originalFileName: string;
+  fileType: string;
+  fileSize: number;
+  storagePath: string;
+  visibility: "private" | "shared";
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt: Date | null;
+  categories?: AssetCategory[];
+  tags?: AssetTag[];
+  uploader?: {
+    id: number;
+    name: string;
+    email: string;
+  };
+}
+
+export interface AssetCategory {
+  id: number;
+  name: string;
+  slug: string;
+  isDefault: boolean;
+  clientId: number | null;
+}
+
+export interface AssetTag {
+  id: number;
+  name: string;
+  slug: string;
+  clientId: number;
+}
+
+export interface AssetFilters {
+  search?: string;
+  categoryId?: number;
+  tagIds?: number[];
+  fileType?: string;
+  visibility?: "private" | "shared";
+  limit?: number;
+  offset?: number;
+}
+
+// Query hooks
+export const useAssetsQuery = (filters?: AssetFilters) => {
+  const params = new URLSearchParams();
+  if (filters?.search) params.append("search", filters.search);
+  if (filters?.categoryId)
+    params.append("categoryId", filters.categoryId.toString());
+  if (filters?.tagIds?.length)
+    params.append("tagIds", filters.tagIds.join(","));
+  if (filters?.fileType) params.append("fileType", filters.fileType);
+  if (filters?.visibility) params.append("visibility", filters.visibility);
+  if (filters?.limit) params.append("limit", filters.limit.toString());
+  if (filters?.offset) params.append("offset", filters.offset.toString());
+
+  const queryString = params.toString();
+  const url = `/api/assets${queryString ? `?${queryString}` : ""}`;
+
+  return useQuery<Asset[]>({
+    queryKey: ["/api/assets", filters],
+    queryFn: async () => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch assets");
+      }
+      return response.json();
+    },
+  });
+};
+
+export const useAssetQuery = (assetId: number | null) =>
+  useQuery<Asset>({
+    queryKey: [`/api/assets/${assetId}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/assets/${assetId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch asset");
+      }
+      return response.json();
+    },
+    enabled: !!assetId,
+  });
+
+export const useAssetCategoriesQuery = () =>
+  useQuery<AssetCategory[]>({
+    queryKey: ["/api/asset-categories"],
+    queryFn: async () => {
+      const response = await fetch("/api/asset-categories");
+      if (!response.ok) {
+        throw new Error("Failed to fetch asset categories");
+      }
+      return response.json();
+    },
+  });
+
+export const useAssetTagsQuery = () =>
+  useQuery<AssetTag[]>({
+    queryKey: ["/api/asset-tags"],
+    queryFn: async () => {
+      const response = await fetch("/api/asset-tags");
+      if (!response.ok) {
+        throw new Error("Failed to fetch asset tags");
+      }
+      return response.json();
+    },
+  });
+
+// Mutation hooks
+export const useUploadAssetMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch("/api/assets/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to upload asset");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/asset-tags"] });
+      toast({
+        title: "Success",
+        description: "Asset uploaded successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateAssetMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Asset> }) => {
+      const response = await apiRequest("PATCH", `/api/assets/${id}`, data);
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      queryClient.invalidateQueries({
+        queryKey: [`/api/assets/${variables.id}`],
+      });
+      toast({
+        title: "Success",
+        description: "Asset updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useDeleteAssetMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/assets/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      toast({
+        title: "Success",
+        description: "Asset deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useCreateCategoryMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { name: string; slug: string }) => {
+      const response = await apiRequest("POST", "/api/asset-categories", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/asset-categories"] });
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Creation failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useCreateTagMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { name: string; slug: string }) => {
+      const response = await apiRequest("POST", "/api/asset-tags", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/asset-tags"] });
+      toast({
+        title: "Success",
+        description: "Tag created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Creation failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useDeleteTagMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/asset-tags/${id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/asset-tags"] });
+      toast({
+        title: "Success",
+        description: "Tag deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};

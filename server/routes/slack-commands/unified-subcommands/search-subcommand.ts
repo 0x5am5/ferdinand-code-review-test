@@ -1,6 +1,5 @@
-
-import { eq } from "drizzle-orm";
 import { brandAssets } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { db } from "../../../db";
 
 export async function handleSearchSubcommand({
@@ -55,7 +54,7 @@ export async function handleSearchSubcommand({
       acc[asset.category].push(asset);
       return acc;
     },
-    {} as Record<string, typeof searchResults>,
+    {} as Record<string, typeof searchResults>
   );
 
   const blocks: any[] = [

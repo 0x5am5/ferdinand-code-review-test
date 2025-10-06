@@ -28,7 +28,7 @@ export async function uploadFile(
   storagePath: string,
   fileBuffer: Buffer
 ): Promise<StorageResult> {
-  if (storageConfig.type === "s3") {
+  if (storageConfig.type === "s3" || storageConfig.type === "r2") {
     return s3Storage.uploadFile(storagePath, fileBuffer);
   }
 
@@ -41,7 +41,7 @@ export async function uploadFile(
 export async function downloadFile(
   storagePath: string
 ): Promise<DownloadResult> {
-  if (storageConfig.type === "s3") {
+  if (storageConfig.type === "s3" || storageConfig.type === "r2") {
     return s3Storage.downloadFile(storagePath);
   }
 
@@ -52,7 +52,7 @@ export async function downloadFile(
  * Delete a file from configured storage backend
  */
 export async function deleteFile(storagePath: string): Promise<StorageResult> {
-  if (storageConfig.type === "s3") {
+  if (storageConfig.type === "s3" || storageConfig.type === "r2") {
     return s3Storage.deleteFile(storagePath);
   }
 
@@ -63,7 +63,7 @@ export async function deleteFile(storagePath: string): Promise<StorageResult> {
  * Check if a file exists in configured storage backend
  */
 export async function fileExists(storagePath: string): Promise<boolean> {
-  if (storageConfig.type === "s3") {
+  if (storageConfig.type === "s3" || storageConfig.type === "r2") {
     return s3Storage.fileExists(storagePath);
   }
 
@@ -72,13 +72,13 @@ export async function fileExists(storagePath: string): Promise<boolean> {
 
 /**
  * Generate a signed URL for temporary file access
- * Only applicable for S3 storage. For local storage, returns the storage path.
+ * Applicable for S3/R2 storage. For local storage, returns the storage path.
  */
 export async function generateSignedUrl(
   storagePath: string,
   expiresIn: number = 3600
 ): Promise<SignedUrlResult> {
-  if (storageConfig.type === "s3") {
+  if (storageConfig.type === "s3" || storageConfig.type === "r2") {
     return s3Storage.generateSignedUrl(storagePath, expiresIn);
   }
 
@@ -93,8 +93,8 @@ export async function generateSignedUrl(
  * Get the full filesystem path for a storage path (local storage only)
  */
 export function getFullPath(storagePath: string): string {
-  if (storageConfig.type === "s3") {
-    throw new Error("getFullPath is not applicable for S3 storage");
+  if (storageConfig.type === "s3" || storageConfig.type === "r2") {
+    throw new Error("getFullPath is not applicable for S3/R2 storage");
   }
 
   return localStorage.getFullPath(storagePath);
@@ -102,10 +102,10 @@ export function getFullPath(storagePath: string): string {
 
 // Re-export utility functions from config
 export {
-  storageConfig,
   generateStoragePath,
   generateUniqueFileName,
   isRiskyFileType,
+  storageConfig,
   validateFileSize,
   validateMimeType,
 } from "./config";
