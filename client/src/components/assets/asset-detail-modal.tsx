@@ -342,7 +342,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
 
             {/* Categories */}
             <div className="space-y-2">
-              <Label>Categories</Label>
+              <Label>Categories ({selectedCategories.length})</Label>
               <div className="flex flex-wrap gap-2">
                 {categories.map((category) => {
                   const isSelected = selectedCategories.includes(category.id);
@@ -363,7 +363,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
 
             {/* Tags */}
             <div className="space-y-2">
-              <Label>Tags</Label>
+              <Label>Tags ({selectedTags.length})</Label>
 
               {/* Existing tags */}
               <div className="flex flex-wrap gap-2">
