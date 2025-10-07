@@ -1,7 +1,10 @@
 import {
   Calendar,
+  Copy,
   Download,
+  ExternalLink,
   FileIcon,
+  Link2,
   Plus,
   Trash2,
   User,
@@ -36,12 +39,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
 import {
   type Asset,
   useAssetCategoriesQuery,
+  useAssetPublicLinksQuery,
   useAssetTagsQuery,
+  useCreatePublicLinkMutation,
   useCreateTagMutation,
   useDeleteAssetMutation,
+  useDeletePublicLinkMutation,
   useUpdateAssetMutation,
 } from "@/lib/queries/assets";
 
@@ -62,6 +69,8 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
   const [newTagInput, setNewTagInput] = useState("");
   const [isCreatingTag, setIsCreatingTag] = useState(false);
   const [visibility, setVisibility] = useState<"private" | "shared">("shared");
+  const [linkExpiry, setLinkExpiry] = useState<string>("7");
+  const { toast } = useToast();
 
   // Update state when asset changes
   useEffect(() => {
@@ -74,9 +83,15 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
 
   const { data: categories = [] } = useAssetCategoriesQuery();
   const { data: tags = [] } = useAssetTagsQuery();
+  const { data: publicLinks = [] } = useAssetPublicLinksQuery(
+    asset?.clientId || 0,
+    asset?.id || 0
+  );
   const updateMutation = useUpdateAssetMutation();
   const deleteMutation = useDeleteAssetMutation();
   const createTagMutation = useCreateTagMutation();
+  const createPublicLinkMutation = useCreatePublicLinkMutation();
+  const deletePublicLinkMutation = useDeletePublicLinkMutation();
 
   if (!asset) return null;
 
@@ -106,7 +121,9 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
     onClose();
   };
 
-  const handleVisibilityChange = async (newVisibility: "private" | "shared") => {
+  const handleVisibilityChange = async (
+    newVisibility: "private" | "shared"
+  ) => {
     setVisibility(newVisibility);
     await updateMutation.mutateAsync({
       id: asset.id,
@@ -170,6 +187,42 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
       e.preventDefault();
       handleCreateTag();
     }
+  };
+
+  const handleCreatePublicLink = async () => {
+    const expiresInDays =
+      linkExpiry === "never" ? null : parseInt(linkExpiry, 10);
+    await createPublicLinkMutation.mutateAsync({
+      clientId: asset.clientId,
+      assetId: asset.id,
+      expiresInDays,
+    });
+  };
+
+  const handleDeletePublicLink = async (linkId: number) => {
+    await deletePublicLinkMutation.mutateAsync({
+      clientId: asset.clientId,
+      assetId: asset.id,
+      linkId,
+    });
+  };
+
+  const handleCopyLink = (token: string) => {
+    const url = `${window.location.origin}/api/public/assets/${token}`;
+    navigator.clipboard.writeText(url);
+    toast({
+      title: "Link copied",
+      description: "Public link copied to clipboard",
+    });
+  };
+
+  const formatExpiryDate = (date: Date | null) => {
+    if (!date) return "Never";
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   const isImage = asset.fileType.startsWith("image/");
@@ -347,6 +400,83 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Add
+                </Button>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Public Links */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                Public Links
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Generate shareable links for this asset
+              </p>
+
+              {/* Existing links */}
+              {publicLinks.length > 0 && (
+                <div className="space-y-2 mt-3">
+                  {publicLinks.map((link) => (
+                    <div
+                      key={link.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-sm font-mono truncate">
+                            {`/public/assets/${link.token.substring(0, 16)}...`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Expires: {formatExpiryDate(link.expiresAt)}
+                        </p>
+                      </div>
+                      <div className="flex gap-1 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCopyLink(link.token)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePublicLink(link.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Create new link */}
+              <div className="flex gap-2 mt-3">
+                <Select value={linkExpiry} onValueChange={setLinkExpiry}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 day</SelectItem>
+                    <SelectItem value="3">3 days</SelectItem>
+                    <SelectItem value="7">7 days</SelectItem>
+                    <SelectItem value="never">No expiry</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCreatePublicLink}
+                  disabled={createPublicLinkMutation.isPending}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Generate Link
                 </Button>
               </div>
             </div>

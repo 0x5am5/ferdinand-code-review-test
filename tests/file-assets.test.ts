@@ -9,9 +9,10 @@
  * 3. Run: npx tsx tests/file-assets.test.ts
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import fs from 'fs';
 import path from 'path';
+import { cleanupTestAssets, cleanupTestCategories, cleanupTestTags } from './helpers/test-server';
 
 const API_BASE = 'http://localhost:3001/api';
 let authCookie: string;
@@ -19,6 +20,11 @@ let testClientId: number;
 let testAssetId: number;
 let testCategoryId: number;
 let testTagId: number;
+
+// Track assets created during tests for cleanup
+const createdAssetIds: number[] = [];
+const createdCategoryIds: number[] = [];
+const createdTagIds: number[] = [];
 
 // Helper to create a test file buffer
 function createTestFile(filename: string, sizeKB = 10): Buffer {
@@ -40,11 +46,73 @@ async function authenticatedFetch(
   });
 }
 
+/**
+ * Track asset ID for cleanup after test
+ */
+function trackAsset(assetId: number): void {
+  if (assetId && !createdAssetIds.includes(assetId)) {
+    createdAssetIds.push(assetId);
+  }
+}
+
+/**
+ * Track category ID for cleanup after test
+ */
+function trackCategory(categoryId: number): void {
+  if (categoryId && !createdCategoryIds.includes(categoryId)) {
+    createdCategoryIds.push(categoryId);
+  }
+}
+
+/**
+ * Track tag ID for cleanup after test
+ */
+function trackTag(tagId: number): void {
+  if (tagId && !createdTagIds.includes(tagId)) {
+    createdTagIds.push(tagId);
+  }
+}
+
 describe('File Asset System', () => {
   beforeAll(async () => {
     // TODO: Implement authentication
     // For now, assumes dev auth bypass is enabled
     testClientId = 1; // Replace with actual test client ID
+  });
+
+  afterEach(async () => {
+    // Clean up any assets created during individual tests
+    if (createdAssetIds.length > 0) {
+      try {
+        await cleanupTestAssets(createdAssetIds);
+        console.log(`Cleaned up ${createdAssetIds.length} test assets`);
+        createdAssetIds.length = 0; // Clear the array
+      } catch (error) {
+        console.warn('Failed to cleanup test assets:', error);
+      }
+    }
+
+    // Clean up any categories created during individual tests
+    if (createdCategoryIds.length > 0) {
+      try {
+        await cleanupTestCategories(createdCategoryIds);
+        console.log(`Cleaned up ${createdCategoryIds.length} test categories`);
+        createdCategoryIds.length = 0; // Clear the array
+      } catch (error) {
+        console.warn('Failed to cleanup test categories:', error);
+      }
+    }
+
+    // Clean up any tags created during individual tests
+    if (createdTagIds.length > 0) {
+      try {
+        await cleanupTestTags(createdTagIds);
+        console.log(`Cleaned up ${createdTagIds.length} test tags`);
+        createdTagIds.length = 0; // Clear the array
+      } catch (error) {
+        console.warn('Failed to cleanup test tags:', error);
+      }
+    }
   });
 
   describe('Asset Upload', () => {
@@ -70,6 +138,7 @@ describe('File Asset System', () => {
       expect(asset).toHaveProperty('clientId', testClientId);
 
       testAssetId = asset.id;
+      trackAsset(asset.id);
     });
 
     it('should reject files exceeding size limit', async () => {
@@ -106,6 +175,7 @@ describe('File Asset System', () => {
       );
       const category = await categoryRes.json();
       testCategoryId = category.id;
+      trackCategory(category.id);
 
       const tagRes = await authenticatedFetch(
         `${API_BASE}/clients/${testClientId}/file-asset-tags`,
@@ -120,6 +190,7 @@ describe('File Asset System', () => {
       );
       const tag = await tagRes.json();
       testTagId = tag.id;
+      trackTag(tag.id);
 
       // Now upload with categories and tags
       const formData = new FormData();
@@ -137,6 +208,10 @@ describe('File Asset System', () => {
       );
 
       expect(response.status).toBe(201);
+      if (response.ok) {
+        const asset = await response.json();
+        trackAsset(asset.id);
+      }
     });
   });
 

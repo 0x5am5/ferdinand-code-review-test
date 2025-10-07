@@ -144,15 +144,37 @@ export async function cleanupTestClient(clientId: number): Promise<void> {
   // Delete assets associated with this client
   const { assets, assetCategoryAssignments, assetTagAssignments, assetCategories, assetTags } = await import('@shared/schema');
 
-  // Delete asset assignments first
+  // Get all assets for this client to clean up their files
   const clientAssets = await db
-    .select({ id: assets.id })
+    .select()
     .from(assets)
     .where(eq(assets.clientId, clientId));
 
   const assetIds = clientAssets.map(a => a.id);
 
   if (assetIds.length > 0) {
+    // Delete physical files and thumbnails for each asset
+    const { deleteFile } = await import('../../server/storage/index');
+    const { deleteThumbnails } = await import('../../server/services/thumbnail');
+
+    for (const asset of clientAssets) {
+      // Delete the actual file
+      if (asset.storagePath) {
+        try {
+          await deleteFile(asset.storagePath);
+        } catch (error) {
+          console.warn(`Failed to delete file for asset ${asset.id}:`, error);
+        }
+      }
+
+      // Delete thumbnails
+      try {
+        await deleteThumbnails(asset.id);
+      } catch (error) {
+        console.warn(`Failed to delete thumbnails for asset ${asset.id}:`, error);
+      }
+    }
+
     // Delete category assignments for all assets
     await db.delete(assetCategoryAssignments).where(
       inArray(assetCategoryAssignments.assetId, assetIds)
@@ -167,7 +189,7 @@ export async function cleanupTestClient(clientId: number): Promise<void> {
   // Delete assets
   await db.delete(assets).where(eq(assets.clientId, clientId));
 
-  // Delete custom categories for this client
+  // Delete custom categories for this client (non-default only)
   await db.delete(assetCategories).where(eq(assetCategories.clientId, clientId));
 
   // Delete custom tags for this client
@@ -175,4 +197,88 @@ export async function cleanupTestClient(clientId: number): Promise<void> {
 
   // Delete client
   await db.delete(clients).where(eq(clients.id, clientId));
+
+  console.log(`Cleaned up client ${clientId}: ${clientAssets.length} assets, files, thumbnails, categories, and tags`);
+}
+
+/**
+ * Clean up uploaded files for specific asset IDs
+ * Useful for cleaning up after individual tests
+ */
+export async function cleanupTestAssets(assetIds: number[]): Promise<void> {
+  if (assetIds.length === 0) return;
+
+  const { assets, assetCategoryAssignments, assetTagAssignments } = await import('@shared/schema');
+  const { deleteFile } = await import('../../server/storage/index');
+  const { deleteThumbnails } = await import('../../server/services/thumbnail');
+
+  // Get assets to clean up their files
+  const assetsToClean = await db
+    .select()
+    .from(assets)
+    .where(inArray(assets.id, assetIds));
+
+  // Delete physical files and thumbnails
+  for (const asset of assetsToClean) {
+    if (asset.storagePath) {
+      try {
+        await deleteFile(asset.storagePath);
+      } catch (error) {
+        console.warn(`Failed to delete file for asset ${asset.id}:`, error);
+      }
+    }
+
+    try {
+      await deleteThumbnails(asset.id);
+    } catch (error) {
+      console.warn(`Failed to delete thumbnails for asset ${asset.id}:`, error);
+    }
+  }
+
+  // Delete category assignments
+  await db.delete(assetCategoryAssignments).where(
+    inArray(assetCategoryAssignments.assetId, assetIds)
+  );
+
+  // Delete tag assignments
+  await db.delete(assetTagAssignments).where(
+    inArray(assetTagAssignments.assetId, assetIds)
+  );
+
+  // Delete asset records
+  await db.delete(assets).where(inArray(assets.id, assetIds));
+}
+
+/**
+ * Clean up categories by ID
+ */
+export async function cleanupTestCategories(categoryIds: number[]): Promise<void> {
+  if (categoryIds.length === 0) return;
+
+  const { assetCategories, assetCategoryAssignments } = await import('@shared/schema');
+
+  // Delete category assignments first
+  await db.delete(assetCategoryAssignments).where(
+    inArray(assetCategoryAssignments.categoryId, categoryIds)
+  );
+
+  // Delete categories
+  await db.delete(assetCategories).where(inArray(assetCategories.id, categoryIds));
+}
+
+/**
+ * Clean up tags by ID
+ */
+export async function cleanupTestTags(tagIds: number[]): Promise<void> {
+  if (tagIds.length === 0) return;
+
+  const { assetTags, assetTagAssignments } = await import('@shared/schema');
+
+  // Delete tag assignments first
+  await db.delete(assetTagAssignments).where(
+    inArray(assetTagAssignments.tagId, tagIds)
+  );
+
+  // Delete tags
+  await db.delete(assetTags).where(inArray(assetTags.id, tagIds));
 }

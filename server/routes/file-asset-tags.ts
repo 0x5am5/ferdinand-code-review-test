@@ -1,4 +1,9 @@
-import { assetTags, insertAssetTagSchema, UserRole } from "@shared/schema";
+import {
+  assetTagAssignments,
+  assetTags,
+  insertAssetTagSchema,
+  UserRole,
+} from "@shared/schema";
 import { eq, inArray } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
@@ -48,14 +53,19 @@ export function registerFileAssetTagRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
         return res.json([]);
       }
 
       // Get tags for all user's clients
-      const clientIds = userClients.map(uc => uc.clientId);
+      const clientIds = userClients.map((uc) => uc.clientId);
       const tags = await db
         .select()
         .from(assetTags)
@@ -82,18 +92,46 @@ export function registerFileAssetTagRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
-        return res.status(400).json({ message: "No client associated with user" });
+        return res
+          .status(400)
+          .json({ message: "No client associated with user" });
       }
 
       const clientId = userClients[0].clientId;
       const { name, slug } = req.body;
 
+      // Normalize tag name to lowercase for consistency
+      const normalizedName = name.trim().toLowerCase();
+      const normalizedSlug = (
+        slug || normalizedName.replace(/\s+/g, "-")
+      ).toLowerCase();
+
+      // Check if tag already exists (case-insensitive)
+      const { sql: rawSql } = await import("drizzle-orm");
+      const existingTag = await db
+        .select()
+        .from(assetTags)
+        .where(
+          rawSql`LOWER(${assetTags.name}) = ${normalizedName} AND ${assetTags.clientId} = ${clientId}`
+        )
+        .limit(1);
+
+      if (existingTag.length > 0) {
+        // Return existing tag instead of creating duplicate
+        return res.status(200).json(existingTag[0]);
+      }
+
       const tagData = {
-        name,
-        slug,
+        name: normalizedName,
+        slug: normalizedSlug,
         clientId,
       };
 
@@ -107,6 +145,44 @@ export function registerFileAssetTagRoutes(app: Express) {
         error instanceof Error ? error.message : "Unknown error"
       );
       res.status(500).json({ message: "Error creating asset tag" });
+    }
+  });
+
+  // Delete a tag (global endpoint)
+  app.delete("/api/asset-tags/:id", async (req, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const tagId = parseInt(req.params.id, 10);
+
+      const permission = await checkTagDeletePermission(
+        req.session.userId,
+        tagId
+      );
+
+      if (!permission.allowed || !permission.tag) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this tag" });
+      }
+
+      // Delete tag assignments first
+      await db
+        .delete(assetTagAssignments)
+        .where(eq(assetTagAssignments.tagId, tagId));
+
+      // Then delete the tag
+      await db.delete(assetTags).where(eq(assetTags.id, tagId));
+
+      res.json({ message: "Tag deleted successfully" });
+    } catch (error: unknown) {
+      console.error(
+        "Error deleting asset tag:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error deleting asset tag" });
     }
   });
 
@@ -158,9 +234,30 @@ export function registerFileAssetTagRoutes(app: Express) {
 
         const { name, slug } = req.body;
 
+        // Normalize tag name to lowercase for consistency
+        const normalizedName = name.trim().toLowerCase();
+        const normalizedSlug = (
+          slug || normalizedName.replace(/\s+/g, "-")
+        ).toLowerCase();
+
+        // Check if tag already exists (case-insensitive)
+        const { sql: rawSql } = await import("drizzle-orm");
+        const existingTag = await db
+          .select()
+          .from(assetTags)
+          .where(
+            rawSql`LOWER(${assetTags.name}) = ${normalizedName} AND ${assetTags.clientId} = ${clientId}`
+          )
+          .limit(1);
+
+        if (existingTag.length > 0) {
+          // Return existing tag instead of creating duplicate
+          return res.status(200).json(existingTag[0]);
+        }
+
         const tagData = {
-          name,
-          slug,
+          name: normalizedName,
+          slug: normalizedSlug,
           clientId,
         };
 
@@ -213,7 +310,12 @@ export function registerFileAssetTagRoutes(app: Express) {
             .json({ message: "Tag does not belong to this client" });
         }
 
-        // Delete the tag (this will cascade delete tag assignments)
+        // Delete tag assignments first
+        await db
+          .delete(assetTagAssignments)
+          .where(eq(assetTagAssignments.tagId, tagId));
+
+        // Then delete the tag
         await db.delete(assetTags).where(eq(assetTags.id, tagId));
 
         res.json({ message: "Tag deleted successfully" });

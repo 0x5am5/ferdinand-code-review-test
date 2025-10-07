@@ -1,102 +1,11 @@
+/* Fonts are loaded via Typekit in index.html */
+/* https://use.typekit.net/ibh8pik.css loads:
+   - ivypresto-display (100, 300, 400, 600 with italics)
+   - roc-grotesk (300, 400, 600, 700)
+   - roc-grotesk-wide (400, 500, 600, 700)
+*/
+
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap");
-
-/* Roc Grotesk - Sans serif font for body text */
-@font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "roc-grotesk";
-  src:
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Roc Grotesk Wide - Extended variant */
-@font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/8e0e59/000000000000000000013365/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n3&v=3")
-    format("woff");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/fe73fc/000000000000000000013366/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n4&v=3")
-    format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/d73eb2/000000000000000000013367/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n5&v=3")
-    format("woff");
-  font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "roc-grotesk-wide";
-  src:
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/l?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff2"),
-    url("https://use.typekit.net/af/e9b30c/000000000000000000013368/27/d?primer=7cdcb44be4a7db8877ffa5c0007b8dd865b3bbc383831fe2ea177f62257a9191&fvd=n6&v=3")
-    format("woff");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
 
 @tailwind base;
 @tailwind components;
@@ -179,7 +88,7 @@
   h1 {
     @apply font-ivy mb-6;
     font-size: var(--heading-1-size);
-    font-weight: var(--heading-weight);
+    font-weight: 400;
     line-height: var(--line-height);
   }
 

@@ -673,7 +673,10 @@ export const assets = pgTable(
     visibilityIdx: index("idx_assets_visibility").on(table.visibility),
     deletedAtIdx: index("idx_assets_deleted_at").on(table.deletedAt),
     // GIN index for full-text search
-    searchVectorIdx: index("idx_assets_search_vector").using("gin", sql`to_tsvector('english', ${table.fileName} || ' ' || ${table.originalFileName})`),
+    searchVectorIdx: index("idx_assets_search_vector").using(
+      "gin",
+      sql`to_tsvector('english', ${table.fileName} || ' ' || ${table.originalFileName})`
+    ),
   })
 );
 
@@ -707,6 +710,11 @@ export const assetTags = pgTable(
   (table) => ({
     clientIdIdx: index("idx_asset_tags_client_id").on(table.clientId),
     slugIdx: index("idx_asset_tags_slug").on(table.slug),
+    // Unique constraint on lowercase name per client
+    uniqueNamePerClient: index("idx_asset_tags_unique_name_client").on(
+      sql`LOWER(${table.name})`,
+      table.clientId
+    ),
   })
 );
 
@@ -746,6 +754,29 @@ export const assetTagAssignments = pgTable(
     pk: index("pk_asset_tag_assignments").on(table.assetId, table.tagId),
     assetIdIdx: index("idx_asset_tag_assignments_asset").on(table.assetId),
     tagIdIdx: index("idx_asset_tag_assignments_tag").on(table.tagId),
+  })
+);
+
+export const assetPublicLinks = pgTable(
+  "asset_public_links",
+  {
+    id: serial("id").primaryKey(),
+    assetId: integer("asset_id")
+      .notNull()
+      .references(() => assets.id),
+    token: text("token").notNull().unique(), // Random URL-safe token
+    createdBy: integer("created_by")
+      .notNull()
+      .references(() => users.id),
+    expiresAt: timestamp("expires_at"), // null = no expiry
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    assetIdIdx: index("idx_asset_public_links_asset_id").on(table.assetId),
+    tokenIdx: index("idx_asset_public_links_token").on(table.token),
+    expiresAtIdx: index("idx_asset_public_links_expires_at").on(
+      table.expiresAt
+    ),
   })
 );
 
@@ -1333,6 +1364,7 @@ export const assetsRelations = relations(assets, ({ one, many }) => ({
   }),
   categoryAssignments: many(assetCategoryAssignments),
   tagAssignments: many(assetTagAssignments),
+  publicLinks: many(assetPublicLinks),
 }));
 
 export const assetCategoriesRelations = relations(
@@ -1378,6 +1410,20 @@ export const assetTagAssignmentsRelations = relations(
     tag: one(assetTags, {
       fields: [assetTagAssignments.tagId],
       references: [assetTags.id],
+    }),
+  })
+);
+
+export const assetPublicLinksRelations = relations(
+  assetPublicLinks,
+  ({ one }) => ({
+    asset: one(assets, {
+      fields: [assetPublicLinks.assetId],
+      references: [assets.id],
+    }),
+    creator: one(users, {
+      fields: [assetPublicLinks.createdBy],
+      references: [users.id],
     }),
   })
 );
@@ -1473,6 +1519,15 @@ export const insertAssetTagAssignmentSchema = createInsertSchema(
   tagId: z.number(),
 });
 
+export const insertAssetPublicLinkSchema = createInsertSchema(assetPublicLinks)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    assetId: z.number(),
+    token: z.string().min(1),
+    createdBy: z.number(),
+    expiresAt: z.date().nullable().optional(),
+  });
+
 // Slack Integration Types
 export type SlackWorkspace = typeof slackWorkspaces.$inferSelect;
 export type SlackUserMapping = typeof slackUserMappings.$inferSelect;
@@ -1505,3 +1560,5 @@ export type InsertAssetCategoryAssignment = z.infer<
 export type InsertAssetTagAssignment = z.infer<
   typeof insertAssetTagAssignmentSchema
 >;
+export type AssetPublicLink = typeof assetPublicLinks.$inferSelect;
+export type InsertAssetPublicLink = z.infer<typeof insertAssetPublicLinkSchema>;

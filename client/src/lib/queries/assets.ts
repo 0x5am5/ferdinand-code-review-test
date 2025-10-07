@@ -165,8 +165,12 @@ export const useUpdateAssetMutation = () => {
       await queryClient.cancelQueries({ queryKey: ["/api/assets"] });
 
       // Snapshot the previous values
-      const previousAsset = queryClient.getQueryData<Asset>([`/api/assets/${id}`]);
-      const previousAssetsList = queryClient.getQueryData<Asset[]>(["/api/assets"]);
+      const previousAsset = queryClient.getQueryData<Asset>([
+        `/api/assets/${id}`,
+      ]);
+      const previousAssetsList = queryClient.getQueryData<Asset[]>([
+        "/api/assets",
+      ]);
 
       // Optimistically update the individual asset
       if (previousAsset) {
@@ -178,8 +182,9 @@ export const useUpdateAssetMutation = () => {
 
       // Optimistically update the asset in the list
       if (previousAssetsList) {
-        queryClient.setQueryData<Asset[]>(["/api/assets"],
-          previousAssetsList.map(asset =>
+        queryClient.setQueryData<Asset[]>(
+          ["/api/assets"],
+          previousAssetsList.map((asset) =>
             asset.id === id ? { ...asset, ...data } : asset
           )
         );
@@ -191,7 +196,10 @@ export const useUpdateAssetMutation = () => {
     onError: (error: Error, _variables, context) => {
       // Rollback on error
       if (context?.previousAsset) {
-        queryClient.setQueryData([`/api/assets/${context.id}`], context.previousAsset);
+        queryClient.setQueryData(
+          [`/api/assets/${context.id}`],
+          context.previousAsset
+        );
       }
       if (context?.previousAssetsList) {
         queryClient.setQueryData(["/api/assets"], context.previousAssetsList);
@@ -228,6 +236,33 @@ export const useDeleteAssetMutation = () => {
       toast({
         title: "Success",
         description: "Asset deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useBulkDeleteAssetsMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: number[]) => {
+      const response = await apiRequest("POST", "/api/assets/bulk-delete", {
+        assetIds: ids,
+      });
+      return response.json();
+    },
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      toast({
+        title: "Success",
+        description: `${ids.length} asset${ids.length === 1 ? "" : "s"} deleted successfully`,
       });
     },
     onError: (error: Error) => {
@@ -308,6 +343,115 @@ export const useDeleteTagMutation = () => {
     onError: (error: Error) => {
       toast({
         title: "Delete failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Public link types and hooks
+export interface AssetPublicLink {
+  id: number;
+  assetId: number;
+  token: string;
+  createdBy: number;
+  expiresAt: Date | null;
+  createdAt: Date;
+}
+
+// Get public links for an asset
+export const useAssetPublicLinksQuery = (clientId: number, assetId: number) =>
+  useQuery<AssetPublicLink[]>({
+    queryKey: [`/api/clients/${clientId}/assets/${assetId}/public-links`],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/clients/${clientId}/assets/${assetId}/public-links`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch public links");
+      }
+      return response.json();
+    },
+    enabled: !!clientId && !!assetId,
+  });
+
+// Create a public link
+export const useCreatePublicLinkMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      clientId,
+      assetId,
+      expiresInDays,
+    }: {
+      clientId: number;
+      assetId: number;
+      expiresInDays: number | null;
+    }) => {
+      const response = await apiRequest(
+        "POST",
+        `/api/clients/${clientId}/assets/${assetId}/public-links`,
+        { expiresInDays }
+      );
+      return response.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [
+          `/api/clients/${variables.clientId}/assets/${variables.assetId}/public-links`,
+        ],
+      });
+      toast({
+        title: "Success",
+        description: "Public link created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create link",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Delete a public link
+export const useDeletePublicLinkMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      clientId,
+      assetId,
+      linkId,
+    }: {
+      clientId: number;
+      assetId: number;
+      linkId: number;
+    }) => {
+      const response = await apiRequest(
+        "DELETE",
+        `/api/clients/${clientId}/assets/${assetId}/public-links/${linkId}`
+      );
+      return response.json();
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [
+          `/api/clients/${variables.clientId}/assets/${variables.assetId}/public-links`,
+        ],
+      });
+      toast({
+        title: "Success",
+        description: "Public link deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete link",
         description: error.message,
         variant: "destructive",
       });

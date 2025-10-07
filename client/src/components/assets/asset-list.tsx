@@ -11,6 +11,7 @@ import { type FC, type MouseEvent, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -27,6 +28,7 @@ interface AssetListProps {
   isLoading?: boolean;
   onAssetClick: (asset: Asset) => void;
   onDelete: (assetId: number) => void;
+  onBulkDelete?: (assetIds: number[]) => void;
 }
 
 export const AssetList: FC<AssetListProps> = ({
@@ -34,8 +36,29 @@ export const AssetList: FC<AssetListProps> = ({
   isLoading,
   onAssetClick,
   onDelete,
+  onBulkDelete,
 }) => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
+
+  const toggleAssetSelection = (assetId: number) => {
+    setSelectedAssets((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(assetId)) {
+        newSet.delete(assetId);
+      } else {
+        newSet.add(assetId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (onBulkDelete && selectedAssets.size > 0) {
+      onBulkDelete(Array.from(selectedAssets));
+      setSelectedAssets(new Set());
+    }
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -99,22 +122,31 @@ export const AssetList: FC<AssetListProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* View toggle */}
-      <div className="flex justify-end gap-2">
-        <Button
-          variant={viewMode === "grid" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("grid")}
-        >
-          <Grid className="h-4 w-4" />
-        </Button>
-        <Button
-          variant={viewMode === "list" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setViewMode("list")}
-        >
-          <List className="h-4 w-4" />
-        </Button>
+      {/* View toggle and bulk actions */}
+      <div className="flex justify-between items-center gap-2">
+        {selectedAssets.size > 0 && (
+          <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete {selectedAssets.size}{" "}
+            {selectedAssets.size === 1 ? "file" : "files"}
+          </Button>
+        )}
+        <div className="flex gap-2 ml-auto">
+          <Button
+            variant={viewMode === "grid" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+          >
+            <Grid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "list" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setViewMode("list")}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Grid view */}
@@ -123,11 +155,12 @@ export const AssetList: FC<AssetListProps> = ({
           {assets.map((asset) => (
             <Card
               key={asset.id}
-              className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+              className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow group"
               onClick={() => onAssetClick(asset)}
             >
               <div className="aspect-square bg-muted flex items-center justify-center relative">
-                {asset.fileType.startsWith("image/") || asset.fileType === "application/pdf" ? (
+                {asset.fileType.startsWith("image/") ||
+                asset.fileType === "application/pdf" ? (
                   <img
                     src={`/api/assets/${asset.id}/thumbnail/medium`}
                     alt={asset.originalFileName}
@@ -136,6 +169,14 @@ export const AssetList: FC<AssetListProps> = ({
                 ) : (
                   <FileIcon className="h-16 w-16 text-muted-foreground" />
                 )}
+                <div className={`absolute top-2 left-2 transition-opacity ${selectedAssets.has(asset.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                  <Checkbox
+                    checked={selectedAssets.has(asset.id)}
+                    onCheckedChange={() => toggleAssetSelection(asset.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white border-2"
+                  />
+                </div>
                 <div className="absolute top-2 right-2">
                   <Badge
                     variant={
@@ -216,6 +257,7 @@ export const AssetList: FC<AssetListProps> = ({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12"></TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Size</TableHead>
@@ -228,11 +270,21 @@ export const AssetList: FC<AssetListProps> = ({
               {assets.map((asset) => (
                 <TableRow
                   key={asset.id}
-                  className="cursor-pointer"
+                  className="cursor-pointer group"
                   onClick={() => onAssetClick(asset)}
                 >
                   <TableCell>
-                    {asset.fileType.startsWith("image/") || asset.fileType === "application/pdf" ? (
+                    <div className={`transition-opacity ${selectedAssets.has(asset.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                      <Checkbox
+                        checked={selectedAssets.has(asset.id)}
+                        onCheckedChange={() => toggleAssetSelection(asset.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {asset.fileType.startsWith("image/") ||
+                    asset.fileType === "application/pdf" ? (
                       <img
                         src={`/api/assets/${asset.id}/thumbnail/small`}
                         alt={asset.originalFileName}

@@ -75,6 +75,7 @@ const mockAssets: Asset[] = [
 describe("AssetList", () => {
   const mockOnAssetClick = jest.fn();
   const mockOnDelete = jest.fn();
+  const mockOnBulkDelete = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -438,6 +439,280 @@ describe("AssetList", () => {
         // Check for formatted dates
         expect(screen.getByText(/Jan 1, 2024/i)).toBeInTheDocument();
         expect(screen.getByText(/Jan 2, 2024/i)).toBeInTheDocument();
+      }
+    });
+  });
+
+  describe("Bulk Delete Functionality", () => {
+    it("should not show bulk delete button when no assets are selected", () => {
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      // Bulk delete button should not be visible
+      const deleteButtons = screen.queryAllByRole("button");
+      const bulkDeleteButton = deleteButtons.find((btn) =>
+        btn.textContent?.includes("Delete")
+      );
+
+      expect(bulkDeleteButton).toBeUndefined();
+    });
+
+    it("should show checkboxes on hover in grid view", () => {
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      // Checkboxes should be present (with opacity-0 class for hover effect)
+      const checkboxes = screen.getAllByRole("checkbox");
+      expect(checkboxes.length).toBe(mockAssets.length);
+    });
+
+    it("should show checkboxes in list view", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      // Switch to list view
+      const buttons = screen.getAllByRole("button");
+      const listViewButton = buttons.find((btn) => {
+        const svg = btn.querySelector("svg.lucide-list");
+        return svg !== null;
+      });
+
+      if (listViewButton) {
+        await user.click(listViewButton);
+
+        // Checkboxes should be present in list view
+        const checkboxes = screen.getAllByRole("checkbox");
+        expect(checkboxes.length).toBe(mockAssets.length);
+      }
+    });
+
+    it("should select and deselect assets when checkbox is clicked", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+
+      // Click first checkbox to select
+      await user.click(checkboxes[0]);
+
+      // Bulk delete button should appear
+      const deleteButton = screen.getByText(/Delete 1 file/i);
+      expect(deleteButton).toBeInTheDocument();
+
+      // Click again to deselect
+      await user.click(checkboxes[0]);
+
+      // Bulk delete button should disappear
+      const deleteButtons = screen.queryAllByRole("button");
+      const bulkDeleteButton = deleteButtons.find((btn) =>
+        btn.textContent?.includes("Delete")
+      );
+      expect(bulkDeleteButton).toBeUndefined();
+    });
+
+    it("should show correct count when multiple assets are selected", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+
+      // Select first two assets
+      await user.click(checkboxes[0]);
+      await user.click(checkboxes[1]);
+
+      // Bulk delete button should show correct count
+      const deleteButton = screen.getByText(/Delete 2 files/i);
+      expect(deleteButton).toBeInTheDocument();
+    });
+
+    it("should use singular 'file' when one asset is selected", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+
+      // Select one asset
+      await user.click(checkboxes[0]);
+
+      // Should say "file" not "files"
+      const deleteButton = screen.getByText(/Delete 1 file$/i);
+      expect(deleteButton).toBeInTheDocument();
+    });
+
+    it("should call onBulkDelete with selected asset IDs when delete button is clicked", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+
+      // Select first two assets
+      await user.click(checkboxes[0]);
+      await user.click(checkboxes[1]);
+
+      // Click bulk delete button
+      const deleteButton = screen.getByText(/Delete 2 files/i);
+      await user.click(deleteButton);
+
+      // Should call onBulkDelete with correct IDs
+      expect(mockOnBulkDelete).toHaveBeenCalledWith([
+        mockAssets[0].id,
+        mockAssets[1].id,
+      ]);
+    });
+
+    it("should clear selection after bulk delete is called", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+
+      // Select assets
+      await user.click(checkboxes[0]);
+      await user.click(checkboxes[1]);
+
+      // Click bulk delete button
+      const deleteButton = screen.getByText(/Delete 2 files/i);
+      await user.click(deleteButton);
+
+      // Bulk delete button should disappear after delete
+      const deleteButtons = screen.queryAllByRole("button");
+      const bulkDeleteButton = deleteButtons.find((btn) =>
+        btn.textContent?.includes("Delete")
+      );
+      expect(bulkDeleteButton).toBeUndefined();
+    });
+
+    it("should not call onBulkDelete when no assets are selected", async () => {
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      // No assets selected, button should not be visible
+      expect(mockOnBulkDelete).not.toHaveBeenCalled();
+    });
+
+    it("should prevent asset click when clicking checkbox", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+
+      // Click checkbox
+      await user.click(checkboxes[0]);
+
+      // onAssetClick should not be called when clicking checkbox
+      expect(mockOnAssetClick).not.toHaveBeenCalled();
+    });
+
+    it("should work in both grid and list views", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkDelete={mockOnBulkDelete}
+        />
+      );
+
+      // Test in grid view
+      let checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+      expect(screen.getByText(/Delete 1 file/i)).toBeInTheDocument();
+
+      // Switch to list view
+      const buttons = screen.getAllByRole("button");
+      const listViewButton = buttons.find((btn) => {
+        const svg = btn.querySelector("svg.lucide-list");
+        return svg !== null;
+      });
+
+      if (listViewButton) {
+        await user.click(listViewButton);
+
+        // Checkboxes should still work in list view
+        checkboxes = screen.getAllByRole("checkbox");
+        await user.click(checkboxes[1]);
+
+        // Should show 2 files selected now
+        expect(screen.getByText(/Delete 2 files/i)).toBeInTheDocument();
       }
     });
   });

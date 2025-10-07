@@ -18,6 +18,7 @@ import {
   type Asset,
   type AssetFilters as Filters,
   useAssetsQuery,
+  useBulkDeleteAssetsMutation,
   useDeleteAssetMutation,
 } from "@/lib/queries/assets";
 
@@ -32,6 +33,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   const [filters, setFilters] = useState<Filters>({});
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<number | null>(null);
+  const [assetsToDelete, setAssetsToDelete] = useState<number[] | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -39,6 +41,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   // Fetch assets filtered by clientId
   const { data: allAssets = [], isLoading } = useAssetsQuery(filters);
   const deleteMutation = useDeleteAssetMutation();
+  const bulkDeleteMutation = useBulkDeleteAssetsMutation();
 
   // Filter assets by clientId on the client side
   const assets = allAssets.filter((asset) => asset.clientId === clientId);
@@ -51,10 +54,21 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     setAssetToDelete(assetId);
   };
 
+  const handleBulkDelete = (assetIds: number[]) => {
+    setAssetsToDelete(assetIds);
+  };
+
   const confirmDelete = async () => {
     if (assetToDelete) {
       await deleteMutation.mutateAsync(assetToDelete);
       setAssetToDelete(null);
+    }
+  };
+
+  const confirmBulkDelete = async () => {
+    if (assetsToDelete && assetsToDelete.length > 0) {
+      await bulkDeleteMutation.mutateAsync(assetsToDelete);
+      setAssetsToDelete(null);
     }
   };
 
@@ -137,6 +151,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         isLoading={isLoading}
         onAssetClick={handleAssetClick}
         onDelete={handleDelete}
+        onBulkDelete={handleBulkDelete}
       />
 
       {/* Asset detail modal */}
@@ -146,7 +161,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         onClose={() => setSelectedAsset(null)}
       />
 
-      {/* Delete confirmation */}
+      {/* Single delete confirmation */}
       <AlertDialog
         open={!!assetToDelete}
         onOpenChange={() => setAssetToDelete(null)}
@@ -163,6 +178,32 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog
+        open={!!assetsToDelete}
+        onOpenChange={() => setAssetsToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Multiple Assets</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {assetsToDelete?.length} asset
+              {assetsToDelete?.length === 1 ? "" : "s"}? This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete

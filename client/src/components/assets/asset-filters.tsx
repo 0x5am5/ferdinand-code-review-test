@@ -1,5 +1,5 @@
-import { Search, X } from "lucide-react";
-import { type FC, useState, useRef, useEffect } from "react";
+import { Pencil, Search, X } from "lucide-react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   useAssetCategoriesQuery,
   useAssetTagsQuery,
 } from "@/lib/queries/assets";
+import { TagManagementModal } from "./tag-management-modal";
 
 interface AssetFiltersProps {
   filters: Filters;
@@ -27,11 +28,13 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
   onFiltersChange,
 }) => {
   const [searchInput, setSearchInput] = useState(filters.search || "");
+  const [isTagManagementOpen, setIsTagManagementOpen] = useState(false);
   const { data: categories = [] } = useAssetCategoriesQuery();
   const { data: tags = [] } = useAssetTagsQuery();
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Debounced search effect
+  // biome-ignore lint/correctness/useExhaustiveDependencies: filters and onFiltersChange are intentionally excluded to prevent infinite loop
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -148,7 +151,17 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
       {/* Tag Filter */}
       {tags.length > 0 && (
         <div className="mt-4 space-y-2">
-          <Label>Tags</Label>
+          <div className="flex items-center gap-2">
+            <Label>Tags</Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsTagManagementOpen(true)}
+              className="h-6 w-6 p-0"
+            >
+              <Pencil className="h-3 w-3" />
+            </Button>
+          </div>
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => {
               const isSelected = filters.tagIds?.includes(tag.id);
@@ -167,6 +180,11 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
           </div>
         </div>
       )}
+
+      <TagManagementModal
+        open={isTagManagementOpen}
+        onOpenChange={setIsTagManagementOpen}
+      />
     </div>
   );
 };

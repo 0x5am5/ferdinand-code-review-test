@@ -1,5 +1,6 @@
 import {
   assetCategoryAssignments,
+  assetPublicLinks,
   assets,
   assetTagAssignments,
   assetTags,
@@ -769,6 +770,11 @@ export function registerFileAssetRoutes(app: Express) {
           .json({ message: "Not authorized to delete this asset" });
       }
 
+      // Delete public links first
+      await db
+        .delete(assetPublicLinks)
+        .where(eq(assetPublicLinks.assetId, assetId));
+
       // Soft delete the asset
       await db
         .update(assets)
@@ -802,6 +808,116 @@ export function registerFileAssetRoutes(app: Express) {
         error instanceof Error ? error.message : "Unknown error"
       );
       res.status(500).json({ message: "Error deleting asset" });
+    }
+  });
+
+  // Bulk delete endpoint
+  app.post("/api/assets/bulk-delete", async (req, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { assetIds } = req.body;
+
+      if (!Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ message: "Invalid asset IDs" });
+      }
+
+      // Get user's clients to determine access
+      const userClients = await db
+        .select()
+        .from((await import("@shared/schema")).userClients)
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
+
+      if (userClients.length === 0) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const clientIds = userClients.map((uc) => uc.clientId);
+
+      // Get all assets to be deleted
+      const assetsToDelete = await db
+        .select()
+        .from(assets)
+        .where(
+          and(
+            inArray(assets.id, assetIds),
+            isNull(assets.deletedAt),
+            inArray(assets.clientId, clientIds)
+          )
+        );
+
+      if (assetsToDelete.length === 0) {
+        return res.status(404).json({ message: "No assets found" });
+      }
+
+      // Check permissions for each asset
+      const userId = req.session.userId;
+      const permissionChecks = await Promise.all(
+        assetsToDelete.map((asset) =>
+          checkAssetPermission(userId, asset.id, asset.clientId, "delete")
+        )
+      );
+
+      const unauthorizedAssets = permissionChecks.filter((p) => !p.allowed);
+      if (unauthorizedAssets.length > 0) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete some assets" });
+      }
+
+      // Delete public links for all assets first
+      await db
+        .delete(assetPublicLinks)
+        .where(inArray(assetPublicLinks.assetId, assetIds));
+
+      // Soft delete all assets
+      await db
+        .update(assets)
+        .set({ deletedAt: new Date() })
+        .where(inArray(assets.id, assetIds));
+
+      // Delete files and thumbnails
+      await Promise.all(
+        assetsToDelete.map(async (asset) => {
+          // Delete the actual file from storage
+          if (asset.storagePath) {
+            const deleteResult = await deleteFile(asset.storagePath);
+            if (!deleteResult.success) {
+              console.error(
+                `Failed to delete file from storage: ${deleteResult.error}`
+              );
+            }
+          }
+
+          // Delete thumbnails
+          try {
+            await deleteThumbnails(asset.id);
+          } catch (error) {
+            console.error(
+              `Failed to delete thumbnails for asset ${asset.id}:`,
+              error
+            );
+          }
+        })
+      );
+
+      res.json({
+        message: `${assetsToDelete.length} asset${assetsToDelete.length === 1 ? "" : "s"} deleted successfully`,
+        deletedCount: assetsToDelete.length,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "Error bulk deleting assets:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error bulk deleting assets" });
     }
   });
 
@@ -1283,7 +1399,8 @@ export function registerFileAssetRoutes(app: Express) {
             id: (await import("@shared/schema")).assetCategories.id,
             name: (await import("@shared/schema")).assetCategories.name,
             slug: (await import("@shared/schema")).assetCategories.slug,
-            isDefault: (await import("@shared/schema")).assetCategories.isDefault,
+            isDefault: (await import("@shared/schema")).assetCategories
+              .isDefault,
             clientId: (await import("@shared/schema")).assetCategories.clientId,
           })
           .from(assetCategoryAssignments)
@@ -1651,4 +1768,229 @@ export function registerFileAssetRoutes(app: Express) {
       }
     }
   );
+
+  // ============ PUBLIC LINK ROUTES ============
+
+  // Create a public link for an asset
+  app.post(
+    "/api/clients/:clientId/assets/:assetId/public-links",
+    validateClientId,
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        const assetId = parseInt(req.params.assetId, 10);
+        const { expiresInDays } = req.body; // 1, 3, 7, null (no expiry)
+
+        // Check if user has read permission for this asset
+        const permission = await checkAssetPermission(
+          req.session.userId,
+          assetId,
+          clientId,
+          "read"
+        );
+
+        if (!permission.allowed || !permission.asset) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to create link for this asset" });
+        }
+
+        // Generate a secure random token
+        const crypto = await import("crypto");
+        const token = crypto.randomBytes(32).toString("base64url");
+
+        // Calculate expiry date if specified
+        let expiresAt: Date | null = null;
+        if (expiresInDays && expiresInDays > 0) {
+          expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+        }
+
+        // Insert the public link
+        const [publicLink] = await db
+          .insert(assetPublicLinks)
+          .values({
+            assetId,
+            token,
+            createdBy: req.session.userId,
+            expiresAt,
+          })
+          .returning();
+
+        res.status(201).json(publicLink);
+      } catch (error: unknown) {
+        console.error(
+          "Error creating public link:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error creating public link" });
+      }
+    }
+  );
+
+  // List public links for an asset
+  app.get(
+    "/api/clients/:clientId/assets/:assetId/public-links",
+    validateClientId,
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        const assetId = parseInt(req.params.assetId, 10);
+
+        // Check if user has read permission for this asset
+        const permission = await checkAssetPermission(
+          req.session.userId,
+          assetId,
+          clientId,
+          "read"
+        );
+
+        if (!permission.allowed) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to view links for this asset" });
+        }
+
+        // Get all public links for this asset
+        const links = await db
+          .select()
+          .from(assetPublicLinks)
+          .where(eq(assetPublicLinks.assetId, assetId));
+
+        res.json(links);
+      } catch (error: unknown) {
+        console.error(
+          "Error fetching public links:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error fetching public links" });
+      }
+    }
+  );
+
+  // Delete a public link
+  app.delete(
+    "/api/clients/:clientId/assets/:assetId/public-links/:linkId",
+    validateClientId,
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        const assetId = parseInt(req.params.assetId, 10);
+        const linkId = parseInt(req.params.linkId, 10);
+
+        // Check if user has read permission for this asset
+        const permission = await checkAssetPermission(
+          req.session.userId,
+          assetId,
+          clientId,
+          "read"
+        );
+
+        if (!permission.allowed) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to delete this link" });
+        }
+
+        // Delete the link
+        await db
+          .delete(assetPublicLinks)
+          .where(
+            and(
+              eq(assetPublicLinks.id, linkId),
+              eq(assetPublicLinks.assetId, assetId)
+            )
+          );
+
+        res.json({ message: "Public link deleted successfully" });
+      } catch (error: unknown) {
+        console.error(
+          "Error deleting public link:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error deleting public link" });
+      }
+    }
+  );
+
+  // Public download endpoint (no auth required)
+  app.get("/api/public/assets/:token", async (req, res: Response) => {
+    try {
+      const { token } = req.params;
+
+      // Find the public link
+      const [publicLink] = await db
+        .select()
+        .from(assetPublicLinks)
+        .where(eq(assetPublicLinks.token, token));
+
+      if (!publicLink) {
+        return res.status(404).json({ message: "Link not found" });
+      }
+
+      // Check if link has expired
+      if (publicLink.expiresAt && publicLink.expiresAt < new Date()) {
+        return res.status(410).json({ message: "Link has expired" });
+      }
+
+      // Get the asset
+      const [asset] = await db
+        .select()
+        .from(assets)
+        .where(
+          and(eq(assets.id, publicLink.assetId), isNull(assets.deletedAt))
+        );
+
+      if (!asset) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
+      // Download file from storage
+      const downloadResult = await downloadFile(asset.storagePath);
+
+      if (!downloadResult.success || !downloadResult.data) {
+        return res
+          .status(404)
+          .json({ message: downloadResult.error || "File not found" });
+      }
+
+      // Set headers for download
+      res.setHeader("Content-Type", asset.fileType);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${asset.originalFileName}"`
+      );
+      res.send(downloadResult.data);
+    } catch (error: unknown) {
+      console.error(
+        "Error serving public asset:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error serving asset" });
+    }
+  });
 }

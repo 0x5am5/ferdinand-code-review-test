@@ -15,7 +15,7 @@
  * Note: These are integration tests that require a running server instance
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { UserRole, type UserRoleType } from '@shared/schema';
 import {
   createTestUser,
@@ -23,6 +23,9 @@ import {
   associateUserWithClient,
   cleanupTestUser,
   cleanupTestClient,
+  cleanupTestAssets,
+  cleanupTestCategories,
+  cleanupTestTags,
   type TestUser,
   type TestClient,
 } from './helpers/test-server';
@@ -42,6 +45,11 @@ let sharedAssetId: number;
 let privateAssetId: number;
 let testCategoryId: number;
 let testTagId: number;
+
+// Track assets created during tests for cleanup
+const createdAssetIds: number[] = [];
+const createdCategoryIds: number[] = [];
+const createdTagIds: number[] = [];
 
 // Helper functions
 function createTestFile(filename: string, sizeKB = 10): Buffer {
@@ -66,6 +74,33 @@ async function authenticatedFetch(
       'x-test-user-id': user.id.toString(),
     },
   });
+}
+
+/**
+ * Track asset ID for cleanup after test
+ */
+function trackAsset(assetId: number): void {
+  if (assetId && !createdAssetIds.includes(assetId)) {
+    createdAssetIds.push(assetId);
+  }
+}
+
+/**
+ * Track category ID for cleanup after test
+ */
+function trackCategory(categoryId: number): void {
+  if (categoryId && !createdCategoryIds.includes(categoryId)) {
+    createdCategoryIds.push(categoryId);
+  }
+}
+
+/**
+ * Track tag ID for cleanup after test
+ */
+function trackTag(tagId: number): void {
+  if (tagId && !createdTagIds.includes(tagId)) {
+    createdTagIds.push(tagId);
+  }
 }
 
 /**
@@ -128,6 +163,41 @@ describe('File Asset System - Comprehensive Tests', () => {
 
     // Create test assets as admin
     await setupTestAssets();
+  });
+
+  afterEach(async () => {
+    // Clean up any assets created during individual tests
+    if (createdAssetIds.length > 0) {
+      try {
+        await cleanupTestAssets(createdAssetIds);
+        console.log(`Cleaned up ${createdAssetIds.length} test assets`);
+        createdAssetIds.length = 0; // Clear the array
+      } catch (error) {
+        console.warn('Failed to cleanup test assets:', error);
+      }
+    }
+
+    // Clean up any categories created during individual tests
+    if (createdCategoryIds.length > 0) {
+      try {
+        await cleanupTestCategories(createdCategoryIds);
+        console.log(`Cleaned up ${createdCategoryIds.length} test categories`);
+        createdCategoryIds.length = 0; // Clear the array
+      } catch (error) {
+        console.warn('Failed to cleanup test categories:', error);
+      }
+    }
+
+    // Clean up any tags created during individual tests
+    if (createdTagIds.length > 0) {
+      try {
+        await cleanupTestTags(createdTagIds);
+        console.log(`Cleaned up ${createdTagIds.length} test tags`);
+        createdTagIds.length = 0; // Clear the array
+      } catch (error) {
+        console.warn('Failed to cleanup test tags:', error);
+      }
+    }
   });
 
   async function setupTestAssets() {
@@ -274,6 +344,10 @@ describe('File Asset System - Comprehensive Tests', () => {
         );
 
         expect(response.status).toBe(201);
+        if (response.ok) {
+          const asset = await response.json();
+          trackAsset(asset.id);
+        }
       });
 
       it('should be able to update own assets', async () => {
@@ -292,6 +366,7 @@ describe('File Asset System - Comprehensive Tests', () => {
         );
 
         const asset = await uploadRes.json();
+        trackAsset(asset.id);
 
         // Now update it
         const updateRes = await authenticatedFetch(
@@ -336,6 +411,7 @@ describe('File Asset System - Comprehensive Tests', () => {
         );
 
         const asset = await uploadRes.json();
+        trackAsset(asset.id);
 
         // Now delete it
         const deleteRes = await authenticatedFetch(
@@ -393,6 +469,10 @@ describe('File Asset System - Comprehensive Tests', () => {
         );
 
         expect(response.status).toBe(201);
+        if (response.ok) {
+          const asset = await response.json();
+          trackAsset(asset.id);
+        }
       });
     });
 
@@ -414,6 +494,7 @@ describe('File Asset System - Comprehensive Tests', () => {
 
         expect(createRes.status).toBe(201);
         const asset = await createRes.json();
+        trackAsset(asset.id);
 
         // Read
         const readRes = await authenticatedFetch(
@@ -461,6 +542,7 @@ describe('File Asset System - Comprehensive Tests', () => {
         );
 
         const asset = await uploadRes.json();
+        trackAsset(asset.id);
 
         // Delete as admin
         const deleteRes = await authenticatedFetch(
@@ -493,6 +575,7 @@ describe('File Asset System - Comprehensive Tests', () => {
         expect(createRes.status).toBe(201);
         const category = await createRes.json();
         testCategoryId = category.id;
+        trackCategory(category.id);
 
         // Update category
         const updateRes = await authenticatedFetch(
@@ -541,6 +624,7 @@ describe('File Asset System - Comprehensive Tests', () => {
             if (tagRes.ok) {
               const tag = await tagRes.json();
               tagMap[tagName] = tag.id;
+              trackTag(tag.id);
             }
           }
         }
@@ -557,7 +641,7 @@ describe('File Asset System - Comprehensive Tests', () => {
           JSON.stringify(asset.tags.map((t) => tagMap[t]))
         );
 
-        await authenticatedFetch(
+        const response = await authenticatedFetch(
           `${API_BASE}/clients/${testClient.id}/file-assets/upload`,
           'admin',
           {
@@ -565,6 +649,11 @@ describe('File Asset System - Comprehensive Tests', () => {
             body: formData,
           }
         );
+
+        if (response.ok) {
+          const uploadedAsset = await response.json();
+          trackAsset(uploadedAsset.id);
+        }
       }
     });
 
@@ -684,6 +773,7 @@ describe('File Asset System - Comprehensive Tests', () => {
       if (imageRes.ok) {
         const imageAsset = await imageRes.json();
         imageAssetId = imageAsset.id;
+        trackAsset(imageAsset.id);
       }
 
       // Upload a PDF file
@@ -704,6 +794,7 @@ describe('File Asset System - Comprehensive Tests', () => {
       if (pdfRes.ok) {
         const pdfAsset = await pdfRes.json();
         pdfAssetId = pdfAsset.id;
+        trackAsset(pdfAsset.id);
       }
     });
 
@@ -810,6 +901,7 @@ describe('File Asset System - Comprehensive Tests', () => {
       );
 
       const asset = await uploadRes.json();
+      trackAsset(asset.id);
 
       // Generate thumbnail
       await authenticatedFetch(
@@ -866,6 +958,7 @@ describe('File Asset System - Comprehensive Tests', () => {
         expect(response.status).toBe(201);
         const asset = await response.json();
         uploadedAssets.push(asset);
+        trackAsset(asset.id);
       }
 
       // Verify all files were uploaded
@@ -903,6 +996,7 @@ describe('File Asset System - Comprehensive Tests', () => {
       );
 
       const category = await categoryRes.json();
+      trackCategory(category.id);
 
       // 2. Create tags
       const tagNames = ['spring-2024', 'digital', 'print'];
@@ -925,6 +1019,7 @@ describe('File Asset System - Comprehensive Tests', () => {
         if (tagRes.ok) {
           const tag = await tagRes.json();
           tagIds.push(tag.id);
+          trackTag(tag.id);
         }
       }
 
@@ -946,6 +1041,7 @@ describe('File Asset System - Comprehensive Tests', () => {
 
       expect(uploadRes.status).toBe(201);
       const asset = await uploadRes.json();
+      trackAsset(asset.id);
 
       // 4. Verify asset has correct metadata
       const getRes = await authenticatedFetch(
@@ -975,6 +1071,7 @@ describe('File Asset System - Comprehensive Tests', () => {
       );
 
       const asset = await uploadRes.json();
+      trackAsset(asset.id);
 
       // 2. Guest cannot see it
       const guestRes = await authenticatedFetch(
@@ -1004,6 +1101,222 @@ describe('File Asset System - Comprehensive Tests', () => {
       );
 
       expect(guestRes2.status).toBe(200);
+    });
+  });
+
+  describe('Bulk Delete', () => {
+    it('should bulk delete multiple assets with proper permissions', async () => {
+      // Upload multiple assets
+      const assetIds: number[] = [];
+
+      for (let i = 0; i < 3; i++) {
+        const formData = new FormData();
+        const file = createTestFile(`bulk-test-${i}.jpg`, 5);
+        formData.append('file', new Blob([file], { type: 'image/jpeg' }), `bulk-test-${i}.jpg`);
+        formData.append('visibility', 'shared');
+
+        const uploadRes = await authenticatedFetch(
+          `${API_BASE}/assets/upload`,
+          'editor',
+          {
+            method: 'POST',
+            body: formData,
+          }
+        );
+
+        expect(uploadRes.status).toBe(200);
+        const asset = await uploadRes.json();
+        assetIds.push(asset.id);
+        trackAsset(asset.id);
+      }
+
+      // Bulk delete as editor
+      const bulkDeleteRes = await authenticatedFetch(
+        `${API_BASE}/assets/bulk-delete`,
+        'editor',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assetIds }),
+        }
+      );
+
+      expect(bulkDeleteRes.status).toBe(200);
+      const result = await bulkDeleteRes.json();
+      expect(result.deletedCount).toBe(3);
+
+      // Verify assets are deleted
+      for (const assetId of assetIds) {
+        const getRes = await authenticatedFetch(
+          `${API_BASE}/assets/${assetId}`,
+          'editor'
+        );
+        expect(getRes.status).toBe(404);
+      }
+    });
+
+    it('should reject bulk delete with invalid asset IDs', async () => {
+      const bulkDeleteRes = await authenticatedFetch(
+        `${API_BASE}/assets/bulk-delete`,
+        'editor',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assetIds: [] }),
+        }
+      );
+
+      expect(bulkDeleteRes.status).toBe(400);
+    });
+
+    it('should reject bulk delete without proper permissions', async () => {
+      // Upload an asset as editor
+      const formData = new FormData();
+      const file = createTestFile('permission-test.jpg', 5);
+      formData.append('file', new Blob([file], { type: 'image/jpeg' }), 'permission-test.jpg');
+      formData.append('visibility', 'private');
+
+      const uploadRes = await authenticatedFetch(
+        `${API_BASE}/assets/upload`,
+        'editor',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      expect(uploadRes.status).toBe(200);
+      const asset = await uploadRes.json();
+      trackAsset(asset.id);
+
+      // Try to bulk delete as guest (should fail)
+      const bulkDeleteRes = await authenticatedFetch(
+        `${API_BASE}/assets/bulk-delete`,
+        'guest',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assetIds: [asset.id] }),
+        }
+      );
+
+      expect(bulkDeleteRes.status).toBe(403);
+    });
+
+    it('should handle bulk delete with non-existent asset IDs', async () => {
+      const nonExistentIds = [999999, 999998, 999997];
+
+      const bulkDeleteRes = await authenticatedFetch(
+        `${API_BASE}/assets/bulk-delete`,
+        'admin',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assetIds: nonExistentIds }),
+        }
+      );
+
+      expect(bulkDeleteRes.status).toBe(404);
+    });
+
+    it('should only delete accessible assets in bulk operation', async () => {
+      // Upload one asset as editor
+      const formData1 = new FormData();
+      const file1 = createTestFile('mixed-access-1.jpg', 5);
+      formData1.append('file', new Blob([file1], { type: 'image/jpeg' }), 'mixed-access-1.jpg');
+      formData1.append('visibility', 'shared');
+
+      const uploadRes1 = await authenticatedFetch(
+        `${API_BASE}/assets/upload`,
+        'editor',
+        {
+          method: 'POST',
+          body: formData1,
+        }
+      );
+
+      const asset1 = await uploadRes1.json();
+      trackAsset(asset1.id);
+
+      // Try to delete both the accessible asset and a non-existent one
+      const bulkDeleteRes = await authenticatedFetch(
+        `${API_BASE}/assets/bulk-delete`,
+        'editor',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assetIds: [asset1.id, 999999] }),
+        }
+      );
+
+      // Should fail because not all assets were found
+      expect(bulkDeleteRes.status).toBe(404);
+
+      // Verify first asset was not deleted (transaction should roll back)
+      const getRes = await authenticatedFetch(
+        `${API_BASE}/assets/${asset1.id}`,
+        'editor'
+      );
+      expect(getRes.status).toBe(200);
+    });
+
+    it('should delete files and thumbnails during bulk delete', async () => {
+      // Upload an asset with thumbnail
+      const formData = new FormData();
+      const file = createTestFile('thumbnail-test.jpg', 10);
+      formData.append('file', new Blob([file], { type: 'image/jpeg' }), 'thumbnail-test.jpg');
+      formData.append('visibility', 'shared');
+
+      const uploadRes = await authenticatedFetch(
+        `${API_BASE}/assets/upload`,
+        'admin',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+
+      const asset = await uploadRes.json();
+      trackAsset(asset.id);
+
+      // Request thumbnail generation
+      await authenticatedFetch(
+        `${API_BASE}/assets/${asset.id}/thumbnail/small`,
+        'admin'
+      );
+
+      // Bulk delete the asset
+      const bulkDeleteRes = await authenticatedFetch(
+        `${API_BASE}/assets/bulk-delete`,
+        'admin',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ assetIds: [asset.id] }),
+        }
+      );
+
+      expect(bulkDeleteRes.status).toBe(200);
+
+      // Verify thumbnail is also deleted
+      const thumbnailRes = await authenticatedFetch(
+        `${API_BASE}/assets/${asset.id}/thumbnail/small`,
+        'admin'
+      );
+
+      expect(thumbnailRes.status).toBe(404);
     });
   });
 
