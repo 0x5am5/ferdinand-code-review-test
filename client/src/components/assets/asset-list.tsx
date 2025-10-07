@@ -374,7 +374,7 @@ export const AssetList: FC<AssetListProps> = ({
               onClick={() => onAssetClick(asset)}
             >
               <div className="aspect-square bg-muted flex items-center justify-center relative">
-                {asset.fileType.startsWith("image/") ||
+                {asset.fileType?.startsWith("image/") ||
                 asset.fileType === "application/pdf" ? (
                   <img
                     src={`/api/assets/${asset.id}/thumbnail/medium`}
@@ -502,7 +502,7 @@ export const AssetList: FC<AssetListProps> = ({
                     </div>
                   </TableCell>
                   <TableCell>
-                    {asset.fileType.startsWith("image/") ||
+                    {asset.fileType?.startsWith("image/") ||
                     asset.fileType === "application/pdf" ? (
                       <img
                         src={`/api/assets/${asset.id}/thumbnail/small`}
@@ -517,7 +517,7 @@ export const AssetList: FC<AssetListProps> = ({
                     {asset.originalFileName}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {asset.fileType.split("/")[1]?.toUpperCase() || "Unknown"}
+                    {asset.fileType?.split("/")[1]?.toUpperCase() || "Unknown"}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatFileSize(asset.fileSize)}
