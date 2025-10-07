@@ -140,7 +140,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
       .map(tag => tag.trim())
       .filter(tag => tag.length > 0);
 
-    const allTags = [...new Set([...selectedTags, ...manualTags])];
+    const allTags = Array.from(new Set([...selectedTags, ...manualTags]));
 
     for (const { file } of files) {
       const formData = new FormData();

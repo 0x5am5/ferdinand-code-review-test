@@ -1,8 +1,8 @@
 import {
   assetCategoryAssignments,
-  assetTags,
   assets,
   assetTagAssignments,
+  assetTags,
   insertAssetSchema,
   insertAssetTagSchema,
   UserRole,
@@ -10,13 +10,17 @@ import {
 
 type Asset = typeof assets.$inferSelect;
 
-import { and, eq, inArray, isNull, or, ilike, SQL, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
+import { uploadRateLimit } from "../middlewares/rate-limit";
+import { csrfProtection } from "../middlewares/security-headers";
 import { upload, virusScan } from "../middlewares/upload";
 import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
+import { deleteThumbnails } from "../services/thumbnail";
 import {
+  deleteFile,
   downloadFile,
   generateStoragePath,
   generateUniqueFileName,
@@ -24,77 +28,7 @@ import {
   validateFileSize,
   validateMimeType,
 } from "../storage/index";
-
-// Helper to check user permissions
-const checkAssetPermission = async (
-  userId: number,
-  assetId: number,
-  clientId: number,
-  requiredPermission: "read" | "write" | "delete"
-): Promise<{ allowed: boolean; asset?: Asset }> => {
-  // Get the asset
-  const [asset] = await db
-    .select()
-    .from(assets)
-    .where(and(eq(assets.id, assetId), isNull(assets.deletedAt)));
-
-  if (!asset) {
-    return { allowed: false };
-  }
-
-  // Verify asset belongs to the client
-  if (asset.clientId !== clientId) {
-    return { allowed: false };
-  }
-
-  // Get user to check role
-  const [user] = await db
-    .select()
-    .from((await import("@shared/schema")).users)
-    .where(eq((await import("@shared/schema")).users.id, userId));
-
-  if (!user) {
-    return { allowed: false };
-  }
-
-  // Permission logic based on role and asset visibility
-  const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
-  const isAdmin = user.role === UserRole.ADMIN;
-  const isEditor = user.role === UserRole.EDITOR;
-  const isOwner = asset.uploadedBy === userId;
-
-  switch (requiredPermission) {
-    case "read":
-      // Guest can view shared assets only
-      if (user.role === UserRole.GUEST) {
-        return { allowed: asset.visibility === "shared", asset };
-      }
-      // All other roles can view if asset is shared or they own it
-      return {
-        allowed:
-          asset.visibility === "shared" || isOwner || isAdmin || isSuperAdmin,
-        asset,
-      };
-
-    case "write":
-      // Guest cannot edit
-      if (user.role === UserRole.GUEST) {
-        return { allowed: false };
-      }
-      // Owner, editor, admin, and super admin can edit
-      return {
-        allowed: isOwner || isEditor || isAdmin || isSuperAdmin,
-        asset,
-      };
-
-    case "delete":
-      // Only owner, admin, or super admin can delete
-      return { allowed: isOwner || isAdmin || isSuperAdmin, asset };
-
-    default:
-      return { allowed: false };
-  }
-};
+import { checkAssetPermission } from "../utils/asset-permissions";
 
 export function registerFileAssetRoutes(app: Express) {
   // Global list endpoint for file assets
@@ -108,19 +42,26 @@ export function registerFileAssetRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
         return res.json([]);
       }
 
-      const clientIds = userClients.map(uc => uc.clientId);
+      const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get user role for visibility filtering
       const [user] = await db
         .select()
         .from((await import("@shared/schema")).users)
-        .where(eq((await import("@shared/schema")).users.id, req.session.userId));
+        .where(
+          eq((await import("@shared/schema")).users.id, req.session.userId)
+        );
 
       if (!user) {
         return res.status(401).json({ message: "User not found" });
@@ -132,14 +73,17 @@ export function registerFileAssetRoutes(app: Express) {
         ? parseInt(req.query.categoryId as string, 10)
         : undefined;
       const tagIds = req.query.tagIds
-        ? (req.query.tagIds as string).split(',').map(id => parseInt(id, 10))
+        ? (req.query.tagIds as string).split(",").map((id) => parseInt(id, 10))
         : undefined;
-      const visibility = req.query.visibility as "private" | "shared" | undefined;
+      const visibility = req.query.visibility as
+        | "private"
+        | "shared"
+        | undefined;
 
       // Build base conditions
       const conditions: SQL[] = [
         isNull(assets.deletedAt),
-        inArray(assets.clientId, clientIds)
+        inArray(assets.clientId, clientIds),
       ];
 
       // Guest users can only see shared assets
@@ -181,7 +125,7 @@ export function registerFileAssetRoutes(app: Express) {
 
         // Filter to only assets with all tags
         const matchingAssetIds = assetIdCounts
-          .filter((row: any) => {
+          .filter((_row: any) => {
             // Count how many of the specified tags this asset has
             return true; // We'll refine this in the next query
           })
@@ -206,8 +150,10 @@ export function registerFileAssetRoutes(app: Express) {
               .from(assetTagAssignments)
               .where(eq(assetTagAssignments.assetId, asset.id));
 
-            const assetTagIdSet = new Set(assetTagIds.map(t => t.tagId));
-            const hasAllTags = tagIds.every(tagId => assetTagIdSet.has(tagId));
+            const assetTagIdSet = new Set(assetTagIds.map((t) => t.tagId));
+            const hasAllTags = tagIds.every((tagId) =>
+              assetTagIdSet.has(tagId)
+            );
 
             return hasAllTags ? asset : null;
           })
@@ -231,13 +177,18 @@ export function registerFileAssetRoutes(app: Express) {
               id: (await import("@shared/schema")).assetCategories.id,
               name: (await import("@shared/schema")).assetCategories.name,
               slug: (await import("@shared/schema")).assetCategories.slug,
-              isDefault: (await import("@shared/schema")).assetCategories.isDefault,
-              clientId: (await import("@shared/schema")).assetCategories.clientId,
+              isDefault: (await import("@shared/schema")).assetCategories
+                .isDefault,
+              clientId: (await import("@shared/schema")).assetCategories
+                .clientId,
             })
             .from(assetCategoryAssignments)
             .innerJoin(
               (await import("@shared/schema")).assetCategories,
-              eq(assetCategoryAssignments.categoryId, (await import("@shared/schema")).assetCategories.id)
+              eq(
+                assetCategoryAssignments.categoryId,
+                (await import("@shared/schema")).assetCategories.id
+              )
             )
             .where(eq(assetCategoryAssignments.assetId, asset.id));
 
@@ -272,35 +223,37 @@ export function registerFileAssetRoutes(app: Express) {
             asset.originalFileName,
             asset.fileType,
             // Format dates for natural language searching
-            asset.createdAt ? new Date(asset.createdAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }) : '',
-            asset.updatedAt ? new Date(asset.updatedAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }) : '',
+            asset.createdAt
+              ? new Date(asset.createdAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : "",
+            asset.updatedAt
+              ? new Date(asset.updatedAt).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : "",
             // Add category names
-            ...(asset.categories?.map(c => c.name) || []),
+            ...(asset.categories?.map((c) => c.name) || []),
             // Add tag names
-            ...(asset.tags?.map(t => t.name) || []),
+            ...(asset.tags?.map((t) => t.name) || []),
           ];
 
-          const searchableText = searchableFields.join(' ').toLowerCase();
+          const searchableText = searchableFields.join(" ").toLowerCase();
           return searchableText.includes(searchLower);
         });
       }
 
       // Sort by creation date (newest first)
-      const sortedAssets = filteredAssets.sort(
-        (a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA;
-        }
-      );
+      const sortedAssets = filteredAssets.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
 
       res.json(sortedAssets);
     } catch (error: unknown) {
@@ -328,32 +281,39 @@ export function registerFileAssetRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
         return res.json({ results: [], total: 0 });
       }
 
-      const clientIds = userClients.map(uc => uc.clientId);
+      const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get user role for visibility filtering
       const [user] = await db
         .select()
         .from((await import("@shared/schema")).users)
-        .where(eq((await import("@shared/schema")).users.id, req.session.userId));
+        .where(
+          eq((await import("@shared/schema")).users.id, req.session.userId)
+        );
 
       if (!user) {
         return res.status(401).json({ message: "User not found" });
       }
 
       // Prepare search query for PostgreSQL full-text search
-      const searchQuery = search.trim().replace(/\s+/g, ' & ');
+      const searchQuery = search.trim().replace(/\s+/g, " & ");
 
       // Build base conditions
       const conditions: SQL[] = [
         isNull(assets.deletedAt),
         inArray(assets.clientId, clientIds),
-        sql`to_tsvector('english', ${assets.fileName} || ' ' || ${assets.originalFileName}) @@ to_tsquery('english', ${searchQuery})`
+        sql`to_tsvector('english', ${assets.fileName} || ' ' || ${assets.originalFileName}) @@ to_tsquery('english', ${searchQuery})`,
       ];
 
       // Guest users can only see shared assets
@@ -369,23 +329,29 @@ export function registerFileAssetRoutes(app: Express) {
         })
         .from(assets)
         .where(and(...conditions))
-        .orderBy(sql`ts_rank(to_tsvector('english', ${assets.fileName} || ' ' || ${assets.originalFileName}), to_tsquery('english', ${searchQuery})) DESC`);
+        .orderBy(
+          sql`ts_rank(to_tsvector('english', ${assets.fileName} || ' ' || ${assets.originalFileName}), to_tsquery('english', ${searchQuery})) DESC`
+        );
 
       // Get category information for each asset
-      const assetIds = searchResults.map(r => r.asset.id);
-      const categoryAssignments = assetIds.length > 0
-        ? await db
-            .select({
-              assetId: assetCategoryAssignments.assetId,
-              category: (await import("@shared/schema")).assetCategories,
-            })
-            .from(assetCategoryAssignments)
-            .innerJoin(
-              (await import("@shared/schema")).assetCategories,
-              eq(assetCategoryAssignments.categoryId, (await import("@shared/schema")).assetCategories.id)
-            )
-            .where(inArray(assetCategoryAssignments.assetId, assetIds))
-        : [];
+      const assetIds = searchResults.map((r) => r.asset.id);
+      const categoryAssignments =
+        assetIds.length > 0
+          ? await db
+              .select({
+                assetId: assetCategoryAssignments.assetId,
+                category: (await import("@shared/schema")).assetCategories,
+              })
+              .from(assetCategoryAssignments)
+              .innerJoin(
+                (await import("@shared/schema")).assetCategories,
+                eq(
+                  assetCategoryAssignments.categoryId,
+                  (await import("@shared/schema")).assetCategories.id
+                )
+              )
+              .where(inArray(assetCategoryAssignments.assetId, assetIds))
+          : [];
 
       // Group results by category
       const categoryMap = new Map<string, typeof searchResults>();
@@ -393,8 +359,8 @@ export function registerFileAssetRoutes(app: Express) {
 
       for (const result of searchResults) {
         const assetCategories = categoryAssignments
-          .filter(ca => ca.assetId === result.asset.id)
-          .map(ca => ca.category);
+          .filter((ca) => ca.assetId === result.asset.id)
+          .map((ca) => ca.category);
 
         if (assetCategories.length === 0) {
           uncategorized.push(result);
@@ -404,21 +370,23 @@ export function registerFileAssetRoutes(app: Express) {
             if (!categoryMap.has(key)) {
               categoryMap.set(key, []);
             }
-            categoryMap.get(key)!.push(result);
+            categoryMap.get(key)?.push(result);
           }
         }
       }
 
       // Format response
-      const groupedResults = Array.from(categoryMap.entries()).map(([categoryName, results]) => ({
-        category: categoryName,
-        assets: results.map(r => ({ ...r.asset, relevance: r.rank })),
-      }));
+      const groupedResults = Array.from(categoryMap.entries()).map(
+        ([categoryName, results]) => ({
+          category: categoryName,
+          assets: results.map((r) => ({ ...r.asset, relevance: r.rank })),
+        })
+      );
 
       if (uncategorized.length > 0) {
         groupedResults.push({
           category: "Uncategorized",
-          assets: uncategorized.map(r => ({ ...r.asset, relevance: r.rank })),
+          assets: uncategorized.map((r) => ({ ...r.asset, relevance: r.rank })),
         });
       }
 
@@ -449,23 +417,30 @@ export function registerFileAssetRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map(uc => uc.clientId);
+      const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get the asset
       const [asset] = await db
         .select()
         .from(assets)
-        .where(and(
-          eq(assets.id, assetId),
-          isNull(assets.deletedAt),
-          inArray(assets.clientId, clientIds)
-        ));
+        .where(
+          and(
+            eq(assets.id, assetId),
+            isNull(assets.deletedAt),
+            inArray(assets.clientId, clientIds)
+          )
+        );
 
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
@@ -480,7 +455,9 @@ export function registerFileAssetRoutes(app: Express) {
       );
 
       if (!permission.allowed) {
-        return res.status(403).json({ message: "Not authorized to view this asset" });
+        return res
+          .status(403)
+          .json({ message: "Not authorized to view this asset" });
       }
 
       // Get categories
@@ -495,7 +472,10 @@ export function registerFileAssetRoutes(app: Express) {
         .from(assetCategoryAssignments)
         .innerJoin(
           (await import("@shared/schema")).assetCategories,
-          eq(assetCategoryAssignments.categoryId, (await import("@shared/schema")).assetCategories.id)
+          eq(
+            assetCategoryAssignments.categoryId,
+            (await import("@shared/schema")).assetCategories.id
+          )
         )
         .where(eq(assetCategoryAssignments.assetId, asset.id));
 
@@ -538,23 +518,30 @@ export function registerFileAssetRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map(uc => uc.clientId);
+      const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get the asset
       const [asset] = await db
         .select()
         .from(assets)
-        .where(and(
-          eq(assets.id, assetId),
-          isNull(assets.deletedAt),
-          inArray(assets.clientId, clientIds)
-        ));
+        .where(
+          and(
+            eq(assets.id, assetId),
+            isNull(assets.deletedAt),
+            inArray(assets.clientId, clientIds)
+          )
+        );
 
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
@@ -569,7 +556,9 @@ export function registerFileAssetRoutes(app: Express) {
       );
 
       if (!permission.allowed || !permission.asset) {
-        return res.status(403).json({ message: "Not authorized to download this asset" });
+        return res
+          .status(403)
+          .json({ message: "Not authorized to download this asset" });
       }
 
       // Download file from storage
@@ -612,23 +601,30 @@ export function registerFileAssetRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map(uc => uc.clientId);
+      const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get the asset
       const [asset] = await db
         .select()
         .from(assets)
-        .where(and(
-          eq(assets.id, assetId),
-          isNull(assets.deletedAt),
-          inArray(assets.clientId, clientIds)
-        ));
+        .where(
+          and(
+            eq(assets.id, assetId),
+            isNull(assets.deletedAt),
+            inArray(assets.clientId, clientIds)
+          )
+        );
 
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
@@ -643,7 +639,9 @@ export function registerFileAssetRoutes(app: Express) {
       );
 
       if (!permission.allowed) {
-        return res.status(403).json({ message: "Not authorized to update this asset" });
+        return res
+          .status(403)
+          .json({ message: "Not authorized to update this asset" });
       }
 
       const { visibility, categories, tags } = req.body;
@@ -728,23 +726,30 @@ export function registerFileAssetRoutes(app: Express) {
       const userClients = await db
         .select()
         .from((await import("@shared/schema")).userClients)
-        .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
 
       if (userClients.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map(uc => uc.clientId);
+      const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get the asset
       const [asset] = await db
         .select()
         .from(assets)
-        .where(and(
-          eq(assets.id, assetId),
-          isNull(assets.deletedAt),
-          inArray(assets.clientId, clientIds)
-        ));
+        .where(
+          and(
+            eq(assets.id, assetId),
+            isNull(assets.deletedAt),
+            inArray(assets.clientId, clientIds)
+          )
+        );
 
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
@@ -759,7 +764,9 @@ export function registerFileAssetRoutes(app: Express) {
       );
 
       if (!permission.allowed) {
-        return res.status(403).json({ message: "Not authorized to delete this asset" });
+        return res
+          .status(403)
+          .json({ message: "Not authorized to delete this asset" });
       }
 
       // Soft delete the asset
@@ -767,6 +774,26 @@ export function registerFileAssetRoutes(app: Express) {
         .update(assets)
         .set({ deletedAt: new Date() })
         .where(eq(assets.id, assetId));
+
+      // Delete the actual file from storage
+      if (asset.storagePath) {
+        const deleteResult = await deleteFile(asset.storagePath);
+        if (!deleteResult.success) {
+          console.error(
+            `Failed to delete file from storage: ${deleteResult.error}`
+          );
+        }
+      }
+
+      // Delete any thumbnails for this asset
+      try {
+        await deleteThumbnails(assetId);
+      } catch (error) {
+        console.error(
+          `Failed to delete thumbnails for asset ${assetId}:`,
+          error
+        );
+      }
 
       res.json({ message: "Asset deleted successfully" });
     } catch (error: unknown) {
@@ -781,6 +808,8 @@ export function registerFileAssetRoutes(app: Express) {
   // Global upload endpoint (infers clientId from session/user context)
   app.post(
     "/api/assets/upload",
+    csrfProtection,
+    uploadRateLimit,
     upload.single("file"),
     virusScan,
     async (req, res: Response) => {
@@ -789,14 +818,39 @@ export function registerFileAssetRoutes(app: Express) {
           return res.status(401).json({ message: "Not authenticated" });
         }
 
+        // Check user role - guests cannot upload
+        const [user] = await db
+          .select()
+          .from((await import("@shared/schema")).users)
+          .where(
+            eq((await import("@shared/schema")).users.id, req.session.userId)
+          );
+
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        if (user.role === UserRole.GUEST) {
+          return res
+            .status(403)
+            .json({ message: "Guests cannot upload files" });
+        }
+
         // Get user's first client (for now - could be enhanced to require clientId in body)
         const userClients = await db
           .select()
           .from((await import("@shared/schema")).userClients)
-          .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+          .where(
+            eq(
+              (await import("@shared/schema")).userClients.userId,
+              req.session.userId
+            )
+          );
 
         if (userClients.length === 0) {
-          return res.status(400).json({ message: "No client associated with user" });
+          return res
+            .status(400)
+            .json({ message: "No client associated with user" });
         }
 
         const clientId = userClients[0].clientId;
@@ -873,17 +927,14 @@ export function registerFileAssetRoutes(app: Express) {
           const tagIds: number[] = [];
 
           for (const tagName of tagNames) {
-            const slug = tagName.toLowerCase().replace(/\s+/g, '-');
+            const slug = tagName.toLowerCase().replace(/\s+/g, "-");
 
             // Check if tag already exists for this client
             const [existingTag] = await db
               .select()
               .from(assetTags)
               .where(
-                and(
-                  eq(assetTags.clientId, clientId),
-                  eq(assetTags.slug, slug)
-                )
+                and(eq(assetTags.clientId, clientId), eq(assetTags.slug, slug))
               );
 
             if (existingTag) {
@@ -928,6 +979,8 @@ export function registerFileAssetRoutes(app: Express) {
   // Upload asset (client-scoped)
   app.post(
     "/api/clients/:clientId/file-assets/upload",
+    csrfProtection,
+    uploadRateLimit,
     validateClientId,
     upload.single("file"),
     virusScan,
@@ -940,6 +993,24 @@ export function registerFileAssetRoutes(app: Express) {
         const clientId = req.clientId;
         if (!clientId) {
           return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        // Check user role - guests cannot upload
+        const [user] = await db
+          .select()
+          .from((await import("@shared/schema")).users)
+          .where(
+            eq((await import("@shared/schema")).users.id, req.session.userId)
+          );
+
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        if (user.role === UserRole.GUEST) {
+          return res
+            .status(403)
+            .json({ message: "Guests cannot upload files" });
         }
 
         const file = req.file;
@@ -1014,17 +1085,14 @@ export function registerFileAssetRoutes(app: Express) {
           const tagIds: number[] = [];
 
           for (const tagName of tagNames) {
-            const slug = tagName.toLowerCase().replace(/\s+/g, '-');
+            const slug = tagName.toLowerCase().replace(/\s+/g, "-");
 
             // Check if tag already exists for this client
             const [existingTag] = await db
               .select()
               .from(assetTags)
               .where(
-                and(
-                  eq(assetTags.clientId, clientId),
-                  eq(assetTags.slug, slug)
-                )
+                and(eq(assetTags.clientId, clientId), eq(assetTags.slug, slug))
               );
 
             if (existingTag) {
@@ -1209,7 +1277,42 @@ export function registerFileAssetRoutes(app: Express) {
             .json({ message: "Not authorized to view this asset" });
         }
 
-        res.json(permission.asset);
+        // Get categories
+        const categoryRows = await db
+          .select({
+            id: (await import("@shared/schema")).assetCategories.id,
+            name: (await import("@shared/schema")).assetCategories.name,
+            slug: (await import("@shared/schema")).assetCategories.slug,
+            isDefault: (await import("@shared/schema")).assetCategories.isDefault,
+            clientId: (await import("@shared/schema")).assetCategories.clientId,
+          })
+          .from(assetCategoryAssignments)
+          .innerJoin(
+            (await import("@shared/schema")).assetCategories,
+            eq(
+              assetCategoryAssignments.categoryId,
+              (await import("@shared/schema")).assetCategories.id
+            )
+          )
+          .where(eq(assetCategoryAssignments.assetId, assetId));
+
+        // Get tags
+        const tagRows = await db
+          .select({
+            id: assetTags.id,
+            name: assetTags.name,
+            slug: assetTags.slug,
+            clientId: assetTags.clientId,
+          })
+          .from(assetTagAssignments)
+          .innerJoin(assetTags, eq(assetTagAssignments.tagId, assetTags.id))
+          .where(eq(assetTagAssignments.assetId, assetId));
+
+        res.json({
+          ...permission.asset,
+          categories: categoryRows,
+          tags: tagRows,
+        });
       } catch (error: unknown) {
         console.error(
           "Error fetching asset:",
@@ -1374,6 +1477,115 @@ export function registerFileAssetRoutes(app: Express) {
     }
   );
 
+  // Get thumbnail for a file asset
+  app.get(
+    "/api/clients/:clientId/file-assets/:assetId/thumbnail/:size",
+    validateClientId,
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const assetId = parseInt(req.params.assetId, 10);
+        const size = req.params.size as "small" | "medium" | "large";
+        const clientId = req.clientId;
+
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        // Validate size parameter
+        if (!["small", "medium", "large"].includes(size)) {
+          return res.status(400).json({ message: "Invalid thumbnail size" });
+        }
+
+        // Check if user has read permission
+        const permission = await checkAssetPermission(
+          req.session.userId,
+          assetId,
+          clientId,
+          "read"
+        );
+
+        if (!permission.allowed || !permission.asset) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to view this asset" });
+        }
+
+        const asset = permission.asset;
+
+        // Import thumbnail service
+        const {
+          canGenerateThumbnail,
+          getOrGenerateThumbnail,
+          getFileTypeIcon,
+        } = await import("../services/thumbnail");
+
+        // Check if we can generate a thumbnail for this file type
+        if (!canGenerateThumbnail(asset.fileType || "")) {
+          // Return file type icon name instead
+          const iconName = getFileTypeIcon(asset.fileType || "");
+          return res.json({ iconName });
+        }
+
+        // Download file from storage
+        const downloadResult = await downloadFile(asset.storagePath);
+
+        if (!downloadResult.success || !downloadResult.data) {
+          return res
+            .status(404)
+            .json({ message: downloadResult.error || "File not found" });
+        }
+
+        // Create a temporary file path for processing
+        const fs = await import("node:fs/promises");
+        const path = await import("node:path");
+        const os = await import("node:os");
+
+        const tempDir = os.tmpdir();
+        const tempFilePath = path.join(
+          tempDir,
+          `asset-${assetId}-${Date.now()}`
+        );
+
+        // Write the buffer to temp file
+        await fs.writeFile(tempFilePath, downloadResult.data);
+
+        try {
+          // Generate or get cached thumbnail
+          const thumbnailPath = await getOrGenerateThumbnail(
+            tempFilePath,
+            assetId,
+            size,
+            asset.fileType || ""
+          );
+
+          // Read and send the thumbnail
+          const thumbnailBuffer = await fs.readFile(thumbnailPath);
+
+          res.setHeader("Content-Type", "image/jpeg");
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          res.send(thumbnailBuffer);
+        } finally {
+          // Clean up temp file
+          try {
+            await fs.unlink(tempFilePath);
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
+      } catch (error: unknown) {
+        console.error(
+          "Error generating thumbnail:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error generating thumbnail" });
+      }
+    }
+  );
+
   // Delete asset (soft delete)
   app.delete(
     "/api/clients/:clientId/file-assets/:assetId",
@@ -1409,8 +1621,25 @@ export function registerFileAssetRoutes(app: Express) {
           .set({ deletedAt: new Date() })
           .where(eq(assets.id, assetId));
 
-        // Note: We don't delete the physical file immediately
-        // This allows for potential recovery. A cleanup job can be implemented later.
+        // Delete the actual file from storage
+        if (permission.asset.storagePath) {
+          const deleteResult = await deleteFile(permission.asset.storagePath);
+          if (!deleteResult.success) {
+            console.error(
+              `Failed to delete file from storage: ${deleteResult.error}`
+            );
+          }
+        }
+
+        // Delete any thumbnails for this asset
+        try {
+          await deleteThumbnails(assetId);
+        } catch (error) {
+          console.error(
+            `Failed to delete thumbnails for asset ${assetId}:`,
+            error
+          );
+        }
 
         res.json({ message: "Asset deleted successfully" });
       } catch (error: unknown) {

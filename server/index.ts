@@ -9,6 +9,7 @@ import express, {
 } from "express";
 import session from "express-session";
 import { devAuthBypass } from "./middlewares/devAuth";
+import { securityHeaders } from "./middlewares/security-headers";
 import { runMigrations } from "./migrations";
 import { registerRoutes } from "./routes";
 import { log, serveStatic, setupVite } from "./vite";
@@ -57,6 +58,9 @@ app.use(
 
 // Development auth bypass middleware (must come after session middleware)
 app.use(devAuthBypass);
+
+// Security headers middleware (should be early in the middleware stack)
+app.use(securityHeaders);
 
 // Add error handling middleware
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

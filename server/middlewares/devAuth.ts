@@ -6,8 +6,9 @@ import { storage } from "../storage";
  * When BYPASS_AUTH_FOR_LOCAL_DEV is enabled, this middleware:
  * 1. Skips Firebase token verification
  * 2. Automatically logs in as a specified dev user (by email)
+ * 3. In test mode, supports x-test-user-id header for per-request user switching
  *
- * IMPORTANT: Only use in local development. Never enable in production.
+ * IMPORTANT: Only use in local development/testing. Never enable in production.
  */
 export async function devAuthBypass(
   req: Request,
@@ -15,7 +16,9 @@ export async function devAuthBypass(
   next: NextFunction
 ): Promise<void> {
   // Only bypass auth if explicitly enabled
-  const bypassEnabled = process.env.BYPASS_AUTH_FOR_LOCAL_DEV === "true";
+  const bypassEnabled =
+    process.env.BYPASS_AUTH_FOR_LOCAL_DEV === "true" ||
+    process.env.NODE_ENV === "test";
 
   if (!bypassEnabled) {
     return next();
@@ -33,7 +36,37 @@ export async function devAuthBypass(
   }
 
   try {
-    // Get the dev user email from environment variable
+    // Check for test user header first (works in both test and dev modes)
+    // This enables integration tests to impersonate different users per request
+    const testUserId = req.headers["x-test-user-id"];
+
+    if (testUserId) {
+      const userId = parseInt(testUserId as string, 10);
+      if (!Number.isNaN(userId)) {
+        // Verify user exists
+        const user = await storage.getUser(userId);
+        if (user) {
+          req.session.userId = userId;
+          return next();
+        } else {
+          res.status(401).json({ message: "Test user not found" });
+          return;
+        }
+      }
+    }
+
+    // Test mode without header: continue without auth
+    if (process.env.NODE_ENV === "test") {
+      // If no test user header, check if session already has a user
+      if (req.session.userId) {
+        return next();
+      }
+
+      // No user specified - continue without auth
+      return next();
+    }
+
+    // Dev mode: use dev user email from environment
     const devUserEmail = process.env.DEV_USER_EMAIL;
 
     if (!devUserEmail) {

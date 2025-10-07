@@ -5,6 +5,8 @@ import {
 } from "@shared/schema";
 import type { Express } from "express";
 import { storage } from "../storage";
+import { csrfProtection } from "../middlewares/security-headers";
+import { mutationRateLimit } from "../middlewares/rate-limit";
 
 export function registerClientRoutes(app: Express) {
   // Client routes
@@ -63,7 +65,7 @@ export function registerClientRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/clients/:id", async (req, res) => {
+  app.delete("/api/clients/:id", csrfProtection, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -85,7 +87,7 @@ export function registerClientRoutes(app: Express) {
   });
 
   // Create new client
-  app.post("/api/clients", async (req, res) => {
+  app.post("/api/clients", csrfProtection, mutationRateLimit, async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -115,7 +117,7 @@ export function registerClientRoutes(app: Express) {
   });
 
   // Add new route for updating client order
-  app.patch("/api/clients/order", async (req, res) => {
+  app.patch("/api/clients/order", csrfProtection, async (req, res) => {
     try {
       const { clientOrders } = updateClientOrderSchema.parse(req.body);
       // Update each client's display order
@@ -135,7 +137,7 @@ export function registerClientRoutes(app: Express) {
   });
 
   // Update client information
-  app.patch("/api/clients/:id", async (req, res) => {
+  app.patch("/api/clients/:id", csrfProtection, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {

@@ -4,6 +4,8 @@ import type { Express } from "express";
 import { db } from "../db";
 import { emailService } from "../email-service";
 import { storage } from "../storage";
+import { invitationRateLimit } from "../middlewares/rate-limit";
+import { csrfProtection } from "../middlewares/security-headers";
 import {
   EmailServiceError,
   ERROR_MESSAGES,
@@ -119,7 +121,7 @@ export function registerInvitationRoutes(app: Express) {
   });
 
   // Create a new invitation
-  app.post("/api/invitations", async (req, res) => {
+  app.post("/api/invitations", csrfProtection, invitationRateLimit, async (req, res) => {
     try {
       const parsed = insertInvitationSchema.safeParse(req.body);
 

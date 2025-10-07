@@ -37,8 +37,8 @@ const ALLOWED_MIME_TYPES = [
   "text/csv",
 ];
 
-// Risky file types that should be flagged (executable files)
-const RISKY_FILE_EXTENSIONS = [
+// Risky file types that should be blocked (executable files)
+const BLOCKED_FILE_EXTENSIONS = [
   ".exe",
   ".bat",
   ".cmd",
@@ -53,8 +53,10 @@ const RISKY_FILE_EXTENSIONS = [
   ".msi",
   ".scr",
   ".vbs",
-  ".js",
-  ".ts",
+  ".com",
+  ".pif",
+  ".cpl",
+  ".dll",
 ];
 
 // Configure multer for memory storage (we'll handle file system storage ourselves)
@@ -68,21 +70,28 @@ const fileFilter = (
 ) => {
   const fileExtension = path.extname(file.originalname).toLowerCase();
 
-  // Check for risky file types
-  if (RISKY_FILE_EXTENSIONS.includes(fileExtension)) {
-    console.warn(
-      `Risky file type detected: ${file.originalname} (${file.mimetype})`
+  // Block executable file types for security
+  if (BLOCKED_FILE_EXTENSIONS.includes(fileExtension)) {
+    console.error(
+      `Blocked executable file type: ${file.originalname} (${file.mimetype})`
     );
-    // Log but don't reject - we'll handle this in the route
-    (req as any).riskyFileDetected = true;
+    return cb(
+      new Error(
+        `File type ${fileExtension} is not allowed for security reasons`
+      )
+    );
   }
 
-  // Check MIME type
+  // Check MIME type - block if not in allowed list
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     console.warn(
-      `Uncommon MIME type: ${file.mimetype} for file ${file.originalname}`
+      `Blocked uncommon MIME type: ${file.mimetype} for file ${file.originalname}`
     );
-    // Accept anyway but log for monitoring
+    return cb(
+      new Error(
+        `File type ${file.mimetype} is not allowed. Please upload a supported file type.`
+      )
+    );
   }
 
   // Accept the file
@@ -106,13 +115,7 @@ export const virusScan = (
   next: (err?: Error) => void
 ) => {
   // In production, integrate with ClamAV or similar
+  // TODO: Integrate with virus scanning service before production launch
   console.log("Virus scan placeholder - file accepted without scanning");
-
-  if ((req as any).riskyFileDetected) {
-    console.warn(
-      "WARNING: Risky file type detected - virus scanning recommended"
-    );
-  }
-
   next();
 };

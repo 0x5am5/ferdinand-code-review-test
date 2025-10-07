@@ -3,6 +3,8 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
 import { validateClientId } from "../middlewares/vaildateClientId";
+import { tokenCreationRateLimit } from "../middlewares/rate-limit";
+import { csrfProtection } from "../middlewares/security-headers";
 import type { RequestWithClientId } from "../routes";
 import {
   generateApiToken,
@@ -17,6 +19,8 @@ export function registerApiTokenRoutes(app: Express) {
   // Generate a new API token
   app.post(
     "/api/clients/:clientId/tokens",
+    csrfProtection,
+    tokenCreationRateLimit,
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {

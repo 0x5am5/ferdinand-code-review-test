@@ -8,7 +8,7 @@ import {
   insertColorAssetSchema,
   insertFontAssetSchema,
 } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Express, Response } from "express";
 import multer from "multer";
 import { validateClientId } from "server/middlewares/vaildateClientId";
@@ -1968,4 +1968,133 @@ export function registerAssetRoutes(app: Express) {
       res.status(500).json({ message: "Error fetching converted assets" });
     }
   });
+
+  // Get thumbnail for an asset
+  app.get(
+    "/api/assets/:assetId/thumbnail/:size",
+    async (req, res: Response) => {
+      try {
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const assetId = parseInt(req.params.assetId, 10);
+        const size = req.params.size as "small" | "medium" | "large";
+
+        // Validate size parameter
+        if (!["small", "medium", "large"].includes(size)) {
+          return res.status(400).json({ message: "Invalid thumbnail size" });
+        }
+
+        // Get user's clients to determine access
+        const userClients = await db
+          .select()
+          .from((await import("@shared/schema")).userClients)
+          .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+
+        if (userClients.length === 0) {
+          return res.status(403).json({ message: "Not authorized" });
+        }
+
+        const clientIds = userClients.map(uc => uc.clientId);
+
+        // Get asset from database (file asset) - check user has access to this client
+        const [asset] = await db
+          .select()
+          .from((await import("@shared/schema")).assets)
+          .where(
+            and(
+              eq((await import("@shared/schema")).assets.id, assetId),
+              isNull((await import("@shared/schema")).assets.deletedAt),
+              inArray((await import("@shared/schema")).assets.clientId, clientIds)
+            )
+          );
+
+        if (!asset) {
+          return res.status(404).json({ message: "Asset not found" });
+        }
+
+        // Check if user has read permission
+        const { checkAssetPermission } = await import("../utils/asset-permissions");
+        const permission = await checkAssetPermission(
+          req.session.userId,
+          assetId,
+          asset.clientId,
+          "read"
+        );
+
+        if (!permission.allowed || !permission.asset) {
+          return res.status(403).json({ message: "Not authorized to view this asset" });
+        }
+
+        // Import thumbnail service
+        const {
+          canGenerateThumbnail,
+          getOrGenerateThumbnail,
+          getFileTypeIcon,
+        } = await import("../services/thumbnail");
+        const { downloadFile } = await import("../storage/index");
+
+        // Check if we can generate a thumbnail for this file type
+        if (!canGenerateThumbnail(asset.fileType || "")) {
+          // Return file type icon name instead
+          const iconName = getFileTypeIcon(asset.fileType || "");
+          return res.json({ icon: iconName });
+        }
+
+        // Download file from storage
+        const downloadResult = await downloadFile(asset.storagePath);
+
+        if (!downloadResult.success || !downloadResult.data) {
+          return res
+            .status(404)
+            .json({ message: downloadResult.error || "File not found" });
+        }
+
+        // Create a temporary file path for processing
+        const fs = await import("fs/promises");
+        const path = await import("path");
+        const os = await import("os");
+
+        const tempDir = os.tmpdir();
+        const tempFilePath = path.join(tempDir, `asset-${assetId}-${Date.now()}`);
+
+        // Write the buffer to temp file
+        await fs.writeFile(tempFilePath, downloadResult.data);
+
+        try {
+          // Generate or get cached thumbnail
+          const thumbnailPath = await getOrGenerateThumbnail(
+            tempFilePath,
+            assetId,
+            size,
+            asset.fileType || ""
+          );
+
+          // Read and send the thumbnail
+          const thumbnailBuffer = await fs.readFile(thumbnailPath);
+
+          res.setHeader("Content-Type", "image/jpeg");
+          res.setHeader(
+            "Cache-Control",
+            "public, max-age=31536000, immutable"
+          );
+          res.send(thumbnailBuffer);
+        } finally {
+          // Clean up temp file
+          try {
+            await fs.unlink(tempFilePath);
+          } catch {
+            // Ignore cleanup errors
+          }
+        }
+      } catch (error: unknown) {
+        console.error(
+          "Error generating thumbnail:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error generating thumbnail" });
+      }
+    }
+  );
 }

@@ -1,10 +1,12 @@
 import type { Express } from "express";
 import { auth as firebaseAuth } from "../firebase";
 import { storage } from "../storage";
+import { authRateLimit } from "../middlewares/rate-limit";
+import { csrfProtection } from "../middlewares/security-headers";
 
 export function registerAuthRoutes(app: Express) {
   // Logout endpoint
-  app.post("/api/auth/logout", (req, res) => {
+  app.post("/api/auth/logout", csrfProtection, (req, res) => {
     req.session.destroy((err) => {
       if (err) {
         console.error(
@@ -18,7 +20,7 @@ export function registerAuthRoutes(app: Express) {
   });
 
   // Google Auth endpoint
-  app.post("/api/auth/google", async (req, res) => {
+  app.post("/api/auth/google", authRateLimit, async (req, res) => {
     try {
       console.log("Received Google auth request");
       const { idToken } = req.body;

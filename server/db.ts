@@ -49,7 +49,7 @@ if (isLocalPostgres) {
   try {
     console.log("Testing database connection...");
     const client = await pool.connect();
-    await client.query("SELECT 1");
+    await client.query("SELECT 1" as any);
     client.release();
     console.log("✓ Database connection successful");
   } catch (err) {

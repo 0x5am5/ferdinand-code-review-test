@@ -755,11 +755,14 @@ export class DatabaseStorage implements IStorage {
 
     // Map individual styles to correct database fields if they exist in the update
     if (updateTypeScale.individualHeaderStyles) {
-      cleanedData.individual_header_styles =
-        updateTypeScale.individualHeaderStyles;
+      cleanedData.individual_header_styles = JSON.stringify(
+        updateTypeScale.individualHeaderStyles
+      );
     }
     if (updateTypeScale.individualBodyStyles) {
-      cleanedData.individual_body_styles = updateTypeScale.individualBodyStyles;
+      cleanedData.individual_body_styles = JSON.stringify(
+        updateTypeScale.individualBodyStyles
+      );
     }
 
     // Set updatedAt field for the database (snake_case)
@@ -1019,10 +1022,10 @@ export const updateTypeScaleStorage = async (
       ...(data.headerFontFamily && { headerFontFamily: data.headerFontFamily }),
       ...(data.typeStyles && { typeStyles: data.typeStyles }),
       ...(data.individualHeaderStyles && {
-        individual_header_styles: data.individualHeaderStyles,
+        individual_header_styles: JSON.stringify(data.individualHeaderStyles),
       }),
       ...(data.individualBodyStyles && {
-        individual_body_styles: data.individualBodyStyles,
+        individual_body_styles: JSON.stringify(data.individualBodyStyles),
       }),
       // ...(data.exports && { exports: data.exports }),
     })
@@ -1058,8 +1061,12 @@ export const getClientTypeScales = async (
     exports: typeScale.exports as TypeScale["exports"],
     createdAt: typeScale.createdAt?.toISOString(),
     updatedAt: typeScale.updatedAt?.toISOString(),
-    individualHeaderStyles: typeScale.individual_header_styles || {},
-    individualBodyStyles: typeScale.individual_body_styles || {},
+    individualHeaderStyles: typeof typeScale.individual_header_styles === 'string'
+      ? JSON.parse(typeScale.individual_header_styles)
+      : typeScale.individual_header_styles || {},
+    individualBodyStyles: typeof typeScale.individual_body_styles === 'string'
+      ? JSON.parse(typeScale.individual_body_styles)
+      : typeScale.individual_body_styles || {},
   }));
 };
 
@@ -1090,7 +1097,11 @@ export const getTypeScale = async (id: number): Promise<TypeScale | null> => {
     exports: typeScale.exports as TypeScale["exports"],
     createdAt: typeScale.createdAt?.toISOString(),
     updatedAt: typeScale.updatedAt?.toISOString(),
-    individualHeaderStyles: typeScale.individual_header_styles || {},
-    individualBodyStyles: typeScale.individual_body_styles || {},
+    individualHeaderStyles: typeof typeScale.individual_header_styles === 'string'
+      ? JSON.parse(typeScale.individual_header_styles)
+      : typeScale.individual_header_styles || {},
+    individualBodyStyles: typeof typeScale.individual_body_styles === 'string'
+      ? JSON.parse(typeScale.individual_body_styles)
+      : typeScale.individual_body_styles || {},
   };
 };

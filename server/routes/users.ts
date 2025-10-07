@@ -11,6 +11,8 @@ import {
 import { and, eq, inArray } from "drizzle-orm";
 import type { Express } from "express";
 import { validateClientId } from "server/middlewares/vaildateClientId";
+import { csrfProtection } from "../middlewares/security-headers";
+import { mutationRateLimit } from "../middlewares/rate-limit";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { emailService } from "../email-service";
@@ -109,7 +111,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Create a new user (with invite)
-  app.post("/api/users", async (req, res) => {
+  app.post("/api/users", csrfProtection, mutationRateLimit, async (req, res) => {
     try {
       // For user invitation, we'll use the invitations system which already has email handling
       // and proper error validation
@@ -132,12 +134,13 @@ export function registerUserRoutes(app: Express) {
       }
 
       // Check if an invitation with this email already exists
-      const existingInvitations = await db.query.invitations.findMany({
-        where: eq(invitations.email, invitationData.email),
-      });
+      const existingInvitations = await db
+        .select()
+        .from(invitations)
+        .where(eq(invitations.email, invitationData.email));
 
       // Only consider unused invitations as duplicates
-      const pendingInvitation = existingInvitations.find((inv) => !inv.used);
+      const pendingInvitation = existingInvitations.find((inv: any) => !inv.used);
       if (pendingInvitation) {
         return res.status(400).json({
           message: "An invitation for this email already exists",
@@ -245,7 +248,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Update current user's role
-  app.patch("/api/users/role", async (req, res) => {
+  app.patch("/api/users/role", csrfProtection, async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -271,7 +274,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Update user role
-  app.patch("/api/users/:id/role", async (req, res) => {
+  app.patch("/api/users/:id/role", csrfProtection, async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -480,7 +483,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Create user-client relationship
-  app.post("/api/user-clients", async (req, res) => {
+  app.post("/api/user-clients", csrfProtection, async (req, res) => {
     try {
       let { userId, clientId } = req.body;
 
@@ -563,7 +566,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Delete user-client relationship
-  app.delete("/api/user-clients/:userId/:clientId", async (req, res) => {
+  app.delete("/api/user-clients/:userId/:clientId", csrfProtection, async (req, res) => {
     try {
       const userId = parseInt(req.params.userId, 10);
       const clientId = parseInt(req.params.clientId, 10);

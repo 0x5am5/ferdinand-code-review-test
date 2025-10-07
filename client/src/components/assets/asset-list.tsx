@@ -127,9 +127,9 @@ export const AssetList: FC<AssetListProps> = ({
               onClick={() => onAssetClick(asset)}
             >
               <div className="aspect-square bg-muted flex items-center justify-center relative">
-                {asset.fileType.startsWith("image/") ? (
+                {asset.fileType.startsWith("image/") || asset.fileType === "application/pdf" ? (
                   <img
-                    src={`/api/assets/${asset.id}/download`}
+                    src={`/api/assets/${asset.id}/thumbnail/medium`}
                     alt={asset.originalFileName}
                     className="w-full h-full object-cover"
                   />
@@ -232,9 +232,9 @@ export const AssetList: FC<AssetListProps> = ({
                   onClick={() => onAssetClick(asset)}
                 >
                   <TableCell>
-                    {asset.fileType.startsWith("image/") ? (
+                    {asset.fileType.startsWith("image/") || asset.fileType === "application/pdf" ? (
                       <img
-                        src={`/api/assets/${asset.id}/download`}
+                        src={`/api/assets/${asset.id}/thumbnail/small`}
                         alt={asset.originalFileName}
                         className="h-10 w-10 object-cover rounded"
                       />
