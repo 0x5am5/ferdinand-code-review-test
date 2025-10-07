@@ -275,6 +275,42 @@ export const useBulkDeleteAssetsMutation = () => {
   });
 };
 
+export const useBulkUpdateAssetsMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      assetIds: number[];
+      categoryId?: number | null;
+      tagIds?: number[];
+      addTags?: number[];
+      removeTags?: number[];
+    }) => {
+      const response = await apiRequest(
+        "POST",
+        "/api/assets/bulk-update",
+        data
+      );
+      return response.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/asset-tags"] });
+      toast({
+        title: "Success",
+        description: `${variables.assetIds.length} asset${variables.assetIds.length === 1 ? "" : "s"} updated successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useCreateCategoryMutation = () => {
   const queryClient = useQueryClient();
 

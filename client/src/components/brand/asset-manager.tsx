@@ -17,8 +17,11 @@ import {
 import {
   type Asset,
   type AssetFilters as Filters,
+  useAssetCategoriesQuery,
   useAssetsQuery,
+  useAssetTagsQuery,
   useBulkDeleteAssetsMutation,
+  useBulkUpdateAssetsMutation,
   useDeleteAssetMutation,
 } from "@/lib/queries/assets";
 
@@ -40,8 +43,11 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
 
   // Fetch assets filtered by clientId
   const { data: allAssets = [], isLoading } = useAssetsQuery(filters);
+  const { data: categories = [] } = useAssetCategoriesQuery();
+  const { data: tags = [] } = useAssetTagsQuery();
   const deleteMutation = useDeleteAssetMutation();
   const bulkDeleteMutation = useBulkDeleteAssetsMutation();
+  const bulkUpdateMutation = useBulkUpdateAssetsMutation();
 
   // Filter assets by clientId on the client side
   const assets = allAssets.filter((asset) => asset.clientId === clientId);
@@ -72,6 +78,16 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     }
   };
 
+  const handleBulkUpdate = async (
+    assetIds: number[],
+    updates: { categoryId?: number | null; addTags?: number[] }
+  ) => {
+    await bulkUpdateMutation.mutateAsync({
+      assetIds,
+      ...updates,
+    });
+  };
+
   const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -97,8 +113,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   }, []);
 
   return (
-    <div
-      role="region"
+    <section
       aria-label="Asset upload drop zone"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -152,6 +167,9 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         onAssetClick={handleAssetClick}
         onDelete={handleDelete}
         onBulkDelete={handleBulkDelete}
+        onBulkUpdate={handleBulkUpdate}
+        categories={categories}
+        tags={tags}
       />
 
       {/* Asset detail modal */}
@@ -211,6 +229,6 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </section>
   );
 };

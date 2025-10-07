@@ -1,3 +1,5 @@
+import type { BrandAsset } from "@shared/schema";
+
 export interface LogoDisplayOptions {
   query?: string;
   showConfirmation?: boolean;
@@ -6,7 +8,7 @@ export interface LogoDisplayOptions {
 
 // Build confirmation blocks for large logo result sets
 export function buildLogoConfirmationBlocks(
-  matchedLogos: any[],
+  matchedLogos: BrandAsset[],
   query: string,
   workspaceClientId: number
 ) {
@@ -77,7 +79,7 @@ export function buildLogoConfirmationBlocks(
 
 // Build processing message for logo uploads
 export function buildLogoProcessingMessage(
-  matchedLogos: any[],
+  matchedLogos: BrandAsset[],
   query?: string
 ): string {
   // Check for dark variants in the matched logos

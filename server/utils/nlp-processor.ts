@@ -16,14 +16,14 @@ interface AssetContext {
 }
 
 export class NLPProcessor {
-  private openai: OpenAI;
+  private openai: OpenAI | null;
 
   constructor() {
     if (!process.env.OPENAI_API_KEY) {
       console.warn(
         "OpenAI API key not configured. Natural language processing will be disabled."
       );
-      this.openai = null as any;
+      this.openai = null;
     } else {
       this.openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,

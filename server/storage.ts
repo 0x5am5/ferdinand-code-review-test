@@ -1061,12 +1061,14 @@ export const getClientTypeScales = async (
     exports: typeScale.exports as TypeScale["exports"],
     createdAt: typeScale.createdAt?.toISOString(),
     updatedAt: typeScale.updatedAt?.toISOString(),
-    individualHeaderStyles: typeof typeScale.individual_header_styles === 'string'
-      ? JSON.parse(typeScale.individual_header_styles)
-      : typeScale.individual_header_styles || {},
-    individualBodyStyles: typeof typeScale.individual_body_styles === 'string'
-      ? JSON.parse(typeScale.individual_body_styles)
-      : typeScale.individual_body_styles || {},
+    individualHeaderStyles:
+      typeof typeScale.individual_header_styles === "string"
+        ? JSON.parse(typeScale.individual_header_styles)
+        : typeScale.individual_header_styles || {},
+    individualBodyStyles:
+      typeof typeScale.individual_body_styles === "string"
+        ? JSON.parse(typeScale.individual_body_styles)
+        : typeScale.individual_body_styles || {},
   }));
 };
 
@@ -1097,11 +1099,13 @@ export const getTypeScale = async (id: number): Promise<TypeScale | null> => {
     exports: typeScale.exports as TypeScale["exports"],
     createdAt: typeScale.createdAt?.toISOString(),
     updatedAt: typeScale.updatedAt?.toISOString(),
-    individualHeaderStyles: typeof typeScale.individual_header_styles === 'string'
-      ? JSON.parse(typeScale.individual_header_styles)
-      : typeScale.individual_header_styles || {},
-    individualBodyStyles: typeof typeScale.individual_body_styles === 'string'
-      ? JSON.parse(typeScale.individual_body_styles)
-      : typeScale.individual_body_styles || {},
+    individualHeaderStyles:
+      typeof typeScale.individual_header_styles === "string"
+        ? JSON.parse(typeScale.individual_header_styles)
+        : typeScale.individual_header_styles || {},
+    individualBodyStyles:
+      typeof typeScale.individual_body_styles === "string"
+        ? JSON.parse(typeScale.individual_body_styles)
+        : typeScale.individual_body_styles || {},
   };
 };

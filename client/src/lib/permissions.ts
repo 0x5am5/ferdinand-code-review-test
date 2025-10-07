@@ -3,7 +3,12 @@
  * Maps to backend permission logic in server/utils/asset-permissions.ts
  */
 
-export type UserRole = "super_admin" | "admin" | "editor" | "standard" | "guest";
+export type UserRole =
+  | "super_admin"
+  | "admin"
+  | "editor"
+  | "standard"
+  | "guest";
 
 export interface Asset {
   id: number;

@@ -1,9 +1,8 @@
-import sharp from 'sharp';
-import fs from 'fs/promises';
-import path from 'path';
-import { mkdir } from 'fs/promises';
+import fs, { mkdir } from "node:fs/promises";
+import path from "node:path";
+import sharp from "sharp";
 
-export type ThumbnailSize = 'small' | 'medium' | 'large';
+export type ThumbnailSize = "small" | "medium" | "large";
 
 export interface ThumbnailDimensions {
   width: number;
@@ -17,14 +16,14 @@ const THUMBNAIL_SIZES: Record<ThumbnailSize, ThumbnailDimensions> = {
 };
 
 const SUPPORTED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/gif",
+  "image/webp",
 ];
 
-const SUPPORTED_PDF_TYPES = ['application/pdf'];
+const SUPPORTED_PDF_TYPES = ["application/pdf"];
 
 /**
  * Check if a file type can have a thumbnail generated
@@ -43,7 +42,7 @@ export function getThumbnailCachePath(
   assetId: number,
   size: ThumbnailSize
 ): string {
-  const cacheDir = process.env.THUMBNAIL_CACHE_DIR || 'uploads/thumbnails';
+  const cacheDir = process.env.THUMBNAIL_CACHE_DIR || "uploads/thumbnails";
   return path.join(cacheDir, size, `${assetId}.jpg`);
 }
 
@@ -79,7 +78,7 @@ async function generatePdfThumbnail(
   dimensions: ThumbnailDimensions
 ): Promise<Buffer> {
   try {
-    const { pdf } = await import('pdf-to-img');
+    const { pdf } = await import("pdf-to-img");
 
     // Convert first page of PDF to image
     const document = await pdf(sourcePath, { scale: 3.0 });
@@ -92,20 +91,20 @@ async function generatePdfThumbnail(
     }
 
     if (!firstPageBuffer) {
-      throw new Error('Failed to extract first page from PDF');
+      throw new Error("Failed to extract first page from PDF");
     }
 
     // Use Sharp to convert to JPEG and resize to exact dimensions
     return await sharp(firstPageBuffer)
       .resize(dimensions.width, dimensions.height, {
-        fit: 'inside',
+        fit: "inside",
         withoutEnlargement: false,
       })
       .jpeg({ quality: 85, progressive: true })
       .toBuffer();
   } catch (error) {
-    console.error('Error generating PDF thumbnail:', error);
-    throw new Error('Failed to generate PDF thumbnail');
+    console.error("Error generating PDF thumbnail:", error);
+    throw new Error("Failed to generate PDF thumbnail");
   }
 }
 
@@ -130,7 +129,10 @@ export async function generateThumbnail(
   try {
     // Handle PDF files differently
     if (SUPPORTED_PDF_TYPES.includes(mimeType.toLowerCase())) {
-      const thumbnailBuffer = await generatePdfThumbnail(sourcePath, dimensions);
+      const thumbnailBuffer = await generatePdfThumbnail(
+        sourcePath,
+        dimensions
+      );
       await fs.writeFile(cachePath, thumbnailBuffer);
       return cachePath;
     }
@@ -138,7 +140,7 @@ export async function generateThumbnail(
     // Handle image files with Sharp
     await sharp(sourcePath)
       .resize(dimensions.width, dimensions.height, {
-        fit: 'inside',
+        fit: "inside",
         withoutEnlargement: true,
       })
       .jpeg({ quality: 85, progressive: true })
@@ -146,8 +148,8 @@ export async function generateThumbnail(
 
     return cachePath;
   } catch (error) {
-    console.error('Error generating thumbnail:', error);
-    throw new Error('Failed to generate thumbnail');
+    console.error("Error generating thumbnail:", error);
+    throw new Error("Failed to generate thumbnail");
   }
 }
 
@@ -175,7 +177,7 @@ export async function getOrGenerateThumbnail(
  * Delete all thumbnails for an asset
  */
 export async function deleteThumbnails(assetId: number): Promise<void> {
-  const sizes: ThumbnailSize[] = ['small', 'medium', 'large'];
+  const sizes: ThumbnailSize[] = ["small", "medium", "large"];
 
   await Promise.all(
     sizes.map(async (size) => {
@@ -196,34 +198,34 @@ export function getFileTypeIcon(mimeType: string): string {
   const type = mimeType.toLowerCase();
 
   // Images
-  if (type.startsWith('image/')) return 'image';
+  if (type.startsWith("image/")) return "image";
 
   // Documents
-  if (type.includes('pdf')) return 'file-text';
+  if (type.includes("pdf")) return "file-text";
   if (
-    type.includes('document') ||
-    type.includes('word') ||
-    type.includes('text')
+    type.includes("document") ||
+    type.includes("word") ||
+    type.includes("text")
   )
-    return 'file-text';
+    return "file-text";
 
   // Spreadsheets
-  if (type.includes('spreadsheet') || type.includes('excel')) return 'table';
+  if (type.includes("spreadsheet") || type.includes("excel")) return "table";
 
   // Presentations
-  if (type.includes('presentation') || type.includes('powerpoint'))
-    return 'presentation';
+  if (type.includes("presentation") || type.includes("powerpoint"))
+    return "presentation";
 
   // Videos
-  if (type.startsWith('video/')) return 'video';
+  if (type.startsWith("video/")) return "video";
 
   // Audio
-  if (type.startsWith('audio/')) return 'music';
+  if (type.startsWith("audio/")) return "music";
 
   // Archives
-  if (type.includes('zip') || type.includes('rar') || type.includes('tar'))
-    return 'archive';
+  if (type.includes("zip") || type.includes("rar") || type.includes("tar"))
+    return "archive";
 
   // Default
-  return 'file';
+  return "file";
 }

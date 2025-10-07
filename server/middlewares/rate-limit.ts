@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 // Simple in-memory rate limiter
 // For production, consider using Redis-backed rate limiting (e.g., express-rate-limit with Redis store)
@@ -11,15 +11,18 @@ interface RateLimitRecord {
 const rateLimitStore = new Map<string, RateLimitRecord>();
 
 // Cleanup old entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  const entries = Array.from(rateLimitStore.entries());
-  for (const [key, record] of entries) {
-    if (record.resetTime < now) {
-      rateLimitStore.delete(key);
+setInterval(
+  () => {
+    const now = Date.now();
+    const entries = Array.from(rateLimitStore.entries());
+    for (const [key, record] of entries) {
+      if (record.resetTime < now) {
+        rateLimitStore.delete(key);
+      }
     }
-  }
-}, 10 * 60 * 1000);
+  },
+  10 * 60 * 1000
+);
 
 export interface RateLimitOptions {
   windowMs: number; // Time window in milliseconds
@@ -65,7 +68,10 @@ export function rateLimit(options: RateLimitOptions) {
       res.setHeader("Retry-After", retryAfter);
       res.setHeader("X-RateLimit-Limit", max);
       res.setHeader("X-RateLimit-Remaining", 0);
-      res.setHeader("X-RateLimit-Reset", new Date(record.resetTime).toISOString());
+      res.setHeader(
+        "X-RateLimit-Reset",
+        new Date(record.resetTime).toISOString()
+      );
 
       return res.status(429).json({
         message,
@@ -76,7 +82,10 @@ export function rateLimit(options: RateLimitOptions) {
     // Set rate limit headers
     res.setHeader("X-RateLimit-Limit", max);
     res.setHeader("X-RateLimit-Remaining", max - record.count);
-    res.setHeader("X-RateLimit-Reset", new Date(record.resetTime).toISOString());
+    res.setHeader(
+      "X-RateLimit-Reset",
+      new Date(record.resetTime).toISOString()
+    );
 
     next();
   };

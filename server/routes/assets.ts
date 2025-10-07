@@ -1887,19 +1887,16 @@ export function registerAssetRoutes(app: Express) {
   }
 
   // Direct download endpoint without client ID (for public/direct access)
-  app.get(
-    "/api/assets/:assetId/download",
-    async (req, res: Response) => {
-      // Redirect to the existing /file endpoint with the same parameters
-      const assetId = req.params.assetId;
-      const query = new URLSearchParams(req.query as Record<string, string>);
-      const queryString = query.toString();
-      const redirectUrl = `/api/assets/${assetId}/file${queryString ? `?${queryString}` : ""}`;
+  app.get("/api/assets/:assetId/download", async (req, res: Response) => {
+    // Redirect to the existing /file endpoint with the same parameters
+    const assetId = req.params.assetId;
+    const query = new URLSearchParams(req.query as Record<string, string>);
+    const queryString = query.toString();
+    const redirectUrl = `/api/assets/${assetId}/file${queryString ? `?${queryString}` : ""}`;
 
-      console.log(`Redirecting direct /download request to: ${redirectUrl}`);
-      return res.redirect(302, redirectUrl);
-    }
-  );
+    console.log(`Redirecting direct /download request to: ${redirectUrl}`);
+    return res.redirect(302, redirectUrl);
+  });
 
   // Add the missing /download endpoint that matches the URLs being generated
   app.get(
@@ -1990,13 +1987,18 @@ export function registerAssetRoutes(app: Express) {
         const userClients = await db
           .select()
           .from((await import("@shared/schema")).userClients)
-          .where(eq((await import("@shared/schema")).userClients.userId, req.session.userId));
+          .where(
+            eq(
+              (await import("@shared/schema")).userClients.userId,
+              req.session.userId
+            )
+          );
 
         if (userClients.length === 0) {
           return res.status(403).json({ message: "Not authorized" });
         }
 
-        const clientIds = userClients.map(uc => uc.clientId);
+        const clientIds = userClients.map((uc) => uc.clientId);
 
         // Get asset from database (file asset) - check user has access to this client
         const [asset] = await db
@@ -2006,7 +2008,10 @@ export function registerAssetRoutes(app: Express) {
             and(
               eq((await import("@shared/schema")).assets.id, assetId),
               isNull((await import("@shared/schema")).assets.deletedAt),
-              inArray((await import("@shared/schema")).assets.clientId, clientIds)
+              inArray(
+                (await import("@shared/schema")).assets.clientId,
+                clientIds
+              )
             )
           );
 
@@ -2015,7 +2020,9 @@ export function registerAssetRoutes(app: Express) {
         }
 
         // Check if user has read permission
-        const { checkAssetPermission } = await import("../utils/asset-permissions");
+        const { checkAssetPermission } = await import(
+          "../utils/asset-permissions"
+        );
         const permission = await checkAssetPermission(
           req.session.userId,
           assetId,
@@ -2024,7 +2031,9 @@ export function registerAssetRoutes(app: Express) {
         );
 
         if (!permission.allowed || !permission.asset) {
-          return res.status(403).json({ message: "Not authorized to view this asset" });
+          return res
+            .status(403)
+            .json({ message: "Not authorized to view this asset" });
         }
 
         // Import thumbnail service
@@ -2052,12 +2061,15 @@ export function registerAssetRoutes(app: Express) {
         }
 
         // Create a temporary file path for processing
-        const fs = await import("fs/promises");
-        const path = await import("path");
-        const os = await import("os");
+        const fs = await import("node:fs/promises");
+        const path = await import("node:path");
+        const os = await import("node:os");
 
         const tempDir = os.tmpdir();
-        const tempFilePath = path.join(tempDir, `asset-${assetId}-${Date.now()}`);
+        const tempFilePath = path.join(
+          tempDir,
+          `asset-${assetId}-${Date.now()}`
+        );
 
         // Write the buffer to temp file
         await fs.writeFile(tempFilePath, downloadResult.data);
@@ -2075,10 +2087,7 @@ export function registerAssetRoutes(app: Express) {
           const thumbnailBuffer = await fs.readFile(thumbnailPath);
 
           res.setHeader("Content-Type", "image/jpeg");
-          res.setHeader(
-            "Cache-Control",
-            "public, max-age=31536000, immutable"
-          );
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
           res.send(thumbnailBuffer);
         } finally {
           // Clean up temp file

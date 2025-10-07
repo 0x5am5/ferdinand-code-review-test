@@ -2,6 +2,7 @@ import { Pool as NeonPool, neonConfig } from "@neondatabase/serverless";
 import * as schema from "@shared/schema";
 import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
 import { drizzle as drizzleNode } from "drizzle-orm/node-postgres";
+import { sql } from "drizzle-orm";
 import { Pool as PgPool } from "pg";
 import ws from "ws";
 
@@ -48,9 +49,7 @@ if (isLocalPostgres) {
 (async () => {
   try {
     console.log("Testing database connection...");
-    const client = await pool.connect();
-    await client.query("SELECT 1" as any);
-    client.release();
+    await db.execute(sql`SELECT 1`);
     console.log("✓ Database connection successful");
   } catch (err) {
     console.error("✗ Database connection failed:", err);

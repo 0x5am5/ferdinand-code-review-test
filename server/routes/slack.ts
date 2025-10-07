@@ -3,7 +3,11 @@ import type { Express, Response } from "express";
 
 const { App, ExpressReceiver } = pkg;
 
-import { slackUserMappings, slackWorkspaces, insertSlackUserMappingSchema } from "@shared/schema";
+import {
+  insertSlackUserMappingSchema,
+  slackUserMappings,
+  slackWorkspaces,
+} from "@shared/schema";
 import * as dotenv from "dotenv";
 import { and, eq, or } from "drizzle-orm";
 import { validateClientId } from "server/middlewares/vaildateClientId";

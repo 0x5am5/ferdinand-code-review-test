@@ -10,7 +10,6 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { SpotlightProvider } from "@/hooks/use-spotlight";
 import { queryClient } from "@/lib/queryClient";
 import Instances from "@/pages/admin/instances";
-import BrandAssets from "@/pages/brand-assets";
 import ClientDetails from "@/pages/clients/[id]";
 import NewClientPage from "@/pages/clients/new";
 import ClientUsers from "@/pages/clients/users";
@@ -99,14 +98,6 @@ function Router() {
         <ProtectedRoute roles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
           <AppLayout pageKey="client-details">
             <Clients />
-          </AppLayout>
-        </ProtectedRoute>
-      </Route>
-
-      <Route path="/brand-assets">
-        <ProtectedRoute roles={[]}>
-          <AppLayout pageKey="brand-assets">
-            <BrandAssets />
           </AppLayout>
         </ProtectedRoute>
       </Route>

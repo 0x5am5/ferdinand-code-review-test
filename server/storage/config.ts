@@ -23,7 +23,8 @@ export const storageConfig: StorageConfig = {
   endpoint: process.env.R2_ENDPOINT, // e.g., https://<account_id>.r2.cloudflarestorage.com
   accountId: process.env.R2_ACCOUNT_ID,
   accessKeyId: process.env.R2_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
+  secretAccessKey:
+    process.env.R2_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
   publicUrl: process.env.R2_PUBLIC_URL, // e.g., https://assets.yourdomain.com
   maxFileSize: 500 * 1024 * 1024, // 500MB
   allowedMimeTypes: [], // Allow all types for now

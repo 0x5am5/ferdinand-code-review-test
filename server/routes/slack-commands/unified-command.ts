@@ -121,6 +121,11 @@ export async function handleUnifiedCommand({
 
     // If not a traditional command, use natural language processing
     if (!isTraditionalCommand) {
+      // workspace is guaranteed to exist here
+      if (!workspace) {
+        throw new Error("Workspace should exist at this point");
+      }
+
       // Gather asset context for the NLP processor
       const [logoAssets, colorAssets, fontAssets] = await Promise.all([
         db
@@ -128,7 +133,7 @@ export async function handleUnifiedCommand({
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace!.clientId),
+              eq(brandAssets.clientId, workspace.clientId),
               eq(brandAssets.category, "logo")
             )
           ),
@@ -137,7 +142,7 @@ export async function handleUnifiedCommand({
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace!.clientId),
+              eq(brandAssets.clientId, workspace.clientId),
               eq(brandAssets.category, "color")
             )
           ),
@@ -146,7 +151,7 @@ export async function handleUnifiedCommand({
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace!.clientId),
+              eq(brandAssets.clientId, workspace.clientId),
               eq(brandAssets.category, "font")
             )
           ),

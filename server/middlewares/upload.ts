@@ -64,7 +64,7 @@ const storage = multer.memoryStorage();
 
 // File filter function
 const fileFilter = (
-  req: Express.Request,
+  _req: Express.Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
@@ -110,7 +110,7 @@ export const upload = multer({
 
 // Virus scanning placeholder middleware (log-only for MVP)
 export const virusScan = (
-  req: Express.Request,
+  _req: Express.Request,
   _res: Express.Response,
   next: (err?: Error) => void
 ) => {

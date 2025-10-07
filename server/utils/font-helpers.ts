@@ -1,7 +1,8 @@
 // Font helper utilities shared between font commands
+import type { BrandAsset } from "@shared/schema";
 
 // Helper functions
-export function hasUploadableFiles(asset: any): boolean {
+export function hasUploadableFiles(asset: BrandAsset): boolean {
   try {
     const data =
       typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
@@ -85,12 +86,11 @@ export const FONT_CATEGORY_NAMES: Record<string, string> = {
 import { formatFontInfo } from "./slack-helpers";
 
 export function buildFontBlocks(
-  displayAssets: any[],
-  filteredFontAssets: any[],
-  fontAssets: any[],
+  displayAssets: BrandAsset[],
+  filteredFontAssets: BrandAsset[],
+  fontAssets: BrandAsset[],
   variant?: string
 ) {
-
   // Group assets by category for better organization
   const groupedAssets = displayAssets.reduce(
     (groups: Record<string, typeof displayAssets>, asset) => {
@@ -124,7 +124,11 @@ export function buildFontBlocks(
     headerText += ` from ${fontAssets.length} total`;
   }
 
-  const fontBlocks: any[] = [
+  const fontBlocks: Array<{
+    type: string;
+    text?: { type: string; text: string };
+    elements?: unknown[];
+  }> = [
     {
       type: "section",
       text: {

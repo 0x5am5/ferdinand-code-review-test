@@ -5,16 +5,6 @@ import fetch from "node-fetch";
 import { db } from "../db";
 import { decrypt } from "../utils/crypto";
 
-interface SlackFileUpload {
-  token: string;
-  channels: string;
-  filename: string;
-  title?: string;
-  initial_comment?: string;
-  file?: Buffer;
-  filetype?: string;
-}
-
 // Fuzzy matching for logo variants
 export function findBestLogoMatch(
   assets: BrandAsset[],
@@ -171,7 +161,7 @@ export async function uploadFileToSlack(
       console.log(
         `[SLACK UPLOAD] Bot user ID: ${authTest.user_id}, Team: ${authTest.team}`
       );
-    } catch (authError: any) {
+    } catch (authError) {
       console.error(`[SLACK UPLOAD] Auth test failed:`, authError);
     }
 
@@ -206,23 +196,27 @@ export async function uploadFileToSlack(
         error: result.error,
       });
       return result.ok === true;
-    } catch (channelError: any) {
+    } catch (channelError: unknown) {
+      const error = channelError as {
+        data?: { error?: string };
+        message?: string;
+      };
       console.error(`[SLACK UPLOAD] Channel upload failed:`, {
-        error: channelError.data?.error,
-        message: channelError.message,
+        error: error.data?.error,
+        message: error.message,
         channelId: options.channelId,
       });
 
       // If channel upload fails due to channel access issues, try DM to user
       const isChannelAccessError =
-        channelError.data?.error === "not_in_channel" ||
-        channelError.data?.error === "channel_not_found" ||
-        channelError.data?.error === "access_denied" ||
-        channelError.data?.error === "missing_scope";
+        error.data?.error === "not_in_channel" ||
+        error.data?.error === "channel_not_found" ||
+        error.data?.error === "access_denied" ||
+        error.data?.error === "missing_scope";
 
       if (isChannelAccessError && options.userId) {
         console.log(
-          `[SLACK UPLOAD] Bot cannot access channel (${channelError.data?.error}), falling back to DM to user ${options.userId}`
+          `[SLACK UPLOAD] Bot cannot access channel (${error.data?.error}), falling back to DM to user ${options.userId}`
         );
 
         try {
@@ -277,10 +271,11 @@ export async function uploadFileToSlack(
           }
 
           throw new Error(`DM upload failed: ${dmResult.error}`);
-        } catch (dmError: any) {
+        } catch (dmError: unknown) {
+          const err = dmError as { message?: string };
           console.error(
             `[SLACK UPLOAD] DM upload failed:`,
-            dmError.message || dmError
+            err.message || dmError
           );
 
           // Final fallback: try to send just a message with download link
@@ -312,10 +307,11 @@ export async function uploadFileToSlack(
                 conversationResponse.error
               );
             }
-          } catch (linkError: any) {
+          } catch (linkError: unknown) {
+            const linkErr = linkError as { message?: string };
             console.error(
               `[SLACK UPLOAD] Download link message also failed:`,
-              linkError.message || linkError
+              linkErr.message || linkError
             );
           }
 
@@ -325,14 +321,15 @@ export async function uploadFileToSlack(
 
       // Re-throw if it's not a channel access issue or no userId provided
       console.error(
-        `[SLACK UPLOAD] Channel upload failed with non-access error or no userId provided: ${channelError.data?.error}`
+        `[SLACK UPLOAD] Channel upload failed with non-access error or no userId provided: ${error.data?.error}`
       );
       throw channelError;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string };
     console.error(
       "[SLACK UPLOAD] Error uploading file to Slack:",
-      error.message || error
+      err.message || error
     );
     return false;
   }
@@ -457,7 +454,7 @@ export interface AuditLogEntry {
   success: boolean;
   error?: string;
   responseTimeMs?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
 }
 
@@ -538,6 +535,20 @@ export function generateColorSwatchUrl(
   return `https://via.placeholder.com/600x120/${validHex}/FFFFFF?text=${text}`;
 }
 
+interface ColorData {
+  name?: string;
+  label?: string;
+  title?: string;
+  hex?: string;
+  value?: string;
+  color?: string;
+  rgb?: string;
+  usage?: string;
+  description?: string;
+  category?: string;
+  pantone?: string;
+}
+
 // Format color information for Slack display
 export function formatColorInfo(colorAsset: BrandAsset): {
   title: string;
@@ -568,13 +579,13 @@ export function formatColorInfo(colorAsset: BrandAsset): {
 
     // Map all colors, handling various color data formats
     const colors = data.colors
-      .filter((color: any) => {
+      .filter((color: ColorData) => {
         // Only filter out colors that are truly empty or explicitly unnamed
         const _name = color.name || color.label || color.title || "";
         const hex = color.hex || color.value || color.color || "";
         return hex && hex.trim() !== "" && hex !== "#000000";
       })
-      .map((color: any) => ({
+      .map((color: ColorData) => ({
         name: color.name || color.label || color.title || "Color",
         hex: color.hex || color.value || color.color || "#000000",
         rgb: color.rgb,
@@ -686,15 +697,14 @@ export function filterColorAssetsByVariant(
 
 // Filter font assets by variant (brand, body, header)
 export function filterFontAssetsByVariant(
-  assets: any[],
+  assets: BrandAsset[],
   variant: string
-): any[] {
+): BrandAsset[] {
   if (!variant) return assets;
 
   const lowerVariant = variant.toLowerCase();
   return assets.filter((asset) => {
     const name = asset.name.toLowerCase();
-    const subcategory = asset.subcategory?.toLowerCase() || "";
 
     // Try to parse data to get additional context
     let fontCategory = "";
@@ -715,7 +725,6 @@ export function filterFontAssetsByVariant(
     // Broader matching for font variants including source and family
     return (
       name.includes(lowerVariant) ||
-      subcategory.includes(lowerVariant) ||
       fontCategory.includes(lowerVariant) ||
       fontUsage.includes(lowerVariant) ||
       fontFamily.includes(lowerVariant) ||

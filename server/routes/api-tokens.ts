@@ -2,9 +2,9 @@ import { apiTokens, insertApiTokenSchema } from "@shared/schema";
 import { and, desc, eq } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
-import { validateClientId } from "../middlewares/vaildateClientId";
 import { tokenCreationRateLimit } from "../middlewares/rate-limit";
 import { csrfProtection } from "../middlewares/security-headers";
+import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
 import {
   generateApiToken,

@@ -10,7 +10,6 @@ import {
 } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -136,9 +136,9 @@ export const AssetUpload: FC<AssetUploadProps> = ({
 
     // Combine selected tags and manual input
     const manualTags = tagInput
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
 
     const allTags = Array.from(new Set([...selectedTags, ...manualTags]));
 
@@ -398,7 +398,8 @@ export const AssetUpload: FC<AssetUploadProps> = ({
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              Select existing tags above or enter new tags separated by commas. New tags will be created automatically.
+              Select existing tags above or enter new tags separated by commas.
+              New tags will be created automatically.
             </p>
           </div>
 

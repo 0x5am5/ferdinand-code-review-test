@@ -72,10 +72,29 @@ const mockAssets: Asset[] = [
   },
 ];
 
+const mockCategories = [
+  { id: 1, name: "Images", slug: "images", isDefault: false, clientId: 1 },
+  {
+    id: 2,
+    name: "Documents",
+    slug: "documents",
+    isDefault: false,
+    clientId: 1,
+  },
+  { id: 3, name: "Videos", slug: "videos", isDefault: false, clientId: 1 },
+];
+
+const mockTags = [
+  { id: 1, name: "important", slug: "important", clientId: 1 },
+  { id: 2, name: "draft", slug: "draft", clientId: 1 },
+  { id: 3, name: "final", slug: "final", clientId: 1 },
+];
+
 describe("AssetList", () => {
   const mockOnAssetClick = jest.fn();
   const mockOnDelete = jest.fn();
   const mockOnBulkDelete = jest.fn();
+  const mockOnBulkUpdate = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -526,7 +545,7 @@ describe("AssetList", () => {
       await user.click(checkboxes[0]);
 
       // Bulk delete button should appear
-      const deleteButton = screen.getByText(/Delete 1 file/i);
+      const deleteButton = screen.getByText(/Delete 1$/i);
       expect(deleteButton).toBeInTheDocument();
 
       // Click again to deselect
@@ -534,8 +553,10 @@ describe("AssetList", () => {
 
       // Bulk delete button should disappear
       const deleteButtons = screen.queryAllByRole("button");
-      const bulkDeleteButton = deleteButtons.find((btn) =>
-        btn.textContent?.includes("Delete")
+      const bulkDeleteButton = deleteButtons.find(
+        (btn) =>
+          btn.textContent?.includes("Delete") &&
+          btn.textContent?.match(/Delete \d+/)
       );
       expect(bulkDeleteButton).toBeUndefined();
     });
@@ -559,11 +580,11 @@ describe("AssetList", () => {
       await user.click(checkboxes[1]);
 
       // Bulk delete button should show correct count
-      const deleteButton = screen.getByText(/Delete 2 files/i);
+      const deleteButton = screen.getByText(/Delete 2$/i);
       expect(deleteButton).toBeInTheDocument();
     });
 
-    it("should use singular 'file' when one asset is selected", async () => {
+    it("should use singular form when one asset is selected", async () => {
       const user = userEvent.setup();
       render(
         <AssetList
@@ -580,8 +601,8 @@ describe("AssetList", () => {
       // Select one asset
       await user.click(checkboxes[0]);
 
-      // Should say "file" not "files"
-      const deleteButton = screen.getByText(/Delete 1 file$/i);
+      // Should show Delete 1
+      const deleteButton = screen.getByText(/Delete 1$/i);
       expect(deleteButton).toBeInTheDocument();
     });
 
@@ -604,7 +625,7 @@ describe("AssetList", () => {
       await user.click(checkboxes[1]);
 
       // Click bulk delete button
-      const deleteButton = screen.getByText(/Delete 2 files/i);
+      const deleteButton = screen.getByText(/Delete 2$/i);
       await user.click(deleteButton);
 
       // Should call onBulkDelete with correct IDs
@@ -633,13 +654,15 @@ describe("AssetList", () => {
       await user.click(checkboxes[1]);
 
       // Click bulk delete button
-      const deleteButton = screen.getByText(/Delete 2 files/i);
+      const deleteButton = screen.getByText(/Delete 2$/i);
       await user.click(deleteButton);
 
       // Bulk delete button should disappear after delete
       const deleteButtons = screen.queryAllByRole("button");
-      const bulkDeleteButton = deleteButtons.find((btn) =>
-        btn.textContent?.includes("Delete")
+      const bulkDeleteButton = deleteButtons.find(
+        (btn) =>
+          btn.textContent?.includes("Delete") &&
+          btn.textContent?.match(/Delete \d+/)
       );
       expect(bulkDeleteButton).toBeUndefined();
     });
@@ -695,7 +718,7 @@ describe("AssetList", () => {
       // Test in grid view
       let checkboxes = screen.getAllByRole("checkbox");
       await user.click(checkboxes[0]);
-      expect(screen.getByText(/Delete 1 file/i)).toBeInTheDocument();
+      expect(screen.getByText(/Delete 1/i)).toBeInTheDocument();
 
       // Switch to list view
       const buttons = screen.getAllByRole("button");
@@ -712,8 +735,345 @@ describe("AssetList", () => {
         await user.click(checkboxes[1]);
 
         // Should show 2 files selected now
-        expect(screen.getByText(/Delete 2 files/i)).toBeInTheDocument();
+        expect(screen.getByText(/Delete 2/i)).toBeInTheDocument();
       }
+    });
+  });
+
+  describe("Bulk Update Functionality", () => {
+    it("should not show bulk actions when no assets are selected", () => {
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Bulk Actions label should not be visible
+      expect(screen.queryByText("Bulk Actions:")).not.toBeInTheDocument();
+    });
+
+    it("should show bulk actions UI when assets are selected", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      // Bulk Actions label should be visible
+      expect(screen.getByText("Bulk Actions:")).toBeInTheDocument();
+    });
+
+    it("should show Change Category button when categories are provided", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      expect(screen.getByText("Change Category")).toBeInTheDocument();
+    });
+
+    it("should show Add Tags button when tags are provided", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      expect(screen.getByText("Add Tags")).toBeInTheDocument();
+    });
+
+    it("should not show category dropdown when no categories provided", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={[]}
+          tags={mockTags}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      expect(screen.queryByText("Change Category")).not.toBeInTheDocument();
+    });
+
+    it("should not show tags dropdown when no tags provided", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={[]}
+        />
+      );
+
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      expect(screen.queryByText("Add Tags")).not.toBeInTheDocument();
+    });
+
+    it("should call onBulkUpdate with category when category is selected", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Select an asset
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      // Open category dropdown
+      const categoryButton = screen.getByText("Change Category");
+      await user.click(categoryButton);
+
+      // Click on a category
+      const videosCategory = screen.getByText("Videos");
+      await user.click(videosCategory);
+
+      // Should call onBulkUpdate with correct parameters
+      expect(mockOnBulkUpdate).toHaveBeenCalledWith([mockAssets[0].id], {
+        categoryId: 3,
+      });
+    });
+
+    it("should call onBulkUpdate with null category when Remove Category is selected", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Select an asset
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      // Open category dropdown
+      const categoryButton = screen.getByText("Change Category");
+      await user.click(categoryButton);
+
+      // Click on Remove Category
+      const removeCategory = screen.getByText("Remove Category");
+      await user.click(removeCategory);
+
+      // Should call onBulkUpdate with null category
+      expect(mockOnBulkUpdate).toHaveBeenCalledWith([mockAssets[0].id], {
+        categoryId: null,
+      });
+    });
+
+    it("should call onBulkUpdate with tag when tag is selected", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Select an asset
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      // Open tags dropdown
+      const tagsButton = screen.getByText("Add Tags");
+      await user.click(tagsButton);
+
+      // Click on a tag
+      const importantTag = screen.getByText("important");
+      await user.click(importantTag);
+
+      // Should call onBulkUpdate with correct parameters
+      expect(mockOnBulkUpdate).toHaveBeenCalledWith([mockAssets[0].id], {
+        addTags: [1],
+      });
+    });
+
+    it("should clear selection after bulk update is called", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Select assets
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+      await user.click(checkboxes[1]);
+
+      // Open category dropdown and select a category
+      const categoryButton = screen.getByText("Change Category");
+      await user.click(categoryButton);
+      const videosCategory = screen.getByText("Videos");
+      await user.click(videosCategory);
+
+      // Bulk actions should disappear after update
+      expect(screen.queryByText("Bulk Actions:")).not.toBeInTheDocument();
+    });
+
+    it("should handle multiple selected assets", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Select multiple assets
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+      await user.click(checkboxes[1]);
+      await user.click(checkboxes[2]);
+
+      // Open category dropdown and select a category
+      const categoryButton = screen.getByText("Change Category");
+      await user.click(categoryButton);
+      const videosCategory = screen.getByText("Videos");
+      await user.click(videosCategory);
+
+      // Should call onBulkUpdate with all selected IDs
+      expect(mockOnBulkUpdate).toHaveBeenCalledWith(
+        [mockAssets[0].id, mockAssets[1].id, mockAssets[2].id],
+        { categoryId: 3 }
+      );
+    });
+
+    it("should show all available categories in dropdown", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Select an asset
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      // Open category dropdown
+      const categoryButton = screen.getByText("Change Category");
+      await user.click(categoryButton);
+
+      // All categories should be visible - use getAllByText to handle duplicates
+      const imagesCat = screen.getAllByText("Images");
+      expect(imagesCat.length).toBeGreaterThan(0);
+      const documentsCat = screen.getAllByText("Documents");
+      expect(documentsCat.length).toBeGreaterThan(0);
+      expect(screen.getByText("Videos")).toBeInTheDocument();
+      expect(screen.getByText("Remove Category")).toBeInTheDocument();
+    });
+
+    it("should show all available tags in dropdown", async () => {
+      const user = userEvent.setup();
+      render(
+        <AssetList
+          assets={mockAssets}
+          isLoading={false}
+          onAssetClick={mockOnAssetClick}
+          onDelete={mockOnDelete}
+          onBulkUpdate={mockOnBulkUpdate}
+          categories={mockCategories}
+          tags={mockTags}
+        />
+      );
+
+      // Select an asset
+      const checkboxes = screen.getAllByRole("checkbox");
+      await user.click(checkboxes[0]);
+
+      // Open tags dropdown
+      const tagsButton = screen.getByText("Add Tags");
+      await user.click(tagsButton);
+
+      // All tags should be visible
+      expect(screen.getByText("important")).toBeInTheDocument();
+      expect(screen.getByText("draft")).toBeInTheDocument();
+      expect(screen.getByText("final")).toBeInTheDocument();
     });
   });
 });

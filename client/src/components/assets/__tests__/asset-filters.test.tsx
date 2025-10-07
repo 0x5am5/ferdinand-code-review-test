@@ -14,7 +14,7 @@ import { AssetFilters } from "../asset-filters";
 
 // Mock the asset queries
 jest.mock("@/lib/queries/assets", () => ({
-  ...jest.requireActual("@/lib/queries/assets"),
+  ...(jest.requireActual("@/lib/queries/assets") as object),
   useAssetCategoriesQuery: jest.fn(() => ({
     data: [
       { id: 1, name: "Documents", slug: "documents" },

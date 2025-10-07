@@ -1,11 +1,11 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * Security headers middleware
  * Adds security-related HTTP headers to all responses
  */
 export function securityHeaders(
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction
 ) {

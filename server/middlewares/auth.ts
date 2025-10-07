@@ -1,14 +1,10 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * Middleware to ensure user is authenticated
  * Checks if user has a valid session with userId
  */
-export function requireAuth(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.userId) {
     return res.status(401).json({ message: "Authentication required" });
   }

@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { auth as firebaseAuth } from "../firebase";
-import { storage } from "../storage";
 import { authRateLimit } from "../middlewares/rate-limit";
 import { csrfProtection } from "../middlewares/security-headers";
+import { storage } from "../storage";
 
 export function registerAuthRoutes(app: Express) {
   // Logout endpoint

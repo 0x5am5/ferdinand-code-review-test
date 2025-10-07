@@ -73,7 +73,7 @@ export function useFontMutations(clientId: number | null) {
           source: string;
           weights: string[];
           styles: string[];
-          sourceData: any;
+          sourceData: unknown;
         };
       };
     }) => {

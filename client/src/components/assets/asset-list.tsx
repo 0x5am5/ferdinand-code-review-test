@@ -5,13 +5,29 @@ import {
   Grid,
   Image as ImageIcon,
   List,
+  Plus,
+  Tag,
   Trash2,
 } from "lucide-react";
-import { type FC, type MouseEvent, useState } from "react";
+import React, {
+  type FC,
+  type KeyboardEvent,
+  type MouseEvent,
+  useState,
+} from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -21,7 +37,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Asset } from "@/lib/queries/assets";
+import {
+  type Asset,
+  type AssetCategory,
+  type AssetTag,
+  useCreateTagMutation,
+} from "@/lib/queries/assets";
 
 interface AssetListProps {
   assets: Asset[];
@@ -29,6 +50,16 @@ interface AssetListProps {
   onAssetClick: (asset: Asset) => void;
   onDelete: (assetId: number) => void;
   onBulkDelete?: (assetIds: number[]) => void;
+  onBulkUpdate?: (
+    assetIds: number[],
+    updates: {
+      categoryId?: number | null;
+      addTags?: number[];
+      removeTags?: number[];
+    }
+  ) => void;
+  categories?: AssetCategory[];
+  tags?: AssetTag[];
 }
 
 export const AssetList: FC<AssetListProps> = ({
@@ -37,9 +68,46 @@ export const AssetList: FC<AssetListProps> = ({
   onAssetClick,
   onDelete,
   onBulkDelete,
+  onBulkUpdate,
+  categories = [],
+  tags = [],
 }) => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
+  const [newTagName, setNewTagName] = useState("");
+  const createTagMutation = useCreateTagMutation();
+
+  // Calculate shared tags across all selected assets
+  const sharedTagIds = React.useMemo(() => {
+    if (selectedAssets.size === 0) return new Set<number>();
+
+    const selectedAssetsList = assets.filter((asset) =>
+      selectedAssets.has(asset.id)
+    );
+
+    if (selectedAssetsList.length === 0) return new Set<number>();
+
+    // Get tag IDs from the first asset
+    const firstAssetTagIds = new Set(
+      selectedAssetsList[0].tags?.map((tag) => tag.id) || []
+    );
+
+    // Find intersection with all other selected assets
+    for (let i = 1; i < selectedAssetsList.length; i++) {
+      const assetTagIds = new Set(
+        selectedAssetsList[i].tags?.map((tag) => tag.id) || []
+      );
+      // Keep only tags that exist in this asset too
+      const tagIdsToCheck = Array.from(firstAssetTagIds);
+      for (const tagId of tagIdsToCheck) {
+        if (!assetTagIds.has(tagId)) {
+          firstAssetTagIds.delete(tagId);
+        }
+      }
+    }
+
+    return firstAssetTagIds;
+  }, [selectedAssets, assets]);
 
   const toggleAssetSelection = (assetId: number) => {
     setSelectedAssets((prev) => {
@@ -57,6 +125,34 @@ export const AssetList: FC<AssetListProps> = ({
     if (onBulkDelete && selectedAssets.size > 0) {
       onBulkDelete(Array.from(selectedAssets));
       setSelectedAssets(new Set());
+    }
+  };
+
+  const handleCreateAndApplyTag = async () => {
+    if (!newTagName.trim() || !onBulkUpdate) return;
+
+    try {
+      const newTag = await createTagMutation.mutateAsync({
+        name: newTagName.trim(),
+        slug: newTagName.trim().toLowerCase().replace(/\s+/g, "-"),
+      });
+
+      // Apply the newly created tag to selected assets
+      onBulkUpdate(Array.from(selectedAssets), {
+        addTags: [newTag.id],
+      });
+
+      setNewTagName("");
+      // Keep assets selected for additional bulk operations
+    } catch {
+      // Error is handled by the mutation
+    }
+  };
+
+  const handleTagInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCreateAndApplyTag();
     }
   };
 
@@ -125,11 +221,130 @@ export const AssetList: FC<AssetListProps> = ({
       {/* View toggle and bulk actions */}
       <div className="flex justify-between items-center gap-2">
         {selectedAssets.size > 0 && (
-          <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete {selectedAssets.size}{" "}
-            {selectedAssets.size === 1 ? "file" : "files"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Bulk Actions:</span>
+
+            {/* Category dropdown */}
+            {onBulkUpdate && categories.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <FileIcon className="h-4 w-4 mr-2" />
+                    Change Category
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Select Category</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {categories.map((category) => (
+                    <DropdownMenuItem
+                      key={category.id}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        onBulkUpdate(Array.from(selectedAssets), {
+                          categoryId: category.id,
+                        });
+                      }}
+                    >
+                      {category.name}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      onBulkUpdate(Array.from(selectedAssets), {
+                        categoryId: null,
+                      });
+                    }}
+                  >
+                    Remove Category
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Tags dropdown */}
+            {onBulkUpdate && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Tag className="h-4 w-4 mr-2" />
+                    Add Tags
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Select Tags to Add</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+
+                  {/* Create new tag input */}
+                  <div className="px-2 py-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Create new tag..."
+                        value={newTagName}
+                        onChange={(e) => setNewTagName(e.target.value)}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          handleTagInputKeyDown(e);
+                        }}
+                        className="h-8"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleCreateAndApplyTag}
+                        disabled={
+                          !newTagName.trim() || createTagMutation.isPending
+                        }
+                        className="h-8 px-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {tags.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      {tags.map((tag) => {
+                        const isShared = sharedTagIds.has(tag.id);
+                        return (
+                          <DropdownMenuItem
+                            key={tag.id}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              // Toggle tag: if it's shared, remove it; otherwise add it
+                              if (isShared) {
+                                onBulkUpdate(Array.from(selectedAssets), {
+                                  removeTags: [tag.id],
+                                });
+                              } else {
+                                onBulkUpdate(Array.from(selectedAssets), {
+                                  addTags: [tag.id],
+                                });
+                              }
+                            }}
+                            className={
+                              isShared
+                                ? "bg-blue-50 text-blue-700 font-medium"
+                                : undefined
+                            }
+                          >
+                            {tag.name}
+                          </DropdownMenuItem>
+                        );
+                      })}
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete {selectedAssets.size}
+            </Button>
+          </div>
         )}
         <div className="flex gap-2 ml-auto">
           <Button
@@ -169,7 +384,9 @@ export const AssetList: FC<AssetListProps> = ({
                 ) : (
                   <FileIcon className="h-16 w-16 text-muted-foreground" />
                 )}
-                <div className={`absolute top-2 left-2 transition-opacity ${selectedAssets.has(asset.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                <div
+                  className={`absolute top-2 left-2 transition-opacity ${selectedAssets.has(asset.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                >
                   <Checkbox
                     checked={selectedAssets.has(asset.id)}
                     onCheckedChange={() => toggleAssetSelection(asset.id)}
@@ -274,7 +491,9 @@ export const AssetList: FC<AssetListProps> = ({
                   onClick={() => onAssetClick(asset)}
                 >
                   <TableCell>
-                    <div className={`transition-opacity ${selectedAssets.has(asset.id) ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                    <div
+                      className={`transition-opacity ${selectedAssets.has(asset.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                    >
                       <Checkbox
                         checked={selectedAssets.has(asset.id)}
                         onCheckedChange={() => toggleAssetSelection(asset.id)}

@@ -126,11 +126,11 @@ export function registerFileAssetRoutes(app: Express) {
 
         // Filter to only assets with all tags
         const matchingAssetIds = assetIdCounts
-          .filter((_row: any) => {
+          .filter((_row: { assetId: number }) => {
             // Count how many of the specified tags this asset has
             return true; // We'll refine this in the next query
           })
-          .map((row: any) => row.assetId);
+          .map((row: { assetId: number }) => row.assetId);
 
         if (matchingAssetIds.length === 0) {
           return res.json([]);
@@ -921,6 +921,175 @@ export function registerFileAssetRoutes(app: Express) {
     }
   });
 
+  // Bulk update endpoint (for categories and tags)
+  app.post("/api/assets/bulk-update", async (req, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { assetIds, categoryId, tagIds, addTags, removeTags } = req.body;
+
+      // Validate assetIds
+      if (!Array.isArray(assetIds) || assetIds.length === 0) {
+        return res.status(400).json({ message: "Invalid asset IDs" });
+      }
+
+      // At least one update operation must be specified
+      if (
+        categoryId === undefined &&
+        tagIds === undefined &&
+        addTags === undefined &&
+        removeTags === undefined
+      ) {
+        return res.status(400).json({ message: "No updates specified" });
+      }
+
+      // Get user's clients to determine access
+      const userClients = await db
+        .select()
+        .from((await import("@shared/schema")).userClients)
+        .where(
+          eq(
+            (await import("@shared/schema")).userClients.userId,
+            req.session.userId
+          )
+        );
+
+      if (userClients.length === 0) {
+        return res.status(403).json({ message: "Not authorized" });
+      }
+
+      const clientIds = userClients.map((uc) => uc.clientId);
+
+      // Get all assets to be updated
+      const assetsToUpdate = await db
+        .select()
+        .from(assets)
+        .where(
+          and(
+            inArray(assets.id, assetIds),
+            isNull(assets.deletedAt),
+            inArray(assets.clientId, clientIds)
+          )
+        );
+
+      if (assetsToUpdate.length === 0) {
+        return res.status(404).json({ message: "No assets found" });
+      }
+
+      // Check permissions for each asset (need write permission)
+      const userId = req.session.userId;
+      const permissionChecks = await Promise.all(
+        assetsToUpdate.map((asset) =>
+          checkAssetPermission(userId, asset.id, asset.clientId, "write")
+        )
+      );
+
+      const unauthorizedAssets = permissionChecks.filter((p) => !p.allowed);
+      if (unauthorizedAssets.length > 0) {
+        return res
+          .status(403)
+          .json({ message: "Not authorized to update some assets" });
+      }
+
+      // Update category if specified
+      if (categoryId !== undefined && categoryId !== null) {
+        // Remove all existing category assignments for these assets
+        await db
+          .delete(assetCategoryAssignments)
+          .where(inArray(assetCategoryAssignments.assetId, assetIds));
+
+        // Add new category assignment
+        if (categoryId > 0) {
+          const categoryAssignments = assetIds.map((assetId) => ({
+            assetId,
+            categoryId,
+          }));
+          await db.insert(assetCategoryAssignments).values(categoryAssignments);
+        }
+      }
+
+      // Handle tag updates
+      if (
+        addTags !== undefined &&
+        Array.isArray(addTags) &&
+        addTags.length > 0
+      ) {
+        // Add tags to existing tags (don't remove existing)
+        const tagAssignments: { assetId: number; tagId: number }[] = [];
+
+        for (const assetId of assetIds) {
+          // Get existing tags for this asset
+          const existingTags = await db
+            .select()
+            .from(assetTagAssignments)
+            .where(eq(assetTagAssignments.assetId, assetId));
+
+          const existingTagIds = new Set(existingTags.map((t) => t.tagId));
+
+          // Add only tags that don't already exist
+          for (const tagId of addTags) {
+            if (!existingTagIds.has(tagId)) {
+              tagAssignments.push({ assetId, tagId });
+            }
+          }
+        }
+
+        if (tagAssignments.length > 0) {
+          await db.insert(assetTagAssignments).values(tagAssignments);
+        }
+      }
+
+      // Handle tag removal
+      if (
+        removeTags !== undefined &&
+        Array.isArray(removeTags) &&
+        removeTags.length > 0
+      ) {
+        // Remove specified tags from the assets
+        await db
+          .delete(assetTagAssignments)
+          .where(
+            and(
+              inArray(assetTagAssignments.assetId, assetIds),
+              inArray(assetTagAssignments.tagId, removeTags)
+            )
+          );
+      }
+
+      if (tagIds !== undefined && Array.isArray(tagIds)) {
+        // Replace all tags with the specified ones
+        // Remove all existing tag assignments for these assets
+        await db
+          .delete(assetTagAssignments)
+          .where(inArray(assetTagAssignments.assetId, assetIds));
+
+        // Add new tag assignments if any
+        if (tagIds.length > 0) {
+          const tagAssignments: { assetId: number; tagId: number }[] = [];
+          for (const assetId of assetIds) {
+            for (const tagId of tagIds) {
+              tagAssignments.push({ assetId, tagId });
+            }
+          }
+          await db.insert(assetTagAssignments).values(tagAssignments);
+        }
+      }
+
+      res.json({
+        message: `${assetsToUpdate.length} asset${assetsToUpdate.length === 1 ? "" : "s"} updated successfully`,
+        updatedCount: assetsToUpdate.length,
+      });
+    } catch (error: unknown) {
+      console.error(
+        "Error bulk updating assets:",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+      res.status(500).json({ message: "Error bulk updating assets" });
+    }
+  });
+
   // Global upload endpoint (infers clientId from session/user context)
   app.post(
     "/api/assets/upload",
@@ -1343,8 +1512,9 @@ export function registerFileAssetRoutes(app: Express) {
 
         // Apply pagination and sorting
         const sortedAssets = assetList.sort(
-          (a: any, b: any) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          (a: Asset, b: Asset) =>
+            new Date(b.createdAt ?? new Date()).getTime() -
+            new Date(a.createdAt ?? new Date()).getTime()
         );
         const paginatedAssets = sortedAssets.slice(offset, offset + limit);
 

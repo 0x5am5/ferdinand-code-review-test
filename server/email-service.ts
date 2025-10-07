@@ -25,8 +25,8 @@ export class EmailService {
     const apiToken = process.env.POSTMARK_API_TOKEN;
     this.usePostmark = !!apiToken;
 
-    if (this.usePostmark) {
-      this.postmarkClient = new PostmarkClient(apiToken!);
+    if (this.usePostmark && apiToken) {
+      this.postmarkClient = new PostmarkClient(apiToken);
       console.log(
         "Postmark API token detected. Using Postmark for email delivery."
       );
@@ -108,12 +108,11 @@ export class EmailService {
           console.log(`📧 =============================================\n`);
 
           return true;
-        } catch (error) {
-          const postmarkError = error as any;
-          console.error("[EMAIL] Postmark error:", postmarkError);
+        } catch (error: unknown) {
+          console.error("[EMAIL] Postmark error:", error);
 
           // Parse the Postmark error and throw a structured error
-          const { message, code, details } = parsePostmarkError(postmarkError);
+          const { message, code, details } = parsePostmarkError(error);
           throw new EmailServiceError(message, code, details);
         }
       } else {

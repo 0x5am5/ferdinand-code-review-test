@@ -42,8 +42,10 @@ async function initializeS3Client() {
       DeleteObjectCommand = awsS3.DeleteObjectCommand;
       HeadObjectCommand = awsS3.HeadObjectCommand;
       getSignedUrl = awsPresigner.getSignedUrl;
-    } catch (error) {
-      console.error("Failed to load AWS SDK. Install @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner");
+    } catch (_error) {
+      console.error(
+        "Failed to load AWS SDK. Install @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner"
+      );
       throw new Error("AWS SDK not installed");
     }
   }
@@ -216,8 +218,15 @@ export async function generateSignedUrl(
 
     // If R2 has a public URL configured, replace the endpoint
     let finalUrl = signedUrl;
-    if (storageConfig.type === "r2" && storageConfig.publicUrl && storageConfig.endpoint) {
-      finalUrl = signedUrl.replace(storageConfig.endpoint, storageConfig.publicUrl);
+    if (
+      storageConfig.type === "r2" &&
+      storageConfig.publicUrl &&
+      storageConfig.endpoint
+    ) {
+      finalUrl = signedUrl.replace(
+        storageConfig.endpoint,
+        storageConfig.publicUrl
+      );
     }
 
     return {
