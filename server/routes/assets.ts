@@ -405,8 +405,8 @@ export function registerAssetRoutes(app: Express) {
       res.json({ kind: "webfonts#webfontList", items: [] });
     }
   });
-  // Get all assets
-  app.get("/api/assets", async (req, res: Response) => {
+  // Get all brand assets (logos, colors, fonts)
+  app.get("/api/brand-assets", async (req, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -416,15 +416,15 @@ export function registerAssetRoutes(app: Express) {
       res.json(allAssets);
     } catch (error: unknown) {
       console.error(
-        "Error fetching assets:",
+        "Error fetching brand assets:",
         error instanceof Error ? error.message : "Unknown error"
       );
-      res.status(500).json({ message: "Error fetching assets" });
+      res.status(500).json({ message: "Error fetching brand assets" });
     }
   });
 
-  // Get single asset
-  app.get("/api/assets/:id", async (req, res: Response) => {
+  // Get single brand asset
+  app.get("/api/brand-assets/:id", async (req, res: Response) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
