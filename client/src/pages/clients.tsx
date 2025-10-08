@@ -1471,7 +1471,7 @@ export default function Clients() {
                     <div className="space-y-0.5">
                       <div className="flex items-center">
                         <Image className="h-4 w-4 mr-2" />
-                        <div className="font-medium">Asset Management</div>
+                        <div className="font-medium">Brand Assets</div>
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Upload and manage brand assets beyond logos
