@@ -1,6 +1,6 @@
-import * as fs from "fs";
-import * as path from "path";
-import * as util from "util";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as util from "node:util";
 import { Client as PostmarkClient } from "postmark";
 import { EmailServiceError, parsePostmarkError } from "./utils/errorResponse";
 
@@ -25,14 +25,14 @@ export class EmailService {
     const apiToken = process.env.POSTMARK_API_TOKEN;
     this.usePostmark = !!apiToken;
 
-    if (this.usePostmark) {
-      this.postmarkClient = new PostmarkClient(apiToken!);
+    if (this.usePostmark && apiToken) {
+      this.postmarkClient = new PostmarkClient(apiToken);
       console.log(
-        "Postmark API token detected. Using Postmark for email delivery.",
+        "Postmark API token detected. Using Postmark for email delivery."
       );
     } else {
       console.log(
-        "No Postmark API token found. Emails will be saved to files instead of being sent.",
+        "No Postmark API token found. Emails will be saved to files instead of being sent."
       );
     }
 
@@ -89,7 +89,7 @@ export class EmailService {
           console.log(`[EMAIL] Using sender email: ${fromEmail}`);
 
           console.log(
-            `[EMAIL] Sending via Postmark to: ${options.to}, from: ${fromEmail}`,
+            `[EMAIL] Sending via Postmark to: ${options.to}, from: ${fromEmail}`
           );
           const response = await this.postmarkClient.sendEmail({
             From: fromEmail,
@@ -108,12 +108,11 @@ export class EmailService {
           console.log(`📧 =============================================\n`);
 
           return true;
-        } catch (error) {
-          const postmarkError = error as any;
-          console.error("[EMAIL] Postmark error:", postmarkError);
+        } catch (error: unknown) {
+          console.error("[EMAIL] Postmark error:", error);
 
           // Parse the Postmark error and throw a structured error
-          const { message, code, details } = parsePostmarkError(postmarkError);
+          const { message, code, details } = parsePostmarkError(error);
           throw new EmailServiceError(message, code, details);
         }
       } else {
@@ -143,7 +142,7 @@ export class EmailService {
       throw new EmailServiceError(
         "Failed to send email due to an unexpected error.",
         "EMAIL_SERVICE_FAILED",
-        { originalError: error },
+        { originalError: error }
       );
     }
   }
@@ -408,7 +407,7 @@ export class EmailService {
 
     console.log(
       "[PASSWORD RESET] Sending password reset email with subject:",
-      subject,
+      subject
     );
 
     try {
@@ -424,7 +423,7 @@ export class EmailService {
     } catch (error: unknown) {
       console.error(
         "[PASSWORD RESET] Error sending password reset email:",
-        error,
+        error
       );
       // Re-throw the EmailServiceError so it can be handled by the caller
       if (error instanceof EmailServiceError) {
@@ -434,7 +433,7 @@ export class EmailService {
       throw new EmailServiceError(
         "Failed to send password reset email.",
         "EMAIL_SERVICE_FAILED",
-        { originalError: error },
+        { originalError: error }
       );
     }
   }

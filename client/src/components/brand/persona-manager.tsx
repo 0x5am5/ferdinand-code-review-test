@@ -20,7 +20,6 @@ interface PersonaMetrics {
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -74,13 +73,7 @@ function PersonaCard({
   );
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      className="relative p-6 border rounded-lg bg-white shadow-sm group"
-    >
+    <div className="relative p-6 border rounded-lg bg-white shadow-sm group">
       {isAbleToEdit && (
         <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="icon" onClick={onEdit}>
@@ -147,30 +140,7 @@ function PersonaCard({
           <p className="text-sm">{persona.painPoints?.join(", ")}</p>
         </div>
       </div>
-    </motion.div>
-  );
-}
-
-function AddPersonaCard({ onClick }: { onClick: () => void }) {
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="p-6 border rounded-lg bg-white/50 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"
-      onClick={onClick}
-      style={{ minHeight: "300px" }}
-    >
-      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-        <Plus className="h-6 w-6 text-primary" />
-      </div>
-      <div className="text-center">
-        <h3 className="font-medium">Add New Persona</h3>
-        <p className="text-sm text-muted-foreground">
-          Create a new user persona profile
-        </p>
-      </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -402,24 +372,56 @@ export function PersonaManager({
   if (!user) return null;
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">User Personas</h2>
+    <div>
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">User Personas</h1>
+          <p className="text-muted-foreground mt-1">
+            Define and manage user persona profiles for your brand
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <AnimatePresence>
-          {personas.map((persona) => (
-            <PersonaCard
-              key={persona.id}
-              persona={persona}
-              onEdit={() => setEditingPersona(persona)}
-              onDelete={() => deletePersona.mutate(persona.id)}
-            />
-          ))}
-        </AnimatePresence>
-        {isAbleToEdit && (
-          <AddPersonaCard onClick={() => setIsAddingPersona(true)} />
+      <div className="space-y-8">
+        {personas.length === 0 && isAbleToEdit ? (
+          <button
+            type="button"
+            className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors w-full"
+            onClick={() => setIsAddingPersona(true)}
+            aria-label="Add your first user persona"
+          >
+            <Plus className="h-8 w-8 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="font-medium mb-2">Add Your First Persona</h3>
+            <p className="text-sm text-muted-foreground">
+              Create a user persona profile to define your audience
+            </p>
+          </button>
+        ) : (
+          <div className="grid gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {personas.map((persona) => (
+                <PersonaCard
+                  key={persona.id}
+                  persona={persona}
+                  onEdit={() => setEditingPersona(persona)}
+                  onDelete={() => deletePersona.mutate(persona.id)}
+                />
+              ))}
+            </div>
+
+            {isAbleToEdit && (
+              <button
+                type="button"
+                className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition-colors"
+                onClick={() => setIsAddingPersona(true)}
+              >
+                <Plus className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Add Another Persona
+                </p>
+              </button>
+            )}
+          </div>
         )}
       </div>
 

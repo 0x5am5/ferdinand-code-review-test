@@ -1,6 +1,6 @@
-import type { Request, Response, NextFunction } from "express";
-import { eq, and, or, isNull, gt } from "drizzle-orm";
 import { apiTokens } from "@shared/schema";
+import { and, eq, gt, isNull, or } from "drizzle-orm";
+import type { NextFunction, Request, Response } from "express";
 import { db } from "../db";
 import { verifyToken } from "../utils/crypto";
 
@@ -28,7 +28,7 @@ export async function authenticateApiToken(
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       res.status(401).json({
         error: "Unauthorized",
-        message: "Bearer token required"
+        message: "Bearer token required",
       });
       return;
     }
@@ -38,7 +38,7 @@ export async function authenticateApiToken(
     if (!token) {
       res.status(401).json({
         error: "Unauthorized",
-        message: "Token is required"
+        message: "Token is required",
       });
       return;
     }
@@ -51,10 +51,7 @@ export async function authenticateApiToken(
         and(
           eq(apiTokens.isActive, true),
           // Only include non-expired tokens (null means no expiration, or future dates)
-          or(
-            isNull(apiTokens.expiresAt),
-            gt(apiTokens.expiresAt, new Date())
-          )
+          or(isNull(apiTokens.expiresAt), gt(apiTokens.expiresAt, new Date()))
         )
       );
 
@@ -72,7 +69,7 @@ export async function authenticateApiToken(
     if (!matchedToken) {
       res.status(401).json({
         error: "Unauthorized",
-        message: "Invalid token"
+        message: "Invalid token",
       });
       return;
     }
@@ -97,7 +94,7 @@ export async function authenticateApiToken(
     console.error("API token authentication error:", error);
     res.status(500).json({
       error: "Internal Server Error",
-      message: "Authentication failed"
+      message: "Authentication failed",
     });
   }
 }
@@ -106,22 +103,28 @@ export async function authenticateApiToken(
  * Middleware to check if the API token has required scopes
  */
 export function requireScopes(requiredScopes: string[]) {
-  return (req: RequestWithApiToken, res: Response, next: NextFunction): void => {
+  return (
+    req: RequestWithApiToken,
+    res: Response,
+    next: NextFunction
+  ): void => {
     if (!req.tokenData) {
       res.status(401).json({
         error: "Unauthorized",
-        message: "Authentication required"
+        message: "Authentication required",
       });
       return;
     }
 
     const tokenScopes = req.tokenData.scopes || [];
-    const hasAllScopes = requiredScopes.every(scope => tokenScopes.includes(scope));
+    const hasAllScopes = requiredScopes.every((scope) =>
+      tokenScopes.includes(scope)
+    );
 
     if (!hasAllScopes) {
       res.status(403).json({
         error: "Forbidden",
-        message: `Insufficient permissions. Required scopes: ${requiredScopes.join(", ")}`
+        message: `Insufficient permissions. Required scopes: ${requiredScopes.join(", ")}`,
       });
       return;
     }
@@ -142,11 +145,13 @@ export function requireSlackAccess() {
  * Rate limiting middleware for API tokens
  * Different limits based on token type/scopes
  */
-export function rateLimit(options: {
-  maxRequests: number;
-  windowMs: number;
-  keyGenerator?: (req: RequestWithApiToken) => string;
-} = { maxRequests: 1000, windowMs: 60000 }) {
+export function rateLimit(
+  options: {
+    maxRequests: number;
+    windowMs: number;
+    keyGenerator?: (req: RequestWithApiToken) => string;
+  } = { maxRequests: 1000, windowMs: 60000 }
+) {
   const requests = new Map<string, { count: number; resetTime: number }>();
 
   // Clean up expired entries periodically
@@ -159,10 +164,14 @@ export function rateLimit(options: {
     });
   }, options.windowMs);
 
-  return (req: RequestWithApiToken, res: Response, next: NextFunction): void => {
+  return (
+    req: RequestWithApiToken,
+    res: Response,
+    next: NextFunction
+  ): void => {
     const key = options.keyGenerator
       ? options.keyGenerator(req)
-      : `token:${req.tokenData?.id || 'unknown'}`;
+      : `token:${req.tokenData?.id || "unknown"}`;
 
     const now = Date.now();
     let requestData = requests.get(key);
@@ -180,7 +189,10 @@ export function rateLimit(options: {
     // Add rate limit headers
     res.set({
       "X-RateLimit-Limit": options.maxRequests.toString(),
-      "X-RateLimit-Remaining": Math.max(0, options.maxRequests - requestData.count).toString(),
+      "X-RateLimit-Remaining": Math.max(
+        0,
+        options.maxRequests - requestData.count
+      ).toString(),
       "X-RateLimit-Reset": new Date(requestData.resetTime).toISOString(),
     });
 

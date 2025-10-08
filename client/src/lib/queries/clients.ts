@@ -109,13 +109,13 @@ export function useUpdateClientMutation() {
 
 // Update client order mutation
 export function useUpdateClientOrderMutation(
-  setSortOrder: (order: "custom") => void,
+  setSortOrder: (order: "custom") => void
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (
-      clientOrders: { id: number; displayOrder: number }[],
+      clientOrders: { id: number; displayOrder: number }[]
     ) => {
       const response = await apiRequest("PATCH", "/api/clients/order", {
         clientOrders,
@@ -175,7 +175,7 @@ export function useClientUserMutations(clientId: number) {
     mutationFn: async (userId: number) => {
       return await apiRequest(
         "DELETE",
-        `/api/user-clients/${userId}/${clientId}`,
+        `/api/user-clients/${userId}/${clientId}`
       );
     },
     onSuccess: () => {

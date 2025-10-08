@@ -1,11 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type InsertClient, insertClientSchema } from "@shared/schema";
 import { useMutation } from "@tanstack/react-query";
+import { Eye, Figma, Package, Palette, Slack, Type, User } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -18,7 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Eye, Figma, Package, Palette, Slack, Type, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -93,11 +99,16 @@ export default function NewClientPage() {
           <CardHeader>
             <CardTitle>Create New Client</CardTitle>
             <CardDescription>
-              Set up a new client with their basic information and feature preferences
+              Set up a new client with their basic information and feature
+              preferences
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <Tabs
+              value={activeTab}
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
               <TabsList className="grid grid-cols-2 mb-6">
                 <TabsTrigger value="client-info">
                   <User className="h-4 w-4 mr-2" />
@@ -110,7 +121,10 @@ export default function NewClientPage() {
               </TabsList>
 
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
                   <TabsContent value="client-info" className="space-y-6">
                     <FormField
                       control={form.control}
@@ -205,7 +219,8 @@ export default function NewClientPage() {
                     <div className="space-y-4">
                       <h3 className="text-lg font-medium">Brand Features</h3>
                       <p className="text-sm text-muted-foreground">
-                        Choose which features to enable for this client. You can change these settings later.
+                        Choose which features to enable for this client. You can
+                        change these settings later.
                       </p>
 
                       <div className="space-y-4">
@@ -237,7 +252,8 @@ export default function NewClientPage() {
                               <div className="font-medium">Color System</div>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              Brand colors, palettes, and accessibility information
+                              Brand colors, palettes, and accessibility
+                              information
                             </div>
                           </div>
                           <Switch
@@ -318,10 +334,13 @@ export default function NewClientPage() {
                           <div className="space-y-0.5">
                             <div className="flex items-center">
                               <Figma className="h-4 w-4 mr-2" />
-                              <div className="font-medium">Figma Integration</div>
+                              <div className="font-medium">
+                                Figma Integration
+                              </div>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              Sync design tokens and styles with Figma design files
+                              Sync design tokens and styles with Figma design
+                              files
                             </div>
                           </div>
                           <Switch
@@ -339,7 +358,9 @@ export default function NewClientPage() {
                           <div className="space-y-0.5">
                             <div className="flex items-center">
                               <Slack className="h-4 w-4 mr-2" />
-                              <div className="font-medium">Slack Integration</div>
+                              <div className="font-medium">
+                                Slack Integration
+                              </div>
                             </div>
                             <div className="text-sm text-muted-foreground">
                               Access brand assets directly from Slack workspace

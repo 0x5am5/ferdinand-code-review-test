@@ -1,24 +1,32 @@
-
 // Font helper utilities shared between font commands
+import type { BrandAsset } from "@shared/schema";
 
 // Helper functions
-export function hasUploadableFiles(asset: any): boolean {
+export function hasUploadableFiles(asset: BrandAsset): boolean {
   try {
-    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-    return data?.source === "file" && data?.sourceData?.files && data.sourceData.files.length > 0;
+    const data =
+      typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    return (
+      data?.source === "file" &&
+      data?.sourceData?.files &&
+      data.sourceData.files.length > 0
+    );
   } catch {
     return false;
   }
 }
 
-export function generateGoogleFontCSS(fontFamily: string, weights: string[]): string {
+export function generateGoogleFontCSS(
+  fontFamily: string,
+  weights: string[]
+): string {
   // Clean and format weights
-  const cleanWeights = weights.filter(w => w && w.trim()).map(w => w.trim());
+  const cleanWeights = weights.filter((w) => w?.trim()).map((w) => w.trim());
   const weightParam = cleanWeights.length > 0 ? cleanWeights.join(";") : "400";
   const familyParam = fontFamily.replace(/\s+/g, "+");
-  
+
   const importUrl = `https://fonts.googleapis.com/css2?family=${familyParam}:wght@${weightParam}&display=swap`;
-  
+
   return `/* Google Font: ${fontFamily} */
 @import url('${importUrl}');
 
@@ -36,7 +44,10 @@ export function generateGoogleFontCSS(fontFamily: string, weights: string[]): st
 /* Available weights: ${cleanWeights.join(", ")} */`;
 }
 
-export function generateAdobeFontCSS(projectId: string, fontFamily: string): string {
+export function generateAdobeFontCSS(
+  projectId: string,
+  fontFamily: string
+): string {
   return `/* Adobe Font: ${fontFamily} */
 /* Add this to your HTML <head> section: */
 /* <link rel="stylesheet" href="https://use.typekit.net/${projectId}.css"> */
@@ -55,32 +66,31 @@ export function generateAdobeFontCSS(projectId: string, fontFamily: string): str
 }
 
 // Font processing constants
-export const FONT_CATEGORY_ORDER = ['brand', 'body', 'header', 'other'];
+export const FONT_CATEGORY_ORDER = ["brand", "body", "header", "other"];
 
 export const FONT_CATEGORY_EMOJIS: Record<string, string> = {
-  brand: '🎯',
-  body: '📖',
-  header: '📰',
-  other: '📝'
+  brand: "🎯",
+  body: "📖",
+  header: "📰",
+  other: "📝",
 };
 
 export const FONT_CATEGORY_NAMES: Record<string, string> = {
-  brand: 'Brand Fonts',
-  body: 'Body Fonts',
-  header: 'Header Fonts',
-  other: 'Other Fonts'
+  brand: "Brand Fonts",
+  body: "Body Fonts",
+  header: "Header Fonts",
+  other: "Other Fonts",
 };
 
 // Build font blocks for Slack display
+import { formatFontInfo } from "./slack-helpers";
+
 export function buildFontBlocks(
-  displayAssets: any[],
-  filteredFontAssets: any[],
-  fontAssets: any[],
-  variant?: string,
+  displayAssets: BrandAsset[],
+  filteredFontAssets: BrandAsset[],
+  fontAssets: BrandAsset[],
+  variant?: string
 ) {
-  // Import formatFontInfo from slack-helpers since it's defined there
-  const { formatFontInfo } = require('./slack-helpers');
-  
   // Group assets by category for better organization
   const groupedAssets = displayAssets.reduce(
     (groups: Record<string, typeof displayAssets>, asset) => {
@@ -93,14 +103,14 @@ export function buildFontBlocks(
         groups[category].push(asset);
         return groups;
       } catch {
-        if (!groups["other"]) {
-          groups["other"] = [];
+        if (!groups.other) {
+          groups.other = [];
         }
-        groups["other"].push(asset);
+        groups.other.push(asset);
         return groups;
       }
     },
-    {},
+    {}
   );
 
   // Build enhanced font blocks organized by category
@@ -114,7 +124,11 @@ export function buildFontBlocks(
     headerText += ` from ${fontAssets.length} total`;
   }
 
-  const fontBlocks: any[] = [
+  const fontBlocks: Array<{
+    type: string;
+    text?: { type: string; text: string };
+    elements?: unknown[];
+  }> = [
     {
       type: "section",
       text: {

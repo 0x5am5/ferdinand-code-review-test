@@ -7,7 +7,7 @@ async function throwIfResNotOk(res: Response) {
       // Clone the response so we can read it multiple times if needed
       const responseClone = res.clone();
       const errorData = await responseClone.json();
-      
+
       // Check if it's our standardized error format
       if (errorData.error?.message) {
         errorMessage = errorData.error.message;

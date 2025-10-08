@@ -93,6 +93,28 @@ export default {
 				shadow: "box-shadow var(--transition)",
 				transform: "transform var(--transition)",
 			},
+			typography: {
+				DEFAULT: {
+					css: {
+						h1: {
+							fontFamily: "ivypresto-display, serif",
+							fontWeight: "400",
+						},
+						h2: {
+							fontFamily: "roc-grotesk-wide, roc-grotesk, sans-serif",
+							fontWeight: "700",
+						},
+						h3: {
+							fontFamily: "roc-grotesk-wide, roc-grotesk, sans-serif",
+							fontWeight: "500",
+						},
+						p: {
+							fontFamily: "roc-grotesk, sans-serif",
+							fontWeight: "300",
+						},
+					},
+				},
+			},
 		},
 	},
 	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],

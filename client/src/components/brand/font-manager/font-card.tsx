@@ -1,5 +1,4 @@
 import { FontSource } from "@shared/schema";
-import { motion } from "framer-motion";
 import { Edit2, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +38,7 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
 
       // Remove existing font link if it exists
       const existingLink = document.head.querySelector(
-        `#font-${font.name.replace(/\s+/g, "-")}`,
+        `#font-${font.name.replace(/\s+/g, "-")}`
       );
       if (!existingLink) {
         document.head.appendChild(link);
@@ -52,7 +51,7 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
 
       // Remove existing font link if it exists
       const existingLink = document.head.querySelector(
-        `#font-${font.name.replace(/\s+/g, "-")}`,
+        `#font-${font.name.replace(/\s+/g, "-")}`
       );
       if (!existingLink) {
         document.head.appendChild(link);
@@ -109,13 +108,7 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
   ]);
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      className="p-4 mb-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow"
-    >
+    <div className="p-4 mb-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <h3 className="font-medium text-sm mb-0">{font.name}</h3>
@@ -173,6 +166,6 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

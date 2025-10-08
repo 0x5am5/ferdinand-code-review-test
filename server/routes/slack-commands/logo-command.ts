@@ -1,7 +1,13 @@
+import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
-import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { db } from "../../db";
+import {
+  buildLogoConfirmationBlocks,
+  buildLogoProcessingMessage,
+  buildLogoSummaryMessage,
+  shouldShowLogoConfirmation,
+} from "../../utils/logo-display";
 import {
   checkRateLimit,
   decryptBotToken,
@@ -11,12 +17,6 @@ import {
   logSlackActivity,
   uploadFileToSlack,
 } from "../../utils/slack-helpers";
-import {
-  buildLogoConfirmationBlocks,
-  buildLogoProcessingMessage,
-  buildLogoSummaryMessage,
-  shouldShowLogoConfirmation,
-} from "../../utils/logo-display";
 
 export async function handleLogoCommand({
   command,
@@ -57,8 +57,8 @@ export async function handleLogoCommand({
       .where(
         and(
           eq(slackWorkspaces.slackTeamId, command.team_id),
-          eq(slackWorkspaces.isActive, true),
-        ),
+          eq(slackWorkspaces.isActive, true)
+        )
       );
 
     if (!workspace) {
@@ -79,8 +79,8 @@ export async function handleLogoCommand({
       .where(
         and(
           eq(brandAssets.clientId, workspace.clientId),
-          eq(brandAssets.category, "logo"),
-        ),
+          eq(brandAssets.category, "logo")
+        )
       );
 
     if (logoAssets.length === 0) {
@@ -116,7 +116,7 @@ export async function handleLogoCommand({
       const confirmationBlocks = buildLogoConfirmationBlocks(
         matchedLogos,
         query,
-        workspace.clientId,
+        workspace.clientId
       );
 
       await respond({
@@ -153,7 +153,9 @@ export async function handleLogoCommand({
             query.toLowerCase() === "white" ||
             query.toLowerCase() === "inverse";
           const data =
-            typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
           const hasDarkVariant = data?.hasDarkVariant === true;
 
           // If dark query specifically requested, only upload dark (or light if no dark available)
@@ -170,7 +172,7 @@ export async function handleLogoCommand({
               asset.id,
               workspace.clientId,
               baseUrl,
-              downloadParams,
+              downloadParams
             );
 
             const variantSuffix = hasDarkVariant ? "_dark" : "";
@@ -178,17 +180,19 @@ export async function handleLogoCommand({
             const variantNote = hasDarkVariant ? " (Dark Variant)" : "";
             const title = `${assetInfo.title}${variantNote}`;
 
-            allUploads.push(uploadFileToSlack(decryptedToken, {
-              channelId: command.channel_id,
-              userId: command.user_id,
-              fileUrl: downloadUrl,
-              filename,
-              title,
-              initialComment: `📋 *${title}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}${variantNote ? `\n• Variant: Dark` : ""}`,
-            }).catch(error => {
-              console.error(`Failed to upload ${asset.name}:`, error);
-              return false;
-            }));
+            allUploads.push(
+              uploadFileToSlack(decryptedToken, {
+                channelId: command.channel_id,
+                userId: command.user_id,
+                fileUrl: downloadUrl,
+                filename,
+                title,
+                initialComment: `📋 *${title}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}${variantNote ? `\n• Variant: Dark` : ""}`,
+              }).catch((error) => {
+                console.error(`Failed to upload ${asset.name}:`, error);
+                return false;
+              })
+            );
           } else {
             // For non-dark queries, upload light variant always
             const lightParams: any = {
@@ -199,23 +203,28 @@ export async function handleLogoCommand({
               asset.id,
               workspace.clientId,
               baseUrl,
-              lightParams,
+              lightParams
             );
 
             const lightFilename = `${asset.name.replace(/\s+/g, "_")}.png`;
             const lightTitle = assetInfo.title;
 
-            allUploads.push(uploadFileToSlack(decryptedToken, {
-              channelId: command.channel_id,
-              userId: command.user_id,
-              fileUrl: lightUrl,
-              filename: lightFilename,
-              title: lightTitle,
-              initialComment: `📋 *${lightTitle}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
-            }).catch(error => {
-              console.error(`Failed to upload light variant of ${asset.name}:`, error);
-              return false;
-            }));
+            allUploads.push(
+              uploadFileToSlack(decryptedToken, {
+                channelId: command.channel_id,
+                userId: command.user_id,
+                fileUrl: lightUrl,
+                filename: lightFilename,
+                title: lightTitle,
+                initialComment: `📋 *${lightTitle}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}`,
+              }).catch((error) => {
+                console.error(
+                  `Failed to upload light variant of ${asset.name}:`,
+                  error
+                );
+                return false;
+              })
+            );
 
             // If asset has dark variant and we're showing all, also upload dark
             if (hasDarkVariant) {
@@ -228,23 +237,28 @@ export async function handleLogoCommand({
                 asset.id,
                 workspace.clientId,
                 baseUrl,
-                darkParams,
+                darkParams
               );
 
               const darkFilename = `${asset.name.replace(/\s+/g, "_")}_dark.png`;
               const darkTitle = `${assetInfo.title} (Dark Variant)`;
 
-              allUploads.push(uploadFileToSlack(decryptedToken, {
-                channelId: command.channel_id,
-                userId: command.user_id,
-                fileUrl: darkUrl,
-                filename: darkFilename,
-                title: darkTitle,
-                initialComment: `📋 *${darkTitle}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}\n• Variant: Dark`,
-              }).catch(error => {
-                console.error(`Failed to upload dark variant of ${asset.name}:`, error);
-                return false;
-              }));
+              allUploads.push(
+                uploadFileToSlack(decryptedToken, {
+                  channelId: command.channel_id,
+                  userId: command.user_id,
+                  fileUrl: darkUrl,
+                  filename: darkFilename,
+                  title: darkTitle,
+                  initialComment: `📋 *${darkTitle}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}\n• Variant: Dark`,
+                }).catch((error) => {
+                  console.error(
+                    `Failed to upload dark variant of ${asset.name}:`,
+                    error
+                  );
+                  return false;
+                })
+              );
             }
           }
         }
@@ -265,7 +279,7 @@ export async function handleLogoCommand({
               user: command.user_id,
               text: "❌ Failed to upload logo files. Check your DMs for the files or download links.",
             });
-          } catch (ephemeralError: any) {
+          } catch (_ephemeralError: any) {
             console.log("Could not send ephemeral error message, trying DM...");
 
             try {
@@ -283,7 +297,7 @@ export async function handleLogoCommand({
             } catch (dmError) {
               console.log(
                 "Could not send error message via DM either:",
-                dmError,
+                dmError
               );
             }
           }
@@ -299,7 +313,7 @@ export async function handleLogoCommand({
             successfulUploads,
             matchedLogos.length,
             query,
-            responseTime,
+            responseTime
           );
 
           try {
@@ -308,9 +322,9 @@ export async function handleLogoCommand({
               user: command.user_id,
               text: summaryText,
             });
-          } catch (ephemeralError) {
+          } catch (_ephemeralError) {
             console.log(
-              "Could not send success message via ephemeral, trying DM...",
+              "Could not send success message via ephemeral, trying DM..."
             );
 
             try {
@@ -328,7 +342,7 @@ export async function handleLogoCommand({
             } catch (dmError) {
               console.log(
                 "Could not send success message via DM either:",
-                dmError,
+                dmError
               );
             }
           }

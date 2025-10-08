@@ -1,16 +1,16 @@
-import { and, eq } from "drizzle-orm";
 import { brandAssets, slackWorkspaces } from "@shared/schema";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
-import {
-  checkRateLimit,
-  filterColorAssetsByVariant,
-  logSlackActivity,
-} from "../../utils/slack-helpers";
 import {
   buildColorBlocks,
   buildColorConfirmationBlocks,
   shouldShowColorConfirmation,
 } from "../../utils/color-display";
+import {
+  checkRateLimit,
+  filterColorAssetsByVariant,
+  logSlackActivity,
+} from "../../utils/slack-helpers";
 
 export async function handleColorCommand({
   command,
@@ -49,8 +49,8 @@ export async function handleColorCommand({
       .where(
         and(
           eq(slackWorkspaces.slackTeamId, command.team_id),
-          eq(slackWorkspaces.isActive, true),
-        ),
+          eq(slackWorkspaces.isActive, true)
+        )
       );
 
     if (!workspace) {
@@ -70,8 +70,8 @@ export async function handleColorCommand({
       .where(
         and(
           eq(brandAssets.clientId, workspace.clientId),
-          eq(brandAssets.category, "color"),
-        ),
+          eq(brandAssets.category, "color")
+        )
       );
 
     if (colorAssets.length === 0) {
@@ -86,7 +86,7 @@ export async function handleColorCommand({
     // Filter by variant if specified
     const filteredColorAssets = filterColorAssetsByVariant(
       colorAssets,
-      variant,
+      variant
     );
 
     if (filteredColorAssets.length === 0 && variant) {
@@ -110,7 +110,7 @@ export async function handleColorCommand({
       const confirmationBlocks = buildColorConfirmationBlocks(
         displayAssets,
         variant,
-        workspace.clientId,
+        workspace.clientId
       );
 
       await respond({

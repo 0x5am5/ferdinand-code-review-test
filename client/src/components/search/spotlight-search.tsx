@@ -158,7 +158,7 @@ export function SpotlightSearch({
             </div>
           ),
           tags: ["users", "accounts", "team"],
-        },
+        }
       );
     }
 
@@ -199,8 +199,8 @@ export function SpotlightSearch({
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.subtitle?.toLowerCase().includes(query.toLowerCase()) ||
         item.tags?.some((tag: string) =>
-          tag.toLowerCase().includes(query.toLowerCase()),
-        ),
+          tag.toLowerCase().includes(query.toLowerCase())
+        )
     );
   }, [allSearchResults, query]);
 
@@ -241,12 +241,12 @@ export function SpotlightSearch({
               {(() => {
                 // Get unique result types
                 const resultTypes = Array.from(
-                  new Set(filteredResults.map((r) => r.type)),
+                  new Set(filteredResults.map((r) => r.type))
                 );
 
                 return resultTypes.map((type) => {
                   const resultsOfType = filteredResults.filter(
-                    (r) => r.type === type,
+                    (r) => r.type === type
                   );
                   if (resultsOfType.length === 0) return null;
 

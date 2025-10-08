@@ -573,7 +573,9 @@ export default function DesignSystemBuilder({
   // Fetch client assets to get the logo for preview and colors
   const { data: clientAssets = [] } = useClientAssetsById(clientId);
   const logoAsset = clientAssets.find((asset) => asset.category === "logo");
-  const clientLogo = logoAsset ? `/api/assets/${logoAsset.id}/file?t=${logoAsset.updatedAt ? new Date(logoAsset.updatedAt).getTime() : Date.now()}` : undefined;
+  const clientLogo = logoAsset
+    ? `/api/assets/${logoAsset.id}/file?t=${logoAsset.updatedAt ? new Date(logoAsset.updatedAt).getTime() : Date.now()}`
+    : undefined;
 
   // Parse existing colors from the color system
   const existingColors = clientAssets

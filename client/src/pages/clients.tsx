@@ -99,6 +99,7 @@ export default function Clients() {
     inspiration: true,
     figmaIntegration: false,
     slackIntegration: false,
+    assetManagement: false,
   });
   const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>(
     {}
@@ -177,6 +178,23 @@ export default function Clients() {
     return false;
   };
 
+  // Sync featureToggles state when editingClient changes
+  useEffect(() => {
+    if (editingClient?.featureToggles) {
+      const toggles = editingClient.featureToggles as FeatureToggles;
+      setFeatureToggles({
+        logoSystem: toggles.logoSystem ?? true,
+        colorSystem: toggles.colorSystem ?? true,
+        typeSystem: toggles.typeSystem ?? true,
+        userPersonas: toggles.userPersonas ?? true,
+        inspiration: toggles.inspiration ?? true,
+        figmaIntegration: toggles.figmaIntegration ?? false,
+        slackIntegration: toggles.slackIntegration ?? false,
+        assetManagement: toggles.assetManagement ?? false,
+      });
+    }
+  }, [editingClient]);
+
   // Initialize the map with empty arrays for each client
   useEffect(() => {
     if (clients.length > 0) {
@@ -252,6 +270,9 @@ export default function Clients() {
           slackIntegration: Boolean(
             editingClient.featureToggles.slackIntegration ?? false
           ),
+          assetManagement: Boolean(
+            editingClient.featureToggles.assetManagement ?? false
+          ),
         };
         setFeatureToggles(toggles);
       } else {
@@ -264,6 +285,7 @@ export default function Clients() {
           inspiration: true,
           figmaIntegration: false,
           slackIntegration: false,
+          assetManagement: false,
         });
       }
     } else {
@@ -276,12 +298,13 @@ export default function Clients() {
         inspiration: true,
         figmaIntegration: false,
         slackIntegration: false,
+        assetManagement: false,
       });
     }
   }, [editingClient]);
 
   return (
-    <div className="p-8">
+    <div className="p-8 pt-4">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-4xl font-bold">Clients</h1>
         <div className="flex items-center gap-4">
@@ -366,6 +389,12 @@ export default function Clients() {
                     <Badge className="bg-indigo-100 text-indigo-800">
                       <Slack className="h-3 w-3 mr-1" />
                       Slack
+                    </Badge>
+                  )}
+                  {client.featureToggles?.assetManagement && (
+                    <Badge className="bg-orange-100 text-orange-800">
+                      <Image className="h-3 w-3 mr-1" />
+                      Assets
                     </Badge>
                   )}
 
@@ -541,6 +570,30 @@ export default function Clients() {
                           Slack
                         </Button>
                       )}
+                      {!client.featureToggles?.assetManagement && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const currentFeatures =
+                              client.featureToggles || ({} as FeatureToggles);
+                            const newToggles = {
+                              ...currentFeatures,
+                              assetManagement: true,
+                            };
+                            await updateClient.mutate({
+                              id: client.id,
+                              data: { featureToggles: newToggles },
+                            });
+                          }}
+                        >
+                          <Plus className="h-3 w-3" />
+                          <Image className="h-3 w-3" />
+                          Assets
+                        </Button>
+                      )}
                     </>
                   )}
                 </div>
@@ -620,6 +673,7 @@ export default function Clients() {
                     inspiration: true,
                     figmaIntegration: false,
                     slackIntegration: false,
+                    assetManagement: false,
                   };
 
                 return (
@@ -802,6 +856,30 @@ export default function Clients() {
                             </Button>
                           </Badge>
                         )}
+                        {clientFeatures.assetManagement && (
+                          <Badge className="flex items-center gap-1 bg-orange-100 text-orange-800 hover:bg-orange-200">
+                            <Image className="h-3 w-3" />
+                            Assets
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-4 w-4 p-0 ml-1 hover:bg-orange-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newToggles = {
+                                  ...clientFeatures,
+                                  assetManagement: false,
+                                };
+                                updateClient.mutate({
+                                  id: client.id,
+                                  data: { featureToggles: newToggles },
+                                });
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </Badge>
+                        )}
 
                         {/* Add buttons for disabled features (admin/super_admin only) */}
                         {(currentUser?.role === "admin" ||
@@ -959,6 +1037,28 @@ export default function Clients() {
                                 <Plus className="h-3 w-3" />
                                 <Slack className="h-3 w-3" />
                                 Slack
+                              </Button>
+                            )}
+                            {!clientFeatures.assetManagement && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-6 text-xs px-2 py-1 flex items-center gap-1 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const newToggles = {
+                                    ...clientFeatures,
+                                    assetManagement: true,
+                                  };
+                                  await updateClient.mutate({
+                                    id: client.id,
+                                    data: { featureToggles: newToggles },
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                                <Image className="h-3 w-3" />
+                                Assets
                               </Button>
                             )}
                           </>
@@ -1360,6 +1460,27 @@ export default function Clients() {
                         setFeatureToggles((prev) => ({
                           ...prev,
                           slackIntegration: checked,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center">
+                        <Image className="h-4 w-4 mr-2" />
+                        <div className="font-medium">Asset Management</div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Upload and manage brand assets beyond logos
+                      </div>
+                    </div>
+                    <Switch
+                      checked={featureToggles.assetManagement}
+                      onCheckedChange={(checked) =>
+                        setFeatureToggles((prev) => ({
+                          ...prev,
+                          assetManagement: checked,
                         }))
                       }
                     />

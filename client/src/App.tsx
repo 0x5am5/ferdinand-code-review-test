@@ -1,6 +1,6 @@
 import { UserRole } from "@shared/schema";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Redirect, Route, Switch, useLocation } from "wouter";
+import { Route, Switch } from "wouter";
 import { ClientProtectedRoute } from "@/components/auth/client-protected-route";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
@@ -23,16 +23,10 @@ import Users from "@/pages/users";
 import Clients from "./pages/clients";
 
 function Router() {
-  const [location] = useLocation();
-
-  if (location === "/") {
-    return <Redirect to="/login" />;
-  }
-
   return (
     <Switch>
       {/* Public routes that don't require authentication */}
-      <Route path="/login" component={Login} />
+      <Route path="/" component={Login} />
       <Route path="/signup" component={SignupPage} />
 
       {/* Protected routes that require authentication */}

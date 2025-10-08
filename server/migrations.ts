@@ -1,4 +1,8 @@
-import { type TypeStyle, typeScales as typeScalesTable } from "@shared/schema";
+import {
+  assetCategories,
+  type TypeStyle,
+  typeScales as typeScalesTable,
+} from "@shared/schema";
 import { eq, sql } from "drizzle-orm";
 import { db } from "./db.js";
 
@@ -12,6 +16,7 @@ export async function runMigrations() {
     await migrateFigmaTables();
     await migrateIndividualHeaderStyles();
     await migrateTypeScaleHierarchy();
+    await migrateDefaultAssetCategories();
 
     console.log("All migrations completed successfully!");
   } catch (error: unknown) {
@@ -288,6 +293,50 @@ async function migrateTypeScaleHierarchy() {
   } catch (error: unknown) {
     console.error(
       "Error migrating type scale hierarchy:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+    throw error;
+  }
+}
+
+async function migrateDefaultAssetCategories() {
+  try {
+    // Check if default categories already exist
+    const existingCategories = await db
+      .select()
+      .from(assetCategories)
+      .where(eq(assetCategories.isDefault, true));
+
+    if (existingCategories.length > 0) {
+      console.log("Default asset categories already exist.");
+      return;
+    }
+
+    console.log("Creating default asset categories...");
+
+    // Default categories as defined in the PRD
+    const defaultCategories = [
+      { name: "Documents", slug: "documents" },
+      { name: "Spreadsheets", slug: "spreadsheets" },
+      { name: "Slide Decks", slug: "slide-decks" },
+      { name: "Design Assets", slug: "design-assets" },
+      { name: "Photography", slug: "photography" },
+    ];
+
+    // Insert default categories (clientId is null for system defaults)
+    for (const category of defaultCategories) {
+      await db.insert(assetCategories).values({
+        name: category.name,
+        slug: category.slug,
+        isDefault: true,
+        clientId: null, // System-wide defaults
+      });
+    }
+
+    console.log("✓ Default asset categories created successfully");
+  } catch (error: unknown) {
+    console.error(
+      "Error creating default asset categories:",
       error instanceof Error ? error.message : "Unknown error"
     );
     throw error;

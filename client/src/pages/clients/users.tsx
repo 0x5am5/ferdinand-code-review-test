@@ -75,15 +75,15 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 const getRoleBadgeVariant = (role: string) => {
   switch (role) {
     case UserRole.SUPER_ADMIN:
-      return "destructive";
+      return "superadmin";
     case UserRole.ADMIN:
-      return "default";
+      return "admin";
     case UserRole.EDITOR:
-      return "secondary";
+      return "editor";
     case UserRole.STANDARD:
-      return "secondary";
+      return "standard";
     case UserRole.GUEST:
-      return "outline";
+      return "guest";
     default:
       return "outline";
   }
@@ -230,20 +230,13 @@ export default function ClientUsersPage() {
     : users;
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
-          <Link href={`/clients/${clientId}`}>
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-4xl font-bold">Users</h1>
-            <p className="text-muted-foreground">
-              Managing users for {client.name}
-            </p>
-          </div>
+    <div className="p-8 pt-4">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+          <p className="text-muted-foreground mt-1">
+            Managing users for {client.name}
+          </p>
         </div>
         <Button
           onClick={() => setIsInviteDialogOpen(true)}
@@ -255,214 +248,220 @@ export default function ClientUsersPage() {
         </Button>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex gap-4 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, email, or role..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-10 transition-all focus:ring-2 ring-primary/20 w-full"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 rounded-full opacity-70 hover:opacity-100"
-              onClick={() => setSearchQuery("")}
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-        </div>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
+      <div className="space-y-8">
+        {/* Search Bar */}
+        <div className="flex gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, email, or role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-10 transition-all focus:ring-2 ring-primary/20 w-full"
+            />
+            {searchQuery && (
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                onClick={() =>
-                  queryClient.invalidateQueries({
-                    queryKey: [`/api/clients/${clientId}/users`],
-                  })
-                }
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 rounded-full opacity-70 hover:opacity-100"
+                onClick={() => setSearchQuery("")}
               >
-                <RefreshCw className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Refresh user data</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+            )}
+          </div>
 
-      {/* Search results info */}
-      {debouncedSearchQuery && (
-        <div className="flex items-center mb-4 text-sm">
-          <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-          <span>
-            Found <strong>{filteredUsers.length}</strong>{" "}
-            {filteredUsers.length === 1 ? "user" : "users"}
-            {filteredUsers.length > 0 ? " matching " : " matching search term "}
-            <Badge variant="outline" className="mx-1 font-mono">
-              {debouncedSearchQuery}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs ml-2"
-              onClick={() => setSearchQuery("")}
-            >
-              Clear filter
-            </Button>
-          </span>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    queryClient.invalidateQueries({
+                      queryKey: [`/api/clients/${clientId}/users`],
+                    })
+                  }
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh user data</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
-      )}
 
-      {/* Pending Invitations */}
-      {pendingInvitations.length > 0 && (
-        <Card className="mb-8">
+        {/* Search results info */}
+        {debouncedSearchQuery && (
+          <div className="flex items-center text-sm">
+            <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+            <span>
+              Found <strong>{filteredUsers.length}</strong>{" "}
+              {filteredUsers.length === 1 ? "user" : "users"}
+              {filteredUsers.length > 0
+                ? " matching "
+                : " matching search term "}
+              <Badge variant="outline" className="mx-1 font-mono">
+                {debouncedSearchQuery}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs ml-2"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear filter
+              </Button>
+            </span>
+          </div>
+        )}
+
+        {/* Pending Invitations */}
+        {pendingInvitations.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Invitations</CardTitle>
+              <CardDescription>
+                Users who have been invited to {client.name} but haven't
+                accepted yet
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoadingInvitations
+                    ? Array.from({ length: 2 }, (_, index) => (
+                        <TableRow
+                          key={`invitation-skeleton-${Date.now()}-${index}`}
+                        >
+                          <TableCell>
+                            <div className="h-4 w-48 bg-muted animate-pulse"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-8 w-24 bg-muted animate-pulse"></div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="h-4 w-24 bg-muted animate-pulse"></div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="h-8 w-8 bg-muted animate-pulse ml-auto"></div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    : pendingInvitations.map((invitation: Invitation) => {
+                        // Format expiration date
+                        const expiresAt = new Date(invitation.expiresAt);
+                        const now = new Date();
+                        const isExpired = expiresAt < now;
+                        const daysLeft = Math.ceil(
+                          (expiresAt.getTime() - now.getTime()) /
+                            (1000 * 3600 * 24)
+                        );
+
+                        return (
+                          <TableRow key={invitation.id}>
+                            <TableCell>{invitation.email}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getRoleBadgeVariant(invitation.role)}
+                              >
+                                {invitation.role.replace("_", " ")}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {isExpired ? (
+                                <Badge variant="destructive">Expired</Badge>
+                              ) : (
+                                <span className="text-sm">
+                                  {daysLeft} {daysLeft === 1 ? "day" : "days"}{" "}
+                                  left
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-48"
+                                >
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      resendInvitation(invitation.id)
+                                    }
+                                    disabled={isResendingInvitationPending}
+                                  >
+                                    {isResendingInvitationPending ? (
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <RefreshCw className="mr-2 h-4 w-4" />
+                                    )}
+                                    <span>Resend Invitation</span>
+                                  </DropdownMenuItem>
+
+                                  {(currentUser?.role ===
+                                    UserRole.SUPER_ADMIN ||
+                                    currentUser?.role === UserRole.ADMIN) && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          removeInvitation(invitation.id)
+                                        }
+                                        className="text-red-600 focus:text-red-600"
+                                      >
+                                        <X className="mr-2 h-4 w-4" />
+                                        <span>Remove Invitation</span>
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Users Table */}
+        <Card>
           <CardHeader>
-            <CardTitle>Pending Invitations</CardTitle>
+            <CardTitle>Client Users</CardTitle>
             <CardDescription>
-              Users who have been invited to {client.name} but haven't accepted
-              yet
+              Manage users assigned to {client.name}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>User</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Expires</TableHead>
+                  <TableHead className="w-[200px]">Role</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoadingInvitations
-                  ? Array.from({ length: 2 }, (_, index) => (
-                      <TableRow
-                        key={`invitation-skeleton-${Date.now()}-${index}`}
-                      >
-                        <TableCell>
-                          <div className="h-4 w-48 bg-muted animate-pulse"></div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="h-8 w-24 bg-muted animate-pulse"></div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="h-4 w-24 bg-muted animate-pulse"></div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="h-8 w-8 bg-muted animate-pulse ml-auto"></div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  : pendingInvitations.map((invitation: Invitation) => {
-                      // Format expiration date
-                      const expiresAt = new Date(invitation.expiresAt);
-                      const now = new Date();
-                      const isExpired = expiresAt < now;
-                      const daysLeft = Math.ceil(
-                        (expiresAt.getTime() - now.getTime()) /
-                          (1000 * 3600 * 24)
-                      );
-
-                      return (
-                        <TableRow key={invitation.id}>
-                          <TableCell>{invitation.email}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={getRoleBadgeVariant(invitation.role)}
-                            >
-                              {invitation.role.replace("_", " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {isExpired ? (
-                              <Badge variant="destructive">Expired</Badge>
-                            ) : (
-                              <span className="text-sm">
-                                {daysLeft} {daysLeft === 1 ? "day" : "days"}{" "}
-                                left
-                              </span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    resendInvitation(invitation.id)
-                                  }
-                                  disabled={isResendingInvitationPending}
-                                >
-                                  {isResendingInvitationPending ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <RefreshCw className="mr-2 h-4 w-4" />
-                                  )}
-                                  <span>Resend Invitation</span>
-                                </DropdownMenuItem>
-
-                                {(currentUser?.role === UserRole.SUPER_ADMIN ||
-                                  currentUser?.role === UserRole.ADMIN) && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() =>
-                                        removeInvitation(invitation.id)
-                                      }
-                                      className="text-red-600 focus:text-red-600"
-                                    >
-                                      <X className="mr-2 h-4 w-4" />
-                                      <span>Remove Invitation</span>
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Users Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Client Users</CardTitle>
-          <CardDescription>
-            Manage users assigned to {client.name}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead className="w-[200px]">Role</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoadingUsers ? (
-                Array.from({ length: 3 }, () => crypto.randomUUID()).map(
-                  (id) => (
+                {isLoadingUsers ? (
+                  Array.from({ length: 3 }, (_, i) => i).map((id) => (
                     <TableRow key={id}>
                       <TableCell>
                         <div className="flex items-center space-x-4">
@@ -480,220 +479,211 @@ export default function ClientUsersPage() {
                         <div className="h-8 w-8 bg-muted animate-pulse ml-auto" />
                       </TableCell>
                     </TableRow>
-                  )
-                )
-              ) : filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      <div className="flex items-center space-x-4">
-                        <Avatar>
-                          <AvatarFallback>
-                            {getInitials(user.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{user.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Select
-                        defaultValue={user.role}
-                        disabled={
-                          // Disable if current user is not super admin and target user is super admin
-                          (currentUser?.role !== UserRole.SUPER_ADMIN &&
-                            user.role === UserRole.SUPER_ADMIN) ||
-                          // Disable if current user is admin and trying to modify their own role
-                          (currentUser?.role === UserRole.ADMIN &&
-                            user.id === currentUser.id)
-                        }
-                        onValueChange={(value) => {
-                          // Permission checks similar to main users page
-                          if (
-                            currentUser?.role !== UserRole.SUPER_ADMIN &&
-                            user.role === UserRole.SUPER_ADMIN
-                          ) {
-                            toast({
-                              title: "Permission denied",
-                              description:
-                                "Only super admins can modify super admin roles",
-                              variant: "destructive",
-                            });
-                            return;
+                  ))
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-4">
+                          <Avatar>
+                            <AvatarFallback>
+                              {getInitials(user.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{user.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Select
+                          defaultValue={user.role}
+                          disabled={
+                            // Disable if current user is not super admin and target user is super admin
+                            (currentUser?.role !== UserRole.SUPER_ADMIN &&
+                              user.role === UserRole.SUPER_ADMIN) ||
+                            // Disable if trying to modify your own role
+                            user.id === currentUser?.id
                           }
-
-                          if (
-                            currentUser?.role !== UserRole.SUPER_ADMIN &&
-                            ["SUPER_ADMIN", "ADMIN"].includes(value)
-                          ) {
-                            toast({
-                              title: "Permission denied",
-                              description:
-                                "Only super admins can assign admin roles",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-
-                          if (
-                            currentUser?.role === UserRole.ADMIN &&
-                            user.id === currentUser.id
-                          ) {
-                            toast({
-                              title: "Permission denied",
-                              description: "You cannot change your own role",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-
-                          updateUserRole({
-                            id: user.id,
-                            role: value as (typeof UserRole)[keyof typeof UserRole],
-                          });
-                        }}
-                      >
-                        <SelectTrigger className="h-8 w-[130px]">
-                          <SelectValue>
-                            <Badge
-                              variant={getRoleBadgeVariant(user.role)}
-                              className="bg-secondary/10 text-secondary"
-                            >
-                              {user.role.replace("_", " ")}
-                            </Badge>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {USER_ROLES.filter((role) => {
-                            // Only super admins can see/assign super_admin role
-                            if (
-                              role === "super_admin" &&
-                              currentUser?.role !== "super_admin"
-                            ) {
-                              return false;
+                          onValueChange={(value) => {
+                            // Check if user is trying to modify their own role
+                            if (user.id === currentUser?.id) {
+                              toast({
+                                title: "Permission denied",
+                                description: "You cannot change your own role",
+                                variant: "destructive",
+                              });
+                              return;
                             }
 
-                            // Admins cannot assign admin role to others
+                            // Permission checks similar to main users page
                             if (
-                              role === "admin" &&
-                              currentUser?.role === "admin"
-                            ) {
-                              return false;
-                            }
-
-                            return true;
-                          }).map((role) => (
-                            <SelectItem key={role} value={role}>
-                              <Badge
-                                variant={getRoleBadgeVariant(role)}
-                                className="bg-secondary/10 text-secondary"
-                              >
-                                {role.replace("_", " ")}
-                              </Badge>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={
                               currentUser?.role !== UserRole.SUPER_ADMIN &&
                               user.role === UserRole.SUPER_ADMIN
+                            ) {
+                              toast({
+                                title: "Permission denied",
+                                description:
+                                  "Only super admins can modify super admin roles",
+                                variant: "destructive",
+                              });
+                              return;
                             }
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                          {(currentUser?.role === UserRole.SUPER_ADMIN ||
-                            user.role !== UserRole.SUPER_ADMIN) && (
-                            <>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  resetPassword(user.id);
-                                }}
-                              >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                <span>Reset Password</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                            </>
-                          )}
 
-                          <DropdownMenuItem
-                            className={
-                              user.role === UserRole.SUPER_ADMIN
-                                ? "text-red-500"
-                                : ""
+                            if (
+                              currentUser?.role !== UserRole.SUPER_ADMIN &&
+                              ["SUPER_ADMIN", "ADMIN"].includes(value)
+                            ) {
+                              toast({
+                                title: "Permission denied",
+                                description:
+                                  "Only super admins can assign admin roles",
+                                variant: "destructive",
+                              });
+                              return;
                             }
-                          >
-                            {user.role === UserRole.SUPER_ADMIN ? (
-                              <Shield className="mr-2 h-4 w-4" />
-                            ) : user.role === UserRole.ADMIN ? (
-                              <UserCheck className="mr-2 h-4 w-4" />
-                            ) : (
-                              <Users className="mr-2 h-4 w-4" />
+
+                            updateUserRole({
+                              id: user.id,
+                              role: value as (typeof UserRole)[keyof typeof UserRole],
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-[130px]">
+                            <SelectValue>
+                              <Badge variant={getRoleBadgeVariant(user.role)}>
+                                {user.role.replace("_", " ")}
+                              </Badge>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {USER_ROLES.filter((role) => {
+                              // Only super admins can see/assign super_admin role
+                              if (
+                                role === "super_admin" &&
+                                currentUser?.role !== "super_admin"
+                              ) {
+                                return false;
+                              }
+
+                              // Admins cannot assign admin role to others
+                              if (
+                                role === "admin" &&
+                                currentUser?.role === "admin"
+                              ) {
+                                return false;
+                              }
+
+                              return true;
+                            }).map((role) => (
+                              <SelectItem key={role} value={role}>
+                                <Badge variant={getRoleBadgeVariant(role)}>
+                                  {role.replace("_", " ")}
+                                </Badge>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={
+                                currentUser?.role !== UserRole.SUPER_ADMIN &&
+                                user.role === UserRole.SUPER_ADMIN
+                              }
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            {(currentUser?.role === UserRole.SUPER_ADMIN ||
+                              user.role !== UserRole.SUPER_ADMIN) && (
+                              <>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    resetPassword(user.id);
+                                  }}
+                                >
+                                  <RefreshCw className="mr-2 h-4 w-4" />
+                                  <span>Reset Password</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                              </>
                             )}
-                            <span>
-                              Current Role: {user.role.replace("_", " ")}
-                            </span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+
+                            <DropdownMenuItem
+                              className={
+                                user.role === UserRole.SUPER_ADMIN
+                                  ? "text-red-500"
+                                  : ""
+                              }
+                            >
+                              {user.role === UserRole.SUPER_ADMIN ? (
+                                <Shield className="mr-2 h-4 w-4" />
+                              ) : user.role === UserRole.ADMIN ? (
+                                <UserCheck className="mr-2 h-4 w-4" />
+                              ) : (
+                                <Users className="mr-2 h-4 w-4" />
+                              )}
+                              <span>
+                                Current Role: {user.role.replace("_", " ")}
+                              </span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-3">
+                        <div className="rounded-full bg-muted p-3">
+                          <Users className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm font-medium">No users found</p>
+                          <p className="text-sm text-muted-foreground">
+                            {debouncedSearchQuery
+                              ? "Try a different search term or clear the filter."
+                              : "Get started by inviting your first user to this client."}
+                          </p>
+                        </div>
+                        {debouncedSearchQuery ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => setSearchQuery("")}
+                          >
+                            Clear filter
+                          </Button>
+                        ) : (
+                          <Button onClick={() => setIsInviteDialogOpen(true)}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Invite User
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <div className="rounded-full bg-muted p-3">
-                        <Users className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">No users found</p>
-                        <p className="text-sm text-muted-foreground">
-                          {debouncedSearchQuery
-                            ? "Try a different search term or clear the filter."
-                            : "Get started by inviting your first user to this client."}
-                        </p>
-                      </div>
-                      {debouncedSearchQuery ? (
-                        <Button
-                          variant="outline"
-                          onClick={() => setSearchQuery("")}
-                        >
-                          Clear filter
-                        </Button>
-                      ) : (
-                        <Button onClick={() => setIsInviteDialogOpen(true)}>
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Invite User
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      {currentUser && (
-        <InviteUserDialog
-          open={isInviteDialogOpen}
-          onOpenChange={setIsInviteDialogOpen}
-          currentUser={currentUser}
-          clients={[client]} // Only pass the current client
-          preSelectedClientId={clientId}
-        />
-      )}
+        {currentUser && (
+          <InviteUserDialog
+            open={isInviteDialogOpen}
+            onOpenChange={setIsInviteDialogOpen}
+            currentUser={currentUser}
+            clients={[client]} // Only pass the current client
+            preSelectedClientId={clientId}
+          />
+        )}
+      </div>
     </div>
   );
 }

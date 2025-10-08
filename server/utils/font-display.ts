@@ -1,3 +1,5 @@
+import type { BrandAsset } from "@shared/schema";
+
 export interface FontDisplayOptions {
   variant?: string;
   showConfirmation?: boolean;
@@ -6,7 +8,7 @@ export interface FontDisplayOptions {
 
 // Build confirmation blocks for large font result sets
 export function buildFontConfirmationBlocks(
-  matchedFonts: any[],
+  matchedFonts: BrandAsset[],
   variant: string,
   workspaceClientId: number
 ) {
@@ -63,7 +65,7 @@ export function buildFontConfirmationBlocks(
 
 // Build processing message for font processing
 export function buildFontProcessingMessage(
-  matchedFonts: any[],
+  matchedFonts: BrandAsset[],
   variant?: string
 ): string {
   const fontNames = matchedFonts.map((asset) => asset.name).join(", ");

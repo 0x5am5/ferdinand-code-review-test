@@ -1,7 +1,18 @@
+import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
-import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { db } from "../../db";
+import {
+  buildFontConfirmationBlocks,
+  buildFontProcessingMessage,
+  buildFontSummaryMessage,
+  shouldShowFontConfirmation,
+} from "../../utils/font-display";
+import {
+  generateAdobeFontCSS,
+  generateGoogleFontCSS,
+  hasUploadableFiles,
+} from "../../utils/font-helpers";
 import {
   checkRateLimit,
   decryptBotToken,
@@ -11,17 +22,6 @@ import {
   logSlackActivity,
   uploadFileToSlack,
 } from "../../utils/slack-helpers";
-import {
-  hasUploadableFiles,
-  generateGoogleFontCSS,
-  generateAdobeFontCSS,
-} from "../../utils/font-helpers";
-import {
-  buildFontConfirmationBlocks,
-  buildFontProcessingMessage,
-  buildFontSummaryMessage,
-  shouldShowFontConfirmation,
-} from "../../utils/font-display";
 
 export async function handleFontCommand({
   command,
@@ -62,8 +62,8 @@ export async function handleFontCommand({
       .where(
         and(
           eq(slackWorkspaces.slackTeamId, command.team_id),
-          eq(slackWorkspaces.isActive, true),
-        ),
+          eq(slackWorkspaces.isActive, true)
+        )
       );
 
     if (!workspace) {
@@ -83,12 +83,12 @@ export async function handleFontCommand({
       .where(
         and(
           eq(brandAssets.clientId, workspace.clientId),
-          eq(brandAssets.category, "font"),
-        ),
+          eq(brandAssets.category, "font")
+        )
       );
 
     console.log(
-      `[FONT DEBUG] Found ${fontAssets.length} total font assets for client ${workspace.clientId}`,
+      `[FONT DEBUG] Found ${fontAssets.length} total font assets for client ${workspace.clientId}`
     );
     console.log(
       `[FONT DEBUG] Font assets:`,
@@ -129,12 +129,12 @@ export async function handleFontCommand({
         } catch (error) {
           console.error(
             `[FONT DEBUG] Error parsing font data for ${f.name}:`,
-            error,
+            error
           );
         }
 
         return { id: f.id, name: f.name, category: f.category, source };
-      }),
+      })
     );
 
     if (fontAssets.length === 0) {
@@ -183,7 +183,10 @@ export async function handleFontCommand({
     const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
 
     // Use utility function for processing message
-    const processingMessage = buildFontProcessingMessage(displayAssets, variant);
+    const processingMessage = buildFontProcessingMessage(
+      displayAssets,
+      variant
+    );
 
     // Send simple response first - matching color command pattern
     await respond({
@@ -208,7 +211,7 @@ export async function handleFontCommand({
           const fontInfo = formatFontInfo(asset);
 
           console.log(
-            `[FONT DEBUG] Processing asset ${asset.name} (ID: ${asset.id})`,
+            `[FONT DEBUG] Processing asset ${asset.name} (ID: ${asset.id})`
           );
           console.log(`[FONT DEBUG] Font info:`, {
             source: fontInfo.source,
@@ -222,7 +225,7 @@ export async function handleFontCommand({
               const downloadUrl = generateAssetDownloadUrl(
                 asset.id,
                 workspace.clientId,
-                baseUrl,
+                baseUrl
               );
 
               const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
@@ -242,15 +245,17 @@ export async function handleFontCommand({
               let codeBlock = "";
               let fontDescription = `📝 *${fontInfo.title}*\n• *Weights:* ${fontInfo.weights.join(", ")}\n• *Styles:* ${fontInfo.styles.join(", ")}`;
 
-              console.log(`[FONT DEBUG] Processing ${fontInfo.title} with source: ${fontInfo.source}`);
+              console.log(
+                `[FONT DEBUG] Processing ${fontInfo.title} with source: ${fontInfo.source}`
+              );
 
               if (fontInfo.source === "google") {
                 console.log(
-                  `[FONT DEBUG] Generating Google Font CSS for ${fontInfo.title} with weights: ${fontInfo.weights.join(",")}`,
+                  `[FONT DEBUG] Generating Google Font CSS for ${fontInfo.title} with weights: ${fontInfo.weights.join(",")}`
                 );
                 codeBlock = generateGoogleFontCSS(
                   fontInfo.title,
-                  fontInfo.weights,
+                  fontInfo.weights
                 );
                 fontDescription += `\n• *Source:* Google Fonts`;
               } else if (fontInfo.source === "adobe") {
@@ -260,11 +265,15 @@ export async function handleFontCommand({
                     : asset.data;
                 const projectId =
                   data?.sourceData?.projectId || "your-project-id";
-                console.log(`[FONT DEBUG] Generating Adobe Font CSS for ${fontInfo.title} with project ID: ${projectId}`);
+                console.log(
+                  `[FONT DEBUG] Generating Adobe Font CSS for ${fontInfo.title} with project ID: ${projectId}`
+                );
                 codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
                 fontDescription += `\n• *Source:* Adobe Fonts (Typekit)`;
               } else {
-                console.log(`[FONT DEBUG] Generating generic CSS for ${fontInfo.title}`);
+                console.log(
+                  `[FONT DEBUG] Generating generic CSS for ${fontInfo.title}`
+                );
                 codeBlock = `/* Font: ${fontInfo.title} */
 .your-element {
   font-family: '${fontInfo.title}', sans-serif;
@@ -283,10 +292,14 @@ export async function handleFontCommand({
                   text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
                 });
                 sentCodeBlocks++;
-                console.log(`[FONT DEBUG] Sent CSS via ephemeral message for ${fontInfo.title}`);
-              } catch (ephemeralError) {
-                console.log(`[FONT DEBUG] Ephemeral message failed, trying DM...`);
-                
+                console.log(
+                  `[FONT DEBUG] Sent CSS via ephemeral message for ${fontInfo.title}`
+                );
+              } catch (_ephemeralError) {
+                console.log(
+                  `[FONT DEBUG] Ephemeral message failed, trying DM...`
+                );
+
                 // Fallback to DM
                 try {
                   const conversationResponse =
@@ -294,18 +307,29 @@ export async function handleFontCommand({
                       users: command.user_id,
                     });
 
-                  if (conversationResponse.ok && conversationResponse.channel?.id) {
+                  if (
+                    conversationResponse.ok &&
+                    conversationResponse.channel?.id
+                  ) {
                     await workspaceClient.chat.postMessage({
                       channel: conversationResponse.channel.id,
                       text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
                     });
                     sentCodeBlocks++;
-                    console.log(`[FONT DEBUG] Sent CSS via DM for ${fontInfo.title}`);
+                    console.log(
+                      `[FONT DEBUG] Sent CSS via DM for ${fontInfo.title}`
+                    );
                   } else {
-                    console.error(`[FONT DEBUG] Failed to open conversation:`, conversationResponse);
+                    console.error(
+                      `[FONT DEBUG] Failed to open conversation:`,
+                      conversationResponse
+                    );
                   }
                 } catch (dmError) {
-                  console.error(`[FONT DEBUG] DM failed for ${fontInfo.title}:`, dmError);
+                  console.error(
+                    `[FONT DEBUG] DM failed for ${fontInfo.title}:`,
+                    dmError
+                  );
                 }
               }
             }
@@ -330,9 +354,9 @@ export async function handleFontCommand({
             user: command.user_id,
             text: summaryText,
           });
-        } catch (ephemeralError) {
+        } catch (_ephemeralError) {
           console.log(
-            "Could not send summary message via ephemeral, trying DM...",
+            "Could not send summary message via ephemeral, trying DM..."
           );
 
           try {
@@ -350,7 +374,7 @@ export async function handleFontCommand({
           } catch (dmError) {
             console.log(
               "Could not send summary message via DM either:",
-              dmError,
+              dmError
             );
           }
         }

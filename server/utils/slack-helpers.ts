@@ -1,19 +1,9 @@
 import type { BrandAsset } from "@shared/schema";
-import { slackAuditLogs, insertSlackAuditLogSchema } from "@shared/schema";
+import { insertSlackAuditLogSchema, slackAuditLogs } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
-import { db } from "../db";
 import fetch from "node-fetch";
+import { db } from "../db";
 import { decrypt } from "../utils/crypto";
-
-interface SlackFileUpload {
-  token: string;
-  channels: string;
-  filename: string;
-  title?: string;
-  initial_comment?: string;
-  file?: Buffer;
-  filetype?: string;
-}
 
 // Fuzzy matching for logo variants
 export function findBestLogoMatch(
@@ -27,16 +17,21 @@ export function findBestLogoMatch(
   const queryLower = query.toLowerCase();
 
   // Handle dark variant queries specially
-  if (queryLower === "dark" || queryLower === "white" || queryLower === "inverse") {
+  if (
+    queryLower === "dark" ||
+    queryLower === "white" ||
+    queryLower === "inverse"
+  ) {
     const darkVariantMatches = assets.filter((asset) => {
       try {
-        const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+        const data =
+          typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
         return data?.hasDarkVariant === true;
       } catch {
         return false;
       }
     });
-    
+
     if (darkVariantMatches.length > 0) {
       return darkVariantMatches;
     }
@@ -45,7 +40,8 @@ export function findBestLogoMatch(
   // Direct type matches (highest priority)
   const typeMatches = assets.filter((asset) => {
     try {
-      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+      const data =
+        typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
       const type = data?.type?.toLowerCase() || "main";
       return type === queryLower;
     } catch {
@@ -77,10 +73,13 @@ export function findBestLogoMatch(
   };
 
   for (const [type, words] of Object.entries(synonyms)) {
-    if (words.some(word => queryLower.includes(word))) {
+    if (words.some((word) => queryLower.includes(word))) {
       const synonymMatches = assets.filter((asset) => {
         try {
-          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          const data =
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
           return data?.type?.toLowerCase() === type;
         } catch {
           return false;
@@ -149,7 +148,9 @@ export async function uploadFileToSlack(
   }
 ): Promise<boolean> {
   try {
-    console.log(`[SLACK UPLOAD] Attempting to upload ${options.filename} to channel ${options.channelId}`);
+    console.log(
+      `[SLACK UPLOAD] Attempting to upload ${options.filename} to channel ${options.channelId}`
+    );
 
     // Create a new WebClient instance with the workspace-specific token
     const client = new WebClient(botToken);
@@ -157,20 +158,26 @@ export async function uploadFileToSlack(
     // First, let's check what channels/conversations the bot has access to
     try {
       const authTest = await client.auth.test();
-      console.log(`[SLACK UPLOAD] Bot user ID: ${authTest.user_id}, Team: ${authTest.team}`);
-    } catch (authError: any) {
+      console.log(
+        `[SLACK UPLOAD] Bot user ID: ${authTest.user_id}, Team: ${authTest.team}`
+      );
+    } catch (authError) {
       console.error(`[SLACK UPLOAD] Auth test failed:`, authError);
     }
 
     // Fetch the file from the URL
     const response = await fetch(options.fileUrl);
     if (!response.ok) {
-      console.error(`[SLACK UPLOAD] Failed to fetch file from ${options.fileUrl}: ${response.statusText}`);
+      console.error(
+        `[SLACK UPLOAD] Failed to fetch file from ${options.fileUrl}: ${response.statusText}`
+      );
       return false;
     }
 
     const fileBuffer = Buffer.from(await response.arrayBuffer());
-    console.log(`[SLACK UPLOAD] File fetched successfully, size: ${fileBuffer.length} bytes`);
+    console.log(
+      `[SLACK UPLOAD] File fetched successfully, size: ${fileBuffer.length} bytes`
+    );
 
     // First try to upload to the channel
     try {
@@ -184,27 +191,39 @@ export async function uploadFileToSlack(
         filetype: options.filetype,
       });
 
-      console.log(`[SLACK UPLOAD] Channel upload result:`, { ok: result.ok, error: result.error });
+      console.log(`[SLACK UPLOAD] Channel upload result:`, {
+        ok: result.ok,
+        error: result.error,
+      });
       return result.ok === true;
-    } catch (channelError: any) {
+    } catch (channelError: unknown) {
+      const error = channelError as {
+        data?: { error?: string };
+        message?: string;
+      };
       console.error(`[SLACK UPLOAD] Channel upload failed:`, {
-        error: channelError.data?.error,
-        message: channelError.message,
-        channelId: options.channelId
+        error: error.data?.error,
+        message: error.message,
+        channelId: options.channelId,
       });
 
       // If channel upload fails due to channel access issues, try DM to user
-      const isChannelAccessError = channelError.data?.error === 'not_in_channel' ||
-                                   channelError.data?.error === 'channel_not_found' ||
-                                   channelError.data?.error === 'access_denied' ||
-                                   channelError.data?.error === 'missing_scope';
+      const isChannelAccessError =
+        error.data?.error === "not_in_channel" ||
+        error.data?.error === "channel_not_found" ||
+        error.data?.error === "access_denied" ||
+        error.data?.error === "missing_scope";
 
       if (isChannelAccessError && options.userId) {
-        console.log(`[SLACK UPLOAD] Bot cannot access channel (${channelError.data?.error}), falling back to DM to user ${options.userId}`);
+        console.log(
+          `[SLACK UPLOAD] Bot cannot access channel (${error.data?.error}), falling back to DM to user ${options.userId}`
+        );
 
         try {
           // Open DM conversation with user first
-          console.log(`[SLACK UPLOAD] Opening DM conversation with user ${options.userId}...`);
+          console.log(
+            `[SLACK UPLOAD] Opening DM conversation with user ${options.userId}...`
+          );
           const conversationResponse = await client.conversations.open({
             users: options.userId,
           });
@@ -212,36 +231,52 @@ export async function uploadFileToSlack(
           console.log(`[SLACK UPLOAD] DM conversation result:`, {
             ok: conversationResponse.ok,
             channelId: conversationResponse.channel?.id,
-            error: conversationResponse.error
+            error: conversationResponse.error,
           });
 
           if (!conversationResponse.ok || !conversationResponse.channel?.id) {
-            console.log(`[SLACK UPLOAD] Failed to open DM conversation:`, conversationResponse.error);
+            console.log(
+              `[SLACK UPLOAD] Failed to open DM conversation:`,
+              conversationResponse.error
+            );
             return false;
           }
 
           const dmChannelId = conversationResponse.channel.id;
 
           // Try uploading to DM using the new uploadV2 method
-          console.log(`[SLACK UPLOAD] Attempting DM upload to ${dmChannelId}...`);
+          console.log(
+            `[SLACK UPLOAD] Attempting DM upload to ${dmChannelId}...`
+          );
           const dmResult = await client.files.uploadV2({
             channel_id: dmChannelId,
             file: fileBuffer,
             filename: options.filename,
             title: options.title,
-            initial_comment: options.initialComment + "\n\n💡 _File sent via DM since the bot doesn't have access to post in the original channel. To get files directly in channels, please ensure the Ferdinand bot has proper channel permissions._",
+            initial_comment:
+              options.initialComment +
+              "\n\n💡 _File sent via DM since the bot doesn't have access to post in the original channel. To get files directly in channels, please ensure the Ferdinand bot has proper channel permissions._",
             filetype: options.filetype,
           });
 
-          console.log(`[SLACK UPLOAD] DM upload result:`, { ok: dmResult.ok, error: dmResult.error });
+          console.log(`[SLACK UPLOAD] DM upload result:`, {
+            ok: dmResult.ok,
+            error: dmResult.error,
+          });
           if (dmResult.ok) {
-            console.log(`[SLACK UPLOAD] Successfully uploaded file to DM for user ${options.userId}`);
+            console.log(
+              `[SLACK UPLOAD] Successfully uploaded file to DM for user ${options.userId}`
+            );
             return true;
           }
 
           throw new Error(`DM upload failed: ${dmResult.error}`);
-        } catch (dmError: any) {
-          console.error(`[SLACK UPLOAD] DM upload failed:`, dmError.message || dmError);
+        } catch (dmError: unknown) {
+          const err = dmError as { message?: string };
+          console.error(
+            `[SLACK UPLOAD] DM upload failed:`,
+            err.message || dmError
+          );
 
           // Final fallback: try to send just a message with download link
           try {
@@ -256,16 +291,28 @@ export async function uploadFileToSlack(
                 text: `📎 **${options.title || options.filename}**\n\n🔗 Download: ${options.fileUrl}\n\n⚠️ _The bot couldn't upload the file directly. This might be due to missing permissions. Please contact your admin to check the bot's permissions._`,
               });
 
-              console.log(`[SLACK UPLOAD] Download link result:`, { ok: messageResult.ok, error: messageResult.error });
+              console.log(`[SLACK UPLOAD] Download link result:`, {
+                ok: messageResult.ok,
+                error: messageResult.error,
+              });
               if (messageResult.ok) {
-                console.log(`[SLACK UPLOAD] Sent download link via DM to user ${options.userId}`);
+                console.log(
+                  `[SLACK UPLOAD] Sent download link via DM to user ${options.userId}`
+                );
                 return true;
               }
             } else {
-              console.log(`[SLACK UPLOAD] Failed to open DM conversation for download link:`, conversationResponse.error);
+              console.log(
+                `[SLACK UPLOAD] Failed to open DM conversation for download link:`,
+                conversationResponse.error
+              );
             }
-          } catch (linkError: any) {
-            console.error(`[SLACK UPLOAD] Download link message also failed:`, linkError.message || linkError);
+          } catch (linkError: unknown) {
+            const linkErr = linkError as { message?: string };
+            console.error(
+              `[SLACK UPLOAD] Download link message also failed:`,
+              linkErr.message || linkError
+            );
           }
 
           return false;
@@ -273,11 +320,17 @@ export async function uploadFileToSlack(
       }
 
       // Re-throw if it's not a channel access issue or no userId provided
-      console.error(`[SLACK UPLOAD] Channel upload failed with non-access error or no userId provided: ${channelError.data?.error}`);
+      console.error(
+        `[SLACK UPLOAD] Channel upload failed with non-access error or no userId provided: ${error.data?.error}`
+      );
       throw channelError;
     }
-  } catch (error: any) {
-    console.error("[SLACK UPLOAD] Error uploading file to Slack:", error.message || error);
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    console.error(
+      "[SLACK UPLOAD] Error uploading file to Slack:",
+      err.message || error
+    );
     return false;
   }
 }
@@ -290,7 +343,8 @@ export function formatAssetInfo(asset: BrandAsset): {
   format: string;
 } {
   try {
-    const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+    const data =
+      typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
     const type = data?.type || "main";
     const format = data?.format || "unknown";
 
@@ -320,13 +374,13 @@ export function formatAssetInfo(asset: BrandAsset): {
 }
 
 // Validate Slack signature for security
-export function validateSlackRequest(
+export async function validateSlackRequest(
   signingSecret: string,
   requestSignature: string,
   timestamp: string,
   body: string
-): boolean {
-  const crypto = require("crypto");
+): Promise<boolean> {
+  const crypto = await import("crypto");
 
   // Create the basestring
   const basestring = `v0:${timestamp}:${body}`;
@@ -400,7 +454,7 @@ export interface AuditLogEntry {
   success: boolean;
   error?: string;
   responseTimeMs?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: Date;
 }
 
@@ -408,7 +462,9 @@ export interface AuditLogEntry {
 export async function logSlackActivity(entry: AuditLogEntry): Promise<void> {
   // Log to console for immediate visibility
   const timestamp = entry.timestamp.toISOString();
-  console.log(`[SLACK AUDIT] ${timestamp} - User ${entry.userId} in workspace ${entry.workspaceId} executed "${entry.command}" - Success: ${entry.success} - Assets: [${entry.assetIds.join(", ")}] - Client: ${entry.clientId}${entry.responseTimeMs ? ` - ${entry.responseTimeMs}ms` : ''}`);
+  console.log(
+    `[SLACK AUDIT] ${timestamp} - User ${entry.userId} in workspace ${entry.workspaceId} executed "${entry.command}" - Success: ${entry.success} - Assets: [${entry.assetIds.join(", ")}] - Client: ${entry.clientId}${entry.responseTimeMs ? ` - ${entry.responseTimeMs}ms` : ""}`
+  );
 
   if (entry.error) {
     console.error(`[SLACK ERROR] ${entry.error}`);
@@ -434,73 +490,107 @@ export async function logSlackActivity(entry: AuditLogEntry): Promise<void> {
       if (parsed.success) {
         await db.insert(slackAuditLogs).values(parsed.data);
       } else {
-        console.error("[SLACK AUDIT] Failed to validate audit log data:", parsed.error.errors);
+        console.error(
+          "[SLACK AUDIT] Failed to validate audit log data:",
+          parsed.error.errors
+        );
       }
     } catch (dbError) {
-      console.error("[SLACK AUDIT] Failed to persist audit log to database:", dbError);
+      console.error(
+        "[SLACK AUDIT] Failed to persist audit log to database:",
+        dbError
+      );
       // Don't throw error to avoid breaking the main functionality
     }
   } else {
-    console.log("[SLACK AUDIT] Skipping database persistence for command without valid client ID");
+    console.log(
+      "[SLACK AUDIT] Skipping database persistence for command without valid client ID"
+    );
   }
 }
 
 // Generate a simple color palette image URL using a placeholder service
-export function generateColorSwatchUrl(colors: Array<{ name?: string; hex: string; }>): string {
+export function generateColorSwatchUrl(
+  colors: Array<{ name?: string; hex: string }>
+): string {
   if (colors.length === 0) {
     return "https://via.placeholder.com/400x100/CCCCCC/000000?text=No+Colors";
   }
 
   if (colors.length === 1) {
     const color = colors[0];
-    const hexClean = color.hex.replace('#', '');
+    const hexClean = color.hex.replace("#", "");
     // Ensure hex is valid 6-character format
-    const validHex = hexClean.length === 6 ? hexClean : 'CCCCCC';
-    const colorName = (color.name || 'Color').replace(/[^a-zA-Z0-9\s]/g, '');
+    const validHex = hexClean.length === 6 ? hexClean : "CCCCCC";
+    const colorName = (color.name || "Color").replace(/[^a-zA-Z0-9\s]/g, "");
     const text = encodeURIComponent(`${colorName}`);
     return `https://via.placeholder.com/400x100/${validHex}/FFFFFF?text=${text}`;
   }
 
   // For multiple colors, just use the first color as background
   const firstColor = colors[0];
-  const hexClean = firstColor.hex.replace('#', '');
-  const validHex = hexClean.length === 6 ? hexClean : 'CCCCCC';
+  const hexClean = firstColor.hex.replace("#", "");
+  const validHex = hexClean.length === 6 ? hexClean : "CCCCCC";
   const text = encodeURIComponent(`${colors.length} Colors`);
   return `https://via.placeholder.com/600x120/${validHex}/FFFFFF?text=${text}`;
+}
+
+interface ColorData {
+  name?: string;
+  label?: string;
+  title?: string;
+  hex?: string;
+  value?: string;
+  color?: string;
+  rgb?: string;
+  usage?: string;
+  description?: string;
+  category?: string;
+  pantone?: string;
 }
 
 // Format color information for Slack display
 export function formatColorInfo(colorAsset: BrandAsset): {
   title: string;
-  colors: Array<{ name: string; hex: string; rgb?: string; usage?: string; category?: string; pantone?: string; }>;
+  colors: Array<{
+    name: string;
+    hex: string;
+    rgb?: string;
+    usage?: string;
+    category?: string;
+    pantone?: string;
+  }>;
   swatchUrl?: string;
   category?: string;
 } {
   try {
-    const data = typeof colorAsset.data === "string" ? JSON.parse(colorAsset.data) : colorAsset.data;
+    const data =
+      typeof colorAsset.data === "string"
+        ? JSON.parse(colorAsset.data)
+        : colorAsset.data;
 
     if (!data?.colors || !Array.isArray(data.colors)) {
       return {
         title: colorAsset.name,
         colors: [],
-        category: data?.category || 'color',
+        category: data?.category || "color",
       };
     }
 
     // Map all colors, handling various color data formats
     const colors = data.colors
-      .filter((color: any) => {
+      .filter((color: ColorData) => {
         // Only filter out colors that are truly empty or explicitly unnamed
-        const name = color.name || color.label || color.title || '';
-        const hex = color.hex || color.value || color.color || '';
-        return hex && hex.trim() !== '' && hex !== '#000000';
+        const _name = color.name || color.label || color.title || "";
+        const hex = color.hex || color.value || color.color || "";
+        return hex && hex.trim() !== "" && hex !== "#000000";
       })
-      .map((color: any) => ({
-        name: color.name || color.label || color.title || 'Color',
-        hex: color.hex || color.value || color.color || '#000000',
+      .map((color: ColorData) => ({
+        name: color.name || color.label || color.title || "Color",
+        hex: color.hex || color.value || color.color || "#000000",
         rgb: color.rgb,
         usage: color.usage || color.description,
-        category: color.category || data.category || 'color',
+        category: color.category || data.category || "color",
         pantone: color.pantone,
       }));
 
@@ -510,14 +600,14 @@ export function formatColorInfo(colorAsset: BrandAsset): {
       title: colorAsset.name,
       colors,
       swatchUrl,
-      category: data?.category || 'color',
+      category: data?.category || "color",
     };
   } catch (error) {
     console.error("Error parsing color asset data:", error);
     return {
       title: colorAsset.name,
       colors: [],
-      category: 'color',
+      category: "color",
     };
   }
 }
@@ -534,21 +624,43 @@ export function filterColorAssetsByVariant(
   const variantLower = variant.toLowerCase();
 
   // Brand colors - typically primary brand colors, logos, main identity
-  const brandKeywords = ['brand', 'primary', 'main', 'identity', 'logo'];
+  const brandKeywords = ["brand", "primary", "main", "identity", "logo"];
 
   // Neutral colors - typically grays, blacks, whites, backgrounds
-  const neutralKeywords = ['neutral', 'gray', 'grey', 'black', 'white', 'background', 'text', 'surface'];
+  const neutralKeywords = [
+    "neutral",
+    "gray",
+    "grey",
+    "black",
+    "white",
+    "background",
+    "text",
+    "surface",
+  ];
 
   // Interactive colors - typically buttons, links, states, actions
-  const interactiveKeywords = ['interactive', 'button', 'link', 'action', 'hover', 'active', 'focus', 'state'];
+  const interactiveKeywords = [
+    "interactive",
+    "button",
+    "link",
+    "action",
+    "hover",
+    "active",
+    "focus",
+    "state",
+  ];
 
   let targetKeywords: string[] = [];
 
-  if (brandKeywords.some(keyword => variantLower.includes(keyword))) {
+  if (brandKeywords.some((keyword) => variantLower.includes(keyword))) {
     targetKeywords = brandKeywords;
-  } else if (neutralKeywords.some(keyword => variantLower.includes(keyword))) {
+  } else if (
+    neutralKeywords.some((keyword) => variantLower.includes(keyword))
+  ) {
     targetKeywords = neutralKeywords;
-  } else if (interactiveKeywords.some(keyword => variantLower.includes(keyword))) {
+  } else if (
+    interactiveKeywords.some((keyword) => variantLower.includes(keyword))
+  ) {
     targetKeywords = interactiveKeywords;
   } else {
     // If no match found, try direct variant matching
@@ -562,15 +674,18 @@ export function filterColorAssetsByVariant(
     const assetName = asset.name.toLowerCase();
 
     // Check asset name against keywords
-    const nameMatch = targetKeywords.some(keyword => assetName.includes(keyword));
+    const nameMatch = targetKeywords.some((keyword) =>
+      assetName.includes(keyword)
+    );
 
     // Also check inside the color data for category or type
     try {
-      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-      const category = data?.category?.toLowerCase() || '';
-      const type = data?.type?.toLowerCase() || '';
-      const categoryMatch = targetKeywords.some(keyword =>
-        category.includes(keyword) || type.includes(keyword)
+      const data =
+        typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+      const category = data?.category?.toLowerCase() || "";
+      const type = data?.type?.toLowerCase() || "";
+      const categoryMatch = targetKeywords.some(
+        (keyword) => category.includes(keyword) || type.includes(keyword)
       );
 
       return nameMatch || categoryMatch;
@@ -582,15 +697,14 @@ export function filterColorAssetsByVariant(
 
 // Filter font assets by variant (brand, body, header)
 export function filterFontAssetsByVariant(
-  assets: any[],
+  assets: BrandAsset[],
   variant: string
-): any[] {
+): BrandAsset[] {
   if (!variant) return assets;
 
   const lowerVariant = variant.toLowerCase();
   return assets.filter((asset) => {
     const name = asset.name.toLowerCase();
-    const subcategory = asset.subcategory?.toLowerCase() || "";
 
     // Try to parse data to get additional context
     let fontCategory = "";
@@ -598,7 +712,8 @@ export function filterFontAssetsByVariant(
     let fontFamily = "";
     let fontSource = "";
     try {
-      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+      const data =
+        typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
       fontCategory = data?.category?.toLowerCase() || "";
       fontUsage = data?.usage?.toLowerCase() || "";
       fontFamily = data?.sourceData?.fontFamily?.toLowerCase() || "";
@@ -610,15 +725,24 @@ export function filterFontAssetsByVariant(
     // Broader matching for font variants including source and family
     return (
       name.includes(lowerVariant) ||
-      subcategory.includes(lowerVariant) ||
       fontCategory.includes(lowerVariant) ||
       fontUsage.includes(lowerVariant) ||
       fontFamily.includes(lowerVariant) ||
       fontSource.includes(lowerVariant) ||
       // Common font type mappings
-      (lowerVariant === "body" && (name.includes("body") || fontUsage.includes("body") || fontCategory.includes("body"))) ||
-      (lowerVariant === "header" && (name.includes("header") || name.includes("heading") || fontUsage.includes("header") || fontCategory.includes("header"))) ||
-      (lowerVariant === "brand" && (name.includes("brand") || fontUsage.includes("brand") || fontCategory.includes("brand"))) ||
+      (lowerVariant === "body" &&
+        (name.includes("body") ||
+          fontUsage.includes("body") ||
+          fontCategory.includes("body"))) ||
+      (lowerVariant === "header" &&
+        (name.includes("header") ||
+          name.includes("heading") ||
+          fontUsage.includes("header") ||
+          fontCategory.includes("header"))) ||
+      (lowerVariant === "brand" &&
+        (name.includes("brand") ||
+          fontUsage.includes("brand") ||
+          fontCategory.includes("brand"))) ||
       (lowerVariant === "google" && fontSource === "google") ||
       (lowerVariant === "adobe" && fontSource === "adobe")
     );
@@ -633,37 +757,56 @@ export function formatFontInfo(fontAsset: BrandAsset): {
   styles: string[];
   usage?: string;
   category?: string;
-  files?: Array<{ format: string; weight: string; style: string; }>;
+  files?: Array<{ format: string; weight: string; style: string }>;
 } {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
-    
-    console.log(`[FONT DEBUG] Processing font ${fontAsset.name}, data:`, JSON.stringify(data, null, 2));
+    const data =
+      typeof fontAsset.data === "string"
+        ? JSON.parse(fontAsset.data)
+        : fontAsset.data;
+
+    console.log(
+      `[FONT DEBUG] Processing font ${fontAsset.name}, data:`,
+      JSON.stringify(data, null, 2)
+    );
 
     // Handle different data structures - be more flexible with source detection
-    let source = data?.source || 'custom';
-    
+    let source = data?.source || "custom";
+
     // If source is not explicitly set, try to infer from the data structure or name
-    if (source === 'custom' || !source) {
+    if (source === "custom" || !source) {
       // Check if it's likely a Google font
       const fontName = fontAsset.name.toLowerCase();
-      const commonGoogleFonts = ['inter', 'roboto', 'open sans', 'lato', 'montserrat', 'poppins', 'source sans pro', 'raleway', 'nunito', 'ubuntu'];
-      
-      if (commonGoogleFonts.some(gFont => fontName.includes(gFont))) {
-        source = 'google';
+      const commonGoogleFonts = [
+        "inter",
+        "roboto",
+        "open sans",
+        "lato",
+        "montserrat",
+        "poppins",
+        "source sans pro",
+        "raleway",
+        "nunito",
+        "ubuntu",
+      ];
+
+      if (commonGoogleFonts.some((gFont) => fontName.includes(gFont))) {
+        source = "google";
         console.log(`[FONT DEBUG] Inferred Google font for ${fontAsset.name}`);
       } else if (data?.sourceData?.projectId) {
-        source = 'adobe';
+        source = "adobe";
         console.log(`[FONT DEBUG] Detected Adobe font for ${fontAsset.name}`);
       } else if (data?.sourceData?.files && data.sourceData.files.length > 0) {
-        source = 'file';
-        console.log(`[FONT DEBUG] Detected custom file font for ${fontAsset.name}`);
+        source = "file";
+        console.log(
+          `[FONT DEBUG] Detected custom file font for ${fontAsset.name}`
+        );
       }
     }
 
-    const weights = Array.isArray(data?.weights) ? data.weights : ['400'];
-    const styles = Array.isArray(data?.styles) ? data.styles : ['normal'];
-    const usage = data?.usage || data?.subcategory || '';
+    const weights = Array.isArray(data?.weights) ? data.weights : ["400"];
+    const styles = Array.isArray(data?.styles) ? data.styles : ["normal"];
+    const usage = data?.usage || data?.subcategory || "";
 
     // Extract files information for custom fonts
     let files = [];
@@ -674,19 +817,34 @@ export function formatFontInfo(fontAsset: BrandAsset): {
     }
 
     // Determine category based on asset name and data
-    let category = '';
+    let category = "";
     const assetName = fontAsset.name.toLowerCase();
-    const subcategory = data?.subcategory?.toLowerCase() || '';
+    const subcategory = data?.subcategory?.toLowerCase() || "";
 
-    if (assetName.includes('brand') || assetName.includes('primary') || assetName.includes('logo')) {
-      category = 'brand';
-    } else if (assetName.includes('body') || assetName.includes('text') || subcategory.includes('body')) {
-      category = 'body';
-    } else if (assetName.includes('header') || assetName.includes('heading') || assetName.includes('display') || subcategory.includes('header')) {
-      category = 'header';
+    if (
+      assetName.includes("brand") ||
+      assetName.includes("primary") ||
+      assetName.includes("logo")
+    ) {
+      category = "brand";
+    } else if (
+      assetName.includes("body") ||
+      assetName.includes("text") ||
+      subcategory.includes("body")
+    ) {
+      category = "body";
+    } else if (
+      assetName.includes("header") ||
+      assetName.includes("heading") ||
+      assetName.includes("display") ||
+      subcategory.includes("header")
+    ) {
+      category = "header";
     }
 
-    console.log(`[FONT DEBUG] Final font info for ${fontAsset.name}: source=${source}, weights=${weights.join(',')}, styles=${styles.join(',')}`);
+    console.log(
+      `[FONT DEBUG] Final font info for ${fontAsset.name}: source=${source}, weights=${weights.join(",")}, styles=${styles.join(",")}`
+    );
 
     return {
       title: fontAsset.name,
@@ -701,18 +859,21 @@ export function formatFontInfo(fontAsset: BrandAsset): {
     console.error("Error parsing font asset data:", error);
     return {
       title: fontAsset.name,
-      source: 'unknown',
-      weights: ['400'],
-      styles: ['normal'],
-      category: 'unknown',
+      source: "unknown",
+      weights: ["400"],
+      styles: ["normal"],
+      category: "unknown",
     };
   }
 }
 
 // Generate CSS code for Google Fonts
-export function generateGoogleFontCSS(fontFamily: string, weights: string[]): string {
-  const familyParam = fontFamily.replace(/\s+/g, '+');
-  const weightsParam = weights.join(';');
+export function generateGoogleFontCSS(
+  fontFamily: string,
+  weights: string[]
+): string {
+  const familyParam = fontFamily.replace(/\s+/g, "+");
+  const weightsParam = weights.join(";");
   const url = `https://fonts.googleapis.com/css2?family=${familyParam}:wght@${weightsParam}&display=swap`;
 
   return `/* Google Font: ${fontFamily} */
@@ -725,12 +886,15 @@ export function generateGoogleFontCSS(fontFamily: string, weights: string[]): st
 /* Use in CSS */
 .your-element {
   font-family: '${fontFamily}', sans-serif;
-  font-weight: ${weights[0] || '400'};
+  font-weight: ${weights[0] || "400"};
 }`;
 }
 
 // Generate CSS code for Adobe Fonts
-export function generateAdobeFontCSS(projectId: string, fontFamily: string): string {
+export function generateAdobeFontCSS(
+  projectId: string,
+  fontFamily: string
+): string {
   return `/* Add this to your HTML <head> */
 <link rel="stylesheet" href="https://use.typekit.net/${projectId}.css">
 
@@ -743,14 +907,26 @@ export function generateAdobeFontCSS(projectId: string, fontFamily: string): str
 // Check if font has uploadable files
 export function hasUploadableFiles(fontAsset: BrandAsset): boolean {
   try {
-    const data = typeof fontAsset.data === "string" ? JSON.parse(fontAsset.data) : fontAsset.data;
-    
+    const data =
+      typeof fontAsset.data === "string"
+        ? JSON.parse(fontAsset.data)
+        : fontAsset.data;
+
     // Check multiple conditions for uploadable files
-    const hasSourceFiles = data?.source === 'file' && data?.sourceData?.files && data.sourceData.files.length > 0;
-    const hasCustomFiles = data?.sourceData?.files && data.sourceData.files.length > 0 && data?.source !== 'google' && data?.source !== 'adobe';
-    
-    console.log(`[FONT DEBUG] hasUploadableFiles for ${fontAsset.name}: source=${data?.source}, hasFiles=${!!(data?.sourceData?.files && data.sourceData.files.length > 0)}, result=${hasSourceFiles || hasCustomFiles}`);
-    
+    const hasSourceFiles =
+      data?.source === "file" &&
+      data?.sourceData?.files &&
+      data.sourceData.files.length > 0;
+    const hasCustomFiles =
+      data?.sourceData?.files &&
+      data.sourceData.files.length > 0 &&
+      data?.source !== "google" &&
+      data?.source !== "adobe";
+
+    console.log(
+      `[FONT DEBUG] hasUploadableFiles for ${fontAsset.name}: source=${data?.source}, hasFiles=${!!(data?.sourceData?.files && data.sourceData.files.length > 0)}, result=${hasSourceFiles || hasCustomFiles}`
+    );
+
     return hasSourceFiles || hasCustomFiles;
   } catch {
     return false;

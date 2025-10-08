@@ -1,36 +1,35 @@
-import { and, eq } from "drizzle-orm";
 import { brandAssets, slackWorkspaces } from "@shared/schema";
-import { db } from "../../db";
-import {
-  filterColorAssetsByVariant,
-  formatColorInfo,
-  logSlackActivity,
-  findBestLogoMatch,
-  formatAssetInfo,
-  generateAssetDownloadUrl,
-  uploadFileToSlack,
-  decryptBotToken,
-  filterFontAssetsByVariant,
-  formatFontInfo,
-} from "../../utils/slack-helpers";
-import { buildColorBlocks } from "../../utils/color-display";
 import { WebClient } from "@slack/web-api";
-import {
-  hasUploadableFiles,
-  generateGoogleFontCSS,
-  generateAdobeFontCSS,
-} from "../../utils/font-helpers";
+import { and, eq } from "drizzle-orm";
+import { db } from "../../db";
+import { buildColorBlocks } from "../../utils/color-display";
 import {
   buildFontProcessingMessage,
   buildFontSummaryMessage,
 } from "../../utils/font-display";
+import {
+  generateAdobeFontCSS,
+  generateGoogleFontCSS,
+  hasUploadableFiles,
+} from "../../utils/font-helpers";
+import {
+  decryptBotToken,
+  filterColorAssetsByVariant,
+  filterFontAssetsByVariant,
+  findBestLogoMatch,
+  formatAssetInfo,
+  formatFontInfo,
+  generateAssetDownloadUrl,
+  logSlackActivity,
+  uploadFileToSlack,
+} from "../../utils/slack-helpers";
 
 export async function handleColorSubcommandWithLimit(
   body: any,
   respond: any,
   variant: string,
   clientId: number,
-  limit: number | "all",
+  limit: number | "all"
 ) {
   try {
     // Find workspace by client ID
@@ -40,8 +39,8 @@ export async function handleColorSubcommandWithLimit(
       .where(
         and(
           eq(slackWorkspaces.clientId, clientId),
-          eq(slackWorkspaces.isActive, true),
-        ),
+          eq(slackWorkspaces.isActive, true)
+        )
       );
 
     if (!workspace) {
@@ -69,8 +68,8 @@ export async function handleColorSubcommandWithLimit(
       .where(
         and(
           eq(brandAssets.clientId, workspace.clientId),
-          eq(brandAssets.category, "color"),
-        ),
+          eq(brandAssets.category, "color")
+        )
       );
 
     if (colorAssets.length === 0) {
@@ -84,7 +83,7 @@ export async function handleColorSubcommandWithLimit(
     // Filter by variant if specified
     const filteredColorAssets = filterColorAssetsByVariant(
       colorAssets,
-      variant,
+      variant
     );
     const displayAssets =
       filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
@@ -101,7 +100,7 @@ export async function handleColorSubcommandWithLimit(
         ? filteredColorAssets.slice(0, assetsToShow.length)
         : assetsToShow,
       colorAssets,
-      variant,
+      variant
     );
 
     await respond({
@@ -126,7 +125,7 @@ export async function handleLogoSubcommandWithLimit(
   respond: any,
   query: string,
   clientId: number,
-  limit: number | "all",
+  limit: number | "all"
 ) {
   try {
     // Find workspace by client ID
@@ -136,8 +135,8 @@ export async function handleLogoSubcommandWithLimit(
       .where(
         and(
           eq(slackWorkspaces.clientId, clientId),
-          eq(slackWorkspaces.isActive, true),
-        ),
+          eq(slackWorkspaces.isActive, true)
+        )
       );
 
     if (!workspace) {
@@ -165,8 +164,8 @@ export async function handleLogoSubcommandWithLimit(
       .where(
         and(
           eq(brandAssets.clientId, workspace.clientId),
-          eq(brandAssets.category, "logo"),
-        ),
+          eq(brandAssets.category, "logo")
+        )
       );
 
     if (logoAssets.length === 0) {
@@ -204,30 +203,37 @@ export async function handleLogoSubcommandWithLimit(
 
         for (const asset of logosToUpload) {
           const assetInfo = formatAssetInfo(asset);
-          
+
           // Check if we should upload dark variant
-          const isDarkQuery = query.toLowerCase() === "dark" || query.toLowerCase() === "white" || query.toLowerCase() === "inverse";
-          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          const isDarkQuery =
+            query.toLowerCase() === "dark" ||
+            query.toLowerCase() === "white" ||
+            query.toLowerCase() === "inverse";
+          const data =
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
           const hasDarkVariant = data?.hasDarkVariant === true;
-          
+
           // Build download URL with variant parameter if needed
           const downloadParams: any = { format: "png" };
-          
+
           if (isDarkQuery && hasDarkVariant) {
             downloadParams.variant = "dark";
           }
-          
+
           const downloadUrl = generateAssetDownloadUrl(
             asset.id,
             workspace.clientId,
             baseUrl,
-            downloadParams,
+            downloadParams
           );
 
           const variantSuffix = isDarkQuery && hasDarkVariant ? "_dark" : "";
           const filename = `${asset.name.replace(/\s+/g, "_")}${variantSuffix}.png`;
-          
-          const variantNote = isDarkQuery && hasDarkVariant ? " (Dark Variant)" : "";
+
+          const variantNote =
+            isDarkQuery && hasDarkVariant ? " (Dark Variant)" : "";
           const title = `${assetInfo.title}${variantNote}`;
 
           const uploaded = await uploadFileToSlack(botToken, {
@@ -277,7 +283,7 @@ export async function handleFontSubcommandWithLimit(
   respond: any,
   variant: string,
   clientId: number,
-  limit: number | "all",
+  limit: number | "all"
 ) {
   try {
     // Find workspace by client ID
@@ -287,8 +293,8 @@ export async function handleFontSubcommandWithLimit(
       .where(
         and(
           eq(slackWorkspaces.clientId, clientId),
-          eq(slackWorkspaces.isActive, true),
-        ),
+          eq(slackWorkspaces.isActive, true)
+        )
       );
 
     if (!workspace) {
@@ -316,8 +322,8 @@ export async function handleFontSubcommandWithLimit(
       .where(
         and(
           eq(brandAssets.clientId, workspace.clientId),
-          eq(brandAssets.category, "font"),
-        ),
+          eq(brandAssets.category, "font")
+        )
       );
 
     if (fontAssets.length === 0) {
@@ -367,7 +373,7 @@ export async function handleFontSubcommandWithLimit(
               const downloadUrl = generateAssetDownloadUrl(
                 asset.id,
                 workspace.clientId,
-                baseUrl,
+                baseUrl
               );
 
               const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
@@ -390,7 +396,7 @@ export async function handleFontSubcommandWithLimit(
               if (fontInfo.source === "google") {
                 codeBlock = generateGoogleFontCSS(
                   fontInfo.title,
-                  fontInfo.weights,
+                  fontInfo.weights
                 );
                 fontDescription += `\n• *Source:* Google Fonts`;
               } else if (fontInfo.source === "adobe") {
@@ -437,7 +443,7 @@ export async function handleFontSubcommandWithLimit(
           variant,
           undefined, // no response time for background processing
           displayAssets.length,
-          limit,
+          limit
         );
 
         await workspaceClient.chat.postEphemeral({
@@ -460,4 +466,3 @@ export async function handleFontSubcommandWithLimit(
     });
   }
 }
-

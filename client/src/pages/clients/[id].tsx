@@ -2,13 +2,13 @@ import type { BrandAsset, FeatureToggles } from "@shared/schema";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
+import { AssetManager } from "@/components/brand/asset-manager";
 import { ClientDashboard } from "@/components/brand/client-dashboard";
 import { ColorManager } from "@/components/brand/color-manager";
 import { FontManager } from "@/components/brand/font-manager/font-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
-import FigmaIntegration from "@/components/figma/figma-integration";
 import { IntegrationsHub } from "@/components/integrations/IntegrationsHub";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -154,6 +154,7 @@ export default function ClientDetails() {
       inspiration: true,
       figmaIntegration: false,
       slackIntegration: false,
+      assetManagement: false,
     };
 
   const anyFeatureEnabled = Object.values(featureToggles).some(
@@ -185,7 +186,10 @@ export default function ClientDetails() {
       const primaryColorAsset = colorAssets.find((asset: BrandAsset) => {
         if (!asset || !asset.data) return false;
         try {
-          const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+          const data =
+            typeof asset.data === "string"
+              ? JSON.parse(asset.data)
+              : asset.data;
           return data && typeof data === "object" && data.category === "brand";
         } catch {
           return false;
@@ -304,6 +308,20 @@ export default function ClientDetails() {
             </CardHeader>
             <CardContent>
               Inspiration Board feature is disabled for this client.
+            </CardContent>
+          </Card>
+        );
+
+      case "assets":
+        return featureToggles.assetManagement ? (
+          <AssetManager clientId={clientId} />
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Feature Disabled</CardTitle>
+            </CardHeader>
+            <CardContent>
+              Asset Management feature is disabled for this client.
             </CardContent>
           </Card>
         );

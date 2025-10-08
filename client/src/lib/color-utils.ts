@@ -140,3 +140,30 @@ export function setPantoneValue(colorId: string, value: string): void {
     }
   }
 }
+
+// Calculate relative luminance for WCAG contrast ratio
+function getLuminance(r: number, g: number, b: number): number {
+  const [rs, gs, bs] = [r, g, b].map((c) => {
+    const val = c / 255;
+    return val <= 0.03928 ? val / 12.92 : ((val + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+}
+
+// Get contrasting text color (black or white) based on background color
+export function getContrastingTextColor(backgroundColor: string): string {
+  // Handle hsl() format
+  if (backgroundColor.startsWith("hsl(")) {
+    // For HSL from CSS variables, use a safe default
+    // We'd need the actual computed value to calculate properly
+    return "#000000"; // Default to black for light backgrounds
+  }
+
+  // Handle hex colors
+  const rgb = hexToRgb(backgroundColor);
+  const luminance = getLuminance(rgb.r, rgb.g, rgb.b);
+
+  // WCAG recommends 4.5:1 contrast ratio for normal text
+  // Luminance threshold of 0.5 roughly corresponds to this
+  return luminance > 0.5 ? "#000000" : "#ffffff";
+}

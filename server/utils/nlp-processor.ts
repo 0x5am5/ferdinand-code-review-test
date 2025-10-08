@@ -1,5 +1,5 @@
-import OpenAI from "openai";
 import type { BrandAsset } from "@shared/schema";
+import OpenAI from "openai";
 import { costMonitor } from "./nlp-cost-monitor";
 
 interface ProcessedCommand {
@@ -16,14 +16,14 @@ interface AssetContext {
 }
 
 export class NLPProcessor {
-  private openai: OpenAI;
+  private openai: OpenAI | null;
 
   constructor() {
     if (!process.env.OPENAI_API_KEY) {
       console.warn(
-        "OpenAI API key not configured. Natural language processing will be disabled.",
+        "OpenAI API key not configured. Natural language processing will be disabled."
       );
-      this.openai = null as any;
+      this.openai = null;
     } else {
       this.openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
@@ -34,7 +34,7 @@ export class NLPProcessor {
   async processCommand(
     input: string,
     assetContext: AssetContext,
-    workspaceId?: string,
+    workspaceId?: string
   ): Promise<ProcessedCommand> {
     // If OpenAI is not configured, fall back to basic parsing
     if (!this.openai) {
@@ -46,7 +46,7 @@ export class NLPProcessor {
       const limitCheck = costMonitor.checkLimits(workspaceId);
       if (!limitCheck.allowed) {
         console.warn(
-          `NLP request blocked for workspace ${workspaceId}: ${limitCheck.reason}`,
+          `NLP request blocked for workspace ${workspaceId}: ${limitCheck.reason}`
         );
         return this.fallbackProcessing(input);
       }
@@ -146,7 +146,7 @@ Rules:
 
   private parseAIResponse(
     response: string,
-    originalInput: string,
+    originalInput: string
   ): ProcessedCommand {
     try {
       const parsed = JSON.parse(response.trim());

@@ -4,6 +4,8 @@ import {
   updateClientOrderSchema,
 } from "@shared/schema";
 import type { Express } from "express";
+import { mutationRateLimit } from "../middlewares/rate-limit";
+import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
 
 export function registerClientRoutes(app: Express) {
@@ -63,7 +65,7 @@ export function registerClientRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/clients/:id", async (req, res) => {
+  app.delete("/api/clients/:id", csrfProtection, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -85,37 +87,42 @@ export function registerClientRoutes(app: Express) {
   });
 
   // Create new client
-  app.post("/api/clients", async (req, res) => {
-    try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
+  app.post(
+    "/api/clients",
+    csrfProtection,
+    mutationRateLimit,
+    async (req, res) => {
+      try {
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        // Validate client data
+        const parsed = insertClientSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid client data",
+            errors: parsed.error?.errors || "Validation failed",
+          });
+        }
+
+        // Create client with validated data
+        const clientData = parsed.data;
+
+        const client = await storage.createClient(clientData);
+        res.status(201).json(client);
+      } catch (error: unknown) {
+        console.error(
+          "Error creating client:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error creating client" });
       }
-
-      // Validate client data
-      const parsed = insertClientSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Invalid client data",
-          errors: parsed.error?.errors || "Validation failed",
-        });
-      }
-
-      // Create client with validated data
-      const clientData = parsed.data;
-
-      const client = await storage.createClient(clientData);
-      res.status(201).json(client);
-    } catch (error: unknown) {
-      console.error(
-        "Error creating client:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error creating client" });
     }
-  });
+  );
 
   // Add new route for updating client order
-  app.patch("/api/clients/order", async (req, res) => {
+  app.patch("/api/clients/order", csrfProtection, async (req, res) => {
     try {
       const { clientOrders } = updateClientOrderSchema.parse(req.body);
       // Update each client's display order
@@ -135,7 +142,7 @@ export function registerClientRoutes(app: Express) {
   });
 
   // Update client information
-  app.patch("/api/clients/:id", async (req, res) => {
+  app.patch("/api/clients/:id", csrfProtection, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {

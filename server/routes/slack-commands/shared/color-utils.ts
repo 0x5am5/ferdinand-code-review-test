@@ -1,4 +1,3 @@
-
 // Color conversion utilities
 export function hexToRgb(hex: string): string {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -81,9 +80,7 @@ export function buildColorBlocks(
     (groups: Record<string, typeof displayAssets>, asset) => {
       try {
         const data =
-          typeof asset.data === "string"
-            ? JSON.parse(asset.data)
-            : asset.data;
+          typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
         const category = data?.category || "color";
         if (!groups[category]) {
           groups[category] = [];
@@ -91,14 +88,14 @@ export function buildColorBlocks(
         groups[category].push(asset);
         return groups;
       } catch {
-        if (!groups["color"]) {
-          groups["color"] = [];
+        if (!groups.color) {
+          groups.color = [];
         }
-        groups["color"].push(asset);
+        groups.color.push(asset);
         return groups;
       }
     },
-    {},
+    {}
   );
 
   // Build enhanced color blocks organized by category

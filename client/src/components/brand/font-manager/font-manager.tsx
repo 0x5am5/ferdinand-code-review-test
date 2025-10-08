@@ -1,6 +1,5 @@
 import { FontSource } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence } from "framer-motion";
 import { Type } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -55,11 +54,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Validate clientId is available
   if (!clientId) {
     return (
-      <div className="font-manager">
-        <div className="manager__header">
+      <div>
+        <div className="flex justify-between items-start mb-6">
           <div>
-            <h1>Typography System</h1>
-            <p className="text-muted-foreground text-red-500">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Typography System
+            </h1>
+            <p className="text-muted-foreground text-red-500 mt-1">
               Error: Client ID is missing. Please refresh the page.
             </p>
           </div>
@@ -100,7 +101,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
             name: font.family,
             category: convertGoogleFontCategory(font.category),
             weights: convertGoogleFontVariants(font.variants),
-          }),
+          })
         )
       : allGoogleFonts;
 
@@ -182,7 +183,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
     console.log(
       `Creating Adobe Font: ${adobeFontData.fontFamily} with weights:`,
-      adobeFontData.weights,
+      adobeFontData.weights
     );
 
     // Create proper font data structure for Adobe fonts
@@ -201,7 +202,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     console.log("Sending Adobe font data to server for client:", clientId);
     console.log(
       "Adobe font data structure:",
-      JSON.stringify(fontData, null, 2),
+      JSON.stringify(fontData, null, 2)
     );
 
     const formData = new FormData();
@@ -217,7 +218,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const handleCustomFontUpload = (
     files: FileList,
     fontName: string,
-    weights: string[],
+    weights: string[]
   ) => {
     if (!files || files.length === 0) {
       toast({
@@ -281,7 +282,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     formData.append("source", FontSource.FILE);
     formData.append(
       "weights",
-      JSON.stringify(weights.length > 0 ? weights : ["400"]),
+      JSON.stringify(weights.length > 0 ? weights : ["400"])
     );
     formData.append("styles", JSON.stringify(["normal"]));
 
@@ -409,17 +410,19 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   };
 
   return (
-    <div className="font-manager">
-      <div className="manager__header">
+    <div>
+      <div className="flex justify-between items-start mb-6">
         <div>
-          <h1>Typography System</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Typography System
+          </h1>
+          <p className="text-muted-foreground mt-1">
             Manage fonts and typography for this brand
           </p>
         </div>
       </div>
 
-      <div className="font-manager__sections space-y-8">
+      <div className="space-y-8">
         <AssetSection
           title="Brand Fonts"
           description="Typography assets that define the brand's visual identity and should be used consistently across all materials."
@@ -442,16 +445,14 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
               should be used consistently across all materials.
             </div>
             <div className="asset-display__preview">
-              <AnimatePresence>
-                {transformedFonts.map((font) => (
-                  <FontCard
-                    key={font.id}
-                    font={font}
-                    onEdit={() => handleEditFont(font)}
-                    onDelete={() => font.id && deleteFont.mutate(font.id)}
-                  />
-                ))}
-              </AnimatePresence>
+              {transformedFonts.map((font) => (
+                <FontCard
+                  key={font.id}
+                  font={font}
+                  onEdit={() => handleEditFont(font)}
+                  onDelete={() => font.id && deleteFont.mutate(font.id)}
+                />
+              ))}
 
               {/* Show add font buttons when there are existing fonts */}
               {isAbleToEdit && transformedFonts.length > 0 && (

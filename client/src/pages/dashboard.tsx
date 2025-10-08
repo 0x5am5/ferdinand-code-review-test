@@ -6,7 +6,6 @@ import {
 } from "@hello-pangea/dnd";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  type BrandAsset,
   type Client,
   type FeatureToggles,
   insertClientSchema,
@@ -108,7 +107,7 @@ function ClientLogo({
               ? JSON.parse(asset.data)
               : asset.data;
           return data?.type === type;
-        } catch (e) {
+        } catch (_e) {
           return false;
         }
       });
@@ -144,7 +143,7 @@ export default function Dashboard() {
   const { currentViewingUser, isUserSwitched } = useRoleSwitching();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
-    "custom",
+    "custom"
   );
   const [, setLocation] = useLocation();
 
@@ -167,6 +166,7 @@ export default function Dashboard() {
     inspiration: true,
     figmaIntegration: false,
     slackIntegration: false,
+    assetManagement: false,
   });
 
   // Define form before any useEffect hooks that use it
@@ -230,7 +230,7 @@ export default function Dashboard() {
       .filter(
         (client: Client) =>
           client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          client.description?.toLowerCase().includes(searchQuery.toLowerCase()),
+          client.description?.toLowerCase().includes(searchQuery.toLowerCase())
       )
       .sort((a, b) => {
         if (sortOrder === "custom") {
@@ -305,11 +305,12 @@ export default function Dashboard() {
           userPersonas: Boolean(featureTogglesObj.userPersonas ?? true),
           inspiration: Boolean(featureTogglesObj.inspiration ?? true),
           figmaIntegration: Boolean(
-            featureTogglesObj.figmaIntegration ?? false,
+            featureTogglesObj.figmaIntegration ?? false
           ),
           slackIntegration: Boolean(
-            featureTogglesObj.slackIntegration ?? false,
+            featureTogglesObj.slackIntegration ?? false
           ),
+          assetManagement: Boolean(featureTogglesObj.assetManagement ?? false),
         };
         setFeatureToggles(toggles);
       } else {
@@ -322,6 +323,7 @@ export default function Dashboard() {
           inspiration: true,
           figmaIntegration: false,
           slackIntegration: false,
+          assetManagement: false,
         });
       }
     } else {
@@ -342,6 +344,7 @@ export default function Dashboard() {
         inspiration: true,
         figmaIntegration: false,
         slackIntegration: false,
+        assetManagement: false,
       });
     }
   }, [editingClient, form]);
@@ -410,186 +413,191 @@ export default function Dashboard() {
         </DropdownMenu>
       </div>
 
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable
-          droppableId="clients"
-          direction="horizontal"
-          ignoreContainerClipping={true}
-        >
-          {(provided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-            >
-              {filteredAndSortedClients.map((client, index) => (
-                <Draggable
-                  key={client.id}
-                  draggableId={client.id.toString()}
-                  index={index}
-                >
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                    >
-                      <Card className="dashboard-card group h-full">
-                        <CardHeader className="pb-5 relative">
-                          <div className="dashboard-card--nav z-10">
-                            <GripVertical className="drag-and-drop--handle h-4 w-4 text-muted-foreground" />
+      {filteredAndSortedClients.length > 0 && (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable
+            droppableId="clients"
+            direction="horizontal"
+            ignoreContainerClipping={true}
+          >
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+              >
+                {filteredAndSortedClients.map((client, index) => (
+                  <Draggable
+                    key={client.id}
+                    draggableId={client.id.toString()}
+                    index={index}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                      >
+                        <Card className="dashboard-card group h-full">
+                          <CardHeader className="pb-5 relative">
+                            <div className="dashboard-card--nav z-10">
+                              <GripVertical className="drag-and-drop--handle h-4 w-4 text-muted-foreground" />
 
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                window.open(`/preview/${client.id}`, "_blank");
-                              }}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  window.open(
+                                    `/preview/${client.id}`,
+                                    "_blank"
+                                  );
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const url = `${window.location.origin}/clients/${client.id}`;
+                                  navigator.clipboard.writeText(url);
+                                  toast({
+                                    title: "Link copied",
+                                    description:
+                                      "Client URL has been copied to clipboard",
+                                    duration: 2000,
+                                  });
+                                }}
+                              >
+                                <Share className="h-4 w-4" />
+                              </Button>
+                              {isAbleToEdit && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setEditingClient(client);
+                                      }}
+                                    >
+                                      <Edit2 className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setDeletingClient(client);
+                                      }}
+                                      className="text-red-600"
+                                    >
+                                      <Trash className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                            <Link
+                              href={`/clients/${client.id}`}
+                              className="block w-full relative"
                             >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                              <div className="flex items-start flex-direction--column">
+                                <ClientLogo
+                                  clientId={client.id}
+                                  clientName={client.name}
+                                />
+                                <div className="">
+                                  <CardTitle className="mb-2">
+                                    {client.name}
+                                  </CardTitle>
 
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const url = `${window.location.origin}/clients/${client.id}`;
-                                navigator.clipboard.writeText(url);
-                                toast({
-                                  title: "Link copied",
-                                  description:
-                                    "Client URL has been copied to clipboard",
-                                  duration: 2000,
-                                });
-                              }}
-                            >
-                              <Share className="h-4 w-4" />
-                            </Button>
-                            {isAbleToEdit && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setEditingClient(client);
-                                    }}
-                                  >
-                                    <Edit2 className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setDeletingClient(client);
-                                    }}
-                                    className="text-red-600"
-                                  >
-                                    <Trash className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
-                          <Link
-                            href={`/clients/${client.id}`}
-                            className="block w-full relative"
-                          >
-                            <div className="flex items-start flex-direction--column">
-                              <ClientLogo
-                                clientId={client.id}
-                                clientName={client.name}
-                              />
-                              <div className="">
-                                <CardTitle className="mb-2">
-                                  {client.name}
-                                </CardTitle>
+                                  {/* Client metadata */}
+                                  <div className="space-y-1 text-sm text-muted-foreground">
+                                    {client.website && (
+                                      <div className="flex items-top gap-2">
+                                        <Globe className="h-3.5 w-3.5" />
+                                        <span className="truncate">
+                                          {client.website}
+                                        </span>
+                                      </div>
+                                    )}
 
-                                {/* Client metadata */}
-                                <div className="space-y-1 text-sm text-muted-foreground">
-                                  {client.website && (
-                                    <div className="flex items-top gap-2">
-                                      <Globe className="h-3.5 w-3.5" />
-                                      <span className="truncate">
-                                        {client.website}
-                                      </span>
-                                    </div>
-                                  )}
+                                    {client.address && (
+                                      <div className="flex items-center gap-2">
+                                        <MapPin className="h-3.5 w-3.5" />
+                                        <span className="truncate">
+                                          {client.address}
+                                        </span>
+                                      </div>
+                                    )}
 
-                                  {client.address && (
-                                    <div className="flex items-center gap-2">
-                                      <MapPin className="h-3.5 w-3.5" />
-                                      <span className="truncate">
-                                        {client.address}
-                                      </span>
-                                    </div>
-                                  )}
+                                    {client.phone && (
+                                      <div className="flex items-center gap-2">
+                                        <Phone className="h-3.5 w-3.5" />
+                                        <span>{client.phone}</span>
+                                      </div>
+                                    )}
 
-                                  {client.phone && (
-                                    <div className="flex items-center gap-2">
-                                      <Phone className="h-3.5 w-3.5" />
-                                      <span>{client.phone}</span>
-                                    </div>
-                                  )}
+                                    {client.updatedAt && (
+                                      <div className="flex items-top gap-2">
+                                        <Clock className="h-3.5 w-3.5" />
+                                        <span>
+                                          Last updated:{" "}
+                                          {new Date(
+                                            client.updatedAt
+                                          ).toLocaleDateString()}
+                                        </span>
+                                      </div>
+                                    )}
 
-                                  {client.updatedAt && (
-                                    <div className="flex items-top gap-2">
-                                      <Clock className="h-3.5 w-3.5" />
-                                      <span>
-                                        Last updated:{" "}
-                                        {new Date(
-                                          client.updatedAt,
-                                        ).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  {client.lastEditedBy && (
-                                    <div className="flex items-top gap-2">
-                                      <UserCircle className="h-3.5 w-3.5" />
-                                      <span>Edited by: Admin</span>
-                                    </div>
-                                  )}
+                                    {client.lastEditedBy && (
+                                      <div className="flex items-top gap-2">
+                                        <UserCircle className="h-3.5 w-3.5" />
+                                        <span>Edited by: Admin</span>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </Link>
-                        </CardHeader>
-                      </Card>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
+                            </Link>
+                          </CardHeader>
+                        </Card>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
 
-              {/* Add New Client Card - Only visible to super admins */}
-              {user?.role === UserRole.SUPER_ADMIN && (
-                <Link href="/clients/new">
-                  <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
-                    <CardHeader className="h-full flex flex-col items-center justify-center text-center">
-                      <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
-                      <CardTitle className="text-muted-foreground">
-                        Add New Client
-                      </CardTitle>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              )}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+                {/* Add New Client Card - Only visible to super admins */}
+                {user?.role === UserRole.SUPER_ADMIN && (
+                  <Link href="/clients/new">
+                    <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
+                      <CardHeader className="h-full flex flex-col items-center justify-center text-center">
+                        <Plus className="h-8 w-8 mb-4 text-muted-foreground" />
+                        <CardTitle className="text-muted-foreground">
+                          Add New Client
+                        </CardTitle>
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                )}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
 
       {filteredAndSortedClients.length === 0 && searchQuery && (
         <Card>
@@ -949,7 +957,7 @@ export default function Dashboard() {
                               onSuccess: () => {
                                 setEditingClient(null);
                               },
-                            },
+                            }
                           );
                         }
                       }}

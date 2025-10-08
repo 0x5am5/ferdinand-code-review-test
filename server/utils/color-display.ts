@@ -1,4 +1,4 @@
-import { hexToRgb, hexToHsl, hexToCmyk } from "./color-conversion";
+import { hexToCmyk, hexToHsl, hexToRgb } from "./color-conversion";
 import { formatColorInfo } from "./slack-helpers";
 
 // Color display constants
@@ -23,7 +23,7 @@ export function buildColorBlocks(
   displayAssets: any[],
   filteredColorAssets: any[],
   colorAssets: any[],
-  variant?: string,
+  variant?: string
 ) {
   // Group assets by category for better organization
   const groupedAssets = displayAssets.reduce(
@@ -38,14 +38,14 @@ export function buildColorBlocks(
         groups[category].push(asset);
         return groups;
       } catch {
-        if (!groups["color"]) {
-          groups["color"] = [];
+        if (!groups.color) {
+          groups.color = [];
         }
-        groups["color"].push(asset);
+        groups.color.push(asset);
         return groups;
       }
     },
-    {},
+    {}
   );
 
   // Build enhanced color blocks organized by category
@@ -237,7 +237,7 @@ export interface ColorDisplayOptions {
 export function buildColorConfirmationBlocks(
   displayAssets: any[],
   variant: string,
-  workspaceClientId: number,
+  workspaceClientId: number
 ) {
   return [
     {
@@ -293,7 +293,7 @@ export function buildColorConfirmationBlocks(
 // Build processing message for color display
 export function buildColorProcessingMessage(
   displayAssets: any[],
-  variant?: string,
+  variant?: string
 ): string {
   return variant
     ? `🎨 Processing *${displayAssets.length} color palettes* for "${variant}"...`
@@ -305,7 +305,7 @@ export function buildColorSummaryMessage(
   displayedCount: number,
   totalCount: number,
   variant?: string,
-  responseTime?: number,
+  responseTime?: number
 ): string {
   let summaryText = `✅ *${displayedCount} color palette${displayedCount > 1 ? "s" : ""} displayed successfully!*`;
 

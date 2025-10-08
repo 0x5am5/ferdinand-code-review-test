@@ -1,12 +1,16 @@
-import type { Express, Response, Request } from "express";
-import { eq, and } from "drizzle-orm";
-import { slackWorkspaces, slackUserMappings, insertSlackWorkspaceSchema } from "@shared/schema";
-import { db } from "../db";
-import { validateClientId } from "../middlewares/vaildateClientId";
-import { requireAdminRole } from "../middlewares/requireAdminRole";
-import type { RequestWithClientId } from "../routes";
-import { encrypt, decrypt, generateSecureRandom } from "../utils/crypto";
+import {
+  insertSlackWorkspaceSchema,
+  slackUserMappings,
+  slackWorkspaces,
+} from "@shared/schema";
+import { and, eq } from "drizzle-orm";
+import type { Express, Request, Response } from "express";
 import fetch from "node-fetch";
+import { db } from "../db";
+import { requireAdminRole } from "../middlewares/requireAdminRole";
+import { validateClientId } from "../middlewares/vaildateClientId";
+import type { RequestWithClientId } from "../routes";
+import { encrypt, generateSecureRandom } from "../utils/crypto";
 
 interface SlackOAuthResponse {
   ok: boolean;
@@ -31,21 +35,27 @@ interface SlackOAuthResponse {
 }
 
 // Store temporary state for OAuth flow
-const oauthStateStore = new Map<string, {
-  clientId: number;
-  userId: number;
-  expiresAt: number;
-}>();
+const oauthStateStore = new Map<
+  string,
+  {
+    clientId: number;
+    userId: number;
+    expiresAt: number;
+  }
+>();
 
 // Clean up expired OAuth states
-setInterval(() => {
-  const now = Date.now();
-  Array.from(oauthStateStore.entries()).forEach(([state, data]) => {
-    if (now > data.expiresAt) {
-      oauthStateStore.delete(state);
-    }
-  });
-}, 5 * 60 * 1000); // Clean up every 5 minutes
+setInterval(
+  () => {
+    const now = Date.now();
+    Array.from(oauthStateStore.entries()).forEach(([state, data]) => {
+      if (now > data.expiresAt) {
+        oauthStateStore.delete(state);
+      }
+    });
+  },
+  5 * 60 * 1000
+); // Clean up every 5 minutes
 
 /**
  * Register Slack OAuth routes
@@ -69,13 +79,13 @@ export function registerSlackOAuthRoutes(app: Express) {
 
         if (!process.env.SLACK_CLIENT_ID) {
           return res.status(500).json({
-            message: "Slack OAuth not configured - missing SLACK_CLIENT_ID"
+            message: "Slack OAuth not configured - missing SLACK_CLIENT_ID",
           });
         }
 
         if (!process.env.SLACK_CLIENT_SECRET) {
           return res.status(500).json({
-            message: "Slack OAuth not configured - missing SLACK_CLIENT_SECRET"
+            message: "Slack OAuth not configured - missing SLACK_CLIENT_SECRET",
           });
         }
 
@@ -84,28 +94,31 @@ export function registerSlackOAuthRoutes(app: Express) {
         const stateData = {
           clientId,
           userId: req.session.userId,
-          expiresAt: Date.now() + (10 * 60 * 1000), // 10 minutes
+          expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
         };
 
         oauthStateStore.set(state, stateData);
 
         // Required scopes for the Slack bot
         const scopes = [
-          "commands",        // Slash commands
-          "files:write",     // Upload files
-          "chat:write",      // Send messages to channels
-          "im:write",        // Send DMs to users
-          "users:read",      // Read user info for mapping
-          "channels:read",   // Read channel info
-          "groups:read",     // Read private channel info
-          "im:read",         // Read DM info
+          "commands", // Slash commands
+          "files:write", // Upload files
+          "chat:write", // Send messages to channels
+          "im:write", // Send DMs to users
+          "users:read", // Read user info for mapping
+          "channels:read", // Read channel info
+          "groups:read", // Read private channel info
+          "im:read", // Read DM info
         ];
 
-        const redirectUri = `${process.env.APP_BASE_URL || 'http://localhost:5000'}/api/slack/oauth/callback`;
+        const redirectUri = `${process.env.APP_BASE_URL || "http://localhost:5000"}/api/slack/oauth/callback`;
 
         // Build Slack OAuth URL
         const slackOAuthUrl = new URL("https://slack.com/oauth/v2/authorize");
-        slackOAuthUrl.searchParams.append("client_id", process.env.SLACK_CLIENT_ID);
+        slackOAuthUrl.searchParams.append(
+          "client_id",
+          process.env.SLACK_CLIENT_ID
+        );
         slackOAuthUrl.searchParams.append("scope", scopes.join(","));
         slackOAuthUrl.searchParams.append("redirect_uri", redirectUri);
         slackOAuthUrl.searchParams.append("state", state);
@@ -114,9 +127,8 @@ export function registerSlackOAuthRoutes(app: Express) {
         res.json({
           authUrl: slackOAuthUrl.toString(),
           state,
-          message: "Redirect user to authUrl to complete Slack installation"
+          message: "Redirect user to authUrl to complete Slack installation",
         });
-
       } catch (error) {
         console.error("Error initiating Slack OAuth:", error);
         res.status(500).json({ message: "Error initiating OAuth flow" });
@@ -128,12 +140,17 @@ export function registerSlackOAuthRoutes(app: Express) {
   app.get("/api/slack/oauth/callback", async (req: Request, res: Response) => {
     try {
       const { code, state, error } = req.query;
-      
+
       // Debug logging
       console.log("=== SLACK OAUTH CALLBACK ===");
       console.log("Query params:", req.query);
       console.log("Code:", code ? `Present (${typeof code})` : "Missing");
-      console.log("State:", state ? `Present (${typeof state})` : `Missing/Empty - value: "${state}"`);
+      console.log(
+        "State:",
+        state
+          ? `Present (${typeof state})`
+          : `Missing/Empty - value: "${state}"`
+      );
       console.log("Error:", error);
 
       if (error) {
@@ -150,7 +167,14 @@ export function registerSlackOAuthRoutes(app: Express) {
       }
 
       if (!code || !state) {
-        console.error("Missing OAuth parameters - Code:", !!code, "State:", !!state, "State value:", state);
+        console.error(
+          "Missing OAuth parameters - Code:",
+          !!code,
+          "State:",
+          !!state,
+          "State value:",
+          state
+        );
         return res.status(400).send(`
           <html>
             <body>
@@ -158,8 +182,8 @@ export function registerSlackOAuthRoutes(app: Express) {
               <p>Missing required parameters from Slack.</p>
               <p><strong>Debug Info:</strong></p>
               <ul>
-                <li>Code: ${code ? 'Present' : 'Missing'}</li>
-                <li>State: ${state ? `Present (${state})` : 'Missing/Empty'}</li>
+                <li>Code: ${code ? "Present" : "Missing"}</li>
+                <li>State: ${state ? `Present (${state})` : "Missing/Empty"}</li>
               </ul>
               <p>This usually means the OAuth initiation was incomplete. Please try reinstalling from the Ferdinand dashboard.</p>
             </body>
@@ -195,20 +219,23 @@ export function registerSlackOAuthRoutes(app: Express) {
       }
 
       // Exchange code for token
-      const tokenResponse = await fetch("https://slack.com/api/oauth.v2.access", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          client_id: process.env.SLACK_CLIENT_ID!,
-          client_secret: process.env.SLACK_CLIENT_SECRET!,
-          code: code as string,
-          redirect_uri: `${process.env.APP_BASE_URL || 'http://localhost:5000'}/api/slack/oauth/callback`,
-        }),
-      });
+      const tokenResponse = await fetch(
+        "https://slack.com/api/oauth.v2.access",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            client_id: process.env.SLACK_CLIENT_ID!,
+            client_secret: process.env.SLACK_CLIENT_SECRET!,
+            code: code as string,
+            redirect_uri: `${process.env.APP_BASE_URL || "http://localhost:5000"}/api/slack/oauth/callback`,
+          }),
+        }
+      );
 
-      const tokenData = await tokenResponse.json() as SlackOAuthResponse;
+      const tokenData = (await tokenResponse.json()) as SlackOAuthResponse;
 
       if (!tokenData.ok) {
         console.error("Slack OAuth token exchange failed:", tokenData.error);
@@ -223,7 +250,11 @@ export function registerSlackOAuthRoutes(app: Express) {
         `);
       }
 
-      if (!tokenData.access_token || !tokenData.team || !tokenData.bot_user_id) {
+      if (
+        !tokenData.access_token ||
+        !tokenData.team ||
+        !tokenData.bot_user_id
+      ) {
         return res.status(400).send(`
           <html>
             <body>
@@ -246,7 +277,7 @@ export function registerSlackOAuthRoutes(app: Express) {
 
       if (existingWorkspace) {
         // Update existing workspace
-        const [updated] = await db
+        const [_updated] = await db
           .update(slackWorkspaces)
           .set({
             teamName: tokenData.team.name,
@@ -260,7 +291,9 @@ export function registerSlackOAuthRoutes(app: Express) {
           .where(eq(slackWorkspaces.id, existingWorkspace.id))
           .returning();
 
-        console.log(`Updated Slack workspace: ${tokenData.team.name} (${tokenData.team.id})`);
+        console.log(
+          `Updated Slack workspace: ${tokenData.team.name} (${tokenData.team.id})`
+        );
       } else {
         // Create new workspace installation
         const workspaceData = {
@@ -286,12 +319,14 @@ export function registerSlackOAuthRoutes(app: Express) {
           `);
         }
 
-        const [created] = await db
+        const [_created] = await db
           .insert(slackWorkspaces)
           .values(parsed.data)
           .returning();
 
-        console.log(`Created new Slack workspace: ${tokenData.team.name} (${tokenData.team.id})`);
+        console.log(
+          `Created new Slack workspace: ${tokenData.team.name} (${tokenData.team.id})`
+        );
       }
 
       // Success page
@@ -334,7 +369,6 @@ export function registerSlackOAuthRoutes(app: Express) {
           </body>
         </html>
       `);
-
     } catch (error) {
       console.error("OAuth callback error:", error);
       res.status(500).send(`
@@ -391,10 +425,12 @@ export function registerSlackOAuthRoutes(app: Express) {
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
-        const workspaceId = parseInt(req.params.workspaceId);
+        const workspaceId = parseInt(req.params.workspaceId, 10);
 
         if (!clientId || !workspaceId) {
-          return res.status(400).json({ message: "Client ID and workspace ID are required" });
+          return res
+            .status(400)
+            .json({ message: "Client ID and workspace ID are required" });
         }
 
         // Verify workspace belongs to this client
@@ -427,7 +463,6 @@ export function registerSlackOAuthRoutes(app: Express) {
           message: "Workspace reactivated successfully",
           workspace: reactivated,
         });
-
       } catch (error) {
         console.error("Error reactivating workspace:", error);
         res.status(500).json({ message: "Error reactivating workspace" });
@@ -444,10 +479,12 @@ export function registerSlackOAuthRoutes(app: Express) {
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
-        const workspaceId = parseInt(req.params.workspaceId);
+        const workspaceId = parseInt(req.params.workspaceId, 10);
 
         if (!clientId || !workspaceId) {
-          return res.status(400).json({ message: "Client ID and workspace ID are required" });
+          return res
+            .status(400)
+            .json({ message: "Client ID and workspace ID are required" });
         }
 
         // Verify workspace belongs to this client
@@ -468,7 +505,8 @@ export function registerSlackOAuthRoutes(app: Express) {
         // Only allow deletion if workspace is already inactive
         if (workspace.isActive) {
           return res.status(400).json({
-            message: "Workspace must be deactivated before deletion. Please deactivate first."
+            message:
+              "Workspace must be deactivated before deletion. Please deactivate first.",
           });
         }
 
@@ -482,14 +520,18 @@ export function registerSlackOAuthRoutes(app: Express) {
             )
           );
 
-        console.log(`Deleted user mappings for workspace: ${workspace.teamName}`);
+        console.log(
+          `Deleted user mappings for workspace: ${workspace.teamName}`
+        );
 
         // Delete the workspace
         await db
           .delete(slackWorkspaces)
           .where(eq(slackWorkspaces.id, workspaceId));
 
-        console.log(`Permanently deleted Slack workspace: ${workspace.teamName} (${workspace.slackTeamId})`);
+        console.log(
+          `Permanently deleted Slack workspace: ${workspace.teamName} (${workspace.slackTeamId})`
+        );
 
         res.json({
           message: "Workspace and all related data permanently deleted",
@@ -499,7 +541,6 @@ export function registerSlackOAuthRoutes(app: Express) {
             slackTeamId: workspace.slackTeamId,
           },
         });
-
       } catch (error) {
         console.error("Error permanently deleting workspace:", error);
         res.status(500).json({ message: "Error deleting workspace" });
@@ -515,10 +556,12 @@ export function registerSlackOAuthRoutes(app: Express) {
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
-        const workspaceId = parseInt(req.params.workspaceId);
+        const workspaceId = parseInt(req.params.workspaceId, 10);
 
         if (!clientId || !workspaceId) {
-          return res.status(400).json({ message: "Client ID and workspace ID are required" });
+          return res
+            .status(400)
+            .json({ message: "Client ID and workspace ID are required" });
         }
 
         // Verify workspace belongs to this client
@@ -551,7 +594,6 @@ export function registerSlackOAuthRoutes(app: Express) {
           message: "Workspace deactivated successfully",
           workspace: deactivated,
         });
-
       } catch (error) {
         console.error("Error deactivating workspace:", error);
         res.status(500).json({ message: "Error deactivating workspace" });

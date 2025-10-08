@@ -1,14 +1,5 @@
 import { AlertTriangle, Plus, RotateCcw, Settings, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +11,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useSlackStatusPolling } from "@/hooks/use-slack-status";
 import { useToast } from "@/hooks/use-toast";
 
@@ -215,7 +215,8 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
 
       toast({
         title: "Integration Deleted",
-        description: "The Slack integration and all associated data have been permanently deleted.",
+        description:
+          "The Slack integration and all associated data have been permanently deleted.",
       });
 
       fetchSlackData(); // Refresh data
@@ -360,22 +361,33 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
                                 </AlertDialogTitle>
                                 <AlertDialogDescription className="space-y-3 text-left">
                                   <p>
-                                    This action will permanently delete the Slack integration for{" "}
-                                    <strong>{workspace.teamName}</strong> and cannot be undone.
+                                    This action will permanently delete the
+                                    Slack integration for{" "}
+                                    <strong>{workspace.teamName}</strong> and
+                                    cannot be undone.
                                   </p>
                                   <div className="rounded-md bg-red-50 border border-red-200 p-3">
                                     <p className="font-semibold text-red-900 mb-2">
-                                      The following data will be permanently deleted:
+                                      The following data will be permanently
+                                      deleted:
                                     </p>
                                     <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
-                                      <li>All activity logs and command history</li>
-                                      <li>User mappings between Slack and Ferdinand</li>
+                                      <li>
+                                        All activity logs and command history
+                                      </li>
+                                      <li>
+                                        User mappings between Slack and
+                                        Ferdinand
+                                      </li>
                                       <li>Workspace authentication tokens</li>
-                                      <li>Integration configuration settings</li>
+                                      <li>
+                                        Integration configuration settings
+                                      </li>
                                     </ul>
                                   </div>
                                   <p className="text-sm">
-                                    To reconnect Slack in the future, you will need to complete the setup process again.
+                                    To reconnect Slack in the future, you will
+                                    need to complete the setup process again.
                                   </p>
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -431,8 +443,8 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
                 command: "/ferdinand help",
                 description: "Show help and usage",
               },
-            ].map((item, index) => (
-              <div key={index} className="p-3 border rounded-lg">
+            ].map((item) => (
+              <div key={item.command} className="p-3 border rounded-lg">
                 <code className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
                   {item.command}
                 </code>

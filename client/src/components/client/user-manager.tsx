@@ -269,7 +269,11 @@ export function UserManager({ clientId }: UserManagerProps) {
                   <p className="text-muted-foreground mt-2 mb-4">
                     Invite team members to collaborate on this client
                   </p>
-                  <Button type="button" size="sm" onClick={() => setInviteDialogOpen(true)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setInviteDialogOpen(true)}
+                  >
                     Invite Users
                   </Button>
                 </>
@@ -513,7 +517,7 @@ function RoleBadge({
                 key={r}
                 className={`
                   border rounded-md p-2 transition-all cursor-pointer text-left w-full
-                  ${isSelected ? `${color} border-2` : "border bg-background hover:bg-muted"}
+                  ${isSelected ? `${color} border-2` : "border hover:bg-muted"}
                   ${isCurrentRole && !isSelected ? "border-primary border-dashed" : ""}
                 `}
                 onClick={() => handleRoleSelect(r)}

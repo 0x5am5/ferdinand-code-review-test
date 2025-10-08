@@ -1,15 +1,15 @@
-import { and, eq } from "drizzle-orm";
 import { brandAssets } from "@shared/schema";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../../db";
-import {
-  filterColorAssetsByVariant,
-  logSlackActivity,
-} from "../../../utils/slack-helpers";
 import {
   buildColorBlocks,
   buildColorConfirmationBlocks,
   shouldShowColorConfirmation,
 } from "../../../utils/color-display";
+import {
+  filterColorAssetsByVariant,
+  logSlackActivity,
+} from "../../../utils/slack-helpers";
 
 export async function handleColorSubcommand({
   command,
@@ -32,8 +32,8 @@ export async function handleColorSubcommand({
     .where(
       and(
         eq(brandAssets.clientId, workspace.clientId),
-        eq(brandAssets.category, "color"),
-      ),
+        eq(brandAssets.category, "color")
+      )
     );
 
   if (colorAssets.length === 0) {
@@ -46,10 +46,7 @@ export async function handleColorSubcommand({
   }
 
   // Filter by variant if specified
-  const filteredColorAssets = filterColorAssetsByVariant(
-    colorAssets,
-    variant,
-  );
+  const filteredColorAssets = filterColorAssetsByVariant(colorAssets, variant);
 
   if (filteredColorAssets.length === 0 && variant) {
     await respond({
@@ -72,7 +69,7 @@ export async function handleColorSubcommand({
     const confirmationBlocks = buildColorConfirmationBlocks(
       displayAssets,
       variant,
-      workspace.clientId,
+      workspace.clientId
     );
 
     await respond({

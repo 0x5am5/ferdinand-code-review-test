@@ -1,3 +1,5 @@
+import type { BrandAsset } from "@shared/schema";
+
 export interface LogoDisplayOptions {
   query?: string;
   showConfirmation?: boolean;
@@ -6,21 +8,23 @@ export interface LogoDisplayOptions {
 
 // Build confirmation blocks for large logo result sets
 export function buildLogoConfirmationBlocks(
-  matchedLogos: any[],
+  matchedLogos: BrandAsset[],
   query: string,
-  workspaceClientId: number,
+  workspaceClientId: number
 ) {
   // Check if any logos have dark variants
   const darkVariantCount = matchedLogos.filter((logo) => {
     try {
-      const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+      const data =
+        typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
       return data?.hasDarkVariant === true;
     } catch {
       return false;
     }
   }).length;
 
-  const variantInfo = darkVariantCount > 0 ? ` (${darkVariantCount} with dark variants)` : "";
+  const variantInfo =
+    darkVariantCount > 0 ? ` (${darkVariantCount} with dark variants)` : "";
 
   return [
     {
@@ -75,13 +79,14 @@ export function buildLogoConfirmationBlocks(
 
 // Build processing message for logo uploads
 export function buildLogoProcessingMessage(
-  matchedLogos: any[],
-  query?: string,
+  matchedLogos: BrandAsset[],
+  query?: string
 ): string {
   // Check for dark variants in the matched logos
   const darkVariantCount = matchedLogos.filter((logo) => {
     try {
-      const data = typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
+      const data =
+        typeof logo.data === "string" ? JSON.parse(logo.data) : logo.data;
       return data?.hasDarkVariant === true;
     } catch {
       return false;
@@ -89,12 +94,18 @@ export function buildLogoProcessingMessage(
   }).length;
 
   // Calculate total files to upload
-  const isDarkQuery = query === "dark" || query === "white" || query === "inverse";
-  const totalFiles = isDarkQuery ? matchedLogos.length :
-                     matchedLogos.length + darkVariantCount; // Light + dark variants
+  const isDarkQuery =
+    query === "dark" || query === "white" || query === "inverse";
+  const totalFiles = isDarkQuery
+    ? matchedLogos.length
+    : matchedLogos.length + darkVariantCount; // Light + dark variants
 
-  const variantNote = isDarkQuery && darkVariantCount > 0 ? " (dark variants)" :
-                     darkVariantCount > 0 ? ` (${darkVariantCount} with dark variants)` : "";
+  const variantNote =
+    isDarkQuery && darkVariantCount > 0
+      ? " (dark variants)"
+      : darkVariantCount > 0
+        ? ` (${darkVariantCount} with dark variants)`
+        : "";
 
   return `🔄 Preparing ${totalFiles} file${totalFiles > 1 ? "s" : ""} from ${matchedLogos.length} logo${matchedLogos.length > 1 ? "s" : ""}${query ? ` for "${query}"` : ""}${variantNote}... Files will appear shortly!`;
 }
@@ -104,7 +115,7 @@ export function buildLogoSummaryMessage(
   successfulUploads: number,
   totalLogos: number,
   query?: string,
-  responseTime?: number,
+  responseTime?: number
 ): string {
   let summaryText = `✅ *${successfulUploads} logo${successfulUploads > 1 ? "s" : ""} uploaded successfully!*`;
 

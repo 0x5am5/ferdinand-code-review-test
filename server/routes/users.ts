@@ -14,6 +14,8 @@ import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { emailService } from "../email-service";
+import { mutationRateLimit } from "../middlewares/rate-limit";
+import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
 
 export function registerUserRoutes(app: Express) {
@@ -109,132 +111,151 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Create a new user (with invite)
-  app.post("/api/users", async (req, res) => {
-    try {
-      // For user invitation, we'll use the invitations system which already has email handling
-      // and proper error validation
-
-      // Create an invitation with the provided user data
-      const invitationData = {
-        email: req.body.email,
-        name: req.body.name || req.body.email.split("@")[0], // Use part of email as name if not provided
-        role: req.body.role || UserRole.STANDARD,
-        clientIds: req.body.clientIds || undefined,
-      };
-
-      // Check if a user with this email already exists
-      const existingUser = await storage.getUserByEmail(invitationData.email);
-      if (existingUser) {
-        return res.status(400).json({
-          message: "A user with this email already exists",
-          code: "EMAIL_EXISTS",
-        });
-      }
-
-      // Check if an invitation with this email already exists
-      const existingInvitations = await db.query.invitations.findMany({
-        where: eq(invitations.email, invitationData.email),
-      });
-
-      // Only consider unused invitations as duplicates
-      const pendingInvitation = existingInvitations.find((inv) => !inv.used);
-      if (pendingInvitation) {
-        return res.status(400).json({
-          message: "An invitation for this email already exists",
-          code: "INVITATION_EXISTS",
-          invitationId: pendingInvitation.id,
-        });
-      }
-
-      // Create the invitation
-      const invitation = await storage.createInvitation(invitationData);
-
-      // Calculate the invitation link
-      const inviteLink = `${req.protocol}://${req.get("host")}/signup?token=${invitation.token}`;
-
-      // Get client information if a clientId is provided
-      let clientName = "our platform";
-      let logoUrl: string | undefined;
-
-      if (invitationData.clientIds && invitationData.clientIds.length > 0) {
-        try {
-          const client = await storage.getClient(invitationData.clientIds[0]);
-          if (client) {
-            clientName = client.name;
-            // Get favicon from brand assets for email
-            try {
-              const assets = await storage.getClientAssets(invitationData.clientIds[0]);
-              const logoAssets = assets.filter(asset => asset.category === "logo");
-              const findLogoByType = (types: string[]) => {
-                for (const type of types) {
-                  const logo = logoAssets.find(asset => {
-                    if (!asset.data) return false;
-                    try {
-                      const data = typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
-                      return data?.type === type;
-                    } catch (e) {
-                      return false;
-                    }
-                  });
-                  if (logo) return logo;
-                }
-                return null;
-              };
-              const logoAsset = findLogoByType(["favicon", "square", "horizontal", "main"]) || logoAssets[0];
-              logoUrl = logoAsset ? `/api/assets/${logoAsset.id}/file` : undefined;
-            } catch (e) {
-              logoUrl = undefined;
-            }
-          }
-        } catch (err: unknown) {
-          console.error(
-            "Error fetching client data for invitation email:",
-            err instanceof Error ? err.message : "Unknown error"
-          );
-          // Continue with default values if client fetch fails
-        }
-      }
-
-      // Send invitation email
+  app.post(
+    "/api/users",
+    csrfProtection,
+    mutationRateLimit,
+    async (req, res) => {
       try {
-        await emailService.sendInvitationEmail({
-          to: invitationData.email,
-          inviteLink,
-          clientName,
-          role: invitationData.role,
-          expiration: "7 days",
-          logoUrl,
-        });
+        // For user invitation, we'll use the invitations system which already has email handling
+        // and proper error validation
 
-        console.log(`Invitation email sent to ${invitationData.email}`);
-      } catch (emailError: unknown) {
-        console.error(
-          "Failed to send invitation email:",
-          emailError instanceof Error ? emailError.message : "Unknown error"
+        // Create an invitation with the provided user data
+        const invitationData = {
+          email: req.body.email,
+          name: req.body.name || req.body.email.split("@")[0], // Use part of email as name if not provided
+          role: req.body.role || UserRole.STANDARD,
+          clientIds: req.body.clientIds || undefined,
+        };
+
+        // Check if a user with this email already exists
+        const existingUser = await storage.getUserByEmail(invitationData.email);
+        if (existingUser) {
+          return res.status(400).json({
+            message: "A user with this email already exists",
+            code: "EMAIL_EXISTS",
+          });
+        }
+
+        // Check if an invitation with this email already exists
+        const existingInvitations = await db
+          .select()
+          .from(invitations)
+          .where(eq(invitations.email, invitationData.email));
+
+        // Only consider unused invitations as duplicates
+        const pendingInvitation = existingInvitations.find(
+          (inv: any) => !inv.used
         );
-        // We don't want to fail the entire invitation process if just the email fails
-      }
+        if (pendingInvitation) {
+          return res.status(400).json({
+            message: "An invitation for this email already exists",
+            code: "INVITATION_EXISTS",
+            invitationId: pendingInvitation.id,
+          });
+        }
 
-      // Return success with the invitation data
-      res.status(201).json({
-        id: invitation.id,
-        email: invitation.email,
-        role: invitation.role,
-        clientIds: invitation.clientIds,
-        inviteLink,
-        message: "User invited successfully",
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Error inviting user:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error inviting user" });
+        // Create the invitation
+        const invitation = await storage.createInvitation(invitationData);
+
+        // Calculate the invitation link
+        const inviteLink = `${req.protocol}://${req.get("host")}/signup?token=${invitation.token}`;
+
+        // Get client information if a clientId is provided
+        let clientName = "our platform";
+        let logoUrl: string | undefined;
+
+        if (invitationData.clientIds && invitationData.clientIds.length > 0) {
+          try {
+            const client = await storage.getClient(invitationData.clientIds[0]);
+            if (client) {
+              clientName = client.name;
+              // Get favicon from brand assets for email
+              try {
+                const assets = await storage.getClientAssets(
+                  invitationData.clientIds[0]
+                );
+                const logoAssets = assets.filter(
+                  (asset) => asset.category === "logo"
+                );
+                const findLogoByType = (types: string[]) => {
+                  for (const type of types) {
+                    const logo = logoAssets.find((asset) => {
+                      if (!asset.data) return false;
+                      try {
+                        const data =
+                          typeof asset.data === "string"
+                            ? JSON.parse(asset.data)
+                            : asset.data;
+                        return data?.type === type;
+                      } catch (_e) {
+                        return false;
+                      }
+                    });
+                    if (logo) return logo;
+                  }
+                  return null;
+                };
+                const logoAsset =
+                  findLogoByType(["favicon", "square", "horizontal", "main"]) ||
+                  logoAssets[0];
+                logoUrl = logoAsset
+                  ? `/api/assets/${logoAsset.id}/file`
+                  : undefined;
+              } catch (_e) {
+                logoUrl = undefined;
+              }
+            }
+          } catch (err: unknown) {
+            console.error(
+              "Error fetching client data for invitation email:",
+              err instanceof Error ? err.message : "Unknown error"
+            );
+            // Continue with default values if client fetch fails
+          }
+        }
+
+        // Send invitation email
+        try {
+          await emailService.sendInvitationEmail({
+            to: invitationData.email,
+            inviteLink,
+            clientName,
+            role: invitationData.role,
+            expiration: "7 days",
+            logoUrl,
+          });
+
+          console.log(`Invitation email sent to ${invitationData.email}`);
+        } catch (emailError: unknown) {
+          console.error(
+            "Failed to send invitation email:",
+            emailError instanceof Error ? emailError.message : "Unknown error"
+          );
+          // We don't want to fail the entire invitation process if just the email fails
+        }
+
+        // Return success with the invitation data
+        res.status(201).json({
+          id: invitation.id,
+          email: invitation.email,
+          role: invitation.role,
+          clientIds: invitation.clientIds,
+          inviteLink,
+          message: "User invited successfully",
+        });
+      } catch (error: unknown) {
+        console.error(
+          "Error inviting user:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error inviting user" });
+      }
     }
-  });
+  );
 
   // Update current user's role
-  app.patch("/api/users/role", async (req, res) => {
+  app.patch("/api/users/role", csrfProtection, async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -260,7 +281,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Update user role
-  app.patch("/api/users/:id/role", async (req, res) => {
+  app.patch("/api/users/:id/role", csrfProtection, async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
@@ -469,7 +490,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Create user-client relationship
-  app.post("/api/user-clients", async (req, res) => {
+  app.post("/api/user-clients", csrfProtection, async (req, res) => {
     try {
       let { userId, clientId } = req.body;
 
@@ -552,54 +573,58 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Delete user-client relationship
-  app.delete("/api/user-clients/:userId/:clientId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId, 10);
-      const clientId = parseInt(req.params.clientId, 10);
+  app.delete(
+    "/api/user-clients/:userId/:clientId",
+    csrfProtection,
+    async (req, res) => {
+      try {
+        const userId = parseInt(req.params.userId, 10);
+        const clientId = parseInt(req.params.clientId, 10);
 
-      if (Number.isNaN(userId) || Number.isNaN(clientId)) {
-        return res.status(400).json({ message: "Invalid user or client ID" });
-      }
+        if (Number.isNaN(userId) || Number.isNaN(clientId)) {
+          return res.status(400).json({ message: "Invalid user or client ID" });
+        }
 
-      // Delete the user-client relationship
-      await db
-        .delete(userClients)
-        .where(
-          and(
-            eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId)
+        // Delete the user-client relationship
+        await db
+          .delete(userClients)
+          .where(
+            and(
+              eq(userClients.userId, userId),
+              eq(userClients.clientId, clientId)
+            )
           )
-        )
-        .execute();
+          .execute();
 
-      // Verify relationship was removed
-      const verifyDeletion = await db
-        .select()
-        .from(userClients)
-        .where(
-          and(
-            eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId)
-          )
+        // Verify relationship was removed
+        const verifyDeletion = await db
+          .select()
+          .from(userClients)
+          .where(
+            and(
+              eq(userClients.userId, userId),
+              eq(userClients.clientId, clientId)
+            )
+          );
+
+        if (verifyDeletion.length > 0) {
+          throw new Error("Failed to delete user-client relationship");
+        }
+
+        res
+          .status(200)
+          .json({ message: "User-client relationship deleted successfully" });
+      } catch (error: unknown) {
+        console.error(
+          "Error deleting user-client relationship:",
+          error instanceof Error ? error.message : "Unknown error"
         );
-
-      if (verifyDeletion.length > 0) {
-        throw new Error("Failed to delete user-client relationship");
+        res
+          .status(500)
+          .json({ message: "Error deleting user-client relationship" });
       }
-
-      res
-        .status(200)
-        .json({ message: "User-client relationship deleted successfully" });
-    } catch (error: unknown) {
-      console.error(
-        "Error deleting user-client relationship:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res
-        .status(500)
-        .json({ message: "Error deleting user-client relationship" });
     }
-  });
+  );
 
   // Get users for a specific client
   app.get(

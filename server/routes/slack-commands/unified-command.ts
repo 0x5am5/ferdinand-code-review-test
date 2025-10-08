@@ -1,19 +1,20 @@
-
-import { and, eq } from "drizzle-orm";
 import { brandAssets, slackWorkspaces } from "@shared/schema";
+import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { nlpProcessor } from "../../utils/nlp-processor";
-import {
-  checkRateLimit,
-  logSlackActivity,
-} from "../../utils/slack-helpers";
+import { checkRateLimit, logSlackActivity } from "../../utils/slack-helpers";
 import { handleColorSubcommand } from "./unified-subcommands/color-subcommand";
 import { handleFontSubcommand } from "./unified-subcommands/font-subcommand";
+import { handleHelpSubcommand } from "./unified-subcommands/help-subcommand";
 import { handleLogoSubcommand } from "./unified-subcommands/logo-subcommand";
 import { handleSearchSubcommand } from "./unified-subcommands/search-subcommand";
-import { handleHelpSubcommand } from "./unified-subcommands/help-subcommand";
 
-export async function handleUnifiedCommand({ command, ack, respond, client }: any) {
+export async function handleUnifiedCommand({
+  command,
+  ack,
+  respond,
+  client,
+}: any) {
   await ack();
 
   // Send immediate acknowledgment to prevent timeout
@@ -102,8 +103,8 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
         .where(
           and(
             eq(slackWorkspaces.slackTeamId, command.team_id),
-            eq(slackWorkspaces.isActive, true),
-          ),
+            eq(slackWorkspaces.isActive, true)
+          )
         );
 
       if (!workspace) {
@@ -120,6 +121,11 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
 
     // If not a traditional command, use natural language processing
     if (!isTraditionalCommand) {
+      // workspace is guaranteed to exist here
+      if (!workspace) {
+        throw new Error("Workspace should exist at this point");
+      }
+
       // Gather asset context for the NLP processor
       const [logoAssets, colorAssets, fontAssets] = await Promise.all([
         db
@@ -127,27 +133,27 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace!.clientId),
-              eq(brandAssets.category, "logo"),
-            ),
+              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.category, "logo")
+            )
           ),
         db
           .select()
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace!.clientId),
-              eq(brandAssets.category, "color"),
-            ),
+              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.category, "color")
+            )
           ),
         db
           .select()
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace!.clientId),
-              eq(brandAssets.category, "font"),
-            ),
+              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.category, "font")
+            )
           ),
       ]);
 
@@ -159,7 +165,7 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
           colors: colorAssets,
           fonts: fontAssets,
         },
-        command.team_id,
+        command.team_id
       );
 
       // Map processed command to traditional format
@@ -168,7 +174,7 @@ export async function handleUnifiedCommand({ command, ack, respond, client }: an
 
       // Log the NLP processing for debugging
       console.log(
-        `[NLP] Input: "${input}" -> Intent: ${processedCommand.intent}, Variant: ${processedCommand.variant}, Confidence: ${processedCommand.confidence}`,
+        `[NLP] Input: "${input}" -> Intent: ${processedCommand.intent}, Variant: ${processedCommand.variant}, Confidence: ${processedCommand.confidence}`
       );
 
       // If confidence is very low, suggest better phrasing
