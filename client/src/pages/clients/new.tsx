@@ -51,7 +51,7 @@ export default function NewClientPage() {
     inspiration: true,
     figmaIntegration: false,
     slackIntegration: false,
-    assetManagement: false,
+    brandAssets: false,
   });
 
   const form = useForm<InsertClient>({
@@ -398,11 +398,11 @@ export default function NewClientPage() {
                             </div>
                           </div>
                           <Switch
-                            checked={featureToggles.assetManagement}
+                            checked={featureToggles.brandAssets}
                             onCheckedChange={(checked) =>
                               setFeatureToggles((prev) => ({
                                 ...prev,
-                                assetManagement: checked,
+                                brandAssets: checked,
                               }))
                             }
                           />

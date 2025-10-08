@@ -144,7 +144,7 @@ export const clients = pgTable("clients", {
     inspiration: true,
     figmaIntegration: false,
     slackIntegration: false,
-    assetManagement: false,
+    brandAssets: false,
   }),
   lastEditedBy: integer("last_edited_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -1131,7 +1131,7 @@ export interface FeatureToggles {
   inspiration: boolean;
   figmaIntegration: boolean;
   slackIntegration: boolean;
-  assetManagement: boolean;
+  brandAssets: boolean;
 }
 
 // Constants from enums

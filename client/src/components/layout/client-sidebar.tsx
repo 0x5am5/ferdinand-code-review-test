@@ -43,7 +43,7 @@ interface ClientSidebarProps {
     inspiration: boolean;
     figmaIntegration: boolean;
     slackIntegration: boolean;
-    assetManagement: boolean;
+    brandAssets: boolean;
   };
   activeTab?: string;
   onTabChange: (tab: string) => void;
@@ -167,7 +167,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       id: "assets",
       title: "Brand Assets",
       icon: <FolderOpen className="h-4 w-4" />,
-      enabled: featureToggles.assetManagement,
+      enabled: featureToggles.brandAssets,
     },
     {
       id: "design-system",

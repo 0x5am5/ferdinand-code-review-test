@@ -154,7 +154,7 @@ export default function ClientDetails() {
       inspiration: true,
       figmaIntegration: false,
       slackIntegration: false,
-      assetManagement: false,
+      brandAssets: false,
     };
 
   const anyFeatureEnabled = Object.values(featureToggles).some(
@@ -313,7 +313,7 @@ export default function ClientDetails() {
         );
 
       case "assets":
-        return featureToggles.assetManagement ? (
+        return featureToggles.brandAssets ? (
           <AssetManager clientId={clientId} />
         ) : (
           <Card>

@@ -167,7 +167,7 @@ export default function Dashboard() {
     inspiration: true,
     figmaIntegration: false,
     slackIntegration: false,
-    assetManagement: false,
+    brandAssets: false,
   });
 
   // Define form before any useEffect hooks that use it
@@ -311,7 +311,7 @@ export default function Dashboard() {
           slackIntegration: Boolean(
             featureTogglesObj.slackIntegration ?? false
           ),
-          assetManagement: Boolean(featureTogglesObj.assetManagement ?? false),
+          brandAssets: Boolean(featureTogglesObj.brandAssets ?? false),
         };
         setFeatureToggles(toggles);
       } else {
@@ -324,7 +324,7 @@ export default function Dashboard() {
           inspiration: true,
           figmaIntegration: false,
           slackIntegration: false,
-          assetManagement: false,
+          brandAssets: false,
         });
       }
     } else {
@@ -345,7 +345,7 @@ export default function Dashboard() {
         inspiration: true,
         figmaIntegration: false,
         slackIntegration: false,
-        assetManagement: false,
+        brandAssets: false,
       });
     }
   }, [editingClient, form]);
@@ -940,11 +940,11 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <Switch
-                          checked={featureToggles.assetManagement}
+                          checked={featureToggles.brandAssets}
                           onCheckedChange={(checked) =>
                             setFeatureToggles((prev) => ({
                               ...prev,
-                              assetManagement: checked,
+                              brandAssets: checked,
                             }))
                           }
                         />

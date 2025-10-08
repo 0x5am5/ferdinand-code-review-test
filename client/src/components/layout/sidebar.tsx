@@ -120,7 +120,7 @@ export const Sidebar: FC = () => {
     typeSystem: true,
     userPersonas: true,
     inspiration: true,
-    assetManagement: false,
+    brandAssets: false,
   };
 
   // Check if admin has multiple clients to determine nav items
@@ -221,10 +221,10 @@ export const Sidebar: FC = () => {
         typeof clientToggles.slackIntegration === "boolean"
           ? clientToggles.slackIntegration
           : false,
-      assetManagement:
-        typeof clientToggles.assetManagement === "boolean"
-          ? clientToggles.assetManagement
-          : defaultFeatureToggles.assetManagement,
+      brandAssets:
+        typeof clientToggles.brandAssets === "boolean"
+          ? clientToggles.brandAssets
+          : defaultFeatureToggles.brandAssets,
     };
 
     return (

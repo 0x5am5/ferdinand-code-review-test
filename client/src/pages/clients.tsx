@@ -99,7 +99,7 @@ export default function Clients() {
     inspiration: true,
     figmaIntegration: false,
     slackIntegration: false,
-    assetManagement: false,
+    brandAssets: false,
   });
   const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>(
     {}
@@ -190,7 +190,7 @@ export default function Clients() {
         inspiration: toggles.inspiration ?? true,
         figmaIntegration: toggles.figmaIntegration ?? false,
         slackIntegration: toggles.slackIntegration ?? false,
-        assetManagement: toggles.assetManagement ?? false,
+        brandAssets: toggles.brandAssets ?? false,
       });
     }
   }, [editingClient]);
@@ -270,8 +270,8 @@ export default function Clients() {
           slackIntegration: Boolean(
             editingClient.featureToggles.slackIntegration ?? false
           ),
-          assetManagement: Boolean(
-            editingClient.featureToggles.assetManagement ?? false
+          brandAssets: Boolean(
+            editingClient.featureToggles.brandAssets ?? false
           ),
         };
         setFeatureToggles(toggles);
@@ -285,7 +285,7 @@ export default function Clients() {
           inspiration: true,
           figmaIntegration: false,
           slackIntegration: false,
-          assetManagement: false,
+          brandAssets: false,
         });
       }
     } else {
@@ -298,7 +298,7 @@ export default function Clients() {
         inspiration: true,
         figmaIntegration: false,
         slackIntegration: false,
-        assetManagement: false,
+        brandAssets: false,
       });
     }
   }, [editingClient]);
@@ -391,7 +391,7 @@ export default function Clients() {
                       Slack
                     </Badge>
                   )}
-                  {client.featureToggles?.assetManagement && (
+                  {client.featureToggles?.brandAssets && (
                     <Badge className="bg-orange-100 text-orange-800">
                       <Image className="h-3 w-3 mr-1" />
                       Assets
@@ -570,7 +570,7 @@ export default function Clients() {
                           Slack
                         </Button>
                       )}
-                      {!client.featureToggles?.assetManagement && (
+                      {!client.featureToggles?.brandAssets && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -581,7 +581,7 @@ export default function Clients() {
                               client.featureToggles || ({} as FeatureToggles);
                             const newToggles = {
                               ...currentFeatures,
-                              assetManagement: true,
+                              brandAssets: true,
                             };
                             await updateClient.mutate({
                               id: client.id,
@@ -673,7 +673,7 @@ export default function Clients() {
                     inspiration: true,
                     figmaIntegration: false,
                     slackIntegration: false,
-                    assetManagement: false,
+                    brandAssets: false,
                   };
 
                 return (
@@ -856,7 +856,7 @@ export default function Clients() {
                             </Button>
                           </Badge>
                         )}
-                        {clientFeatures.assetManagement && (
+                        {clientFeatures.brandAssets && (
                           <Badge className="flex items-center gap-1 bg-orange-100 text-orange-800 hover:bg-orange-200">
                             <Image className="h-3 w-3" />
                             Assets
@@ -868,7 +868,7 @@ export default function Clients() {
                                 e.stopPropagation();
                                 const newToggles = {
                                   ...clientFeatures,
-                                  assetManagement: false,
+                                  brandAssets: false,
                                 };
                                 updateClient.mutate({
                                   id: client.id,
@@ -1039,7 +1039,7 @@ export default function Clients() {
                                 Slack
                               </Button>
                             )}
-                            {!clientFeatures.assetManagement && (
+                            {!clientFeatures.brandAssets && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1048,7 +1048,7 @@ export default function Clients() {
                                   e.stopPropagation();
                                   const newToggles = {
                                     ...clientFeatures,
-                                    assetManagement: true,
+                                    brandAssets: true,
                                   };
                                   await updateClient.mutate({
                                     id: client.id,
@@ -1478,11 +1478,11 @@ export default function Clients() {
                       </div>
                     </div>
                     <Switch
-                      checked={featureToggles.assetManagement}
+                      checked={featureToggles.brandAssets}
                       onCheckedChange={(checked) =>
                         setFeatureToggles((prev) => ({
                           ...prev,
-                          assetManagement: checked,
+                          brandAssets: checked,
                         }))
                       }
                     />

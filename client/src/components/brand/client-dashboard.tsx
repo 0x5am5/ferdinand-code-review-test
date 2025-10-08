@@ -35,7 +35,7 @@ interface ClientDashboardProps {
     userPersonas: boolean;
     inspiration: boolean;
     figmaIntegration: boolean;
-    assetManagement: boolean;
+    brandAssets: boolean;
   };
   onTabChange: (tab: string) => void;
 }
@@ -111,7 +111,7 @@ export function ClientDashboard({
       title: "Brand Assets",
       description: "Manage and organize all your brand assets in one place",
       icon: <FolderOpen className="h-5 w-5" />,
-      enabled: featureToggles.assetManagement,
+      enabled: featureToggles.brandAssets,
     },
     {
       id: "design-system",
