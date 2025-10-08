@@ -171,11 +171,12 @@ export const brandAssets = pgTable("brand_assets", {
   category: text("category", {
     enum: ["logo", "color", "typography", "font"],
   }).notNull(),
-  data: json("data"),
   fileData: text("file_data"),
   mimeType: text("mime_type"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  data: jsonb("data"),
+  sortOrder: integer("sort_order").default(0),
 });
 
 export const convertedAssets = pgTable("converted_assets", {
@@ -201,12 +202,12 @@ export const userPersonas = pgTable("user_personas", {
   role: text("role"),
   imageUrl: text("image_url"),
   ageRange: text("age_range"),
-  demographics: json("demographics"),
-  eventAttributes: json("event_attributes"),
+  demographics: jsonb("demographics"),
+  eventAttributes: jsonb("event_attributes"),
   motivations: text("motivations").array(),
   coreNeeds: text("core_needs").array(),
   painPoints: text("pain_points").array(),
-  metrics: json("metrics"),
+  metrics: jsonb("metrics"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -369,7 +370,7 @@ export const typeScales = pgTable("type_scales", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   individual_header_styles: text("individual_header_styles").default("{}"),
-  individual_body_styles: text("individual_body_styles").default("{}"),
+  individual_body_styles: jsonb("individual_body_styles").default("{}"),
 });
 
 // Figma Integration Tables
@@ -408,9 +409,9 @@ export const figmaSyncLogs = pgTable("figma_sync_logs", {
   syncDirection: text("sync_direction", {
     enum: ["figma_to_ferdinand", "ferdinand_to_figma"],
   }).notNull(),
-  elementsChanged: json("elements_changed"), // Array of changed design tokens/styles
-  conflictsDetected: json("conflicts_detected"), // Array of conflicts found
-  conflictsResolved: json("conflicts_resolved"), // How conflicts were resolved
+  elementsChanged: jsonb("elements_changed"), // Array of changed design tokens/styles
+  conflictsDetected: jsonb("conflicts_detected"), // Array of conflicts found
+  conflictsResolved: jsonb("conflicts_resolved"), // How conflicts were resolved
   status: text("status", {
     enum: ["started", "completed", "failed"],
   }).notNull(),
@@ -429,8 +430,8 @@ export const figmaDesignTokens = pgTable("figma_design_tokens", {
   }).notNull(),
   tokenName: text("token_name").notNull(),
   figmaId: text("figma_id"), // Figma style ID
-  ferdinandValue: json("ferdinand_value").notNull(), // Value stored in Ferdinand
-  figmaValue: json("figma_value"), // Last known value from Figma
+  ferdinandValue: jsonb("ferdinand_value").notNull(), // Value stored in Ferdinand
+  figmaValue: jsonb("figma_value"), // Last known value from Figma
   lastSyncAt: timestamp("last_sync_at"),
   syncStatus: text("sync_status", {
     enum: ["in_sync", "ferdinand_newer", "figma_newer", "conflict"],
