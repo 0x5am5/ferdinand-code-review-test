@@ -16,6 +16,7 @@ import {
   Edit2,
   Eye,
   Figma,
+  FolderOpen,
   Globe,
   GripVertical,
   MapPin,
@@ -923,6 +924,27 @@ export default function Dashboard() {
                             setFeatureToggles((prev) => ({
                               ...prev,
                               slackIntegration: checked,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center">
+                            <FolderOpen className="h-4 w-4 mr-2" />
+                            <div className="font-medium">Brand Assets</div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Advanced asset management with categories and tags
+                          </div>
+                        </div>
+                        <Switch
+                          checked={featureToggles.assetManagement}
+                          onCheckedChange={(checked) =>
+                            setFeatureToggles((prev) => ({
+                              ...prev,
+                              assetManagement: checked,
                             }))
                           }
                         />
