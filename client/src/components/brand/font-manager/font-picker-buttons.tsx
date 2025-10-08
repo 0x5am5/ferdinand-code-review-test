@@ -8,16 +8,9 @@ export function FontPickerButtons({
 }: FontPickerButtonsProps) {
   return (
     <div className="grid grid-cols-3 gap-4">
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={onGoogleFontClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onGoogleFontClick();
-          }
-        }}
         className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
         style={{ minHeight: "200px" }}
       >
@@ -30,18 +23,11 @@ export function FontPickerButtons({
             Browse Google Fonts
           </p>
         </div>
-      </div>
+      </button>
 
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={onAdobeFontClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onAdobeFontClick();
-          }
-        }}
         className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
         style={{ minHeight: "200px" }}
       >
@@ -54,18 +40,11 @@ export function FontPickerButtons({
             Browse Adobe Fonts
           </p>
         </div>
-      </div>
+      </button>
 
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
         onClick={onCustomFontClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            onCustomFontClick();
-          }
-        }}
         className="p-6 border rounded-lg bg-white border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:bg-white/70 cursor-pointer shadow-sm"
         style={{ minHeight: "200px" }}
       >
@@ -78,7 +57,7 @@ export function FontPickerButtons({
             Upload font files
           </p>
         </div>
-      </div>
+      </button>
     </div>
   );
 }

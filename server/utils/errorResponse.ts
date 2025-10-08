@@ -168,13 +168,22 @@ export class EmailServiceError extends Error {
   }
 }
 
+export interface PostmarkErrorResponse {
+  statusCode?: number;
+  code?: string | number;
+  message?: string;
+  body?: {
+    Message?: string;
+  };
+}
+
 /**
  * Parse Postmark errors and return appropriate error message and code
  */
-export function parsePostmarkError(error: any): {
+export function parsePostmarkError(error: PostmarkErrorResponse): {
   message: string;
   code: string;
-  details?: any;
+  details?: unknown;
 } {
   console.error("Parsing Postmark error:", error);
 

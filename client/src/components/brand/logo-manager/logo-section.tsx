@@ -37,7 +37,7 @@ export function LogoSection({
   const currentType = type;
 
   const handleDarkVariantDragEnter = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLElement>) => {
       e.preventDefault();
       e.stopPropagation();
       setIsDarkVariantDragging(true);
@@ -46,7 +46,7 @@ export function LogoSection({
   );
 
   const handleDarkVariantDragLeave = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLElement>) => {
       e.preventDefault();
       e.stopPropagation();
       setIsDarkVariantDragging(false);
@@ -54,14 +54,11 @@ export function LogoSection({
     []
   );
 
-  const handleDarkVariantDragOver = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDarkVariantDragging(true);
-    },
-    []
-  );
+  const handleDarkVariantDragOver = useCallback((e: DragEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDarkVariantDragging(true);
+  }, []);
 
   const handleFileUpload = async (
     file: File,
@@ -146,7 +143,7 @@ export function LogoSection({
   };
 
   const handleDarkVariantDrop = (
-    e: DragEvent<HTMLDivElement>,
+    e: DragEvent<HTMLElement>,
     parsedData: ParsedLogoData,
     logo: BrandAsset
   ) => {

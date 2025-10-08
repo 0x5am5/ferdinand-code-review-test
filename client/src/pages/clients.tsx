@@ -1066,9 +1066,11 @@ export default function Clients() {
                       </div>
                     </td>
                     <td className="p-4">
-                      <div
+                      <section
+                        aria-label="Client users"
                         className="flex flex-wrap gap-1 border-0 bg-transparent p-0"
                         onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
                       >
                         {/* Fetch and display client users or use cached ones */}
                         {(clientUsersMap.get(client.id) || []).map((user) => (
@@ -1197,7 +1199,7 @@ export default function Clients() {
                             </Command>
                           </PopoverContent>
                         </Popover>
-                      </div>
+                      </section>
                     </td>
                     <td className="p-4">
                       {client.createdAt

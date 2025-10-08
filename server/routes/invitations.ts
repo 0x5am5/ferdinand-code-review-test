@@ -206,7 +206,6 @@ export function registerInvitationRoutes(app: Express) {
             to: parsed.data.email,
             inviteLink,
             clientName,
-            role: parsed.data.role,
             expiration: "7 days",
             logoUrl,
           });
@@ -472,7 +471,6 @@ export function registerInvitationRoutes(app: Express) {
           to: invitation.email,
           inviteLink,
           clientName,
-          role: invitation.role,
           expiration: "7 days",
           logoUrl,
         });

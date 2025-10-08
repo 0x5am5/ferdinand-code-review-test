@@ -22,17 +22,10 @@ export function ColorBlock({ hex, onClick }: ColorBlockProps) {
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      className="relative cursor-pointer group"
+    <button
+      type="button"
+      className="relative cursor-pointer group w-full"
       onClick={handleClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleClick();
-        }
-      }}
     >
       <div
         className="rounded-md transition-all duration-200 group-hover:ring-2 ring-primary/20"
@@ -58,6 +51,6 @@ export function ColorBlock({ hex, onClick }: ColorBlockProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </button>
   );
 }

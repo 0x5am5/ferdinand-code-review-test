@@ -1,3 +1,4 @@
+import type { BrandAsset } from "@shared/schema";
 import { hexToCmyk, hexToHsl, hexToRgb } from "./color-conversion";
 import { formatColorInfo } from "./slack-helpers";
 
@@ -18,13 +19,28 @@ export const COLOR_CATEGORY_NAMES: Record<string, string> = {
   color: "Other Colors",
 };
 
+interface SlackBlock {
+  type: string;
+  text?: {
+    type: string;
+    text: string;
+  };
+  elements?: Array<{
+    type: string;
+    text?: string | { type: string; text: string };
+    style?: string;
+    action_id?: string;
+    value?: string;
+  }>;
+}
+
 // Build color blocks for Slack display
 export function buildColorBlocks(
-  displayAssets: any[],
-  filteredColorAssets: any[],
-  colorAssets: any[],
+  displayAssets: BrandAsset[],
+  filteredColorAssets: BrandAsset[],
+  colorAssets: BrandAsset[],
   variant?: string
-) {
+): SlackBlock[] {
   // Group assets by category for better organization
   const groupedAssets = displayAssets.reduce(
     (groups: Record<string, typeof displayAssets>, asset) => {
@@ -59,7 +75,7 @@ export function buildColorBlocks(
     headerText += ` from ${colorAssets.length} total`;
   }
 
-  const colorBlocks: any[] = [
+  const colorBlocks: SlackBlock[] = [
     {
       type: "section",
       text: {
@@ -235,10 +251,10 @@ export interface ColorDisplayOptions {
 
 // Build confirmation blocks for large color result sets
 export function buildColorConfirmationBlocks(
-  displayAssets: any[],
+  displayAssets: BrandAsset[],
   variant: string,
   workspaceClientId: number
-) {
+): SlackBlock[] {
   return [
     {
       type: "section",
@@ -292,7 +308,7 @@ export function buildColorConfirmationBlocks(
 
 // Build processing message for color display
 export function buildColorProcessingMessage(
-  displayAssets: any[],
+  displayAssets: BrandAsset[],
   variant?: string
 ): string {
   return variant

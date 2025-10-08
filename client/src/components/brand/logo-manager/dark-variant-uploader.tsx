@@ -3,6 +3,7 @@ import { FILE_FORMATS } from "@shared/schema";
 import type { QueryClient } from "@tanstack/react-query";
 import { Copy, Upload } from "lucide-react";
 import type { DragEvent } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { FileUpload } from "./file-upload";
@@ -15,10 +16,10 @@ interface DarkVariantUploaderProps {
   clientId: number;
   queryClient: QueryClient;
   isDarkVariantDragging: boolean;
-  onDragEnter: (e: DragEvent<HTMLDivElement>) => void;
-  onDragLeave: (e: DragEvent<HTMLDivElement>) => void;
-  onDragOver: (e: DragEvent<HTMLDivElement>) => void;
-  onDrop: (e: DragEvent<HTMLDivElement>) => void;
+  onDragEnter: (e: DragEvent<HTMLElement>) => void;
+  onDragLeave: (e: DragEvent<HTMLElement>) => void;
+  onDragOver: (e: DragEvent<HTMLElement>) => void;
+  onDrop: (e: DragEvent<HTMLElement>) => void;
 }
 
 export function DarkVariantUploader({
@@ -34,6 +35,7 @@ export function DarkVariantUploader({
   onDrop,
 }: DarkVariantUploaderProps) {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const copyLightAsDark = async () => {
     try {
@@ -241,9 +243,9 @@ export function DarkVariantUploader({
         <div className="text-sm text-muted-foreground">- or -</div>
       </div>
 
-      <div
-        role="button"
-        tabIndex={0}
+      <button
+        type="button"
+        aria-label="Drag and drop logo file or click to browse"
         className={`logo-upload__dropzone logo-upload__dropzone--dark flex flex-col items-center justify-center ${
           isDarkVariantDragging ? "logo-upload__dropzone--active" : ""
         }`}
@@ -251,6 +253,7 @@ export function DarkVariantUploader({
         onDragLeave={onDragLeave}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        onClick={() => fileInputRef.current?.click()}
       >
         <div className="logo-upload__dropzone-icon">
           <Upload className="h-8 w-8" />
@@ -273,6 +276,7 @@ export function DarkVariantUploader({
             queryClient={queryClient}
             buttonOnly={true}
             className="min-w-32 text-black"
+            inputRef={fileInputRef}
             onSuccess={() => {
               parsedData.hasDarkVariant = true;
               queryClient.invalidateQueries({
@@ -286,7 +290,7 @@ export function DarkVariantUploader({
             Browse Files
           </FileUpload>
         </div>
-      </div>
+      </button>
     </div>
   );
 }

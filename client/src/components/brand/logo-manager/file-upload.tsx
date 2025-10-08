@@ -1,7 +1,7 @@
 import { FILE_FORMATS } from "@shared/schema";
 import { type QueryClient, useMutation } from "@tanstack/react-query";
 import { Upload } from "lucide-react";
-import {
+import React, {
   type ChangeEvent,
   type DragEvent,
   type ReactNode,
@@ -22,6 +22,7 @@ export interface FileUploadProps {
   className?: string;
   buttonOnly?: boolean;
   children?: ReactNode;
+  inputRef?: React.RefObject<HTMLInputElement>;
 }
 
 export function FileUpload({
@@ -34,6 +35,7 @@ export function FileUpload({
   buttonOnly = false,
   children,
   className,
+  inputRef,
 }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -208,6 +210,7 @@ export function FileUpload({
     return (
       <div>
         <Input
+          ref={inputRef}
           id={inputId}
           type="file"
           accept={Object.values(FILE_FORMATS)

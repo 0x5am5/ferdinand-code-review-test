@@ -2,7 +2,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as util from "node:util";
 import { Client as PostmarkClient } from "postmark";
-import { EmailServiceError, parsePostmarkError } from "./utils/errorResponse";
+import {
+  EmailServiceError,
+  type PostmarkErrorResponse,
+  parsePostmarkError,
+} from "./utils/errorResponse";
 
 interface EmailOptions {
   to: string;
@@ -112,7 +116,9 @@ export class EmailService {
           console.error("[EMAIL] Postmark error:", error);
 
           // Parse the Postmark error and throw a structured error
-          const { message, code, details } = parsePostmarkError(error);
+          const { message, code, details } = parsePostmarkError(
+            error as PostmarkErrorResponse
+          );
           throw new EmailServiceError(message, code, details);
         }
       } else {
@@ -155,14 +161,12 @@ export class EmailService {
     to,
     inviteLink,
     clientName = "our platform",
-    role = "user",
     expiration = "7 days",
     logoUrl,
   }: {
     to: string;
     inviteLink: string;
     clientName?: string;
-    role?: string;
     expiration?: string;
     logoUrl?: string;
   }): Promise<boolean> {
@@ -201,12 +205,13 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="header">
+            ${logoUrl ? `<img src="${logoUrl}" alt="${clientName} logo" class="logo">` : ""}
             <h2>${subject}</h2>
           </div>
           <div class="content">
             <p>Hi,</p>
 
-            <p>You’ve been invited to access ${clientName}’s brand assets in Ferdinand.</p>
+            <p>You've been invited to access ${clientName}'s brand assets in Ferdinand.</p>
 
             <p>Click the button below to get started: </p>
             <p><a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #0f172a; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Accept Invitation</a></p>
@@ -244,14 +249,12 @@ export class EmailService {
     to,
     inviteLink,
     clientName = "our platform",
-    role = "user",
     expiration = "7 days",
     logoUrl,
   }: {
     to: string;
     inviteLink: string;
     clientName?: string;
-    role?: string;
     expiration?: string;
     logoUrl?: string;
   }): Promise<boolean> {
@@ -298,7 +301,7 @@ export class EmailService {
           </div>
           <div class="content">
             <p>Hello,</p>
-            <p>Just a quick reminder, your invitation to access ${clientName}’s brand in Ferdinand is still pending.</p>
+            <p>Just a quick reminder, your invitation to access ${clientName}'s brand in Ferdinand is still pending.</p>
             
             <p>Click the button below to join:</p>
             <p style="text-align: center;">
@@ -335,13 +338,11 @@ export class EmailService {
     resetLink,
     clientName = "our platform",
     expiration = "24 hours",
-    logoUrl,
   }: {
     to: string;
     resetLink: string;
     clientName?: string;
     expiration?: string;
-    logoUrl?: string;
   }): Promise<boolean> {
     console.log(`[PASSWORD RESET] sendPasswordResetEmail called for ${to}`);
     console.log(`[PASSWORD RESET] Reset link: ${resetLink}`);

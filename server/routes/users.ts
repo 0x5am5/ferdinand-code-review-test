@@ -221,7 +221,6 @@ export function registerUserRoutes(app: Express) {
             to: invitationData.email,
             inviteLink,
             clientName,
-            role: invitationData.role,
             expiration: "7 days",
             logoUrl,
           });

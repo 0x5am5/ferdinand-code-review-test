@@ -79,12 +79,12 @@ export const AssetUpload: FC<AssetUploadProps> = ({
     }
   }, [initialFiles, open]);
 
-  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsDragging(true);
   }, []);
 
-  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setIsDragging(false);
   }, []);
@@ -101,7 +101,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
   }, []);
 
   const handleDrop = useCallback(
-    (e: DragEvent<HTMLDivElement>) => {
+    (e: DragEvent<HTMLButtonElement>) => {
       e.preventDefault();
       setIsDragging(false);
 
@@ -212,20 +212,13 @@ export const AssetUpload: FC<AssetUploadProps> = ({
 
         <div className="space-y-4">
           {/* Drag and drop zone */}
-          <div
-            role="button"
-            tabIndex={0}
+          <button
+            type="button"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                fileInputRef.current?.click();
-              }
-            }}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors w-full ${
               isDragging
                 ? "border-primary bg-primary/5"
                 : "border-muted-foreground/25 hover:border-primary/50"
@@ -238,14 +231,14 @@ export const AssetUpload: FC<AssetUploadProps> = ({
             <p className="text-xs text-muted-foreground mt-1">
               Maximum file size: 500MB
             </p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </div>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFileSelect}
+            className="hidden"
+          />
 
           {/* File previews */}
           {files.length > 0 && (
