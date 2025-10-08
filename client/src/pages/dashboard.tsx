@@ -563,10 +563,14 @@ export default function Dashboard() {
                                       </div>
                                     )}
 
-                                    {client.lastEditedBy && (
+                                    {client.lastEditedByUser && (
                                       <div className="flex items-top gap-2">
                                         <UserCircle className="h-3.5 w-3.5" />
-                                        <span>Edited by: Admin</span>
+                                        <span>
+                                          Edited by:{" "}
+                                          {client.lastEditedByUser.name ||
+                                            client.lastEditedByUser.email}
+                                        </span>
                                       </div>
                                     )}
                                   </div>

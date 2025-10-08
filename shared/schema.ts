@@ -1010,6 +1010,7 @@ export const updateClientOrderSchema = z.object({
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect & {
   featureToggles: FeatureToggles;
+  lastEditedByUser?: User;
 };
 export type BrandAsset = typeof brandAssets.$inferSelect;
 export type ConvertedAsset = typeof convertedAssets.$inferSelect;

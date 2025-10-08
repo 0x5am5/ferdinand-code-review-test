@@ -180,8 +180,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getClients(): Promise<Client[]> {
-    const rawClients = await db.select().from(clients);
-    return rawClients as Client[];
+    const rawClients = await db
+      .select({
+        client: clients,
+        editor: users,
+      })
+      .from(clients)
+      .leftJoin(users, eq(clients.lastEditedBy, users.id));
+
+    return rawClients.map((row) => ({
+      ...(row.client as Client),
+      lastEditedByUser: row.editor || undefined,
+    })) as Client[];
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
