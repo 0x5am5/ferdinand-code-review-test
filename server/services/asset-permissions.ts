@@ -1,6 +1,11 @@
 import { assets, UserRole } from "@shared/schema";
 import { and, eq, or } from "drizzle-orm";
 import { db } from "../db";
+import {
+  checkDriveFilePermission,
+  type DriveFileAction,
+} from "./drive-file-permissions";
+import { parseDriveSharingMetadata } from "./google-drive";
 
 export type Permission = "read" | "write" | "delete" | "share";
 
@@ -20,6 +25,9 @@ const ROLE_PERMISSIONS = {
 
 /**
  * Check if a user has permission to perform an action on an asset
+ *
+ * This function now intelligently handles both regular assets and Google Drive
+ * assets, applying the appropriate permission model based on the asset type.
  */
 export const checkAssetPermission = async (
   userId: string | number,
@@ -63,6 +71,35 @@ export const checkAssetPermission = async (
       return { allowed: false, reason: "Not authorized for this client" };
     }
 
+    // ============================================================================
+    // Google Drive File Permissions
+    // ============================================================================
+    // If this is a Google Drive file, use the Drive-specific permission logic
+    if (asset.isGoogleDrive) {
+      const driveMetadata = parseDriveSharingMetadata(asset);
+      const drivePermissionCheck = checkDriveFilePermission(
+        userIdNum,
+        user.role,
+        permission as DriveFileAction,
+        {
+          uploadedBy: asset.uploadedBy,
+          visibility: asset.visibility,
+          isGoogleDrive: asset.isGoogleDrive,
+          driveOwner: asset.driveOwner,
+          driveMetadata: driveMetadata || undefined,
+        }
+      );
+
+      return {
+        allowed: drivePermissionCheck.allowed,
+        asset: drivePermissionCheck.allowed ? asset : undefined,
+        reason: drivePermissionCheck.reason,
+      };
+    }
+
+    // ============================================================================
+    // Regular Asset Permissions
+    // ============================================================================
     // Check if user has required role-based permission
     const allowedPermissions = ROLE_PERMISSIONS[
       user.role as keyof typeof ROLE_PERMISSIONS

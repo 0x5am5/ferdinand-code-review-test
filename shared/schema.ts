@@ -661,6 +661,81 @@ export const googleDriveConnections = pgTable("google_drive_connections", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Secure Drive Access Tokens (for temporary file access)
+export const driveAccessTokens = pgTable(
+  "drive_access_tokens",
+  {
+    id: serial("id").primaryKey(),
+    token: text("token").notNull().unique(),
+    assetId: integer("asset_id")
+      .notNull()
+      .references(() => assets.id),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    driveFileId: text("drive_file_id").notNull(),
+    action: text("action", {
+      enum: ["read", "download", "thumbnail"],
+    }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    revokedAt: timestamp("revoked_at"), // For manual revocation
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    tokenIdx: index("idx_drive_access_tokens_token").on(table.token),
+    expiresAtIdx: index("idx_drive_access_tokens_expires").on(table.expiresAt),
+    assetIdIdx: index("idx_drive_access_tokens_asset").on(table.assetId),
+    userIdIdx: index("idx_drive_access_tokens_user").on(table.userId),
+  })
+);
+
+// Drive File Access Audit Logs (for security and compliance)
+export const driveFileAccessLogs = pgTable(
+  "drive_file_access_logs",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").references(() => users.id),
+    assetId: integer("asset_id").references(() => assets.id),
+    driveFileId: text("drive_file_id"),
+    action: text("action", {
+      enum: ["read", "download", "thumbnail", "import", "list"],
+    }).notNull(),
+    success: boolean("success").notNull(),
+    errorCode: text("error_code"), // e.g., "PERMISSION_DENIED", "FILE_NOT_FOUND"
+    errorMessage: text("error_message"),
+    userRole: text("user_role"),
+    clientId: integer("client_id").references(() => clients.id),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    metadata: jsonb("metadata").default("{}"), // Additional context
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => ({
+    // Index for audit queries by user and time
+    userTimeIdx: index("idx_drive_access_logs_user_time").on(
+      table.userId,
+      table.createdAt
+    ),
+    // Index for queries by asset
+    assetTimeIdx: index("idx_drive_access_logs_asset_time").on(
+      table.assetId,
+      table.createdAt
+    ),
+    // Index for queries by client
+    clientTimeIdx: index("idx_drive_access_logs_client_time").on(
+      table.clientId,
+      table.createdAt
+    ),
+    // Index for error analysis
+    successIdx: index("idx_drive_access_logs_success").on(
+      table.success,
+      table.createdAt
+    ),
+    // Index for action-based queries
+    actionIdx: index("idx_drive_access_logs_action").on(table.action),
+  })
+);
+
 // Asset Management Tables
 export const assets = pgTable(
   "assets",
@@ -686,6 +761,14 @@ export const assets = pgTable(
     driveFileId: text("drive_file_id"),
     driveWebLink: text("drive_web_link"),
     driveLastModified: timestamp("drive_last_modified"),
+    driveOwner: text("drive_owner"), // Owner email or display name
+    driveThumbnailUrl: text("drive_thumbnail_url"), // Drive thumbnail URL
+    driveWebContentLink: text("drive_web_content_link"), // Direct download link
+    driveSharingMetadata: jsonb("drive_sharing_metadata"), // Comprehensive Drive sharing metadata
+    // Thumbnail cache fields
+    cachedThumbnailPath: text("cached_thumbnail_path"), // Local storage path for cached thumbnail
+    thumbnailCachedAt: timestamp("thumbnail_cached_at"), // When thumbnail was last cached
+    thumbnailCacheVersion: text("thumbnail_cache_version"), // Version hash to track Drive thumbnail changes
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
     deletedAt: timestamp("deleted_at"), // soft delete
@@ -1516,6 +1599,37 @@ export const insertGoogleDriveConnectionSchema = createInsertSchema(
     scopes: z.array(z.string()).optional(),
   });
 
+export const insertDriveAccessTokenSchema = createInsertSchema(driveAccessTokens)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    token: z.string().min(1),
+    assetId: z.number(),
+    userId: z.number(),
+    driveFileId: z.string().min(1),
+    action: z.enum(["read", "download", "thumbnail"]),
+    expiresAt: z.date(),
+    revokedAt: z.date().nullable().optional(),
+  });
+
+export const insertDriveFileAccessLogSchema = createInsertSchema(
+  driveFileAccessLogs
+)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    userId: z.number().optional(),
+    assetId: z.number().optional(),
+    driveFileId: z.string().optional(),
+    action: z.enum(["read", "download", "thumbnail", "import", "list"]),
+    success: z.boolean(),
+    errorCode: z.string().optional(),
+    errorMessage: z.string().optional(),
+    userRole: z.string().optional(),
+    clientId: z.number().optional(),
+    ipAddress: z.string().optional(),
+    userAgent: z.string().optional(),
+    metadata: z.record(z.unknown()).optional(),
+  });
+
 // Asset Management Insert Schemas
 export const insertAssetSchema = createInsertSchema(assets)
   .omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true })
@@ -1588,6 +1702,12 @@ export type InsertSlackAuditLog = z.infer<typeof insertSlackAuditLogSchema>;
 export type GoogleDriveConnection = typeof googleDriveConnections.$inferSelect;
 export type InsertGoogleDriveConnection = z.infer<
   typeof insertGoogleDriveConnectionSchema
+>;
+export type DriveAccessToken = typeof driveAccessTokens.$inferSelect;
+export type InsertDriveAccessToken = z.infer<typeof insertDriveAccessTokenSchema>;
+export type DriveFileAccessLog = typeof driveFileAccessLogs.$inferSelect;
+export type InsertDriveFileAccessLog = z.infer<
+  typeof insertDriveFileAccessLogSchema
 >;
 
 // Asset Management Types

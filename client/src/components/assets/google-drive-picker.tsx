@@ -1,6 +1,6 @@
 import { FileIcon, FolderIcon } from "lucide-react";
-import { type FC, useEffect, useRef, useState } from "react";
-import "@googleworkspace/drive-picker-element";
+import type { FC, ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,95 +11,149 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import type {
-  PickerAuthenticatedEvent,
-  PickerCanceledEvent,
-  PickerDocument,
-  PickerPickedEvent,
-} from "@/types/google-picker";
 
 interface GoogleDrivePickerProps {
   clientId: string;
   appId: string;
   oauthToken?: string;
-  onFilesSelected?: (files: PickerDocument[]) => void;
+  onFilesSelected?: (files: google.picker.DocumentObject[]) => void;
   allowFolders?: boolean;
   allowMultiple?: boolean;
   mimeTypes?: string[];
-  children?: React.ReactNode;
+  children?: ReactNode;
+}
+
+// Extend window to include google and gapi
+declare global {
+  interface Window {
+    google?: {
+      picker: {
+        PickerBuilder: new () => google.picker.PickerBuilder;
+        DocsView: new () => google.picker.DocsView;
+        DocsViewMode: {
+          LIST: google.picker.ViewId;
+          GRID: google.picker.ViewId;
+        };
+        ViewId: {
+          DOCS: google.picker.ViewId;
+        };
+        Action: {
+          PICKED: string;
+          CANCEL: string;
+        };
+        Feature: {
+          MULTISELECT_ENABLED: number;
+          NAV_HIDDEN: number;
+          MINE_ONLY: number;
+        };
+      };
+    };
+    gapi?: {
+      load: (api: string, callback: () => void) => void;
+    };
+  }
 }
 
 /**
  * Google Drive Picker Component
- * Embeds Google Picker API to allow users to select files and folders from their Drive
+ * Uses the native Google Picker API to allow users to select files from their Drive
  */
 export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
   clientId,
   appId,
-  oauthToken: initialOauthToken,
+  oauthToken,
   onFilesSelected,
   allowFolders = true,
   allowMultiple = true,
   mimeTypes,
   children,
 }) => {
-  const [isPickerVisible, setIsPickerVisible] = useState(false);
-  const [oauthToken, setOauthToken] = useState(initialOauthToken);
-  const [selectedFiles, setSelectedFiles] = useState<PickerDocument[]>([]);
+  const [isPickerLoaded, setIsPickerLoaded] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<
+    google.picker.DocumentObject[]
+  >([]);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const pickerRef = useRef<HTMLElement>(null);
 
-  // Import the web component
+  // Load Google Picker API
   useEffect(() => {
-    import("@googleworkspace/drive-picker-element");
+    const loadPickerApi = () => {
+      if (window.gapi) {
+        window.gapi.load("picker", () => {
+          setIsPickerLoaded(true);
+        });
+      } else {
+        // Load the GAPI script if not already loaded
+        const script = document.createElement("script");
+        script.src = "https://apis.google.com/js/api.js";
+        script.onload = () => {
+          window.gapi?.load("picker", () => {
+            setIsPickerLoaded(true);
+          });
+        };
+        document.body.appendChild(script);
+      }
+    };
+
+    loadPickerApi();
   }, []);
 
-  // Set up event listeners
-  useEffect(() => {
-    const picker = pickerRef.current;
-    if (!picker) return;
-
-    const handleAuthenticated = (event: Event) => {
-      const customEvent = event as PickerAuthenticatedEvent;
-      setOauthToken(customEvent.detail.token);
+  const handleOpenPicker = () => {
+    if (!oauthToken) {
       toast({
-        title: "Authenticated",
-        description: "Successfully authenticated with Google Drive",
+        title: "Authentication Required",
+        description: "Please connect your Google Drive account first",
+        variant: "destructive",
       });
-    };
+      return;
+    }
 
-    const handlePicked = (event: Event) => {
-      const customEvent = event as PickerPickedEvent;
-      const docs = customEvent.detail.docs || [];
+    if (!isPickerLoaded || !window.google) {
+      toast({
+        title: "Loading",
+        description: "Google Picker is still loading. Please try again.",
+      });
+      return;
+    }
+
+    const picker = new window.google.picker.PickerBuilder()
+      .setAppId(appId)
+      .setOAuthToken(oauthToken)
+      .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY || "")
+      .setCallback(pickerCallback)
+      .enableFeature(
+        allowMultiple
+          ? window.google.picker.Feature.MULTISELECT_ENABLED
+          : undefined
+      );
+
+    // Add docs view
+    const docsView = new window.google.picker.DocsView()
+      .setIncludeFolders(allowFolders)
+      .setSelectFolderEnabled(allowFolders)
+      .setMode(
+        allowMultiple
+          ? window.google.picker.DocsViewMode.LIST
+          : window.google.picker.DocsViewMode.GRID
+      );
+
+    if (mimeTypes && mimeTypes.length > 0) {
+      docsView.setMimeTypes(mimeTypes.join(","));
+    }
+
+    picker.addView(docsView);
+    picker.build().setVisible(true);
+  };
+
+  const pickerCallback = (data: google.picker.ResponseObject) => {
+    if (data.action === window.google?.picker.Action.PICKED) {
+      const docs = data.docs || [];
       setSelectedFiles(docs);
       setConfirmDialogOpen(true);
-    };
-
-    const handleCanceled = (event: Event) => {
-      const customEvent = event as PickerCanceledEvent;
-      setIsPickerVisible(false);
+    } else if (data.action === window.google?.picker.Action.CANCEL) {
       toast({
         title: "Cancelled",
         description: "File selection was cancelled",
       });
-    };
-
-    picker.addEventListener("picker:authenticated", handleAuthenticated);
-    picker.addEventListener("picker:picked", handlePicked);
-    picker.addEventListener("picker:canceled", handleCanceled);
-
-    return () => {
-      picker.removeEventListener("picker:authenticated", handleAuthenticated);
-      picker.removeEventListener("picker:picked", handlePicked);
-      picker.removeEventListener("picker:canceled", handleCanceled);
-    };
-  }, []);
-
-  const handleOpenPicker = () => {
-    setIsPickerVisible(true);
-    if (pickerRef.current) {
-      // @ts-expect-error - web component property
-      pickerRef.current.visible = true;
     }
   };
 
@@ -108,7 +162,6 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
       onFilesSelected(selectedFiles);
     }
     setConfirmDialogOpen(false);
-    setIsPickerVisible(false);
     setSelectedFiles([]);
   };
 
@@ -130,28 +183,30 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
   return (
     <>
       {children ? (
-        <div onClick={handleOpenPicker}>{children}</div>
+        // biome-ignore lint/a11y/useSemanticElements: Cannot use button element as it wraps another button component
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleOpenPicker}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleOpenPicker();
+            }
+          }}
+          className="inline-block cursor-pointer"
+        >
+          {children}
+        </div>
       ) : (
-        <Button onClick={handleOpenPicker} variant="outline">
+        <Button
+          onClick={handleOpenPicker}
+          variant="outline"
+          disabled={!oauthToken || !isPickerLoaded}
+        >
           Select from Google Drive
         </Button>
       )}
-
-      {/* Google Drive Picker Web Component */}
-      <drive-picker
-        ref={pickerRef}
-        client-id={clientId}
-        app-id={appId}
-        oauth-token={oauthToken}
-        style={{ display: isPickerVisible ? "block" : "none" }}
-      >
-        <drive-picker-docs-view
-          include-folders={allowFolders ? "true" : "false"}
-          select-folder-enabled={allowFolders ? "true" : "false"}
-          mode={allowMultiple ? "list" : "grid"}
-          mime-types={mimeTypes?.join(",")}
-        />
-      </drive-picker>
 
       {/* Confirmation Dialog */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
@@ -178,7 +233,7 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
                   </p>
                   {file.sizeBytes && (
                     <p className="text-xs text-muted-foreground">
-                      {(file.sizeBytes / 1024 / 1024).toFixed(2)} MB
+                      {(Number(file.sizeBytes) / 1024 / 1024).toFixed(2)} MB
                     </p>
                   )}
                 </div>

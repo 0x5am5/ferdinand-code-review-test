@@ -207,7 +207,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
 
       {/* Google Drive Status */}
       <div className="mb-6">
-        <GoogleDriveStatus />
+        <GoogleDriveStatus clientId={clientId} />
       </div>
 
       {/* Filters */}

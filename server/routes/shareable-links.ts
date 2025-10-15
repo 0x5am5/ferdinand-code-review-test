@@ -38,12 +38,9 @@ export function registerShareableLinksRoutes(app: Express) {
         );
 
         if (!permission.allowed) {
-          return res
-            .status(403)
-            .json({
-              message:
-                permission.reason || "Not authorized to share this asset",
-            });
+          return res.status(403).json({
+            message: permission.reason || "Not authorized to share this asset",
+          });
         }
 
         const { expiresIn } = req.body;
@@ -88,11 +85,9 @@ export function registerShareableLinksRoutes(app: Express) {
         );
 
         if (!permission.allowed) {
-          return res
-            .status(403)
-            .json({
-              message: permission.reason || "Not authorized to view this asset",
-            });
+          return res.status(403).json({
+            message: permission.reason || "Not authorized to view this asset",
+          });
         }
 
         const links = await getAssetShareableLinks(assetId);
@@ -131,12 +126,9 @@ export function registerShareableLinksRoutes(app: Express) {
         );
 
         if (!permission.allowed) {
-          return res
-            .status(403)
-            .json({
-              message:
-                permission.reason || "Not authorized to modify this asset",
-            });
+          return res.status(403).json({
+            message: permission.reason || "Not authorized to modify this asset",
+          });
         }
 
         await deactivateShareableLink(linkId);

@@ -210,7 +210,9 @@ export const handleGoogleCallback = async (
 ) => {
   try {
     if (!req.session.userId) {
-      return res.redirect("/dashboard?google_auth=error&reason=not_authenticated");
+      return res.redirect(
+        "/dashboard?google_auth=error&reason=not_authenticated"
+      );
     }
 
     const userIdNum = req.session.userId;
