@@ -1,0 +1,249 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 11,
+        "title": "Backend: Implement Google OAuth 2.0 Authentication Flow",
+        "description": "Enable secure OAuth 2.0 authentication for Google Drive access, requesting only the required scopes.",
+        "details": "Use Google OAuth 2.0 endpoints to initiate authentication. Request scopes 'drive.readonly' and 'drive.metadata.readonly'. Store access and refresh tokens encrypted in the database (e.g., AES-256). Implement automatic token refresh logic. Provide endpoints: POST /api/google-drive/auth (initiate), GET /api/google-drive/callback (handle redirect), DELETE /api/google-drive/disconnect (revoke and remove tokens).",
+        "testStrategy": "Unit test token storage and encryption. Simulate OAuth flow with test accounts. Validate token refresh and revocation. Confirm only required scopes are requested.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Google Cloud Project and OAuth 2.0 Credentials",
+            "description": "Set up a Google Cloud project, configure the OAuth consent screen, and generate OAuth 2.0 client credentials for your backend application.",
+            "dependencies": [],
+            "details": "Create a new project in Google Cloud Console. Configure the OAuth consent screen with your app name, support email, and branding. Generate OAuth client ID and secret for a web application, specifying authorized redirect URIs (e.g., /api/google-drive/callback). Ensure only the required scopes ('drive.readonly', 'drive.metadata.readonly') are listed in the consent screen configuration[1][2][6].",
+            "status": "done",
+            "testStrategy": "Verify project and credential creation in Google Cloud Console. Confirm that only the specified scopes are requested during consent."
+          },
+          {
+            "id": 2,
+            "title": "Implement OAuth 2.0 Initiation and Redirect Handling Endpoints",
+            "description": "Develop backend endpoints to initiate the Google OAuth 2.0 flow and handle the authorization callback.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement POST /api/google-drive/auth to construct and return the Google OAuth 2.0 authorization URL with the correct scopes, client ID, redirect URI, and state parameter for CSRF protection. Implement GET /api/google-drive/callback to receive the authorization code from Google, validate the state, and exchange the code for access and refresh tokens using the Google token endpoint[1][6]. Store the tokens temporarily during this exchange.",
+            "status": "done",
+            "testStrategy": "Unit test endpoint construction and state validation. Simulate the OAuth flow with test accounts and validate successful token exchange."
+          },
+          {
+            "id": 3,
+            "title": "Encrypt and Store Tokens in Database",
+            "description": "Securely encrypt access and refresh tokens using AES-256 and persist them in the database, linked to the user.",
+            "dependencies": [
+              2
+            ],
+            "details": "After obtaining tokens from Google, encrypt both access and refresh tokens using AES-256 before storing them in the database. Ensure each token record is associated with the correct user. Design the schema to support future token refreshes and revocations.",
+            "status": "done",
+            "testStrategy": "Unit test encryption and decryption logic. Validate that only encrypted tokens are stored and that they can be correctly retrieved and decrypted for the associated user."
+          },
+          {
+            "id": 4,
+            "title": "Implement Automatic Token Refresh Logic",
+            "description": "Add logic to detect expired access tokens and automatically refresh them using the stored refresh token.",
+            "dependencies": [
+              3
+            ],
+            "details": "Before making any Google Drive API call, check if the access token is expired. If so, use the refresh token to obtain a new access token from Google, encrypt the new tokens, and update the database. Ensure the refresh process is transparent to the end user and handles errors gracefully.",
+            "status": "done",
+            "testStrategy": "Unit test token expiration detection and refresh logic. Simulate token expiry and validate that new tokens are obtained and stored correctly. Test error handling for failed refresh attempts."
+          },
+          {
+            "id": 5,
+            "title": "Implement Token Revocation and Disconnection Endpoint",
+            "description": "Provide an endpoint to revoke Google OAuth 2.0 tokens and remove them from the database.",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement DELETE /api/google-drive/disconnect to revoke the access and refresh tokens via Google's revocation endpoint, then remove the encrypted tokens from the database. Ensure the user's Drive connection is fully terminated and any related resources are cleaned up.",
+            "status": "done",
+            "testStrategy": "Unit test token revocation and removal. Simulate disconnection and verify that tokens are revoked with Google and deleted from the database. Confirm that subsequent API calls fail as expected."
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Frontend: Integrate Google OAuth Consent and Connection UI",
+        "description": "Create UI components for connecting/disconnecting Google Drive and handling OAuth consent.",
+        "details": "Implement 'Connect Google Drive' button in Brand Assets. Show OAuth consent modal explaining permissions. Handle redirect and token exchange on frontend, passing tokens securely to backend. Display Drive connection status in user settings. Provide 'Disconnect Drive' option.",
+        "testStrategy": "UI tests for button/modal rendering. Simulate OAuth flow and verify correct status updates. Test disconnect flow and error handling.",
+        "priority": "high",
+        "dependencies": [
+          11
+        ],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement 'Connect Google Drive' Button in Brand Assets UI",
+            "description": "Add a button to the Brand Assets section that initiates the Google OAuth connection flow.",
+            "dependencies": [],
+            "details": "Create a visually distinct 'Connect Google Drive' button in the Brand Assets UI. When clicked, this button should trigger the OAuth flow by redirecting the user to Google's authorization endpoint with the correct client ID, scopes, and redirect URI. Ensure the button is accessible and follows UI guidelines.",
+            "status": "done",
+            "testStrategy": "Verify button renders correctly and triggers OAuth redirect when clicked. Check accessibility and UI consistency."
+          },
+          {
+            "id": 2,
+            "title": "Display OAuth Consent Modal Explaining Permissions",
+            "description": "Show a modal dialog before redirecting to Google, explaining what permissions will be requested and why.",
+            "dependencies": [
+              1
+            ],
+            "details": "Implement a modal that appears when the user clicks 'Connect Google Drive'. The modal should clearly list the permissions being requested (e.g., access to Drive files) and provide a brief explanation for each. Include options to proceed or cancel. Only proceed to the OAuth redirect if the user confirms.",
+            "status": "done",
+            "testStrategy": "Test that the modal appears on button click, displays correct permission info, and only proceeds to OAuth if user confirms."
+          },
+          {
+            "id": 3,
+            "title": "Handle OAuth Redirect and Token Exchange on Frontend",
+            "description": "Process the OAuth redirect from Google, validate state, and securely send the authorization code to the backend for token exchange.",
+            "dependencies": [
+              2
+            ],
+            "details": "Implement logic to handle the redirect URI after Google authentication. Parse the authorization code and state from the URL, validate the state against a locally stored CSRF token, and send the code to the backend via a secure API call for token exchange. Handle errors and display appropriate messages to the user.",
+            "status": "done",
+            "testStrategy": "Simulate OAuth redirect, validate state handling, and ensure code is sent to backend. Test error handling for invalid or missing parameters."
+          },
+          {
+            "id": 4,
+            "title": "Display Google Drive Connection Status in User Settings",
+            "description": "Show the current Google Drive connection status in the user settings area, including connected account info and connection state.",
+            "dependencies": [
+              3
+            ],
+            "details": "Fetch and display the user's Google Drive connection status in the user settings UI. If connected, show account details (e.g., email, avatar) and a 'Disconnect Drive' option. If not connected, prompt to connect. Update status reactively based on connection changes.",
+            "status": "done",
+            "testStrategy": "Test status display for both connected and disconnected states. Verify UI updates after connection or disconnection."
+          },
+          {
+            "id": 5,
+            "title": "Implement 'Disconnect Drive' Option and Handle Revocation",
+            "description": "Provide a way for users to disconnect their Google Drive account and revoke access from the frontend.",
+            "dependencies": [
+              4
+            ],
+            "details": "Add a 'Disconnect Drive' button in user settings. When clicked, call the backend to revoke the user's tokens and update the frontend state to reflect the disconnected status. Ensure all Drive-related UI is updated accordingly and handle any errors gracefully.",
+            "status": "done",
+            "testStrategy": "Test disconnect flow, verify backend revocation is triggered, and ensure UI updates to show disconnected state. Check for error handling."
+          }
+        ]
+      },
+      {
+        "id": 13,
+        "title": "Frontend: Embed Google Drive Picker for File/Folder Selection",
+        "description": "Integrate Google Picker API to allow users to select files and folders from their Drive.",
+        "details": "Use Google Picker API to display Drive UI in a modal. Allow selection of individual files, multiple files, and folders. Show file previews and filter by type. Pass selected file/folder IDs to backend for import.",
+        "testStrategy": "UI tests for picker modal. Validate selection and preview functionality. Test file type filtering and bulk selection.",
+        "priority": "high",
+        "dependencies": [
+          12
+        ],
+        "status": "in-progress",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Backend: Implement Google Drive API Integration for Metadata Retrieval",
+        "description": "Fetch file and folder metadata from Google Drive using API v3.",
+        "details": "Use Google Drive API v3 to retrieve metadata for selected files/folders: file ID, name, MIME type, size, owner, last modified date, thumbnail URL, direct link. Flatten folder imports (no hierarchy). Implement GET /api/google-drive/files/:id endpoint for metadata retrieval.",
+        "testStrategy": "Unit and integration tests for API calls. Mock Drive responses for edge cases. Validate metadata completeness and accuracy.",
+        "priority": "high",
+        "dependencies": [
+          11,
+          13
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Backend: Store Imported Drive File References and Metadata",
+        "description": "Extend database schema to store Drive file references and metadata, associating with Ferdinand users.",
+        "details": "Update 'brand_assets' table to include drive_file_id, drive_owner, drive_modified_at, is_drive_file, thumbnail_url, direct_drive_link. Create 'google_drive_connections' table for user-token mapping. Associate imported files with importing user. Map files to Brand Assets with metadata.",
+        "testStrategy": "Database migration tests. Validate schema changes and data integrity. Test association logic for users and assets.",
+        "priority": "high",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Backend: Enforce Ferdinand Role-Based Permissions on Imported Drive Files",
+        "description": "Apply Ferdinand's permission model to imported Drive files, referencing Drive sharing metadata.",
+        "details": "On import, set Ferdinand ownership to importing user. Apply role-based access: Guest (view only shared), Standard (view all, edit own), Admin/Super Admin (full access). Store Drive sharing status for reference. Integrate permission checks in API endpoints.",
+        "testStrategy": "Permission unit tests. Simulate different user roles and verify access. Test edge cases for Drive sharing status.",
+        "priority": "high",
+        "dependencies": [
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Backend: Implement Secure File Access and Thumbnail Caching",
+        "description": "Generate secure URLs for accessing Drive files and cache thumbnails for performance.",
+        "details": "Use Drive API to generate direct links and fetch thumbnails. Store cached thumbnails in CDN or local cache. Validate Drive permissions before serving files. Handle permission errors gracefully and return actionable error messages.",
+        "testStrategy": "Integration tests for file access and thumbnail retrieval. Test cache hit/miss scenarios. Simulate permission errors and validate error responses.",
+        "priority": "medium",
+        "dependencies": [
+          16
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Frontend: Display Imported Drive Files in Brand Assets Grid",
+        "description": "Render Drive-sourced files in Brand Assets grid with metadata, thumbnails, and visual indicators.",
+        "details": "Show file thumbnails, metadata (last modified, owner, size), and 'Imported from Google Drive' badge/icon. Provide 'Open in Google Drive' link for editing. Implement filter/tag for Drive-sourced files. Display import progress indicator for bulk imports.",
+        "testStrategy": "UI tests for grid rendering, badge/icon display, and metadata accuracy. Test filter/tag functionality and progress indicator.",
+        "priority": "medium",
+        "dependencies": [
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Backend: Implement Error Handling and Rate Limiting for Drive API Endpoints",
+        "description": "Handle Drive API errors, expired tokens, permission issues, and enforce rate limiting.",
+        "details": "Wrap all Drive API calls in try-catch blocks. Detect and handle expired tokens (trigger refresh). Return clear, actionable error messages for permission issues. Implement rate limiting on Drive API endpoints to prevent quota exhaustion.",
+        "testStrategy": "Unit and integration tests for error scenarios. Simulate API quota exhaustion and permission errors. Validate rate limiting logic.",
+        "priority": "medium",
+        "dependencies": [
+          14
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Security: Encrypt OAuth Tokens and Validate Drive Permissions",
+        "description": "Ensure all OAuth tokens are encrypted at rest and Drive file permissions are validated before serving.",
+        "details": "Use strong encryption (e.g., AES-256) for token storage. Validate Drive file permissions on every access request. Use HTTPS for all Drive API calls. Store only minimal necessary Drive data.",
+        "testStrategy": "Security audit of token storage and API calls. Penetration tests for permission validation. Verify HTTPS enforcement.",
+        "priority": "high",
+        "dependencies": [
+          11,
+          15
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-10-15T11:26:16.620Z",
+      "updated": "2025-10-15T14:03:47.387Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

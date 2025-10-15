@@ -1,9 +1,17 @@
 import { Upload } from "lucide-react";
-import { type DragEvent, type FC, useCallback, useState } from "react";
+import {
+  type DragEvent,
+  type FC,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { AssetDetailModal } from "@/components/assets/asset-detail-modal";
 import { AssetFilters } from "@/components/assets/asset-filters";
 import { AssetList } from "@/components/assets/asset-list";
 import { AssetUpload } from "@/components/assets/asset-upload";
+import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
+import { GoogleDriveStatus } from "@/components/assets/google-drive-status";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
 import {
   type Asset,
   type AssetFilters as Filters,
@@ -24,6 +33,7 @@ import {
   useBulkUpdateAssetsMutation,
   useDeleteAssetMutation,
 } from "@/lib/queries/assets";
+import { useGoogleDriveConnectionQuery } from "@/lib/queries/google-drive";
 
 interface AssetManagerProps {
   clientId: number;
@@ -48,6 +58,43 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   const deleteMutation = useDeleteAssetMutation();
   const bulkDeleteMutation = useBulkDeleteAssetsMutation();
   const bulkUpdateMutation = useBulkUpdateAssetsMutation();
+
+  // Invalidate Google Drive connection query when coming back from OAuth
+  const googleDriveQuery = useGoogleDriveConnectionQuery();
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const googleAuth = params.get("google_auth");
+
+    if (googleAuth === "success") {
+      toast({
+        title: "Success",
+        description: "Google Drive connected successfully",
+      });
+      // Invalidate the Google Drive connection query to update the UI
+      googleDriveQuery.refetch();
+      // Clean up URL params
+      params.delete("google_auth");
+      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+      window.history.replaceState({}, "", newUrl);
+    } else if (googleAuth === "error") {
+      const reason = params.get("reason");
+      toast({
+        title: "Connection failed",
+        description:
+          reason === "not_authenticated"
+            ? "Please log in to connect Google Drive"
+            : "Failed to connect Google Drive. Please try again.",
+        variant: "destructive",
+      });
+      // Clean up URL params
+      params.delete("google_auth");
+      params.delete("reason");
+      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+      window.history.replaceState({}, "", newUrl);
+    }
+  }, [googleDriveQuery]);
 
   // Filter assets by clientId on the client side
   const assets = allAssets.filter((asset) => asset.clientId === clientId);
@@ -143,16 +190,24 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
             Manage and organize your brand assets
           </p>
         </div>
-        <AssetUpload
-          open={uploadDialogOpen}
-          onOpenChange={(open) => {
-            setUploadDialogOpen(open);
-            if (!open) {
-              setDroppedFiles([]);
-            }
-          }}
-          initialFiles={droppedFiles}
-        />
+        <div className="flex gap-2">
+          <GoogleDriveConnect clientId={clientId} />
+          <AssetUpload
+            open={uploadDialogOpen}
+            onOpenChange={(open) => {
+              setUploadDialogOpen(open);
+              if (!open) {
+                setDroppedFiles([]);
+              }
+            }}
+            initialFiles={droppedFiles}
+          />
+        </div>
+      </div>
+
+      {/* Google Drive Status */}
+      <div className="mb-6">
+        <GoogleDriveStatus />
       </div>
 
       {/* Filters */}

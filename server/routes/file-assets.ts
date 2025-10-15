@@ -19,6 +19,7 @@ import { csrfProtection } from "../middlewares/security-headers";
 import { upload, virusScan } from "../middlewares/upload";
 import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
+import { checkAssetPermission } from "../services/asset-permissions";
 import { deleteThumbnails } from "../services/thumbnail";
 import {
   deleteFile,
@@ -29,7 +30,6 @@ import {
   validateFileSize,
   validateMimeType,
 } from "../storage/index";
-import { checkAssetPermission } from "../utils/asset-permissions";
 
 export function registerFileAssetRoutes(app: Express) {
   // Global list endpoint for file assets

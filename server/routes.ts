@@ -1,4 +1,5 @@
 import type { Express, Request } from "express";
+import type { OAuth2Client } from "google-auth-library";
 import { registerApiTokenRoutes } from "./routes/api-tokens";
 import { registerAssetRoutes } from "./routes/assets";
 import { registerAuthRoutes } from "./routes/auth";
@@ -8,6 +9,7 @@ import { registerFigmaRoutes } from "./routes/figma";
 import { registerFileAssetCategoryRoutes } from "./routes/file-asset-categories";
 import { registerFileAssetTagRoutes } from "./routes/file-asset-tags";
 import { registerFileAssetRoutes } from "./routes/file-assets";
+import { registerGoogleDriveRoutes } from "./routes/google-drive";
 import { registerHiddenSectionsRoutes } from "./routes/hidden-sections";
 import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
 import { registerInvitationRoutes } from "./routes/invitations";
@@ -21,12 +23,20 @@ import { registerUserRoutes } from "./routes/users";
 declare module "express-session" {
   interface SessionData {
     userId: number;
+    googleToken?: {
+      access_token: string;
+      refresh_token?: string;
+      scope: string;
+      token_type: string;
+      expiry_date: number;
+    };
   }
 }
 
 // Add request augmentation for clientId parameter
 export interface RequestWithClientId extends Request {
   clientId?: number;
+  googleAuth?: OAuth2Client;
 }
 
 export function registerRoutes(app: Express) {
@@ -90,6 +100,7 @@ export function registerRoutes(app: Express) {
   registerHiddenSectionsRoutes(app);
   registerTypeScalesRoutes(app);
   registerFigmaRoutes(app);
+  registerGoogleDriveRoutes(app);
   registerSlackRoutes(app);
   registerSlackOAuthRoutes(app);
   registerApiTokenRoutes(app);

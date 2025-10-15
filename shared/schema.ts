@@ -641,6 +641,26 @@ export const slackAuditLogs = pgTable(
   })
 );
 
+// Google Drive Integration Tables
+export const googleDriveConnections = pgTable("google_drive_connections", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  encryptedAccessToken: text("encrypted_access_token").notNull(),
+  encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  scopes: text("scopes")
+    .array()
+    .default([
+      "https://www.googleapis.com/auth/drive.readonly",
+      "https://www.googleapis.com/auth/drive.metadata.readonly",
+    ]),
+  connectedAt: timestamp("connected_at").defaultNow(),
+  lastUsedAt: timestamp("last_used_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Asset Management Tables
 export const assets = pgTable(
   "assets",
@@ -662,6 +682,10 @@ export const assets = pgTable(
     })
       .notNull()
       .default("shared"),
+    isGoogleDrive: boolean("is_google_drive").default(false),
+    driveFileId: text("drive_file_id"),
+    driveWebLink: text("drive_web_link"),
+    driveLastModified: timestamp("drive_last_modified"),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
     deletedAt: timestamp("deleted_at"), // soft delete
@@ -770,6 +794,7 @@ export const assetPublicLinks = pgTable(
       .notNull()
       .references(() => users.id),
     expiresAt: timestamp("expires_at"), // null = no expiry
+    deletedAt: timestamp("deleted_at"), // soft delete
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => ({
@@ -1478,6 +1503,19 @@ export const insertSlackAuditLogSchema = createInsertSchema(slackAuditLogs)
     responseTimeMs: z.number().optional(),
   });
 
+// Google Drive Integration Insert Schemas
+export const insertGoogleDriveConnectionSchema = createInsertSchema(
+  googleDriveConnections
+)
+  .omit({ id: true, connectedAt: true, lastUsedAt: true, updatedAt: true })
+  .extend({
+    userId: z.number(),
+    encryptedAccessToken: z.string().min(1),
+    encryptedRefreshToken: z.string().min(1),
+    tokenExpiresAt: z.date().optional(),
+    scopes: z.array(z.string()).optional(),
+  });
+
 // Asset Management Insert Schemas
 export const insertAssetSchema = createInsertSchema(assets)
   .omit({ id: true, createdAt: true, updatedAt: true, deletedAt: true })
@@ -1545,6 +1583,12 @@ export type InsertSlackConversation = z.infer<
   typeof insertSlackConversationSchema
 >;
 export type InsertSlackAuditLog = z.infer<typeof insertSlackAuditLogSchema>;
+
+// Google Drive Integration Types
+export type GoogleDriveConnection = typeof googleDriveConnections.$inferSelect;
+export type InsertGoogleDriveConnection = z.infer<
+  typeof insertGoogleDriveConnectionSchema
+>;
 
 // Asset Management Types
 export type Asset = typeof assets.$inferSelect;

@@ -1,0 +1,84 @@
+## **Problem Statement**
+
+Ferdinand users need a centralized way to upload, organize, and share brand assets (files, documents, and design resources). Current workflows rely on scattered Google Drive links, email attachments, and local file storage, which leads to lost files, duplicated work, and inconsistent brand usage.
+
+## **Goals**
+
+- Provide a dedicated "Brand Assets" section for file management.
+- Support direct file uploads and Google Drive references.
+- Enable flexible tagging and categorization without folder complexity.
+- Allow role-based permissions and private/public asset settings.
+- Make files searchable, with previews where possible.
+
+## **User Stories**
+
+- **As a Designer**, I want to upload Illustrator, Photoshop, or PDF files so my team can access the most current brand assets.
+- **As a Marketing Manager**, I want to pull in a Google Drive folder of presentation decks so I can share them with my agency without manual uploads.
+- **As an Editor**, I want to tag files with "Photography" or "Slide Deck" so they're easy to find later.
+- **As a Guest**, I only want to see files that are explicitly shared with me.
+- **As an Admin**, I want full CRUD access to all files so I can manage the brand library.
+
+## **Key Features**
+
+1. **File Uploads**
+    - Support any file type.
+    - Special handling for: PDF, AI, PSD, INDD, ZIP, video, Figma links (with preview or placeholder).
+    - Max file size TBD (recommend 500MB cap for MVP).
+2. **Google Drive Integration**
+    - OAuth-based Drive picker.
+    - User selects file(s) or folder.
+    - For folders: import is flattened (all files referenced, no folder hierarchy).
+    - Ferdinand stores references, not copies.
+3. **Tagging & Categorization**
+    - Default categories: Documents, Spreadsheets, Slide Decks, Design Assets, Photography.
+    - Users can add custom tags.
+    - Categories + tags replace folders for organization.
+4. **Permissions & Sharing**
+    - Align with existing role model:
+        - **Guest**: View only shared files.
+        - **Standard**: CRUD for own files; view/download others; edit/delete requires owner approval.
+        - **Admin/Super Admin**: Full CRUD.
+    - File privacy option at upload: *Private (restricted)* vs *Shared (team visible)*.
+    - Generate shareable links (internal only).
+5. **Search & Discovery**
+    - Elastic search with instant results.
+    - Searchable by name, tags, categories.
+    - Results grouped by category (Spotlight-style).
+    - Future: filters by type/date/uploader.
+6. **UI/UX**
+    - New sidebar section: **Brand Assets**.
+    - Grid/list toggle with thumbnails/previews (PDF, image, video).
+    - Placeholder for unsupported file types.
+    - Upload button with drag-and-drop.
+
+## **Technical Requirements**
+
+- **Storage**: Ferdinand hosts uploaded files (S3/GCP bucket).
+- **References**: Google Drive links stored with metadata (name, type, owner, last modified).
+- **Auth**: Google OAuth for Drive access.
+- **Search**: ElasticSearch (or equivalent) integrated with tags/categories.
+- **Preview**: Image thumbnails + PDF previews via service (e.g., PDF.js).
+- **Constraints**: MVP excludes folder hierarchy + versioning.
+
+## **Success Criteria**
+
+- Users can upload at least 5 different file types without errors.
+- Google Drive import works reliably for both individual files and folders.
+- Files are searchable by tag, name, or category in under 1 second for <5,000 assets.
+- Permissions are enforced according to user roles.
+- UI loads previews/thumbnails for at least 80% of uploaded file types.
+
+## **Future Enhancements (V2+)**
+
+- File versioning with rollback.
+- Folder support + nested hierarchy.
+- Advanced filters (date range, uploader).
+- External share links with expiration.
+- Bulk upload + bulk tagging.
+- Preview for Figma/Adobe cloud links.
+
+## **Non-Goals**
+
+- Real-time sync with Google Drive (out of scope).
+- Video streaming/transcoding.
+- Dark mode previews.

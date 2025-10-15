@@ -26,10 +26,10 @@ export function securityHeaders(
   const csp = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Vite in dev mode needs unsafe-eval
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://p.typekit.net",
+    "font-src 'self' https://fonts.gstatic.com https://use.typekit.net https://r2cdn.perplexity.ai data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://use.typekit.net https://www.googleapis.com",
+    "connect-src 'self' https://use.typekit.net https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com",
     "frame-ancestors 'none'",
   ].join("; ");
 
