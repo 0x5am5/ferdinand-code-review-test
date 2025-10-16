@@ -523,33 +523,39 @@ export function registerGoogleDriveRoutes(app: Express) {
     "/api/drive/secure/:fileId",
     driveFileAccessRateLimit,
     async (req: RequestWithClientId, res) => {
-      const {logDriveFileAccess, logFailedAccess} = await import(
+      const { logDriveFileAccess, logFailedAccess } = await import(
         "../services/drive-audit-logger"
       );
-      const {handleValidationError, handleAuthError, handleFileNotFound, handlePermissionDenied, handleDriveApiError, DriveErrorCode} = await import(
-        "../services/drive-error-handler"
-      );
+      const { handleValidationError, handleAuthError, DriveErrorCode } =
+        await import("../services/drive-error-handler");
+
+      // Extract params at top level so they're accessible in catch block
+      const { fileId } = req.params;
+      const { token, action = "read" } = req.query;
 
       try {
-        const { fileId } = req.params;
-        const { token, action = "read" } = req.query;
-
         if (!token || typeof token !== "string") {
-          await logFailedAccess({
-            driveFileId: fileId,
-            action: action as "read" | "download",
-            errorCode: DriveErrorCode.MISSING_TOKEN,
-            errorMessage: "Access token is required",
-          }, req);
+          await logFailedAccess(
+            {
+              driveFileId: fileId,
+              action: action as "read" | "download",
+              errorCode: DriveErrorCode.MISSING_TOKEN,
+              errorMessage: "Access token is required",
+            },
+            req
+          );
           return handleValidationError(res, DriveErrorCode.MISSING_TOKEN);
         }
 
         if (!fileId) {
-          await logFailedAccess({
-            action: action as "read" | "download",
-            errorCode: DriveErrorCode.MISSING_FILE_ID,
-            errorMessage: "File ID is required in the request",
-          }, req);
+          await logFailedAccess(
+            {
+              action: action as "read" | "download",
+              errorCode: DriveErrorCode.MISSING_FILE_ID,
+              errorMessage: "File ID is required in the request",
+            },
+            req
+          );
           return handleValidationError(res, DriveErrorCode.MISSING_FILE_ID);
         }
 
@@ -558,12 +564,15 @@ export function registerGoogleDriveRoutes(app: Express) {
           "../services/drive-secure-access"
         );
         if (!isValidDriveFileId(fileId)) {
-          await logFailedAccess({
-            driveFileId: fileId,
-            action: action as "read" | "download",
-            errorCode: DriveErrorCode.INVALID_FILE_ID,
-            errorMessage: "Invalid Drive file ID format",
-          }, req);
+          await logFailedAccess(
+            {
+              driveFileId: fileId,
+              action: action as "read" | "download",
+              errorCode: DriveErrorCode.INVALID_FILE_ID,
+              errorMessage: "Invalid Drive file ID format",
+            },
+            req
+          );
           return handleValidationError(res, DriveErrorCode.INVALID_FILE_ID);
         }
 
@@ -574,25 +583,35 @@ export function registerGoogleDriveRoutes(app: Express) {
         const tokenData = await validateSecureToken(token);
 
         if (!tokenData) {
-          await logFailedAccess({
-            driveFileId: fileId,
-            action: action as "read" | "download",
-            errorCode: DriveErrorCode.INVALID_TOKEN,
-            errorMessage: "Access link expired or invalid",
-          }, req);
+          await logFailedAccess(
+            {
+              driveFileId: fileId,
+              action: action as "read" | "download",
+              errorCode: DriveErrorCode.INVALID_TOKEN,
+              errorMessage: "Access link expired or invalid",
+            },
+            req
+          );
           return handleAuthError(res, DriveErrorCode.INVALID_TOKEN);
         }
 
         // Verify file ID matches
         if (tokenData.fileId !== fileId) {
-          await logFailedAccess({
-            userId: tokenData.userId,
-            driveFileId: fileId,
-            action: action as "read" | "download",
-            errorCode: DriveErrorCode.TOKEN_FILE_MISMATCH,
-            errorMessage: "Token not valid for requested file",
-          }, req);
-          return handleAuthError(res, DriveErrorCode.TOKEN_FILE_MISMATCH, "This access token is not valid for the requested file.");
+          await logFailedAccess(
+            {
+              userId: tokenData.userId,
+              driveFileId: fileId,
+              action: action as "read" | "download",
+              errorCode: DriveErrorCode.TOKEN_FILE_MISMATCH,
+              errorMessage: "Token not valid for requested file",
+            },
+            req
+          );
+          return handleAuthError(
+            res,
+            DriveErrorCode.TOKEN_FILE_MISMATCH,
+            "This access token is not valid for the requested file."
+          );
         }
 
         // Verify action matches (if specified in token)
@@ -601,18 +620,25 @@ export function registerGoogleDriveRoutes(app: Express) {
           action !== tokenData.action &&
           action !== "read"
         ) {
-          await logFailedAccess({
-            userId: tokenData.userId,
-            driveFileId: fileId,
-            action: action as "read" | "download",
-            errorCode: DriveErrorCode.ACTION_NOT_PERMITTED,
-            errorMessage: `Token only allows '${tokenData.action}' access`,
-            metadata: {
-              allowedAction: tokenData.action,
-              requestedAction: action as string,
-            }
-          }, req);
-          return handleAuthError(res, DriveErrorCode.ACTION_NOT_PERMITTED, `This token only allows '${tokenData.action}' access. Requested action '${action}' is not permitted.`);
+          await logFailedAccess(
+            {
+              userId: tokenData.userId,
+              driveFileId: fileId,
+              action: action as "read" | "download",
+              errorCode: DriveErrorCode.ACTION_NOT_PERMITTED,
+              errorMessage: `Token only allows '${tokenData.action}' access`,
+              metadata: {
+                allowedAction: tokenData.action,
+                requestedAction: action as string,
+              },
+            },
+            req
+          );
+          return handleAuthError(
+            res,
+            DriveErrorCode.ACTION_NOT_PERMITTED,
+            `This token only allows '${tokenData.action}' access. Requested action '${action}' is not permitted.`
+          );
         }
 
         // Find the asset to verify permissions
@@ -772,19 +798,22 @@ export function registerGoogleDriveRoutes(app: Express) {
           .where(eq(users.id, tokenData.userId));
 
         // Log successful access
-        await logDriveFileAccess({
-          userId: tokenData.userId,
-          assetId: asset.id,
-          driveFileId: fileId,
-          action: action as "read" | "download",
-          success: true,
-          userRole: user?.role,
-          clientId: asset.clientId,
-          metadata: {
-            fileSize: buffer.length,
-            mimeType: asset.fileType,
-          }
-        }, req);
+        await logDriveFileAccess(
+          {
+            userId: tokenData.userId,
+            assetId: asset.id,
+            driveFileId: fileId,
+            action: action as "read" | "download",
+            success: true,
+            userRole: user?.role,
+            clientId: asset.clientId,
+            metadata: {
+              fileSize: buffer.length,
+              mimeType: asset.fileType,
+            },
+          },
+          req
+        );
 
         // Set appropriate headers
         res.setHeader("Content-Type", asset.fileType);
@@ -805,12 +834,15 @@ export function registerGoogleDriveRoutes(app: Express) {
           error instanceof Error ? error.message : "Unknown error";
 
         // Log failed access
-        await logFailedAccess({
-          driveFileId: fileId,
-          action: action as "read" | "download",
-          errorCode: DriveErrorCode.FILE_ACCESS_ERROR,
-          errorMessage: errorMessage,
-        }, req);
+        await logFailedAccess(
+          {
+            driveFileId: fileId,
+            action: action as "read" | "download",
+            errorCode: DriveErrorCode.FILE_ACCESS_ERROR,
+            errorMessage: errorMessage,
+          },
+          req
+        );
 
         res.status(500).json({
           message:
@@ -862,7 +894,8 @@ export function registerGoogleDriveRoutes(app: Express) {
         );
         if (!isValidDriveFileId(fileId)) {
           return res.status(400).json({
-            message: "Invalid Drive file ID format. The file ID contains invalid characters.",
+            message:
+              "Invalid Drive file ID format. The file ID contains invalid characters.",
             code: "INVALID_FILE_ID",
           });
         }

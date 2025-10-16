@@ -115,66 +115,53 @@ const ERROR_MESSAGES: Record<DriveErrorCodeType, string> = {
     "You don't have permission to access this file. Contact your administrator for access.",
   DRIVE_PERMISSION_DENIED:
     "You don't have permission to access this Drive file.",
-  TOKEN_FILE_MISMATCH:
-    "This access token is not valid for the requested file.",
+  TOKEN_FILE_MISMATCH: "This access token is not valid for the requested file.",
   ACTION_NOT_PERMITTED:
     "This token only allows specific actions. The requested action is not permitted.",
-  PERMISSION_REVOKED:
-    "You no longer have permission to access this file.",
+  PERMISSION_REVOKED: "You no longer have permission to access this file.",
   ROLE_INSUFFICIENT:
     "Your role does not have sufficient permissions for this action.",
   INSUFFICIENT_SCOPES:
     "Your Google Drive connection does not have the required permissions. Please reconnect.",
 
   // Authentication errors
-  UNAUTHORIZED:
-    "Authentication required. Please sign in to view this file.",
+  UNAUTHORIZED: "Authentication required. Please sign in to view this file.",
   DRIVE_AUTH_REQUIRED:
     "Google Drive authentication required. Please connect your Google Drive account.",
   INVALID_TOKEN:
     "Your access link has expired or is invalid. Please request a new link.",
-  TOKEN_EXPIRED:
-    "Your access link has expired. Please request a new link.",
-  TOKEN_REVOKED:
-    "Your access has been revoked. Please request a new link.",
+  TOKEN_EXPIRED: "Your access link has expired. Please request a new link.",
+  TOKEN_REVOKED: "Your access has been revoked. Please request a new link.",
   TOKEN_REFRESH_FAILED:
     "Your Google Drive session has expired. Please reconnect your Drive account.",
 
   // File errors
-  FILE_NOT_FOUND:
-    "File not found. It may have been deleted.",
+  FILE_NOT_FOUND: "File not found. It may have been deleted.",
   ASSET_NOT_FOUND:
     "Asset not found. The file may have been deleted or you don't have access.",
   DRIVE_FILE_NOT_FOUND:
     "File not found in Google Drive. It may have been deleted or moved.",
   DRIVE_ACCESS_DENIED:
     "Access denied by Google Drive. You may no longer have permission to this file.",
-  NO_THUMBNAIL:
-    "No thumbnail available for this file type",
+  NO_THUMBNAIL: "No thumbnail available for this file type",
   FOLDER_NOT_FOUND:
     "Folder not found in Google Drive. It may have been deleted or moved.",
 
   // Validation errors
-  MISSING_FILE_ID:
-    "File ID is required in the request",
+  MISSING_FILE_ID: "File ID is required in the request",
   INVALID_FILE_ID:
     "Invalid Drive file ID format. The file ID contains invalid characters.",
-  MISSING_TOKEN:
-    "Access token is required. Please request a new secure URL.",
-  INVALID_SIZE:
-    "Invalid thumbnail size. Must be 'small', 'medium', or 'large'",
-  INVALID_REQUEST:
-    "Invalid request to Google Drive API",
+  MISSING_TOKEN: "Access token is required. Please request a new secure URL.",
+  INVALID_SIZE: "Invalid thumbnail size. Must be 'small', 'medium', or 'large'",
+  INVALID_REQUEST: "Invalid request to Google Drive API",
 
   // Rate limiting errors
   RATE_LIMIT_EXCEEDED:
     "Too many requests to Google Drive. Please try again later.",
   USER_RATE_LIMIT_EXCEEDED:
     "You have exceeded your Google Drive request limit. Please try again later.",
-  QUOTA_EXCEEDED:
-    "Daily API quota exceeded. Please try again tomorrow.",
-  STORAGE_QUOTA_EXCEEDED:
-    "Storage quota exceeded in Google Drive.",
+  QUOTA_EXCEEDED: "Daily API quota exceeded. Please try again tomorrow.",
+  STORAGE_QUOTA_EXCEEDED: "Storage quota exceeded in Google Drive.",
 
   // System errors
   DRIVE_CONNECTION_NOT_FOUND:
@@ -183,24 +170,18 @@ const ERROR_MESSAGES: Record<DriveErrorCodeType, string> = {
     "Unable to obtain Drive access token. Please reconnect your Drive account.",
   FILE_ACCESS_ERROR:
     "Failed to access Drive file. Please try again later or request a new link.",
-  THUMBNAIL_FETCH_ERROR:
-    "Failed to fetch thumbnail. Please try again later.",
-  DRIVE_API_ERROR:
-    "Google Drive API error. Please try again later.",
+  THUMBNAIL_FETCH_ERROR: "Failed to fetch thumbnail. Please try again later.",
+  DRIVE_API_ERROR: "Google Drive API error. Please try again later.",
   SERVICE_UNAVAILABLE:
     "Google Drive service is temporarily unavailable. Please try again later.",
-  TIMEOUT:
-    "Request to Google Drive timed out. Please try again.",
-  BACKEND_ERROR:
-    "An unexpected error occurred. Please try again later.",
+  TIMEOUT: "Request to Google Drive timed out. Please try again.",
+  BACKEND_ERROR: "An unexpected error occurred. Please try again later.",
 
   // Special errors
-  FILE_TOO_LARGE:
-    "File is too large to process.",
+  FILE_TOO_LARGE: "File is too large to process.",
   SHARED_DRIVE_ERROR:
     "Error accessing shared Drive. You may not have permission.",
-  EXPORT_FORMAT_ERROR:
-    "Unable to export file in the requested format.",
+  EXPORT_FORMAT_ERROR: "Unable to export file in the requested format.",
 };
 
 // ============================================================================
@@ -238,7 +219,9 @@ function extractGoogleApiError(error: GaxiosError): {
       return {
         reason: firstError.reason as string | undefined,
         domain: firstError.domain as string | undefined,
-        message: (errorObj.message as string) || (firstError.message as string | undefined),
+        message:
+          (errorObj.message as string) ||
+          (firstError.message as string | undefined),
       };
     }
 
@@ -268,7 +251,10 @@ export function parseDriveError(error: unknown): ParsedDriveError {
 
     // 401 Unauthorized - Token issues
     if (statusCode === 401) {
-      if (errorDetails.message?.toLowerCase().includes("invalid") || reason.includes("invalid")) {
+      if (
+        errorDetails.message?.toLowerCase().includes("invalid") ||
+        reason.includes("invalid")
+      ) {
         return {
           statusCode: 401,
           code: DriveErrorCode.INVALID_TOKEN,
@@ -324,7 +310,10 @@ export function parseDriveError(error: unknown): ParsedDriveError {
       }
 
       // Daily quota exceeded
-      if (reason.includes("dailylimitexceeded") || reason.includes("quotaexceeded")) {
+      if (
+        reason.includes("dailylimitexceeded") ||
+        reason.includes("quotaexceeded")
+      ) {
         return {
           statusCode: 403,
           code: DriveErrorCode.QUOTA_EXCEEDED,
@@ -352,7 +341,10 @@ export function parseDriveError(error: unknown): ParsedDriveError {
       }
 
       // Insufficient permissions
-      if (reason.includes("insufficientpermissions") || reason.includes("forbidden")) {
+      if (
+        reason.includes("insufficientpermissions") ||
+        reason.includes("forbidden")
+      ) {
         return {
           statusCode: 403,
           code: DriveErrorCode.PERMISSION_DENIED,
@@ -431,9 +423,10 @@ export function parseDriveError(error: unknown): ParsedDriveError {
 
       return {
         statusCode,
-        code: statusCode === 503
-          ? DriveErrorCode.SERVICE_UNAVAILABLE
-          : DriveErrorCode.DRIVE_API_ERROR,
+        code:
+          statusCode === 503
+            ? DriveErrorCode.SERVICE_UNAVAILABLE
+            : DriveErrorCode.DRIVE_API_ERROR,
         message: "Google Drive service temporarily unavailable",
         originalError: error,
         retryable: retryableServerErrors.includes(statusCode),
@@ -461,7 +454,10 @@ export function parseDriveError(error: unknown): ParsedDriveError {
 
   // Handle standard Error objects
   if (error instanceof Error) {
-    if (error.message.includes("timeout") || error.message.includes("ETIMEDOUT")) {
+    if (
+      error.message.includes("timeout") ||
+      error.message.includes("ETIMEDOUT")
+    ) {
       return {
         statusCode: 504,
         code: DriveErrorCode.TIMEOUT,
@@ -505,9 +501,12 @@ export function parseDriveError(error: unknown): ParsedDriveError {
  * @param baseDelay - Base delay in milliseconds (default: 1000)
  * @returns Delay in milliseconds
  */
-export function calculateBackoff(attempt: number, baseDelay: number = 1000): number {
+export function calculateBackoff(
+  attempt: number,
+  baseDelay: number = 1000
+): number {
   const maxDelay = 60000; // 60 seconds max
-  const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+  const delay = Math.min(baseDelay * 2 ** attempt, maxDelay);
   // Add jitter (0-1000ms) to prevent thundering herd
   return delay + Math.random() * 1000;
 }
@@ -525,7 +524,10 @@ export async function withDriveErrorHandling<T>(
   options: {
     maxRetries?: number;
     shouldRetry?: (error: ParsedDriveError) => boolean;
-    onRetry?: (attempt: number, error: ParsedDriveError) => void | Promise<void>;
+    onRetry?: (
+      attempt: number,
+      error: ParsedDriveError
+    ) => void | Promise<void>;
     onTokenRefreshNeeded?: () => Promise<void>;
     context?: string;
   } = {}
@@ -710,7 +712,9 @@ export function handleAuthError(
     | typeof DriveErrorCode.DRIVE_AUTH_REQUIRED
     | typeof DriveErrorCode.INVALID_TOKEN
     | typeof DriveErrorCode.TOKEN_EXPIRED
-    | typeof DriveErrorCode.TOKEN_REFRESH_FAILED,
+    | typeof DriveErrorCode.TOKEN_REFRESH_FAILED
+    | typeof DriveErrorCode.TOKEN_FILE_MISMATCH
+    | typeof DriveErrorCode.ACTION_NOT_PERMITTED,
   customMessage?: string
 ): Response {
   return res.status(401).json(createErrorResponse(code, customMessage));

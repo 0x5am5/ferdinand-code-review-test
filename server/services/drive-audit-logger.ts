@@ -10,14 +10,14 @@
  * @module drive-audit-logger
  */
 
-import type { Request } from "express";
-import { db } from "../db";
 import {
   driveFileAccessLogs,
   type InsertDriveFileAccessLog,
   insertDriveFileAccessLogSchema,
   type UserRoleType,
 } from "@shared/schema";
+import type { Request } from "express";
+import { db } from "../db";
 
 // ============================================================================
 // Types
