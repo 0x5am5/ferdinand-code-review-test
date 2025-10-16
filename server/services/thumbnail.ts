@@ -176,7 +176,6 @@ export async function downloadThumbnail(
   size: ThumbnailSize
 ): Promise<Buffer> {
   const storagePath = getThumbnailStoragePath(assetId, size);
-
   const result = await downloadFile(storagePath);
 
   if (!result.success || !result.data) {
