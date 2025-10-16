@@ -1,4 +1,4 @@
-import { CloudIcon, Figma, Settings, Slack } from "lucide-react";
+import { CloudIcon, Figma, Slack } from "lucide-react";
 import FigmaIntegration from "@/components/figma/figma-integration";
 import { GoogleDriveIntegration } from "@/components/integrations/google-drive-integration";
 import { SlackIntegration } from "@/components/settings/SlackIntegration";
@@ -62,18 +62,16 @@ export function IntegrationsHub({
   ];
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Integrations
-          </CardTitle>
-          <CardDescription>
+    <section className="relative">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
+          <p className="text-muted-foreground mt-1">
             Connect Ferdinand with your design and communication tools
-          </CardDescription>
-        </CardHeader>
-      </Card>
+          </p>
+        </div>
+      </div>
 
       {enabledIntegrations.length === 0 ? (
         <Card className="border-orange-200 bg-orange-50">
@@ -107,6 +105,6 @@ export function IntegrationsHub({
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }

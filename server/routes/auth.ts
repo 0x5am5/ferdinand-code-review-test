@@ -1,20 +1,36 @@
 import type { Express } from "express";
 import { auth as firebaseAuth } from "../firebase";
 import { authRateLimit } from "../middlewares/rate-limit";
-import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
 
 export function registerAuthRoutes(app: Express) {
-  // Logout endpoint
-  app.post("/api/auth/logout", csrfProtection, (req, res) => {
+  // Logout endpoint - no CSRF protection needed as logout is safe even if triggered externally
+  app.post("/api/auth/logout", (req, res) => {
+    console.log("=== LOGOUT REQUEST RECEIVED ===");
+    console.log("Method:", req.method);
+    console.log("URL:", req.url);
+    console.log("Headers:", JSON.stringify(req.headers, null, 2));
+    console.log("Session ID:", req.sessionID);
+    console.log("Session User ID:", req.session?.userId);
+
     req.session.destroy((err) => {
       if (err) {
         console.error(
-          "Error destroying session:",
+          "=== LOGOUT SESSION DESTROY ERROR ===",
           err instanceof Error ? err.message : "Unknown error"
         );
         return res.status(500).json({ message: "Logout failed" });
       }
+      console.log("=== LOGOUT SUCCESSFUL - Session destroyed ===");
+
+      // Clear the session cookie to prevent dev auth bypass from re-creating the session
+      res.clearCookie("connect.sid", {
+        path: "/",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+      });
+
       res.json({ message: "Logged out successfully" });
     });
   });

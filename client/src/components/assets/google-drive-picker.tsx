@@ -59,7 +59,6 @@ declare global {
  * Uses the native Google Picker API to allow users to select files from their Drive
  */
 export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
-  clientId,
   appId,
   oauthToken,
   onFilesSelected,
@@ -119,12 +118,15 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
       .setAppId(appId)
       .setOAuthToken(oauthToken)
       .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY || "")
-      .setCallback(pickerCallback)
-      .enableFeature(
-        allowMultiple
-          ? window.google.picker.Feature.MULTISELECT_ENABLED
-          : undefined
-      );
+      .setCallback(pickerCallback);
+
+    // Enable multiselect if allowed
+    if (allowMultiple) {
+      picker.enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED);
+    }
+
+    // Only show files from the authenticated user's Drive
+    picker.enableFeature(window.google.picker.Feature.MINE_ONLY);
 
     // Add docs view
     const docsView = new window.google.picker.DocsView()

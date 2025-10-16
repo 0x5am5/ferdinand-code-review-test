@@ -11,10 +11,12 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { auth, googleProvider } from "@/lib/firebase";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type AuthContextType = {
   user: User | null;
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const isLoggingOutRef = useRef(false);
 
   // Fetch user data from our backend
   const fetchUser = useCallback(async (): Promise<boolean> => {
@@ -68,6 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Set up Firebase auth listener regardless of whether we have a session
       // This ensures Firebase auth still works when bypass is disabled
       unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+        // Skip auth sync if we're in the middle of logging out
+        if (isLoggingOutRef.current) {
+          return;
+        }
+
         setFirebaseUser(fbUser);
 
         if (fbUser) {
@@ -153,32 +161,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log("=== FRONTEND LOGOUT STARTED ===");
+
+      // Set flag to prevent auth state listener from re-syncing during logout
+      isLoggingOutRef.current = true;
+      console.log("Logout flag set to true");
+
+      console.log("Signing out from Firebase...");
       await signOut(auth);
+      console.log("Firebase sign out complete");
 
-      // Clear session on backend
-      await fetch("/api/auth/logout", {
-        method: "POST",
-      });
+      console.log("Calling backend logout endpoint...");
+      // Clear session on backend using apiRequest (includes proper CSRF headers)
+      const response = await apiRequest("POST", "/api/auth/logout", {});
+      console.log(
+        "Backend logout response:",
+        response.status,
+        response.statusText
+      );
 
+      console.log("Clearing React Query cache...");
+      // Clear the user data from React Query cache
+      queryClient.setQueryData(["/api/user"], null);
+
+      console.log("Clearing user state...");
       setUser(null);
+      setFirebaseUser(null);
 
+      console.log("Showing success toast...");
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out",
       });
 
-      // Redirect to login
-      window.location.href = "/login";
+      console.log("Redirecting to home page...");
+      // Redirect to home
+      window.location.href = "/";
     } catch (error: unknown) {
+      // Reset logout flag on error
+      isLoggingOutRef.current = false;
+
       console.error(
-        "Logout error:",
-        error instanceof Error ? error.message : "Unknown error"
+        "=== FRONTEND LOGOUT ERROR ===",
+        error instanceof Error ? error.message : "Unknown error",
+        error
       );
       setError(error instanceof Error ? error : new Error("Logout failed"));
 
       toast({
         title: "Logout Error",
-        description: "Failed to sign out",
+        description:
+          error instanceof Error ? error.message : "Failed to sign out",
         variant: "destructive",
       });
     }
@@ -202,15 +235,6 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
-  }
-
-  // Wait until auth is initialized before returning context
-  if (context.isLoading) {
-    return {
-      ...context,
-      user: null,
-      firebaseUser: null,
-    };
   }
 
   return context;

@@ -1,4 +1,4 @@
-import { CloudIcon, InfoIcon } from "lucide-react";
+import { InfoIcon } from "lucide-react";
 import { type FC, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -54,7 +54,6 @@ export const GoogleDriveConnect: FC<GoogleDriveConnectProps> = ({
         onClick={handleConnect}
         disabled={isLoading}
       >
-        <CloudIcon className="h-4 w-4 mr-2" />
         Connect Google Drive
       </Button>
 
