@@ -562,24 +562,98 @@ export function registerFileAssetRoutes(app: Express) {
           .json({ message: "Not authorized to download this asset" });
       }
 
-      // Download file from storage
-      const downloadResult = await downloadFile(permission.asset.storagePath);
+      const downloadAsset = permission.asset;
+      let fileBuffer: Buffer;
 
-      if (!downloadResult.success || !downloadResult.data) {
-        return res
-          .status(404)
-          .json({ message: downloadResult.error || "File not found" });
+      // Handle Google Drive assets differently
+      if (downloadAsset.isGoogleDrive && downloadAsset.driveFileId) {
+        // Get user's Google Drive connection
+        const [connection] = await db
+          .select()
+          .from((await import("@shared/schema")).googleDriveConnections)
+          .where(
+            eq(
+              (await import("@shared/schema")).googleDriveConnections.userId,
+              req.session.userId
+            )
+          );
+
+        if (!connection) {
+          return res
+            .status(404)
+            .json({ message: "Google Drive connection not found" });
+        }
+
+        // Check if token is expired and refresh if needed
+        const { isTokenExpired, decryptTokens } = await import(
+          "../utils/encryption"
+        );
+        let accessToken: string;
+
+        if (isTokenExpired(connection.tokenExpiresAt)) {
+          const { refreshUserTokens } = await import(
+            "../middlewares/google-drive-auth"
+          );
+          const refreshedClient = await refreshUserTokens(
+            req.session.userId.toString()
+          );
+          accessToken = refreshedClient.credentials.access_token || "";
+        } else {
+          const tokens = decryptTokens({
+            encryptedAccessToken: connection.encryptedAccessToken,
+            encryptedRefreshToken: connection.encryptedRefreshToken,
+            tokenExpiresAt: connection.tokenExpiresAt,
+          });
+          accessToken = tokens.access_token || "";
+        }
+
+        // Download file from Google Drive
+        try {
+          const response = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${downloadAsset.driveFileId}?alt=media`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              `Failed to download from Google Drive: ${response.statusText}`
+            );
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          fileBuffer = Buffer.from(arrayBuffer);
+        } catch (error) {
+          console.error("Error downloading from Google Drive:", error);
+          return res
+            .status(500)
+            .json({ message: "Failed to download file from Google Drive" });
+        }
+      } else {
+        // Regular file asset - download from storage
+        const downloadResult = await downloadFile(downloadAsset.storagePath);
+
+        if (!downloadResult.success || !downloadResult.data) {
+          return res
+            .status(404)
+            .json({ message: downloadResult.error || "File not found" });
+        }
+
+        fileBuffer = downloadResult.data;
       }
 
       // Set headers for file download
-      res.setHeader("Content-Type", permission.asset.fileType);
+      res.setHeader("Content-Type", downloadAsset.fileType);
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${permission.asset.originalFileName}"`
+        `attachment; filename="${downloadAsset.originalFileName}"`
       );
-      res.setHeader("Content-Length", downloadResult.data.length);
+      res.setHeader("Content-Length", fileBuffer.length);
 
-      res.send(downloadResult.data);
+      res.send(fileBuffer);
     } catch (error: unknown) {
       console.error(
         "Error downloading asset:",
