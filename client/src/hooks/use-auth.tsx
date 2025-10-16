@@ -50,10 +50,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
     } catch (e: unknown) {
-      console.error(
-        "Error fetching user:",
-        e instanceof Error ? e.message : "Unknown error"
-      );
       setUser(null);
       return false;
     } finally {
@@ -97,15 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               await fetchUser();
             } else {
               const data = await response.json();
-              console.error("Failed to create session:", data);
               setError(new Error(data.message || "Authentication failed"));
               setIsLoading(false);
             }
           } catch (e: unknown) {
-            console.error(
-              "Auth processing error:",
-              e instanceof Error ? e.message : "Unknown error"
-            );
             setError(
               e instanceof Error ? e : new Error("Authentication failed")
             );
@@ -139,10 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: `Signed in as ${result.user?.email}`,
       });
     } catch (error: unknown) {
-      console.error(
-        "Google sign-in error:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
       const errorInstance =
         error instanceof Error
           ? error
@@ -161,51 +148,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      console.log("=== FRONTEND LOGOUT STARTED ===");
-
       // Set flag to prevent auth state listener from re-syncing during logout
       isLoggingOutRef.current = true;
-      console.log("Logout flag set to true");
 
-      console.log("Signing out from Firebase...");
       await signOut(auth);
-      console.log("Firebase sign out complete");
 
-      console.log("Calling backend logout endpoint...");
       // Clear session on backend using apiRequest (includes proper CSRF headers)
-      const response = await apiRequest("POST", "/api/auth/logout", {});
-      console.log(
-        "Backend logout response:",
-        response.status,
-        response.statusText
-      );
+      await apiRequest("POST", "/api/auth/logout", {});
 
-      console.log("Clearing React Query cache...");
       // Clear the user data from React Query cache
       queryClient.setQueryData(["/api/user"], null);
+      // Set flag to prevent auth state listener from re-syncing during logout
+      isLoggingOutRef.current = true;
 
-      console.log("Clearing user state...");
       setUser(null);
       setFirebaseUser(null);
 
-      console.log("Showing success toast...");
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out",
       });
-
-      console.log("Redirecting to home page...");
       // Redirect to home
       window.location.href = "/";
     } catch (error: unknown) {
       // Reset logout flag on error
       isLoggingOutRef.current = false;
+      // Redirect to home
+      window.location.href = "/";
 
-      console.error(
-        "=== FRONTEND LOGOUT ERROR ===",
-        error instanceof Error ? error.message : "Unknown error",
-        error
-      );
       setError(error instanceof Error ? error : new Error("Logout failed"));
 
       toast({
