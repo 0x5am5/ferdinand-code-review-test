@@ -47,10 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
     } catch (e: unknown) {
-      console.error(
-        "Error fetching user:",
-        e instanceof Error ? e.message : "Unknown error"
-      );
       setUser(null);
       return false;
     } finally {
@@ -89,15 +85,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               await fetchUser();
             } else {
               const data = await response.json();
-              console.error("Failed to create session:", data);
               setError(new Error(data.message || "Authentication failed"));
               setIsLoading(false);
             }
           } catch (e: unknown) {
-            console.error(
-              "Auth processing error:",
-              e instanceof Error ? e.message : "Unknown error"
-            );
             setError(
               e instanceof Error ? e : new Error("Authentication failed")
             );
@@ -131,10 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         description: `Signed in as ${result.user?.email}`,
       });
     } catch (error: unknown) {
-      console.error(
-        "Google sign-in error:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
       const errorInstance =
         error instanceof Error
           ? error
@@ -153,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
+<<<<<<< Updated upstream
       await signOut(auth);
 
       // Clear session on backend
@@ -160,12 +148,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
       });
 
+=======
+      // Set flag to prevent auth state listener from re-syncing during logout
+      isLoggingOutRef.current = true;
+
+      await signOut(auth);
+
+      // Clear session on backend using apiRequest (includes proper CSRF headers)
+      await apiRequest("POST", "/api/auth/logout", {});
+
+      // Clear the user data from React Query cache
+      queryClient.setQueryData(["/api/user"], null);
+
+>>>>>>> Stashed changes
       setUser(null);
 
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out",
       });
+<<<<<<< Updated upstream
 
       // Redirect to login
       window.location.href = "/login";
@@ -174,6 +176,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "Logout error:",
         error instanceof Error ? error.message : "Unknown error"
       );
+=======
+      // Redirect to home
+      window.location.href = "/";
+    } catch (error: unknown) {
+      // Reset logout flag on error
+      isLoggingOutRef.current = false;
+
+>>>>>>> Stashed changes
       setError(error instanceof Error ? error : new Error("Logout failed"));
 
       toast({

@@ -29,7 +29,12 @@ export function securityHeaders(
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
+<<<<<<< Updated upstream
     "connect-src 'self' https://use.typekit.net https://www.googleapis.com",
+=======
+    "connect-src 'self' https://use.typekit.net https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
+    "frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://*.firebaseapp.com", // Google Picker iframe and Firebase Auth
+>>>>>>> Stashed changes
     "frame-ancestors 'none'",
   ].join("; ");
 
