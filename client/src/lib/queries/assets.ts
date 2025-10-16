@@ -16,6 +16,18 @@ export interface Asset {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  // Google Drive fields
+  isGoogleDrive?: boolean;
+  driveFileId?: string;
+  driveWebLink?: string;
+  driveLastModified?: Date;
+  driveOwner?: string;
+  driveThumbnailUrl?: string;
+  driveWebContentLink?: string;
+  driveSharingMetadata?: Record<string, unknown>;
+  cachedThumbnailPath?: string;
+  thumbnailCachedAt?: Date;
+  thumbnailCacheVersion?: string;
   categories?: AssetCategory[];
   tags?: AssetTag[];
   uploader?: {
@@ -46,6 +58,7 @@ export interface AssetFilters {
   tagIds?: number[];
   fileType?: string;
   visibility?: "private" | "shared";
+  isGoogleDrive?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -60,6 +73,8 @@ export const useAssetsQuery = (filters?: AssetFilters) => {
     params.append("tagIds", filters.tagIds.join(","));
   if (filters?.fileType) params.append("fileType", filters.fileType);
   if (filters?.visibility) params.append("visibility", filters.visibility);
+  if (filters?.isGoogleDrive !== undefined)
+    params.append("isGoogleDrive", filters.isGoogleDrive.toString());
   if (filters?.limit) params.append("limit", filters.limit.toString());
   if (filters?.offset) params.append("offset", filters.offset.toString());
 

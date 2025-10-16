@@ -1119,3 +1119,20 @@ export const getTypeScale = async (id: number): Promise<TypeScale | null> => {
         : typeScale.individual_body_styles || {},
   };
 };
+
+// Storage helper functions for asset management
+export const generateUniqueFileName = (originalFileName: string): string => {
+  const timestamp = Date.now();
+  const randomString = crypto.randomBytes(8).toString("hex");
+  const extension = originalFileName.split(".").pop();
+  const nameWithoutExt = originalFileName.replace(/\.[^/.]+$/, "");
+  const sanitizedName = nameWithoutExt.replace(/[^a-zA-Z0-9-_]/g, "_");
+  return `${sanitizedName}_${timestamp}_${randomString}.${extension}`;
+};
+
+export const generateStoragePath = (
+  clientId: number,
+  fileName: string
+): string => {
+  return `uploads/clients/${clientId}/assets/${fileName}`;
+};

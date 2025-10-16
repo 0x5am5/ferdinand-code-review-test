@@ -1,8 +1,5 @@
-import type { NextFunction, Request, Response } from "express";
-
-interface RequestWithClientId extends Request {
-  clientId?: number;
-}
+import type { NextFunction, Response } from "express";
+import type { RequestWithClientId } from "../routes/index";
 
 export const validateClientId = (
   req: RequestWithClientId,

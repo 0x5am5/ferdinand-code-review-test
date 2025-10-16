@@ -79,8 +79,8 @@ export async function signOut() {
     await apiRequest("POST", "/api/auth/logout", {});
     // Clear the user data from React Query cache
     queryClient.setQueryData(["/api/user"], null);
-    // Redirect to login page
-    window.location.href = "/login";
+    // Redirect to home page
+    window.location.href = "/";
   } catch (error: unknown) {
     console.error(
       "Sign out error:",

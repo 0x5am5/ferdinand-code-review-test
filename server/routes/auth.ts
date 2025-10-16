@@ -1,25 +1,11 @@
 import type { Express } from "express";
 import { auth as firebaseAuth } from "../firebase";
 import { authRateLimit } from "../middlewares/rate-limit";
-import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
 
 export function registerAuthRoutes(app: Express) {
-<<<<<<< Updated upstream
-  // Logout endpoint
-  app.post("/api/auth/logout", csrfProtection, (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        console.error(
-          "Error destroying session:",
-          err instanceof Error ? err.message : "Unknown error"
-        );
-        return res.status(500).json({ message: "Logout failed" });
-      }
-=======
   // Logout endpoint - no CSRF protection needed as logout is safe even if triggered externally
   app.post("/api/auth/logout", (req, res) => {
-
     req.session.destroy((err) => {
       if (err) {
         return res.status(500).json({ message: "Logout failed" });
@@ -33,7 +19,6 @@ export function registerAuthRoutes(app: Express) {
         sameSite: "lax",
       });
 
->>>>>>> Stashed changes
       res.json({ message: "Logged out successfully" });
     });
   });
@@ -56,7 +41,6 @@ export function registerAuthRoutes(app: Express) {
       // Check if user exists
       const user = await storage.getUserByEmail(decodedToken.email);
 
-
       if (!user) {
         try {
           // await firebaseAuth.deleteUser(decodedToken.uid);
@@ -76,7 +60,6 @@ export function registerAuthRoutes(app: Express) {
       // Set user in session
       req.session.userId = user.id;
 
-
       await new Promise((resolve, reject) => {
         req.session.save((err) => {
           if (err) {
@@ -84,7 +67,6 @@ export function registerAuthRoutes(app: Express) {
           } else resolve(undefined);
         });
       });
-
 
       // Get user's assigned clients to determine redirect
       const userClients = await storage.getUserClients(user.id);

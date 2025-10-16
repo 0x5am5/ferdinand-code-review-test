@@ -114,7 +114,7 @@ export function ClientDashboard({
       enabled: featureToggles.brandAssets,
     },
     {
-      id: "design-system",
+      id: "integrations",
       title: "Design System",
       description: "Sync design tokens and styles with Figma design files",
       icon: <Figma className="h-5 w-5" />,

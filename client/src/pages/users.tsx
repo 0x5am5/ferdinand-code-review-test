@@ -633,17 +633,23 @@ export default function UsersPage() {
                                             (client: Client) => (
                                               <CommandItem
                                                 key={client.id}
-                                                onSelect={() => {
-                                                  removeClient.mutate({
-                                                    userId: user.id,
-                                                    clientId: client.id,
-                                                  });
-                                                }}
                                                 className="bg-secondary/5 text-primary"
                                               >
                                                 <Check className="h-4 w-4 mr-2 text-primary" />
                                                 <span>{client.name}</span>
-                                                <X className="ml-auto h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                                <button
+                                                  type="button"
+                                                  className="ml-auto h-4 w-4 p-0 inline-flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-destructive/20 transition-colors"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeClient.mutate({
+                                                      userId: user.id,
+                                                      clientId: client.id,
+                                                    });
+                                                  }}
+                                                >
+                                                  <X className="h-4 w-4" />
+                                                </button>
                                               </CommandItem>
                                             )
                                           )}
