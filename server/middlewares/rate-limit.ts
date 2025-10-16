@@ -179,3 +179,31 @@ export const mutationRateLimit = rateLimit({
   max: 200,
   message: "Too many requests. Please slow down.",
 });
+
+// Google Drive file access rate limit: 100 file access requests per 15 minutes per user
+export const driveFileAccessRateLimit = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: "Too many Drive file requests. Please try again later.",
+});
+
+// Google Drive thumbnail rate limit: 200 thumbnail requests per 5 minutes per user
+export const driveThumbnailRateLimit = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 200,
+  message: "Too many thumbnail requests. Please try again later.",
+});
+
+// Google Drive import rate limit: 50 imports per hour per user
+export const driveImportRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 50,
+  message: "Too many file imports. Please try again later.",
+});
+
+// Google Drive listing rate limit: 100 list requests per 10 minutes per user
+export const driveListingRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 100,
+  message: "Too many Drive listing requests. Please try again later.",
+});

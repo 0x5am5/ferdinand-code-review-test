@@ -62,6 +62,12 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
     onFiltersChange({ ...filters, visibility });
   };
 
+  const handleSourceChange = (value: string) => {
+    const isGoogleDrive =
+      value === "all" ? undefined : value === "google-drive";
+    onFiltersChange({ ...filters, isGoogleDrive });
+  };
+
   const handleTagToggle = (tagId: number) => {
     const currentTags = filters.tagIds || [];
     const newTags = currentTags.includes(tagId)
@@ -82,6 +88,7 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
     filters.search ||
     filters.categoryId ||
     filters.visibility ||
+    filters.isGoogleDrive !== undefined ||
     (filters.tagIds && filters.tagIds.length > 0);
 
   return (
@@ -118,6 +125,30 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
                   {category.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Source Filter */}
+        <div className="w-[180px] space-y-2">
+          <Label>Source</Label>
+          <Select
+            value={
+              filters.isGoogleDrive === undefined
+                ? "all"
+                : filters.isGoogleDrive
+                  ? "google-drive"
+                  : "uploaded"
+            }
+            onValueChange={handleSourceChange}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sources</SelectItem>
+              <SelectItem value="google-drive">Google Drive</SelectItem>
+              <SelectItem value="uploaded">Uploaded</SelectItem>
             </SelectContent>
           </Select>
         </div>

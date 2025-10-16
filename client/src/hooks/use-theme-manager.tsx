@@ -7,6 +7,7 @@ interface ThemeManagerHookResult {
   updateDesignSystem: (newTheme: Partial<DesignSystem>) => Promise<void>;
   updateDraftDesignSystem: (newTheme: Partial<DesignSystem>) => void;
   applyDraftChanges: () => Promise<boolean | undefined>;
+  clearDraft: () => void;
   isLoading: boolean;
 }
 
@@ -81,7 +82,9 @@ export function useThemeManager(): ThemeManagerHookResult {
   useEffect(() => {
     // Subscribe to theme changes
     const themeUnsubscribe = themeManager.subscribe("theme-update", (theme) => {
-      setCurrentTheme(theme);
+      if (theme) {
+        setCurrentTheme(theme);
+      }
       setIsLoading(false);
     });
 
@@ -121,6 +124,9 @@ export function useThemeManager(): ThemeManagerHookResult {
     },
     applyDraftChanges: async () => {
       return await themeManager.applyDraftChanges();
+    },
+    clearDraft: () => {
+      themeManager.clearDraft();
     },
     isLoading,
   };

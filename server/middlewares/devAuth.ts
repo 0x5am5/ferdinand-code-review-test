@@ -84,6 +84,13 @@ export async function devAuthBypass(
       return next();
     }
 
+    // Don't auto-login on the homepage or login page - allow user to stay logged out
+    // This prevents immediate re-login after logout
+    const publicPaths = ["/", "/api/user"];
+    if (publicPaths.includes(req.path)) {
+      return next();
+    }
+
     // Find the dev user in the database
     const user = await storage.getUserByEmail(devUserEmail);
 

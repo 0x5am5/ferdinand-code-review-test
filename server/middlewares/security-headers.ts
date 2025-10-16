@@ -13,7 +13,8 @@ export function securityHeaders(
   res.setHeader("X-Content-Type-Options", "nosniff");
 
   // Prevent clickjacking attacks
-  res.setHeader("X-Frame-Options", "DENY");
+  // Note: Using SAMEORIGIN instead of DENY to allow Google Picker iframes
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
 
   // Enable XSS protection (legacy browsers)
   res.setHeader("X-XSS-Protection", "1; mode=block");
@@ -25,11 +26,12 @@ export function securityHeaders(
   // Note: Adjust based on your app's needs
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Vite in dev mode needs unsafe-eval
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com", // Google Picker API scripts
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://p.typekit.net",
+    "font-src 'self' https://fonts.gstatic.com https://use.typekit.net https://r2cdn.perplexity.ai data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://use.typekit.net https://www.googleapis.com",
+    "connect-src 'self' https://use.typekit.net https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
+    "frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com", // Google Picker iframe
     "frame-ancestors 'none'",
   ].join("; ");
 

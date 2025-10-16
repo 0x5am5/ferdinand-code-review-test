@@ -1,5 +1,7 @@
 import {
+  Cloud,
   Download,
+  ExternalLink,
   Eye,
   FileIcon,
   Grid,
@@ -394,7 +396,7 @@ export const AssetList: FC<AssetListProps> = ({
                     className="bg-white border-2"
                   />
                 </div>
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
                   <Badge
                     variant={
                       asset.visibility === "private" ? "secondary" : "default"
@@ -402,6 +404,16 @@ export const AssetList: FC<AssetListProps> = ({
                   >
                     {asset.visibility}
                   </Badge>
+                  {asset.isGoogleDrive && (
+                    <Badge
+                      variant="outline"
+                      className="bg-white/90 backdrop-blur-sm"
+                      aria-label="Imported from Google Drive"
+                    >
+                      <Cloud className="h-3 w-3 mr-1" aria-hidden="true" />
+                      Google Drive
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="p-4">
@@ -410,7 +422,18 @@ export const AssetList: FC<AssetListProps> = ({
                 </h3>
                 <p className="text-xs text-muted-foreground mb-2">
                   {formatFileSize(asset.fileSize)}
+                  {asset.isGoogleDrive && asset.driveLastModified && (
+                    <>
+                      {" "}
+                      · Modified {formatDate(new Date(asset.driveLastModified))}
+                    </>
+                  )}
                 </p>
+                {asset.isGoogleDrive && asset.driveOwner && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Owner: {asset.driveOwner}
+                  </p>
+                )}
                 {asset.categories && asset.categories.length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
                     {asset.categories.slice(0, 2).map((category) => (
@@ -441,14 +464,31 @@ export const AssetList: FC<AssetListProps> = ({
                   >
                     <Eye className="h-3 w-3" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1"
-                    onClick={(e) => handleDownload(asset, e)}
-                  >
-                    <Download className="h-3 w-3" />
-                  </Button>
+                  {asset.isGoogleDrive && asset.driveWebLink ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(asset.driveWebLink, "_blank");
+                      }}
+                      aria-label="Open in Google Drive"
+                      title="Open in Google Drive"
+                    >
+                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => handleDownload(asset, e)}
+                      aria-label="Download asset"
+                    >
+                      <Download className="h-3 w-3" aria-hidden="true" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -476,9 +516,11 @@ export const AssetList: FC<AssetListProps> = ({
                 <TableHead className="w-12"></TableHead>
                 <TableHead className="w-12"></TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Source</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Size</TableHead>
-                <TableHead>Uploaded</TableHead>
+                <TableHead>Last Modified</TableHead>
+                <TableHead>Owner</TableHead>
                 <TableHead>Visibility</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -516,6 +558,22 @@ export const AssetList: FC<AssetListProps> = ({
                   <TableCell className="font-medium">
                     {asset.originalFileName}
                   </TableCell>
+                  <TableCell>
+                    {asset.isGoogleDrive ? (
+                      <Badge
+                        variant="outline"
+                        className="gap-1"
+                        aria-label="Source: Google Drive"
+                      >
+                        <Cloud className="h-3 w-3" aria-hidden="true" />
+                        Google Drive
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" aria-label="Source: Uploaded">
+                        Uploaded
+                      </Badge>
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {asset.fileType?.split("/")[1]?.toUpperCase() || "Unknown"}
                   </TableCell>
@@ -523,7 +581,14 @@ export const AssetList: FC<AssetListProps> = ({
                     {formatFileSize(asset.fileSize)}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(asset.createdAt)}
+                    {asset.isGoogleDrive && asset.driveLastModified
+                      ? formatDate(new Date(asset.driveLastModified))
+                      : formatDate(asset.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {asset.isGoogleDrive && asset.driveOwner
+                      ? asset.driveOwner
+                      : asset.uploader?.name || "-"}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -546,13 +611,32 @@ export const AssetList: FC<AssetListProps> = ({
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleDownload(asset, e)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      {asset.isGoogleDrive && asset.driveWebLink ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(asset.driveWebLink, "_blank");
+                          }}
+                          aria-label={`Open ${asset.originalFileName} in Google Drive`}
+                          title="Open in Google Drive"
+                        >
+                          <ExternalLink
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDownload(asset, e)}
+                          aria-label={`Download ${asset.originalFileName}`}
+                        >
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

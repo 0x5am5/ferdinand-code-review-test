@@ -8,7 +8,7 @@ import {
   Sun,
   Type,
 } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import {
@@ -89,6 +89,7 @@ export default function DesignBuilder() {
     draftDesignSystem,
     updateDraftDesignSystem,
     applyDraftChanges,
+    clearDraft,
   } = useThemeManager();
 
   // Define the designSystem variable to use throughout the component
@@ -175,6 +176,14 @@ export default function DesignBuilder() {
   const confirmNavigation = () => {
     setShowLeaveAlert(false);
   };
+
+  // Clear draft theme when component unmounts to prevent it from persisting
+  useEffect(() => {
+    return () => {
+      // Clear the draft when leaving the design builder page
+      clearDraft();
+    };
+  }, [clearDraft]);
 
   if (isLoading) return null;
 

@@ -159,7 +159,7 @@ export const defaultTheme: DesignSystem = {
 type ThemeChangeEvent = "theme-update" | "draft-update";
 
 // Subscribers function type
-type ThemeChangeSubscriber = (theme: DesignSystem) => void;
+type ThemeChangeSubscriber = (theme: DesignSystem | null) => void;
 
 // Theme Manager Class
 class ThemeManager {
@@ -223,7 +223,7 @@ class ThemeManager {
   }
 
   // Notify subscribers of changes
-  private notify(event: ThemeChangeEvent, theme: DesignSystem) {
+  private notify(event: ThemeChangeEvent, theme: DesignSystem | null) {
     const subscribers = this.subscribers.get(event);
     if (subscribers) {
       subscribers.forEach((callback) => {
@@ -416,6 +416,13 @@ class ThemeManager {
       // Only notify subscribers, the React hook will handle the DOM updates
       this.notify("draft-update", this.draftTheme);
     }
+  }
+
+  // Clear draft changes completely (set to null)
+  clearDraft() {
+    this.draftTheme = null;
+    // Notify subscribers so the theme reverts to the saved theme
+    this.notify("draft-update", null);
   }
 
   // Variable to store the timeout ID for debouncing
