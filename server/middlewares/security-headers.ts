@@ -31,11 +31,15 @@ export function securityHeaders(
     "font-src 'self' https://fonts.gstatic.com https://use.typekit.net https://r2cdn.perplexity.ai data:",
     "img-src 'self' data: blob: https:",
     "connect-src 'self' https://use.typekit.net https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
-    "frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://*.firebaseapp.com", // Google Picker iframe and Firebase Auth
+    "frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://gb--brand-guidelines.firebaseapp.com", // Google Picker iframe and Firebase Auth
     "frame-ancestors 'none'",
   ].join("; ");
 
   res.setHeader("Content-Security-Policy", csp);
+
+  // Set Cross-Origin-Opener-Policy for popup authentication
+  // Use "same-origin-allow-popups" to allow Firebase popup authentication
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
 
   // Permissions Policy (formerly Feature Policy)
   const permissionsPolicy = [
