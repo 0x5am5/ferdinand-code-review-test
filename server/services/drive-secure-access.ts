@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
+import { driveAccessTokens } from "@shared/schema";
 import { and, count, eq, gt, isNotNull, isNull, lt } from "drizzle-orm";
 import { db } from "../db";
-import { driveAccessTokens } from "@shared/schema";
 
 /**
  * Google Drive Secure File Access Service
@@ -80,12 +80,15 @@ export async function cleanupExpiredTokens(): Promise<number> {
 }
 
 // Start periodic cleanup (every 5 minutes)
-setInterval(async () => {
-  const cleaned = await cleanupExpiredTokens();
-  if (cleaned > 0) {
-    console.log(`Cleaned up ${cleaned} expired Drive access tokens`);
-  }
-}, 5 * 60 * 1000);
+setInterval(
+  async () => {
+    const cleaned = await cleanupExpiredTokens();
+    if (cleaned > 0) {
+      console.log(`Cleaned up ${cleaned} expired Drive access tokens`);
+    }
+  },
+  5 * 60 * 1000
+);
 
 // ============================================================================
 // Secure URL Generation
@@ -338,7 +341,7 @@ export function generateDriveApiUrlWithHeader(
  * @returns True if valid format, false otherwise
  */
 export function isValidDriveFileId(fileId: string): boolean {
-  if (!fileId || typeof fileId !== 'string') {
+  if (!fileId || typeof fileId !== "string") {
     return false;
   }
 
@@ -356,10 +359,10 @@ export function isValidDriveFileId(fileId: string): boolean {
 
   // Reject obviously malicious patterns
   const maliciousPatterns = [
-    /\.\./,  // Directory traversal
-    /[<>]/,  // HTML/XML injection
-    /[;'"]/,  // SQL/command injection
-    /\$/,    // Template injection
+    /\.\./, // Directory traversal
+    /[<>]/, // HTML/XML injection
+    /[;'"]/, // SQL/command injection
+    /\$/, // Template injection
   ];
 
   for (const pattern of maliciousPatterns) {

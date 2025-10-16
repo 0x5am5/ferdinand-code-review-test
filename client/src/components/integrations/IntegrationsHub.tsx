@@ -1,5 +1,6 @@
-import { Figma, Settings, Slack } from "lucide-react";
+import { CloudIcon, Figma, Settings, Slack } from "lucide-react";
 import FigmaIntegration from "@/components/figma/figma-integration";
+import { GoogleDriveIntegration } from "@/components/integrations/google-drive-integration";
 import { SlackIntegration } from "@/components/settings/SlackIntegration";
 import {
   Card,
@@ -23,6 +24,8 @@ export function IntegrationsHub({
 }: IntegrationsHubProps) {
   const figmaEnabled = featureToggles.figmaIntegration ?? false;
   const slackEnabled = featureToggles.slackIntegration ?? false;
+  // Google Drive is always enabled when Integrations tab is shown (Brand Assets is enabled)
+  const googleDriveEnabled = true;
 
   // Only show integrations that are enabled
   const enabledIntegrations = [
@@ -43,6 +46,16 @@ export function IntegrationsHub({
             name: "Slack",
             icon: Slack,
             component: <SlackIntegration clientId={clientId} />,
+          },
+        ]
+      : []),
+    ...(googleDriveEnabled
+      ? [
+          {
+            key: "google-drive",
+            name: "Google Drive",
+            icon: CloudIcon,
+            component: <GoogleDriveIntegration clientId={clientId} />,
           },
         ]
       : []),
@@ -75,7 +88,7 @@ export function IntegrationsHub({
           <CardContent className="text-sm text-orange-700">
             <p>
               Available integrations: Figma (design token sync), Slack (brand
-              asset access)
+              asset access), Google Drive (asset import)
             </p>
           </CardContent>
         </Card>

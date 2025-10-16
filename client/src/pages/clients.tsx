@@ -1,5 +1,6 @@
 import type { Client, FeatureToggles, User } from "@shared/schema";
 import {
+  CloudIcon,
   Edit2,
   Eye,
   Figma,
@@ -338,7 +339,28 @@ export default function Clients() {
         </div>
       </div>
 
-      {viewMode === "grid" ? (
+      {clients.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+          <div className="rounded-full bg-muted p-6 mb-4">
+            <UserCircle className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-semibold mb-2">No clients yet</h2>
+          <p className="text-muted-foreground mb-6 max-w-md">
+            Get started by creating your first client. You can add brand assets,
+            colors, typography, and more.
+          </p>
+          <Button
+            variant="default"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+            asChild
+          >
+            <Link href="/clients/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Your First Client
+            </Link>
+          </Button>
+        </div>
+      ) : viewMode === "grid" ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredClients.map((client) => (
             <Card key={client.id} className="relative group">
@@ -688,13 +710,12 @@ export default function Clients() {
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
                         {clientFeatures.logoSystem && (
-                          <Badge className="flex items-center gap-1 bg-blue-100 text-blue-800 hover:bg-blue-200">
+                          <Badge className="flex items-center gap-1 bg-blue-100 text-blue-800">
                             <Package className="h-3 w-3" />
                             Logo
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-blue-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-blue-900/20 transition-colors"
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -709,17 +730,16 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
                         {clientFeatures.colorSystem && (
-                          <Badge className="flex items-center gap-1 bg-green-100 text-green-800 hover:bg-green-200">
+                          <Badge className="flex items-center gap-1 bg-green-100 text-green-800">
                             <Palette className="h-3 w-3" />
                             Colors
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-green-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-green-900/20 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -733,17 +753,16 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
                         {clientFeatures.typeSystem && (
-                          <Badge className="flex items-center gap-1 bg-purple-100 text-purple-800 hover:bg-purple-200">
+                          <Badge className="flex items-center gap-1 bg-purple-100 text-purple-800">
                             <Type className="h-3 w-3" />
                             Type
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-purple-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-purple-900/20 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -757,17 +776,16 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
                         {clientFeatures.userPersonas && (
-                          <Badge className="flex items-center gap-1 bg-amber-100 text-amber-800 hover:bg-amber-200">
+                          <Badge className="flex items-center gap-1 bg-amber-100 text-amber-800">
                             <UserIcon className="h-3 w-3" />
                             Personas
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-amber-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-amber-900/20 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -781,17 +799,16 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
                         {clientFeatures.inspiration && (
-                          <Badge className="flex items-center gap-1 bg-red-100 text-red-800 hover:bg-red-200">
+                          <Badge className="flex items-center gap-1 bg-red-100 text-red-800">
                             <Image className="h-3 w-3" />
                             Inspo
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-red-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-red-900/20 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -805,17 +822,16 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
                         {clientFeatures.figmaIntegration && (
-                          <Badge className="flex items-center gap-1 bg-gray-100 text-gray-800 hover:bg-gray-200">
+                          <Badge className="flex items-center gap-1 bg-gray-100 text-gray-800">
                             <Figma className="h-3 w-3" />
                             Figma
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-gray-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-gray-900/20 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -829,17 +845,16 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
                         {clientFeatures.slackIntegration && (
-                          <Badge className="flex items-center gap-1 bg-indigo-100 text-indigo-800 hover:bg-indigo-200">
+                          <Badge className="flex items-center gap-1 bg-indigo-100 text-indigo-800">
                             <Slack className="h-3 w-3" />
                             Slack
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-indigo-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-indigo-900/20 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -853,17 +868,16 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
                         {clientFeatures.brandAssets && (
-                          <Badge className="flex items-center gap-1 bg-orange-100 text-orange-800 hover:bg-orange-200">
+                          <Badge className="flex items-center gap-1 bg-orange-100 text-orange-800">
                             <Image className="h-3 w-3" />
                             Assets
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-4 w-4 p-0 ml-1 hover:bg-orange-200"
+                            <button
+                              type="button"
+                              className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-orange-900/20 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 const newToggles = {
@@ -877,7 +891,7 @@ export default function Clients() {
                               }}
                             >
                               <X className="h-3 w-3" />
-                            </Button>
+                            </button>
                           </Badge>
                         )}
 
@@ -1076,22 +1090,21 @@ export default function Clients() {
                         {(clientUsersMap.get(client.id) || []).map((user) => (
                           <Badge
                             key={user.id}
-                            className="flex items-center gap-1 bg-blue-100 text-blue-800 hover:bg-blue-200 text-xs"
+                            className="flex items-center gap-1 bg-blue-100 text-blue-800 text-xs"
                           >
                             <UserCircle className="h-3 w-3" />
                             {user.name}
                             {canRemoveUser(user) && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-4 w-4 p-0 ml-1 hover:bg-blue-200"
+                              <button
+                                type="button"
+                                className="h-4 w-4 p-0 ml-1 inline-flex items-center justify-center rounded hover:bg-blue-900/20 transition-colors"
                                 onClick={() => {
                                   setActiveClientId(client.id);
                                   removeUser.mutate(user.id);
                                 }}
                               >
                                 <X className="h-3 w-3" />
-                              </Button>
+                              </button>
                             )}
                           </Badge>
                         ))}

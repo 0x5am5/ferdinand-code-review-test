@@ -121,6 +121,8 @@ export const Sidebar: FC = () => {
     userPersonas: true,
     inspiration: true,
     brandAssets: false,
+    figmaIntegration: false,
+    slackIntegration: false,
   };
 
   // Check if admin has multiple clients to determine nav items
@@ -216,11 +218,11 @@ export const Sidebar: FC = () => {
       figmaIntegration:
         typeof clientToggles.figmaIntegration === "boolean"
           ? clientToggles.figmaIntegration
-          : false,
+          : defaultFeatureToggles.figmaIntegration,
       slackIntegration:
         typeof clientToggles.slackIntegration === "boolean"
           ? clientToggles.slackIntegration
-          : false,
+          : defaultFeatureToggles.slackIntegration,
       brandAssets:
         typeof clientToggles.brandAssets === "boolean"
           ? clientToggles.brandAssets

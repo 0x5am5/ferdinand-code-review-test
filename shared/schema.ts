@@ -1599,7 +1599,9 @@ export const insertGoogleDriveConnectionSchema = createInsertSchema(
     scopes: z.array(z.string()).optional(),
   });
 
-export const insertDriveAccessTokenSchema = createInsertSchema(driveAccessTokens)
+export const insertDriveAccessTokenSchema = createInsertSchema(
+  driveAccessTokens
+)
   .omit({ id: true, createdAt: true })
   .extend({
     token: z.string().min(1),
@@ -1704,7 +1706,9 @@ export type InsertGoogleDriveConnection = z.infer<
   typeof insertGoogleDriveConnectionSchema
 >;
 export type DriveAccessToken = typeof driveAccessTokens.$inferSelect;
-export type InsertDriveAccessToken = z.infer<typeof insertDriveAccessTokenSchema>;
+export type InsertDriveAccessToken = z.infer<
+  typeof insertDriveAccessTokenSchema
+>;
 export type DriveFileAccessLog = typeof driveFileAccessLogs.$inferSelect;
 export type InsertDriveFileAccessLog = z.infer<
   typeof insertDriveFileAccessLogSchema

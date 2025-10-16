@@ -27,16 +27,25 @@ export default function ClientDetails() {
 
   // Get the active tab from the sidebar through URL query params
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
-    if (tab) {
-      // If users tab is selected, redirect to the users page
-      if (tab === "users" && clientId) {
-        setLocation(`/clients/${clientId}/users`);
-        return;
+    const handleUrlChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab) {
+        // If users tab is selected, redirect to the users page
+        if (tab === "users" && clientId) {
+          setLocation(`/clients/${clientId}/users`);
+          return;
+        }
+        setActiveTab(tab);
       }
-      setActiveTab(tab);
-    }
+    };
+
+    // Call immediately to set initial tab
+    handleUrlChange();
+
+    // Listen for popstate events (browser back/forward)
+    window.addEventListener("popstate", handleUrlChange);
+    return () => window.removeEventListener("popstate", handleUrlChange);
   }, [clientId, setLocation]);
 
   // Listen for tab changes from the sidebar
@@ -326,7 +335,7 @@ export default function ClientDetails() {
           </Card>
         );
 
-      case "design-system":
+      case "integrations":
         return (
           <IntegrationsHub
             clientId={client?.id || 0}
