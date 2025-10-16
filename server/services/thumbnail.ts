@@ -1,6 +1,13 @@
-import fs, { mkdir } from "node:fs/promises";
+import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
+import {
+  fileExists,
+  uploadFile,
+  downloadFile,
+  deleteFile,
+} from "../storage/index";
 
 export type ThumbnailSize = "small" | "medium" | "large";
 
@@ -36,38 +43,24 @@ export function canGenerateThumbnail(mimeType: string): boolean {
 }
 
 /**
- * Get the cache path for a thumbnail
+ * Get the storage path for a thumbnail (works for both local and R2)
  */
-export function getThumbnailCachePath(
+export function getThumbnailStoragePath(
   assetId: number,
   size: ThumbnailSize
 ): string {
-  const cacheDir = process.env.THUMBNAIL_CACHE_DIR || "uploads/thumbnails";
-  return path.join(cacheDir, size, `${assetId}.jpg`);
+  return `thumbnails/${size}/${assetId}.jpg`;
 }
 
 /**
- * Ensure the thumbnail cache directory exists
- */
-async function ensureCacheDirectory(cachePath: string): Promise<void> {
-  const dir = path.dirname(cachePath);
-  await mkdir(dir, { recursive: true });
-}
-
-/**
- * Check if a thumbnail exists in cache
+ * Check if a thumbnail exists in storage
  */
 export async function thumbnailExists(
   assetId: number,
   size: ThumbnailSize
 ): Promise<boolean> {
-  const cachePath = getThumbnailCachePath(assetId, size);
-  try {
-    await fs.access(cachePath);
-    return true;
-  } catch {
-    return false;
-  }
+  const storagePath = getThumbnailStoragePath(assetId, size);
+  return await fileExists(storagePath);
 }
 
 /**
@@ -109,7 +102,7 @@ async function generatePdfThumbnail(
 }
 
 /**
- * Generate a thumbnail for an image file
+ * Generate a thumbnail for an image file and upload to storage
  */
 export async function generateThumbnail(
   sourcePath: string,
@@ -121,32 +114,34 @@ export async function generateThumbnail(
     throw new Error(`Cannot generate thumbnail for type: ${mimeType}`);
   }
 
-  const cachePath = getThumbnailCachePath(assetId, size);
-  await ensureCacheDirectory(cachePath);
-
+  const storagePath = getThumbnailStoragePath(assetId, size);
   const dimensions = THUMBNAIL_SIZES[size];
 
   try {
+    let thumbnailBuffer: Buffer;
+
     // Handle PDF files differently
     if (SUPPORTED_PDF_TYPES.includes(mimeType.toLowerCase())) {
-      const thumbnailBuffer = await generatePdfThumbnail(
-        sourcePath,
-        dimensions
-      );
-      await fs.writeFile(cachePath, thumbnailBuffer);
-      return cachePath;
+      thumbnailBuffer = await generatePdfThumbnail(sourcePath, dimensions);
+    } else {
+      // Handle image files with Sharp
+      thumbnailBuffer = await sharp(sourcePath)
+        .resize(dimensions.width, dimensions.height, {
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: 85, progressive: true })
+        .toBuffer();
     }
 
-    // Handle image files with Sharp
-    await sharp(sourcePath)
-      .resize(dimensions.width, dimensions.height, {
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .jpeg({ quality: 85, progressive: true })
-      .toFile(cachePath);
+    // Upload thumbnail to storage (R2 or local)
+    const uploadResult = await uploadFile(storagePath, thumbnailBuffer);
 
-    return cachePath;
+    if (!uploadResult.success) {
+      throw new Error(uploadResult.error || "Failed to upload thumbnail");
+    }
+
+    return storagePath;
   } catch (error) {
     console.error("Error generating thumbnail:", error);
     throw new Error("Failed to generate thumbnail");
@@ -154,7 +149,7 @@ export async function generateThumbnail(
 }
 
 /**
- * Get or generate a thumbnail
+ * Get or generate a thumbnail, returns the storage path
  */
 export async function getOrGenerateThumbnail(
   sourcePath: string,
@@ -162,28 +157,46 @@ export async function getOrGenerateThumbnail(
   size: ThumbnailSize,
   mimeType: string
 ): Promise<string> {
-  const cachePath = getThumbnailCachePath(assetId, size);
+  const storagePath = getThumbnailStoragePath(assetId, size);
 
-  // Check if thumbnail already exists
+  // Check if thumbnail already exists in storage
   if (await thumbnailExists(assetId, size)) {
-    return cachePath;
+    return storagePath;
   }
 
-  // Generate new thumbnail
+  // Generate new thumbnail and upload to storage
   return await generateThumbnail(sourcePath, assetId, size, mimeType);
 }
 
 /**
- * Delete all thumbnails for an asset
+ * Download a thumbnail from storage
+ */
+export async function downloadThumbnail(
+  assetId: number,
+  size: ThumbnailSize
+): Promise<Buffer> {
+  const storagePath = getThumbnailStoragePath(assetId, size);
+
+  const result = await downloadFile(storagePath);
+
+  if (!result.success || !result.data) {
+    throw new Error(result.error || "Failed to download thumbnail");
+  }
+
+  return result.data;
+}
+
+/**
+ * Delete all thumbnails for an asset from storage
  */
 export async function deleteThumbnails(assetId: number): Promise<void> {
   const sizes: ThumbnailSize[] = ["small", "medium", "large"];
 
   await Promise.all(
     sizes.map(async (size) => {
-      const cachePath = getThumbnailCachePath(assetId, size);
+      const storagePath = getThumbnailStoragePath(assetId, size);
       try {
-        await fs.unlink(cachePath);
+        await deleteFile(storagePath);
       } catch {
         // Ignore if file doesn't exist
       }

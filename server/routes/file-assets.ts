@@ -2060,16 +2060,17 @@ export function registerFileAssetRoutes(app: Express) {
         await fs.writeFile(tempFilePath, fileBuffer);
 
         try {
-          // Generate or get cached thumbnail
-          const thumbnailPath = await getOrGenerateThumbnail(
+          // Generate or get cached thumbnail (returns storage path)
+          const thumbnailStoragePath = await getOrGenerateThumbnail(
             tempFilePath,
             assetId,
             size,
             asset.fileType || ""
           );
 
-          // Read and send the thumbnail
-          const thumbnailBuffer = await fs.readFile(thumbnailPath);
+          // Download thumbnail from storage
+          const { downloadThumbnail } = await import("../services/thumbnail");
+          const thumbnailBuffer = await downloadThumbnail(assetId, size);
 
           res.setHeader("Content-Type", "image/jpeg");
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
