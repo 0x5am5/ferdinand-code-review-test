@@ -33,16 +33,24 @@
     overflow: hidden;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    max-width: 100%;
 
     h5 {
       font-size: 1.2rem;
     }
 
     // Handle long URLs and text
-    a, p, span {
+    a, p, span, div {
       word-wrap: break-word;
       overflow-wrap: break-word;
       word-break: break-word;
+      max-width: 100%;
+    }
+
+    // Ensure images and SVGs stay within bounds
+    img, svg {
+      max-width: 100%;
+      height: auto;
     }
   }
 
