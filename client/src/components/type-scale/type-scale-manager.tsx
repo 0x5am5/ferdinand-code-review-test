@@ -1216,17 +1216,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
                           px-3 py-1.5 text-xs font-medium rounded-md border transition-all duration-200
                           ${
                             activeBodyCustomizations.has(bodyLevel)
-                              ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/20"
-                              : "bg-background text-foreground border-border hover:bg-muted hover:border-primary/50"
+                              ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                              : "bg-background text-foreground border-border hover:bg-muted"
                           }
                         `}
-                      aria-pressed={activeBodyCustomizations.has(bodyLevel)}
-                      aria-label={`${activeBodyCustomizations.has(bodyLevel) ? 'Editing' : 'Edit'} ${bodyLevel}`}
                     >
                       {bodyLevel.toUpperCase().replace("-", " ")}
-                      {activeBodyCustomizations.has(bodyLevel) && (
-                        <span className="ml-1.5 inline-block w-1.5 h-1.5 bg-primary-foreground rounded-full" />
-                      )}
                     </button>
                   ))}
                 </div>
