@@ -129,6 +129,7 @@
     flex-direction: column;
     gap: .25rem;
     max-width: 100%;
+    min-width: 0;
 
     &-nav {
       display: flex;
