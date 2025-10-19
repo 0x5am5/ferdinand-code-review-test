@@ -1,4 +1,5 @@
-import { CloudIcon, Figma, Slack } from "lucide-react";
+import { CloudIcon, Figma, Slack, ChevronDown, ChevronUp } from "lucide-react";
+import { useState } from "react";
 import FigmaIntegration from "@/components/figma/figma-integration";
 import { GoogleDriveIntegration } from "@/components/integrations/google-drive-integration";
 import { SlackIntegration } from "@/components/settings/SlackIntegration";
@@ -9,6 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface IntegrationsHubProps {
   clientId: number;
@@ -26,6 +32,20 @@ export function IntegrationsHub({
   const slackEnabled = featureToggles.slackIntegration ?? false;
   // Google Drive is always enabled when Integrations tab is shown (Brand Assets is enabled)
   const googleDriveEnabled = true;
+
+  // Track open/closed state for each integration
+  const [openIntegrations, setOpenIntegrations] = useState<Record<string, boolean>>({
+    figma: false,
+    slack: false,
+    "google-drive": false,
+  });
+
+  const toggleIntegration = (key: string) => {
+    setOpenIntegrations((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // Only show integrations that are enabled
   const enabledIntegrations = [
@@ -93,15 +113,32 @@ export function IntegrationsHub({
       ) : (
         <div className="space-y-6">
           {enabledIntegrations.map(({ key, name, icon: Icon, component }) => (
-            <Card key={key}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon className="h-5 w-5" />
-                  {name} Integration
-                </CardTitle>
-              </CardHeader>
-              <CardContent>{component}</CardContent>
-            </Card>
+            <Collapsible
+              key={key}
+              open={openIntegrations[key]}
+              onOpenChange={() => toggleIntegration(key)}
+            >
+              <Card>
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                    <CardTitle className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-5 w-5" />
+                        {name} Integration
+                      </div>
+                      {openIntegrations[key] ? (
+                        <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent>{component}</CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
           ))}
         </div>
       )}
