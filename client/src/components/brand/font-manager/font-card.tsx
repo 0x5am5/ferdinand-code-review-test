@@ -108,22 +108,24 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
   ]);
 
   return (
-    <div className="p-4 mb-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow">
+    <div className="p-4 mb-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
       <div className="flex items-start justify-between">
-        <div className="flex-1">
+        <div className="flex-1 pr-16 overflow-hidden">
           <h3 className="font-medium text-sm mb-0">{font.name}</h3>
           <p className="text-xs text-muted-foreground capitalize">
             {font.source} Font
           </p>
 
           {/* Font Preview Section */}
-          <div className="text-left mb-4 mt-3">
+          <div className="text-left mb-4 mt-3 overflow-hidden">
             <div
               style={{
                 fontFamily: `'${font.name}', monospace`,
                 fontSize: "1.75rem",
                 lineHeight: "1.4",
                 fontWeight: selectedWeight,
+                wordBreak: "break-all",
+                overflowWrap: "break-word",
               }}
             >
               ABCDEFGHIJKLMNOPQRSTUVWXYZ
@@ -145,27 +147,27 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
             ))}
           </div>
         </div>
-        {isAbleToEdit && (
-          <div className="flex gap-1 ml-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onEdit}
-              className="h-8 w-8 p-0"
-            >
-              <Edit2 className="h-3 w-3" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDelete}
-              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
       </div>
+      {isAbleToEdit && (
+        <div className="absolute top-4 right-4 flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            className="h-8 w-8 p-0"
+          >
+            <Edit2 className="h-3 w-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
