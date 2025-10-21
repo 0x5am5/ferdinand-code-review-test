@@ -117,16 +117,26 @@ export const useGoogleDriveDisconnectMutation = () => {
   });
 };
 
-// Mutation to import files from Google Drive
+// Mutation to import files from Google Drive with progress tracking
 export const useGoogleDriveImportMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation<
     GoogleDriveImportResponse,
     Error,
-    GoogleDriveImportRequest
+    GoogleDriveImportRequest & {
+      onProgress?: (progress: {
+        status: string;
+        file?: string;
+        progress: number;
+        total: number;
+        message: string;
+        error?: string;
+        assetId?: number;
+      }) => void;
+    }
   >({
-    mutationFn: async ({ files, clientId }) => {
+    mutationFn: async ({ files, clientId, onProgress }) => {
       const response = await fetch("/api/google-drive/import", {
         method: "POST",
         headers: {
@@ -149,7 +159,58 @@ export const useGoogleDriveImportMutation = () => {
         );
       }
 
-      return response.json();
+      // Handle Server-Sent Events for progress tracking
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No response body received");
+      }
+
+      let finalResult: GoogleDriveImportResponse = {
+        success: false,
+        imported: 0,
+        failed: 0,
+      };
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                // Call progress callback if provided
+                if (onProgress) {
+                  onProgress(data);
+                }
+
+                // Handle final result
+                if (data.status === "finished") {
+                  finalResult = {
+                    success: true,
+                    imported: data.imported,
+                    failed: data.failed,
+                    errors: data.errors,
+                  };
+                }
+              } catch (parseError) {
+                console.error("Error parsing SSE data:", parseError);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      return finalResult;
     },
     onSuccess: (data) => {
       // Invalidate assets cache to refresh the list
@@ -158,18 +219,18 @@ export const useGoogleDriveImportMutation = () => {
 
       const message =
         data.failed > 0
-          ? `Imported ${data.imported} files successfully. ${data.failed} failed.`
-          : `Successfully imported ${data.imported} files from Google Drive`;
+          ? `Downloaded ${data.imported} files successfully. ${data.failed} failed.`
+          : `Successfully downloaded ${data.imported} files from Google Drive`;
 
       toast({
-        title: "Import Complete",
+        title: "Download Complete",
         description: message,
         variant: data.failed > 0 ? "default" : "default",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Import failed",
+        title: "Download failed",
         description: error.message,
         variant: "destructive",
       });

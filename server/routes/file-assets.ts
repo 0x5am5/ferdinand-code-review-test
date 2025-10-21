@@ -20,6 +20,10 @@ import { upload, virusScan } from "../middlewares/upload";
 import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
 import { checkAssetPermission } from "../services/asset-permissions";
+import {
+  ensureDefaultCategories,
+  getCategoriesForClient,
+} from "../services/default-categories";
 import { deleteThumbnails } from "../services/thumbnail";
 import {
   deleteFile,
@@ -30,6 +34,10 @@ import {
   validateFileSize,
   validateMimeType,
 } from "../storage/index";
+import {
+  autoSelectCategory,
+  determineAssetCategory,
+} from "../utils/asset-categorization";
 
 export function registerFileAssetRoutes(app: Express) {
   // Global list endpoint for file assets
@@ -563,87 +571,16 @@ export function registerFileAssetRoutes(app: Express) {
       }
 
       const downloadAsset = permission.asset;
-      let fileBuffer: Buffer;
+      // Download file from storage
+      const downloadResult = await downloadFile(downloadAsset.storagePath);
 
-      // Handle Google Drive assets differently
-      if (downloadAsset.isGoogleDrive && downloadAsset.driveFileId) {
-        // Get user's Google Drive connection
-        const [connection] = await db
-          .select()
-          .from((await import("@shared/schema")).googleDriveConnections)
-          .where(
-            eq(
-              (await import("@shared/schema")).googleDriveConnections.userId,
-              req.session.userId
-            )
-          );
-
-        if (!connection) {
-          return res
-            .status(404)
-            .json({ message: "Google Drive connection not found" });
-        }
-
-        // Check if token is expired and refresh if needed
-        const { isTokenExpired, decryptTokens } = await import(
-          "../utils/encryption"
-        );
-        let accessToken: string;
-
-        if (isTokenExpired(connection.tokenExpiresAt)) {
-          const { refreshUserTokens } = await import(
-            "../middlewares/google-drive-auth"
-          );
-          const refreshedClient = await refreshUserTokens(
-            req.session.userId.toString()
-          );
-          accessToken = refreshedClient.credentials.access_token || "";
-        } else {
-          const tokens = decryptTokens({
-            encryptedAccessToken: connection.encryptedAccessToken,
-            encryptedRefreshToken: connection.encryptedRefreshToken,
-            tokenExpiresAt: connection.tokenExpiresAt,
-          });
-          accessToken = tokens.access_token || "";
-        }
-
-        // Download file from Google Drive
-        try {
-          const response = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${downloadAsset.driveFileId}?alt=media`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-
-          if (!response.ok) {
-            throw new Error(
-              `Failed to download from Google Drive: ${response.statusText}`
-            );
-          }
-
-          const arrayBuffer = await response.arrayBuffer();
-          fileBuffer = Buffer.from(arrayBuffer);
-        } catch (error) {
-          console.error("Error downloading from Google Drive:", error);
-          return res
-            .status(500)
-            .json({ message: "Failed to download file from Google Drive" });
-        }
-      } else {
-        // Regular file asset - download from storage
-        const downloadResult = await downloadFile(downloadAsset.storagePath);
-
-        if (!downloadResult.success || !downloadResult.data) {
-          return res
-            .status(404)
-            .json({ message: downloadResult.error || "File not found" });
-        }
-
-        fileBuffer = downloadResult.data;
+      if (!downloadResult.success || !downloadResult.data) {
+        return res
+          .status(404)
+          .json({ message: downloadResult.error || "File not found" });
       }
+
+      const fileBuffer = downloadResult.data;
 
       // Set headers for file download
       res.setHeader("Content-Type", downloadAsset.fileType);
@@ -1268,13 +1205,49 @@ export function registerFileAssetRoutes(app: Express) {
           visibility,
         };
 
+        // Auto-categorize if no manual categories provided
+        let finalCategoryIds = categoryIds;
+        if (finalCategoryIds.length === 0) {
+          try {
+            // Ensure default categories exist
+            await ensureDefaultCategories();
+
+            // Get available categories for this client (defaults + client-specific)
+            const categories = await getCategoriesForClient(clientId);
+
+            // Auto-select category based on file type
+            const autoCategoryId = autoSelectCategory(
+              file.originalname,
+              file.mimetype,
+              categories
+            );
+
+            if (autoCategoryId) {
+              finalCategoryIds = [autoCategoryId];
+              const categoryName = determineAssetCategory(
+                file.originalname,
+                file.mimetype
+              );
+              console.log(
+                `Auto-categorized uploaded file "${file.originalname}" as "${categoryName}" (ID: ${autoCategoryId})`
+              );
+            }
+          } catch (categoryError) {
+            console.warn(
+              "Failed to auto-categorize uploaded file:",
+              categoryError
+            );
+            // Continue without categorization if it fails
+          }
+        }
+
         const validated = insertAssetSchema.parse(assetData);
         const [asset] = await db.insert(assets).values(validated).returning();
 
         // Assign categories
-        if (categoryIds.length > 0) {
+        if (finalCategoryIds.length > 0) {
           await db.insert(assetCategoryAssignments).values(
-            categoryIds.map((categoryId) => ({
+            finalCategoryIds.map((categoryId) => ({
               assetId: asset.id,
               categoryId,
             }))
@@ -1426,13 +1399,49 @@ export function registerFileAssetRoutes(app: Express) {
           visibility,
         };
 
+        // Auto-categorize if no manual categories provided
+        let finalCategoryIds = categoryIds;
+        if (finalCategoryIds.length === 0) {
+          try {
+            // Ensure default categories exist
+            await ensureDefaultCategories();
+
+            // Get available categories for this client (defaults + client-specific)
+            const categories = await getCategoriesForClient(clientId);
+
+            // Auto-select category based on file type
+            const autoCategoryId = autoSelectCategory(
+              file.originalname,
+              file.mimetype,
+              categories
+            );
+
+            if (autoCategoryId) {
+              finalCategoryIds = [autoCategoryId];
+              const categoryName = determineAssetCategory(
+                file.originalname,
+                file.mimetype
+              );
+              console.log(
+                `Auto-categorized uploaded file "${file.originalname}" as "${categoryName}" (ID: ${autoCategoryId})`
+              );
+            }
+          } catch (categoryError) {
+            console.warn(
+              "Failed to auto-categorize uploaded file:",
+              categoryError
+            );
+            // Continue without categorization if it fails
+          }
+        }
+
         const validated = insertAssetSchema.parse(assetData);
         const [asset] = await db.insert(assets).values(validated).returning();
 
         // Assign categories
-        if (categoryIds.length > 0) {
+        if (finalCategoryIds.length > 0) {
           await db.insert(assetCategoryAssignments).values(
-            categoryIds.map((categoryId) => ({
+            finalCategoryIds.map((categoryId) => ({
               assetId: asset.id,
               categoryId,
             }))
@@ -1715,87 +1724,16 @@ export function registerFileAssetRoutes(app: Express) {
 
         const asset = permission.asset;
 
-        let fileBuffer: Buffer;
+        // Download file from storage
+        const downloadResult = await downloadFile(asset.storagePath);
 
-        // Handle Google Drive assets differently
-        if (asset.isGoogleDrive && asset.driveFileId) {
-          // Get user's Google Drive connection
-          const [connection] = await db
-            .select()
-            .from((await import("@shared/schema")).googleDriveConnections)
-            .where(
-              eq(
-                (await import("@shared/schema")).googleDriveConnections.userId,
-                req.session.userId
-              )
-            );
-
-          if (!connection) {
-            return res
-              .status(404)
-              .json({ message: "Google Drive connection not found" });
-          }
-
-          // Check if token is expired and refresh if needed
-          const { isTokenExpired, decryptTokens } = await import(
-            "../utils/encryption"
-          );
-          let accessToken: string;
-
-          if (isTokenExpired(connection.tokenExpiresAt)) {
-            const { refreshUserTokens } = await import(
-              "../middlewares/google-drive-auth"
-            );
-            const refreshedClient = await refreshUserTokens(
-              req.session.userId.toString()
-            );
-            accessToken = refreshedClient.credentials.access_token || "";
-          } else {
-            const tokens = decryptTokens({
-              encryptedAccessToken: connection.encryptedAccessToken,
-              encryptedRefreshToken: connection.encryptedRefreshToken,
-              tokenExpiresAt: connection.tokenExpiresAt,
-            });
-            accessToken = tokens.access_token || "";
-          }
-
-          // Download file from Google Drive
-          try {
-            const response = await fetch(
-              `https://www.googleapis.com/drive/v3/files/${asset.driveFileId}?alt=media`,
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
-              }
-            );
-
-            if (!response.ok) {
-              throw new Error(
-                `Failed to download from Google Drive: ${response.statusText}`
-              );
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            fileBuffer = Buffer.from(arrayBuffer);
-          } catch (error) {
-            console.error("Error downloading from Google Drive:", error);
-            return res
-              .status(500)
-              .json({ message: "Failed to download file from Google Drive" });
-          }
-        } else {
-          // Regular file asset - download from storage
-          const downloadResult = await downloadFile(asset.storagePath);
-
-          if (!downloadResult.success || !downloadResult.data) {
-            return res
-              .status(404)
-              .json({ message: downloadResult.error || "File not found" });
-          }
-
-          fileBuffer = downloadResult.data;
+        if (!downloadResult.success || !downloadResult.data) {
+          return res
+            .status(404)
+            .json({ message: downloadResult.error || "File not found" });
         }
+
+        const fileBuffer = downloadResult.data;
 
         // Set headers for file download
         res.setHeader("Content-Type", asset.fileType);
@@ -1964,86 +1902,16 @@ export function registerFileAssetRoutes(app: Express) {
           return res.json({ iconName });
         }
 
-        // Handle Google Drive assets differently
-        let fileBuffer: Buffer;
-        if (asset.isGoogleDrive && asset.driveFileId) {
-          // Get user's Google Drive connection
-          const [connection] = await db
-            .select()
-            .from((await import("@shared/schema")).googleDriveConnections)
-            .where(
-              eq(
-                (await import("@shared/schema")).googleDriveConnections.userId,
-                req.session.userId
-              )
-            );
+        // Download file from storage
+        const downloadResult = await downloadFile(asset.storagePath);
 
-          if (!connection) {
-            return res
-              .status(404)
-              .json({ message: "Google Drive connection not found" });
-          }
-
-          // Check if token is expired and refresh if needed
-          const { isTokenExpired, decryptTokens } = await import(
-            "../utils/encryption"
-          );
-          let accessToken: string;
-
-          if (isTokenExpired(connection.tokenExpiresAt)) {
-            const { refreshUserTokens } = await import(
-              "../middlewares/google-drive-auth"
-            );
-            const refreshedClient = await refreshUserTokens(
-              req.session.userId.toString()
-            );
-            accessToken = refreshedClient.credentials.access_token || "";
-          } else {
-            const tokens = decryptTokens({
-              encryptedAccessToken: connection.encryptedAccessToken,
-              encryptedRefreshToken: connection.encryptedRefreshToken,
-              tokenExpiresAt: connection.tokenExpiresAt,
-            });
-            accessToken = tokens.access_token || "";
-          }
-
-          // Download file from Google Drive
-          try {
-            const response = await fetch(
-              `https://www.googleapis.com/drive/v3/files/${asset.driveFileId}?alt=media`,
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
-              }
-            );
-
-            if (!response.ok) {
-              throw new Error(
-                `Failed to download from Google Drive: ${response.statusText}`
-              );
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            fileBuffer = Buffer.from(arrayBuffer);
-          } catch (error) {
-            console.error("Error downloading from Google Drive:", error);
-            return res
-              .status(500)
-              .json({ message: "Failed to download file from Google Drive" });
-          }
-        } else {
-          // Regular file asset - download from storage
-          const downloadResult = await downloadFile(asset.storagePath);
-
-          if (!downloadResult.success || !downloadResult.data) {
-            return res
-              .status(404)
-              .json({ message: downloadResult.error || "File not found" });
-          }
-
-          fileBuffer = downloadResult.data;
+        if (!downloadResult.success || !downloadResult.data) {
+          return res
+            .status(404)
+            .json({ message: downloadResult.error || "File not found" });
         }
+
+        const fileBuffer = downloadResult.data;
 
         // Create a temporary file path for processing
         const fs = await import("node:fs/promises");

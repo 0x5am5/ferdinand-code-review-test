@@ -206,7 +206,7 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
           variant="outline"
           disabled={!oauthToken || !isPickerLoaded}
         >
-          Select from Google Drive
+          Download from Google Drive
         </Button>
       )}
 
@@ -217,7 +217,8 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
             <DialogTitle>Confirm Selection</DialogTitle>
             <DialogDescription>
               You have selected {selectedFiles.length} item(s) from Google
-              Drive. Click confirm to import them.
+              Drive. These files will be downloaded and stored in your Ferdinand
+              account. Click confirm to import them.
             </DialogDescription>
           </DialogHeader>
 
@@ -248,7 +249,7 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
               Cancel
             </Button>
             <Button onClick={handleConfirmSelection}>
-              Confirm Import ({selectedFiles.length})
+              Download & Import ({selectedFiles.length})
             </Button>
           </DialogFooter>
         </DialogContent>
