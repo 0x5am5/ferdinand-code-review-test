@@ -1,4 +1,4 @@
-import { CloudIcon, FolderIcon, Upload } from "lucide-react";
+import { FolderIcon, Upload } from "lucide-react";
 import {
   type DragEvent,
   type FC,
@@ -11,6 +11,7 @@ import { AssetDetailModal } from "@/components/assets/asset-detail-modal";
 import { AssetFilters } from "@/components/assets/asset-filters";
 import { AssetList } from "@/components/assets/asset-list";
 import { AssetUpload } from "@/components/assets/asset-upload";
+import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
 import { GoogleDrivePicker } from "@/components/assets/google-drive-picker";
 import {
   AlertDialog,
@@ -184,7 +185,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     }
   }, []);
 
-  const handleGoogleDriveClick = () => {
+  const _handleGoogleDriveClick = () => {
     // If not connected, redirect to integrations tab
     if (!googleDriveQuery.data) {
       // Dispatch custom event for tab change (like sidebar does)
@@ -240,11 +241,12 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
           {/* Google Drive Button - Smart button that changes based on connection status */}
           {isAdmin &&
             (!googleDriveQuery.data ? (
-              // Not connected - redirect to integrations tab
-              <Button variant="outline" onClick={handleGoogleDriveClick}>
-                <CloudIcon className="h-4 w-4 mr-2" />
-                Connect Google Drive
-              </Button>
+              // Not connected - trigger Google Drive connect flow (consent modal / OAuth)
+              <GoogleDriveConnect
+                clientId={clientId}
+                variant="outline"
+                size="sm"
+              />
             ) : (
               // Connected - open picker to import files
               <GoogleDrivePicker
