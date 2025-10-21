@@ -1,6 +1,7 @@
 import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
+import type { SlackCommandArgs } from "../../types/slack-types";
 import {
   buildColorBlocks,
   buildColorConfirmationBlocks,
@@ -16,8 +17,7 @@ export async function handleColorCommand({
   command,
   ack,
   respond,
-  client,
-}: any) {
+}: SlackCommandArgs) {
   await ack();
 
   // Rate limiting

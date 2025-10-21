@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { autoSelectCategory } from "@/lib/asset-categorization";
 import {
   useAssetCategoriesQuery,
   useAssetTagsQuery,
@@ -37,6 +38,7 @@ import {
 interface FilePreview {
   file: File;
   preview?: string;
+  autoCategory?: number;
 }
 
 interface AssetUploadProps {
@@ -73,11 +75,34 @@ export const AssetUpload: FC<AssetUploadProps> = ({
         const preview = file.type.startsWith("image/")
           ? URL.createObjectURL(file)
           : undefined;
-        return { file, preview };
+        const autoCategory = autoSelectCategory(file, categories) || undefined;
+        return { file, preview, autoCategory };
       });
       setFiles(filePreviews);
+
+      // Auto-select category if no categories are currently selected
+      const autoCategories = filePreviews
+        .map((fp) => fp.autoCategory)
+        .filter((catId): catId is number => catId !== undefined);
+
+      if (autoCategories.length > 0 && selectedCategories.length === 0) {
+        // Use the most common auto-selected category
+        const categoryCounts = autoCategories.reduce(
+          (acc, catId) => {
+            acc[catId] = (acc[catId] || 0) + 1;
+            return acc;
+          },
+          {} as Record<number, number>
+        );
+
+        const mostCommonCategoryId = Object.entries(categoryCounts).sort(
+          ([, a], [, b]) => b - a
+        )[0][0];
+
+        setSelectedCategories([parseInt(mostCommonCategoryId, 10)]);
+      }
     }
-  }, [initialFiles, open]);
+  }, [initialFiles, open, categories, selectedCategories]);
 
   const handleDragOver = useCallback((e: DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -89,16 +114,42 @@ export const AssetUpload: FC<AssetUploadProps> = ({
     setIsDragging(false);
   }, []);
 
-  const addFiles = useCallback((newFiles: File[]) => {
-    const filePreviews: FilePreview[] = newFiles.map((file) => {
-      const preview = file.type.startsWith("image/")
-        ? URL.createObjectURL(file)
-        : undefined;
-      return { file, preview };
-    });
+  const addFiles = useCallback(
+    (newFiles: File[]) => {
+      const filePreviews: FilePreview[] = newFiles.map((file) => {
+        const preview = file.type.startsWith("image/")
+          ? URL.createObjectURL(file)
+          : undefined;
+        const autoCategory = autoSelectCategory(file, categories) || undefined;
+        return { file, preview, autoCategory };
+      });
 
-    setFiles((prev) => [...prev, ...filePreviews]);
-  }, []);
+      setFiles((prev) => [...prev, ...filePreviews]);
+
+      // Auto-select category if no categories are currently selected
+      const autoCategories = filePreviews
+        .map((fp) => fp.autoCategory)
+        .filter((catId): catId is number => catId !== undefined);
+
+      if (autoCategories.length > 0 && selectedCategories.length === 0) {
+        // Use the most common auto-selected category
+        const categoryCounts = autoCategories.reduce(
+          (acc, catId) => {
+            acc[catId] = (acc[catId] || 0) + 1;
+            return acc;
+          },
+          {} as Record<number, number>
+        );
+
+        const mostCommonCategoryId = Object.entries(categoryCounts).sort(
+          ([, a], [, b]) => b - a
+        )[0][0];
+
+        setSelectedCategories([parseInt(mostCommonCategoryId, 10)]);
+      }
+    },
+    [categories, selectedCategories]
+  );
 
   const handleDrop = useCallback(
     (e: DragEvent<HTMLButtonElement>) => {

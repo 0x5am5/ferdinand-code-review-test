@@ -67,13 +67,29 @@ export function hexToCmyk(hex: string): string {
   return `${Math.round(c * 100)}%, ${Math.round(m * 100)}%, ${Math.round(y * 100)}%, ${Math.round(k * 100)}%`;
 }
 
+interface ColorAsset {
+  id: number;
+  name: string;
+  data: string | Record<string, unknown>;
+  category: string;
+}
+
+interface ColorInfo {
+  title: string;
+  colors: Array<{
+    hex: string;
+    pantone?: string;
+    usage?: string;
+  }>;
+}
+
 // Color block building utilities
 export function buildColorBlocks(
-  displayAssets: any[],
-  filteredColorAssets: any[],
-  colorAssets: any[],
+  displayAssets: ColorAsset[],
+  filteredColorAssets: ColorAsset[],
+  colorAssets: ColorAsset[],
   variant: string,
-  formatColorInfo: any
+  formatColorInfo: (asset: ColorAsset) => ColorInfo
 ) {
   // Group assets by category for better organization
   const groupedAssets = displayAssets.reduce(
@@ -109,7 +125,7 @@ export function buildColorBlocks(
     headerText += ` from ${colorAssets.length} total`;
   }
 
-  const colorBlocks: any[] = [
+  const colorBlocks: Array<Record<string, unknown>> = [
     {
       type: "section",
       text: {
@@ -171,7 +187,7 @@ export function buildColorBlocks(
 
       // Add detailed color information with all formats
       const colorDetails = colorInfo.colors
-        .map((color: any) => {
+        .map((color: { hex: string; pantone?: string; usage?: string }) => {
           const rgb = hexToRgb(color.hex);
           const hsl = hexToHsl(color.hex);
           const cmyk = hexToCmyk(color.hex);
@@ -220,7 +236,7 @@ export function buildColorBlocks(
       },
     });
 
-    for (const asset of (assets as any[]).slice(0, 3)) {
+    for (const asset of (assets as ColorAsset[]).slice(0, 3)) {
       const colorInfo = formatColorInfo(asset);
 
       if (colorInfo.colors.length === 0) {
@@ -236,7 +252,7 @@ export function buildColorBlocks(
       });
 
       const colorDetails = colorInfo.colors
-        .map((color: any) => {
+        .map((color: { hex: string; pantone?: string; usage?: string }) => {
           const rgb = hexToRgb(color.hex);
           const hsl = hexToHsl(color.hex);
           const cmyk = hexToCmyk(color.hex);

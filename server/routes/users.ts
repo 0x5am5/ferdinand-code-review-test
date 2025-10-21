@@ -145,7 +145,7 @@ export function registerUserRoutes(app: Express) {
 
         // Only consider unused invitations as duplicates
         const pendingInvitation = existingInvitations.find(
-          (inv: any) => !inv.used
+          (inv: Record<string, unknown>) => !inv.used
         );
         if (pendingInvitation) {
           return res.status(400).json({

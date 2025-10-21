@@ -2,6 +2,10 @@ import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
+import type {
+  SlackInteractionBody,
+  SlackRespondFn,
+} from "../../types/slack-types";
 import { buildColorBlocks } from "../../utils/color-display";
 import {
   buildFontProcessingMessage,
@@ -25,8 +29,8 @@ import {
 } from "../../utils/slack-helpers";
 
 export async function handleColorSubcommandWithLimit(
-  body: any,
-  respond: any,
+  body: SlackInteractionBody,
+  respond: SlackRespondFn,
   variant: string,
   clientId: number,
   limit: number | "all"
@@ -121,8 +125,8 @@ export async function handleColorSubcommandWithLimit(
 }
 
 export async function handleLogoSubcommandWithLimit(
-  body: any,
-  respond: any,
+  body: SlackInteractionBody,
+  respond: SlackRespondFn,
   query: string,
   clientId: number,
   limit: number | "all"
@@ -216,10 +220,11 @@ export async function handleLogoSubcommandWithLimit(
           const hasDarkVariant = data?.hasDarkVariant === true;
 
           // Build download URL with variant parameter if needed
-          const downloadParams: any = { format: "png" };
+          const downloadParams: { format: string; variant?: "dark" | "light" } =
+            { format: "png" };
 
           if (isDarkQuery && hasDarkVariant) {
-            downloadParams.variant = "dark";
+            downloadParams.variant = "dark" as const;
           }
 
           const downloadUrl = generateAssetDownloadUrl(
@@ -279,8 +284,8 @@ export async function handleLogoSubcommandWithLimit(
 }
 
 export async function handleFontSubcommandWithLimit(
-  body: any,
-  respond: any,
+  body: SlackInteractionBody,
+  respond: SlackRespondFn,
   variant: string,
   clientId: number,
   limit: number | "all"

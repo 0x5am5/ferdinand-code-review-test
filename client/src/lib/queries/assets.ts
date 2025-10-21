@@ -246,18 +246,57 @@ export const useDeleteAssetMutation = () => {
       const response = await apiRequest("DELETE", `/api/assets/${id}`);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
-      toast({
-        title: "Success",
-        description: "Asset deleted successfully",
+    onMutate: async (id) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/assets"] });
+      await queryClient.cancelQueries({ queryKey: [`/api/assets/${id}`] });
+
+      // Snapshot the previous values
+      const previousAssetsList = queryClient.getQueryData<Asset[]>([
+        "/api/assets",
+      ]);
+
+      // Optimistically remove the asset from all lists
+      if (previousAssetsList) {
+        queryClient.setQueryData<Asset[]>(
+          ["/api/assets"],
+          previousAssetsList.filter((asset) => asset.id !== id)
+        );
+      }
+
+      // Also optimistically update any filtered queries
+      const allQueries = queryClient.getQueriesData<Asset[]>({
+        queryKey: ["/api/assets"],
       });
+      allQueries.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<Asset[]>(
+            queryKey,
+            data.filter((asset) => asset.id !== id)
+          );
+        }
+      });
+
+      // Return a context with the snapshots
+      return { previousAssetsList, id };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _id, context) => {
+      // Rollback on error
+      if (context?.previousAssetsList) {
+        queryClient.setQueryData(["/api/assets"], context.previousAssetsList);
+      }
       toast({
         title: "Delete failed",
         description: error.message,
         variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      // Invalidate to ensure fresh data from server
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      toast({
+        title: "Success",
+        description: "Asset deleted successfully",
       });
     },
   });
@@ -273,18 +312,56 @@ export const useBulkDeleteAssetsMutation = () => {
       });
       return response.json();
     },
-    onSuccess: (_, ids) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
-      toast({
-        title: "Success",
-        description: `${ids.length} asset${ids.length === 1 ? "" : "s"} deleted successfully`,
+    onMutate: async (ids) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/assets"] });
+
+      // Snapshot the previous values
+      const previousAssetsList = queryClient.getQueryData<Asset[]>([
+        "/api/assets",
+      ]);
+
+      // Optimistically remove the assets from all lists
+      if (previousAssetsList) {
+        queryClient.setQueryData<Asset[]>(
+          ["/api/assets"],
+          previousAssetsList.filter((asset) => !ids.includes(asset.id))
+        );
+      }
+
+      // Also optimistically update any filtered queries
+      const allQueries = queryClient.getQueriesData<Asset[]>({
+        queryKey: ["/api/assets"],
       });
+      allQueries.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<Asset[]>(
+            queryKey,
+            data.filter((asset) => !ids.includes(asset.id))
+          );
+        }
+      });
+
+      // Return a context with the snapshots
+      return { previousAssetsList, ids };
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _ids, context) => {
+      // Rollback on error
+      if (context?.previousAssetsList) {
+        queryClient.setQueryData(["/api/assets"], context.previousAssetsList);
+      }
       toast({
         title: "Delete failed",
         description: error.message,
         variant: "destructive",
+      });
+    },
+    onSuccess: (_, ids) => {
+      // Invalidate to ensure fresh data from server
+      queryClient.invalidateQueries({ queryKey: ["/api/assets"] });
+      toast({
+        title: "Success",
+        description: `${ids.length} asset${ids.length === 1 ? "" : "s"} deleted successfully`,
       });
     },
   });

@@ -1,6 +1,7 @@
 import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
+import type { SlackCommandArgs } from "../../types/slack-types";
 import { nlpProcessor } from "../../utils/nlp-processor";
 import { checkRateLimit, logSlackActivity } from "../../utils/slack-helpers";
 import { handleColorSubcommand } from "./unified-subcommands/color-subcommand";
@@ -13,8 +14,7 @@ export async function handleUnifiedCommand({
   command,
   ack,
   respond,
-  client,
-}: any) {
+}: SlackCommandArgs) {
   await ack();
 
   // Send immediate acknowledgment to prevent timeout
@@ -95,7 +95,7 @@ export async function handleUnifiedCommand({
 
   try {
     // Find the workspace (common for all subcommands except help)
-    let workspace = null;
+    let workspace: typeof slackWorkspaces.$inferSelect | null = null;
     if (!isTraditionalCommand || subcommand !== "help") {
       [workspace] = await db
         .select()
@@ -125,6 +125,7 @@ export async function handleUnifiedCommand({
       if (!workspace) {
         throw new Error("Workspace should exist at this point");
       }
+      const workspaceData = workspace;
 
       // Gather asset context for the NLP processor
       const [logoAssets, colorAssets, fontAssets] = await Promise.all([
@@ -133,7 +134,7 @@ export async function handleUnifiedCommand({
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.clientId, workspaceData.clientId),
               eq(brandAssets.category, "logo")
             )
           ),
@@ -142,7 +143,7 @@ export async function handleUnifiedCommand({
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.clientId, workspaceData.clientId),
               eq(brandAssets.category, "color")
             )
           ),
@@ -151,7 +152,7 @@ export async function handleUnifiedCommand({
           .from(brandAssets)
           .where(
             and(
-              eq(brandAssets.clientId, workspace.clientId),
+              eq(brandAssets.clientId, workspaceData.clientId),
               eq(brandAssets.category, "font")
             )
           ),
@@ -206,15 +207,29 @@ export async function handleUnifiedCommand({
     }
 
     // Route to appropriate handler based on subcommand
+    // For help command, workspace is not required
+    if (subcommand === "help") {
+      await handleHelpSubcommand({ respond, auditLog });
+      auditLog.success = true;
+      logSlackActivity(auditLog);
+      return;
+    }
+
+    // For all other commands, workspace is required and must exist at this point
+    if (!workspace) {
+      throw new Error(`Workspace is required for ${subcommand} subcommand`);
+    }
+
+    // TypeScript now knows workspace is not null for the rest of this scope
+    const verifiedWorkspace = workspace;
+
     switch (subcommand) {
       case "color":
       case "colors":
         await handleColorSubcommand({
-          command,
           respond,
-          client,
           variant,
-          workspace,
+          workspace: verifiedWorkspace,
           auditLog,
         });
         break;
@@ -224,9 +239,8 @@ export async function handleUnifiedCommand({
         await handleFontSubcommand({
           command,
           respond,
-          client,
           variant,
-          workspace,
+          workspace: verifiedWorkspace,
           auditLog,
         });
         break;
@@ -236,9 +250,8 @@ export async function handleUnifiedCommand({
         await handleLogoSubcommand({
           command,
           respond,
-          client,
           variant,
-          workspace,
+          workspace: verifiedWorkspace,
           auditLog,
         });
         break;
@@ -252,16 +265,11 @@ export async function handleUnifiedCommand({
           return;
         }
         await handleSearchSubcommand({
-          command,
           respond,
           variant,
-          workspace,
+          workspace: verifiedWorkspace,
           auditLog,
         });
-        break;
-
-      case "help":
-        await handleHelpSubcommand({ command, respond, auditLog });
         break;
 
       default:

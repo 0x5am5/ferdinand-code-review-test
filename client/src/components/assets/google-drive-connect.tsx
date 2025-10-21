@@ -66,8 +66,9 @@ export const GoogleDriveConnect: FC<GoogleDriveConnectProps> = ({
               Connect Google Drive
             </DialogTitle>
             <DialogDescription>
-              To import files from Google Drive, we need your permission to
-              access your Drive files.
+              To download files from Google Drive, we need your permission to
+              access your Drive files. Files will be downloaded and stored in
+              your Ferdinand account.
             </DialogDescription>
           </DialogHeader>
 
@@ -79,7 +80,7 @@ export const GoogleDriveConnect: FC<GoogleDriveConnectProps> = ({
                   <span className="text-primary mt-0.5">•</span>
                   <span>
                     <strong>View files in your Drive:</strong> We'll be able to
-                    see and import files you choose to share with Ferdinand
+                    see and download files you choose to share with Ferdinand
                   </span>
                 </li>
                 <li className="flex gap-2">
@@ -90,6 +91,13 @@ export const GoogleDriveConnect: FC<GoogleDriveConnectProps> = ({
                     your assets
                   </span>
                 </li>
+                <li className="flex gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>
+                    <strong>Download files:</strong> Selected files will be
+                    downloaded and stored in your Ferdinand account
+                  </span>
+                </li>
               </ul>
             </div>
 
@@ -98,8 +106,9 @@ export const GoogleDriveConnect: FC<GoogleDriveConnectProps> = ({
                 <strong>Your privacy matters:</strong>
               </p>
               <ul className="space-y-1 ml-4">
-                <li>• We only access files you explicitly select to import</li>
+                <li>• We only download files you explicitly select</li>
                 <li>• Your credentials are encrypted and stored securely</li>
+                <li>• Downloaded files are stored in your Ferdinand account</li>
                 <li>• You can disconnect at any time from your settings</li>
               </ul>
             </div>

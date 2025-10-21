@@ -1,6 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { Express, Response } from "express";
-import { readFile } from "fs/promises";
-import { resolve } from "path";
 import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
 import { checkAssetPermission } from "../services/asset-permissions";

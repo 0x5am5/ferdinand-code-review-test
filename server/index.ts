@@ -89,6 +89,13 @@ async function startServer(retries = 3) {
       console.log("Running database migrations...");
       await runMigrations();
 
+      // Ensure default asset categories exist
+      console.log("Ensuring default asset categories...");
+      const { ensureDefaultCategories } = await import(
+        "./services/default-categories"
+      );
+      await ensureDefaultCategories();
+
       // Register API routes
       registerRoutes(app);
 

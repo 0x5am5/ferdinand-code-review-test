@@ -1,6 +1,12 @@
 import { brandAssets } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../../db";
+import type {
+  SlackAuditLog,
+  SlackCommand,
+  SlackRespondFn,
+  SlackWorkspace,
+} from "../../../types/slack-types";
 import {
   buildLogoConfirmationBlocks,
   buildLogoProcessingMessage,
@@ -19,17 +25,15 @@ import {
 export async function handleLogoSubcommand({
   command,
   respond,
-  client,
   variant,
   workspace,
   auditLog,
 }: {
-  command: any;
-  respond: any;
-  client: any;
+  command: SlackCommand;
+  respond: SlackRespondFn;
   variant: string;
-  workspace: any;
-  auditLog: any;
+  workspace: SlackWorkspace;
+  auditLog: SlackAuditLog;
 }) {
   const startTime = Date.now();
 
@@ -114,12 +118,12 @@ export async function handleLogoSubcommand({
 
     // If dark query specifically requested, only upload dark (or light if no dark available)
     if (isDarkQuery) {
-      const downloadParams: any = {
+      const downloadParams: { format: string; variant?: "dark" | "light" } = {
         format: "png",
       };
 
       if (hasDarkVariant) {
-        downloadParams.variant = "dark";
+        downloadParams.variant = "dark" as const;
       }
 
       const downloadUrl = generateAssetDownloadUrl(
@@ -149,7 +153,7 @@ export async function handleLogoSubcommand({
       );
     } else {
       // For non-dark queries, upload light variant always
-      const lightParams: any = {
+      const lightParams: { format: string; variant?: "dark" | "light" } = {
         format: "png",
       };
 
@@ -182,9 +186,9 @@ export async function handleLogoSubcommand({
 
       // If asset has dark variant and we're showing all, also upload dark
       if (hasDarkVariant) {
-        const darkParams: any = {
+        const darkParams: { format: string; variant: "dark" | "light" } = {
           format: "png",
-          variant: "dark",
+          variant: "dark" as const,
         };
 
         const darkUrl = generateAssetDownloadUrl(

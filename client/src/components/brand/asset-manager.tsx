@@ -238,37 +238,34 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         </div>
         <div className="flex gap-2">
           {/* Google Drive Button - Smart button that changes based on connection status */}
-          {isAdmin && (
-            <>
-              {!googleDriveQuery.data ? (
-                // Not connected - redirect to integrations tab
-                <Button variant="outline" onClick={handleGoogleDriveClick}>
-                  <CloudIcon className="h-4 w-4 mr-2" />
-                  Connect Google Drive
-                </Button>
-              ) : (
-                // Connected - open picker to import files
-                <GoogleDrivePicker
-                  clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}
-                  appId={import.meta.env.VITE_GOOGLE_APP_ID || ""}
-                  oauthToken={accessToken}
-                  onFilesSelected={handleFilesSelected}
-                  allowFolders={true}
-                  allowMultiple={true}
+          {isAdmin &&
+            (!googleDriveQuery.data ? (
+              // Not connected - redirect to integrations tab
+              <Button variant="outline" onClick={handleGoogleDriveClick}>
+                <CloudIcon className="h-4 w-4 mr-2" />
+                Connect Google Drive
+              </Button>
+            ) : (
+              // Connected - open picker to import files
+              <GoogleDrivePicker
+                clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}
+                appId={import.meta.env.VITE_GOOGLE_APP_ID || ""}
+                oauthToken={accessToken}
+                onFilesSelected={handleFilesSelected}
+                allowFolders={true}
+                allowMultiple={true}
+              >
+                <Button
+                  variant="outline"
+                  disabled={importMutation.isPending || !accessToken}
                 >
-                  <Button
-                    variant="outline"
-                    disabled={importMutation.isPending || !accessToken}
-                  >
-                    <FolderIcon className="h-4 w-4 mr-2" />
-                    {importMutation.isPending
-                      ? "Importing..."
-                      : "Import from Drive"}
-                  </Button>
-                </GoogleDrivePicker>
-              )}
-            </>
-          )}
+                  <FolderIcon className="h-4 w-4 mr-2" />
+                  {importMutation.isPending
+                    ? "Importing..."
+                    : "Import from Drive"}
+                </Button>
+              </GoogleDrivePicker>
+            ))}
           <AssetUpload
             open={uploadDialogOpen}
             onOpenChange={(open) => {

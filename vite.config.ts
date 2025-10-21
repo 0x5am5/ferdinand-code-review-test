@@ -28,6 +28,29 @@ export default defineConfig({
 		},
 	},
 	root: path.resolve(__dirname, "client"),
+	optimizeDeps: {
+		force: true,
+		include: [
+			"react",
+			"react-dom",
+			"@tanstack/react-query",
+			"wouter",
+			"lucide-react",
+			"framer-motion",
+			"radix-ui-*",
+			"date-fns",
+			"class-variance-authority",
+			"clsx",
+			"tailwind-merge"
+		],
+		exclude: [
+			"canvas",
+			"sharp",
+			"pdf-lib",
+			"pdfjs-dist",
+			"jszip"
+		]
+	},
 	build: {
 		outDir: path.resolve(__dirname, "dist/public"),
 		emptyOutDir: true,

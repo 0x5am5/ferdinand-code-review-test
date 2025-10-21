@@ -218,6 +218,21 @@ export function registerSlackOAuthRoutes(app: Express) {
         `);
       }
 
+      // Validate environment variables are set (should be validated earlier but double-check for safety)
+      const slackClientId = process.env.SLACK_CLIENT_ID;
+      const slackClientSecret = process.env.SLACK_CLIENT_SECRET;
+
+      if (!slackClientId || !slackClientSecret) {
+        return res.status(500).send(`
+          <html>
+            <body>
+              <h1>Configuration Error</h1>
+              <p>Slack OAuth is not properly configured on the server.</p>
+            </body>
+          </html>
+        `);
+      }
+
       // Exchange code for token
       const tokenResponse = await fetch(
         "https://slack.com/api/oauth.v2.access",
@@ -227,8 +242,8 @@ export function registerSlackOAuthRoutes(app: Express) {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            client_id: process.env.SLACK_CLIENT_ID!,
-            client_secret: process.env.SLACK_CLIENT_SECRET!,
+            client_id: slackClientId,
+            client_secret: slackClientSecret,
             code: code as string,
             redirect_uri: `${process.env.APP_BASE_URL || "http://localhost:5000"}/api/slack/oauth/callback`,
           }),

@@ -2,6 +2,12 @@ import { brandAssets } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../../db";
+import type {
+  SlackAuditLog,
+  SlackCommand,
+  SlackRespondFn,
+  SlackWorkspace,
+} from "../../../types/slack-types";
 import {
   buildFontConfirmationBlocks,
   buildFontProcessingMessage,
@@ -25,17 +31,15 @@ import {
 export async function handleFontSubcommand({
   command,
   respond,
-  client,
   variant,
   workspace,
   auditLog,
 }: {
-  command: any;
-  respond: any;
-  client: any;
+  command: SlackCommand;
+  respond: SlackRespondFn;
   variant: string;
-  workspace: any;
-  auditLog: any;
+  workspace: SlackWorkspace;
+  auditLog: SlackAuditLog;
 }) {
   const startTime = Date.now();
 

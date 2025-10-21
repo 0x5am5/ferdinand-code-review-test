@@ -176,7 +176,9 @@ export function registerInspirationBoardsRoutes(app: Express) {
         }
 
         const image = await storage.createInspirationImage(parsed.data);
-        await storage.touchClient(req.clientId!);
+        if (req.clientId) {
+          await storage.touchClient(req.clientId);
+        }
         res.status(201).json(image);
       } catch (error: unknown) {
         console.error(

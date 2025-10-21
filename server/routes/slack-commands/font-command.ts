@@ -2,6 +2,7 @@ import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
+import type { SlackCommandArgs } from "../../types/slack-types";
 import {
   buildFontConfirmationBlocks,
   buildFontProcessingMessage,
@@ -27,8 +28,7 @@ export async function handleFontCommand({
   command,
   ack,
   respond,
-  client,
-}: any) {
+}: SlackCommandArgs) {
   const startTime = Date.now();
   await ack();
 

@@ -1,15 +1,7 @@
-import { CheckCircle2, CloudIcon, CloudOffIcon } from "lucide-react";
+import { CheckCircle2, CloudOffIcon } from "lucide-react";
 import type { FC } from "react";
-import { useEffect } from "react";
 import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   useGoogleDriveConnectionQuery,
   useGoogleDriveDisconnectMutation,

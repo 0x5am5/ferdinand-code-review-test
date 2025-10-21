@@ -57,10 +57,11 @@ function initializeSlackApp() {
       },
       processBeforeResponse: true,
       // Ensure proper request handling
-      customPropertiesExtractor: (req) => {
+      customPropertiesExtractor: (req: unknown) => {
+        const reqObj = req as Record<string, unknown>;
         return {
-          headers: req.headers,
-          rawBody: (req as any).rawBody,
+          headers: reqObj.headers,
+          rawBody: reqObj.rawBody,
         };
       },
     });
@@ -82,6 +83,7 @@ function initializeSlackApp() {
     slackApp.command("/ferdinand", handleUnifiedCommand);
 
     // Register interactive button handlers
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     slackApp.action("show_all_colors", async ({ ack, body, respond }: any) => {
       await ack();
       const [clientId, variant] = body.actions[0].value.split("|");
@@ -97,6 +99,7 @@ function initializeSlackApp() {
 
     slackApp.action(
       "show_limited_colors",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async ({ ack, body, respond }: any) => {
         await ack();
         const [clientId, variant] = body.actions[0].value.split("|");
@@ -111,6 +114,7 @@ function initializeSlackApp() {
       }
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     slackApp.action("upload_all_logos", async ({ ack, body, respond }: any) => {
       await ack();
       const [clientId, query] = body.actions[0].value.split("|");
@@ -126,6 +130,7 @@ function initializeSlackApp() {
 
     slackApp.action(
       "upload_limited_logos",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async ({ ack, body, respond }: any) => {
         await ack();
         const [clientId, query] = body.actions[0].value.split("|");
@@ -142,6 +147,7 @@ function initializeSlackApp() {
 
     slackApp.action(
       "process_all_fonts",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async ({ ack, body, respond }: any) => {
         await ack();
         const [clientId, variant] = body.actions[0].value.split("|");
@@ -158,6 +164,7 @@ function initializeSlackApp() {
 
     slackApp.action(
       "process_limited_fonts",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async ({ ack, body, respond }: any) => {
         await ack();
         const [clientId, variant] = body.actions[0].value.split("|");
@@ -173,6 +180,7 @@ function initializeSlackApp() {
     );
 
     // Unified action handler to manage all interactive button events
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     slackApp.action(/.*/, async ({ ack, body, respond }: any) => {
       await ack();
       const actionId = body.actions[0].action_id;

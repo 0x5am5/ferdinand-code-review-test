@@ -1,13 +1,16 @@
 import { assets, insertAssetSchema, type UserRoleType } from "@shared/schema";
-import { eq } from "drizzle-orm";
 import type { OAuth2Client } from "google-auth-library";
 import { type drive_v3, google } from "googleapis";
 import { db } from "../db";
 import { generateStoragePath, generateUniqueFileName } from "../storage";
 import {
-  type DriveFileSharingMetadata,
-  getInitialImportPermissions,
-} from "./drive-file-permissions";
+  autoSelectCategory,
+  determineAssetCategory,
+} from "../utils/asset-categorization";
+import {
+  ensureDefaultCategories,
+  getCategoriesForClient,
+} from "./default-categories";
 
 interface DriveFileMetadata {
   id: string;
@@ -22,19 +25,6 @@ interface DriveFileMetadata {
   }>;
   thumbnailLink?: string;
   webContentLink?: string;
-}
-
-interface DetailedFileMetadata extends DriveFileMetadata {
-  owners?: Array<{
-    displayName?: string;
-    emailAddress?: string;
-    photoLink?: string;
-  }>;
-  thumbnailLink?: string;
-  webContentLink?: string;
-  createdTime?: string;
-  description?: string;
-  fileExtension?: string;
 }
 
 export const createDriveClient = (auth: OAuth2Client) => {
@@ -65,15 +55,15 @@ export const listDriveFiles = async (
 export const getFileMetadata = async (
   driveClient: drive_v3.Drive,
   fileId: string
-): Promise<DetailedFileMetadata> => {
+): Promise<DriveFileMetadata> => {
   try {
     const response = await driveClient.files.get({
       fileId,
       fields:
-        "id, name, mimeType, size, modifiedTime, createdTime, webViewLink, webContentLink, thumbnailLink, description, fileExtension, owners(displayName, emailAddress, photoLink)",
+        "id, name, mimeType, size, modifiedTime, webViewLink, webContentLink, thumbnailLink, owners(displayName, emailAddress)",
     });
 
-    return response.data as DetailedFileMetadata;
+    return response.data as DriveFileMetadata;
   } catch (error) {
     console.error("Error fetching file metadata:", error);
     throw new Error("Failed to fetch file metadata");
@@ -86,200 +76,167 @@ export const importDriveFile = async ({
   clientId,
   driveFile,
   visibility,
+  driveClient,
 }: {
   userId: number;
   userRole: UserRoleType;
   clientId: number;
   driveFile: DriveFileMetadata;
   visibility?: "private" | "shared";
+  driveClient: drive_v3.Drive;
 }) => {
   try {
-    // Generate a unique file name for the Drive reference
+    console.log(
+      `Starting download of Drive file: ${driveFile.name} (${driveFile.id})`
+    );
+
+    // Download the actual file content from Google Drive
+    const response = await driveClient.files.get(
+      {
+        fileId: driveFile.id,
+        alt: "media",
+      },
+      {
+        responseType: "arraybuffer",
+      }
+    );
+
+    if (!response.data) {
+      throw new Error("No data received from Google Drive");
+    }
+
+    const fileBuffer = Buffer.from(response.data as ArrayBuffer);
+    console.log(
+      `Downloaded ${fileBuffer.length} bytes for file: ${driveFile.name}`
+    );
+
+    // Generate unique filename and storage path
     const uniqueFileName = generateUniqueFileName(driveFile.name);
     const storagePath = generateStoragePath(clientId, uniqueFileName);
 
-    // Extract owner information (prefer email, fall back to display name)
-    const driveOwner = driveFile.owners?.[0]
-      ? driveFile.owners[0].emailAddress || driveFile.owners[0].displayName
-      : undefined;
+    // Upload to your storage system
+    const { uploadFile } = await import("../storage/index");
+    const uploadResult = await uploadFile(storagePath, fileBuffer);
 
-    // Determine if the importing user is the owner in Drive
-    const isOwnedByImporter = driveFile.owners?.[0]?.emailAddress
-      ? // We would need the user's email to check this properly
-        // For now, we assume false unless we can confirm
-        false
-      : false;
+    if (!uploadResult.success) {
+      throw new Error(`Failed to store file: ${uploadResult.error}`);
+    }
 
-    // Check if file has public link (webContentLink indicates downloadable/shareable)
-    const hasPublicLink = !!driveFile.webContentLink;
+    console.log(`File stored successfully at: ${storagePath}`);
 
-    // Prepare Drive sharing metadata
-    const driveSharingMetadata = {
-      isShared: driveFile.owners && driveFile.owners.length > 0,
-      isOwnedByImporter,
-      driveOwner,
-      hasPublicLink,
-      importerDriveRole: "reader" as const, // We'll determine this based on permissions
-    };
+    // Determine asset category automatically
+    let categoryId: number | null = null;
+    try {
+      // Ensure default categories exist
+      await ensureDefaultCategories();
 
-    // Get initial permissions using the permission model
-    const initialPermissions = getInitialImportPermissions(
-      userId,
-      userRole,
-      driveSharingMetadata
-    );
+      // Get available categories for this client (defaults + client-specific)
+      const categories = await getCategoriesForClient(clientId);
 
-    // Use the calculated visibility or fall back to provided value
-    const finalVisibility = visibility || initialPermissions.initialVisibility;
+      // Auto-select category based on file type
+      categoryId = autoSelectCategory(
+        driveFile.name,
+        driveFile.mimeType,
+        categories
+      );
 
-    // Create asset record for the Drive file
+      if (categoryId) {
+        const categoryName = determineAssetCategory(
+          driveFile.name,
+          driveFile.mimeType
+        );
+        console.log(
+          `Auto-categorized "${driveFile.name}" as "${categoryName}" (ID: ${categoryId})`
+        );
+      } else {
+        console.log(
+          `No suitable category found for "${driveFile.name}" (${driveFile.mimeType})`
+        );
+      }
+    } catch (categoryError) {
+      console.warn("Failed to auto-categorize file:", categoryError);
+      // Continue without categorization if it fails
+    }
+
+    // Create clean asset record without any Drive-specific fields
     const assetData = {
       clientId,
-      uploadedBy: initialPermissions.ferdinandOwner, // Use the calculated owner
+      uploadedBy: userId,
       fileName: uniqueFileName,
       originalFileName: driveFile.name,
       fileType: driveFile.mimeType,
-      fileSize: parseInt(driveFile.size || "0", 10),
+      fileSize: fileBuffer.length,
       storagePath,
-      visibility: finalVisibility,
-      isGoogleDrive: true,
-      driveFileId: driveFile.id,
-      driveWebLink: driveFile.webViewLink,
-      driveLastModified: new Date(driveFile.modifiedTime),
-      driveOwner,
-      driveThumbnailUrl: driveFile.thumbnailLink,
-      driveWebContentLink: driveFile.webContentLink,
-      driveSharingMetadata: initialPermissions.storeDriveMetadata, // Store comprehensive metadata
+      visibility: visibility || "shared",
     };
 
     const validated = insertAssetSchema.parse(assetData);
     const [asset] = await db.insert(assets).values(validated).returning();
 
-    // Log the import action for auditing
+    // If we have a category, create the category assignment
+    if (categoryId) {
+      try {
+        await db
+          .insert((await import("@shared/schema")).assetCategoryAssignments)
+          .values({
+            assetId: asset.id,
+            categoryId,
+          });
+
+        console.log(`Assigned asset ${asset.id} to category ${categoryId}`);
+      } catch (assignmentError) {
+        console.warn("Failed to assign category to asset:", assignmentError);
+        // Continue even if category assignment fails
+      }
+    }
+
     console.log(
-      `Drive file imported: ${driveFile.name} (${driveFile.id}) by user ${userId} (${userRole}) with visibility: ${finalVisibility}`
+      `Drive file downloaded and imported: ${driveFile.name} -> ${asset.fileName} (ID: ${asset.id}) by user ${userId} (${userRole})${categoryId ? `, category: ${categoryId}` : ""}`
     );
 
     return asset;
   } catch (error) {
     console.error("Error importing Drive file:", error);
-    throw new Error("Failed to import Drive file");
+    throw new Error(
+      `Failed to import Drive file: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 };
 
-// ============================================================================
-// Drive Sharing Metadata Helper Functions
-// ============================================================================
+// Maximum file size for download (100MB)
+export const MAX_FILE_SIZE = 100 * 1024 * 1024;
 
-/**
- * Parses and validates Drive sharing metadata from an asset record
- *
- * @param asset - Asset record with potential driveSharingMetadata
- * @returns Parsed and validated Drive sharing metadata or null
- */
-export const parseDriveSharingMetadata = (asset: {
-  driveSharingMetadata: unknown;
-}): DriveFileSharingMetadata | null => {
-  if (!asset.driveSharingMetadata) {
-    return null;
-  }
-
-  try {
-    const metadata = asset.driveSharingMetadata as Record<string, unknown>;
-
+export const validateFileForImport = (
+  driveFile: DriveFileMetadata
+): { valid: boolean; error?: string } => {
+  // Check file size
+  const fileSize = parseInt(driveFile.size || "0", 10);
+  if (fileSize > MAX_FILE_SIZE) {
     return {
-      isShared:
-        typeof metadata.isShared === "boolean" ? metadata.isShared : false,
-      isOwnedByImporter:
-        typeof metadata.isOwnedByImporter === "boolean"
-          ? metadata.isOwnedByImporter
-          : false,
-      driveOwner:
-        typeof metadata.driveOwner === "string"
-          ? metadata.driveOwner
-          : undefined,
-      hasPublicLink:
-        typeof metadata.hasPublicLink === "boolean"
-          ? metadata.hasPublicLink
-          : false,
-      importerDriveRole:
-        metadata.importerDriveRole === "owner" ||
-        metadata.importerDriveRole === "writer" ||
-        metadata.importerDriveRole === "commenter" ||
-        metadata.importerDriveRole === "reader"
-          ? metadata.importerDriveRole
-          : "reader",
+      valid: false,
+      error: `File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB). Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
     };
-  } catch (error) {
-    console.error("Error parsing Drive sharing metadata:", error);
-    return null;
   }
-};
 
-/**
- * Retrieves an asset with its Drive sharing metadata
- *
- * @param assetId - Asset ID to retrieve
- * @returns Asset record with parsed metadata or null if not found
- */
-export const getAssetWithDriveMetadata = async (assetId: number) => {
-  try {
-    const [asset] = await db
-      .select()
-      .from(assets)
-      .where(eq(assets.id, assetId));
+  // Check for Google Workspace files that need special handling
+  const googleWorkspaceMimeTypes = [
+    "application/vnd.google-apps.document",
+    "application/vnd.google-apps.spreadsheet",
+    "application/vnd.google-apps.presentation",
+    "application/vnd.google-apps.drawing",
+    "application/vnd.google-apps.forms",
+    "application/vnd.google-apps.script",
+    "application/vnd.google-apps.site",
+    "application/vnd.google-apps.fusiontable",
+    "application/vnd.google-apps.map",
+  ];
 
-    if (!asset) {
-      return null;
-    }
-
-    const metadata = parseDriveSharingMetadata(asset);
-
+  if (googleWorkspaceMimeTypes.includes(driveFile.mimeType)) {
     return {
-      ...asset,
-      parsedDriveMetadata: metadata,
+      valid: false,
+      error: `Google Workspace files (${driveFile.mimeType}) cannot be downloaded directly. Please export them to a standard format first.`,
     };
-  } catch (error) {
-    console.error("Error retrieving asset with Drive metadata:", error);
-    throw new Error("Failed to retrieve asset");
   }
-};
 
-/**
- * Checks if an asset has public link sharing enabled in Drive
- *
- * @param asset - Asset record to check
- * @returns True if the file has public link sharing
- */
-export const hasPublicDriveLink = (asset: {
-  driveSharingMetadata: unknown;
-}): boolean => {
-  const metadata = parseDriveSharingMetadata(asset);
-  return metadata?.hasPublicLink ?? false;
-};
-
-/**
- * Gets the original Drive owner of an imported file
- *
- * @param asset - Asset record to check
- * @returns Drive owner email/name or null
- */
-export const getDriveOwner = (asset: {
-  driveSharingMetadata: unknown;
-}): string | null => {
-  const metadata = parseDriveSharingMetadata(asset);
-  return metadata?.driveOwner ?? null;
-};
-
-/**
- * Checks if the importing user owned the file in Drive
- *
- * @param asset - Asset record to check
- * @returns True if the importer was the Drive owner
- */
-export const wasOwnedByImporter = (asset: {
-  driveSharingMetadata: unknown;
-}): boolean => {
-  const metadata = parseDriveSharingMetadata(asset);
-  return metadata?.isOwnedByImporter ?? false;
+  return { valid: true };
 };

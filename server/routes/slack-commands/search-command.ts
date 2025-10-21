@@ -1,9 +1,14 @@
 import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
+import type { SlackCommandArgs } from "../../types/slack-types";
 import { checkRateLimit, logSlackActivity } from "../../utils/slack-helpers";
 
-export async function handleSearchCommand({ command, ack, respond }: any) {
+export async function handleSearchCommand({
+  command,
+  ack,
+  respond,
+}: SlackCommandArgs) {
   await ack();
 
   // Rate limiting
@@ -85,7 +90,7 @@ export async function handleSearchCommand({ command, ack, respond }: any) {
       {} as Record<string, typeof searchResults>
     );
 
-    const blocks: any[] = [
+    const blocks: Array<Record<string, unknown>> = [
       {
         type: "section",
         text: {

@@ -1,6 +1,11 @@
+import type { SlackCommandArgs } from "../../types/slack-types";
 import { logSlackActivity } from "../../utils/slack-helpers";
 
-export async function handleHelpCommand({ command, ack, respond }: any) {
+export async function handleHelpCommand({
+  command,
+  ack,
+  respond,
+}: SlackCommandArgs) {
   await ack();
 
   const helpBlocks = [
