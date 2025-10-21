@@ -152,9 +152,8 @@ export const GoogleDriveStatus: FC<GoogleDriveStatusProps> = ({ clientId }) => {
 
         {/* Import Progress Indicator */}
         {importMutation.isPending && importingFileCount > 0 && (
-          <div
+          <output
             className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/20 space-y-3"
-            role="status"
             aria-live="polite"
             aria-label={`Importing ${importingFileCount} file${importingFileCount !== 1 ? "s" : ""} from Google Drive`}
           >
@@ -178,14 +177,13 @@ export const GoogleDriveStatus: FC<GoogleDriveStatusProps> = ({ clientId }) => {
               className="h-2"
               aria-label="Import progress"
             />
-          </div>
+          </output>
         )}
 
         {/* Success Message */}
         {importMutation.isSuccess && (
-          <div
+          <output
             className="p-4 border rounded-lg bg-green-50 dark:bg-green-950/20"
-            role="status"
             aria-live="polite"
           >
             <div className="flex items-center gap-3">
@@ -198,7 +196,7 @@ export const GoogleDriveStatus: FC<GoogleDriveStatusProps> = ({ clientId }) => {
                 {importingFileCount !== 1 ? "s" : ""} from Google Drive
               </p>
             </div>
-          </div>
+          </output>
         )}
 
         <div className="text-sm text-muted-foreground space-y-1">

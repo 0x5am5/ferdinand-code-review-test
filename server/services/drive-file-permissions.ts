@@ -212,7 +212,7 @@ export function hasPermission(
  */
 export function getInitialImportPermissions(
   importingUserId: number,
-  userRole: UserRoleType,
+  _userRole: UserRoleType,
   driveMetadata: DriveFileSharingMetadata
 ) {
   // The importing user always becomes the owner in Ferdinand
@@ -365,7 +365,7 @@ export function getRolePermissionDescription(userRole: UserRoleType): string {
 
   if (actions.length === 0) return "No permissions";
 
-  return actions.join(", ") + " Drive files";
+  return `${actions.join(", ")} Drive files`;
 }
 
 /**

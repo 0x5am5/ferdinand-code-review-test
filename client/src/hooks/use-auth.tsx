@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         return false;
       }
-    } catch (e: unknown) {
+    } catch (_e: unknown) {
       setUser(null);
       return false;
     } finally {

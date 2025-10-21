@@ -20,12 +20,13 @@ export interface SignedUrlResult {
 }
 
 // Lazy-load AWS SDK to avoid errors when not configured
-let S3Client: any;
-let PutObjectCommand: any;
-let GetObjectCommand: any;
-let DeleteObjectCommand: any;
-let HeadObjectCommand: any;
-let getSignedUrl: any;
+// These are initialized as constructors from the AWS SDK modules
+let S3Client: unknown;
+let PutObjectCommand: unknown;
+let GetObjectCommand: unknown;
+let DeleteObjectCommand: unknown;
+let HeadObjectCommand: unknown;
+let getSignedUrl: unknown;
 
 /**
  * Initialize AWS SDK clients (lazy loading)
@@ -60,7 +61,7 @@ async function initializeS3Client() {
   }
 
   // Create S3/R2 client
-  const clientConfig: any = {
+  const clientConfig: Record<string, unknown> = {
     region: storageConfig.region || "auto",
     credentials: {
       accessKeyId: storageConfig.accessKeyId,
@@ -73,7 +74,11 @@ async function initializeS3Client() {
     clientConfig.endpoint = storageConfig.endpoint;
   }
 
-  return new S3Client(clientConfig);
+  // Create client using dynamic constructor
+  const ClientConstructor = S3Client as unknown as new (
+    config: Record<string, unknown>
+  ) => unknown;
+  return new ClientConstructor(clientConfig);
 }
 
 /**
@@ -86,7 +91,10 @@ export async function uploadFile(
   try {
     const client = await initializeS3Client();
 
-    const command = new PutObjectCommand({
+    const CommandConstructor = PutObjectCommand as unknown as new (
+      params: Record<string, unknown>
+    ) => unknown;
+    const command = new CommandConstructor({
       Bucket: storageConfig.bucket,
       Key: storagePath,
       Body: fileBuffer,
@@ -94,7 +102,9 @@ export async function uploadFile(
       // ContentType can be inferred from the file extension
     });
 
-    await client.send(command);
+    await (
+      client as unknown as { send: (cmd: unknown) => Promise<unknown> }
+    ).send(command);
 
     return {
       success: true,
@@ -118,16 +128,22 @@ export async function downloadFile(
   try {
     const client = await initializeS3Client();
 
-    const command = new GetObjectCommand({
+    const CommandConstructor = GetObjectCommand as unknown as new (
+      params: Record<string, unknown>
+    ) => unknown;
+    const command = new CommandConstructor({
       Bucket: storageConfig.bucket,
       Key: storagePath,
     });
 
-    const response = await client.send(command);
+    const response = (await (
+      client as unknown as { send: (cmd: unknown) => Promise<unknown> }
+    ).send(command)) as Record<string, unknown>;
 
     // Convert stream to buffer
     const chunks: Uint8Array[] = [];
-    for await (const chunk of response.Body as any) {
+    const body = response.Body as AsyncIterable<Uint8Array>;
+    for await (const chunk of body) {
       chunks.push(chunk);
     }
     const data = Buffer.concat(chunks);
@@ -135,7 +151,10 @@ export async function downloadFile(
     return {
       success: true,
       data,
-      mimeType: response.ContentType,
+      mimeType:
+        typeof response.ContentType === "string"
+          ? response.ContentType
+          : undefined,
     };
   } catch (error) {
     console.error("Error downloading file from S3/R2:", error);
@@ -153,12 +172,17 @@ export async function deleteFile(storagePath: string): Promise<StorageResult> {
   try {
     const client = await initializeS3Client();
 
-    const command = new DeleteObjectCommand({
+    const CommandConstructor = DeleteObjectCommand as unknown as new (
+      params: Record<string, unknown>
+    ) => unknown;
+    const command = new CommandConstructor({
       Bucket: storageConfig.bucket,
       Key: storagePath,
     });
 
-    await client.send(command);
+    await (
+      client as unknown as { send: (cmd: unknown) => Promise<unknown> }
+    ).send(command);
 
     return {
       success: true,
@@ -180,16 +204,25 @@ export async function fileExists(storagePath: string): Promise<boolean> {
   try {
     const client = await initializeS3Client();
 
-    const command = new HeadObjectCommand({
+    const CommandConstructor = HeadObjectCommand as unknown as new (
+      params: Record<string, unknown>
+    ) => unknown;
+    const command = new CommandConstructor({
       Bucket: storageConfig.bucket,
       Key: storagePath,
     });
 
-    await client.send(command);
+    await (
+      client as unknown as { send: (cmd: unknown) => Promise<unknown> }
+    ).send(command);
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     // HeadObject throws an error if the object doesn't exist
-    if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
+    const err = error as Record<string, unknown>;
+    if (
+      err.name === "NotFound" ||
+      (err.$metadata as Record<string, unknown>)?.httpStatusCode === 404
+    ) {
       return false;
     }
     console.error("Error checking file existence in S3/R2:", error);
@@ -207,12 +240,20 @@ export async function generateSignedUrl(
   try {
     const client = await initializeS3Client();
 
-    const command = new GetObjectCommand({
+    const CommandConstructor = GetObjectCommand as unknown as new (
+      params: Record<string, unknown>
+    ) => unknown;
+    const command = new CommandConstructor({
       Bucket: storageConfig.bucket,
       Key: storagePath,
     });
 
-    const signedUrl = await getSignedUrl(client, command, {
+    const getSignedUrlFn = getSignedUrl as unknown as (
+      client: unknown,
+      command: unknown,
+      options: Record<string, unknown>
+    ) => Promise<string>;
+    const signedUrl = await getSignedUrlFn(client, command, {
       expiresIn,
     });
 

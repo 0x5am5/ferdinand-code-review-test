@@ -1,19 +1,22 @@
 import { brandAssets } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { db } from "../../../db";
+import type {
+  SlackAuditLog,
+  SlackRespondFn,
+  SlackWorkspace,
+} from "../../../types/slack-types";
 
 export async function handleSearchSubcommand({
-  command,
   respond,
   variant,
   workspace,
   auditLog,
 }: {
-  command: any;
-  respond: any;
+  respond: SlackRespondFn;
   variant: string;
-  workspace: any;
-  auditLog: any;
+  workspace: SlackWorkspace;
+  auditLog: SlackAuditLog;
 }) {
   const query = variant; // variant contains the search query for search subcommand
 
@@ -57,7 +60,7 @@ export async function handleSearchSubcommand({
     {} as Record<string, typeof searchResults>
   );
 
-  const blocks: any[] = [
+  const blocks: unknown[] = [
     {
       type: "section",
       text: {

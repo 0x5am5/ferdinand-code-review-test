@@ -1,6 +1,5 @@
 import type { Client, FeatureToggles, User } from "@shared/schema";
 import {
-  CloudIcon,
   Edit2,
   Eye,
   Figma,

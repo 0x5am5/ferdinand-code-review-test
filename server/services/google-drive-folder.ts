@@ -40,25 +40,29 @@ export async function listFolderContents(
 
       // Process each file/folder
       for (const file of files) {
-        // Skip if we've seen this file already
-        if (processedFiles.has(file.id!)) {
+        // Skip if we've seen this file already or if file has no ID
+        if (!file.id || processedFiles.has(file.id)) {
           continue;
         }
 
-        processedFiles.add(file.id!);
+        processedFiles.add(file.id);
 
         // If it's a folder, process it recursively
         if (file.mimeType === "application/vnd.google-apps.folder") {
-          await processFolder(file.id!, currentDepth + 1);
+          // We already checked file.id exists above
+          if (file.id) {
+            await processFolder(file.id, currentDepth + 1);
+          }
         } else {
           // Add file to results if it's not a folder
+          // We already checked file.id exists above
           allFiles.push({
-            id: file.id!,
-            name: file.name!,
-            mimeType: file.mimeType!,
+            id: file.id,
+            name: file.name || "Untitled",
+            mimeType: file.mimeType || "application/octet-stream",
             size: file.size || "0",
-            webViewLink: file.webViewLink!,
-            modifiedTime: file.modifiedTime!,
+            webViewLink: file.webViewLink || "",
+            modifiedTime: file.modifiedTime || new Date().toISOString(),
           });
 
           // Check if we've reached the file limit
@@ -94,7 +98,7 @@ export function validateFolderContents(files: DriveFileMetadata[]): {
   }
 
   // Check for unsupported file types
-  const unsupportedFiles = files.filter((file) => {
+  const unsupportedFiles = files.filter((_file) => {
     // Add your mime type validation logic here
     // This should match your existing file validation rules
     return false; // Placeholder

@@ -2,6 +2,7 @@ import { brandAssets, slackWorkspaces } from "@shared/schema";
 import { WebClient } from "@slack/web-api";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
+import type { SlackCommandArgs } from "../../types/slack-types";
 import {
   buildLogoConfirmationBlocks,
   buildLogoProcessingMessage,
@@ -22,8 +23,7 @@ export async function handleLogoCommand({
   command,
   ack,
   respond,
-  client,
-}: any) {
+}: SlackCommandArgs) {
   const startTime = Date.now();
   await ack();
 
@@ -160,12 +160,15 @@ export async function handleLogoCommand({
 
           // If dark query specifically requested, only upload dark (or light if no dark available)
           if (isDarkQuery) {
-            const downloadParams: any = {
+            const downloadParams: {
+              format: string;
+              variant?: "dark" | "light";
+            } = {
               format: "png",
             };
 
             if (hasDarkVariant) {
-              downloadParams.variant = "dark";
+              downloadParams.variant = "dark" as const;
             }
 
             const downloadUrl = generateAssetDownloadUrl(
@@ -195,9 +198,10 @@ export async function handleLogoCommand({
             );
           } else {
             // For non-dark queries, upload light variant always
-            const lightParams: any = {
-              format: "png",
-            };
+            const lightParams: { format: string; variant?: "dark" | "light" } =
+              {
+                format: "png",
+              };
 
             const lightUrl = generateAssetDownloadUrl(
               asset.id,
@@ -228,10 +232,11 @@ export async function handleLogoCommand({
 
             // If asset has dark variant and we're showing all, also upload dark
             if (hasDarkVariant) {
-              const darkParams: any = {
-                format: "png",
-                variant: "dark",
-              };
+              const darkParams: { format: string; variant: "dark" | "light" } =
+                {
+                  format: "png",
+                  variant: "dark" as const,
+                };
 
               const darkUrl = generateAssetDownloadUrl(
                 asset.id,
@@ -279,7 +284,7 @@ export async function handleLogoCommand({
               user: command.user_id,
               text: "❌ Failed to upload logo files. Check your DMs for the files or download links.",
             });
-          } catch (_ephemeralError: any) {
+          } catch (_ephemeralError: unknown) {
             console.log("Could not send ephemeral error message, trying DM...");
 
             try {

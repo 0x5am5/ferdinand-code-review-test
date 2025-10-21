@@ -43,7 +43,7 @@ async function fixLogoTypeData() {
 
       for (const asset of logoAssets) {
         let needsUpdate = false;
-        let assetData;
+        let assetData: Record<string, unknown>;
 
         try {
           assetData =
@@ -94,9 +94,13 @@ async function fixLogoTypeData() {
 
         if (needsUpdate) {
           await storage.updateAsset(asset.id, {
-            ...asset,
-            data: assetData,
-          } as any);
+            name: asset.name,
+            clientId: asset.clientId,
+            category: asset.category as "logo",
+            data: assetData as unknown as InsertBrandAsset["data"],
+            fileData: asset.fileData || "",
+            mimeType: asset.mimeType || "",
+          });
           console.log(`Updated asset ${asset.id} with type: ${assetData.type}`);
         }
       }
@@ -1080,12 +1084,14 @@ export function registerAssetRoutes(app: Express) {
         // Update client logo if this is a square or favicon logo update
         try {
           if (asset.category === "logo" && parsed.data) {
-            const data = parsed.data as any;
+            const data = parsed.data as InsertBrandAsset;
             const assetData =
               typeof asset.data === "string"
                 ? JSON.parse(asset.data)
                 : asset.data;
-            const logoType = data.data?.type || assetData?.type;
+            const logoType =
+              (data.data as Record<string, unknown>)?.type ||
+              (assetData as Record<string, unknown>)?.type;
 
             if (logoType === "square" || logoType === "favicon") {
               const logoUrl = `/api/clients/${clientId}/assets/${asset.id}/download`;
@@ -2148,7 +2154,7 @@ export function registerAssetRoutes(app: Express) {
 
         try {
           // Generate or get cached thumbnail (returns storage path)
-          const thumbnailStoragePath = await getOrGenerateThumbnail(
+          const _thumbnailStoragePath = await getOrGenerateThumbnail(
             tempFilePath,
             assetId,
             size,

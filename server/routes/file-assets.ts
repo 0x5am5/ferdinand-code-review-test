@@ -2061,7 +2061,7 @@ export function registerFileAssetRoutes(app: Express) {
 
         try {
           // Generate or get cached thumbnail (returns storage path)
-          const thumbnailStoragePath = await getOrGenerateThumbnail(
+          const _thumbnailStoragePath = await getOrGenerateThumbnail(
             tempFilePath,
             assetId,
             size,

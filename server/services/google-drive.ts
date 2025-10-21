@@ -104,11 +104,9 @@ export const importDriveFile = async ({
       : undefined;
 
     // Determine if the importing user is the owner in Drive
-    const isOwnedByImporter = driveFile.owners?.[0]?.emailAddress
-      ? // We would need the user's email to check this properly
-        // For now, we assume false unless we can confirm
-        false
-      : false;
+    // We would need the user's email to check this properly
+    // For now, we assume false unless we can confirm
+    const isOwnedByImporter = false;
 
     // Check if file has public link (webContentLink indicates downloadable/shareable)
     const hasPublicLink = !!driveFile.webContentLink;

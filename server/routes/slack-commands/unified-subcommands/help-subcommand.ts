@@ -1,11 +1,11 @@
+import type { SlackAuditLog, SlackRespondFn } from "../../../types/slack-types";
+
 export async function handleHelpSubcommand({
-  command,
   respond,
   auditLog,
 }: {
-  command: any;
-  respond: any;
-  auditLog: any;
+  respond: SlackRespondFn;
+  auditLog: SlackAuditLog;
 }) {
   const helpBlocks = [
     {

@@ -1,6 +1,11 @@
 import { brandAssets } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { db } from "../../../db";
+import type {
+  SlackAuditLog,
+  SlackRespondFn,
+  SlackWorkspace,
+} from "../../../types/slack-types";
 import {
   buildColorBlocks,
   buildColorConfirmationBlocks,
@@ -12,19 +17,15 @@ import {
 } from "../../../utils/slack-helpers";
 
 export async function handleColorSubcommand({
-  command,
   respond,
-  client,
   variant,
   workspace,
   auditLog,
 }: {
-  command: any;
-  respond: any;
-  client: any;
+  respond: SlackRespondFn;
   variant: string;
-  workspace: any;
-  auditLog: any;
+  workspace: SlackWorkspace;
+  auditLog: SlackAuditLog;
 }) {
   const colorAssets = await db
     .select()
