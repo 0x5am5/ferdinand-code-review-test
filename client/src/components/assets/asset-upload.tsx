@@ -257,7 +257,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
         <DialogHeader>
           <DialogTitle>Upload Assets</DialogTitle>
           <DialogDescription>
-            Upload multiple files - categories will be automatically determined
+            Upload multiple files and organize them with categories and tags
           </DialogDescription>
         </DialogHeader>
 

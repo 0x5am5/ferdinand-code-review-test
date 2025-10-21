@@ -222,7 +222,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
               Drop files to upload
             </p>
             <p className="text-sm text-muted-foreground text-center mt-2">
-              Categories will be automatically determined
+              You'll be able to add categories and tags
             </p>
           </div>
         </div>
