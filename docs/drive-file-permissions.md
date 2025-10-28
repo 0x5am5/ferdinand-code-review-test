@@ -283,25 +283,84 @@ SUPER_ADMIN users have special privileges for Google Drive integration that allo
 2. **Import files into any client** without requiring a userClients association
 3. **Bypass client access restrictions** while maintaining security for other user roles
 
-### SUPER_ADMIN Privileges
+### Master Admin Global Linking
 
 #### Global Drive Connection
-- SUPER_ADMIN can link Google Drive from dashboard using `/api/auth/google/url`
-- Connection is stored globally and not tied to any specific client
-- Connection status is available across all clients and pages
-- OAuth callback handling triggers token refresh and status refetch globally
+- **Connection Scope**: SUPER_ADMIN can link Google Drive from dashboard using `/api/auth/google/url` without clientId parameter
+- **Storage**: Connection stored in `googleDriveConnections` table tied to `userId` only, not `clientId`
+- **Availability**: Connection status available across all clients via `/api/google-drive/status`
+- **OAuth Flow**: Handled by `server/middlewares/google-drive-auth.ts` with global token management
+- **Token Management**: Automatic refresh works globally across all client contexts
 
 #### Import Bypass Mechanism
-- SUPER_ADMIN can import into any client without userClients entry
+- **Target Determination**: Import always goes to currently viewed client's Brand Assets page
+- **Client Parameter**: Frontend `AssetManager.tsx` passes current `clientId` to import mutation
+- **Backend Validation**: Import endpoint `/api/google-drive/import` requires `clientId` in request body
+- **SUPER_ADMIN Bypass**: Backend skips `userClients` association check for SUPER_ADMIN role
+### Audit Logging
+
+#### Asset-Level Audit Trail
+- **Primary Records**: `assets` table captures comprehensive audit information:
+  - `uploadedBy`: SUPER_ADMIN's userId who performed import
+  - `clientId`: Target client where files were imported
+  - `createdAt`: Import timestamp
+  - `updatedAt`: Last modification timestamp
+  - `fileName`: Generated unique filename
+  - `originalFileName`: Original Drive filename
+
+#### Import Process Logging
+- **Service Logs**: Detailed console logging during import process:
+```typescript
+console.log(
+  `Drive file downloaded and imported: ${driveFile.name} -> ${asset.fileName} (ID: ${asset.id}) by user ${userId} (${userRole})${categoryId ? `, category: ${categoryId}` : ""}`
+);
+```
+
+#### Progress Tracking
+- **Server-Sent Events**: Real-time progress updates during import:
+  - Download status per file
+  - Success/failure indicators
+  - Asset creation confirmation
+  - Final import summary
+- **Error Tracking**: Failed imports logged with specific error messages
+
+#### No Separate Audit Table
+- **Integration**: Uses standard asset audit trails rather than separate Drive audit table
+- **Completeness**: All import activities preserved through existing asset management logging
+- **Traceability**: Full audit trail available through asset history and user activity logs
 - Backend checks `user.role !== UserRole.SUPER_ADMIN` before enforcing client access
 - Audit logs still record the correct uploader userId (SUPER_ADMIN's ID)
 - Import target is always the current client being viewed
 
-#### UI Indicators
-- Dashboard shows "Link your Google Drive" control for SUPER_ADMIN only
-- Brand Asset Manager shows connection status and target client for SUPER_ADMIN
-- Connected account email is displayed: "Google Drive Connected (user@example.com)"
-- Target client display: "Files will import into [Current Client Name]"
+### UI Indicators and User Experience
+
+#### Dashboard Controls
+- **SUPER_ADMIN Only**: "Link your Google Drive" control appears exclusively for SUPER_ADMIN users
+- **Global Status**: Connection status persists across all client contexts
+- **Email Display**: Connected account email shown: "Google Drive Connected (user@example.com)"
+
+#### Brand Assets Page
+- **Connection Status**: Shows current Drive connection state for admin users
+- **Target Client Display**: Clear indication: "Files will import into [Current Client Name]"
+- **Import Progress**: Real-time progress bar with file-by-file status updates
+- **Error Handling**: User-friendly error messages for import failures
+
+#### Component Implementation
+```typescript
+// Dashboard - SUPER_ADMIN global connect control
+{user.role === 'super_admin' && (
+  <GoogleDriveConnect variant="dashboard" />
+)}
+
+// Asset Manager - Connection status and import
+{isAdmin && googleDriveQuery.data && (
+  <div className="text-sm text-muted-foreground">
+    Google Drive Connected ({googleDriveQuery.data.userEmail})
+    <br />
+    Files will import into {currentClient?.name}
+  </div>
+)}
+```
 
 ### Implementation Details
 
@@ -334,11 +393,11 @@ if (user.role !== UserRole.SUPER_ADMIN) {
 
 ### Security Considerations
 
-#### Audit Logging
-- All imports record uploader's userId accurately
-- clientId is always the target client, not the SUPER_ADMIN's default client
-- Import timestamps and file details are preserved
-- No audit trail is lost due to SUPER_ADMIN bypass
+#### Audit Integrity
+- **User Attribution**: All imports correctly attributed to SUPER_ADMIN's userId
+- **Client Isolation**: Target clientId accurately recorded for each import
+- **Temporal Accuracy**: Precise timestamps maintained for all import activities
+- **No Audit Loss**: SUPER_ADMIN bypass doesn't compromise audit trail completeness
 
 #### Permission Isolation
 - Non-super_admin users still require userClients association
@@ -346,24 +405,23 @@ if (user.role !== UserRole.SUPER_ADMIN) {
 - No security bypasses are introduced for other roles
 - SUPER_ADMIN privileges are role-based, not user-based
 
-#### Error Handling
-- Token refresh works globally for SUPER_ADMIN
-- Connection errors are handled gracefully
-- Import failures don't expose sensitive information
-- Rate limiting still applies to SUPER_ADMIN
+#### Error Handling and Security
+- **Token Security**: Global token refresh maintains encryption and security standards
+- **Graceful Failures**: Connection errors handled without exposing sensitive information
+- **Input Validation**: All import requests validated regardless of user role
+- **Session Security**: SUPER_ADMIN still requires valid session for all operations
 
 ### Usage Examples
 
-#### SUPER_ADMIN Workflow
-1. Login as SUPER_ADMIN
-2. Navigate to dashboard
-3. Click "Link your Google Drive"
-4. Complete OAuth flow
-5. Navigate to any client's Brand Assets page
-6. See "Google Drive Connected" indicator
-7. Click "Import from Drive"
-8. Select files from Google Picker
-9. Files import into current client
+#### SUPER_ADMIN Global Workflow
+1. **Authentication**: Login as SUPER_ADMIN user
+2. **Global Connection**: Navigate to dashboard, click "Link your Google Drive"
+3. **OAuth Completion**: Complete Google OAuth flow (no client association required)
+4. **Client Navigation**: Navigate to any client's Brand Assets page
+5. **Status Verification**: See "Google Drive Connected" with target client indication
+6. **File Import**: Click "Import from Drive", select files via Google Picker
+7. **Target Confirmation**: Files import into currently viewed client
+8. **Audit Trail**: Import recorded with SUPER_ADMIN userId and target clientId
 
 #### Regular Admin Workflow (Unchanged)
 1. Login as Regular Admin
