@@ -143,7 +143,7 @@ export const clients = pgTable("clients", {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
-    slackIntegration: false,
+    slackIntegration: true,
     brandAssets: false,
   }),
   lastEditedBy: integer("last_edited_by").references(() => users.id),

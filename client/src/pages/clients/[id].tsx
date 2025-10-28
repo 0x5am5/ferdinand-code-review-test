@@ -10,7 +10,7 @@ import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { IntegrationsHub } from "@/components/integrations/IntegrationsHub";
-import { ClientSettingsPage } from "@/components/settings/client-settings-page";
+import { SettingsPage } from "@/components/settings/settings-page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -163,7 +163,7 @@ export default function ClientDetails() {
       userPersonas: true,
       inspiration: true,
       figmaIntegration: false,
-      slackIntegration: false,
+      slackIntegration: true,
       brandAssets: false,
     };
 
