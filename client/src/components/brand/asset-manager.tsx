@@ -161,16 +161,16 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   }, []);
 
   const _handleGoogleDriveClick = () => {
-    // If not connected, redirect to integrations tab
+    // If not connected, redirect to settings tab
     if (!googleDriveQuery.data) {
       // Dispatch custom event for tab change (like sidebar does)
       const event = new CustomEvent("client-tab-change", {
-        detail: { tab: "integrations" },
+        detail: { tab: "settings" },
       });
       window.dispatchEvent(event);
 
       // Update URL
-      setLocation(`/clients/${clientId}?tab=integrations`);
+      setLocation(`/clients/${clientId}?tab=settings`);
     }
     // If connected, the GoogleDrivePicker will handle opening the picker
   };
@@ -214,33 +214,6 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* Google Drive Connection Indicator for Super Admins */}
-          {isSuperAdmin && googleDriveQuery.data && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-              <div className="text-sm">
-                <div className="font-medium text-green-800">
-                  Google Drive Connected
-                </div>
-                <div className="text-green-600">
-                  {googleDriveQuery.data.scopes?.includes("drive.readonly") && (
-                    <span className="block">
-                      Account:{" "}
-                      {googleDriveQuery.data.userEmail ||
-                        (googleDriveQuery.data.userId === user?.id
-                          ? "You"
-                          : `User ${googleDriveQuery.data.userId}`)}
-                    </span>
-                  )}
-                  {currentClient && (
-                    <span className="block">
-                      Files will import into: {currentClient.name}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
           {/* Google Drive Button - Smart button that changes based on connection status */}
           {isAdmin &&
             (!googleDriveQuery.data ? (

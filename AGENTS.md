@@ -123,4 +123,5 @@ make sure all typescript errors are resolved
 CLAUDE.md file, AGENTS.md file should be in sync
 Any authentication/permission should ALWAYS be enforced on the backend
 run biome checks after each tasks to fix linting and coding errors
+don't create documentation unless specifically asked
 ```

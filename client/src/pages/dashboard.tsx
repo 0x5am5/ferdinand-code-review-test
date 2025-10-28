@@ -370,26 +370,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Google Drive Link Control for Master Admins */}
-      {user?.role === UserRole.SUPER_ADMIN && (
-        <div className="mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FolderOpen className="h-5 w-5 text-primary" />
-                Google Drive Integration
-              </CardTitle>
-              <CardDescription>
-                Link your Google Drive — allows importing files into any client
-                from its Brand Assets page.
-              </CardDescription>
-            </CardHeader>
-            <div className="p-6">
-              <GoogleDriveConnect variant="default" size="default" />
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Search and Sort Controls */}
       <div className="flex gap-4 mb-6">

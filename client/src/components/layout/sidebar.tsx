@@ -8,6 +8,7 @@ import {
   LogOutIcon,
   PaletteIcon,
   Search,
+  Settings,
   UsersIcon,
 } from "lucide-react";
 import type React from "react";
@@ -165,6 +166,16 @@ export const Sidebar: FC = () => {
             title: "Design Builder",
             href: "/design-builder",
             icon: <PaletteIcon className="h-4 w-4" />,
+          },
+        ]
+      : []),
+    // Show Settings for super_admins
+    ...(user?.role === UserRole.SUPER_ADMIN
+      ? [
+          {
+            title: "Settings",
+            href: "/admin/settings",
+            icon: <Settings className="h-4 w-4" />,
           },
         ]
       : []),
