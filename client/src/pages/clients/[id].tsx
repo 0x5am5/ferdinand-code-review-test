@@ -343,6 +343,7 @@ export default function ClientDetails() {
             featureToggles={{
               figmaIntegration: featureToggles.figmaIntegration,
               slackIntegration: featureToggles.slackIntegration,
+              brandAssets: featureToggles.brandAssets,
             }}
           />
         );

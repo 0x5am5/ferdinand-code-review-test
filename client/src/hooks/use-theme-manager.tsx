@@ -59,12 +59,21 @@ export function useThemeManager(): ThemeManagerHookResult {
       }
 
       // Apply all CSS variables from theme.colors
+      // Skip 'primary' as it's already set from theme.primary in the theme manager
       if (theme.colors) {
         Object.entries(theme.colors).forEach(([key, value]) => {
-          if (typeof value === "string") {
+          if (typeof value === "string" && key !== "primary") {
             root.style.setProperty(`--${key}`, value);
           }
         });
+
+        // Explicitly set primary-foreground if it exists
+        if (theme.colors["primary-foreground"]) {
+          root.style.setProperty(
+            "--primary-foreground",
+            theme.colors["primary-foreground"]
+          );
+        }
       }
 
       // Apply typography settings

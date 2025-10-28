@@ -1,6 +1,5 @@
-import { CloudIcon, Settings as SettingsIcon } from "lucide-react";
+import { CloudIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -10,7 +9,7 @@ export default function AdminSettings() {
   // Only allow super admins to access this page
   if (!user || user.role !== "super_admin") {
     return (
-      <div className="p-8">
+      <div className="p-8 pt-4">
         <Card>
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
@@ -24,43 +23,34 @@ export default function AdminSettings() {
   }
 
   return (
-    <section className="relative">
+    <div className="p-8 pt-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Settings</h1>
+          <h1 className="text-4xl font-bold">Settings</h1>
           <p className="text-muted-foreground mt-1">
             Manage system-wide integrations and settings
           </p>
         </div>
       </div>
 
-      <Tabs defaultValue="integrations" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="integrations" className="space-y-6">
-          <div className="grid gap-6">
-            {/* Google Drive Integration */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CloudIcon className="h-5 w-5" />
-                  Google Drive Integration
-                </CardTitle>
-                <CardDescription>
-                  Link your Google Drive — allows importing files into any client
-                  from its Brand Assets page.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <GoogleDriveConnect variant="default" size="default" />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </section>
+      {/* Integrations Section */}
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CloudIcon className="h-5 w-5" />
+              Google Drive Integration
+            </CardTitle>
+            <CardDescription>
+              Connect your Google Drive to import brand assets directly from your Drive files into any client's Brand Assets page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GoogleDriveConnect variant="default" size="default" />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

@@ -1,278 +1,191 @@
 # Google Drive Import - Manual QA Checklist
 
-This checklist provides step-by-step instructions for manually validating the end-to-end import flow and permission enforcement for the SUPER_ADMIN bypass functionality.
+## Test Environment Setup
+- **Server URL**: http://localhost:3001 ✅
+- **Frontend URL**: http://localhost:3001 (integrated dev server) ✅
+- **Test Date**: 2025-10-28
+- **Tester**: [To be filled]
+- **Browser**: [To be filled]
+- **Server Status**: Running (PID 26982) ✅
+- **Database**: Local PostgreSQL ✅
 
-## Prerequisites
-
-- [ ] **Test Environment Setup**
-  - [ ] Server running on `http://localhost:3001`
-  - [ ] Database with test data available
-  - [ ] Test users created:
-    - [ ] SUPER_ADMIN user (e.g., `superadmin@test.com`)
-    - [ ] Regular ADMIN user (e.g., `admin@test.com`)
-    - [ ] STANDARD user (e.g., `standard@test.com`)
-  - [ ] Test clients created:
-    - [ ] Client A (accessible to regular admin)
-    - [ ] Client B (not accessible to regular admin)
-  - [ ] Google Drive test files available in test account
-
-## Test Scenarios
-
-### 1. SUPER_ADMIN Global Linking and Import
-
-#### 1.1 Link Drive as SUPER_ADMIN from Dashboard
-- [ ] **Login as SUPER_ADMIN user**
-  - [ ] Navigate to dashboard (`/dashboard`)
-  - [ ] Verify "Link your Google Drive" control is visible
-  - [ ] Verify UX copy: "Link your Google Drive — allows importing files into any client from its Brand Assets page."
-  - [ ] Click "Link your Google Drive" button
-  - [ ] Verify OAuth redirect to Google
-  - [ ] Complete OAuth flow in Google
-  - [ ] Verify redirect back to application
-  - [ ] Verify success message/toast appears
-  - [ ] Verify Drive connection status shows as connected
-
-#### 1.2 Import Assets into Client A
-- [ ] **Navigate to Client A Brand Assets page**
-  - [ ] Verify Drive connection indicator shows: "Google Drive Connected"
-  - [ ] Verify connected account email is displayed
-  - [ ] Verify target client display: "Files will import into [Client A name]"
-  - [ ] Click "Import from Drive" button
-  - [ ] Verify Google Picker opens
-  - [ ] Select test files (at least 2-3 different file types)
-  - [ ] Click "Select" in picker
-  - [ ] Monitor import progress via SSE/events
-  - [ ] Verify progress updates show for each file
-  - [ ] Verify completion message shows correct counts
-  - [ ] Verify imported files appear in Client A assets list
-  - [ ] Verify files are assigned to Client A (not wrong client)
-
-#### 1.3 Import Assets into Client B
-- [ ] **Navigate to Client B Brand Assets page**
-  - [ ] Verify Drive connection indicator still shows: "Google Drive Connected"
-  - [ ] Verify target client display: "Files will import into [Client B name]"
-  - [ ] Click "Import from Drive" button
-  - [ ] Verify Google Picker opens
-  - [ ] Select different test files
-  - [ ] Click "Select" in picker
-  - [ ] Monitor import progress
-  - [ ] Verify completion message
-  - [ ] Verify imported files appear in Client B assets list
-  - [ ] Verify files are assigned to Client B (not Client A)
-
-### 2. Non-SUPER_ADMIN Permission Enforcement
-
-#### 2.1 Regular Admin with Valid Client Access
-- [ ] **Login as Regular ADMIN user**
-  - [ ] Navigate to Client A Brand Assets page (client they have access to)
-  - [ ] Verify "Link your Google Drive" control is NOT visible (should only show for SUPER_ADMIN)
-  - [ ] If Drive is already connected by SUPER_ADMIN, verify connection indicator shows
-  - [ ] Click "Import from Drive" button
-  - [ ] Verify Google Picker opens
-  - [ ] Select test files
-  - [ ] Click "Select" in picker
-  - [ ] Monitor import progress
-  - [ ] Verify import completes successfully
-  - [ ] Verify imported files appear in Client A assets list
-
-#### 2.2 Regular Admin with Invalid Client Access
-- [ ] **Attempt to import into Client B (no userClients entry)**
-  - [ ] Navigate to Client B Brand Assets page
-  - [ ] Click "Import from Drive" button
-  - [ ] Verify Google Picker opens
-  - [ ] Select test files
-  - [ ] Click "Select" in picker
-  - [ ] **Expected**: Import fails with "Not authorized for this client" error
-  - [ ] Verify error message is clear and user-friendly
-  - [ ] Verify no files are imported
-  - [ ] Verify error is logged appropriately
-
-#### 2.3 Standard User Permission Test
-- [ ] **Login as STANDARD user**
-  - [ ] Navigate to any client Brand Assets page
-  - [ ] Verify import functionality is appropriately restricted
-  - [ ] Attempt import and verify proper permission handling
-
-### 3. Audit Logging Verification
-
-#### 3.1 SUPER_ADMIN Import Audit
-- [ ] **Check audit logs for SUPER_ADMIN imports**
-  - [ ] Import files into Client A as SUPER_ADMIN
-  - [ ] Check database/audit logs:
-    - [ ] Verify uploader userId is SUPER_ADMIN's ID
-    - [ ] Verify clientId is correctly recorded (Client A)
-    - [ ] Verify timestamp is accurate
-    - [ ] Verify file details are logged
-  - [ ] Import files into Client B as SUPER_ADMIN
-  - [ ] Check audit logs:
-    - [ ] Verify uploader userId is still SUPER_ADMIN's ID
-    - [ ] Verify clientId is correctly recorded (Client B)
-    - [ ] Verify timestamp is accurate
-
-#### 3.2 Regular Admin Import Audit
-- [ ] **Check audit logs for Regular Admin imports**
-  - [ ] Import files into Client A as Regular Admin
-  - [ ] Check database/audit logs:
-    - [ ] Verify uploader userId is Regular Admin's ID
-    - [ ] Verify clientId is correctly recorded (Client A)
-    - [ ] Verify timestamp is accurate
-
-### 4. Security and Error Handling
-
-#### 4.1 Token Expiry Handling
-- [ ] **Test token refresh scenarios**
-  - [ ] Wait for token to expire (or manually expire in database)
-  - [ ] Attempt import as SUPER_ADMIN
-  - [ ] Verify automatic token refresh occurs
-  - [ ] Verify import succeeds after refresh
-  - [ ] Verify user sees appropriate loading/refresh indicators
-
-#### 4.2 Connection Error Handling
-- [ ] **Test connection failure scenarios**
-  - [ ] Disconnect Google Drive
-  - [ ] Attempt import
-  - [ ] Verify "Google Drive authentication required" error
-  - [ ] Verify error handling is graceful
-  - [ ] Verify user can re-connect
-
-#### 4.3 Network Error Handling
-- [ ] **Test network interruption scenarios**
-  - [ ] Start import and disconnect network
-  - [ ] Verify appropriate error handling
-  - [ ] Verify partial imports are handled correctly
-  - [ ] Verify user can retry import
-
-### 5. File Type and Size Validation
-
-#### 5.1 Supported File Types
-- [ ] **Test various file types**
-  - [ ] Import PDF files - verify success
-  - [ ] Import image files (PNG, JPG) - verify success
-  - [ ] Import document files (DOC, DOCX) - verify success
-  - [ ] Import unsupported file types - verify appropriate rejection
-
-#### 5.2 File Size Limits
-- [ ] **Test file size validation**
-  - [ ] Import small files (< 1MB) - verify success
-  - [ ] Import large files (approaching limit) - verify success
-  - [ ] Import oversized files - verify appropriate rejection
-  - [ ] Verify error messages are clear
-
-### 6. Performance and Scalability
-
-#### 6.1 Large Batch Imports
-- [ ] **Test importing multiple files**
-  - [ ] Import 10+ files simultaneously
-  - [ ] Monitor memory usage and performance
-  - [ ] Verify all files are processed
-  - [ ] Verify progress updates are responsive
-  - [ ] Verify completion time is reasonable
-
-#### 6.2 Concurrent User Operations
-- [ ] **Test multiple users importing simultaneously**
-  - [ ] Have SUPER_ADMIN import to Client A
-  - [ ] Have Regular Admin import to Client A (if they have access)
-  - [ ] Verify operations don't interfere with each other
-  - [ ] Verify audit logs correctly track each user
-
-## Expected Results Documentation
-
-### Success Criteria
-- [ ] **SUPER_ADMIN can import into any client**
-  - [ ] No userClients entry required
-  - [ ] Import succeeds for any client
-  - [ ] Correct clientId is used for asset assignment
-
-- [ ] **Non-SUPER_ADMIN permissions enforced**
-  - [ ] Regular users blocked without userClients entry
-  - [ ] Clear error messages provided
-  - [ ] No security bypasses possible
-
-- [ ] **Audit logging accurate**
-  - [ ] Uploader userId always recorded correctly
-  - [ ] ClientId always recorded correctly
-  - [ ] Timestamps are accurate
-  - [ ] File details are preserved
-
-### Error Handling
-- [ ] **Graceful failure handling**
-  - [ ] Network errors don't crash system
-  - [ ] Authentication errors are clear
-  - [ ] Permission errors are user-friendly
-  - [ ] Recovery mechanisms work correctly
-
-## Test Results Template
-
-```
-Test Environment:
-- Server URL: http://localhost:3001
-- Test Date: [DATE]
-- Tester: [NAME]
-- Browser: [BROWSER/VERSION]
-
-Test Results:
-✅ SUPER_ADMIN Global Linking: [PASS/FAIL] - [Notes]
-✅ SUPER_ADMIN Import to Client A: [PASS/FAIL] - [Notes]
-✅ SUPER_ADMIN Import to Client B: [PASS/FAIL] - [Notes]
-✅ Regular Admin Valid Client: [PASS/FAIL] - [Notes]
-✅ Regular Admin Invalid Client: [PASS/FAIL] - [Notes]
-✅ Audit Logging: [PASS/FAIL] - [Notes]
-✅ Error Handling: [PASS/FAIL] - [Notes]
-✅ Performance: [PASS/FAIL] - [Notes]
-
-Issues Found:
-1. [Description of issue]
-   - Severity: [HIGH/MEDIUM/LOW]
-   - Steps to reproduce: [Steps]
-   - Expected behavior: [Description]
-   - Actual behavior: [Description]
-   - Suggested fix: [Description]
-
-Screenshots:
-- [Attach relevant screenshots for each test scenario]
-```
-
-## Additional Notes
-
-### Browser Compatibility
-- [ ] Test in Chrome (latest)
-- [ ] Test in Firefox (latest)
-- [ ] Test in Safari (latest)
-- [ ] Test in Edge (latest)
-
-### Mobile Responsiveness
-- [ ] Test dashboard linking on mobile
-- [ ] Test import flow on mobile
-- [ ] Verify picker works on mobile devices
-
-### Accessibility
-- [ ] Verify keyboard navigation works
-- [ ] Verify screen reader compatibility
-- [ ] Verify color contrast ratios
-- [ ] Verify focus management
-
-## Completion Criteria
-
-- [ ] All test scenarios executed
-- [ ] All results documented
-- [ ] Screenshots captured for failures
-- [ ] Performance metrics recorded
-- [ ] Accessibility verified
-- [ ] Browser compatibility confirmed
-- [ ] Issues documented with severity levels
-- [ ] Ready for production deployment
+## Test Accounts
+- **Super Admin Account**: [Email/ID to be filled]
+- **Regular Admin Account**: [Email/ID to be filled]
+- **Client A**: [Name/ID to be filled]
+- **Client B**: [Name/ID to be filled]
 
 ---
 
-**Instructions for QA Team:**
+## Subtask 8.1: Prepare test environment and link Google Drive as super_admin
 
-1. Complete each test scenario in order
-2. Take screenshots of each step
-3. Document any deviations from expected behavior
-4. Note performance issues or UI glitches
-5. Verify audit logs after each import test
-6. Test error scenarios thoroughly
-7. Report security concerns immediately
+### Status: ⏳ IN PROGRESS
 
-**Contact:** [QA Lead contact information]
-**Escalation:** [Escalation path for critical issues]
+### Pre-requisites:
+- [ ] Server is running on port 3001
+- [ ] Frontend is accessible
+- [ ] Super admin account is created and accessible
+- [ ] Google Drive test account is available
+
+### Test Steps:
+1. [ ] Login as super_admin
+2. [ ] Navigate to dashboard
+3. [ ] Locate Google Drive linking option
+4. [ ] Initiate OAuth flow
+5. [ ] Complete Google authentication
+6. [ ] Verify Drive is linked successfully
+
+### Expected Results:
+- [ ] Dashboard shows Drive as linked
+- [ ] No error messages during linking
+- [ ] Connection status is visible in UI
+
+### Screenshots/Evidence:
+- [ ] Login screen
+- [ ] Dashboard with Drive link option
+- [ ] OAuth redirect screen
+- [ ] Dashboard after successful linking
+- [ ] Connection status indicators
+
+### Notes/Observations:
+- [ ] Timestamp of linking: [To be filled]
+- [ ] Any errors encountered: [To be filled]
+- [ ] Token refresh indicators: [To be filled]
+
+---
+
+## Subtask 8.2: Import assets into Client A and Client B as super_admin
+
+### Status: ⏸️ PENDING
+
+### Test Steps for Client A:
+1. [ ] Navigate to Client A's asset management
+2. [ ] Initiate Google Drive import
+3. [ ] Select sample files for Client A
+4. [ ] Confirm Client A is selected as target
+5. [ ] Complete import process
+6. [ ] Verify assets appear in Client A's asset list
+
+### Test Steps for Client B:
+1. [ ] Navigate to Client B's asset management
+2. [ ] Initiate Google Drive import
+3. [ ] Select different sample files for Client B
+4. [ ] Confirm Client B is selected as target
+5. [ ] Complete import process
+6. [ ] Verify assets appear in Client B's asset list
+
+### Expected Results:
+- [ ] Assets are correctly assigned to Client A
+- [ ] Assets are correctly assigned to Client B
+- [ ] No cross-contamination between clients
+- [ ] Import progress indicators work correctly
+
+### Verification Methods:
+- [ ] UI asset list verification
+- [ ] Database query verification
+- [ ] API response verification
+
+### Screenshots/Evidence:
+- [ ] File picker interface
+- [ ] Import progress indicators
+- [ ] Client A asset list after import
+- [ ] Client B asset list after import
+- [ ] Database records showing correct clientId
+
+---
+
+## Subtask 8.3: Validate non-super_admin cannot import to unassociated clients
+
+### Status: ⏸️ PENDING
+
+### Test Steps:
+1. [ ] Login as regular admin (no client associations)
+2. [ ] Attempt to import to Client A
+3. [ ] Attempt to import to Client B
+4. [ ] Try direct API call to import endpoint
+5. [ ] Verify all attempts are blocked
+
+### Expected Results:
+- [ ] UI shows appropriate error messages
+- [ ] API returns 403 Forbidden
+- [ ] No assets are created in unassociated clients
+- [ ] Error messages are user-friendly
+
+### Screenshots/Evidence:
+- [ ] Error messages in UI
+- [ ] API response screenshots
+- [ ] Network tab showing 403 responses
+- [ ] Database verification showing no new assets
+
+---
+
+## Subtask 8.4: Verify audit fields record correct uploader userId
+
+### Status: ⏸️ PENDING
+
+### Test Steps:
+1. [ ] Check audit fields for super_admin imports
+2. [ ] Check audit fields for blocked attempts
+3. [ ] Verify userId matches authenticated user
+4. [ ] Check timestamps and other audit metadata
+
+### Expected Results:
+- [ ] uploader userId matches super_admin for successful imports
+- [ ] Audit logs correctly record failed attempts
+- [ ] Timestamps are accurate
+- [ ] No orphaned audit records
+
+### Verification Methods:
+- [ ] Database query of audit fields
+- [ ] API response inspection
+- [ ] Log file analysis
+
+### Screenshots/Evidence:
+- [ ] Database records showing audit fields
+- [ ] API responses with audit data
+- [ ] Log entries showing user actions
+
+---
+
+## Subtask 8.5: Produce QA report with reproduction steps, evidence, and recommended fixes
+
+### Status: ⏸️ PENDING
+
+### Report Contents:
+- [ ] Executive summary
+- [ ] Test environment details
+- [ ] Detailed test results
+- [ ] Screenshots and evidence
+- [ ] Pass/fail status per scenario
+- [ ] Identified issues with severity
+- [ ] Recommended fixes
+- [ ] Retest requirements
+
+### Deliverables:
+- [ ] Complete QA report (markdown/PDF)
+- [ ] All screenshots organized
+- [ ] Test data and logs
+- [ ] Bug tickets for any issues found
+
+---
+
+## Overall Test Summary
+
+### Pass/Fail Status:
+- Subtask 8.1: ⏳ IN PROGRESS
+- Subtask 8.2: ⏸️ PENDING
+- Subtask 8.3: ⏸️ PENDING
+- Subtask 8.4: ⏸️ PENDING
+- Subtask 8.5: ⏸️ PENDING
+
+### Critical Issues Found:
+- [ ] None identified yet
+
+### Recommendations:
+- [ ] Complete testing in order of dependencies
+- [ ] Document all findings thoroughly
+- [ ] Create bug tickets for any issues
+
+### Sign-off:
+- **QA Tester**: [Signature/Date]
+- **Review Date**: [To be filled]

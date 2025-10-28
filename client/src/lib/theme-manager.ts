@@ -31,6 +31,7 @@ export interface DesignSystem {
   colors: {
     // Basic colors
     primary: string;
+    "primary-foreground"?: string;
     background: string;
     foreground: string;
     muted: string;
@@ -152,6 +153,7 @@ export const defaultTheme: DesignSystem = {
     "destructive-foreground": "#ffffff",
     border: "#e2e8f0",
     ring: "#0099ff",
+    "primary-foreground": "#ffffff",
   },
 };
 
@@ -487,8 +489,13 @@ class ThemeManager {
           // Convert primary color to HSL
           const primaryHsl = this.hexToHSL(activeTheme.theme.primary);
 
-          // Apply the primary color
-          root.style.setProperty("--primary", primaryHsl.hslString);
+          // Apply the primary color - only if we got valid HSL values
+          if (!isNaN(primaryHsl.h) && !isNaN(primaryHsl.s) && !isNaN(primaryHsl.l)) {
+            root.style.setProperty("--primary", primaryHsl.hslString);
+          } else {
+            // Fallback to default blue if conversion failed
+            root.style.setProperty("--primary", "205 100% 50%");
+          }
 
           // Apply primary tints and shades
           if (activeTheme.colors["primary-tint-1"]) {
@@ -797,11 +804,20 @@ class ThemeManager {
             root.classList.remove("dark");
 
             // Apply all colors from the theme when in light mode
+            // Skip 'primary' as it's already set from theme.primary above
             Object.entries(activeTheme.colors).forEach(([key, value]) => {
-              if (typeof value === "string" && !key.startsWith("dark-")) {
+              if (typeof value === "string" && !key.startsWith("dark-") && key !== "primary") {
                 this.setCssColorProperty(`--${key}`, value);
               }
             });
+
+            // Explicitly set primary-foreground if it exists
+            if (activeTheme.colors["primary-foreground"]) {
+              this.setCssColorProperty(
+                "--primary-foreground",
+                activeTheme.colors["primary-foreground"]
+              );
+            }
           }
         }
 
@@ -835,6 +851,12 @@ class ThemeManager {
   } {
     // Remove the # if present
     hex = hex.replace(/^#/, "");
+
+    // Validate hex format
+    if (!/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(hex)) {
+      // Return default blue if invalid
+      return { h: 205, s: 100, l: 50, hslString: "205 100% 50%" };
+    }
 
     // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
     if (hex.length === 3) {

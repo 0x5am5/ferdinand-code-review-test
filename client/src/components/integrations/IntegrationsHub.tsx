@@ -21,6 +21,7 @@ interface IntegrationsHubProps {
   featureToggles?: {
     figmaIntegration?: boolean;
     slackIntegration?: boolean;
+    brandAssets?: boolean;
   };
 }
 
@@ -30,11 +31,13 @@ export function IntegrationsHub({
 }: IntegrationsHubProps) {
   const figmaEnabled = featureToggles.figmaIntegration ?? false;
   const slackEnabled = featureToggles.slackIntegration ?? false;
+  const googleDriveEnabled = featureToggles.brandAssets ?? false;
 
   // Track open/closed state for each integration
   const [openIntegrations, setOpenIntegrations] = useState<Record<string, boolean>>({
     figma: false,
     slack: false,
+    googleDrive: false,
   });
 
   const toggleIntegration = (key: string) => {
@@ -66,6 +69,16 @@ export function IntegrationsHub({
           },
         ]
       : []),
+    ...(googleDriveEnabled
+      ? [
+          {
+            key: "googleDrive",
+            name: "Google Drive",
+            icon: CloudIcon,
+            component: <GoogleDriveIntegration clientId={clientId} />,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -93,10 +106,7 @@ export function IntegrationsHub({
           <CardContent className="text-sm text-orange-700">
             <p>
               Available integrations: Figma (design token sync), Slack (brand
-              asset access)
-            </p>
-            <p className="mt-2 text-xs">
-              Note: Google Drive integration has been moved to Settings.
+              asset access), Google Drive (asset import)
             </p>
           </CardContent>
         </Card>

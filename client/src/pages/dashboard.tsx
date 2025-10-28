@@ -363,13 +363,15 @@ export default function Dashboard() {
   const filteredAndSortedClients = getFilteredAndSortedClients();
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <h1 className="font-bold">Dashboard</h1>
+    <div className="p-8 pt-4">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-4xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your clients and their brand systems
+          </p>
         </div>
       </div>
-
 
       {/* Search and Sort Controls */}
       <div className="flex gap-4 mb-6">

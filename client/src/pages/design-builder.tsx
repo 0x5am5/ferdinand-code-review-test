@@ -191,7 +191,7 @@ export default function DesignBuilder() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">Design Builder</h1>
+          <h1 className="text-4xl font-bold">Design Builder</h1>
 
           {!canEdit ? (
             <p className="text-sm text-destructive mt-2">
