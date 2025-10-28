@@ -32,7 +32,8 @@ node_modules/
 *.sw?
 # OS specific
 
+.taskmaster
+
 # Task files
 # tasks.json
 # tasks/ 
-.taskmaster

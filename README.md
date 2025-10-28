@@ -271,6 +271,144 @@ Clients can have features enabled/disabled via the `feature_toggles` JSON field:
 2. Run `npm run db:push` to apply changes
 3. Update TypeScript types accordingly
 
+# Local PostgreSQL Database Setup
+
+This guide explains how to use a local PostgreSQL database for development instead of the remote Neon database.
+
+## ✅ Setup Complete
+
+Your local PostgreSQL database is now set up and ready to use!
+
+- **Database Name:** `ferdinand_dev`
+- **Connection URL:** `postgresql://samuelgregory@localhost:5432/ferdinand_dev`
+- **All tables created:** 19 tables migrated successfully
+
+## 🔄 Switching Between Local and Remote Databases
+
+The app automatically detects whether you're using a local or remote database based on the `DATABASE_URL` in your `.env` file.
+
+### Use Local Database (Current Setup)
+```env
+DATABASE_URL=postgresql://samuelgregory@localhost:5432/ferdinand_dev
+```
+
+### Use Remote Neon Database
+```env
+DATABASE_URL=postgresql://neondb_owner:npg_VcIOBQmlY81h@ep-spring-bonus-a581cq2t.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+## 🚀 Starting Your App
+
+Just run your app normally:
+```bash
+npm run dev
+```
+
+The console will show which database you're connected to:
+- 🔧 Using local PostgreSQL database (local)
+- ☁️  Using Neon serverless database (remote)
+
+## 🔓 Bypassing Firebase Authentication for Local Development
+
+If you can't whitelist your local domain in Firebase, you can bypass authentication entirely during local development:
+
+### Setup
+
+1. Add these environment variables to your `.env` file:
+```env
+BYPASS_AUTH_FOR_LOCAL_DEV=true
+DEV_USER_EMAIL=your-email@example.com
+```
+
+2. Make sure the email matches a user that exists in your local database.
+
+### How it Works
+
+When `BYPASS_AUTH_FOR_LOCAL_DEV=true`:
+- The app skips Firebase token verification
+- Automatically logs you in as the user specified in `DEV_USER_EMAIL`
+- Creates a session without requiring any authentication
+
+### Security
+
+**⚠️ IMPORTANT**: This bypass will **NEVER** work in production. The middleware has built-in safeguards that prevent it from running when `NODE_ENV=production`.
+
+If you accidentally enable this in production, the app will return a 500 error instead of bypassing auth.
+
+## 📊 Database Management
+
+### View all tables
+```bash
+psql -U samuelgregory -d ferdinand_dev -c "\dt"
+```
+
+### Run SQL queries
+```bash
+psql -U samuelgregory -d ferdinand_dev
+```
+
+### Export data from remote to local
+```bash
+# Dump from remote Neon database
+DATABASE_URL="<remote-neon-url>" pg_dump > backup.sql
+
+# Import to local
+psql -U samuelgregory -d ferdinand_dev -f backup.sql
+```
+
+### Reset local database
+```bash
+# Drop and recreate database
+psql -U samuelgregory -d postgres -c "DROP DATABASE ferdinand_dev;"
+psql -U samuelgregory -d postgres -c "CREATE DATABASE ferdinand_dev;"
+
+# Re-run migrations
+cd migrations
+sed 's/^\/\*//' 0000_jittery_ma_gnuci.sql | sed 's/\*\///' | psql -U samuelgregory -d ferdinand_dev
+```
+
+## 🛠️ PostgreSQL Service Management
+
+### Check if PostgreSQL is running
+```bash
+brew services list | grep postgresql
+```
+
+### Start PostgreSQL
+```bash
+brew services start postgresql@14
+```
+
+### Stop PostgreSQL
+```bash
+brew services stop postgresql@14
+```
+
+### Restart PostgreSQL
+```bash
+brew services restart postgresql@14
+```
+
+## 📝 Notes
+
+- The local database starts empty. You'll need to seed it with test data or import from your remote database.
+- The `.env.remote` file contains a backup of your remote database configuration.
+- The database connection logic is in `server/db.ts` and automatically chooses the right driver based on the URL.
+
+## 🔍 Troubleshooting
+
+### App hangs on startup
+- Make sure PostgreSQL is running: `brew services list | grep postgresql`
+- Test connection manually: `psql -U samuelgregory -d ferdinand_dev -c "SELECT 1;"`
+
+### Connection refused
+- Ensure PostgreSQL is running on port 5432
+- Check if another process is using port 5432: `lsof -i :5432`
+
+### Tables not found
+- Re-run the migrations as shown in "Reset local database" above
+
+
 ### Testing
 - Run `npm run check` for TypeScript validation
 - Ensure all type errors are resolved before committing

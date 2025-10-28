@@ -17,7 +17,18 @@ export default {
           },
         ],
       },
-      testMatch: ['**/tests/**/*.test.ts'],
+      testMatch: ['**/tests/**/*.test.ts', '**/tests/**/*.test.js', '**/tests/server/**/*.test.ts'],
+      collectCoverageFrom: [
+        'server/**/*.ts',
+        '!server/index.ts',
+        '!server/**/*.d.ts',
+      ],
+      setupFiles: ['dotenv/config'],
+    },
+    {
+      displayName: 'server-js',
+      testEnvironment: 'node',
+      testMatch: ['**/tests/server/**/*.test.js'],
       collectCoverageFrom: [
         'server/**/*.ts',
         '!server/index.ts',

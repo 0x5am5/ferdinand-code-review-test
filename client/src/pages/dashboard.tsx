@@ -39,6 +39,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation } from "wouter";
+import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
 import { UserManager } from "@/components/client/user-manager";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,6 +84,7 @@ import {
   useUpdateClientMutation,
   useUpdateClientOrderMutation,
 } from "@/lib/queries/clients";
+import { useGoogleDriveOAuthCallback } from "@/lib/queries/google-drive";
 
 // Component to fetch and display client logo from brand assets
 function ClientLogo({
@@ -147,6 +149,9 @@ export default function Dashboard() {
     "custom"
   );
   const [, setLocation] = useLocation();
+
+  // Handle OAuth callback for Google Drive
+  useGoogleDriveOAuthCallback();
 
   const isAbleToEdit = user
     ? user.role === UserRole.SUPER_ADMIN ||
@@ -364,6 +369,27 @@ export default function Dashboard() {
           <h1 className="font-bold">Dashboard</h1>
         </div>
       </div>
+
+      {/* Google Drive Link Control for Master Admins */}
+      {user?.role === UserRole.SUPER_ADMIN && (
+        <div className="mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 text-primary" />
+                Google Drive Integration
+              </CardTitle>
+              <CardDescription>
+                Link your Google Drive — allows importing files into any client
+                from its Brand Assets page.
+              </CardDescription>
+            </CardHeader>
+            <div className="p-6">
+              <GoogleDriveConnect variant="default" size="default" />
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Search and Sort Controls */}
       <div className="flex gap-4 mb-6">

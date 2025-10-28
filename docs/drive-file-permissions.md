@@ -273,10 +273,111 @@ Permission enforcement should be tested for:
 4. **Import scenarios**: Various Drive sharing states during import
 5. **Visibility changes**: Changing file visibility and access impact
 
+## SUPER_ADMIN Global Linking and Import
+
+### Overview
+
+SUPER_ADMIN users have special privileges for Google Drive integration that allow them to:
+
+1. **Link Google Drive globally** from the dashboard without being tied to a specific client
+2. **Import files into any client** without requiring a userClients association
+3. **Bypass client access restrictions** while maintaining security for other user roles
+
+### SUPER_ADMIN Privileges
+
+#### Global Drive Connection
+- SUPER_ADMIN can link Google Drive from dashboard using `/api/auth/google/url`
+- Connection is stored globally and not tied to any specific client
+- Connection status is available across all clients and pages
+- OAuth callback handling triggers token refresh and status refetch globally
+
+#### Import Bypass Mechanism
+- SUPER_ADMIN can import into any client without userClients entry
+- Backend checks `user.role !== UserRole.SUPER_ADMIN` before enforcing client access
+- Audit logs still record the correct uploader userId (SUPER_ADMIN's ID)
+- Import target is always the current client being viewed
+
+#### UI Indicators
+- Dashboard shows "Link your Google Drive" control for SUPER_ADMIN only
+- Brand Asset Manager shows connection status and target client for SUPER_ADMIN
+- Connected account email is displayed: "Google Drive Connected (user@example.com)"
+- Target client display: "Files will import into [Current Client Name]"
+
+### Implementation Details
+
+#### Backend Changes
+```typescript
+// In server/routes/google-drive.ts - POST /api/google-drive/import
+if (user.role !== UserRole.SUPER_ADMIN) {
+  const [userClient] = await db.select()...;
+  if (!userClient) {
+    return res.status(403).json({ message: "Not authorized for this client" });
+  }
+}
+```
+
+#### Frontend Changes
+```typescript
+// Dashboard shows Drive connect control for SUPER_ADMIN
+{user.role === 'super_admin' && (
+  <GoogleDriveConnect variant="dashboard" />
+)}
+
+// Asset Manager shows connection status for SUPER_ADMIN
+{user.role === 'super_admin' && driveConnection && (
+  <div>
+    Google Drive Connected ({driveConnection.email})
+    Files will import into {currentClient.name}
+  </div>
+)}
+```
+
+### Security Considerations
+
+#### Audit Logging
+- All imports record uploader's userId accurately
+- clientId is always the target client, not the SUPER_ADMIN's default client
+- Import timestamps and file details are preserved
+- No audit trail is lost due to SUPER_ADMIN bypass
+
+#### Permission Isolation
+- Non-super_admin users still require userClients association
+- Regular admin permissions are unchanged
+- No security bypasses are introduced for other roles
+- SUPER_ADMIN privileges are role-based, not user-based
+
+#### Error Handling
+- Token refresh works globally for SUPER_ADMIN
+- Connection errors are handled gracefully
+- Import failures don't expose sensitive information
+- Rate limiting still applies to SUPER_ADMIN
+
+### Usage Examples
+
+#### SUPER_ADMIN Workflow
+1. Login as SUPER_ADMIN
+2. Navigate to dashboard
+3. Click "Link your Google Drive"
+4. Complete OAuth flow
+5. Navigate to any client's Brand Assets page
+6. See "Google Drive Connected" indicator
+7. Click "Import from Drive"
+8. Select files from Google Picker
+9. Files import into current client
+
+#### Regular Admin Workflow (Unchanged)
+1. Login as Regular Admin
+2. Navigate to client's Brand Assets page
+3. No "Link your Google Drive" control on dashboard
+4. If Drive is connected by SUPER_ADMIN, can import
+5. If not connected, cannot link (no permission)
+6. Import requires userClients association
+
 ## References
 
 - `server/services/drive-file-permissions.ts` - Permission logic implementation
 - `server/services/asset-permissions.ts` - Base asset permission service
-- `server/routes/google-drive.ts` - Drive import endpoints
+- `server/routes/google-drive.ts` - Drive import endpoints with SUPER_ADMIN bypass
 - `server/routes/file-assets.ts` - Asset CRUD endpoints
 - `shared/schema.ts` - User roles and asset schema definitions
+- `docs/google-drive-import-qa-checklist.md` - QA testing procedures

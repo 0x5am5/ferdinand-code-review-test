@@ -76,9 +76,18 @@ export function registerGoogleDriveRoutes(app: Express) {
         return res.status(404).json({ message: "No connection found" });
       }
 
+      // Get user email to display in the connection status
+      const [user] = await db
+        .select()
+        .from((await import("@shared/schema")).users)
+        .where(
+          eq((await import("@shared/schema")).users.id, connection.userId)
+        );
+
       res.json({
         id: connection.id,
         userId: connection.userId,
+        userEmail: user?.email || null,
         scopes: connection.scopes,
         connectedAt: connection.connectedAt,
         lastUsedAt: connection.lastUsedAt,
@@ -220,27 +229,31 @@ export function registerGoogleDriveRoutes(app: Express) {
           return res.status(401).json({ message: "User not found" });
         }
 
-        // Verify user has access to this client
-        const [userClient] = await db
-          .select()
-          .from((await import("@shared/schema")).userClients)
-          .where(
-            and(
-              eq(
-                (await import("@shared/schema")).userClients.userId,
-                req.session.userId
-              ),
-              eq(
-                (await import("@shared/schema")).userClients.clientId,
-                clientId
+        // Verify user has access to this client (SUPER_ADMIN bypass)
+        if (
+          user.role !== (await import("@shared/schema")).UserRole.SUPER_ADMIN
+        ) {
+          const [userClient] = await db
+            .select()
+            .from((await import("@shared/schema")).userClients)
+            .where(
+              and(
+                eq(
+                  (await import("@shared/schema")).userClients.userId,
+                  req.session.userId
+                ),
+                eq(
+                  (await import("@shared/schema")).userClients.clientId,
+                  clientId
+                )
               )
-            )
-          );
+            );
 
-        if (!userClient) {
-          return res
-            .status(403)
-            .json({ message: "Not authorized for this client" });
+          if (!userClient) {
+            return res
+              .status(403)
+              .json({ message: "Not authorized for this client" });
+          }
         }
 
         // Set up Server-Sent Events for progress tracking

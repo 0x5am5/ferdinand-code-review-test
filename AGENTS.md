@@ -120,7 +120,7 @@ If new packages are installed, make sure to run `npm i`
 the project runs on http://localhost:3001/
 Create appropriate tests for any new features, workflows, helpers. Focus on test only for the current task
 make sure all typescript errors are resolved
-CLAUDE.md file and replit.md file should be in sync
+CLAUDE.md file, AGENTS.md file should be in sync
 Any authentication/permission should ALWAYS be enforced on the backend
 run biome checks after each tasks to fix linting and coding errors
 ```
