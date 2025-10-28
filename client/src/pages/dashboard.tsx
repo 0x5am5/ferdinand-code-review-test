@@ -43,6 +43,7 @@ import { UserManager } from "@/components/client/user-manager";
 import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
