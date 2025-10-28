@@ -39,7 +39,6 @@ import {
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation } from "wouter";
-import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
 import { UserManager } from "@/components/client/user-manager";
 import { Button } from "@/components/ui/button";
 import {
@@ -387,7 +386,12 @@ export default function Dashboard() {
                   Link your Google Drive to import assets into any client when
                   viewing its Brand Assets page.
                 </p>
-                <GoogleDriveConnect variant="default" size="default" />
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/admin/settings")}
+                >
+                  Link your Google Drive
+                </Button>
               </CardContent>
             </Card>
           </div>
