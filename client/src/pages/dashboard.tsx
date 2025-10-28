@@ -43,7 +43,6 @@ import { UserManager } from "@/components/client/user-manager";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -371,32 +370,6 @@ export default function Dashboard() {
             Manage your clients and their brand systems
           </p>
         </div>
-
-        {/* Google Drive Connection for SUPER_ADMIN */}
-        {user?.role === UserRole.SUPER_ADMIN && (
-          <div className="mb-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Google Drive Integration
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Link your Google Drive to import assets into any client when
-                  viewing its Brand Assets page.
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => setLocation("/admin/settings")}
-                >
-                  Link your Google Drive
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
 
       {/* Search and Sort Controls */}
