@@ -322,6 +322,36 @@ export class TestScenarioBuilder {
     return this;
   }
 
+  withSuperAdminUser() {
+    // Mock super admin user scenario
+    return this;
+  }
+
+  withRegularAdminUser() {
+    // Mock regular admin user scenario
+    return this;
+  }
+
+  withStandardUser() {
+    // Mock standard user scenario
+    return this;
+  }
+
+  withGuestUser() {
+    // Mock guest user scenario
+    return this;
+  }
+
+  withUserRole(role: string) {
+    // Mock user role scenario
+    return this;
+  }
+
+  withCurrentClient(clientName: string) {
+    // Mock current client scenario
+    return this;
+  }
+
   build() {
     const mockFetch = this.fetchResponses.setupFetchMock();
     
