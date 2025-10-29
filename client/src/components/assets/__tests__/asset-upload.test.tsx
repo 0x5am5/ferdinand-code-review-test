@@ -220,7 +220,6 @@ describe("AssetUpload", () => {
 
   describe("Metadata Selection", () => {
     it("should allow selecting visibility option", async () => {
-      const _user = userEvent.setup();
       render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
         wrapper: createWrapper(),
       });

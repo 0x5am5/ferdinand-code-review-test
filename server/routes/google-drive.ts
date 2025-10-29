@@ -16,6 +16,12 @@ import {
   listDriveFiles,
   validateFileForImport,
 } from "../services/google-drive";
+import {
+  googleDriveConnections,
+  users,
+  userClients,
+  UserRole,
+} from "@shared/schema";
 import type { RequestWithClientId } from "./index";
 
 // Initialize OAuth2 client for generating auth URLs
@@ -63,13 +69,8 @@ export function registerGoogleDriveRoutes(app: Express) {
 
       const [connection] = await db
         .select()
-        .from((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            req.session.userId
-          )
-        );
+        .from(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, req.session.userId));
 
       if (!connection) {
         return res.status(404).json({ message: "No connection found" });
@@ -78,10 +79,8 @@ export function registerGoogleDriveRoutes(app: Express) {
       // Get user email to display in the connection status
       const [user] = await db
         .select()
-        .from((await import("@shared/schema")).users)
-        .where(
-          eq((await import("@shared/schema")).users.id, connection.userId)
-        );
+        .from(users)
+        .where(eq(users.id, connection.userId));
 
       res.json({
         id: connection.id,
@@ -106,13 +105,8 @@ export function registerGoogleDriveRoutes(app: Express) {
 
       const [connection] = await db
         .select()
-        .from((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            req.session.userId
-          )
-        );
+        .from(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, req.session.userId));
 
       if (!connection) {
         return res.status(404).json({ message: "No connection found" });
@@ -219,32 +213,22 @@ export function registerGoogleDriveRoutes(app: Express) {
         // Check user role and permissions
         const [user] = await db
           .select()
-          .from((await import("@shared/schema")).users)
-          .where(
-            eq((await import("@shared/schema")).users.id, req.session.userId)
-          );
+          .from(users)
+          .where(eq(users.id, req.session.userId));
 
         if (!user) {
           return res.status(401).json({ message: "User not found" });
         }
 
         // Verify user has access to this client (SUPER_ADMIN bypass)
-        if (
-          user.role !== (await import("@shared/schema")).UserRole.SUPER_ADMIN
-        ) {
+        if (user.role !== UserRole.SUPER_ADMIN) {
           const [userClient] = await db
             .select()
-            .from((await import("@shared/schema")).userClients)
+            .from(userClients)
             .where(
               and(
-                eq(
-                  (await import("@shared/schema")).userClients.userId,
-                  req.session.userId
-                ),
-                eq(
-                  (await import("@shared/schema")).userClients.clientId,
-                  clientId
-                )
+                eq(userClients.userId, req.session.userId),
+                eq(userClients.clientId, clientId)
               )
             );
 
@@ -377,13 +361,8 @@ export function registerGoogleDriveRoutes(app: Express) {
       // Get the user's Google Drive connection
       const [connection] = await db
         .select()
-        .from((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            userIdNum
-          )
-        );
+        .from(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, userIdNum));
 
       if (!connection) {
         return res
@@ -425,13 +404,8 @@ export function registerGoogleDriveRoutes(app: Express) {
 
       // Delete the connection from database
       await db
-        .delete((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            userIdNum
-          )
-        );
+        .delete(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, userIdNum));
 
       res.json({ message: "Successfully disconnected from Google Drive" });
     } catch (error) {

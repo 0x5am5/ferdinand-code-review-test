@@ -2,6 +2,8 @@ import {
   type BrandAsset,
   brandAssets,
   convertedAssets,
+  assets as fileAssets,
+  userClients as fileUserClients,
   type InsertBrandAsset,
   type InsertColorAsset,
   type InsertFontAsset,
@@ -51,7 +53,10 @@ async function fixLogoTypeData() {
               ? JSON.parse(asset.data)
               : asset.data;
         } catch (error) {
-          console.error(`Asset ${asset.id} has invalid JSON data, skipping:`, error);
+          console.error(
+            `Asset ${asset.id} has invalid JSON data, skipping:`,
+            error
+          );
           continue;
         }
 
@@ -131,7 +136,10 @@ async function updateClientLogosFromAssets() {
               : asset.data;
           return data?.type === "favicon" || data?.type === "square";
         } catch (error) {
-          console.error(`Failed to parse asset data for asset ${asset.id}:`, error);
+          console.error(
+            `Failed to parse asset data for asset ${asset.id}:`,
+            error
+          );
           return false;
         }
       });
@@ -1993,13 +2001,8 @@ export function registerAssetRoutes(app: Express) {
         // Get user's clients to determine access
         const userClients = await db
           .select()
-          .from((await import("@shared/schema")).userClients)
-          .where(
-            eq(
-              (await import("@shared/schema")).userClients.userId,
-              req.session.userId
-            )
-          );
+          .from(fileUserClients)
+          .where(eq(fileUserClients.userId, req.session.userId));
 
         if (userClients.length === 0) {
           return res.status(403).json({ message: "Not authorized" });
@@ -2010,15 +2013,12 @@ export function registerAssetRoutes(app: Express) {
         // Get asset from database (file asset) - check user has access to this client
         const [asset] = await db
           .select()
-          .from((await import("@shared/schema")).assets)
+          .from(fileAssets)
           .where(
             and(
-              eq((await import("@shared/schema")).assets.id, assetId),
-              isNull((await import("@shared/schema")).assets.deletedAt),
-              inArray(
-                (await import("@shared/schema")).assets.clientId,
-                clientIds
-              )
+              eq(fileAssets.id, assetId),
+              isNull(fileAssets.deletedAt),
+              inArray(fileAssets.clientId, clientIds)
             )
           );
 
@@ -2028,7 +2028,7 @@ export function registerAssetRoutes(app: Express) {
 
         // Check if user has read permission
         const { checkAssetPermission } = await import(
-          "../utils/asset-permissions"
+          "../services/asset-permissions"
         );
         const permission = await checkAssetPermission(
           req.session.userId,

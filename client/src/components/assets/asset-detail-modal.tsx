@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { getFileTypeIcon } from "@/utils/file-icons";
 import {
   type Asset,
   useAssetCategoriesQuery,
@@ -53,6 +52,7 @@ import {
   useDeletePublicLinkMutation,
   useUpdateAssetMutation,
 } from "@/lib/queries/assets";
+import { getFileTypeIcon } from "@/utils/file-icons";
 
 interface AssetDetailModalProps {
   asset: Asset | null;
@@ -86,7 +86,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
   const { data: categories = [] } = useAssetCategoriesQuery();
   const { data: tags = [] } = useAssetTagsQuery();
   const { data: publicLinks = [], isError: publicLinksError } =
-    useAssetPublicLinksQuery(asset?.clientId || 0, asset?.id || 0);
+    useAssetPublicLinksQuery(asset?.clientId || null, asset?.id || null);
   const updateMutation = useUpdateAssetMutation();
   const deleteMutation = useDeleteAssetMutation();
   const createTagMutation = useCreateTagMutation();
@@ -241,26 +241,15 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     size="sm"
                     onClick={() => {
                       if (asset.driveWebLink) {
-                        window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                        window.open(
+                          asset.driveWebLink,
+                          "_blank",
+                          "noopener,noreferrer"
+                        );
                       }
                     }}
                     aria-label="View reference in Google Drive"
                     title="View reference in Google Drive"
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </Button>
-                ) : asset.isGoogleDrive && asset.driveWebLink ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (asset.driveWebLink) {
-                        window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
-                      }
-                    }}
-                    aria-label="View in Google Drive"
-                    title="View in Google Drive"
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     View

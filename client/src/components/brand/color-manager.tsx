@@ -99,7 +99,7 @@ import { AssetSection } from "./logo-manager/asset-section";
 // ColorCard component for the color manager
 function ColorCard({
   color,
-  onEdit: _onEdit,
+  onEdit,
   onDelete,
   onGenerate,
   neutralColorsCount,
@@ -245,72 +245,6 @@ function ColorCard({
     { color: "#737373", position: 100 },
   ]);
 
-  const _handleColorAreaClick = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-
-    // Simple color calculation for responsive color picker
-    const hue = 200; // Default blue
-    const saturation = Math.round(x * 100);
-    const lightness = Math.round((1 - y) * 100);
-
-    // Convert HSL to hex
-    const h = hue / 360;
-    const s = saturation / 100;
-    const l = lightness / 100;
-
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-
-    let r: number, g: number, b: number;
-    if (s === 0) {
-      r = g = b = l;
-    } else {
-      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-      const p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1 / 3);
-      g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1 / 3);
-    }
-
-    const toHex = (c: number) => {
-      const hex = Math.round(c * 255).toString(16);
-      return hex.length === 1 ? `0${hex}` : hex;
-    };
-
-    const hexColor = `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-    setTempColor(hexColor);
-  };
-
-  const _handleHueSliderClick = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const hue = Math.round(x * 360);
-
-    // Simple hue change
-    const hexColor = `hsl(${hue}, 80%, 60%)`;
-    // Convert to actual hex - simplified version
-    const tempDiv = document.createElement("div");
-    tempDiv.style.color = hexColor;
-    document.body.appendChild(tempDiv);
-    const computedColor = getComputedStyle(tempDiv).color;
-    document.body.removeChild(tempDiv);
-
-    // Extract RGB values and convert to hex
-    const rgb = computedColor.match(/\d+/g);
-    if (rgb) {
-      const hex = `#${parseInt(rgb[0], 10).toString(16).padStart(2, "0")}${parseInt(rgb[1], 10).toString(16).padStart(2, "0")}${parseInt(rgb[2], 10).toString(16).padStart(2, "0")}`;
-      setTempColor(hex);
-    }
-  };
-
   const handleHexInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (/^#[0-9A-Fa-f]{0,6}$/.test(value)) {
@@ -319,22 +253,12 @@ function ColorCard({
   };
 
   // Color picker state
-  const [_hue, _setHue] = useState(0);
-  const [_saturation, _setSaturation] = useState(100);
-  const [_brightness, _setBrightness] = useState(50);
-  const [_isDragging, _setIsDragging] = useState(false);
-
   const copyHex = (hexValue: string) => {
     navigator.clipboard.writeText(hexValue);
     toast({
       title: "Copied!",
       description: `${hexValue} has been copied to your clipboard.`,
     });
-  };
-
-  const _handleColorChange = (newHex: string) => {
-    setTempColor(newHex);
-    // Only update the visual display, don't save to database until Save is clicked
   };
 
   const handleNameEdit = () => {
@@ -387,11 +311,6 @@ function ColorCard({
     } else {
       setActiveTab("color");
     }
-  };
-
-  const _handleEditColor = (colorToEdit: ColorData) => {
-    setTempColor(colorToEdit.hex);
-    setIsEditing(true);
   };
 
   const handleSaveEdit = () => {
@@ -883,7 +802,6 @@ function ColorCard({
                         e.stopPropagation();
                         e.preventDefault();
 
-                        const _startPosition = stop.position;
                         const rect =
                           e.currentTarget.parentElement?.getBoundingClientRect();
 
@@ -1072,7 +990,7 @@ function ColorCard({
           >
             {/* Tints Row (Lighter) */}
             <div className="flex h-1/2">
-              {tints.map((tint, _index) => (
+              {tints.map((tint) => (
                 <motion.div
                   key={`tint-${tint}`}
                   className="flex-1 relative group cursor-pointer"
@@ -1088,7 +1006,7 @@ function ColorCard({
 
             {/* Shades Row (Darker) */}
             <div className="flex h-1/2">
-              {shades.map((shade, _index) => (
+              {shades.map((shade) => (
                 <motion.div
                   key={`shade-${shade}`}
                   className="flex-1 relative group cursor-pointer"
@@ -1658,49 +1576,6 @@ export function ColorManager({
   const [regenerationCount, setRegenerationCount] = useState(0);
   // We don't need an extra state since colors are derived from props
 
-  // Color utility functions
-  const _ColorUtils = {
-    // Analyze brightness of a hex color (returns 1-11 scale)
-    analyzeBrightness(hex: string): number {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      if (!result) return 6; // Default middle value
-
-      const r = parseInt(result[1], 16);
-      const g = parseInt(result[2], 16);
-      const b = parseInt(result[3], 16);
-
-      // Calculate perceived brightness using relative luminance formula
-      const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
-
-      // Convert to 1-11 scale
-      return Math.round(brightness * 10) + 1;
-    },
-
-    // Generate missing grey shades based on existing ones
-    generateGreyShades(
-      existingColors: Array<ColorData & { brightness: number }>
-    ) {
-      const existingLevels = existingColors.map((c) => c.brightness);
-      const newShades: Array<{ level: number; hex: string }> = [];
-
-      // Generate shades for missing levels (1-11)
-      for (let i = 1; i <= 11; i++) {
-        if (!existingLevels.includes(i)) {
-          // Calculate brightness percentage (0-100)
-          const brightness = ((i - 1) / 10) * 100;
-
-          // Generate hex color
-          const value = Math.round((brightness / 100) * 255);
-          const hex = `#${value.toString(16).padStart(2, "0")}${value.toString(16).padStart(2, "0")}${value.toString(16).padStart(2, "0")}`;
-
-          newShades.push({ level: i, hex: hex.toUpperCase() });
-        }
-      }
-
-      return newShades;
-    },
-  };
-
   const form = useForm<ColorFormData>({
     resolver: zodResolver(colorFormSchema),
     defaultValues: {
@@ -2053,7 +1928,7 @@ export function ColorManager({
     const manualColors = neutralColorsData.filter(
       (color) => !/^Grey \d+$/.test(color.name)
     );
-    manualColors.forEach((color, _index) => {
+    manualColors.forEach((color) => {
       if (color.name !== "Base grey" && color.id) {
         // Update the existing color to "Base grey"
         fetch(`/api/clients/${clientId}/assets/${color.id}`, {
@@ -2184,46 +2059,11 @@ export function ColorManager({
       // The `createColor.mutate` call below handles the actual creation.
     }
 
-    // Convert brandColorsData to ColorData format for the purpose of filtering
-    const brandColors = brandColorsData.map((asset) => ({
-      hex: asset.data.colors[0]?.hex || "#000000",
-      rgb: asset.data.colors[0]?.rgb,
-      hsl: asset.data.colors[0]?.hsl,
-      cmyk: asset.data.colors[0]?.cmyk,
-      pantone: asset.data.colors[0]?.pantone,
-      // Adding category property to match the expected structure for filtering
-      category: asset.data.category,
-      name: asset.name,
-    }));
-
-    // For brand colors, we should use colors with category "brand"
-    const _filteredBrandColors = brandColors.filter(
-      (color) => color.category === "brand"
-    );
-
     // This part of the logic seems incomplete or redundant if the UI handles
     // the `isAddingColor` state and form reset correctly.
     // If `handleAddBrandColor` is meant to directly trigger the creation of a default color,
     // that mutation should be called here.
     // For now, assuming the UI handles the addition flow.
-  };
-
-  const _handleColorChange = (
-    _key: string,
-    _value: string,
-    _isBaseColor = false
-  ) => {
-    //  Updated color change handling to dynamically generate container and neutral colors
-    const updatedDesignSystem = designSystem || [];
-
-    // Only call these if the props are provided
-    if (updateDraftDesignSystem) {
-      updateDraftDesignSystem(updatedDesignSystem);
-    }
-
-    if (addToHistory) {
-      addToHistory(updatedDesignSystem);
-    }
   };
 
   if (!user) return null;

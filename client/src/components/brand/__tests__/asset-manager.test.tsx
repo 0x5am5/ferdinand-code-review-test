@@ -296,10 +296,6 @@ describe("AssetManager - Google Drive UI Indicator", () => {
 
 describe("AssetManager - Google Drive Import clientId", () => {
   const mockClientId = 456;
-  const mockFiles = [
-    { id: "file1", name: "test-file-1.jpg", mimeType: "image/jpeg" },
-    { id: "file2", name: "test-file-2.png", mimeType: "image/png" },
-  ];
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -344,8 +340,6 @@ describe("AssetManager - Google Drive Import clientId", () => {
     render(<AssetManager clientId={mockClientId} />);
 
     // Simulate file selection from Google Drive Picker
-    const _mockFileSelection = mockFiles;
-
     // Get the handleFilesSelected function by simulating the picker callback
     // Since we can't directly access the internal function, we'll test the mutation call
     expect(mockImportMutation.mutate).not.toHaveBeenCalled();

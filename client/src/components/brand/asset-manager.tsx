@@ -52,7 +52,7 @@ interface AssetManagerProps {
  * Client-scoped Asset Manager - Manages assets for a specific client
  */
 export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
-  const [, setLocation] = useLocation();
+  const [, _setLocation] = useLocation();
   const { user } = useAuth();
   const [filters, setFilters] = useState<Filters>({});
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -65,7 +65,6 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
 
   // Get client info for displaying current client name
   const { data: allClients } = useClientsQuery();
-  const _currentClient = allClients?.find((client) => client.id === clientId);
 
   // Fetch assets filtered by clientId
   const { data: allAssets = [], isLoading } = useAssetsQuery(filters);
@@ -160,27 +159,10 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     }
   }, []);
 
-  const _handleGoogleDriveClick = () => {
-    // If not connected, redirect to settings tab
-    if (!googleDriveQuery.data) {
-      // Dispatch custom event for tab change (like sidebar does)
-      const event = new CustomEvent("client-tab-change", {
-        detail: { tab: "settings" },
-      });
-      window.dispatchEvent(event);
-
-      // Update URL
-      setLocation(`/clients/${clientId}?tab=settings`);
-    }
-    // If connected, the GoogleDrivePicker will handle opening the picker
-  };
-
   const handleFilesSelected = (files: google.picker.DocumentObject[]) => {
     importMutation.mutate({ files, clientId });
   };
 
-  const _isAdmin = user?.role === "super_admin" || user?.role === "admin";
-  const _isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
   // All users except guests can connect Google Drive
   const canUseGoogleDrive = user?.role !== UserRole.GUEST;
 

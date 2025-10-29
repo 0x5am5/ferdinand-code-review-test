@@ -490,8 +490,10 @@ export interface AssetPublicLink {
   createdAt: Date;
 }
 
-// Get public links for an asset
-export const useAssetPublicLinksQuery = (clientId: number, assetId: number) =>
+export const useAssetPublicLinksQuery = (
+  clientId: number | null,
+  assetId: number | null
+) =>
   useQuery<AssetPublicLink[]>({
     queryKey: [`/api/clients/${clientId}/assets/${assetId}/public-links`],
     queryFn: async () => {
