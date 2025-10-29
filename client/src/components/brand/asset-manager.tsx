@@ -36,7 +36,6 @@ import {
   useBulkUpdateAssetsMutation,
   useDeleteAssetMutation,
 } from "@/lib/queries/assets";
-import { useClientsQuery } from "@/lib/queries/clients";
 import {
   useGoogleDriveConnectionQuery,
   useGoogleDriveImportMutation,
@@ -62,9 +61,6 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
-
-  // Get client info for displaying current client name
-  const { data: allClients } = useClientsQuery();
 
   // Fetch assets filtered by clientId
   const { data: allAssets = [], isLoading } = useAssetsQuery(filters);

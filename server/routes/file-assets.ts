@@ -1,4 +1,5 @@
 import {
+  assetCategories,
   assetCategoryAssignments,
   assetPublicLinks,
   assets,
@@ -7,10 +8,16 @@ import {
   insertAssetSchema,
   insertAssetTagSchema,
   UserRole,
+  userClients,
+  users,
 } from "@shared/schema";
 
 type Asset = typeof assets.$inferSelect;
 
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { and, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
@@ -24,7 +31,13 @@ import {
   ensureDefaultCategories,
   getCategoriesForClient,
 } from "../services/default-categories";
-import { deleteThumbnails } from "../services/thumbnail";
+import {
+  canGenerateThumbnail,
+  deleteThumbnails,
+  downloadThumbnail,
+  getFileTypeIcon,
+  getOrGenerateThumbnail,
+} from "../services/thumbnail";
 import {
   deleteFile,
   downloadFile,
@@ -48,29 +61,22 @@ export function registerFileAssetRoutes(app: Express) {
       }
 
       // Get user's clients to determine which assets they can see
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.json([]);
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get user role for visibility filtering
       const [user] = await db
         .select()
-        .from((await import("@shared/schema")).users)
-        .where(
-          eq((await import("@shared/schema")).users.id, req.session.userId)
-        );
+        .from(users)
+        .where(eq(users.id, req.session.userId));
 
       if (!user) {
         return res.status(401).json({ message: "User not found" });
@@ -183,21 +189,16 @@ export function registerFileAssetRoutes(app: Express) {
           // Get categories
           const categoryRows = await db
             .select({
-              id: (await import("@shared/schema")).assetCategories.id,
-              name: (await import("@shared/schema")).assetCategories.name,
-              slug: (await import("@shared/schema")).assetCategories.slug,
-              isDefault: (await import("@shared/schema")).assetCategories
-                .isDefault,
-              clientId: (await import("@shared/schema")).assetCategories
-                .clientId,
+              id: assetCategories.id,
+              name: assetCategories.name,
+              slug: assetCategories.slug,
+              isDefault: assetCategories.isDefault,
+              clientId: assetCategories.clientId,
             })
             .from(assetCategoryAssignments)
             .innerJoin(
-              (await import("@shared/schema")).assetCategories,
-              eq(
-                assetCategoryAssignments.categoryId,
-                (await import("@shared/schema")).assetCategories.id
-              )
+              assetCategories,
+              eq(assetCategoryAssignments.categoryId, assetCategories.id)
             )
             .where(eq(assetCategoryAssignments.assetId, asset.id));
 
@@ -287,29 +288,22 @@ export function registerFileAssetRoutes(app: Express) {
       }
 
       // Get user's clients to determine which assets they can see
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.json({ results: [], total: 0 });
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get user role for visibility filtering
       const [user] = await db
         .select()
-        .from((await import("@shared/schema")).users)
-        .where(
-          eq((await import("@shared/schema")).users.id, req.session.userId)
-        );
+        .from(users)
+        .where(eq(users.id, req.session.userId));
 
       if (!user) {
         return res.status(401).json({ message: "User not found" });
@@ -349,15 +343,12 @@ export function registerFileAssetRoutes(app: Express) {
           ? await db
               .select({
                 assetId: assetCategoryAssignments.assetId,
-                category: (await import("@shared/schema")).assetCategories,
+                category: assetCategories,
               })
               .from(assetCategoryAssignments)
               .innerJoin(
-                (await import("@shared/schema")).assetCategories,
-                eq(
-                  assetCategoryAssignments.categoryId,
-                  (await import("@shared/schema")).assetCategories.id
-                )
+                assetCategories,
+                eq(assetCategoryAssignments.categoryId, assetCategories.id)
               )
               .where(inArray(assetCategoryAssignments.assetId, assetIds))
           : [];
@@ -423,21 +414,16 @@ export function registerFileAssetRoutes(app: Express) {
       const assetId = parseInt(req.params.assetId, 10);
 
       // Get user's clients to determine access
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get the asset
       const [asset] = await db
@@ -472,19 +458,16 @@ export function registerFileAssetRoutes(app: Express) {
       // Get categories
       const categoryRows = await db
         .select({
-          id: (await import("@shared/schema")).assetCategories.id,
-          name: (await import("@shared/schema")).assetCategories.name,
-          slug: (await import("@shared/schema")).assetCategories.slug,
-          isDefault: (await import("@shared/schema")).assetCategories.isDefault,
-          clientId: (await import("@shared/schema")).assetCategories.clientId,
+          id: assetCategories.id,
+          name: assetCategories.name,
+          slug: assetCategories.slug,
+          isDefault: assetCategories.isDefault,
+          clientId: assetCategories.clientId,
         })
         .from(assetCategoryAssignments)
         .innerJoin(
-          (await import("@shared/schema")).assetCategories,
-          eq(
-            assetCategoryAssignments.categoryId,
-            (await import("@shared/schema")).assetCategories.id
-          )
+          assetCategories,
+          eq(assetCategoryAssignments.categoryId, assetCategories.id)
         )
         .where(eq(assetCategoryAssignments.assetId, asset.id));
 
@@ -524,21 +507,16 @@ export function registerFileAssetRoutes(app: Express) {
       const assetId = parseInt(req.params.assetId, 10);
 
       // Get user's clients to determine access
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get the asset
       const [asset] = await db
@@ -653,21 +631,16 @@ export function registerFileAssetRoutes(app: Express) {
       const assetId = parseInt(req.params.assetId, 10);
 
       // Get user's clients to determine access
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get the asset
       const [asset] = await db
@@ -778,24 +751,19 @@ export function registerFileAssetRoutes(app: Express) {
       const assetId = parseInt(req.params.assetId, 10);
 
       // Get user's clients to determine access
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get the asset
-      const [_asset] = await db
+      const [assetRecord] = await db
         .select()
         .from(assets)
         .where(
@@ -806,11 +774,15 @@ export function registerFileAssetRoutes(app: Express) {
           )
         );
 
+      if (!assetRecord) {
+        return res.status(404).json({ message: "Asset not found" });
+      }
+
       // Check if user has delete permission
       const permission = await checkAssetPermission(
         req.session.userId,
         assetId,
-        asset.clientId,
+        assetRecord.clientId,
         "delete"
       );
 
@@ -820,7 +792,7 @@ export function registerFileAssetRoutes(app: Express) {
           .json({ message: "Not authorized to delete this asset" });
       }
 
-      const asset = permission.asset;
+      const asset = permission.asset ?? assetRecord;
 
       // Delete public links first
       await db
@@ -877,21 +849,16 @@ export function registerFileAssetRoutes(app: Express) {
       }
 
       // Get user's clients to determine access
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get all assets to be deleted
       const assetsToDelete = await db
@@ -998,21 +965,16 @@ export function registerFileAssetRoutes(app: Express) {
       }
 
       // Get user's clients to determine access
-      const userClients = await db
+      const userClientRecords = await db
         .select()
-        .from((await import("@shared/schema")).userClients)
-        .where(
-          eq(
-            (await import("@shared/schema")).userClients.userId,
-            req.session.userId
-          )
-        );
+        .from(userClients)
+        .where(eq(userClients.userId, req.session.userId));
 
-      if (userClients.length === 0) {
+      if (userClientRecords.length === 0) {
         return res.status(403).json({ message: "Not authorized" });
       }
 
-      const clientIds = userClients.map((uc) => uc.clientId);
+      const clientIds = userClientRecords.map((uc) => uc.clientId);
 
       // Get all assets to be updated
       const assetsToUpdate = await db
@@ -1158,10 +1120,8 @@ export function registerFileAssetRoutes(app: Express) {
         // Check user role - guests cannot upload
         const [user] = await db
           .select()
-          .from((await import("@shared/schema")).users)
-          .where(
-            eq((await import("@shared/schema")).users.id, req.session.userId)
-          );
+          .from(users)
+          .where(eq(users.id, req.session.userId));
 
         if (!user) {
           return res.status(401).json({ message: "User not found" });
@@ -1174,23 +1134,18 @@ export function registerFileAssetRoutes(app: Express) {
         }
 
         // Get user's first client (for now - could be enhanced to require clientId in body)
-        const userClients = await db
+        const userClientRecords = await db
           .select()
-          .from((await import("@shared/schema")).userClients)
-          .where(
-            eq(
-              (await import("@shared/schema")).userClients.userId,
-              req.session.userId
-            )
-          );
+          .from(userClients)
+          .where(eq(userClients.userId, req.session.userId));
 
-        if (userClients.length === 0) {
+        if (userClientRecords.length === 0) {
           return res
             .status(400)
             .json({ message: "No client associated with user" });
         }
 
-        const clientId = userClients[0].clientId;
+        const clientId = userClientRecords[0].clientId;
 
         const file = req.file;
         if (!file) {
@@ -1371,10 +1326,8 @@ export function registerFileAssetRoutes(app: Express) {
         // Check user role - guests cannot upload
         const [user] = await db
           .select()
-          .from((await import("@shared/schema")).users)
-          .where(
-            eq((await import("@shared/schema")).users.id, req.session.userId)
-          );
+          .from(users)
+          .where(eq(users.id, req.session.userId));
 
         if (!user) {
           return res.status(401).json({ message: "User not found" });
@@ -1575,10 +1528,8 @@ export function registerFileAssetRoutes(app: Express) {
         // Get user role to determine what they can see
         const [user] = await db
           .select()
-          .from((await import("@shared/schema")).users)
-          .where(
-            eq((await import("@shared/schema")).users.id, req.session.userId)
-          );
+          .from(users)
+          .where(eq(users.id, req.session.userId));
 
         if (!user) {
           return res.status(401).json({ message: "User not found" });
@@ -1690,20 +1641,16 @@ export function registerFileAssetRoutes(app: Express) {
         // Get categories
         const categoryRows = await db
           .select({
-            id: (await import("@shared/schema")).assetCategories.id,
-            name: (await import("@shared/schema")).assetCategories.name,
-            slug: (await import("@shared/schema")).assetCategories.slug,
-            isDefault: (await import("@shared/schema")).assetCategories
-              .isDefault,
-            clientId: (await import("@shared/schema")).assetCategories.clientId,
+            id: assetCategories.id,
+            name: assetCategories.name,
+            slug: assetCategories.slug,
+            isDefault: assetCategories.isDefault,
+            clientId: assetCategories.clientId,
           })
           .from(assetCategoryAssignments)
           .innerJoin(
-            (await import("@shared/schema")).assetCategories,
-            eq(
-              assetCategoryAssignments.categoryId,
-              (await import("@shared/schema")).assetCategories.id
-            )
+            assetCategories,
+            eq(assetCategoryAssignments.categoryId, assetCategories.id)
           )
           .where(eq(assetCategoryAssignments.assetId, assetId));
 
@@ -1971,13 +1918,6 @@ export function registerFileAssetRoutes(app: Express) {
 
         const asset = permission.asset;
 
-        // Import thumbnail service
-        const {
-          canGenerateThumbnail,
-          getOrGenerateThumbnail,
-          getFileTypeIcon,
-        } = await import("../services/thumbnail");
-
         // Check if we can generate a thumbnail for this file type
         if (!canGenerateThumbnail(asset.fileType || "")) {
           // Return file type icon name instead
@@ -1997,10 +1937,6 @@ export function registerFileAssetRoutes(app: Express) {
         const fileBuffer = downloadResult.data;
 
         // Create a temporary file path for processing
-        const fs = await import("node:fs/promises");
-        const path = await import("node:path");
-        const os = await import("node:os");
-
         const tempDir = os.tmpdir();
         const tempFilePath = path.join(
           tempDir,
@@ -2020,7 +1956,6 @@ export function registerFileAssetRoutes(app: Express) {
           );
 
           // Download thumbnail from storage
-          const { downloadThumbnail } = await import("../services/thumbnail");
           const thumbnailBuffer = await downloadThumbnail(assetId, size);
 
           res.setHeader("Content-Type", "image/jpeg");
@@ -2145,7 +2080,6 @@ export function registerFileAssetRoutes(app: Express) {
         }
 
         // Generate a secure random token
-        const crypto = await import("crypto");
         const token = crypto.randomBytes(32).toString("base64url");
 
         // Calculate expiry date if specified

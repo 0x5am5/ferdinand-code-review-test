@@ -44,15 +44,24 @@ export const GoogleDriveIntegration: FC<GoogleDriveIntegrationProps> = ({
 
   // Not connected state - show connect button
   if (!connection) {
-    return userRole !== "guest" ? (
+    // Guests cannot connect
+    if (userRole === "guest") return null;
+
+    // If a super admin initiates the connection from the Integrations Hub,
+    // treat it the same as connecting from the Settings page by omitting
+    // the clientId. The backend will interpret a missing clientId as a
+    // tenant-wide (super-admin) connection.
+    const connectClientId = userRole === "super_admin" ? undefined : clientId;
+
+    return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Connect your Google Drive to import brand assets directly from your
           Drive files.
         </p>
-        <GoogleDriveConnect clientId={clientId} variant="default" />
+        <GoogleDriveConnect clientId={connectClientId} variant="default" />
       </div>
-    ) : null;
+    );
   }
 
   // Connected state - show management interface

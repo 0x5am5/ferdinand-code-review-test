@@ -26,12 +26,12 @@ export function securityHeaders(
   // Note: Adjust based on your app's needs
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com", // Google Picker API scripts
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://accounts.google.com https://replit.com https://*.replit.com https://replit.dev https://*.replit.dev", // Google Picker API scripts and Replit beacon
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://use.typekit.net https://p.typekit.net",
     "font-src 'self' https://fonts.gstatic.com https://use.typekit.net https://r2cdn.perplexity.ai data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://use.typekit.net https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://oauth2.googleapis.com",
-    "frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://*.firebaseapp.com https://gb--brand-guidelines.firebaseapp.com", // Google Picker iframe and Firebase Auth
+    "connect-src 'self' https://use.typekit.net https://www.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://replit.com https://*.replit.com https://replit.dev https://*.replit.dev",
+    "frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://*.firebaseapp.com https://gb--brand-guidelines.firebaseapp.com https://replit.com https://*.replit.com https://replit.dev https://*.replit.dev", // Google Picker iframe and Firebase Auth
     "frame-ancestors 'none'",
   ].join("; ");
 
