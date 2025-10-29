@@ -373,9 +373,6 @@ export const AssetList: FC<AssetListProps> = ({
                   // Reference-only assets show file type icon with reference label
                   <div className="flex flex-col items-center gap-2">
                     {getFileTypeIcon(asset.fileType, true, "lg")}
-                    <span className="text-xs text-muted-foreground text-center">
-                      Reference
-                    </span>
                   </div>
                 ) : asset.fileType?.startsWith("image/") ||
                   asset.fileType === "application/pdf" ? (
