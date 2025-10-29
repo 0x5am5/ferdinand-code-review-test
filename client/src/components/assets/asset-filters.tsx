@@ -1,5 +1,5 @@
 import { Pencil, Search, X } from "lucide-react";
-import { type FC, useEffect, useRef, useState } from "react";
+import { type FC, useCallback, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,7 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
   filters,
   onFiltersChange,
 }) => {
+  const memoizedOnFiltersChange = useCallback(onFiltersChange, [onFiltersChange]);
   const [searchInput, setSearchInput] = useState(filters.search || "");
   const [isTagManagementOpen, setIsTagManagementOpen] = useState(false);
   const { data: categories = [] } = useAssetCategoriesQuery();
@@ -34,14 +35,13 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Debounced search effect
-  // biome-ignore lint/correctness/useExhaustiveDependencies: filters and onFiltersChange are intentionally excluded to prevent infinite loop
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
 
     searchTimeoutRef.current = setTimeout(() => {
-      onFiltersChange({ ...filters, search: searchInput || undefined });
+      memoizedOnFiltersChange({ ...filters, search: searchInput || undefined });
     }, 300);
 
     return () => {
@@ -49,23 +49,23 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchInput]);
+  }, [searchInput, filters, memoizedOnFiltersChange]);
 
   const handleCategoryChange = (value: string) => {
     const categoryId = value === "all" ? undefined : parseInt(value, 10);
-    onFiltersChange({ ...filters, categoryId });
+    memoizedOnFiltersChange({ ...filters, categoryId });
   };
 
   const handleVisibilityChange = (value: string) => {
     const visibility =
       value === "all" ? undefined : (value as "private" | "shared");
-    onFiltersChange({ ...filters, visibility });
+    memoizedOnFiltersChange({ ...filters, visibility });
   };
 
   const handleSourceChange = (value: string) => {
     const isGoogleDrive =
       value === "all" ? undefined : value === "google-drive";
-    onFiltersChange({ ...filters, isGoogleDrive });
+    memoizedOnFiltersChange({ ...filters, isGoogleDrive });
   };
 
   const handleTagToggle = (tagId: number) => {
@@ -73,7 +73,7 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
     const newTags = currentTags.includes(tagId)
       ? currentTags.filter((id) => id !== tagId)
       : [...currentTags, tagId];
-    onFiltersChange({
+    memoizedOnFiltersChange({
       ...filters,
       tagIds: newTags.length > 0 ? newTags : undefined,
     });
@@ -81,7 +81,7 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
 
   const handleClearFilters = () => {
     setSearchInput("");
-    onFiltersChange({});
+    memoizedOnFiltersChange({});
   };
 
   const hasActiveFilters =

@@ -571,7 +571,50 @@ export function registerFileAssetRoutes(app: Express) {
       }
 
       const downloadAsset = permission.asset;
-      // Download file from storage
+
+      // Check if this is a reference-only asset (Google Workspace file)
+      // CRITICAL: Do this check BEFORE attempting to download from storage
+      if (downloadAsset.referenceOnly) {
+        if (!downloadAsset.driveWebLink) {
+          if (downloadAsset.driveFileId) {
+            const webLink = `https://drive.google.com/file/d/${downloadAsset.driveFileId}/view`;
+            try {
+              await db
+                .update(assets)
+                .set({ driveWebLink: webLink, updatedAt: new Date() })
+                .where(eq(assets.id, assetId));
+              console.log(
+                `Backfilled driveWebLink for asset ${assetId}: ${webLink}`
+              );
+            } catch (e) {
+              console.warn(
+                `Failed to backfill driveWebLink for asset ${assetId}:`,
+                e
+              );
+            }
+            return res.redirect(302, webLink);
+          }
+          return res.status(400).json({
+            message: "Reference-only asset without valid Google Drive link",
+          });
+        }
+        console.log(
+          `Redirecting to Google Drive file: ${downloadAsset.driveWebLink}`
+        );
+        return res.redirect(302, downloadAsset.driveWebLink);
+      }
+
+      // Validate storagePath exists for regular assets
+      if (!downloadAsset.storagePath) {
+        console.error(
+          `ERROR: Asset ${assetId} has empty storagePath and is not a reference asset`
+        );
+        return res.status(400).json({
+          message: "Asset storage path not found",
+        });
+      }
+
+      // Download file from storage for regular assets
       const downloadResult = await downloadFile(downloadAsset.storagePath);
 
       if (!downloadResult.success || !downloadResult.data) {
@@ -752,7 +795,7 @@ export function registerFileAssetRoutes(app: Express) {
       const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get the asset
-      const [asset] = await db
+      const [_asset] = await db
         .select()
         .from(assets)
         .where(
@@ -763,10 +806,6 @@ export function registerFileAssetRoutes(app: Express) {
           )
         );
 
-      if (!asset) {
-        return res.status(404).json({ message: "Asset not found" });
-      }
-
       // Check if user has delete permission
       const permission = await checkAssetPermission(
         req.session.userId,
@@ -775,11 +814,13 @@ export function registerFileAssetRoutes(app: Express) {
         "delete"
       );
 
-      if (!permission.allowed) {
+      if (!permission.allowed || !permission.asset) {
         return res
           .status(403)
           .json({ message: "Not authorized to delete this asset" });
       }
+
+      const asset = permission.asset;
 
       // Delete public links first
       await db
@@ -1724,7 +1765,49 @@ export function registerFileAssetRoutes(app: Express) {
 
         const asset = permission.asset;
 
-        // Download file from storage
+        // Check if this is a reference-only asset (Google Workspace file)
+        // CRITICAL: Do this check BEFORE attempting to download from storage
+        if (asset.referenceOnly) {
+          if (!asset.driveWebLink) {
+            if (asset.driveFileId) {
+              const webLink = `https://drive.google.com/file/d/${asset.driveFileId}/view`;
+              try {
+                await db
+                  .update(assets)
+                  .set({ driveWebLink: webLink, updatedAt: new Date() })
+                  .where(eq(assets.id, assetId));
+                console.log(
+                  `Backfilled driveWebLink for asset ${assetId}: ${webLink}`
+                );
+              } catch (e) {
+                console.warn(
+                  `Failed to backfill driveWebLink for asset ${assetId}:`,
+                  e
+                );
+              }
+              return res.redirect(302, webLink);
+            }
+            return res.status(400).json({
+              message: "Reference-only asset without valid Google Drive link",
+            });
+          }
+          console.log(
+            `Redirecting to Google Drive file: ${asset.driveWebLink}`
+          );
+          return res.redirect(302, asset.driveWebLink);
+        }
+
+        // Validate storagePath exists for regular assets
+        if (!asset.storagePath) {
+          console.error(
+            `ERROR: Asset ${assetId} has empty storagePath and is not a reference asset`
+          );
+          return res.status(400).json({
+            message: "Asset storage path not found",
+          });
+        }
+
+        // Download file from storage for regular assets
         const downloadResult = await downloadFile(asset.storagePath);
 
         if (!downloadResult.success || !downloadResult.data) {
@@ -2047,12 +2130,12 @@ export function registerFileAssetRoutes(app: Express) {
         const assetId = parseInt(req.params.assetId, 10);
         const { expiresInDays } = req.body; // 1, 3, 7, null (no expiry)
 
-        // Check if user has read permission for this asset
+        // Check if user has share permission for this asset
         const permission = await checkAssetPermission(
           req.session.userId,
           assetId,
           clientId,
-          "read"
+          "share"
         );
 
         if (!permission.allowed || !permission.asset) {
@@ -2160,12 +2243,12 @@ export function registerFileAssetRoutes(app: Express) {
         const assetId = parseInt(req.params.assetId, 10);
         const linkId = parseInt(req.params.linkId, 10);
 
-        // Check if user has read permission for this asset
+        // Check if user has share permission for this asset
         const permission = await checkAssetPermission(
           req.session.userId,
           assetId,
           clientId,
-          "read"
+          "share"
         );
 
         if (!permission.allowed) {
@@ -2227,7 +2310,47 @@ export function registerFileAssetRoutes(app: Express) {
         return res.status(404).json({ message: "Asset not found" });
       }
 
-      // Download file from storage
+      // Check if this is a reference-only asset (Google Workspace file)
+      // CRITICAL: Do this check BEFORE attempting to download from storage
+      if (asset.referenceOnly) {
+        if (!asset.driveWebLink) {
+          if (asset.driveFileId) {
+            const webLink = `https://drive.google.com/file/d/${asset.driveFileId}/view`;
+            try {
+              await db
+                .update(assets)
+                .set({ driveWebLink: webLink, updatedAt: new Date() })
+                .where(eq(assets.id, asset.id));
+              console.log(
+                `Backfilled driveWebLink for asset ${asset.id}: ${webLink}`
+              );
+            } catch (e) {
+              console.warn(
+                `Failed to backfill driveWebLink for asset ${asset.id}:`,
+                e
+              );
+            }
+            return res.redirect(302, webLink);
+          }
+          return res.status(400).json({
+            message: "Reference-only asset without valid Google Drive link",
+          });
+        }
+        console.log(`Redirecting to Google Drive file: ${asset.driveWebLink}`);
+        return res.redirect(302, asset.driveWebLink);
+      }
+
+      // Validate storagePath exists for regular assets
+      if (!asset.storagePath) {
+        console.error(
+          `ERROR: Asset has empty storagePath and is not a reference asset`
+        );
+        return res.status(400).json({
+          message: "Asset storage path not found",
+        });
+      }
+
+      // Download file from storage for regular assets
       const downloadResult = await downloadFile(asset.storagePath);
 
       if (!downloadResult.success || !downloadResult.data) {

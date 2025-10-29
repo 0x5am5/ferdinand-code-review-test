@@ -101,9 +101,5 @@ export const validateDriveFile = (
     fileSize: parseInt(validatedFile.size, 10),
     storagePath: `drive/${validatedFile.id}`,
     visibility: "shared",
-    isGoogleDrive: true,
-    driveFileId: validatedFile.id,
-    driveWebLink: validatedFile.webViewLink,
-    driveLastModified: new Date(validatedFile.modifiedTime),
   };
 };

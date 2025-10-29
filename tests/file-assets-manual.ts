@@ -9,8 +9,7 @@
  * - Dev auth bypass enabled OR valid session cookie
  */
 
-import fs from 'fs';
-import path from 'path';
+// File and path imports removed - not used in this test script
 
 const API_BASE = 'http://localhost:3001/api';
 const TEST_CLIENT_ID = 1; // Update with your test client ID

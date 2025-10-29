@@ -21,23 +21,25 @@ interface IntegrationsHubProps {
   featureToggles?: {
     figmaIntegration?: boolean;
     slackIntegration?: boolean;
+    brandAssets?: boolean;
   };
+  userRole?: string;
 }
 
 export function IntegrationsHub({
   clientId,
   featureToggles = {},
+  userRole,
 }: IntegrationsHubProps) {
   const figmaEnabled = featureToggles.figmaIntegration ?? false;
   const slackEnabled = featureToggles.slackIntegration ?? false;
-  // Google Drive is always enabled when Integrations tab is shown (Brand Assets is enabled)
-  const googleDriveEnabled = true;
+  const googleDriveEnabled = featureToggles.brandAssets ?? false;
 
   // Track open/closed state for each integration
   const [openIntegrations, setOpenIntegrations] = useState<Record<string, boolean>>({
     figma: false,
     slack: false,
-    "google-drive": false,
+    googleDrive: false,
   });
 
   const toggleIntegration = (key: string) => {
@@ -72,10 +74,10 @@ export function IntegrationsHub({
     ...(googleDriveEnabled
       ? [
           {
-            key: "google-drive",
+            key: "googleDrive",
             name: "Google Drive",
             icon: CloudIcon,
-            component: <GoogleDriveIntegration clientId={clientId} />,
+            component: <GoogleDriveIntegration clientId={clientId} userRole={userRole} />,
           },
         ]
       : []),

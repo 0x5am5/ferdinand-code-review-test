@@ -9,7 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 export default defineConfig({
 	plugins: [
-		react(),
+		react({
+			// Also transform JSX in .js files so Vite's import analysis doesn't choke
+			include: [/\.jsx$/, /\.tsx$/, /\.js$/],
+		}),
 		runtimeErrorOverlay(),
 		themePlugin(),
 		...(process.env.NODE_ENV !== "production" &&
@@ -26,6 +29,7 @@ export default defineConfig({
 			"@": path.resolve(__dirname, "client", "src"),
 			"@shared": path.resolve(__dirname, "shared"),
 		},
+		extensions: [".tsx", ".ts", ".jsx", ".js", ".mjs", ".mts", ".json"],
 	},
 	root: path.resolve(__dirname, "client"),
 	optimizeDeps: {
@@ -49,7 +53,12 @@ export default defineConfig({
 			"pdf-lib",
 			"pdfjs-dist",
 			"jszip"
-		]
+		],
+		esbuildOptions: {
+			loader: {
+				".js": "jsx",
+			},
+		},
 	},
 	build: {
 		outDir: path.resolve(__dirname, "dist/public"),

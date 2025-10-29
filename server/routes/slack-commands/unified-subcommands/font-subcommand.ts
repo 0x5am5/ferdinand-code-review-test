@@ -178,8 +178,9 @@ export async function handleFontSubcommand({
                 text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
               });
               sentCodeBlocks++;
-            } catch (_ephemeralError) {
+            } catch (ephemeralError) {
               // Fallback to DM
+              console.error('Failed to send font code via ephemeral:', ephemeralError);
               try {
                 const conversationResponse =
                   await workspaceClient.conversations.open({

@@ -1,5 +1,40 @@
 import '@testing-library/jest-dom';
 
+// Mock import.meta.env for Jest
+Object.defineProperty(global, 'import', {
+  value: {
+    meta: {
+      env: {
+        VITE_GOOGLE_CLIENT_ID: 'test-google-client-id',
+        VITE_GOOGLE_APP_ID: 'test-google-app-id',
+      },
+    },
+  },
+  writable: true,
+});
+
+// Mock fetch globally
+global.fetch = jest.fn();
+
+// Mock Response globally with proper implementation
+global.Response = class MockResponse {
+  constructor(body?: any, init?: ResponseInit) {
+    this.body = body;
+    this.status = init?.status || 200;
+    this.ok = (this.status >= 200 && this.status < 300);
+  }
+  body: any;
+  status: number;
+  ok: boolean;
+  
+  static json(data: any) {
+    return new MockResponse(JSON.stringify(data), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+} as any;
+
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

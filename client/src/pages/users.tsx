@@ -217,7 +217,7 @@ export default function UsersPage() {
     <div className="p-8 pt-4">
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Users</h1>
+          <h1 className="text-4xl font-bold">Users</h1>
           <p className="text-muted-foreground mt-1">
             Manage users, roles, and permissions across your organization
           </p>

@@ -98,7 +98,7 @@ export default function Clients() {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
-    slackIntegration: false,
+    slackIntegration: true,
     brandAssets: false,
   });
   const [animatingRows, setAnimatingRows] = useState<Record<number, boolean>>(
@@ -297,7 +297,7 @@ export default function Clients() {
         userPersonas: true,
         inspiration: true,
         figmaIntegration: false,
-        slackIntegration: false,
+        slackIntegration: true,
         brandAssets: false,
       });
     }
@@ -693,7 +693,7 @@ export default function Clients() {
                     userPersonas: true,
                     inspiration: true,
                     figmaIntegration: false,
-                    slackIntegration: false,
+                    slackIntegration: true,
                     brandAssets: false,
                   };
 

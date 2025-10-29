@@ -1,5 +1,5 @@
-import { assets, UserRole } from "@shared/schema";
-import { and, eq, or } from "drizzle-orm";
+import { assets, UserRole, userClients, users } from "@shared/schema";
+import { and, eq, isNull, or } from "drizzle-orm";
 import { db } from "../db";
 
 export type Permission = "read" | "write" | "delete" | "share";
@@ -32,31 +32,36 @@ export const checkAssetPermission = async (
       typeof userId === "string" ? parseInt(userId, 10) : userId;
 
     // Get user's role
-    const [user] = await db
-      .select()
-      .from((await import("@shared/schema")).users)
-      .where(eq((await import("@shared/schema")).users.id, userIdNum));
+    const [user] = await db.select().from(users).where(eq(users.id, userIdNum));
 
     if (!user) {
       return { allowed: false, reason: "User not found" };
     }
 
-    // Get the asset
+    // Get the asset (excluding deleted assets)
     const [asset] = await db
       .select()
       .from(assets)
-      .where(eq(assets.id, assetId));
+      .where(and(eq(assets.id, assetId), isNull(assets.deletedAt)));
 
     if (!asset) {
       return { allowed: false, reason: "Asset not found" };
     }
 
-    // Verify client access
+    // Verify asset belongs to the provided client
+    if (asset.clientId !== clientId) {
+      return { allowed: false, reason: "Asset not in client" };
+    }
+
+    // Verify client access - check both clientId and userId
     const [userClient] = await db
       .select()
-      .from((await import("@shared/schema")).userClients)
+      .from(userClients)
       .where(
-        eq((await import("@shared/schema")).userClients.clientId, clientId)
+        and(
+          eq(userClients.clientId, clientId),
+          eq(userClients.userId, userIdNum)
+        )
       );
 
     if (!userClient) {
@@ -108,23 +113,24 @@ export const getAccessibleAssets = async (
       typeof userId === "string" ? parseInt(userId, 10) : userId;
 
     // Get user's role
-    const [user] = await db
-      .select()
-      .from((await import("@shared/schema")).users)
-      .where(eq((await import("@shared/schema")).users.id, userIdNum));
+    const [user] = await db.select().from(users).where(eq(users.id, userIdNum));
 
     if (!user) {
       return [];
     }
 
-    // Build query conditions based on role
+    // Build query conditions based on role (excluding deleted assets)
     // Guests can only see shared assets
     if (user.role === UserRole.GUEST) {
       const accessibleAssets = await db
         .select()
         .from(assets)
         .where(
-          and(eq(assets.clientId, clientId), eq(assets.visibility, "shared"))
+          and(
+            eq(assets.clientId, clientId),
+            eq(assets.visibility, "shared"),
+            isNull(assets.deletedAt)
+          )
         );
       return accessibleAssets;
     }
@@ -139,17 +145,17 @@ export const getAccessibleAssets = async (
             or(
               eq(assets.visibility, "shared"),
               eq(assets.uploadedBy, userIdNum)
-            )
+            ),
+            isNull(assets.deletedAt)
           )
         );
       return accessibleAssets;
     }
     // Admins and editors can see all assets in the client
-
     const accessibleAssets = await db
       .select()
       .from(assets)
-      .where(eq(assets.clientId, clientId));
+      .where(and(eq(assets.clientId, clientId), isNull(assets.deletedAt)));
 
     return accessibleAssets;
   } catch (error) {

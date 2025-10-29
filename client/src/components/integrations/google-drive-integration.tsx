@@ -9,6 +9,7 @@ import {
 
 interface GoogleDriveIntegrationProps {
   clientId: number;
+  userRole?: string;
 }
 
 /**
@@ -18,6 +19,7 @@ interface GoogleDriveIntegrationProps {
  */
 export const GoogleDriveIntegration: FC<GoogleDriveIntegrationProps> = ({
   clientId,
+  userRole,
 }) => {
   const { data: connection, isLoading } = useGoogleDriveConnectionQuery();
   const disconnectMutation = useGoogleDriveDisconnectMutation();
@@ -42,7 +44,7 @@ export const GoogleDriveIntegration: FC<GoogleDriveIntegrationProps> = ({
 
   // Not connected state - show connect button
   if (!connection) {
-    return (
+    return userRole !== "guest" ? (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Connect your Google Drive to import brand assets directly from your
@@ -50,7 +52,7 @@ export const GoogleDriveIntegration: FC<GoogleDriveIntegrationProps> = ({
         </p>
         <GoogleDriveConnect clientId={clientId} variant="default" />
       </div>
-    );
+    ) : null;
   }
 
   // Connected state - show management interface

@@ -135,7 +135,7 @@ const createMockAsset = (overrides?: Partial<Asset>): Asset => ({
   ...overrides,
 });
 
-const createMockUser = (role: typeof UserRole[keyof typeof UserRole] = UserRole.STANDARD) => ({
+const createMockUser = (role: typeof UserRole[keyof typeof UserRole] = UserRole.STANDARD): any => ({
   id: 50,
   email: 'user@example.com',
   name: 'Test User',
@@ -145,6 +145,9 @@ const createMockUser = (role: typeof UserRole[keyof typeof UserRole] = UserRole.
   updatedAt: new Date(),
   lastLogin: new Date(),
 });
+
+// Unused - kept for reference
+const _createMockUser = createMockUser;
 
 const createMockDriveConnection = () => ({
   id: 1,
@@ -789,7 +792,7 @@ describe('Drive File Serving Endpoints', () => {
 
         try {
           await refreshUserTokens('50');
-        } catch (error) {
+        } catch (_error) {
           const expectedResponse = {
             message: 'Your Google Drive session has expired. Please reconnect your Drive account.',
             code: 'TOKEN_REFRESH_FAILED',
@@ -861,9 +864,9 @@ describe('Drive File Serving Endpoints', () => {
     describe('Single-Use Download Token Revocation', () => {
       it('should revoke token after successful download', () => {
         const token = 'download-token-123';
-        const action = 'download';
+        const _action = 'download';
 
-        if (action === 'download') {
+        if (_action === 'download') {
           revokeSecureToken(token);
           expect(revokeSecureToken).toHaveBeenCalledWith(token);
         }
@@ -871,7 +874,7 @@ describe('Drive File Serving Endpoints', () => {
 
       it('should not revoke token for read actions', () => {
         const token = 'read-token-123';
-        const action = 'read';
+        const _action = 'read';
 
         if (action === 'download') {
           revokeSecureToken(token);
@@ -885,7 +888,7 @@ describe('Drive File Serving Endpoints', () => {
     describe('Response Headers and Content', () => {
       it('should set appropriate headers for file streaming', () => {
         const asset = createMockAsset();
-        const action = 'read';
+        const _action = 'read';
 
         const expectedHeaders = {
           'Content-Type': asset.fileType,

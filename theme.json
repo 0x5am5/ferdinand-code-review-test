@@ -34,7 +34,7 @@
 			"fontFamilyMonoBase": "monospace"
 		},
 		"colors": {
-			"brandPrimaryBase": "#08192B",
+			"brandPrimaryBase": "#0099ff",
 			"brandSecondaryBase": "#4563AE",
 			"neutralBase": "hsl(0, 0%, 69%)",
 			"interactiveSuccessBase": "#4BBB84",

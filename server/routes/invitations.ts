@@ -29,7 +29,8 @@ async function getClientLogoUrl(clientId: number): Promise<string | null> {
                 ? JSON.parse(asset.data)
                 : asset.data;
             return data?.type === type;
-          } catch (_e) {
+          } catch (error) {
+            console.error(`Failed to parse logo data for asset ${asset.id}:`, error);
             return false;
           }
         });

@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 
 // Types for Google Drive integration
 export interface GoogleDriveConnection {
   id: number;
   userId: number;
+  userEmail: string | null;
   scopes: string[];
   connectedAt: Date;
   lastUsedAt: Date | null;
@@ -236,4 +238,89 @@ export const useGoogleDriveImportMutation = () => {
       });
     },
   });
+};
+
+/**
+ * Hook to handle OAuth callback detection and trigger refetch of Drive connection status
+ * This should be used in a top-level layout or shared component to ensure global state updates
+ */
+export const useGoogleDriveOAuthCallback = () => {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // Check if we're returning from OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const googleAuthStatus = urlParams.get("google_auth");
+
+    if (googleAuthStatus === "success") {
+      // Refetch connection status and token after successful OAuth
+      queryClient.invalidateQueries({ queryKey: ["/api/google-drive/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/google-drive/token"] });
+
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Google Drive connected successfully",
+      });
+
+      // Clean up URL parameters without page reload
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("google_auth");
+      window.history.replaceState({}, "", newUrl.toString());
+
+      console.log("Google Drive OAuth successful, connection status refreshed");
+    } else if (googleAuthStatus === "error") {
+      const reason = urlParams.get("reason");
+      console.error("Google Drive OAuth failed:", reason);
+
+      // Show error toast
+      toast({
+        title: "Connection failed",
+        description:
+          reason === "not_authenticated"
+            ? "Please log in to connect Google Drive"
+            : "Failed to connect Google Drive. Please try again.",
+        variant: "destructive",
+      });
+
+      // Clean up URL parameters
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("google_auth");
+      newUrl.searchParams.delete("reason");
+      window.history.replaceState({}, "", newUrl.toString());
+    }
+  }, [queryClient]);
+};
+
+/**
+ * Enhanced token query that can be manually triggered for refresh
+ */
+export const useGoogleDriveTokenQueryWithRefresh = () => {
+  const queryClient = useQueryClient();
+
+  const baseQuery = useQuery<{ accessToken: string; expiresAt: Date } | null>({
+    queryKey: ["/api/google-drive/token"],
+    queryFn: async () => {
+      const response = await fetch("/api/google-drive/token");
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null; // No connection found
+        }
+        throw new Error("Failed to fetch Google Drive access token");
+      }
+      return response.json();
+    },
+    retry: false,
+    enabled: false, // Only fetch when explicitly requested
+  });
+
+  const refreshToken = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/google-drive/token"] });
+    queryClient.refetchQueries({ queryKey: ["/api/google-drive/token"] });
+  };
+
+  return {
+    ...baseQuery,
+    refreshToken,
+  };
 };

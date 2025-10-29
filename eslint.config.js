@@ -6,7 +6,7 @@ import hooksPlugin from "eslint-plugin-react-hooks";
 
 export default [
 	{
-		ignores: ["dist/*", "node_modules/*"],
+		ignores: ["dist/*", "node_modules/*", "server/public/assets/*", "client/dist/*", "**/*.js"],
 	},
 	// Base JS recommended rules
 	eslint.configs.recommended,

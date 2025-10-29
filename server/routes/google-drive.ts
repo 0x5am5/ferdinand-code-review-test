@@ -16,6 +16,12 @@ import {
   listDriveFiles,
   validateFileForImport,
 } from "../services/google-drive";
+import {
+  googleDriveConnections,
+  users,
+  userClients,
+  UserRole,
+} from "@shared/schema";
 import type { RequestWithClientId } from "./index";
 
 // Initialize OAuth2 client for generating auth URLs
@@ -26,8 +32,7 @@ const oauth2Client = new OAuth2Client({
 });
 
 const SCOPES = [
-  "https://www.googleapis.com/auth/drive.readonly",
-  "https://www.googleapis.com/auth/drive.metadata.readonly",
+  "https://www.googleapis.com/auth/drive", // Full Drive access for file management and permission updates
 ];
 
 export function registerGoogleDriveRoutes(app: Express) {
@@ -64,21 +69,23 @@ export function registerGoogleDriveRoutes(app: Express) {
 
       const [connection] = await db
         .select()
-        .from((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            req.session.userId
-          )
-        );
+        .from(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, req.session.userId));
 
       if (!connection) {
         return res.status(404).json({ message: "No connection found" });
       }
 
+      // Get user email to display in the connection status
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, connection.userId));
+
       res.json({
         id: connection.id,
         userId: connection.userId,
+        userEmail: user?.email || null,
         scopes: connection.scopes,
         connectedAt: connection.connectedAt,
         lastUsedAt: connection.lastUsedAt,
@@ -98,13 +105,8 @@ export function registerGoogleDriveRoutes(app: Express) {
 
       const [connection] = await db
         .select()
-        .from((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            req.session.userId
-          )
-        );
+        .from(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, req.session.userId));
 
       if (!connection) {
         return res.status(404).json({ message: "No connection found" });
@@ -211,36 +213,30 @@ export function registerGoogleDriveRoutes(app: Express) {
         // Check user role and permissions
         const [user] = await db
           .select()
-          .from((await import("@shared/schema")).users)
-          .where(
-            eq((await import("@shared/schema")).users.id, req.session.userId)
-          );
+          .from(users)
+          .where(eq(users.id, req.session.userId));
 
         if (!user) {
           return res.status(401).json({ message: "User not found" });
         }
 
-        // Verify user has access to this client
-        const [userClient] = await db
-          .select()
-          .from((await import("@shared/schema")).userClients)
-          .where(
-            and(
-              eq(
-                (await import("@shared/schema")).userClients.userId,
-                req.session.userId
-              ),
-              eq(
-                (await import("@shared/schema")).userClients.clientId,
-                clientId
+        // Verify user has access to this client (SUPER_ADMIN bypass)
+        if (user.role !== UserRole.SUPER_ADMIN) {
+          const [userClient] = await db
+            .select()
+            .from(userClients)
+            .where(
+              and(
+                eq(userClients.userId, req.session.userId),
+                eq(userClients.clientId, clientId)
               )
-            )
-          );
+            );
 
-        if (!userClient) {
-          return res
-            .status(403)
-            .json({ message: "Not authorized for this client" });
+          if (!userClient) {
+            return res
+              .status(403)
+              .json({ message: "Not authorized for this client" });
+          }
         }
 
         // Set up Server-Sent Events for progress tracking
@@ -365,13 +361,8 @@ export function registerGoogleDriveRoutes(app: Express) {
       // Get the user's Google Drive connection
       const [connection] = await db
         .select()
-        .from((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            userIdNum
-          )
-        );
+        .from(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, userIdNum));
 
       if (!connection) {
         return res
@@ -413,13 +404,8 @@ export function registerGoogleDriveRoutes(app: Express) {
 
       // Delete the connection from database
       await db
-        .delete((await import("@shared/schema")).googleDriveConnections)
-        .where(
-          eq(
-            (await import("@shared/schema")).googleDriveConnections.userId,
-            userIdNum
-          )
-        );
+        .delete(googleDriveConnections)
+        .where(eq(googleDriveConnections.userId, userIdNum));
 
       res.json({ message: "Successfully disconnected from Google Drive" });
     } catch (error) {

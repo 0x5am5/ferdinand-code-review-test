@@ -1,3 +1,4 @@
+import { UserRole } from "@shared/schema";
 import { FolderIcon, Upload } from "lucide-react";
 import {
   type DragEvent,
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { toast } from "@/hooks/use-toast";
 import {
   type Asset,
   type AssetFilters as Filters,
@@ -36,9 +36,11 @@ import {
   useBulkUpdateAssetsMutation,
   useDeleteAssetMutation,
 } from "@/lib/queries/assets";
+import { useClientsQuery } from "@/lib/queries/clients";
 import {
   useGoogleDriveConnectionQuery,
   useGoogleDriveImportMutation,
+  useGoogleDriveOAuthCallback,
   useGoogleDriveTokenQuery,
 } from "@/lib/queries/google-drive";
 
@@ -50,7 +52,7 @@ interface AssetManagerProps {
  * Client-scoped Asset Manager - Manages assets for a specific client
  */
 export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
-  const [, setLocation] = useLocation();
+  const [, _setLocation] = useLocation();
   const { user } = useAuth();
   const [filters, setFilters] = useState<Filters>({});
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
@@ -60,6 +62,9 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [accessToken, setAccessToken] = useState<string | undefined>();
+
+  // Get client info for displaying current client name
+  const { data: allClients } = useClientsQuery();
 
   // Fetch assets filtered by clientId
   const { data: allAssets = [], isLoading } = useAssetsQuery(filters);
@@ -88,39 +93,8 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     }
   }, [tokenData]);
 
-  // Handle OAuth callback
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const googleAuth = params.get("google_auth");
-
-    if (googleAuth === "success") {
-      toast({
-        title: "Success",
-        description: "Google Drive connected successfully",
-      });
-      // Invalidate the Google Drive connection query to update the UI
-      googleDriveQuery.refetch();
-      // Clean up URL params
-      params.delete("google_auth");
-      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
-      window.history.replaceState({}, "", newUrl);
-    } else if (googleAuth === "error") {
-      const reason = params.get("reason");
-      toast({
-        title: "Connection failed",
-        description:
-          reason === "not_authenticated"
-            ? "Please log in to connect Google Drive"
-            : "Failed to connect Google Drive. Please try again.",
-        variant: "destructive",
-      });
-      // Clean up URL params
-      params.delete("google_auth");
-      params.delete("reason");
-      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
-      window.history.replaceState({}, "", newUrl);
-    }
-  }, [googleDriveQuery]);
+  // Use shared OAuth callback hook
+  useGoogleDriveOAuthCallback();
 
   // Filter assets by clientId on the client side
   const assets = allAssets.filter((asset) => asset.clientId === clientId);
@@ -185,26 +159,12 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     }
   }, []);
 
-  const _handleGoogleDriveClick = () => {
-    // If not connected, redirect to integrations tab
-    if (!googleDriveQuery.data) {
-      // Dispatch custom event for tab change (like sidebar does)
-      const event = new CustomEvent("client-tab-change", {
-        detail: { tab: "integrations" },
-      });
-      window.dispatchEvent(event);
-
-      // Update URL
-      setLocation(`/clients/${clientId}?tab=integrations`);
-    }
-    // If connected, the GoogleDrivePicker will handle opening the picker
-  };
-
   const handleFilesSelected = (files: google.picker.DocumentObject[]) => {
     importMutation.mutate({ files, clientId });
   };
 
-  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
+  // All users except guests can connect Google Drive
+  const canUseGoogleDrive = user?.role !== UserRole.GUEST;
 
   return (
     <section
@@ -239,7 +199,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         </div>
         <div className="flex gap-2">
           {/* Google Drive Button - Smart button that changes based on connection status */}
-          {isAdmin &&
+          {canUseGoogleDrive &&
             (!googleDriveQuery.data ? (
               // Not connected - trigger Google Drive connect flow (consent modal / OAuth)
               <GoogleDriveConnect

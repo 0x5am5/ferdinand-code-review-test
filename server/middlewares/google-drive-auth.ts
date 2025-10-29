@@ -17,10 +17,9 @@ const oauth2Client = new OAuth2Client({
   redirectUri: process.env.GOOGLE_REDIRECT_URI,
 });
 
-// Required scopes for Drive API access
+// Required scopes for Drive API access including permission management
 const SCOPES = [
-  "https://www.googleapis.com/auth/drive.readonly",
-  "https://www.googleapis.com/auth/drive.metadata.readonly",
+  "https://www.googleapis.com/auth/drive", // Full Drive access for file management and permission updates
 ];
 
 /**

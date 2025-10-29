@@ -45,12 +45,12 @@ export function registerAuthRoutes(app: Express) {
         try {
           // await firebaseAuth.deleteUser(decodedToken.uid);
           return res.status(403).json({ message: "User not authorized" });
-        } catch (_error: unknown) {
+        } catch (error: unknown) {
+          console.error('Failed to delete unauthorized user:', error);
           return res
             .status(500)
             .json({ message: "Failed to delete unauthorized user" });
         }
-      } else {
       }
 
       if (!req.session) {

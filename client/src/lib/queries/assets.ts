@@ -16,6 +16,8 @@ export interface Asset {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  // Reference-only flag for Google Workspace files
+  referenceOnly?: boolean;
   // Google Drive fields
   isGoogleDrive?: boolean;
   driveFileId?: string;
@@ -488,8 +490,10 @@ export interface AssetPublicLink {
   createdAt: Date;
 }
 
-// Get public links for an asset
-export const useAssetPublicLinksQuery = (clientId: number, assetId: number) =>
+export const useAssetPublicLinksQuery = (
+  clientId: number | null,
+  assetId: number | null
+) =>
   useQuery<AssetPublicLink[]>({
     queryKey: [`/api/clients/${clientId}/assets/${assetId}/public-links`],
     queryFn: async () => {

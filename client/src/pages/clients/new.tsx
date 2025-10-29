@@ -50,7 +50,7 @@ export default function NewClientPage() {
     userPersonas: true,
     inspiration: true,
     figmaIntegration: false,
-    slackIntegration: false,
+    slackIntegration: true,
     brandAssets: false,
   });
 

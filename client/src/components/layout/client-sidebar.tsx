@@ -174,7 +174,9 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       title: "Integrations",
       icon: <Settings className="h-4 w-4" />,
       enabled:
-        featureToggles.brandAssets &&
+        (featureToggles.figmaIntegration ||
+         featureToggles.slackIntegration ||
+         featureToggles.brandAssets) &&
         (user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN),
     },
   ];

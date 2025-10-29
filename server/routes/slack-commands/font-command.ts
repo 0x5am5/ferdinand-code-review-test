@@ -295,9 +295,10 @@ export async function handleFontCommand({
                 console.log(
                   `[FONT DEBUG] Sent CSS via ephemeral message for ${fontInfo.title}`
                 );
-              } catch (_ephemeralError) {
+              } catch (ephemeralError) {
                 console.log(
-                  `[FONT DEBUG] Ephemeral message failed, trying DM...`
+                  `[FONT DEBUG] Ephemeral message failed, trying DM...`,
+                  ephemeralError
                 );
 
                 // Fallback to DM
@@ -354,9 +355,10 @@ export async function handleFontCommand({
             user: command.user_id,
             text: summaryText,
           });
-        } catch (_ephemeralError) {
+        } catch (ephemeralError) {
           console.log(
-            "Could not send summary message via ephemeral, trying DM..."
+            "Could not send summary message via ephemeral, trying DM...",
+            ephemeralError
           );
 
           try {
@@ -401,8 +403,8 @@ export async function handleFontCommand({
                 text: "❌ An error occurred while processing your /ferdinand-fonts request. The bot might need additional permissions. Please try:\n• Inviting the bot to the channel: `/invite @Ferdinand`\n• Or contact your workspace admin to check bot permissions",
               });
             }
-          } catch (dmError) {
-            console.log("Could not send error message via DM:", dmError);
+          } catch (error) {
+            console.error("Could not send error message via DM:", error);
           }
         }
 
