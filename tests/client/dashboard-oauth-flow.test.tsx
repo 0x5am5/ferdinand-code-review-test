@@ -9,19 +9,16 @@
  * - UI updates after linking
  */
 
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import '@testing-library/jest-dom';
-import { TextDecoder } from 'util';
 // Note: matchers are already extended in setup.ts
 
 // Import utilities we created
 import {
   TestScenarioBuilder,
   createMockQueryClient,
-  createTestWrapper,
 } from './test-utils';
 
 // Mock the dashboard component

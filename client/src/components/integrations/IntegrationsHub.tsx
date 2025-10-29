@@ -23,11 +23,13 @@ interface IntegrationsHubProps {
     slackIntegration?: boolean;
     brandAssets?: boolean;
   };
+  userRole?: string;
 }
 
 export function IntegrationsHub({
   clientId,
   featureToggles = {},
+  userRole,
 }: IntegrationsHubProps) {
   const figmaEnabled = featureToggles.figmaIntegration ?? false;
   const slackEnabled = featureToggles.slackIntegration ?? false;
@@ -75,7 +77,7 @@ export function IntegrationsHub({
             key: "googleDrive",
             name: "Google Drive",
             icon: CloudIcon,
-            component: <GoogleDriveIntegration clientId={clientId} />,
+            component: <GoogleDriveIntegration clientId={clientId} userRole={userRole} />,
           },
         ]
       : []),

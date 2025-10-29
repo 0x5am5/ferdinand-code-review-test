@@ -9,9 +9,8 @@
  * 3. Run: npx tsx tests/file-assets.test.ts
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
-import fs from 'fs';
-import path from 'path';
+import { describe, it, expect, beforeAll, afterEach } from '@jest/globals';
+// fs and path imports removed - not used in this test suite
 import { cleanupTestAssets, cleanupTestCategories, cleanupTestTags } from './helpers/test-server';
 
 const API_BASE = 'http://localhost:3001/api';

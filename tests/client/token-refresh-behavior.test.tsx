@@ -9,9 +9,8 @@
  * - Token caching behavior
  */
 
-import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 

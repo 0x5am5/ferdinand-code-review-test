@@ -44,7 +44,7 @@ let testClient: TestClient;
 let sharedAssetId: number;
 let privateAssetId: number;
 let testCategoryId: number;
-let testTagId: number;
+// testTagId is used in the test file for cleanup tracking
 
 // Track assets created during tests for cleanup
 const createdAssetIds: number[] = [];
@@ -843,7 +843,7 @@ describe('File Asset System - Comprehensive Tests', () => {
 
     it('should cache generated thumbnails', async () => {
       // First request - generates thumbnail
-      const start1 = Date.now();
+      const _start1 = Date.now();
       const response1 = await authenticatedFetch(
         `${API_BASE}/clients/${testClient.id}/file-assets/${imageAssetId}/thumbnail/small`,
         'admin'

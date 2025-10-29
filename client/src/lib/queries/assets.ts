@@ -16,6 +16,8 @@ export interface Asset {
   createdAt: Date;
   updatedAt: Date;
   deletedAt: Date | null;
+  // Reference-only flag for Google Workspace files
+  referenceOnly?: boolean;
   // Google Drive fields
   isGoogleDrive?: boolean;
   driveFileId?: string;

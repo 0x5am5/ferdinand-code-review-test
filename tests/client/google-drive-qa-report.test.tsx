@@ -1,7 +1,4 @@
-import React from "react";
 import { describe, expect, it, jest, beforeEach } from "@jest/globals";
-import { renderHook } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Mock fetch globally
 const mockFetch = global.fetch = jest.fn() as any;
@@ -38,21 +35,6 @@ class MockResponse {
 global.Response = MockResponse as any;
 
 describe("Google Drive Import - QA Report Generation", () => {
-  const mockClientId = 123;
-  const mockSuperAdminUserId = 1;
-  const mockRegularUserId = 2;
-
-  // Create a test QueryClient
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-
-  const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -370,10 +352,10 @@ describe("Google Drive Import - QA Report Generation", () => {
                 assignee: "backend-team"
               }
             ]
-          }), {
+            }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
-          };
+          });
         }
         return new MockResponse();
       });
@@ -440,7 +422,7 @@ describe("Google Drive Import - QA Report Generation", () => {
             }), {
               status: 200,
               headers: { 'Content-Type': 'application/json' }
-            };
+            });
           }
         }
         return new MockResponse();

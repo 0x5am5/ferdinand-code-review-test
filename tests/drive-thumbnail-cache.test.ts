@@ -35,6 +35,12 @@ describe("Drive Thumbnail Cache", () => {
   const testThumbnailUrl = "https://example.com/thumbnail/test=s220";
   const testModifiedDate = new Date("2025-01-01T00:00:00Z");
 
+  // Helper function to access URL field
+  const getUrl = (url: string | URL | Request): string => {
+    if (typeof url === 'string') return url;
+    return url instanceof URL ? url.toString() : new URL(url.url || '').toString();
+  };
+
   beforeAll(async () => {
     // Mock global fetch
     global.fetch = async (url: string | URL | Request) => {

@@ -682,6 +682,20 @@ export const assets = pgTable(
     })
       .notNull()
       .default("shared"),
+    // Google Drive integration fields (existing)
+    isGoogleDrive: boolean("is_google_drive").default(false),
+    driveFileId: text("drive_file_id"),
+    driveWebLink: text("drive_web_link"), // webViewLink for Google Drive files
+    driveLastModified: timestamp("drive_last_modified", { mode: "string" }),
+    driveOwner: text("drive_owner"),
+    driveThumbnailUrl: text("drive_thumbnail_url"),
+    driveWebContentLink: text("drive_web_content_link"),
+    driveSharingMetadata: jsonb("drive_sharing_metadata"),
+    cachedThumbnailPath: text("cached_thumbnail_path"),
+    thumbnailCachedAt: timestamp("thumbnail_cached_at", { mode: "string" }),
+    thumbnailCacheVersion: text("thumbnail_cache_version"),
+    // Reference-only asset flag for Google Workspace files
+    referenceOnly: boolean("reference_only").default(false), // Flag for reference-only assets
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
     deletedAt: timestamp("deleted_at"), // soft delete
@@ -1519,10 +1533,27 @@ export const insertAssetSchema = createInsertSchema(assets)
     fileName: z.string().min(1),
     originalFileName: z.string().min(1),
     fileType: z.string().min(1),
-    fileSize: z.number().min(1),
-    storagePath: z.string().min(1),
+    fileSize: z.number().min(0), // Allow 0 for reference-only assets
+    storagePath: z.string().min(0), // Allow empty string for reference-only assets
     visibility: z.enum(["private", "shared"]).default("shared"),
-  });
+    externalUrl: z.string().url().optional(), // webViewLink for Google Drive files
+    referenceOnly: z.boolean().default(false), // Flag for reference-only assets
+  })
+  .refine(
+    (data) => {
+      // If referenceOnly is true, allow fileSize: 0 and storagePath: ""
+      // Otherwise, require fileSize >= 1 and storagePath with at least 1 character
+      if (data.referenceOnly) {
+        return data.fileSize === 0 && data.storagePath === "";
+      }
+      return data.fileSize >= 1 && data.storagePath.length >= 1;
+    },
+    {
+      message:
+        "For reference-only assets, fileSize must be 0 and storagePath must be empty. For regular assets, fileSize must be >= 1 and storagePath must not be empty.",
+      path: ["fileSize", "storagePath"],
+    }
+  );
 
 export const insertAssetCategorySchema = createInsertSchema(assetCategories)
   .omit({ id: true, createdAt: true })

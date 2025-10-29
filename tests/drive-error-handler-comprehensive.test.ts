@@ -19,14 +19,11 @@
  */
 
 // @ts-nocheck - Disabling type checks for test file to avoid Jest mock type issues
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import type { GaxiosError } from 'gaxios';
 import {
   parseDriveError,
-  calculateBackoff,
-  withDriveErrorHandling,
   DriveErrorCode,
-  type ParsedDriveError,
 } from '../server/services/drive-error-handler';
 
 // ============================================================================

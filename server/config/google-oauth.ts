@@ -1,10 +1,7 @@
 import { OAuth2Client } from "google-auth-library";
 
 // Google OAuth2 scopes required for Drive access
-export const GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/drive.readonly",
-  "https://www.googleapis.com/auth/drive.metadata.readonly",
-];
+export const GOOGLE_SCOPES = ["https://www.googleapis.com/auth/drive"];
 
 // Initialize OAuth2 client
 export const oauth2Client = new OAuth2Client({

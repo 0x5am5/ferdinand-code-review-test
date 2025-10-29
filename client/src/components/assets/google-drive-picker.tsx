@@ -182,6 +182,28 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
     return <FileIcon className="h-4 w-4" />;
   };
 
+  const isGoogleWorkspaceFile = (mimeType: string) => {
+    const googleWorkspaceMimeTypes = [
+      "application/vnd.google-apps.document",
+      "application/vnd.google-apps.spreadsheet",
+      "application/vnd.google-apps.presentation",
+      "application/vnd.google-apps.drawing",
+      "application/vnd.google-apps.forms",
+      "application/vnd.google-apps.script",
+      "application/vnd.google-apps.site",
+      "application/vnd.google-apps.fusiontable",
+      "application/vnd.google-apps.map",
+    ];
+    return googleWorkspaceMimeTypes.includes(mimeType);
+  };
+
+  const getFileTypeDescription = (mimeType: string) => {
+    if (isGoogleWorkspaceFile(mimeType)) {
+      return "Reference-only (will be linked, not downloaded)";
+    }
+    return "Will be downloaded and stored";
+  };
+
   return (
     <>
       {children ? (
@@ -234,6 +256,9 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
                   <p className="text-sm text-muted-foreground truncate">
                     {file.mimeType}
                   </p>
+                  <p className="text-xs text-blue-600 font-medium">
+                    {getFileTypeDescription(file.mimeType)}
+                  </p>
                   {file.sizeBytes && (
                     <p className="text-xs text-muted-foreground">
                       {(Number(file.sizeBytes) / 1024 / 1024).toFixed(2)} MB
@@ -243,6 +268,33 @@ export const GoogleDrivePicker: FC<GoogleDrivePickerProps> = ({
               </div>
             ))}
           </div>
+
+          {/* Information about reference assets */}
+          {selectedFiles.some((file) =>
+            isGoogleWorkspaceFile(file.mimeType)
+          ) && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-blue-900 mb-2">
+                About Google Workspace Files
+              </h4>
+              <p className="text-sm text-blue-800 mb-2">
+                Google Workspace files (Docs, Sheets, Slides, etc.) will be
+                imported as reference-only assets. This means:
+              </p>
+              <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                <li>The file will not be downloaded to Ferdinand</li>
+                <li>Users will open the file directly in Google Drive</li>
+                <li>
+                  File permissions will be set to "anyone with link can view"
+                </li>
+                <li>The original file remains in your Google Drive</li>
+              </ul>
+              <p className="text-sm text-blue-700 font-medium">
+                This allows you to reference Google Workspace files without
+                consuming storage space.
+              </p>
+            </div>
+          )}
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={handleCancelSelection}>

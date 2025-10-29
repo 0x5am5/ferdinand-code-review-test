@@ -1,0 +1,322 @@
+import { brandAssets, slackWorkspaces } from "@shared/schema";
+import { WebClient } from "@slack/web-api";
+import { and, eq } from "drizzle-orm";
+import { db } from "../../db";
+import { buildColorBlocks } from "../../utils/color-display";
+import { buildFontProcessingMessage, buildFontSummaryMessage, } from "../../utils/font-display";
+import { generateAdobeFontCSS, generateGoogleFontCSS, hasUploadableFiles, } from "../../utils/font-helpers";
+import { decryptBotToken, filterColorAssetsByVariant, filterFontAssetsByVariant, findBestLogoMatch, formatAssetInfo, formatFontInfo, generateAssetDownloadUrl, logSlackActivity, uploadFileToSlack, } from "../../utils/slack-helpers";
+export async function handleColorSubcommandWithLimit(body, respond, variant, clientId, limit) {
+    try {
+        // Find workspace by client ID
+        const [workspace] = await db
+            .select()
+            .from(slackWorkspaces)
+            .where(and(eq(slackWorkspaces.clientId, clientId), eq(slackWorkspaces.isActive, true)));
+        if (!workspace) {
+            await respond({
+                text: "❌ Workspace configuration not found.",
+                response_type: "ephemeral",
+            });
+            return;
+        }
+        const auditLog = {
+            userId: body.user.id,
+            workspaceId: body.team.id,
+            command: `/ferdinand color ${variant} (${limit === "all" ? "show all" : `limit ${limit}`})`,
+            assetIds: [],
+            clientId,
+            success: false,
+            timestamp: new Date(),
+        };
+        // Get color assets
+        const colorAssets = await db
+            .select()
+            .from(brandAssets)
+            .where(and(eq(brandAssets.clientId, workspace.clientId), eq(brandAssets.category, "color")));
+        if (colorAssets.length === 0) {
+            await respond({
+                text: "🎨 No color assets found for your organization.",
+                response_type: "ephemeral",
+            });
+            return;
+        }
+        // Filter by variant if specified
+        const filteredColorAssets = filterColorAssetsByVariant(colorAssets, variant);
+        const displayAssets = filteredColorAssets.length > 0 ? filteredColorAssets : colorAssets;
+        // Apply limit
+        const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit);
+        auditLog.assetIds = assetsToShow.map((asset) => asset.id);
+        // Build color blocks using the same shared utility as the main commands
+        const colorBlocks = buildColorBlocks(assetsToShow, filteredColorAssets.length > 0
+            ? filteredColorAssets.slice(0, assetsToShow.length)
+            : assetsToShow, colorAssets, variant);
+        await respond({
+            blocks: colorBlocks,
+            response_type: "ephemeral",
+            replace_original: true,
+        });
+        auditLog.success = true;
+        logSlackActivity(auditLog);
+    }
+    catch (error) {
+        console.error("Error in handleColorSubcommandWithLimit:", error);
+        await respond({
+            text: "❌ An error occurred while processing your request.",
+            response_type: "ephemeral",
+        });
+    }
+}
+export async function handleLogoSubcommandWithLimit(body, respond, query, clientId, limit) {
+    try {
+        // Find workspace by client ID
+        const [workspace] = await db
+            .select()
+            .from(slackWorkspaces)
+            .where(and(eq(slackWorkspaces.clientId, clientId), eq(slackWorkspaces.isActive, true)));
+        if (!workspace) {
+            await respond({
+                text: "❌ Workspace configuration not found.",
+                response_type: "ephemeral",
+            });
+            return;
+        }
+        const auditLog = {
+            userId: body.user.id,
+            workspaceId: body.team.id,
+            command: `/ferdinand logo ${query} (${limit === "all" ? "upload all" : `limit ${limit}`})`,
+            assetIds: [],
+            clientId,
+            success: false,
+            timestamp: new Date(),
+        };
+        // Get logo assets
+        const logoAssets = await db
+            .select()
+            .from(brandAssets)
+            .where(and(eq(brandAssets.clientId, workspace.clientId), eq(brandAssets.category, "logo")));
+        if (logoAssets.length === 0) {
+            await respond({
+                text: "🏷️ No logo assets found for your organization.",
+                response_type: "ephemeral",
+            });
+            return;
+        }
+        // Find matching logos
+        const matchedLogos = findBestLogoMatch(logoAssets, query);
+        // Apply limit
+        const logosToUpload = limit === "all" ? matchedLogos : matchedLogos.slice(0, limit);
+        auditLog.assetIds = logosToUpload.map((asset) => asset.id);
+        const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
+        // Update the original message
+        await respond({
+            text: `🔄 Processing ${logosToUpload.length} logo${logosToUpload.length > 1 ? "s" : ""}${query ? ` (${query} variant)` : ""}...`,
+            response_type: "ephemeral",
+            replace_original: true,
+        });
+        // Process uploads asynchronously
+        setImmediate(async () => {
+            try {
+                const botToken = decryptBotToken(workspace.botToken);
+                const workspaceClient = new WebClient(botToken);
+                let uploadedFiles = 0;
+                for (const asset of logosToUpload) {
+                    const assetInfo = formatAssetInfo(asset);
+                    // Check if we should upload dark variant
+                    const isDarkQuery = query.toLowerCase() === "dark" ||
+                        query.toLowerCase() === "white" ||
+                        query.toLowerCase() === "inverse";
+                    const data = typeof asset.data === "string"
+                        ? JSON.parse(asset.data)
+                        : asset.data;
+                    const hasDarkVariant = data?.hasDarkVariant === true;
+                    // Build download URL with variant parameter if needed
+                    const downloadParams = { format: "png" };
+                    if (isDarkQuery && hasDarkVariant) {
+                        downloadParams.variant = "dark";
+                    }
+                    const downloadUrl = generateAssetDownloadUrl(asset.id, workspace.clientId, baseUrl, downloadParams);
+                    const variantSuffix = isDarkQuery && hasDarkVariant ? "_dark" : "";
+                    const filename = `${asset.name.replace(/\s+/g, "_")}${variantSuffix}.png`;
+                    const variantNote = isDarkQuery && hasDarkVariant ? " (Dark Variant)" : "";
+                    const title = `${assetInfo.title}${variantNote}`;
+                    const uploaded = await uploadFileToSlack(botToken, {
+                        channelId: body.channel.id,
+                        userId: body.user.id,
+                        fileUrl: downloadUrl,
+                        filename,
+                        title,
+                        initialComment: `📋 *${title}*\n${assetInfo.description}\n• Type: ${assetInfo.type}\n• Format: ${assetInfo.format}${variantNote ? `\n• Variant: Dark` : ""}`,
+                    });
+                    if (uploaded)
+                        uploadedFiles++;
+                }
+                // Send summary
+                let summaryText = `✅ *${uploadedFiles} logo${uploadedFiles > 1 ? "s" : ""} uploaded successfully!*`;
+                if (query) {
+                    summaryText += `\n🔍 Search: "${query}" (${matchedLogos.length} match${matchedLogos.length > 1 ? "es" : ""})`;
+                }
+                if (limit !== "all" && matchedLogos.length > limit) {
+                    summaryText += `\n💡 Showing ${limit} of ${matchedLogos.length} results.`;
+                }
+                await workspaceClient.chat.postEphemeral({
+                    channel: body.channel.id,
+                    user: body.user.id,
+                    text: summaryText,
+                });
+                auditLog.success = true;
+                logSlackActivity(auditLog);
+            }
+            catch (error) {
+                console.error("Error in logo upload:", error);
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error in handleLogoSubcommandWithLimit:", error);
+        await respond({
+            text: "❌ An error occurred while processing your request.",
+            response_type: "ephemeral",
+        });
+    }
+}
+export async function handleFontSubcommandWithLimit(body, respond, variant, clientId, limit) {
+    try {
+        // Find workspace by client ID
+        const [workspace] = await db
+            .select()
+            .from(slackWorkspaces)
+            .where(and(eq(slackWorkspaces.clientId, clientId), eq(slackWorkspaces.isActive, true)));
+        if (!workspace) {
+            await respond({
+                text: "❌ Workspace configuration not found.",
+                response_type: "ephemeral",
+            });
+            return;
+        }
+        const auditLog = {
+            userId: body.user.id,
+            workspaceId: body.team.id,
+            command: `/ferdinand font ${variant} (${limit === "all" ? "process all" : `limit ${limit}`})`,
+            assetIds: [],
+            clientId,
+            success: false,
+            timestamp: new Date(),
+        };
+        // Get font assets
+        const fontAssets = await db
+            .select()
+            .from(brandAssets)
+            .where(and(eq(brandAssets.clientId, workspace.clientId), eq(brandAssets.category, "font")));
+        if (fontAssets.length === 0) {
+            await respond({
+                text: "📝 No font assets found for your organization.",
+                response_type: "ephemeral",
+            });
+            return;
+        }
+        // Filter by variant if specified
+        const filteredFontAssets = filterFontAssetsByVariant(fontAssets, variant);
+        const displayAssets = filteredFontAssets.length > 0 ? filteredFontAssets : fontAssets;
+        // Apply limit
+        const assetsToShow = limit === "all" ? displayAssets : displayAssets.slice(0, limit);
+        auditLog.assetIds = assetsToShow.map((asset) => asset.id);
+        // Use utility function for processing message
+        const processingMessage = buildFontProcessingMessage(assetsToShow, variant);
+        await respond({
+            text: processingMessage,
+            response_type: "ephemeral",
+            replace_original: true,
+        });
+        // Process fonts asynchronously
+        setImmediate(async () => {
+            try {
+                const botToken = decryptBotToken(workspace.botToken);
+                const workspaceClient = new WebClient(botToken);
+                let uploadedFiles = 0;
+                let sentCodeBlocks = 0;
+                const baseUrl = process.env.APP_BASE_URL || "http://localhost:5000";
+                for (const asset of assetsToShow) {
+                    const fontInfo = formatFontInfo(asset);
+                    try {
+                        // Check if font has uploadable files (custom fonts)
+                        if (hasUploadableFiles(asset)) {
+                            // Upload actual font files for custom fonts
+                            const downloadUrl = generateAssetDownloadUrl(asset.id, workspace.clientId, baseUrl);
+                            const filename = `${asset.name.replace(/\s+/g, "_")}_fonts.zip`;
+                            const uploaded = await uploadFileToSlack(botToken, {
+                                channelId: body.channel.id,
+                                userId: body.user.id,
+                                fileUrl: downloadUrl,
+                                filename,
+                                title: `${fontInfo.title} - Font Files`,
+                                initialComment: `📝 *${fontInfo.title}* - Custom Font Files\n• *Weights:* ${fontInfo.weights.join(", ")}\n• *Styles:* ${fontInfo.styles.join(", ")}\n• *Source:* Custom Upload\n• *Formats:* ${fontInfo.files?.map((f) => f.format.toUpperCase()).join(", ") || "Various"}`,
+                            });
+                            if (uploaded)
+                                uploadedFiles++;
+                        }
+                        else {
+                            // For Google/Adobe fonts, send usage code
+                            let codeBlock = "";
+                            let fontDescription = `📝 *${fontInfo.title}*\n• *Weights:* ${fontInfo.weights.join(", ")}\n• *Styles:* ${fontInfo.styles.join(", ")}`;
+                            if (fontInfo.source === "google") {
+                                codeBlock = generateGoogleFontCSS(fontInfo.title, fontInfo.weights);
+                                fontDescription += `\n• *Source:* Google Fonts`;
+                            }
+                            else if (fontInfo.source === "adobe") {
+                                const data = typeof asset.data === "string"
+                                    ? JSON.parse(asset.data)
+                                    : asset.data;
+                                const projectId = data?.sourceData?.projectId || "your-project-id";
+                                codeBlock = generateAdobeFontCSS(projectId, fontInfo.title);
+                                fontDescription += `\n• *Source:* Adobe Fonts (Typekit)`;
+                            }
+                            else {
+                                codeBlock = `/* Font: ${fontInfo.title} */
+.your-element {
+  font-family: '${fontInfo.title}', sans-serif;
+  font-weight: ${fontInfo.weights[0] || "400"};
+}`;
+                                fontDescription += `\n• *Source:* ${fontInfo.source}`;
+                            }
+                            // Send code block as a message
+                            const conversationResponse = await workspaceClient.conversations.open({
+                                users: body.user.id,
+                            });
+                            if (conversationResponse.ok && conversationResponse.channel?.id) {
+                                await workspaceClient.chat.postMessage({
+                                    channel: conversationResponse.channel.id,
+                                    text: `${fontDescription}\n\n\`\`\`css\n${codeBlock}\n\`\`\``,
+                                });
+                                sentCodeBlocks++;
+                            }
+                        }
+                    }
+                    catch (fontError) {
+                        console.error(`Failed to process font ${asset.name}:`, fontError);
+                    }
+                }
+                // Use utility function for summary message
+                const summaryText = buildFontSummaryMessage(uploadedFiles, sentCodeBlocks, variant, undefined, // no response time for background processing
+                displayAssets.length, limit);
+                await workspaceClient.chat.postEphemeral({
+                    channel: body.channel.id,
+                    user: body.user.id,
+                    text: summaryText,
+                });
+                auditLog.success = true;
+                logSlackActivity(auditLog);
+            }
+            catch (error) {
+                console.error("Error in font processing:", error);
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error in handleFontSubcommandWithLimit:", error);
+        await respond({
+            text: "❌ An error occurred while processing your request.",
+            response_type: "ephemeral",
+        });
+    }
+}

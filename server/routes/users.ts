@@ -188,7 +188,7 @@ export function registerUserRoutes(app: Express) {
                             ? JSON.parse(asset.data)
                             : asset.data;
                         return data?.type === type;
-                      } catch (_e) {
+                      } catch {
                         return false;
                       }
                     });
@@ -202,7 +202,8 @@ export function registerUserRoutes(app: Express) {
                 logoUrl = logoAsset
                   ? `/api/assets/${logoAsset.id}/file`
                   : undefined;
-              } catch (_e) {
+              } catch (error) {
+                console.error('Failed to parse logo data:', error);
                 logoUrl = undefined;
               }
             }

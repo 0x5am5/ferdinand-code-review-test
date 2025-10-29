@@ -65,7 +65,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
 
   // Get client info for displaying current client name
   const { data: allClients } = useClientsQuery();
-  const currentClient = allClients?.find((client) => client.id === clientId);
+  const _currentClient = allClients?.find((client) => client.id === clientId);
 
   // Fetch assets filtered by clientId
   const { data: allAssets = [], isLoading } = useAssetsQuery(filters);
@@ -179,8 +179,10 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     importMutation.mutate({ files, clientId });
   };
 
-  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
-  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const _isAdmin = user?.role === "super_admin" || user?.role === "admin";
+  const _isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  // All users except guests can connect Google Drive
+  const canUseGoogleDrive = user?.role !== UserRole.GUEST;
 
   return (
     <section
@@ -215,7 +217,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         </div>
         <div className="flex gap-2">
           {/* Google Drive Button - Smart button that changes based on connection status */}
-          {isAdmin &&
+          {canUseGoogleDrive &&
             (!googleDriveQuery.data ? (
               // Not connected - trigger Google Drive connect flow (consent modal / OAuth)
               <GoogleDriveConnect

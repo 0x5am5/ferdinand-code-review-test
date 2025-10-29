@@ -3,7 +3,7 @@ import {
   Copy,
   Download,
   ExternalLink,
-  FileIcon,
+  Eye,
   Link2,
   Plus,
   Trash2,
@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { getFileTypeIcon } from "@/utils/file-icons";
 import {
   type Asset,
   useAssetCategoriesQuery,
@@ -234,10 +235,42 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
             <DialogTitle className="flex items-center justify-between pt-4">
               <span className="truncate pr-4">{asset.originalFileName}</span>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handleDownload}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
+                {asset.referenceOnly && asset.driveWebLink ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (asset.driveWebLink) {
+                        window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                    aria-label="View reference in Google Drive"
+                    title="View reference in Google Drive"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                ) : asset.isGoogleDrive && asset.driveWebLink ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (asset.driveWebLink) {
+                        window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                      }
+                    }}
+                    aria-label="View in Google Drive"
+                    title="View in Google Drive"
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={handleDownload}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                )}
                 <Button
                   variant="destructive"
                   size="sm"
@@ -256,14 +289,24 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
           <div className="space-y-6">
             {/* Preview */}
             <div className="bg-muted rounded-lg flex items-center justify-center min-h-[300px]">
-              {isImage ? (
+              {asset.referenceOnly ? (
+                <div className="text-center space-y-4">
+                  {getFileTypeIcon(asset.fileType, true, "lg")}
+                  <div>
+                    <p className="text-lg font-medium">Reference-Only Asset</p>
+                    <p className="text-sm text-muted-foreground">
+                      This file is stored in Google Drive
+                    </p>
+                  </div>
+                </div>
+              ) : isImage ? (
                 <img
                   src={`/api/assets/${asset.id}/download`}
                   alt={asset.originalFileName}
                   className="max-h-[500px] max-w-full object-contain"
                 />
               ) : (
-                <FileIcon className="h-24 w-24 text-muted-foreground" />
+                getFileTypeIcon(asset.fileType, false, "lg")
               )}
             </div>
 
@@ -281,7 +324,9 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                 <div>
                   <Label className="text-muted-foreground">File Size</Label>
                   <p className="font-medium">
-                    {formatFileSize(asset.fileSize)}
+                    {asset.referenceOnly
+                      ? "Reference (No local copy)"
+                      : formatFileSize(asset.fileSize)}
                   </p>
                 </div>
                 {asset.uploader && (
@@ -408,8 +453,8 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
 
             <Separator />
 
-            {/* Public Links - only show if supported (no error) */}
-            {!publicLinksError && (
+            {/* Public Links - only show for non-reference assets */}
+            {!asset.referenceOnly && !publicLinksError && (
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Link2 className="h-4 w-4" />

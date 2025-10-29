@@ -5,7 +5,6 @@ import {
   Eye,
   FileIcon,
   Grid,
-  Image as ImageIcon,
   List,
   Plus,
   Tag,
@@ -39,6 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getFileTypeIcon } from "@/utils/file-icons";
 import {
   type Asset,
   type AssetCategory,
@@ -172,12 +172,6 @@ export const AssetList: FC<AssetListProps> = ({
     });
   };
 
-  const getFileTypeIcon = (fileType: string) => {
-    if (fileType.startsWith("image/")) {
-      return <ImageIcon className="h-5 w-5 text-blue-500" />;
-    }
-    return <FileIcon className="h-5 w-5 text-gray-500" />;
-  };
 
   const handleDownload = async (
     asset: Asset,
@@ -376,15 +370,23 @@ export const AssetList: FC<AssetListProps> = ({
               onClick={() => onAssetClick(asset)}
             >
               <div className="aspect-square bg-muted flex items-center justify-center relative">
-                {asset.fileType?.startsWith("image/") ||
-                asset.fileType === "application/pdf" ? (
+                {asset.referenceOnly ? (
+                  // Reference-only assets show file type icon with reference label
+                  <div className="flex flex-col items-center gap-2">
+                    {getFileTypeIcon(asset.fileType, true, "lg")}
+                    <span className="text-xs text-muted-foreground text-center">
+                      Reference
+                    </span>
+                  </div>
+                ) : asset.fileType?.startsWith("image/") ||
+                  asset.fileType === "application/pdf" ? (
                   <img
                     src={`/api/assets/${asset.id}/thumbnail/medium`}
                     alt={asset.originalFileName}
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <FileIcon className="h-16 w-16 text-muted-foreground" />
+                  getFileTypeIcon(asset.fileType, false, "lg")
                 )}
                 <div
                   className={`absolute top-2 left-2 transition-opacity ${selectedAssets.has(asset.id) ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
@@ -414,6 +416,19 @@ export const AssetList: FC<AssetListProps> = ({
                       Google Drive
                     </Badge>
                   )}
+                  {asset.referenceOnly && (
+                    <Badge
+                      variant="secondary"
+                      className="bg-orange-100 text-orange-800 border-orange-200"
+                      aria-label="Reference-only asset"
+                    >
+                      <ExternalLink
+                        className="h-3 w-3 mr-1"
+                        aria-hidden="true"
+                      />
+                      Reference
+                    </Badge>
+                  )}
                 </div>
               </div>
               <div className="p-4">
@@ -421,7 +436,9 @@ export const AssetList: FC<AssetListProps> = ({
                   {asset.originalFileName}
                 </h3>
                 <p className="text-xs text-muted-foreground mb-2">
-                  {formatFileSize(asset.fileSize)}
+                  {asset.referenceOnly
+                    ? "Reference-only asset"
+                    : formatFileSize(asset.fileSize)}
                   {asset.isGoogleDrive && asset.driveLastModified && (
                     <>
                       {" "}
@@ -464,19 +481,37 @@ export const AssetList: FC<AssetListProps> = ({
                   >
                     <Eye className="h-3 w-3" />
                   </Button>
-                  {asset.isGoogleDrive && asset.driveWebLink ? (
+                  {asset.referenceOnly && asset.driveWebLink ? (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="flex-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        window.open(asset.driveWebLink, "_blank");
+                        if (asset.driveWebLink) {
+                          window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                        }
                       }}
-                      aria-label="Open in Google Drive"
-                      title="Open in Google Drive"
+                      aria-label="View reference in Google Drive"
+                      title="View reference in Google Drive"
                     >
-                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                      <Eye className="h-3 w-3" aria-hidden="true" />
+                    </Button>
+                  ) : asset.isGoogleDrive && asset.driveWebLink ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (asset.driveWebLink) {
+                          window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                        }
+                      }}
+                      aria-label="View in Google Drive"
+                      title="View in Google Drive"
+                    >
+                      <Eye className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   ) : (
                     <Button
@@ -552,7 +587,7 @@ export const AssetList: FC<AssetListProps> = ({
                         className="h-10 w-10 object-cover rounded"
                       />
                     ) : (
-                      getFileTypeIcon(asset.fileType)
+                      getFileTypeIcon(asset.fileType, asset.referenceOnly, "sm")
                     )}
                   </TableCell>
                   <TableCell className="font-medium">
@@ -611,18 +646,38 @@ export const AssetList: FC<AssetListProps> = ({
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      {asset.isGoogleDrive && asset.driveWebLink ? (
+                      {asset.referenceOnly && asset.driveWebLink ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(asset.driveWebLink, "_blank");
+                            if (asset.driveWebLink) {
+                              window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                            }
                           }}
-                          aria-label={`Open ${asset.originalFileName} in Google Drive`}
-                          title="Open in Google Drive"
+                          aria-label={`View ${asset.originalFileName} in Google Drive`}
+                          title="View reference in Google Drive"
                         >
-                          <ExternalLink
+                          <Eye
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      ) : asset.isGoogleDrive && asset.driveWebLink ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (asset.driveWebLink) {
+                              window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                            }
+                          }}
+                          aria-label={`View ${asset.originalFileName} in Google Drive`}
+                          title="View in Google Drive"
+                        >
+                          <Eye
                             className="h-4 w-4"
                             aria-hidden="true"
                           />

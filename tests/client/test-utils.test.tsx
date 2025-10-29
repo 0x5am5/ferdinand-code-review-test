@@ -5,9 +5,7 @@
  * and provide the expected mocking functionality for SSE and OAuth flows.
  */
 
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 import { TextDecoder } from 'util';

@@ -51,12 +51,20 @@ export const checkAssetPermission = async (
       return { allowed: false, reason: "Asset not found" };
     }
 
-    // Verify client access
+    // Verify asset belongs to the provided client
+    if (asset.clientId !== clientId) {
+      return { allowed: false, reason: "Asset not in client" };
+    }
+
+    // Verify client access - check both clientId and userId
     const [userClient] = await db
       .select()
       .from((await import("@shared/schema")).userClients)
       .where(
-        eq((await import("@shared/schema")).userClients.clientId, clientId)
+        and(
+          eq((await import("@shared/schema")).userClients.clientId, clientId),
+          eq((await import("@shared/schema")).userClients.userId, userIdNum)
+        )
       );
 
     if (!userClient) {

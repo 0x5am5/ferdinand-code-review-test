@@ -9,7 +9,6 @@
  * - Handling role-based visibility
  */
 
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
@@ -19,7 +18,6 @@ import '@testing-library/jest-dom';
 import {
   TestScenarioBuilder,
   createMockQueryClient,
-  createTestWrapper,
 } from './test-utils';
 
 // Mock components for testing

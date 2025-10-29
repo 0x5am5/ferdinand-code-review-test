@@ -1,6 +1,36 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 
+// Google API type declarations
+interface GooglePickerView {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any;
+}
+
+interface GooglePicker {
+  setVisible: (visible: boolean) => void;
+}
+
+interface GooglePickerBuilder {
+  addView: (view: GooglePickerView) => GooglePickerBuilder;
+  setOAuthToken: (token: string) => GooglePickerBuilder;
+  setDeveloperKey: (key: string) => GooglePickerBuilder;
+  setCallback: (callback: (data: { action: string; docs: Array<{ id: string }> }) => void) => GooglePickerBuilder;
+  build: () => GooglePicker;
+}
+
+declare global {
+  interface Window {
+    google: {
+      picker: {
+        PickerBuilder: new () => GooglePickerBuilder;
+        DocsView: new () => GooglePickerView;
+        FolderView: new () => GooglePickerView;
+      };
+    };
+  }
+}
+
 interface GoogleDrivePickerProps {
   onSelect: (fileIds: string[]) => void;
   onError: (error: Error) => void;
@@ -14,7 +44,7 @@ export const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
   onError
 }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated] = useState(false);
 
   // Load the required Google APIs
   useEffect(() => {
@@ -24,6 +54,7 @@ export const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
         await loadScript(GAPI_LOADER_SCRIPT);
         setIsLoading(false);
       } catch (error) {
+        console.error('Failed to load Google APIs:', error);
         onError(new Error('Failed to load Google APIs'));
       }
     };
@@ -41,6 +72,7 @@ export const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
       // Redirect to Google auth
       window.location.href = authUrl;
     } catch (error) {
+      console.error('Failed to initialize Google authentication:', error);
       onError(new Error('Failed to initialize Google authentication'));
     }
   }, [onError]);
@@ -55,11 +87,11 @@ export const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
     const picker = new window.google.picker.PickerBuilder()
       .addView(new window.google.picker.DocsView())
       .addView(new window.google.picker.FolderView())
-      .setOAuthToken(accessToken) // Set from your auth flow
+      .setOAuthToken('') // Set from your auth flow
       .setDeveloperKey(process.env.NEXT_PUBLIC_GOOGLE_API_KEY)
-      .setCallback((data: any) => {
+      .setCallback((data: { action: string; docs: Array<{ id: string }> }) => {
         if (data.action === 'picked') {
-          const fileIds = data.docs.map((doc: any) => doc.id);
+          const fileIds = data.docs.map((doc) => doc.id);
           onSelect(fileIds);
         }
       })

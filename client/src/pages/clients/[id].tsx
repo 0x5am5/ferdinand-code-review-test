@@ -10,9 +10,9 @@ import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { IntegrationsHub } from "@/components/integrations/IntegrationsHub";
-import { SettingsPage } from "@/components/settings/settings-page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/use-auth";
 import {
   useClientAssetsById,
   useClientPersonasById,
@@ -23,6 +23,7 @@ import { queryClient } from "@/lib/queryClient";
 export default function ClientDetails() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
   const clientId = id ? parseInt(id, 10) : null;
   const [activeTab, setActiveTab] = useState<string>("dashboard"); // Default to dashboard
 
@@ -337,6 +338,21 @@ export default function ClientDetails() {
         );
 
       case "integrations":
+        // Only admins and super_admins can access integrations page
+        if (user?.role !== "admin" && user?.role !== "super_admin") {
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle>Access Restricted</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Only administrators can access the integrations page.
+                </p>
+              </CardContent>
+            </Card>
+          );
+        }
         return (
           <IntegrationsHub
             clientId={client?.id || 0}
@@ -345,6 +361,7 @@ export default function ClientDetails() {
               slackIntegration: featureToggles.slackIntegration,
               brandAssets: featureToggles.brandAssets,
             }}
+            userRole={user?.role}
           />
         );
 

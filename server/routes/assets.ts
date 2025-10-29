@@ -50,8 +50,8 @@ async function fixLogoTypeData() {
             typeof asset.data === "string"
               ? JSON.parse(asset.data)
               : asset.data;
-        } catch (_e) {
-          console.log(`Asset ${asset.id} has invalid JSON data, skipping`);
+        } catch (error) {
+          console.error(`Asset ${asset.id} has invalid JSON data, skipping:`, error);
           continue;
         }
 
@@ -130,7 +130,8 @@ async function updateClientLogosFromAssets() {
               ? JSON.parse(asset.data)
               : asset.data;
           return data?.type === "favicon" || data?.type === "square";
-        } catch (_e) {
+        } catch (error) {
+          console.error(`Failed to parse asset data for asset ${asset.id}:`, error);
           return false;
         }
       });

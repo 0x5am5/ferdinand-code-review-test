@@ -12,6 +12,59 @@ import {
   getCategoriesForClient,
 } from "./default-categories";
 
+/**
+ * Log audit events for Google Drive operations
+ */
+async function _logAuditEvent({
+  userId,
+  clientId,
+  action,
+  fileId,
+  fileName,
+  success,
+  error,
+  metadata,
+}: {
+  userId: number;
+  clientId: number;
+  action: string;
+  fileId?: string;
+  fileName?: string;
+  success: boolean;
+  error?: string;
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    // For now, log to console. In a real implementation, this would go to an audit log table
+    console.log(`[AUDIT] Google Drive ${action}:`, {
+      userId,
+      clientId,
+      fileId,
+      fileName,
+      success,
+      error,
+      timestamp: new Date().toISOString(),
+      metadata,
+    });
+
+    // TODO: Implement proper audit logging table when available
+    // await db.insert(auditLogs).values({
+    //   userId,
+    //   clientId,
+    //   action: `google_drive_${action}`,
+    //   resourceType: 'drive_file',
+    //   resourceId: fileId,
+    //   resourceName: fileName,
+    //   success,
+    //   errorMessage: error,
+    //   metadata,
+    //   createdAt: new Date(),
+    // });
+  } catch (logError) {
+    console.error("Failed to log audit event:", logError);
+  }
+}
+
 interface DriveFileMetadata {
   id: string;
   name: string;
@@ -87,8 +140,128 @@ export const importDriveFile = async ({
 }) => {
   try {
     console.log(
-      `Starting download of Drive file: ${driveFile.name} (${driveFile.id})`
+      `Starting import of Drive file: ${driveFile.name} (${driveFile.id})`
     );
+
+    // Log import start
+    await _logAuditEvent({
+      userId,
+      clientId,
+      action: "import_start",
+      fileId: driveFile.id,
+      fileName: driveFile.name,
+      success: true,
+      metadata: {
+        mimeType: driveFile.mimeType,
+        size: driveFile.size,
+        isReferenceAsset: isGoogleWorkspaceFile(driveFile),
+        userRole,
+      },
+    });
+
+    // Check if this is a Google Workspace file that should be handled as reference
+    const isReferenceAsset = isGoogleWorkspaceFile(driveFile);
+
+    if (isReferenceAsset) {
+      console.log(
+        `Importing Google Workspace file as reference asset: ${driveFile.name}`
+      );
+
+      // Update permissions to "anyone with the link can view"
+      const permissionResult = await updateFilePermissions(
+        driveClient,
+        driveFile.id
+      );
+      if (!permissionResult.success) {
+        throw new Error(
+          `Failed to update file permissions: ${permissionResult.error}`
+        );
+      }
+
+      // Determine asset category automatically
+      let categoryId: number | null = null;
+      try {
+        // Ensure default categories exist
+        await ensureDefaultCategories();
+
+        // Get available categories for this client (defaults + client-specific)
+        const categories = await getCategoriesForClient(clientId);
+
+        // Auto-select category based on file type
+        categoryId = autoSelectCategory(
+          driveFile.name,
+          driveFile.mimeType,
+          categories
+        );
+
+        if (categoryId) {
+          const categoryName = determineAssetCategory(
+            driveFile.name,
+            driveFile.mimeType
+          );
+          console.log(
+            `Auto-categorized "${driveFile.name}" as "${categoryName}" (ID: ${categoryId})`
+          );
+        } else {
+          console.log(
+            `No suitable category found for "${driveFile.name}" (${driveFile.mimeType})`
+          );
+        }
+      } catch (categoryError) {
+        console.warn("Failed to auto-categorize file:", categoryError);
+        // Continue without categorization if it fails
+      }
+
+      // Create reference asset record
+      const assetData = {
+        clientId,
+        uploadedBy: userId,
+        fileName: driveFile.name, // Use original name for reference assets
+        originalFileName: driveFile.name,
+        fileType: driveFile.mimeType,
+        fileSize: 0, // Reference assets have no local file size
+        storagePath: "", // No local storage for reference assets
+        visibility: visibility || "shared",
+        isGoogleDrive: true,
+        driveFileId: driveFile.id,
+        driveWebLink: driveFile.webViewLink, // Store the webViewLink
+        referenceOnly: true, // Mark as reference-only asset
+      };
+
+      const validated = insertAssetSchema.parse(assetData);
+      const [asset] = await db.insert(assets).values(validated).returning();
+
+      // If we have a category, create the category assignment
+      if (categoryId) {
+        try {
+          await db
+            .insert((await import("@shared/schema")).assetCategoryAssignments)
+            .values({
+              assetId: asset.id,
+              categoryId,
+            });
+
+          console.log(
+            `Assigned reference asset ${asset.id} to category ${categoryId}`
+          );
+        } catch (assignmentError) {
+          console.warn(
+            "Failed to assign category to reference asset:",
+            assignmentError
+          );
+          // Continue even if category assignment fails
+        }
+      }
+
+      console.log(
+        `Google Workspace file imported as reference: ${driveFile.name} (ID: ${asset.id}) by user ${userId} (${userRole})${categoryId ? `, category: ${categoryId}` : ""}`
+      );
+
+      return asset;
+    }
+
+    // For non-Google Workspace files, use existing download logic
+    console.log(`Importing regular file: ${driveFile.name}`);
 
     // Download the actual file content from Google Drive
     const response = await driveClient.files.get(
@@ -218,7 +391,133 @@ export const validateFileForImport = (
     };
   }
 
-  // Check for Google Workspace files that need special handling
+  // Google Workspace files are now allowed for reference import
+  // These will be handled as reference-only assets with webViewLink
+  const _googleWorkspaceMimeTypes = [
+    "application/vnd.google-apps.document",
+    "application/vnd.google-apps.spreadsheet",
+    "application/vnd.google-apps.presentation",
+    "application/vnd.google-apps.drawing",
+    "application/vnd.google-apps.forms",
+    "application/vnd.google-apps.script",
+    "application/vnd.google-apps.site",
+    "application/vnd.google-apps.fusiontable",
+    "application/vnd.google-apps.map",
+  ];
+
+  // Note: Google Workspace files are now allowed and will be handled as reference assets
+  // No blocking validation needed here
+
+  return { valid: true };
+};
+
+/**
+ * Update Google Drive file permissions to "anyone with the link can view"
+ */
+export const updateFilePermissions = async (
+  driveClient: drive_v3.Drive,
+  fileId: string,
+  userId?: number,
+  clientId?: number,
+  fileName?: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log(`Updating permissions for file: ${fileId}`);
+
+    const response = await driveClient.permissions.create({
+      fileId,
+      requestBody: {
+        role: "reader",
+        type: "anyone",
+      },
+    });
+
+    if (response.data) {
+      console.log(
+        `Successfully updated permissions for file ${fileId} to anyone with link can view`
+      );
+
+      // Log successful permission update
+      if (userId && clientId) {
+        await _logAuditEvent({
+          userId,
+          clientId,
+          action: "permission_update",
+          fileId,
+          fileName,
+          success: true,
+          metadata: {
+            newPermission: "anyone_with_link_can_view",
+            role: "reader",
+            type: "anyone",
+          },
+        });
+      }
+
+      return { success: true };
+    } else {
+      console.error(
+        `Failed to update permissions for file ${fileId}:`,
+        response.statusText
+      );
+
+      // Log failed permission update
+      if (userId && clientId) {
+        await _logAuditEvent({
+          userId,
+          clientId,
+          action: "permission_update",
+          fileId,
+          fileName,
+          success: false,
+          error: response.statusText || "Unknown error",
+          metadata: {
+            attemptedPermission: "anyone_with_link_can_view",
+            role: "reader",
+            type: "anyone",
+          },
+        });
+      }
+
+      return {
+        success: false,
+        error: `Failed to update permissions: ${response.statusText || "Unknown error"}`,
+      };
+    }
+  } catch (error) {
+    console.error(`Error updating permissions for file ${fileId}:`, error);
+
+    // Log error during permission update
+    if (userId && clientId) {
+      await _logAuditEvent({
+        userId,
+        clientId,
+        action: "permission_update",
+        fileId,
+        fileName,
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+        metadata: {
+          attemptedPermission: "anyone_with_link_can_view",
+          role: "reader",
+          type: "anyone",
+        },
+      });
+    }
+
+    return {
+      success: false,
+      error: `Error updating permissions: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+};
+
+/**
+ * Check if a file is a Google Workspace file that should be handled as a reference
+ */
+export const isGoogleWorkspaceFile = (
+  driveFile: DriveFileMetadata
+): boolean => {
   const googleWorkspaceMimeTypes = [
     "application/vnd.google-apps.document",
     "application/vnd.google-apps.spreadsheet",
@@ -231,12 +530,5 @@ export const validateFileForImport = (
     "application/vnd.google-apps.map",
   ];
 
-  if (googleWorkspaceMimeTypes.includes(driveFile.mimeType)) {
-    return {
-      valid: false,
-      error: `Google Workspace files (${driveFile.mimeType}) cannot be downloaded directly. Please export them to a standard format first.`,
-    };
-  }
-
-  return { valid: true };
+  return googleWorkspaceMimeTypes.includes(driveFile.mimeType);
 };

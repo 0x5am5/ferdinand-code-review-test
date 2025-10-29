@@ -25,7 +25,6 @@ import {
   getRolePermissionDescription,
   getRolePermissions,
   DRIVE_FILE_PERMISSIONS,
-  type DriveFileAction,
 } from '../server/services/drive-file-permissions';
 
 describe('Drive File Permissions', () => {

@@ -59,7 +59,6 @@ Object.defineProperty(global, 'import', {
 });
 
 describe("Google Drive Import - Permission Enforcement", () => {
-  const mockClientId = 123;
   const mockUnassociatedClientId = 456;
   const mockFiles = [
     { id: "file1", name: "test-file-1.jpg", mimeType: "image/jpeg" },
@@ -88,7 +87,6 @@ describe("Google Drive Import - Permission Enforcement", () => {
   describe("Non-super_admin user permission enforcement", () => {
     it("should return 403 when non-super_admin attempts import to unassociated client", async () => {
       const { result } = renderHook(() => useGoogleDriveImportMutation(), { wrapper });
-      const mockMutate = result.current.mutate;
 
       // Mock 403 response for unauthorized client access
       mockFetch.mockResolvedValueOnce(

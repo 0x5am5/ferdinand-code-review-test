@@ -284,8 +284,8 @@ export async function handleLogoCommand({
               user: command.user_id,
               text: "❌ Failed to upload logo files. Check your DMs for the files or download links.",
             });
-          } catch (_ephemeralError: unknown) {
-            console.log("Could not send ephemeral error message, trying DM...");
+          } catch (ephemeralError: unknown) {
+            console.log("Could not send ephemeral error message, trying DM...", ephemeralError);
 
             try {
               const conversationResponse =
@@ -327,9 +327,10 @@ export async function handleLogoCommand({
               user: command.user_id,
               text: summaryText,
             });
-          } catch (_ephemeralError) {
+          } catch (ephemeralError) {
             console.log(
-              "Could not send success message via ephemeral, trying DM..."
+              "Could not send success message via ephemeral, trying DM...",
+              ephemeralError
             );
 
             try {

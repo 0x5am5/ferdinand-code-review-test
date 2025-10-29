@@ -77,17 +77,6 @@ export function requireDrivePermission(action: DriveFileAction) {
         return;
       }
 
-      // Only apply Drive permissions if this is a Google Drive file
-      // Note: For now, we'll assume all assets could be Drive files
-      // In a real implementation, you'd check asset.fileType or metadata
-      // to determine if it's from Google Drive
-      if (false) {
-        // For non-Drive files, just attach the asset and continue
-        req.asset = asset;
-        next();
-        return;
-      }
-
       // Fetch the user to get their role
       const [user] = await db
         .select()
@@ -246,7 +235,7 @@ export async function validateAssetClientAccess(
 export async function checkAssetPermission(
   userId: number,
   assetId: number,
-  action: DriveFileAction
+  _action: DriveFileAction
 ): Promise<{ allowed: boolean; reason?: string; asset?: Asset }> {
   try {
     // Fetch the asset
@@ -264,33 +253,6 @@ export async function checkAssetPermission(
     // In a real implementation, you'd check asset.fileType or metadata
     // to determine if it's from Google Drive
     return { allowed: true, asset };
-
-    // Fetch the user
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-
-    if (!user) {
-      return { allowed: false, reason: "User not found" };
-    }
-
-    // Check permissions (without Drive metadata for now)
-    const permissionCheck = checkDriveFilePermission(
-      userId,
-      user.role,
-      action,
-      {
-        uploadedBy: asset.uploadedBy,
-        visibility: asset.visibility,
-        isGoogleDrive: true, // Assume Drive file for permission checks
-        driveOwner: asset.uploadedBy, // Use uploader as drive owner
-        driveMetadata: undefined, // No metadata available yet
-      }
-    );
-
-    return {
-      allowed: permissionCheck.allowed,
-      reason: permissionCheck.reason,
-      asset,
-    };
   } catch (error) {
     console.error("Error checking asset permission:", error);
     return { allowed: false, reason: "Error checking permissions" };

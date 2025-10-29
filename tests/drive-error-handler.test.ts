@@ -21,7 +21,7 @@
  * npm test -- drive-error-handler.test.ts
  */
 
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 import type { Response } from 'express';
 
 // Import the error handler module
@@ -38,7 +38,6 @@ import {
   isPermissionError,
   isNotFoundError,
   isAuthError,
-  type DriveErrorResponse,
 } from '../server/services/drive-error-handler';
 
 // Mock response helper

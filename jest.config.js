@@ -35,6 +35,12 @@ export default {
         '!server/**/*.d.ts',
       ],
       setupFiles: ['dotenv/config'],
+      globals: {
+        require: 'readonly',
+        console: 'readonly',
+        Buffer: 'readonly',
+        jest: 'readonly',
+      },
     },
     {
       displayName: 'client',

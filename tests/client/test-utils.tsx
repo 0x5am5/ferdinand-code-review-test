@@ -8,9 +8,8 @@
  * - Common test scenarios and mock data
  */
 
-import React from 'react';
 import { jest } from '@jest/globals';
-import { TextEncoder, TextDecoder } from 'util';
+import { TextEncoder } from 'util';
 
 // Mock data types
 export interface MockGoogleDriveConnection {
@@ -142,12 +141,12 @@ export class MockOAuthFlow {
     }
   }
 
-  mockOAuthCallback(status: 'success' | 'error', reason?: string) {
+  mockOAuthCallback(status: 'success' | 'error', _reason?: string) {
     // Mock URL parameters for OAuth callback
     const mockUrl = new URL('http://localhost:3001/dashboard');
     mockUrl.searchParams.set('google_auth', status);
-    if (reason) {
-      mockUrl.searchParams.set('reason', reason);
+    if (_reason) {
+      mockUrl.searchParams.set('reason', _reason);
     }
 
     // Mock window.location for OAuth callback using a simple approach
@@ -229,7 +228,6 @@ export class MockFetchResponses {
   setupFetchMock() {
     const mockFetch = jest.fn().mockImplementation((...args: any[]) => {
       const url = args[0] as string;
-      const options = args[1] as RequestInit | undefined;
       const response = this.responses.get(url);
       if (response) {
         return Promise.resolve(response);
@@ -342,12 +340,12 @@ export class TestScenarioBuilder {
     return this;
   }
 
-  withUserRole(role: string) {
+  withUserRole(_role: string) {
     // Mock user role scenario
     return this;
   }
 
-  withCurrentClient(clientName: string) {
+  withCurrentClient(_clientName: string) {
     // Mock current client scenario
     return this;
   }

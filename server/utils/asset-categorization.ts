@@ -9,6 +9,7 @@ const FILE_TYPE_CATEGORIES = {
   "application/msword": "Documents",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
     "Documents",
+  "application/vnd.google-apps.document": "Documents",
   "text/plain": "Documents",
   "text/rtf": "Documents",
   "application/rtf": "Documents",
@@ -17,12 +18,14 @@ const FILE_TYPE_CATEGORIES = {
   "application/vnd.ms-excel": "Spreadsheets",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
     "Spreadsheets",
+  "application/vnd.google-apps.spreadsheet": "Spreadsheets",
   "text/csv": "Spreadsheets",
 
   // Slide Decks
   "application/vnd.ms-powerpoint": "Slide Decks",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation":
     "Slide Decks",
+  "application/vnd.google-apps.presentation": "Slide Decks",
 
   // Design Assets (prioritized over Photography for ambiguous types)
   "application/illustrator": "Design Assets",

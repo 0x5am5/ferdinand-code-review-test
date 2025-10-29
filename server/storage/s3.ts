@@ -43,9 +43,10 @@ async function initializeS3Client() {
       DeleteObjectCommand = awsS3.DeleteObjectCommand;
       HeadObjectCommand = awsS3.HeadObjectCommand;
       getSignedUrl = awsPresigner.getSignedUrl;
-    } catch (_error) {
+    } catch (error) {
       console.error(
-        "Failed to load AWS SDK. Install @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner"
+        "Failed to load AWS SDK. Install @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner:",
+        error
       );
       throw new Error("AWS SDK not installed");
     }

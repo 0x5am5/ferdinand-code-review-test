@@ -109,7 +109,8 @@ function ClientLogo({
               ? JSON.parse(asset.data)
               : asset.data;
           return data?.type === type;
-        } catch (_e) {
+        } catch (error) {
+          console.error('Failed to parse logo data:', error);
           return false;
         }
       });

@@ -9,9 +9,8 @@
  * - Handling import progress and completion
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor, renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import '@testing-library/jest-dom';
 
@@ -65,7 +64,7 @@ describe('Drive Picker Import', () => {
         setCallback: jest.fn().mockReturnThis(),
         build: jest.fn().mockReturnValue({
           setVisible: jest.fn(),
-        show: jest.fn(),
+          show: jest.fn(),
         }),
       };
 
@@ -120,7 +119,7 @@ describe('Drive Picker Import', () => {
       mockGooglePicker.PickerBuilder.mockReturnValue(mockBuilder);
 
       // Simulate file selection
-      const picker = mockBuilder.build();
+      mockBuilder.build();
       pickerCallback({ docs: mockFiles });
 
       // Verify callback received files

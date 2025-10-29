@@ -26,8 +26,7 @@ const oauth2Client = new OAuth2Client({
 });
 
 const SCOPES = [
-  "https://www.googleapis.com/auth/drive.readonly",
-  "https://www.googleapis.com/auth/drive.metadata.readonly",
+  "https://www.googleapis.com/auth/drive", // Full Drive access for file management and permission updates
 ];
 
 export function registerGoogleDriveRoutes(app: Express) {
