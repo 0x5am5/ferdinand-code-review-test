@@ -572,6 +572,38 @@ export function registerFileAssetRoutes(app: Express) {
 
       const downloadAsset = permission.asset;
 
+      // Check if this is a reference-only asset (Google Workspace file)
+      // CRITICAL: Do this check BEFORE attempting to download from storage
+      if (downloadAsset.referenceOnly) {
+        if (!downloadAsset.driveWebLink) {
+          if (downloadAsset.driveFileId) {
+            const webLink = `https://drive.google.com/file/d/${downloadAsset.driveFileId}/view`;
+            try {
+              await db
+                .update(assets)
+                .set({ driveWebLink: webLink, updatedAt: new Date() })
+                .where(eq(assets.id, assetId));
+              console.log(
+                `Backfilled driveWebLink for asset ${assetId}: ${webLink}`
+              );
+            } catch (e) {
+              console.warn(
+                `Failed to backfill driveWebLink for asset ${assetId}:`,
+                e
+              );
+            }
+            return res.redirect(302, webLink);
+          }
+          return res.status(400).json({
+            message: "Reference-only asset without valid Google Drive link",
+          });
+        }
+        console.log(
+          `Redirecting to Google Drive file: ${downloadAsset.driveWebLink}`
+        );
+        return res.redirect(302, downloadAsset.driveWebLink);
+      }
+
       // Validate storagePath exists for regular assets
       if (!downloadAsset.storagePath) {
         console.error(
@@ -763,7 +795,7 @@ export function registerFileAssetRoutes(app: Express) {
       const clientIds = userClients.map((uc) => uc.clientId);
 
       // Get the asset
-      const [asset] = await db
+      const [_asset] = await db
         .select()
         .from(assets)
         .where(
@@ -774,10 +806,6 @@ export function registerFileAssetRoutes(app: Express) {
           )
         );
 
-      if (!asset) {
-        return res.status(404).json({ message: "Asset not found" });
-      }
-
       // Check if user has delete permission
       const permission = await checkAssetPermission(
         req.session.userId,
@@ -786,11 +814,13 @@ export function registerFileAssetRoutes(app: Express) {
         "delete"
       );
 
-      if (!permission.allowed) {
+      if (!permission.allowed || !permission.asset) {
         return res
           .status(403)
           .json({ message: "Not authorized to delete this asset" });
       }
+
+      const asset = permission.asset;
 
       // Delete public links first
       await db
