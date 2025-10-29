@@ -10,6 +10,7 @@ import {
 interface GoogleDriveIntegrationProps {
   clientId: number;
   userRole?: string;
+  description?: string;
 }
 
 /**
@@ -20,6 +21,7 @@ interface GoogleDriveIntegrationProps {
 export const GoogleDriveIntegration: FC<GoogleDriveIntegrationProps> = ({
   clientId,
   userRole,
+  description,
 }) => {
   const { data: connection, isLoading } = useGoogleDriveConnectionQuery();
   const disconnectMutation = useGoogleDriveDisconnectMutation();
@@ -56,8 +58,8 @@ export const GoogleDriveIntegration: FC<GoogleDriveIntegrationProps> = ({
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Connect your Google Drive to import brand assets directly from your
-          Drive files.
+          {description ??
+            "Connect your Google Drive to import brand assets directly from your Drive files."}
         </p>
         <GoogleDriveConnect clientId={connectClientId} variant="default" />
       </div>

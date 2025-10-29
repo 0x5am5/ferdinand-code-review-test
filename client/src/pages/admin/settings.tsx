@@ -48,13 +48,14 @@ export default function AdminSettings() {
               <CloudIcon className="h-5 w-5" />
               Google Drive Integration
             </CardTitle>
-            <CardDescription>
-              Connect your Google Drive to import brand assets directly from
-              your Drive files into any client's Brand Assets page.
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <GoogleDriveIntegration clientId={0} userRole="super_admin" />
+            <GoogleDriveIntegration
+              clientId={0}
+              userRole="super_admin"
+              description="Connect your Google Drive to import brand assets directly from
+              your Drive files into any client's Brand Assets page."
+            />
           </CardContent>
         </Card>
       </div>
