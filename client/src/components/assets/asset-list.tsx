@@ -7,7 +7,6 @@ import {
   Grid,
   List,
   Plus,
-  Share2,
   Tag,
   Trash2,
 } from "lucide-react";
@@ -499,7 +498,7 @@ export const AssetList: FC<AssetListProps> = ({
                       aria-label="View reference in Google Drive"
                       title="View reference in Google Drive"
                     >
-                      <Share2 className="h-3 w-3" aria-hidden="true" />
+                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   ) : asset.isGoogleDrive && asset.driveWebLink ? (
                     <Button
@@ -671,7 +670,10 @@ export const AssetList: FC<AssetListProps> = ({
                           aria-label={`View ${asset.originalFileName} in Google Drive`}
                           title="View reference in Google Drive"
                         >
-                          <Share2 className="h-4 w-4" aria-hidden="true" />
+                          <ExternalLink
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
                         </Button>
                       ) : asset.isGoogleDrive && asset.driveWebLink ? (
                         <Button

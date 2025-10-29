@@ -1,5 +1,5 @@
+import { FileIcon, ImageIcon } from "lucide-react";
 import React from "react";
-import { ExternalLink, FileIcon, ImageIcon } from "lucide-react";
 
 type IconSize = "sm" | "md" | "lg";
 
@@ -18,7 +18,7 @@ const sizeClasses = {
  */
 export const getFileTypeIcon = (
   fileType: string,
-  referenceOnly?: boolean,
+  _referenceOnly?: boolean,
   size: IconSize = "md"
 ) => {
   const { icon: iconClass, badge: badgeClass } = sizeClasses[size];
@@ -36,11 +36,7 @@ export const getFileTypeIcon = (
       { className: "relative inline-block" },
       React.createElement(FileIcon, {
         className: `${iconClass} text-green-500`,
-      }),
-      referenceOnly &&
-        React.createElement(ExternalLink, {
-          className: `${badgeClass} text-blue-500 absolute -bottom-1 -right-1 bg-white rounded-full`,
-        })
+      })
     );
   }
   if (fileType === "application/vnd.google-apps.document") {
@@ -49,11 +45,7 @@ export const getFileTypeIcon = (
       { className: "relative inline-block" },
       React.createElement(FileIcon, {
         className: `${iconClass} text-blue-500`,
-      }),
-      referenceOnly &&
-        React.createElement(ExternalLink, {
-          className: `${badgeClass} text-blue-500 absolute -bottom-1 -right-1 bg-white rounded-full`,
-        })
+      })
     );
   }
   if (fileType === "application/vnd.google-apps.presentation") {
@@ -62,11 +54,7 @@ export const getFileTypeIcon = (
       { className: "relative inline-block" },
       React.createElement(FileIcon, {
         className: `${iconClass} text-orange-500`,
-      }),
-      referenceOnly &&
-        React.createElement(ExternalLink, {
-          className: `${badgeClass} text-blue-500 absolute -bottom-1 -right-1 bg-white rounded-full`,
-        })
+      })
     );
   }
 
