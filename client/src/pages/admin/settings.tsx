@@ -1,6 +1,12 @@
 import { CloudIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
+import { GoogleDriveIntegration } from "@/components/integrations/google-drive-integration";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function AdminSettings() {
@@ -43,11 +49,12 @@ export default function AdminSettings() {
               Google Drive Integration
             </CardTitle>
             <CardDescription>
-              Connect your Google Drive to import brand assets directly from your Drive files into any client's Brand Assets page.
+              Connect your Google Drive to import brand assets directly from
+              your Drive files into any client's Brand Assets page.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <GoogleDriveConnect variant="default" size="default" />
+            <GoogleDriveIntegration clientId={0} userRole="super_admin" />
           </CardContent>
         </Card>
       </div>
