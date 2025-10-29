@@ -7,6 +7,7 @@ import {
   Grid,
   List,
   Plus,
+  Share2,
   Tag,
   Trash2,
 } from "lucide-react";
@@ -38,13 +39,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getFileTypeIcon } from "@/utils/file-icons";
 import {
   type Asset,
   type AssetCategory,
   type AssetTag,
   useCreateTagMutation,
 } from "@/lib/queries/assets";
+import { getFileTypeIcon } from "@/utils/file-icons";
 
 interface AssetListProps {
   assets: Asset[];
@@ -171,7 +172,6 @@ export const AssetList: FC<AssetListProps> = ({
       year: "numeric",
     });
   };
-
 
   const handleDownload = async (
     asset: Asset,
@@ -489,13 +489,17 @@ export const AssetList: FC<AssetListProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         if (asset.driveWebLink) {
-                          window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                          window.open(
+                            asset.driveWebLink,
+                            "_blank",
+                            "noopener,noreferrer"
+                          );
                         }
                       }}
                       aria-label="View reference in Google Drive"
                       title="View reference in Google Drive"
                     >
-                      <Eye className="h-3 w-3" aria-hidden="true" />
+                      <Share2 className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   ) : asset.isGoogleDrive && asset.driveWebLink ? (
                     <Button
@@ -505,7 +509,11 @@ export const AssetList: FC<AssetListProps> = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         if (asset.driveWebLink) {
-                          window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                          window.open(
+                            asset.driveWebLink,
+                            "_blank",
+                            "noopener,noreferrer"
+                          );
                         }
                       }}
                       aria-label="View in Google Drive"
@@ -653,16 +661,17 @@ export const AssetList: FC<AssetListProps> = ({
                           onClick={(e) => {
                             e.stopPropagation();
                             if (asset.driveWebLink) {
-                              window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                              window.open(
+                                asset.driveWebLink,
+                                "_blank",
+                                "noopener,noreferrer"
+                              );
                             }
                           }}
                           aria-label={`View ${asset.originalFileName} in Google Drive`}
                           title="View reference in Google Drive"
                         >
-                          <Eye
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          />
+                          <Share2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       ) : asset.isGoogleDrive && asset.driveWebLink ? (
                         <Button
@@ -671,16 +680,17 @@ export const AssetList: FC<AssetListProps> = ({
                           onClick={(e) => {
                             e.stopPropagation();
                             if (asset.driveWebLink) {
-                              window.open(asset.driveWebLink, "_blank", "noopener,noreferrer");
+                              window.open(
+                                asset.driveWebLink,
+                                "_blank",
+                                "noopener,noreferrer"
+                              );
                             }
                           }}
                           aria-label={`View ${asset.originalFileName} in Google Drive`}
                           title="View in Google Drive"
                         >
-                          <Eye
-                            className="h-4 w-4"
-                            aria-hidden="true"
-                          />
+                          <Eye className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       ) : (
                         <Button
