@@ -21,7 +21,7 @@ export const getFileTypeIcon = (
   _referenceOnly?: boolean,
   size: IconSize = "md"
 ) => {
-  const { icon: iconClass, badge: badgeClass } = sizeClasses[size];
+  const { icon: iconClass } = sizeClasses[size];
 
   if (fileType?.startsWith("image/")) {
     return React.createElement(ImageIcon, {

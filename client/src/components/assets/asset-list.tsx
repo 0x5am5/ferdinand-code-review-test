@@ -415,19 +415,6 @@ export const AssetList: FC<AssetListProps> = ({
                       Google Drive
                     </Badge>
                   )}
-                  {asset.referenceOnly && (
-                    <Badge
-                      variant="secondary"
-                      className="bg-orange-100 text-orange-800 border-orange-200"
-                      aria-label="Reference-only asset"
-                    >
-                      <ExternalLink
-                        className="h-3 w-3 mr-1"
-                        aria-hidden="true"
-                      />
-                      Reference
-                    </Badge>
-                  )}
                 </div>
               </div>
               <div className="p-4">
