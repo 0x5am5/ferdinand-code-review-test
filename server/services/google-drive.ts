@@ -1,6 +1,7 @@
-import { assets, insertAssetSchema, type UserRoleType } from "@shared/schema";
+import { assets, insertAssetSchema, type UserRoleType, userClients } from "@shared/schema";
 import type { OAuth2Client } from "google-auth-library";
 import { type drive_v3, google } from "googleapis";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { generateStoragePath, generateUniqueFileName } from "../storage";
 import {
@@ -62,6 +63,41 @@ async function _logAuditEvent({
     // });
   } catch (logError) {
     console.error("Failed to log audit event:", logError);
+  }
+}
+
+/**
+ * Ensure that a user has access to a client by creating a user_clients record if needed
+ * This prevents the issue where assets can be created but not viewed
+ */
+async function ensureUserClientAccess({
+  userId,
+  clientId,
+}: {
+  userId: number;
+  clientId: number;
+}) {
+  try {
+    // Check if user already has access to this client
+    const existingAccess = await db
+      .select()
+      .from(userClients)
+      .where(and(eq(userClients.userId, userId), eq(userClients.clientId, clientId)))
+      .limit(1);
+
+    // If not, create the association
+    if (existingAccess.length === 0) {
+      await db.insert(userClients).values({
+        userId,
+        clientId,
+      });
+      console.log(
+        `Created user_clients association: user ${userId} -> client ${clientId}`
+      );
+    }
+  } catch (error) {
+    console.error("Failed to ensure user client access:", error);
+    // Don't throw - this shouldn't block the asset import
   }
 }
 
@@ -142,6 +178,9 @@ export const importDriveFile = async ({
     console.log(
       `Starting import of Drive file: ${driveFile.name} (${driveFile.id})`
     );
+
+    // Ensure user has access to this client so they can view imported assets
+    await ensureUserClientAccess({ userId, clientId });
 
     // Log import start
     await _logAuditEvent({

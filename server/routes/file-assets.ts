@@ -5,6 +5,7 @@ import {
   assets,
   assetTagAssignments,
   assetTags,
+  clients,
   insertAssetSchema,
   insertAssetTagSchema,
   UserRole,
@@ -60,18 +61,6 @@ export function registerFileAssetRoutes(app: Express) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      // Get user's clients to determine which assets they can see
-      const userClientRecords = await db
-        .select()
-        .from(userClients)
-        .where(eq(userClients.userId, req.session.userId));
-
-      if (userClientRecords.length === 0) {
-        return res.json([]);
-      }
-
-      const clientIds = userClientRecords.map((uc) => uc.clientId);
-
       // Get user role for visibility filtering
       const [user] = await db
         .select()
@@ -80,6 +69,26 @@ export function registerFileAssetRoutes(app: Express) {
 
       if (!user) {
         return res.status(401).json({ message: "User not found" });
+      }
+
+      // Super admins can see all assets; regular users see only their assigned clients
+      let clientIds: number[];
+      if (user.role === UserRole.SUPER_ADMIN) {
+        // Super admins see all assets from all clients
+        const allClients = await db.select({ id: clients.id }).from(clients);
+        clientIds = allClients.map((c) => c.id);
+      } else {
+        // Regular users see only assets from their assigned clients
+        const userClientRecords = await db
+          .select()
+          .from(userClients)
+          .where(eq(userClients.userId, req.session.userId));
+
+        if (userClientRecords.length === 0) {
+          return res.json([]);
+        }
+
+        clientIds = userClientRecords.map((uc) => uc.clientId);
       }
 
       // Parse query parameters
@@ -287,18 +296,6 @@ export function registerFileAssetRoutes(app: Express) {
         return res.json({ results: [], total: 0 });
       }
 
-      // Get user's clients to determine which assets they can see
-      const userClientRecords = await db
-        .select()
-        .from(userClients)
-        .where(eq(userClients.userId, req.session.userId));
-
-      if (userClientRecords.length === 0) {
-        return res.json({ results: [], total: 0 });
-      }
-
-      const clientIds = userClientRecords.map((uc) => uc.clientId);
-
       // Get user role for visibility filtering
       const [user] = await db
         .select()
@@ -307,6 +304,26 @@ export function registerFileAssetRoutes(app: Express) {
 
       if (!user) {
         return res.status(401).json({ message: "User not found" });
+      }
+
+      // Super admins can see all assets; regular users see only their assigned clients
+      let clientIds: number[];
+      if (user.role === UserRole.SUPER_ADMIN) {
+        // Super admins search across all assets from all clients
+        const allClients = await db.select({ id: clients.id }).from(clients);
+        clientIds = allClients.map((c) => c.id);
+      } else {
+        // Regular users search only assets from their assigned clients
+        const userClientRecords = await db
+          .select()
+          .from(userClients)
+          .where(eq(userClients.userId, req.session.userId));
+
+        if (userClientRecords.length === 0) {
+          return res.json({ results: [], total: 0 });
+        }
+
+        clientIds = userClientRecords.map((uc) => uc.clientId);
       }
 
       // Prepare search query for PostgreSQL full-text search
