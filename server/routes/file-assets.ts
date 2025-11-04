@@ -430,17 +430,35 @@ export function registerFileAssetRoutes(app: Express) {
 
       const assetId = parseInt(req.params.assetId, 10);
 
-      // Get user's clients to determine access
-      const userClientRecords = await db
+      // Get user role
+      const [user] = await db
         .select()
-        .from(userClients)
-        .where(eq(userClients.userId, req.session.userId));
+        .from(users)
+        .where(eq(users.id, req.session.userId));
 
-      if (userClientRecords.length === 0) {
-        return res.status(403).json({ message: "Not authorized" });
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
       }
 
-      const clientIds = userClientRecords.map((uc) => uc.clientId);
+      // Super admins can access all assets; regular users see only their assigned clients
+      let clientIds: number[];
+      if (user.role === UserRole.SUPER_ADMIN) {
+        // Super admins can access all assets from all clients
+        const allClients = await db.select({ id: clients.id }).from(clients);
+        clientIds = allClients.map((c) => c.id);
+      } else {
+        // Regular users can only access assets from their assigned clients
+        const userClientRecords = await db
+          .select()
+          .from(userClients)
+          .where(eq(userClients.userId, req.session.userId));
+
+        if (userClientRecords.length === 0) {
+          return res.status(403).json({ message: "Not authorized" });
+        }
+
+        clientIds = userClientRecords.map((uc) => uc.clientId);
+      }
 
       // Get the asset
       const [asset] = await db
@@ -523,17 +541,35 @@ export function registerFileAssetRoutes(app: Express) {
 
       const assetId = parseInt(req.params.assetId, 10);
 
-      // Get user's clients to determine access
-      const userClientRecords = await db
+      // Get user role
+      const [user] = await db
         .select()
-        .from(userClients)
-        .where(eq(userClients.userId, req.session.userId));
+        .from(users)
+        .where(eq(users.id, req.session.userId));
 
-      if (userClientRecords.length === 0) {
-        return res.status(403).json({ message: "Not authorized" });
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
       }
 
-      const clientIds = userClientRecords.map((uc) => uc.clientId);
+      // Super admins can access all assets; regular users see only their assigned clients
+      let clientIds: number[];
+      if (user.role === UserRole.SUPER_ADMIN) {
+        // Super admins can access all assets from all clients
+        const allClients = await db.select({ id: clients.id }).from(clients);
+        clientIds = allClients.map((c) => c.id);
+      } else {
+        // Regular users can only access assets from their assigned clients
+        const userClientRecords = await db
+          .select()
+          .from(userClients)
+          .where(eq(userClients.userId, req.session.userId));
+
+        if (userClientRecords.length === 0) {
+          return res.status(403).json({ message: "Not authorized" });
+        }
+
+        clientIds = userClientRecords.map((uc) => uc.clientId);
+      }
 
       // Get the asset
       const [asset] = await db

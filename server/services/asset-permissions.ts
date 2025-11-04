@@ -53,19 +53,21 @@ export const checkAssetPermission = async (
       return { allowed: false, reason: "Asset not in client" };
     }
 
-    // Verify client access - check both clientId and userId
-    const [userClient] = await db
-      .select()
-      .from(userClients)
-      .where(
-        and(
-          eq(userClients.clientId, clientId),
-          eq(userClients.userId, userIdNum)
-        )
-      );
+    // Verify client access - super admins bypass this check
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const [userClient] = await db
+        .select()
+        .from(userClients)
+        .where(
+          and(
+            eq(userClients.clientId, clientId),
+            eq(userClients.userId, userIdNum)
+          )
+        );
 
-    if (!userClient) {
-      return { allowed: false, reason: "Not authorized for this client" };
+      if (!userClient) {
+        return { allowed: false, reason: "Not authorized for this client" };
+      }
     }
 
     // Check if user has required role-based permission
