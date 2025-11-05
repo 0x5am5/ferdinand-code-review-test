@@ -1186,19 +1186,27 @@ export function registerFileAssetRoutes(app: Express) {
             .json({ message: "Guests cannot upload files" });
         }
 
-        // Get user's first client (for now - could be enhanced to require clientId in body)
-        const userClientRecords = await db
-          .select()
-          .from(userClients)
-          .where(eq(userClients.userId, req.session.userId));
+        // Get client ID - super admins can specify it in body, others use their first assigned client
+        let clientId: number;
 
-        if (userClientRecords.length === 0) {
-          return res
-            .status(400)
-            .json({ message: "No client associated with user" });
+        if (user.role === UserRole.SUPER_ADMIN && req.body.clientId) {
+          // Super admins can specify which client to upload to
+          clientId = parseInt(req.body.clientId, 10);
+        } else {
+          // Regular users must use their assigned client
+          const userClientRecords = await db
+            .select()
+            .from(userClients)
+            .where(eq(userClients.userId, req.session.userId));
+
+          if (userClientRecords.length === 0) {
+            return res
+              .status(400)
+              .json({ message: "No client associated with user" });
+          }
+
+          clientId = userClientRecords[0].clientId;
         }
-
-        const clientId = userClientRecords[0].clientId;
 
         const file = req.file;
         if (!file) {
