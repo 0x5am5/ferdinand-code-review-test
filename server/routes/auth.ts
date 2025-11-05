@@ -1,6 +1,8 @@
 import type { Express } from "express";
+import { userClients } from "@shared/schema";
 import { auth as firebaseAuth } from "../firebase";
 import { authRateLimit } from "../middlewares/rate-limit";
+import { db } from "../db";
 import { storage } from "../storage";
 
 export function registerAuthRoutes(app: Express) {
@@ -26,7 +28,7 @@ export function registerAuthRoutes(app: Express) {
   // Google Auth endpoint
   app.post("/api/auth/google", authRateLimit, async (req, res) => {
     try {
-      const { idToken } = req.body;
+      const { idToken, invitationToken } = req.body;
 
       if (!idToken) {
         return res.status(400).json({ message: "No ID token provided" });
@@ -39,17 +41,53 @@ export function registerAuthRoutes(app: Express) {
       }
 
       // Check if user exists
-      const user = await storage.getUserByEmail(decodedToken.email);
+      let user = await storage.getUserByEmail(decodedToken.email);
 
+      // If user doesn't exist, check if they have a valid invitation
       if (!user) {
-        try {
-          // await firebaseAuth.deleteUser(decodedToken.uid);
+        if (!invitationToken) {
           return res.status(403).json({ message: "User not authorized" });
-        } catch (error: unknown) {
-          console.error('Failed to delete unauthorized user:', error);
-          return res
-            .status(500)
-            .json({ message: "Failed to delete unauthorized user" });
+        }
+
+        // Validate invitation
+        const invitation = await storage.getInvitation(invitationToken);
+
+        if (!invitation) {
+          return res.status(403).json({ message: "Invalid invitation token" });
+        }
+
+        // Check if invitation is expired
+        if (new Date(invitation.expiresAt) < new Date()) {
+          return res.status(403).json({ message: "Invitation has expired" });
+        }
+
+        // Check if invitation has already been used
+        if (invitation.used) {
+          return res.status(403).json({ message: "Invitation has already been used" });
+        }
+
+        // Check if invitation email matches the Google auth email
+        if (invitation.email !== decodedToken.email) {
+          return res.status(403).json({ message: "Email does not match invitation" });
+        }
+
+        // Create new user with the role from the invitation
+        user = await storage.createUserWithRole({
+          email: decodedToken.email,
+          name: decodedToken.name || decodedToken.email.split("@")[0],
+          role: invitation.role as any,
+        });
+
+        // Associate user with the clients specified in the invitation
+        if (invitation.clientIds && invitation.clientIds.length > 0) {
+          for (const clientId of invitation.clientIds) {
+            await db
+              .insert(userClients)
+              .values({
+                userId: user.id,
+                clientId,
+              });
+          }
         }
       }
 
@@ -69,11 +107,11 @@ export function registerAuthRoutes(app: Express) {
       });
 
       // Get user's assigned clients to determine redirect
-      const userClients = await storage.getUserClients(user.id);
+      const assignedClients = await storage.getUserClients(user.id);
 
       return res.json({
         ...user,
-        assignedClients: userClients,
+        assignedClients,
       });
     } catch (error: unknown) {
       return res.status(401).json({

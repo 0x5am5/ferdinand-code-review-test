@@ -2,7 +2,7 @@ import { signOut as firebaseSignOut, signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "./firebase";
 import { apiRequest, queryClient } from "./queryClient";
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(invitationToken?: string) {
   try {
     // Sign in with Google popup
     console.log("Starting Google sign-in process");
@@ -14,7 +14,10 @@ export async function signInWithGoogle() {
 
     console.log("Sending token to backend");
     // Send the token to our backend
-    await apiRequest("POST", "/api/auth/google", { idToken });
+    await apiRequest("POST", "/api/auth/google", {
+      idToken,
+      ...(invitationToken && { invitationToken })
+    });
 
     console.log("Authentication completed successfully");
     // Refresh the user data

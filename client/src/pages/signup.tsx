@@ -115,76 +115,25 @@ export default function SignupPage() {
         return;
       }
 
-      // Sign in with Google
-      await signInWithGoogle();
+      // Sign in with Google with the invitation token
+      // The backend now handles creating the user with the role and client associations
+      await signInWithGoogle(token || undefined);
 
-      // Update user role based on invitation
+      // Mark invitation as used
       try {
-        // Update the user role
-        const response = await fetch("/api/users/role", {
-          method: "PATCH",
+        await fetch(`/api/invitations/${invitation.id}/use`, {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            role: invitation.role,
-          }),
         });
-
-        if (!response.ok) {
-          console.error("Failed to update user role");
-        } else {
-          console.log(`User role updated to ${invitation.role}`);
-        }
       } catch (error: unknown) {
         console.error(
-          "Error updating user role:",
+          "Error marking invitation as used:",
           error instanceof Error ? error.message : "Unknown error"
         );
+        // Don't fail the signup if marking as used fails - user is already created
       }
-
-      // Associate user with the clients in the invitation
-      if (invitation.clientIds && invitation.clientIds.length > 0) {
-        try {
-          // Create user-client associations for each client ID
-          await Promise.all(
-            invitation.clientIds.map(async (clientId) => {
-              const response = await fetch("/api/user-clients", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  clientId,
-                }),
-              });
-
-              if (!response.ok) {
-                throw new Error(
-                  `Failed to associate user with client ID ${clientId}`
-                );
-              }
-            })
-          );
-
-          console.log(
-            `User associated with ${invitation.clientIds.length} clients`
-          );
-        } catch (error: unknown) {
-          console.error(
-            "Error associating user with clients:",
-            error instanceof Error ? error.message : "Unknown error"
-          );
-        }
-      }
-
-      // Mark invitation as used
-      await fetch(`/api/invitations/${invitation.id}/use`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
 
       // Redirect to dashboard
       toast({
