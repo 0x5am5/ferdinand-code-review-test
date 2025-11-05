@@ -140,8 +140,7 @@ export const GoogleDrivePicker: React.FC<PropsWithChildren<GoogleDrivePickerProp
       .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY || "")
       .setCallback((data: google.picker.ResponseObject) => {
         if (data.action === 'picked') {
-          const fileIds = (data.docs || []).map((doc) => doc.id);
-          onFilesSelected?.(fileIds as unknown as google.picker.DocumentObject[]);
+          onFilesSelected?.(data.docs || []);
         }
       });
 

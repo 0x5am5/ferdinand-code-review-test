@@ -257,6 +257,14 @@ export function registerGoogleDriveRoutes(app: Express) {
           const file = files[i];
 
           try {
+            // Validate that file has required properties
+            if (!file || !file.id || !file.name || !file.mimeType) {
+              console.error("Invalid file object:", file);
+              throw new Error(
+                `Invalid file object: missing required properties (id, name, mimeType). Received: ${JSON.stringify(file)}`
+              );
+            }
+
             // Send progress update
             res.write(
               `data: ${JSON.stringify({
