@@ -54,8 +54,9 @@ export const checkAssetPermission = async (
     }
 
     // Verify client access - super admins bypass this check
-    if (user.role !== UserRole.SUPER_ADMIN) {
-      const [userClient] = await db
+    const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
+    if (!isSuperAdmin) {
+      const userClientList = await db
         .select()
         .from(userClients)
         .where(
@@ -65,7 +66,7 @@ export const checkAssetPermission = async (
           )
         );
 
-      if (!userClient) {
+      if (userClientList.length === 0) {
         return { allowed: false, reason: "Not authorized for this client" };
       }
     }
