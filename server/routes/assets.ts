@@ -1998,17 +1998,40 @@ export function registerAssetRoutes(app: Express) {
           return res.status(400).json({ message: "Invalid thumbnail size" });
         }
 
-        // Get user's clients to determine access
-        const userClients = await db
+        // Get user's role to determine client access
+        const { users } = await import("@shared/schema");
+        const { UserRole } = await import("@shared/schema");
+        const [user] = await db
           .select()
-          .from(fileUserClients)
-          .where(eq(fileUserClients.userId, req.session.userId));
+          .from(users)
+          .where(eq(users.id, req.session.userId));
 
-        if (userClients.length === 0) {
-          return res.status(403).json({ message: "Not authorized" });
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
         }
 
-        const clientIds = userClients.map((uc) => uc.clientId);
+        // Get client IDs based on user role
+        let clientIds: number[];
+        if (user.role === UserRole.SUPER_ADMIN) {
+          // Super admins see all assets from all clients
+          const { clients } = await import("@shared/schema");
+          const allClients = await db
+            .select({ id: clients.id })
+            .from(clients);
+          clientIds = allClients.map((c) => c.id);
+        } else {
+          // Regular users see only assets from their assigned clients
+          const userClients = await db
+            .select()
+            .from(fileUserClients)
+            .where(eq(fileUserClients.userId, req.session.userId));
+
+          if (userClients.length === 0) {
+            return res.status(403).json({ message: "Not authorized" });
+          }
+
+          clientIds = userClients.map((uc) => uc.clientId);
+        }
 
         // Get asset from database (file asset) - check user has access to this client
         const [asset] = await db
