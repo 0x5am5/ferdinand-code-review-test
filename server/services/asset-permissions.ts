@@ -35,7 +35,6 @@ export const checkAssetPermission = async (
     const [user] = await db.select().from(users).where(eq(users.id, userIdNum));
 
     if (!user) {
-      console.warn(`[Permission] User ${userIdNum} not found`);
       return { allowed: false, reason: "User not found" };
     }
 
@@ -46,24 +45,16 @@ export const checkAssetPermission = async (
       .where(and(eq(assets.id, assetId), isNull(assets.deletedAt)));
 
     if (!asset) {
-      console.warn(`[Permission] Asset ${assetId} not found`);
       return { allowed: false, reason: "Asset not found" };
     }
 
     // Verify asset belongs to the provided client
     if (asset.clientId !== clientId) {
-      console.warn(
-        `[Permission] Asset ${assetId} clientId ${asset.clientId} does not match requested ${clientId}`
-      );
       return { allowed: false, reason: "Asset not in client" };
     }
 
     // Verify client access - super admins bypass this check
     const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
-    console.log(
-      `[Permission] Checking ${permission} for user ${userIdNum} (role: ${user.role}) on asset ${assetId} in client ${clientId}. isSuperAdmin: ${isSuperAdmin}`
-    );
-
     if (!isSuperAdmin) {
       const userClientList = await db
         .select()
@@ -76,9 +67,6 @@ export const checkAssetPermission = async (
         );
 
       if (userClientList.length === 0) {
-        console.warn(
-          `[Permission] User ${userIdNum} not assigned to client ${clientId}`
-        );
         return { allowed: false, reason: "Not authorized for this client" };
       }
     }
@@ -88,9 +76,6 @@ export const checkAssetPermission = async (
       user.role as keyof typeof ROLE_PERMISSIONS
     ] as readonly Permission[];
     if (!allowedPermissions.includes(permission)) {
-      console.warn(
-        `[Permission] Role ${user.role} does not have ${permission} permission. Allowed: ${allowedPermissions.join(", ")}`
-      );
       return {
         allowed: false,
         reason: `Role ${user.role} cannot ${permission} assets`,
@@ -99,7 +84,6 @@ export const checkAssetPermission = async (
 
     // For guests, only allow access to shared assets
     if (user.role === UserRole.GUEST && asset.visibility !== "shared") {
-      console.warn(`[Permission] Guest user cannot access non-shared asset`);
       return { allowed: false, reason: "Asset is not shared" };
     }
 
@@ -109,16 +93,10 @@ export const checkAssetPermission = async (
         (permission === "write" || permission === "delete") &&
         asset.uploadedBy !== userIdNum
       ) {
-        console.warn(
-          `[Permission] Standard user ${userIdNum} cannot ${permission} asset uploaded by ${asset.uploadedBy}`
-        );
         return { allowed: false, reason: "Can only modify own assets" };
       }
     }
 
-    console.log(
-      `[Permission] ✓ User ${userIdNum} allowed to ${permission} asset ${assetId}`
-    );
     return { allowed: true, asset };
   } catch (error) {
     console.error("Error checking asset permission:", error);
