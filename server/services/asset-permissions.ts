@@ -13,7 +13,7 @@ interface PermissionCheck {
 const ROLE_PERMISSIONS = {
   [UserRole.GUEST]: ["read"],
   [UserRole.STANDARD]: ["read", "write"],
-  [UserRole.EDITOR]: ["read", "write", "share"],
+  [UserRole.EDITOR]: ["read", "write", "delete", "share"],
   [UserRole.ADMIN]: ["read", "write", "delete", "share"],
   [UserRole.SUPER_ADMIN]: ["read", "write", "delete", "share"],
 } as const;

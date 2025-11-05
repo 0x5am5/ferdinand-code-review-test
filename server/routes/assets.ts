@@ -3,6 +3,7 @@ import {
   brandAssets,
   convertedAssets,
   assets as fileAssets,
+  userClients,
   userClients as fileUserClients,
   type InsertBrandAsset,
   type InsertColorAsset,
@@ -469,12 +470,50 @@ export function registerAssetRoutes(app: Express) {
     "/api/clients/:clientId/assets",
     upload.any(),
     validateClientId,
+    requireAuth,
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
+        const userId = req.session?.userId;
+
         if (!clientId) {
           return res.status(400).json({ message: "Client ID is required" });
         }
+
+        if (!userId) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        // Check if user has write permission for this client
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        // Guest users cannot create assets
+        if (user.role === "guest") {
+          return res.status(403).json({ message: "Guests cannot create assets" });
+        }
+
+        // Verify user has access to this client (unless super admin)
+        if (user.role !== "super_admin") {
+          const userClient = await db
+            .select()
+            .from(userClients)
+            .where(
+              and(
+                eq(userClients.clientId, clientId),
+                eq(userClients.userId, userId)
+              )
+            );
+
+          if (userClient.length === 0) {
+            return res
+              .status(403)
+              .json({ message: "Not authorized for this client" });
+          }
+        }
+
         const { category } = req.body;
 
         // Font asset creation
