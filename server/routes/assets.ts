@@ -3,13 +3,13 @@ import {
   brandAssets,
   convertedAssets,
   assets as fileAssets,
-  userClients,
   userClients as fileUserClients,
   type InsertBrandAsset,
   type InsertColorAsset,
   type InsertFontAsset,
   insertColorAssetSchema,
   insertFontAssetSchema,
+  userClients,
 } from "@shared/schema";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
@@ -1180,7 +1180,6 @@ export function registerAssetRoutes(app: Express) {
     "/api/clients/:clientId/assets/:assetId",
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
-      console.log("DELETE /api/clients/:clientId/assets/:assetId");
       try {
         const clientId = req.clientId;
         if (!clientId) {
@@ -1264,6 +1263,7 @@ export function registerAssetRoutes(app: Express) {
     requireAuth,
     mutationRateLimit,
     async (req: Request, res: Response) => {
+      console.log("DELETE /api/assets/:id");
       try {
         const assetId = parseInt(req.params.id, 10);
         const userId = req.session?.userId;
