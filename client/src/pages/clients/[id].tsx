@@ -9,7 +9,7 @@ import { FontManager } from "@/components/brand/font-manager/font-manager";
 import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
-import { IntegrationsHub } from "@/components/integrations/IntegrationsHub";
+import { IntegrationsHub } from "@/components/integrations/integrations-hub";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
