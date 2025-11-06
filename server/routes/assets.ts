@@ -21,6 +21,7 @@ import { db } from "../db";
 import { storage } from "../storage";
 import { convertToAllFormats } from "../utils/file-converter";
 import { checkAssetPermission } from "../services/asset-permissions";
+import { mutationRateLimit } from "../middlewares/rate-limit";
 
 const upload = multer({ preservePath: true });
 
@@ -1255,7 +1256,7 @@ export function registerAssetRoutes(app: Express) {
   );
 
   // Delete asset endpoint (simplified path without clientId)
-  app.delete("/api/assets/:id", requireAuth, async (req: Request, res: Response) => {
+  app.delete("/api/assets/:id", requireAuth, mutationRateLimit, async (req: Request, res: Response) => {
     try {
       const assetId = parseInt(req.params.id, 10);
       const userId = req.session?.userId;
@@ -1269,7 +1270,8 @@ export function registerAssetRoutes(app: Express) {
       }
 
       // First try to get from brandAssets, then from fileAssets
-      let asset = await storage.getAsset(assetId);
+      type AssetUnion = BrandAsset | typeof fileAssets.$inferSelect;
+      let asset: AssetUnion | null = (await storage.getAsset(assetId)) ?? null;
 
       if (!asset) {
         // Try to get from file assets table
@@ -1279,7 +1281,7 @@ export function registerAssetRoutes(app: Express) {
           .where(and(eq(fileAssets.id, assetId), isNull(fileAssets.deletedAt)));
 
         if (fileAsset) {
-          asset = fileAsset as any;
+          asset = fileAsset;
         }
       }
 
@@ -1296,14 +1298,17 @@ export function registerAssetRoutes(app: Express) {
       );
 
       if (!permission.allowed) {
+        // Log detailed info for debugging on server side only
+        console.error("Asset deletion permission denied", {
+          userId,
+          assetId,
+          clientId: asset.clientId,
+          reason: permission.reason
+        });
+
+        // Send minimal info to client
         return res.status(403).json({
-          message: permission.reason || "Not authorized to delete this asset",
-          debug: {
-            userId,
-            assetId,
-            clientId: asset.clientId,
-            reason: permission.reason
-          }
+          message: "Not authorized to delete this asset"
         });
       }
 

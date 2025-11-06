@@ -12,7 +12,7 @@ interface PermissionCheck {
 
 const ROLE_PERMISSIONS = {
   [UserRole.GUEST]: ["read"],
-  [UserRole.STANDARD]: ["read", "write"],
+  [UserRole.STANDARD]: ["read", "write"], // Standard users cannot delete assets
   [UserRole.EDITOR]: ["read", "write", "delete", "share"],
   [UserRole.ADMIN]: ["read", "write", "delete", "share"],
   [UserRole.SUPER_ADMIN]: ["read", "write", "delete", "share"],
@@ -87,12 +87,9 @@ export const checkAssetPermission = async (
       return { allowed: false, reason: "Asset is not shared" };
     }
 
-    // For standard users, check if they own the asset for write/delete
-    if (user.role === UserRole.STANDARD) {
-      if (
-        (permission === "write" || permission === "delete") &&
-        asset.uploadedBy !== userIdNum
-      ) {
+    // For standard users, check if they own the asset for write operations
+    if (user.role === UserRole.STANDARD && permission === "write") {
+      if (asset.uploadedBy !== userIdNum) {
         return { allowed: false, reason: "Can only modify own assets" };
       }
     }
