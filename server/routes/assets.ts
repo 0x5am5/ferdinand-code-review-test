@@ -1296,7 +1296,15 @@ export function registerAssetRoutes(app: Express) {
       );
 
       if (!permission.allowed) {
-        return res.status(403).json({ message: permission.reason || "Not authorized to delete this asset" });
+        return res.status(403).json({
+          message: permission.reason || "Not authorized to delete this asset",
+          debug: {
+            userId,
+            assetId,
+            clientId: asset.clientId,
+            reason: permission.reason
+          }
+        });
       }
 
       // Delete from the appropriate table
