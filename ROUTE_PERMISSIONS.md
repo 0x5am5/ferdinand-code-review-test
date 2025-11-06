@@ -111,6 +111,9 @@ All asset-related permissions flow through `/server/services/asset-permissions.t
 
 **Purpose:** Design system assets (logos, fonts, colors, typography) stored directly in the database with format conversion support. This is distinct from File Assets which handle general file storage with external storage backends.
 
+**⚠️ IMPORTANT ARCHITECTURE NOTE:**
+The `/api/assets/:assetId/file` endpoint is defined in `brand-assets.ts` and serves **BRAND ASSETS ONLY** (not file assets). This endpoint provides format conversion (SVG → PNG/JPG/PDF/AI), dark variant switching, and dynamic resizing specifically for brand assets. File assets use `/api/assets/:assetId/download` for direct downloads without conversion.
+
 | Method | Endpoint | Auth | Roles | CSRF | Rate Limit | Notes |
 |--------|----------|------|-------|------|-----------|-------|
 | POST | `/api/utils/fix-logo-types` | Yes | SUPER_ADMIN | No | No | Utility endpoint |
@@ -124,13 +127,13 @@ All asset-related permissions flow through `/server/services/asset-permissions.t
 | DELETE | `/api/clients/:clientId/brand-assets/:assetId` | Yes | EDITOR, ADMIN, SUPER_ADMIN | No | No | Delete brand asset/variant |
 | DELETE | `/api/assets/:id` | Yes | EDITOR, ADMIN, SUPER_ADMIN | No | No | Delete brand asset (uses permission service) |
 | GET | `/api/clients/:clientId/brand-assets` | Yes | All | No | No | List client brand assets |
-| GET | `/api/assets/:assetId/light` | No | Public | No | No | Light variant (cached) |
-| GET | `/api/assets/:assetId/dark` | No | Public | No | No | Dark variant (cached) |
-| GET | `/api/assets/:assetId/file` | No | Public | No | No | Asset file; format conversion; resize |
-| GET | `/api/assets/:assetId/download` | No | Public | No | No | Redirects to `/file` |
-| GET | `/api/clients/:clientId/assets/:assetId/download` | Yes | All | No | No | Auth redirects to `/file` |
-| GET | `/api/assets/:assetId/converted` | Yes | All | No | No | Get converted formats |
-| GET | `/api/assets/:assetId/thumbnail/:size` | Yes | All | No | No | Asset thumbnail; GUEST sees shared only |
+| GET | `/api/assets/:assetId/light` | No | Public | No | No | **BRAND ASSET**: Light variant (cached) |
+| GET | `/api/assets/:assetId/dark` | No | Public | No | No | **BRAND ASSET**: Dark variant (cached) |
+| GET | `/api/assets/:assetId/file` | No | Public | No | No | **⚠️ BRAND ASSET**: Primary serving endpoint with format conversion & resizing |
+| GET | `/api/assets/:assetId/download` | No | Public | No | No | **BRAND ASSET**: Redirects to `/file` |
+| GET | `/api/clients/:clientId/assets/:assetId/download` | Yes | All | No | No | **BRAND ASSET**: Auth redirects to `/file` |
+| GET | `/api/assets/:assetId/converted` | Yes | All | No | No | **BRAND ASSET**: Get converted formats |
+| GET | `/api/assets/:assetId/thumbnail/:size` | Yes | All | No | No | **BRAND ASSET**: Thumbnail; GUEST sees shared only |
 
 ---
 
@@ -139,6 +142,8 @@ All asset-related permissions flow through `/server/services/asset-permissions.t
 **File:** `/server/routes/file-assets.ts`
 
 **Purpose:** General file storage system for documents, images, videos, and any file type. Supports external storage backends, full-text search, categories, tags, and public sharing. This is distinct from Brand Assets which handle design system elements stored in the database.
+
+**⚠️ IMPORTANT:** File assets use `/api/assets/:assetId/download` for serving (direct downloads). They do NOT use `/api/assets/:assetId/file` which is reserved for brand asset format conversion.
 
 | Method | Endpoint | Auth | Roles | CSRF | Rate Limit | Notes |
 |--------|----------|------|-------|------|-----------|-------|
@@ -820,5 +825,124 @@ The following security enhancements were implemented:
 
 ---
 
-**Document Version:** 1.1
-**Last Updated:** November 6, 2025 (Updated with security enhancements)
+## Asset Architecture: Brand Assets vs File Assets
+
+### Two Distinct Systems
+
+The application maintains two separate asset management systems with different purposes and implementations:
+
+#### 1. Brand Assets (`brand_assets` table)
+**Purpose:** Design system elements (logos, colors, fonts)
+**Storage:** Database (base64 encoded)
+**Routes File:** `server/routes/brand-assets.ts`
+
+**CRUD Operations:**
+- `GET /api/clients/:clientId/brand-assets` - List
+- `POST /api/clients/:clientId/brand-assets` - Create
+- `PATCH /api/clients/:clientId/brand-assets/:assetId` - Update
+- `DELETE /api/clients/:clientId/brand-assets/:assetId` - Delete
+
+**Serving Endpoints:**
+- `GET /api/assets/:assetId/file` - **PRIMARY**: Format conversion, resizing, variants
+- `GET /api/assets/:assetId/light` - Light logo variant (cached)
+- `GET /api/assets/:assetId/dark` - Dark logo variant (cached)
+- `GET /api/assets/:assetId/download` - Redirect to `/file`
+- `GET /api/assets/:assetId/thumbnail/:size` - Thumbnail generation
+- `GET /api/assets/:assetId/converted` - List pre-converted formats
+
+**Features:**
+- SVG → PNG/JPG/PDF/AI format conversion
+- Dark/light logo variant system
+- Dynamic image resizing with aspect ratio preservation
+- Pre-conversion caching in `converted_assets` table
+- CDN-friendly cache headers
+
+**Frontend Utility:** `getSecureAssetUrl()` in `client/src/components/brand/logo-manager/logo-utils.ts`
+
+---
+
+#### 2. File Assets (`assets` table)
+**Purpose:** General file storage (documents, images, videos, any file type)
+**Storage:** External (S3 or local filesystem)
+**Routes File:** `server/routes/file-assets.ts`
+
+**CRUD Operations:**
+- `GET /api/assets` - List all file assets
+- `GET /api/assets/search` - Full-text search
+- `POST /api/assets/upload` - Upload
+- `PATCH /api/assets/:assetId` - Update metadata
+- `DELETE /api/assets/:assetId` - Delete (soft delete)
+
+**Client-Scoped Operations:**
+- `POST /api/clients/:clientId/file-assets/upload`
+- `GET /api/clients/:clientId/file-assets`
+- `PATCH /api/clients/:clientId/file-assets/:assetId`
+- `DELETE /api/clients/:clientId/file-assets/:assetId`
+
+**Serving Endpoints:**
+- `GET /api/assets/:assetId/download` - **PRIMARY**: Direct file download (no conversion)
+- `GET /api/clients/:clientId/file-assets/:assetId/download` - Client-scoped download
+- `GET /api/clients/:clientId/file-assets/:assetId/thumbnail/:size` - Thumbnail
+
+**Public Sharing:**
+- `POST /api/clients/:clientId/assets/:assetId/public-links` - Create shareable link
+- `GET /api/clients/:clientId/assets/:assetId/public-links` - List links
+- `DELETE /api/clients/:clientId/assets/:assetId/public-links/:linkId` - Revoke link
+- `GET /api/public/assets/:token` - Public download via token
+
+**Features:**
+- Categories and tags for organization
+- Full-text search across metadata
+- Public shareable links with expiration
+- Thumbnail generation (images, PDFs, videos)
+- Virus scanning on upload
+- Bulk operations (delete, update)
+
+**Permissions:** `checkAssetPermission()` service in `server/services/asset-permissions.ts`
+
+---
+
+### Critical Crossover: `/api/assets/:assetId/file`
+
+**⚠️ IMPORTANT:** Despite the `/assets/` URL pattern, this endpoint is defined in `brand-assets.ts` and serves **BRAND ASSETS ONLY**.
+
+**Why This Crossover Exists:**
+1. **Historical naming:** Predates the brand/file asset separation
+2. **Feature requirements:** Brand assets need format conversion, file assets don't
+3. **Consistency:** Grouped with other brand asset serving endpoints (/light, /dark, /thumbnail)
+4. **Caching:** Changing the URL would break existing browser and CDN caches
+
+**File Assets Do NOT Use This Endpoint:**
+- File assets use `/api/assets/:assetId/download` for direct downloads
+- No format conversion or resizing for file assets
+- Files are served exactly as uploaded
+
+**Used By:**
+- All brand asset preview components (logo-preview.tsx, font-card.tsx)
+- Logo download buttons (standard-logo-download-button.tsx, etc.)
+- Design system builder
+- Client dashboards
+- Any component displaying logos, colors, or fonts
+
+---
+
+### Quick Reference Table
+
+| Feature | Brand Assets | File Assets |
+|---------|--------------|-------------|
+| **Table** | `brand_assets` | `assets` |
+| **Storage** | Database (base64) | External (S3/local) |
+| **CRUD Routes** | `/api/clients/:clientId/brand-assets` | `/api/clients/:clientId/file-assets` |
+| **Serving Endpoint** | `/api/assets/:assetId/file` | `/api/assets/:assetId/download` |
+| **Format Conversion** | ✅ Yes (SVG → PNG/JPG/PDF/AI) | ❌ No (served as-is) |
+| **Resizing** | ✅ Yes (dynamic) | ❌ No |
+| **Dark Variants** | ✅ Yes (logos only) | ❌ No |
+| **Public Sharing** | ❌ No | ✅ Yes (shareable links) |
+| **Categories/Tags** | ❌ No | ✅ Yes |
+| **Full-Text Search** | ❌ No | ✅ Yes |
+| **Permission Service** | ❌ No | ✅ Yes (`checkAssetPermission`) |
+
+---
+
+**Document Version:** 1.2
+**Last Updated:** November 6, 2025 (Updated with asset architecture documentation)

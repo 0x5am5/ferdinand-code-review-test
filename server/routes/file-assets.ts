@@ -1,3 +1,32 @@
+/**
+ * FILE ASSETS ROUTES
+ *
+ * This file handles general file storage: documents, images, videos, and any file type.
+ *
+ * KEY ARCHITECTURE DISTINCTION:
+ * - File Assets: General files stored in `assets` table (external storage via S3/local filesystem)
+ * - Brand Assets: Design system elements in `brand_assets` table (base64 in DB)
+ *
+ * ROUTING STRUCTURE:
+ * - Global routes: /api/assets (list, search, upload, delete, etc.)
+ * - Client-scoped routes: /api/clients/:clientId/file-assets (client-specific operations)
+ * - Download: /api/assets/:assetId/download (direct file download, no conversion)
+ * - Public links: /api/clients/:clientId/assets/:assetId/public-links (shareable links)
+ *
+ * FEATURES:
+ * - External storage backends (S3, local filesystem)
+ * - Full-text search across file metadata
+ * - Categories and tags for organization
+ * - Public shareable links with expiration
+ * - Thumbnail generation for supported formats
+ * - Virus scanning on upload
+ * - Role-based permissions (GUEST sees shared only, STANDARD+ can upload)
+ *
+ * IMPORTANT: FILE ASSETS DO NOT USE `/api/assets/:assetId/file`
+ * - That endpoint is in brand-assets.ts and serves brand assets with format conversion
+ * - File assets use `/api/assets/:assetId/download` for direct downloads (no conversion)
+ */
+
 import {
   assetCategories,
   assetCategoryAssignments,

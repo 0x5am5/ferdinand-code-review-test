@@ -1531,7 +1531,41 @@ export function registerBrandAssetRoutes(app: Express) {
     }
   );
 
-  // Serve asset endpoint
+  /**
+   * PRIMARY BRAND ASSET SERVING ENDPOINT
+   *
+   * GET /api/assets/:assetId/file
+   *
+   * IMPORTANT: Despite the `/assets/` URL pattern, this endpoint serves BRAND ASSETS ONLY
+   * (logos, colors, fonts from the `brand_assets` table, NOT file assets from `assets` table).
+   *
+   * This endpoint is the main way brand assets are served to the frontend and provides:
+   *
+   * FEATURES:
+   * - Format conversion: SVG → PNG, JPG, PDF, AI via query param `?format=png`
+   * - Dark variant support: Serve dark logo versions via `?variant=dark`
+   * - Dynamic resizing: Resize images via `?size=200` (max dimension in pixels)
+   * - Performance caching: Pre-converted formats stored in `converted_assets` table
+   * - CDN-friendly: Sets cache headers for long-term browser/CDN caching
+   *
+   * QUERY PARAMETERS:
+   * - format: Target format (png, jpg, pdf, ai, svg) - triggers format conversion
+   * - variant: Logo variant (light, dark) - switches between logo variants
+   * - size: Maximum dimension in pixels - triggers resizing
+   *
+   * USED BY:
+   * - All brand asset preview components (logo-preview.tsx, font-card.tsx, etc.)
+   * - Logo download buttons (generates converted formats on-demand)
+   * - Design system builder
+   * - Client dashboards
+   *
+   * WHY NOT `/brand-assets/:id/file`?
+   * - Historical naming from before brand/file asset separation
+   * - Shared with other asset serving endpoints (/light, /dark, /thumbnail)
+   * - Changing would break existing URLs and caching
+   *
+   * FILE ASSETS USE: `/api/assets/:assetId/download` (no conversion, direct download)
+   */
   app.get(
     "/api/assets/:assetId/file",
     async (req: RequestWithClientId, res: Response) => {

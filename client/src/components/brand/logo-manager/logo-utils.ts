@@ -28,6 +28,40 @@ export function parseBrandAssetData(logo: BrandAsset): ParsedLogoData | null {
   }
 }
 
+/**
+ * Generate a URL for serving BRAND ASSETS (logos, colors, fonts) with optional format conversion
+ *
+ * IMPORTANT: This function generates URLs for the `/api/assets/:assetId/file` endpoint,
+ * which serves BRAND ASSETS ONLY (from `brand_assets` table), NOT file assets.
+ *
+ * The endpoint provides:
+ * - Format conversion (SVG → PNG, JPG, PDF, AI)
+ * - Dark/light variant switching for logos
+ * - Dynamic image resizing
+ * - CDN-friendly caching
+ *
+ * @param assetId - ID of the brand asset (from brand_assets table)
+ * @param clientId - Client ID for permission validation
+ * @param options - Optional transformations:
+ *   - format: Target format (png, jpg, pdf, ai, svg) - triggers conversion
+ *   - size: Maximum dimension in pixels for resizing
+ *   - variant: Logo variant ("dark" | "light") - switches between variants
+ *   - preserveRatio: Maintain aspect ratio during resize (default: true)
+ *   - preserveVector: Keep SVG as vector when resizing (default: false)
+ *
+ * @returns Full URL with query parameters for brand asset serving
+ *
+ * @example
+ * // Get original logo
+ * getSecureAssetUrl(123, 456)
+ *
+ * @example
+ * // Get dark variant as PNG at 200px max dimension
+ * getSecureAssetUrl(123, 456, { variant: "dark", format: "png", size: 200 })
+ *
+ * NOTE: File assets (documents, images from file storage) use `/api/assets/:assetId/download`
+ * instead, which provides direct downloads without conversion.
+ */
 export function getSecureAssetUrl(
   assetId: number,
   clientId: number,

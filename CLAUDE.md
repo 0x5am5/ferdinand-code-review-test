@@ -61,6 +61,37 @@ All database tables, types, and validation schemas are centralized in `shared/sc
 - Client ID validation middleware for multi-tenant operations
 - TanStack React Query for client-side data fetching and caching
 
+### Asset Management Systems
+
+The application has **two distinct asset systems** with different purposes:
+
+#### 1. Brand Assets (`server/routes/brand-assets.ts`)
+Design system elements: logos, colors, and fonts
+- **Storage**: Database (`brand_assets` table, base64 encoded)
+- **CRUD Routes**: `/api/clients/:clientId/brand-assets`
+- **Serving Endpoint**: `/api/assets/:assetId/file` (with format conversion)
+- **Features**:
+  - SVG → PNG/JPG/PDF/AI format conversion
+  - Dark/light logo variants
+  - Dynamic resizing and caching
+- **Frontend Utility**: `getSecureAssetUrl()` in `client/src/components/brand/logo-manager/logo-utils.ts`
+
+#### 2. File Assets (`server/routes/file-assets.ts`)
+General file storage: documents, images, videos, any file type
+- **Storage**: External (`assets` table, S3 or local filesystem)
+- **CRUD Routes**: `/api/clients/:clientId/file-assets` (client-scoped)
+- **Serving Endpoint**: `/api/assets/:assetId/download` (direct download, no conversion)
+- **Features**:
+  - Categories and tags
+  - Full-text search
+  - Public shareable links with expiration
+  - Virus scanning on upload
+- **Permissions**: `checkAssetPermission()` service in `server/services/asset-permissions.ts`
+
+**⚠️ CRITICAL CROSSOVER:** The `/api/assets/:assetId/file` endpoint is defined in `brand-assets.ts` and serves brand assets only (not file assets). File assets use `/api/assets/:assetId/download` for direct downloads.
+
+See `ROUTE_PERMISSIONS.md` for complete asset architecture documentation.
+
 ### UI Components
 - **Design System**: Custom components built on Radix UI primitives
 - **Styling**: Tailwind CSS with custom theme configuration
