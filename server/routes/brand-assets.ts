@@ -18,6 +18,7 @@ import { requireAuth } from "server/middlewares/auth";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
+import { mutationRateLimit } from "../middlewares/rate-limit";
 import { checkAssetPermission } from "../services/asset-permissions";
 import { storage } from "../storage";
 import { convertToAllFormats } from "../utils/file-converter";
@@ -1265,11 +1266,13 @@ export function registerBrandAssetRoutes(app: Express) {
     }
   );
 
+  // Delete asset endpoint (simplified path without clientId)
   app.delete(
     "/api/assets/:id",
     requireAuth,
+    mutationRateLimit,
     async (req: Request, res: Response) => {
-      console.log("Deleting asset:", req.params.id);
+      console.log("DELETE /api/assets/:id");
       try {
         const assetId = parseInt(req.params.id, 10);
         const userId = req.session?.userId;
@@ -1282,8 +1285,24 @@ export function registerBrandAssetRoutes(app: Express) {
           return res.status(400).json({ message: "Invalid asset ID" });
         }
 
-        // Get the asset to find its clientId
-        const asset = await storage.getAsset(assetId);
+        // First try to get from brandAssets, then from fileAssets
+        type AssetUnion = BrandAsset | typeof fileAssets.$inferSelect;
+        let asset: AssetUnion | null =
+          (await storage.getAsset(assetId)) ?? null;
+
+        if (!asset) {
+          // Try to get from file assets table
+          const [fileAsset] = await db
+            .select()
+            .from(fileAssets)
+            .where(
+              and(eq(fileAssets.id, assetId), isNull(fileAssets.deletedAt))
+            );
+
+          if (fileAsset) {
+            asset = fileAsset;
+          }
+        }
 
         if (!asset) {
           return res.status(404).json({ message: "Asset not found" });
@@ -1298,6 +1317,7 @@ export function registerBrandAssetRoutes(app: Express) {
         );
 
         if (!permission.allowed) {
+<<<<<<< HEAD:server/routes/brand-assets.ts
           return res.status(403).json({
             message: permission.reason || "Not authorized to delete this asset",
           });
@@ -1306,6 +1326,36 @@ export function registerBrandAssetRoutes(app: Express) {
         // Delete the asset
         await storage.deleteAsset(assetId);
         await storage.touchClient(asset.clientId);
+=======
+          // Log detailed info for debugging on server side only
+          console.error("Asset deletion permission denied", {
+            userId,
+            assetId,
+            clientId: asset.clientId,
+            reason: permission.reason,
+          });
+
+          // Send minimal info to client
+          return res.status(403).json({
+            message: "Not authorized to delete this asset",
+          });
+        }
+
+        // Delete from the appropriate table
+        const isBrandAsset = "category" in asset; // Brand assets have a category field
+
+        if (isBrandAsset) {
+          // Delete from brandAssets
+          await storage.deleteAsset(assetId);
+          await storage.touchClient(asset.clientId);
+        } else {
+          // Soft delete from file assets
+          await db
+            .update(fileAssets)
+            .set({ deletedAt: new Date() })
+            .where(eq(fileAssets.id, assetId));
+        }
+>>>>>>> origin/main:server/routes/assets.ts
 
         res.status(200).json({ message: "Asset deleted successfully" });
       } catch (error: unknown) {
