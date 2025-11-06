@@ -1317,7 +1317,6 @@ export function registerBrandAssetRoutes(app: Express) {
         );
 
         if (!permission.allowed) {
-<<<<<<< HEAD:server/routes/brand-assets.ts
           return res.status(403).json({
             message: permission.reason || "Not authorized to delete this asset",
           });
@@ -1326,36 +1325,6 @@ export function registerBrandAssetRoutes(app: Express) {
         // Delete the asset
         await storage.deleteAsset(assetId);
         await storage.touchClient(asset.clientId);
-=======
-          // Log detailed info for debugging on server side only
-          console.error("Asset deletion permission denied", {
-            userId,
-            assetId,
-            clientId: asset.clientId,
-            reason: permission.reason,
-          });
-
-          // Send minimal info to client
-          return res.status(403).json({
-            message: "Not authorized to delete this asset",
-          });
-        }
-
-        // Delete from the appropriate table
-        const isBrandAsset = "category" in asset; // Brand assets have a category field
-
-        if (isBrandAsset) {
-          // Delete from brandAssets
-          await storage.deleteAsset(assetId);
-          await storage.touchClient(asset.clientId);
-        } else {
-          // Soft delete from file assets
-          await db
-            .update(fileAssets)
-            .set({ deletedAt: new Date() })
-            .where(eq(fileAssets.id, assetId));
-        }
->>>>>>> origin/main:server/routes/assets.ts
 
         res.status(200).json({ message: "Asset deleted successfully" });
       } catch (error: unknown) {
