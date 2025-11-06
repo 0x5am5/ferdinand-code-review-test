@@ -803,35 +803,31 @@ export function registerFileAssetRoutes(app: Express) {
 
       const assetId = parseInt(req.params.assetId, 10);
 
-      // Get user's clients to determine access
-      const userClientRecords = await db
+      // Get user to check role
+      const [user] = await db
         .select()
-        .from(userClients)
-        .where(eq(userClients.userId, req.session.userId));
+        .from(users)
+        .where(eq(users.id, req.session.userId));
 
-      if (userClientRecords.length === 0) {
-        return res.status(403).json({ message: "Not authorized" });
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
       }
 
-      const clientIds = userClientRecords.map((uc) => uc.clientId);
+      console.log(
+        `[Asset Delete] User ${req.session.userId} (role: ${user.role}) attempting to delete asset ${assetId}`
+      );
 
-      // Get the asset
+      // Get the asset (don't filter by clientId yet - let checkAssetPermission handle that)
       const [assetRecord] = await db
         .select()
         .from(assets)
-        .where(
-          and(
-            eq(assets.id, assetId),
-            isNull(assets.deletedAt),
-            inArray(assets.clientId, clientIds)
-          )
-        );
+        .where(and(eq(assets.id, assetId), isNull(assets.deletedAt)));
 
       if (!assetRecord) {
         return res.status(404).json({ message: "Asset not found" });
       }
 
-      // Check if user has delete permission
+      // Check if user has delete permission (this handles super admin bypass)
       const permission = await checkAssetPermission(
         req.session.userId,
         assetId,
@@ -840,10 +836,20 @@ export function registerFileAssetRoutes(app: Express) {
       );
 
       if (!permission.allowed || !permission.asset) {
+        console.log(
+          `[Asset Delete] User ${req.session.userId} denied: ${permission.reason || "No permission"}`
+        );
         return res
           .status(403)
-          .json({ message: "Not authorized to delete this asset" });
+          .json({
+            message:
+              permission.reason || "Not authorized to delete this asset",
+          });
       }
+
+      console.log(
+        `[Asset Delete] User ${req.session.userId} authorized to delete asset ${assetId}`
+      );
 
       const asset = permission.asset ?? assetRecord;
 
@@ -901,29 +907,25 @@ export function registerFileAssetRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid asset IDs" });
       }
 
-      // Get user's clients to determine access
-      const userClientRecords = await db
+      // Get user to check role
+      const [user] = await db
         .select()
-        .from(userClients)
-        .where(eq(userClients.userId, req.session.userId));
+        .from(users)
+        .where(eq(users.id, req.session.userId));
 
-      if (userClientRecords.length === 0) {
-        return res.status(403).json({ message: "Not authorized" });
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
       }
 
-      const clientIds = userClientRecords.map((uc) => uc.clientId);
+      console.log(
+        `[Asset Bulk Delete] User ${req.session.userId} (role: ${user.role}) attempting to delete ${assetIds.length} assets`
+      );
 
-      // Get all assets to be deleted
+      // Get all assets to be deleted (don't filter by clientId - let checkAssetPermission handle that)
       const assetsToDelete = await db
         .select()
         .from(assets)
-        .where(
-          and(
-            inArray(assets.id, assetIds),
-            isNull(assets.deletedAt),
-            inArray(assets.clientId, clientIds)
-          )
-        );
+        .where(and(inArray(assets.id, assetIds), isNull(assets.deletedAt)));
 
       if (assetsToDelete.length === 0) {
         return res.status(404).json({ message: "No assets found" });
@@ -1189,23 +1191,39 @@ export function registerFileAssetRoutes(app: Express) {
         // Get client ID - super admins can specify it in body, others use their first assigned client
         let clientId: number;
 
+        console.log(
+          `[Asset Upload] User ${req.session.userId} (role: ${user.role}) attempting upload. clientId in body: ${req.body.clientId}`
+        );
+
         if (user.role === UserRole.SUPER_ADMIN && req.body.clientId) {
           // Super admins can specify which client to upload to
           clientId = parseInt(req.body.clientId, 10);
+          console.log(
+            `[Asset Upload] Super admin ${req.session.userId} uploading to client ${clientId}`
+          );
         } else {
           // Regular users must use their assigned client
+          console.log(
+            `[Asset Upload] Non-super-admin user ${req.session.userId}, checking assigned clients`
+          );
           const userClientRecords = await db
             .select()
             .from(userClients)
             .where(eq(userClients.userId, req.session.userId));
 
           if (userClientRecords.length === 0) {
+            console.log(
+              `[Asset Upload] User ${req.session.userId} denied: no assigned clients`
+            );
             return res
               .status(400)
               .json({ message: "No client associated with user" });
           }
 
           clientId = userClientRecords[0].clientId;
+          console.log(
+            `[Asset Upload] User ${req.session.userId} using assigned client ${clientId}`
+          );
         }
 
         const file = req.file;

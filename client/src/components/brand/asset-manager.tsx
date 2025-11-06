@@ -225,6 +225,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
               </GoogleDrivePicker>
             ))}
           <AssetUpload
+            clientId={clientId}
             open={uploadDialogOpen}
             onOpenChange={(open) => {
               setUploadDialogOpen(open);

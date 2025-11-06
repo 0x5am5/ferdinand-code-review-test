@@ -280,7 +280,7 @@ export function DarkVariantUploader({
             onSuccess={() => {
               parsedData.hasDarkVariant = true;
               queryClient.invalidateQueries({
-                queryKey: [`/api/clients/${clientId}/assets`],
+                queryKey: [`/api/clients/${clientId}/brand-assets`],
               });
               queryClient.invalidateQueries({
                 queryKey: [`/api/assets/${logo.id}`],

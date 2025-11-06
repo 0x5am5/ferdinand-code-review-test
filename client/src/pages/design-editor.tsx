@@ -39,7 +39,7 @@ export default function DesignEditor() {
   });
 
   const { data: brandAssets } = useQuery<BrandAsset[]>({
-    queryKey: [`/api/clients/${clientId}/assets`],
+    queryKey: [`/api/clients/${clientId}/brand-assets`],
     enabled: validClientId,
   });
 

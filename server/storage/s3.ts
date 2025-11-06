@@ -92,6 +92,12 @@ export async function uploadFile(
   try {
     const client = await initializeS3Client();
 
+    console.log("[R2 Upload Debug] Uploading to R2:");
+    console.log("  Bucket:", storageConfig.bucket);
+    console.log("  Key:", storagePath);
+    console.log("  Endpoint:", storageConfig.endpoint);
+    console.log("  File size:", fileBuffer.length, "bytes");
+
     const CommandConstructor = PutObjectCommand as unknown as new (
       params: Record<string, unknown>
     ) => unknown;
@@ -106,6 +112,8 @@ export async function uploadFile(
     await (
       client as unknown as { send: (cmd: unknown) => Promise<unknown> }
     ).send(command);
+
+    console.log("[R2 Upload Debug] Upload successful");
 
     return {
       success: true,
@@ -128,6 +136,11 @@ export async function downloadFile(
 ): Promise<DownloadResult> {
   try {
     const client = await initializeS3Client();
+
+    console.log("[R2 Download Debug] Attempting to download from R2:");
+    console.log("  Bucket:", storageConfig.bucket);
+    console.log("  Key:", storagePath);
+    console.log("  Endpoint:", storageConfig.endpoint);
 
     const CommandConstructor = GetObjectCommand as unknown as new (
       params: Record<string, unknown>
