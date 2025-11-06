@@ -406,9 +406,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Fetch brand fonts for this client from brand assets
   const { data: brandAssets = [] } = useQuery({
-    queryKey: [`/api/clients/${clientId}/assets`],
+    queryKey: [`/api/clients/${clientId}/brand-assets`],
     queryFn: async () => {
-      const response = await fetch(`/api/clients/${clientId}/assets`, {
+      const response = await fetch(`/api/clients/${clientId}/brand-assets`, {
         credentials: "include",
       });
       if (!response.ok) return [];

@@ -29,7 +29,7 @@ export const useClientsById = (clientId: number | null) =>
 
 export const useClientAssetsById = (clientId: number | null) =>
   useQuery<BrandAsset[]>({
-    queryKey: [`/api/clients/${clientId}/assets`],
+    queryKey: [`/api/clients/${clientId}/brand-assets`],
     enabled: !!clientId,
   });
 

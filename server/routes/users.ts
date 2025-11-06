@@ -17,6 +17,12 @@ import { emailService } from "../email-service";
 import { mutationRateLimit } from "../middlewares/rate-limit";
 import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
+import {
+  canAdminAccessClient,
+  canAdminAccessUser,
+  requireAdmin,
+  requireSuperAdmin,
+} from "../middlewares/auth";
 
 export function registerUserRoutes(app: Express) {
   // Get current user
@@ -281,12 +287,8 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Update user role
-  app.patch("/api/users/:id/role", csrfProtection, async (req, res) => {
+  app.patch("/api/users/:id/role", csrfProtection, requireAdmin, async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
@@ -298,6 +300,9 @@ export function registerUserRoutes(app: Express) {
       }
 
       // Get the current user making the request
+      if (!req.session?.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       const currentUser = await storage.getUser(req.session.userId);
       if (!currentUser) {
         return res.status(404).json({ message: "Current user not found" });
@@ -329,6 +334,14 @@ export function registerUserRoutes(app: Express) {
         if (targetUser.id === currentUser.id) {
           return res.status(403).json({
             message: "You cannot change your own role",
+          });
+        }
+
+        // ADMIN: Verify the target user is in one of their assigned clients
+        const hasAccess = await canAdminAccessUser(currentUser.id, id);
+        if (!hasAccess) {
+          return res.status(403).json({
+            message: "You can only modify users in your assigned clients",
           });
         }
       } else if (currentUser.role !== UserRole.SUPER_ADMIN) {
@@ -444,11 +457,29 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Get clients for a user
-  app.get("/api/users/:id/clients", async (req, res) => {
+  app.get("/api/users/:id/clients", requireAdmin, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid user ID" });
+      }
+
+      if (!req.session?.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "Current user not found" });
+      }
+
+      // ADMIN: Verify they can access this user
+      if (currentUser.role === UserRole.ADMIN) {
+        const hasAccess = await canAdminAccessUser(currentUser.id, id);
+        if (!hasAccess) {
+          return res.status(403).json({
+            message: "You can only view users in your assigned clients",
+          });
+        }
       }
 
       const clients = await storage.getUserClients(id);
@@ -462,8 +493,8 @@ export function registerUserRoutes(app: Express) {
     }
   });
 
-  // Get all client assignments for all users
-  app.get("/api/users/client-assignments", async (_req, res) => {
+  // Get all client assignments for all users (SUPER_ADMIN only)
+  app.get("/api/users/client-assignments", requireSuperAdmin, async (_req, res) => {
     try {
       // Get all users
       const userList = await storage.getUsers();
@@ -490,17 +521,32 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Create user-client relationship
-  app.post("/api/user-clients", csrfProtection, async (req, res) => {
+  app.post("/api/user-clients", csrfProtection, requireAdmin, async (req, res) => {
     try {
-      let { userId, clientId } = req.body;
+      const { userId, clientId } = req.body;
 
-      // If userId is not provided, use the current user's ID
-      if (!userId && req.session.userId) {
-        userId = req.session.userId;
-      } else if (!userId) {
-        return res.status(401).json({
-          message: "User ID is required or user must be authenticated",
+      if (!userId || !clientId) {
+        return res.status(400).json({
+          message: "Both userId and clientId are required",
         });
+      }
+
+      if (!req.session?.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "Current user not found" });
+      }
+
+      // ADMIN: Verify they can access this client
+      if (currentUser.role === UserRole.ADMIN) {
+        const hasAccess = await canAdminAccessClient(currentUser.id, clientId);
+        if (!hasAccess) {
+          return res.status(403).json({
+            message: "You can only assign users to your assigned clients",
+          });
+        }
       }
 
       // Check if this relationship already exists to prevent duplicates
@@ -629,12 +675,31 @@ export function registerUserRoutes(app: Express) {
   // Get users for a specific client
   app.get(
     "/api/clients/:clientId/users",
+    requireAdmin,
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;
         if (!clientId) {
           return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        if (!req.session?.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+        const currentUser = await storage.getUser(req.session.userId);
+        if (!currentUser) {
+          return res.status(404).json({ message: "Current user not found" });
+        }
+
+        // ADMIN: Verify they can access this client
+        if (currentUser.role === UserRole.ADMIN) {
+          const hasAccess = await canAdminAccessClient(currentUser.id, clientId);
+          if (!hasAccess) {
+            return res.status(403).json({
+              message: "You can only view users in your assigned clients",
+            });
+          }
         }
 
         // Query all users who have this client assigned

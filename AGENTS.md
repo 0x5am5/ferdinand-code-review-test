@@ -111,6 +111,12 @@ The application uses feature toggles stored in the database (`clients.featureTog
 - Role-based permissions control feature access
 - Users can be associated with multiple clients
 
+### Asset Systems
+Ferdinand has two complementary asset systems - **never confuse them**:
+- **Brand Assets** (`/api/brand-assets`, `/api/clients/:clientId/brand-assets`): Design system elements (logos, fonts, colors, typography) stored in PostgreSQL with automatic format conversion and dark variant support
+- **File Assets** (`/api/assets`, `/api/clients/:clientId/assets`): General file storage (documents, images, videos) with external backends, search, categories, tags, and public sharing
+- See `docs/ASSET-SYSTEMS.md` for detailed comparison and use case guidelines
+
 ## User Preferences
 
 ```

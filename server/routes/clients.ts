@@ -6,6 +6,8 @@ import {
 import type { Express } from "express";
 import { mutationRateLimit } from "../middlewares/rate-limit";
 import { csrfProtection } from "../middlewares/security-headers";
+import { requireSuperAdminRole } from "../middlewares/requireSuperAdminRole";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { storage } from "../storage";
 
 export function registerClientRoutes(app: Express) {
@@ -47,14 +49,39 @@ export function registerClientRoutes(app: Express) {
 
   app.get("/api/clients/:id", async (req, res) => {
     try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       const client = await storage.getClient(id);
       if (!client) {
         return res.status(404).json({ message: "Client not found" });
       }
+
+      // Super admins can view any client
+      if (user.role === UserRole.SUPER_ADMIN) {
+        res.json(client);
+        return;
+      }
+
+      // For other users, verify they're assigned to this client
+      const userClients = await storage.getUserClients(user.id);
+      const hasAccess = userClients.some((uc) => uc.id === id);
+
+      if (!hasAccess) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       res.json(client);
     } catch (error: unknown) {
       console.error(
@@ -65,7 +92,11 @@ export function registerClientRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/clients/:id", csrfProtection, async (req, res) => {
+  app.delete(
+    "/api/clients/:id",
+    csrfProtection,
+    requireSuperAdminRole,
+    async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -91,6 +122,7 @@ export function registerClientRoutes(app: Express) {
     "/api/clients",
     csrfProtection,
     mutationRateLimit,
+    requireSuperAdminRole,
     async (req, res) => {
       try {
         if (!req.session.userId) {
@@ -122,7 +154,11 @@ export function registerClientRoutes(app: Express) {
   );
 
   // Add new route for updating client order
-  app.patch("/api/clients/order", csrfProtection, async (req, res) => {
+  app.patch(
+    "/api/clients/order",
+    csrfProtection,
+    requireSuperAdminRole,
+    async (req, res) => {
     try {
       const { clientOrders } = updateClientOrderSchema.parse(req.body);
       // Update each client's display order
@@ -142,7 +178,11 @@ export function registerClientRoutes(app: Express) {
   });
 
   // Update client information
-  app.patch("/api/clients/:id", csrfProtection, async (req, res) => {
+  app.patch(
+    "/api/clients/:id",
+    csrfProtection,
+    requireMinimumRole(UserRole.EDITOR),
+    async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {

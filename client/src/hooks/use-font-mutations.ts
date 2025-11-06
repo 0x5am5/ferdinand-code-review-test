@@ -13,7 +13,7 @@ export function useFontMutations(clientId: number | null) {
         throw new Error("Client ID is required");
       }
 
-      const response = await fetch(`/api/clients/${clientId}/assets`, {
+      const response = await fetch(`/api/clients/${clientId}/brand-assets`, {
         method: "POST",
         body: data,
         credentials: "include",
@@ -37,7 +37,7 @@ export function useFontMutations(clientId: number | null) {
       if (clientId) {
         queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
         queryClient.invalidateQueries({
-          queryKey: [`/api/clients/${clientId}/assets`],
+          queryKey: [`/api/clients/${clientId}/brand-assets`],
         });
       }
       toast({
@@ -82,7 +82,7 @@ export function useFontMutations(clientId: number | null) {
       }
       const response = await apiRequest(
         "PATCH",
-        `/api/clients/${clientId}/assets/${id}`,
+        `/api/clients/${clientId}/brand-assets/${id}`,
         data
       );
       return response.json();
@@ -91,7 +91,7 @@ export function useFontMutations(clientId: number | null) {
       if (clientId) {
         queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
         queryClient.invalidateQueries({
-          queryKey: [`/api/clients/${clientId}/assets`],
+          queryKey: [`/api/clients/${clientId}/brand-assets`],
         });
       }
       toast({
@@ -116,7 +116,7 @@ export function useFontMutations(clientId: number | null) {
       }
       const response = await apiRequest(
         "DELETE",
-        `/api/clients/${clientId}/assets/${fontId}`
+        `/api/clients/${clientId}/brand-assets/${fontId}`
       );
       return response.json();
     },
@@ -124,7 +124,7 @@ export function useFontMutations(clientId: number | null) {
       if (clientId) {
         queryClient.invalidateQueries({ queryKey: ["/api/clients", clientId] });
         queryClient.invalidateQueries({
-          queryKey: [`/api/clients/${clientId}/assets`],
+          queryKey: [`/api/clients/${clientId}/brand-assets`],
         });
       }
       toast({

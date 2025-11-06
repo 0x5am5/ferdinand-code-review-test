@@ -1,3 +1,27 @@
+/**
+ * BRAND ASSETS ROUTES
+ *
+ * This file handles design system assets: logos, colors, and fonts.
+ *
+ * KEY ARCHITECTURE DISTINCTION:
+ * - Brand Assets: Design system elements stored in `brand_assets` table (base64 in DB)
+ * - File Assets: General file storage in `assets` table (external storage via S3/local)
+ *
+ * ROUTING STRUCTURE:
+ * - CRUD Operations: /api/clients/:clientId/brand-assets
+ * - Asset Serving: /api/assets/:assetId/file (IMPORTANT: serves brand assets despite URL pattern)
+ *
+ * CRITICAL CROSSOVER:
+ * The `/api/assets/:assetId/file` endpoint in this file serves BRAND ASSETS (not file assets).
+ * This endpoint provides:
+ * - Format conversion (SVG → PNG, JPG, PDF, AI)
+ * - Dark/light variant switching
+ * - Dynamic resizing
+ * - Caching for performance
+ *
+ * File assets use `/api/assets/:assetId/download` for direct downloads (no conversion).
+ */
+
 import {
   type BrandAsset,
   brandAssets,
@@ -170,7 +194,7 @@ async function updateClientLogosFromAssets() {
       }
 
       if (selectedAsset) {
-        const logoUrl = `/api/clients/${client.id}/assets/${selectedAsset.id}/download`;
+        const logoUrl = `/api/clients/${client.id}/brand-assets/${selectedAsset.id}/download`;
         await storage.updateClient(client.id, { logo: logoUrl });
         console.log(
           `Updated client ${client.id} (${client.name}) logo to: ${logoUrl}`
@@ -183,7 +207,16 @@ async function updateClientLogosFromAssets() {
   }
 }
 
-export function registerAssetRoutes(app: Express) {
+/**
+ * Brand Assets Routes
+ *
+ * This module handles design system assets: logos, fonts, colors, and typography.
+ * These are stored directly in the database (base64 encoded) and support format conversion.
+ *
+ * This is distinct from the File Assets system (/server/routes/file-assets.ts) which handles
+ * general file storage with external storage backends.
+ */
+export function registerBrandAssetRoutes(app: Express) {
   // Utility endpoint to fix logo type data
   app.post("/api/utils/fix-logo-types", async (req, res) => {
     try {
@@ -466,9 +499,9 @@ export function registerAssetRoutes(app: Express) {
     }
   });
 
-  // Handle both file uploads and other assets
+  // Handle both file uploads and other brand assets
   app.post(
-    "/api/clients/:clientId/assets",
+    "/api/clients/:clientId/brand-assets",
     upload.any(),
     validateClientId,
     requireAuth,
@@ -498,8 +531,16 @@ export function registerAssetRoutes(app: Express) {
             .json({ message: "Guests cannot create assets" });
         }
 
+        // Log user attempting upload
+        console.log(
+          `[Asset Upload] User ${userId} (role: ${user.role}) attempting upload to client ${clientId}`
+        );
+
         // Verify user has access to this client (unless super admin)
         if (user.role !== "super_admin") {
+          console.log(
+            `[Asset Upload] Checking client access for non-super-admin user ${userId}`
+          );
           const userClient = await db
             .select()
             .from(userClients)
@@ -511,10 +552,20 @@ export function registerAssetRoutes(app: Express) {
             );
 
           if (userClient.length === 0) {
+            console.log(
+              `[Asset Upload] User ${userId} denied: not authorized for client ${clientId}`
+            );
             return res
               .status(403)
               .json({ message: "Not authorized for this client" });
           }
+          console.log(
+            `[Asset Upload] User ${userId} authorized for client ${clientId}`
+          );
+        } else {
+          console.log(
+            `[Asset Upload] Super admin ${userId} bypassing client access check for client ${clientId}`
+          );
         }
 
         const { category } = req.body;
@@ -868,9 +919,9 @@ export function registerAssetRoutes(app: Express) {
     }
   );
 
-  // Update asset endpoint
+  // Update brand asset endpoint
   app.patch(
-    "/api/clients/:clientId/assets/:assetId",
+    "/api/clients/:clientId/brand-assets/:assetId",
     upload.any(),
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
@@ -1147,7 +1198,7 @@ export function registerAssetRoutes(app: Express) {
               (assetData as Record<string, unknown>)?.type;
 
             if (logoType === "square" || logoType === "favicon") {
-              const logoUrl = `/api/clients/${clientId}/assets/${asset.id}/download`;
+              const logoUrl = `/api/clients/${clientId}/brand-assets/${asset.id}/download`;
               await storage.updateClient(clientId, { logo: logoUrl });
               console.log(
                 `Updated client ${clientId} logo to: ${logoUrl} (via update)`
@@ -1175,16 +1226,24 @@ export function registerAssetRoutes(app: Express) {
     }
   );
 
-  // Delete asset endpoint
+  // Delete brand asset endpoint
   app.delete(
-    "/api/clients/:clientId/assets/:assetId",
+    "/api/clients/:clientId/brand-assets/:assetId",
     validateClientId,
+    requireAuth,
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
+        const userId = req.session?.userId;
+
         if (!clientId) {
           return res.status(400).json({ message: "Client ID is required" });
         }
+
+        if (!userId) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
         const assetId = parseInt(req.params.assetId, 10);
         const variant = req.query.variant as string;
 
@@ -1198,6 +1257,42 @@ export function registerAssetRoutes(app: Express) {
           return res
             .status(403)
             .json({ message: "Not authorized to delete this asset" });
+        }
+
+        // Check user has permission to delete (unless super admin)
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        console.log(
+          `[Asset Delete] User ${userId} (role: ${user.role}) attempting delete for asset ${assetId} in client ${clientId}`
+        );
+
+        // Verify user has access to this client (unless super admin)
+        if (user.role !== "super_admin") {
+          const userClient = await db
+            .select()
+            .from(userClients)
+            .where(
+              and(
+                eq(userClients.clientId, clientId),
+                eq(userClients.userId, userId)
+              )
+            );
+
+          if (userClient.length === 0) {
+            console.log(
+              `[Asset Delete] User ${userId} denied: not authorized for client ${clientId}`
+            );
+            return res
+              .status(403)
+              .json({ message: "Not authorized for this client" });
+          }
+        } else {
+          console.log(
+            `[Asset Delete] Super admin ${userId} bypassing client access check for client ${clientId}`
+          );
         }
 
         if (variant === "dark" && asset.category === "logo") {
@@ -1308,34 +1403,14 @@ export function registerAssetRoutes(app: Express) {
         );
 
         if (!permission.allowed) {
-          // Log detailed info for debugging on server side only
-          console.error("Asset deletion permission denied", {
-            userId,
-            assetId,
-            clientId: asset.clientId,
-            reason: permission.reason,
-          });
-
-          // Send minimal info to client
           return res.status(403).json({
-            message: "Not authorized to delete this asset",
+            message: permission.reason || "Not authorized to delete this asset",
           });
         }
 
-        // Delete from the appropriate table
-        const isBrandAsset = "category" in asset; // Brand assets have a category field
-
-        if (isBrandAsset) {
-          // Delete from brandAssets
-          await storage.deleteAsset(assetId);
-          await storage.touchClient(asset.clientId);
-        } else {
-          // Soft delete from file assets
-          await db
-            .update(fileAssets)
-            .set({ deletedAt: new Date() })
-            .where(eq(fileAssets.id, assetId));
-        }
+        // Delete the asset
+        await storage.deleteAsset(assetId);
+        await storage.touchClient(asset.clientId);
 
         res.status(200).json({ message: "Asset deleted successfully" });
       } catch (error: unknown) {
@@ -1349,7 +1424,7 @@ export function registerAssetRoutes(app: Express) {
   );
 
   app.get(
-    "/api/clients/:clientId/assets",
+    "/api/clients/:clientId/brand-assets",
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
       try {
@@ -1361,10 +1436,10 @@ export function registerAssetRoutes(app: Express) {
         res.json(assets);
       } catch (error: unknown) {
         console.error(
-          "Error fetching client assets:",
+          "Error fetching client brand assets:",
           error instanceof Error ? error.message : "Unknown error"
         );
-        res.status(500).json({ message: "Error fetching client assets" });
+        res.status(500).json({ message: "Error fetching client brand assets" });
       }
     }
   );

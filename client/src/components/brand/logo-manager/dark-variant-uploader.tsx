@@ -69,7 +69,7 @@ export function DarkVariantUploader({
       );
 
       const response = await fetch(
-        `/api/clients/${clientId}/assets/${logo.id}?variant=dark`,
+        `/api/clients/${clientId}/brand-assets/${logo.id}?variant=dark`,
         {
           method: "PATCH",
           body: formData,
@@ -82,7 +82,7 @@ export function DarkVariantUploader({
 
       parsedData.hasDarkVariant = true;
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
       queryClient.invalidateQueries({
         queryKey: [`/api/assets/${logo.id}`],
@@ -169,7 +169,7 @@ export function DarkVariantUploader({
 
       console.log("Converting light SVG logo to white for dark variant");
       const response = await fetch(
-        `/api/clients/${clientId}/assets/${logo.id}?variant=dark`,
+        `/api/clients/${clientId}/brand-assets/${logo.id}?variant=dark`,
         {
           method: "PATCH",
           body: formData,
@@ -182,7 +182,7 @@ export function DarkVariantUploader({
 
       parsedData.hasDarkVariant = true;
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
       queryClient.invalidateQueries({
         queryKey: [`/api/assets/${logo.id}`],
@@ -280,7 +280,7 @@ export function DarkVariantUploader({
             onSuccess={() => {
               parsedData.hasDarkVariant = true;
               queryClient.invalidateQueries({
-                queryKey: [`/api/clients/${clientId}/assets`],
+                queryKey: [`/api/clients/${clientId}/brand-assets`],
               });
               queryClient.invalidateQueries({
                 queryKey: [`/api/assets/${logo.id}`],

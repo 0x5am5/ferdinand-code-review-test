@@ -21,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -42,12 +43,14 @@ interface FilePreview {
 }
 
 interface AssetUploadProps {
+  clientId: number;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   initialFiles?: File[];
 }
 
 export const AssetUpload: FC<AssetUploadProps> = ({
+  clientId,
   open: controlledOpen,
   onOpenChange,
   initialFiles = [],
@@ -67,6 +70,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
   const { data: categories = [] } = useAssetCategoriesQuery();
   const { data: tags = [] } = useAssetTagsQuery();
   const uploadMutation = useUploadAssetMutation();
+  const { toast } = useToast();
 
   // Handle initial files when dialog opens
   useEffect(() => {
@@ -193,19 +197,45 @@ export const AssetUpload: FC<AssetUploadProps> = ({
 
     const allTags = Array.from(new Set([...selectedTags, ...manualTags]));
 
-    for (const { file } of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("visibility", visibility);
-      if (selectedCategories.length > 0) {
-        formData.append("categoryIds", JSON.stringify(selectedCategories));
-      }
-      if (allTags.length > 0) {
-        formData.append("tags", JSON.stringify(allTags));
-      }
+    const failedUploads: string[] = [];
+    let successCount = 0;
 
-      await uploadMutation.mutateAsync(formData);
-      setUploadProgress((prev) => Math.min(prev + progressIncrement, 100));
+    for (const { file } of files) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("clientId", clientId.toString());
+        formData.append("visibility", visibility);
+        if (selectedCategories.length > 0) {
+          formData.append("categoryIds", JSON.stringify(selectedCategories));
+        }
+        if (allTags.length > 0) {
+          formData.append("tags", JSON.stringify(allTags));
+        }
+
+        await uploadMutation.mutateAsync(formData);
+        successCount++;
+        setUploadProgress((prev) => Math.min(prev + progressIncrement, 100));
+      } catch (error) {
+        console.error(`Failed to upload ${file.name}:`, error);
+        failedUploads.push(file.name);
+        // Still increment progress for failed files
+        setUploadProgress((prev) => Math.min(prev + progressIncrement, 100));
+      }
+    }
+
+    // Show results
+    if (failedUploads.length > 0) {
+      toast({
+        title: "Upload completed with errors",
+        description: `Successfully uploaded ${successCount} of ${files.length} files. Failed: ${failedUploads.join(", ")}`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Upload successful",
+        description: `Successfully uploaded ${successCount} file${successCount !== 1 ? "s" : ""}`,
+      });
     }
 
     // Cleanup
@@ -219,7 +249,11 @@ export const AssetUpload: FC<AssetUploadProps> = ({
     setTagInput("");
     setUploadProgress(0);
     setVisibility("shared");
-    setOpen(false);
+
+    // Only close if all uploads succeeded
+    if (failedUploads.length === 0) {
+      setOpen(false);
+    }
   };
 
   const handleClose = () => {
