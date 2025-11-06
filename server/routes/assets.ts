@@ -1268,8 +1268,20 @@ export function registerAssetRoutes(app: Express) {
         return res.status(400).json({ message: "Invalid asset ID" });
       }
 
-      // Get the asset to find its clientId
-      const asset = await storage.getAsset(assetId);
+      // First try to get from brandAssets, then from fileAssets
+      let asset = await storage.getAsset(assetId);
+
+      if (!asset) {
+        // Try to get from file assets table
+        const [fileAsset] = await db
+          .select()
+          .from(fileAssets)
+          .where(and(eq(fileAssets.id, assetId), isNull(fileAssets.deletedAt)));
+
+        if (fileAsset) {
+          asset = fileAsset as any;
+        }
+      }
 
       if (!asset) {
         return res.status(404).json({ message: "Asset not found" });
@@ -1287,9 +1299,20 @@ export function registerAssetRoutes(app: Express) {
         return res.status(403).json({ message: permission.reason || "Not authorized to delete this asset" });
       }
 
-      // Delete the asset
-      await storage.deleteAsset(assetId);
-      await storage.touchClient(asset.clientId);
+      // Delete from the appropriate table
+      const isBrandAsset = 'category' in asset; // Brand assets have a category field
+
+      if (isBrandAsset) {
+        // Delete from brandAssets
+        await storage.deleteAsset(assetId);
+        await storage.touchClient(asset.clientId);
+      } else {
+        // Soft delete from file assets
+        await db
+          .update(fileAssets)
+          .set({ deletedAt: new Date() })
+          .where(eq(fileAssets.id, assetId));
+      }
 
       res.status(200).json({ message: "Asset deleted successfully" });
     } catch (error: unknown) {
