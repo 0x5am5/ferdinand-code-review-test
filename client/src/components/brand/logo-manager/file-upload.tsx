@@ -73,7 +73,7 @@ export function FileUpload({
         );
 
         const response = await fetch(
-          `/api/clients/${clientId}/assets/${parentLogoId}?variant=dark`,
+          `/api/clients/${clientId}/brand-assets/${parentLogoId}?variant=dark`,
           {
             method: "PATCH",
             body: formData,
@@ -96,7 +96,7 @@ export function FileUpload({
           })
         );
 
-        const response = await fetch(`/api/clients/${clientId}/assets`, {
+        const response = await fetch(`/api/clients/${clientId}/brand-assets`, {
           method: "POST",
           body: formData,
         });
@@ -111,7 +111,7 @@ export function FileUpload({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
       toast({
         title: "Success",

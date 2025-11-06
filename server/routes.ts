@@ -1,7 +1,7 @@
 import type { Express, Request } from "express";
 import type { OAuth2Client } from "google-auth-library";
 import { registerApiTokenRoutes } from "./routes/api-tokens";
-import { registerAssetRoutes } from "./routes/assets";
+import { registerBrandAssetRoutes } from "./routes/brand-assets";
 import { registerAuthRoutes } from "./routes/auth";
 import { registerClientRoutes } from "./routes/clients";
 import { registerDesignSystemRoutes } from "./routes/design-system";
@@ -87,12 +87,13 @@ export function registerRoutes(app: Express) {
   registerAuthRoutes(app);
   registerUserRoutes(app);
   registerClientRoutes(app);
-  // Register file asset routes BEFORE old asset routes to avoid path conflicts
-  // The new file assets system uses /api/assets/* while old system uses /api/clients/:clientId/assets/*
+  // Register file asset routes BEFORE brand asset routes to avoid path conflicts
+  // File assets system uses /api/assets/* and /api/clients/:clientId/assets (file storage)
+  // Brand assets system uses /api/brand-assets/* and /api/clients/:clientId/brand-assets (design system)
   registerFileAssetRoutes(app);
   registerFileAssetCategoryRoutes(app);
   registerFileAssetTagRoutes(app);
-  registerAssetRoutes(app);
+  registerBrandAssetRoutes(app);
   registerInvitationRoutes(app);
   registerDesignSystemRoutes(app);
   registerPersonasRoutes(app);

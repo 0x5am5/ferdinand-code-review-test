@@ -150,7 +150,7 @@ function ColorCard({
       data: ColorAssetData;
     }) => {
       const response = await fetch(
-        `/api/clients/${clientId}/assets/${data.id}`,
+        `/api/clients/${clientId}/brand-assets/${data.id}`,
         {
           method: "PATCH",
           headers: {
@@ -174,17 +174,17 @@ function ColorCard({
     onMutate: async (newData) => {
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
 
       // Snapshot the previous value
       const previousAssets = queryClient.getQueryData([
-        `/api/clients/${clientId}/assets`,
+        `/api/clients/${clientId}/brand-assets`,
       ]);
 
       // Optimistically update the cache
       queryClient.setQueryData(
-        [`/api/clients/${clientId}/assets`],
+        [`/api/clients/${clientId}/brand-assets`],
         (old: BrandAsset[] | undefined) => {
           if (!old) return old;
 
@@ -207,7 +207,7 @@ function ColorCard({
     onError: (err, _newData, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(
-        [`/api/clients/${clientId}/assets`],
+        [`/api/clients/${clientId}/brand-assets`],
         context?.previousAssets
       );
 
@@ -226,7 +226,7 @@ function ColorCard({
     onSettled: () => {
       // Always refetch after error or success to ensure we have the latest data
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
     },
   });
@@ -1614,7 +1614,7 @@ export function ColorManager({
       };
 
       const response = await fetch(
-        `/api/clients/${clientId}/assets${editingColor?.id ? `/${editingColor.id}` : ""}`,
+        `/api/clients/${clientId}/brand-assets${editingColor?.id ? `/${editingColor.id}` : ""}`,
         {
           method: editingColor ? "PATCH" : "POST",
           headers: {
@@ -1633,7 +1633,7 @@ export function ColorManager({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
       toast({
         title: "Success",
@@ -1657,7 +1657,7 @@ export function ColorManager({
   const deleteColor = useMutation({
     mutationFn: async (colorId: number) => {
       const response = await fetch(
-        `/api/clients/${clientId}/assets/${colorId}`,
+        `/api/clients/${clientId}/brand-assets/${colorId}`,
         {
           method: "DELETE",
         }
@@ -1670,7 +1670,7 @@ export function ColorManager({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
       toast({
         title: "Success",
@@ -1694,7 +1694,7 @@ export function ColorManager({
       data: ColorAssetData;
     }) => {
       const response = await fetch(
-        `/api/clients/${clientId}/assets/${data.id}`,
+        `/api/clients/${clientId}/brand-assets/${data.id}`,
         {
           method: "PATCH",
           headers: {
@@ -1718,17 +1718,17 @@ export function ColorManager({
     onMutate: async (newData) => {
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
 
       // Snapshot the previous value
       const previousAssets = queryClient.getQueryData([
-        `/api/clients/${clientId}/assets`,
+        `/api/clients/${clientId}/brand-assets`,
       ]);
 
       // Optimistically update the cache
       queryClient.setQueryData(
-        [`/api/clients/${clientId}/assets`],
+        [`/api/clients/${clientId}/brand-assets`],
         (old: BrandAsset[] | undefined) => {
           if (!old) return old;
 
@@ -1751,7 +1751,7 @@ export function ColorManager({
     onError: (err, _newData, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       queryClient.setQueryData(
-        [`/api/clients/${clientId}/assets`],
+        [`/api/clients/${clientId}/brand-assets`],
         context?.previousAssets
       );
 
@@ -1764,7 +1764,7 @@ export function ColorManager({
     onSettled: () => {
       // Always refetch after error or success to ensure we have the latest data
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
     },
   });
@@ -1931,7 +1931,7 @@ export function ColorManager({
     manualColors.forEach((color) => {
       if (color.name !== "Base grey" && color.id) {
         // Update the existing color to "Base grey"
-        fetch(`/api/clients/${clientId}/assets/${color.id}`, {
+        fetch(`/api/clients/${clientId}/brand-assets/${color.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1965,7 +1965,7 @@ export function ColorManager({
           }),
         }).then(() => {
           queryClient.invalidateQueries({
-            queryKey: [`/api/clients/${clientId}/assets`],
+            queryKey: [`/api/clients/${clientId}/brand-assets`],
           });
         });
       }

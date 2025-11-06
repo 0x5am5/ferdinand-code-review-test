@@ -76,7 +76,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       variant: "light" | "dark";
     }) => {
       const response = await fetch(
-        `/api/clients/${clientId}/assets/${logoId}${variant === "dark" ? "?variant=dark" : ""}`,
+        `/api/clients/${clientId}/brand-assets/${logoId}${variant === "dark" ? "?variant=dark" : ""}`,
         {
           method: "DELETE",
         }
@@ -89,7 +89,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
       toast({
         title: "Success",

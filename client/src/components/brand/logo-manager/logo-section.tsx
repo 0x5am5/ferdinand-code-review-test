@@ -105,8 +105,8 @@ export function LogoSection({
 
       const endpoint =
         variant === "dark"
-          ? `/api/clients/${clientId}/assets/${logo.id}?variant=dark`
-          : `/api/clients/${clientId}/assets/${logo.id}`;
+          ? `/api/clients/${clientId}/brand-assets/${logo.id}?variant=dark`
+          : `/api/clients/${clientId}/brand-assets/${logo.id}`;
 
       const response = await fetch(endpoint, {
         method: "PATCH",
@@ -118,7 +118,7 @@ export function LogoSection({
       }
 
       queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/assets`],
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
       queryClient.invalidateQueries({
         queryKey: [`/api/assets/${logo.id}`],
