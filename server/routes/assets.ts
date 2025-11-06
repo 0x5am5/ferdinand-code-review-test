@@ -14,14 +14,14 @@ import {
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
 import multer from "multer";
-import { validateClientId } from "server/middlewares/vaildateClientId";
 import { requireAuth } from "server/middlewares/auth";
+import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
+import { mutationRateLimit } from "../middlewares/rate-limit";
+import { checkAssetPermission } from "../services/asset-permissions";
 import { storage } from "../storage";
 import { convertToAllFormats } from "../utils/file-converter";
-import { checkAssetPermission } from "../services/asset-permissions";
-import { mutationRateLimit } from "../middlewares/rate-limit";
 
 const upload = multer({ preservePath: true });
 
@@ -493,7 +493,9 @@ export function registerAssetRoutes(app: Express) {
 
         // Guest users cannot create assets
         if (user.role === "guest") {
-          return res.status(403).json({ message: "Guests cannot create assets" });
+          return res
+            .status(403)
+            .json({ message: "Guests cannot create assets" });
         }
 
         // Verify user has access to this client (unless super admin)
@@ -1178,6 +1180,7 @@ export function registerAssetRoutes(app: Express) {
     "/api/clients/:clientId/assets/:assetId",
     validateClientId,
     async (req: RequestWithClientId, res: Response) => {
+      console.log("DELETE /api/clients/:clientId/assets/:assetId");
       try {
         const clientId = req.clientId;
         if (!clientId) {
@@ -1256,86 +1259,94 @@ export function registerAssetRoutes(app: Express) {
   );
 
   // Delete asset endpoint (simplified path without clientId)
-  app.delete("/api/assets/:id", requireAuth, mutationRateLimit, async (req: Request, res: Response) => {
-    try {
-      const assetId = parseInt(req.params.id, 10);
-      const userId = req.session?.userId;
+  app.delete(
+    "/api/assets/:id",
+    requireAuth,
+    mutationRateLimit,
+    async (req: Request, res: Response) => {
+      try {
+        const assetId = parseInt(req.params.id, 10);
+        const userId = req.session?.userId;
 
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      if (Number.isNaN(assetId)) {
-        return res.status(400).json({ message: "Invalid asset ID" });
-      }
-
-      // First try to get from brandAssets, then from fileAssets
-      type AssetUnion = BrandAsset | typeof fileAssets.$inferSelect;
-      let asset: AssetUnion | null = (await storage.getAsset(assetId)) ?? null;
-
-      if (!asset) {
-        // Try to get from file assets table
-        const [fileAsset] = await db
-          .select()
-          .from(fileAssets)
-          .where(and(eq(fileAssets.id, assetId), isNull(fileAssets.deletedAt)));
-
-        if (fileAsset) {
-          asset = fileAsset;
+        if (!userId) {
+          return res.status(401).json({ message: "Authentication required" });
         }
-      }
 
-      if (!asset) {
-        return res.status(404).json({ message: "Asset not found" });
-      }
+        if (Number.isNaN(assetId)) {
+          return res.status(400).json({ message: "Invalid asset ID" });
+        }
 
-      // Check if user has permission to delete this asset
-      const permission = await checkAssetPermission(
-        userId,
-        assetId,
-        asset.clientId,
-        "delete"
-      );
+        // First try to get from brandAssets, then from fileAssets
+        type AssetUnion = BrandAsset | typeof fileAssets.$inferSelect;
+        let asset: AssetUnion | null =
+          (await storage.getAsset(assetId)) ?? null;
 
-      if (!permission.allowed) {
-        // Log detailed info for debugging on server side only
-        console.error("Asset deletion permission denied", {
+        if (!asset) {
+          // Try to get from file assets table
+          const [fileAsset] = await db
+            .select()
+            .from(fileAssets)
+            .where(
+              and(eq(fileAssets.id, assetId), isNull(fileAssets.deletedAt))
+            );
+
+          if (fileAsset) {
+            asset = fileAsset;
+          }
+        }
+
+        if (!asset) {
+          return res.status(404).json({ message: "Asset not found" });
+        }
+
+        // Check if user has permission to delete this asset
+        const permission = await checkAssetPermission(
           userId,
           assetId,
-          clientId: asset.clientId,
-          reason: permission.reason
-        });
+          asset.clientId,
+          "delete"
+        );
 
-        // Send minimal info to client
-        return res.status(403).json({
-          message: "Not authorized to delete this asset"
-        });
+        if (!permission.allowed) {
+          // Log detailed info for debugging on server side only
+          console.error("Asset deletion permission denied", {
+            userId,
+            assetId,
+            clientId: asset.clientId,
+            reason: permission.reason,
+          });
+
+          // Send minimal info to client
+          return res.status(403).json({
+            message: "Not authorized to delete this asset",
+          });
+        }
+
+        // Delete from the appropriate table
+        const isBrandAsset = "category" in asset; // Brand assets have a category field
+
+        if (isBrandAsset) {
+          // Delete from brandAssets
+          await storage.deleteAsset(assetId);
+          await storage.touchClient(asset.clientId);
+        } else {
+          // Soft delete from file assets
+          await db
+            .update(fileAssets)
+            .set({ deletedAt: new Date() })
+            .where(eq(fileAssets.id, assetId));
+        }
+
+        res.status(200).json({ message: "Asset deleted successfully" });
+      } catch (error: unknown) {
+        console.error(
+          "Error deleting asset:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error deleting asset" });
       }
-
-      // Delete from the appropriate table
-      const isBrandAsset = 'category' in asset; // Brand assets have a category field
-
-      if (isBrandAsset) {
-        // Delete from brandAssets
-        await storage.deleteAsset(assetId);
-        await storage.touchClient(asset.clientId);
-      } else {
-        // Soft delete from file assets
-        await db
-          .update(fileAssets)
-          .set({ deletedAt: new Date() })
-          .where(eq(fileAssets.id, assetId));
-      }
-
-      res.status(200).json({ message: "Asset deleted successfully" });
-    } catch (error: unknown) {
-      console.error(
-        "Error deleting asset:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error deleting asset" });
     }
-  });
+  );
 
   app.get(
     "/api/clients/:clientId/assets",
@@ -2139,9 +2150,7 @@ export function registerAssetRoutes(app: Express) {
         if (user.role === UserRole.SUPER_ADMIN) {
           // Super admins see all assets from all clients
           const { clients } = await import("@shared/schema");
-          const allClients = await db
-            .select({ id: clients.id })
-            .from(clients);
+          const allClients = await db.select({ id: clients.id }).from(clients);
           clientIds = allClients.map((c) => c.id);
         } else {
           // Regular users see only assets from their assigned clients
