@@ -377,7 +377,7 @@ export const AssetList: FC<AssetListProps> = ({
                 ) : asset.fileType?.startsWith("image/") ||
                   asset.fileType === "application/pdf" ? (
                   <img
-                    src={`/api/assets/${asset.id}/thumbnail/medium`}
+                    src={`/api/clients/${asset.clientId}/file-assets/${asset.id}/thumbnail/medium`}
                     alt={asset.originalFileName}
                     className="w-full h-full object-contain"
                   />
@@ -573,7 +573,7 @@ export const AssetList: FC<AssetListProps> = ({
                     {asset.fileType?.startsWith("image/") ||
                     asset.fileType === "application/pdf" ? (
                       <img
-                        src={`/api/assets/${asset.id}/thumbnail/small`}
+                        src={`/api/clients/${asset.clientId}/file-assets/${asset.id}/thumbnail/small`}
                         alt={asset.originalFileName}
                         className="h-10 w-10 object-contain rounded"
                       />
