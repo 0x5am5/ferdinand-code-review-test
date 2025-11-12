@@ -12,6 +12,7 @@ import { devAuthBypass } from "./middlewares/devAuth";
 import { securityHeaders } from "./middlewares/security-headers";
 import { runMigrations } from "./migrations";
 import { registerRoutes } from "./routes";
+import { findAvailablePort } from "./utils/port";
 import { log, serveStatic, setupVite } from "./vite";
 
 const app = express();
@@ -77,7 +78,7 @@ app.get("/api/health", (_req, res) => {
 EventEmitter.defaultMaxListeners = 20;
 
 // Port configuration: use PORT env var or default to 3001
-const PORT = parseInt(process.env.PORT ?? "3001", 10);
+const DEFAULT_PORT = parseInt(process.env.PORT ?? "3001", 10);
 
 // Improved server startup function
 async function startServer(retries = 3) {
@@ -99,6 +100,14 @@ async function startServer(retries = 3) {
       // Register API routes
       registerRoutes(app);
 
+      // Find an available port
+      const PORT = await findAvailablePort(DEFAULT_PORT);
+      if (PORT !== DEFAULT_PORT) {
+        console.log(
+          `Port ${DEFAULT_PORT} is occupied, using port ${PORT} instead`
+        );
+      }
+
       // Create the HTTP server
       if (process.env.NODE_ENV !== "production") {
         // For development, create server first then setup Vite
@@ -114,7 +123,7 @@ async function startServer(retries = 3) {
 
       // Simplified port logic for production vs development
       if (process.env.NODE_ENV === "production") {
-        // Production: Only use the specified port (5100 or PORT env var)
+        // Production: Use the found available port
         console.log(`Starting server on port ${PORT} for production`);
         await new Promise<void>((resolve, reject) => {
           server?.listen(PORT, "0.0.0.0", () => {
@@ -132,7 +141,7 @@ async function startServer(retries = 3) {
           });
         });
       } else {
-        // Development: Use a single fixed port
+        // Development: Use the found available port
         console.log(`Starting development server on port ${PORT}`);
         await new Promise<void>((resolve, reject) => {
           server?.listen(PORT, "localhost", () => {
