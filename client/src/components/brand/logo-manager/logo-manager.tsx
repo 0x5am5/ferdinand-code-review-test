@@ -39,8 +39,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const addHiddenSection = useAddHiddenSection(clientId);
   const removeHiddenSection = useRemoveHiddenSection(clientId);
 
-  const isAdmin =
-    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const canManageSections =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR;
 
   useEffect(() => {
     if (loadingHiddenSections) return;
@@ -172,7 +174,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             Manage and download the official logos for this brand
           </p>
         </div>
-        {isAdmin && availableSections.length > 0 && (
+        {canManageSections && availableSections.length > 0 && (
           <Button
             onClick={() => setShowAddSection(true)}
             variant="outline"
@@ -194,11 +196,11 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             deleteLogo.mutate({ logoId, variant })
           }
           queryClient={queryClient}
-          onRemoveSection={isAdmin ? handleRemoveSection : undefined}
+          onRemoveSection={canManageSections ? handleRemoveSection : undefined}
         />
       ))}
 
-      {isAdmin && (
+      {canManageSections && (
         <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
           <DialogContent>
             <DialogHeader>
