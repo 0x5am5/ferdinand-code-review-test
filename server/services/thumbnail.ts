@@ -121,7 +121,7 @@ export async function generateThumbnail(
     if (SUPPORTED_PDF_TYPES.includes(mimeType.toLowerCase())) {
       thumbnailBuffer = await generatePdfThumbnail(sourcePath, dimensions);
     } else {
-      // Handle image files with Sharp
+      // Handle raster image files with Sharp
       thumbnailBuffer = await sharp(sourcePath)
         .resize(dimensions.width, dimensions.height, {
           fit: "inside",
@@ -157,7 +157,7 @@ export async function getOrGenerateThumbnail(
   const storagePath = getThumbnailStoragePath(assetId, size);
 
   // Check if thumbnail already exists in storage
-  if (await thumbnailExists(assetId, size)) {
+  if (await fileExists(storagePath)) {
     return storagePath;
   }
 

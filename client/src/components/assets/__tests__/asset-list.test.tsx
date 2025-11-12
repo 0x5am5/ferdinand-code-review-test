@@ -217,7 +217,7 @@ describe("AssetList", () => {
 
       const images = screen.getAllByRole("img");
       const thumbnailImage = images.find((img) =>
-        img.getAttribute("src")?.includes("/api/assets/1/thumbnail")
+        img.getAttribute("src")?.includes("/api/clients/1/file-assets/1/thumbnail")
       );
 
       expect(thumbnailImage).toBeInTheDocument();

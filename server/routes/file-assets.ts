@@ -868,12 +868,9 @@ export function registerFileAssetRoutes(app: Express) {
         console.log(
           `[Asset Delete] User ${req.session.userId} denied: ${permission.reason || "No permission"}`
         );
-        return res
-          .status(403)
-          .json({
-            message:
-              permission.reason || "Not authorized to delete this asset",
-          });
+        return res.status(403).json({
+          message: permission.reason || "Not authorized to delete this asset",
+        });
       }
 
       console.log(
@@ -1001,7 +998,7 @@ export function registerFileAssetRoutes(app: Express) {
 
           // Delete thumbnails
           try {
-            await deleteThumbnails(asset.id);
+            await deleteThumbnails(asset.id, asset.fileType || undefined);
           } catch (error) {
             console.error(
               `Failed to delete thumbnails for asset ${asset.id}:`,
@@ -2025,6 +2022,22 @@ export function registerFileAssetRoutes(app: Express) {
         }
 
         const asset = permission.asset;
+
+        // For SVG files, serve them directly without thumbnail conversion
+        if (asset.fileType?.toLowerCase() === "image/svg+xml") {
+          const downloadResult = await downloadFile(asset.storagePath);
+
+          if (!downloadResult.success || !downloadResult.data) {
+            return res
+              .status(404)
+              .json({ message: downloadResult.error || "File not found" });
+          }
+
+          // Serve raw SVG with appropriate headers
+          res.setHeader("Content-Type", "image/svg+xml");
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          return res.send(downloadResult.data);
+        }
 
         // Check if we can generate a thumbnail for this file type
         if (!canGenerateThumbnail(asset.fileType || "")) {
