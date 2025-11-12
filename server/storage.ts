@@ -614,8 +614,10 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(hiddenSections)
       .where(
-        eq(hiddenSections.clientId, section.clientId) &&
+        and(
+          eq(hiddenSections.clientId, section.clientId),
           eq(hiddenSections.sectionType, section.sectionType)
+        )
       );
 
     if (existingSection) {
@@ -639,8 +641,10 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(hiddenSections)
       .where(
-        eq(hiddenSections.clientId, clientId) &&
+        and(
+          eq(hiddenSections.clientId, clientId),
           eq(hiddenSections.sectionType, sectionType)
+        )
       );
   }
 
