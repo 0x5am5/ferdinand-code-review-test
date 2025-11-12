@@ -157,3 +157,7 @@ run biome checks after each tasks to fix linting and coding errors
 don't create documentation unless specifically asked
 do not create new git branches
 ```
+
+## Task Master AI Instructions
+**Import Task Master's development workflow commands and guidelines, treat as if import is in the main CLAUDE.md file.**
+@./.taskmaster/CLAUDE.md

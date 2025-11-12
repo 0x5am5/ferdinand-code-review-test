@@ -902,7 +902,7 @@ export function registerFileAssetRoutes(app: Express) {
 
       // Delete any thumbnails for this asset
       try {
-        await deleteThumbnails(assetId, asset.fileType || undefined);
+        await deleteThumbnails(assetId);
       } catch (error) {
         console.error(
           `Failed to delete thumbnails for asset ${assetId}:`,
@@ -2077,11 +2077,7 @@ export function registerFileAssetRoutes(app: Express) {
           );
 
           // Download thumbnail from storage
-          const thumbnailBuffer = await downloadThumbnail(
-            assetId,
-            size,
-            asset.fileType || undefined
-          );
+          const thumbnailBuffer = await downloadThumbnail(assetId, size);
 
           res.setHeader("Content-Type", "image/jpeg");
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");

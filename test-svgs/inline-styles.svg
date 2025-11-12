@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
-  <style>
-    .box { fill: #667eea; stroke: #764ba2; stroke-width: 3; }
-    .label { font-family: Arial, sans-serif; font-size: 16px; fill: white; }
-  </style>
-  <rect class="box" x="25" y="25" width="100" height="100" rx="10"/>
-  <text class="label" x="75" y="80" text-anchor="middle">Styled</text>
-</svg>
