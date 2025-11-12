@@ -25,7 +25,6 @@ const SUPPORTED_IMAGE_TYPES = [
   "image/png",
   "image/gif",
   "image/webp",
-  // Note: image/svg+xml is NOT included - SVGs are served directly without thumbnail conversion
 ];
 
 const SUPPORTED_PDF_TYPES = ["application/pdf"];
@@ -42,7 +41,6 @@ export function canGenerateThumbnail(mimeType: string): boolean {
 
 /**
  * Get the storage path for a thumbnail (works for both local and R2)
- * Note: SVGs are served directly and do not use thumbnails
  */
 export function getThumbnailStoragePath(
   assetId: number,
@@ -102,7 +100,6 @@ async function generatePdfThumbnail(
 
 /**
  * Generate a thumbnail for an image file and upload to storage
- * Note: SVGs are served directly and do not use this function
  */
 export async function generateThumbnail(
   sourcePath: string,
@@ -150,7 +147,6 @@ export async function generateThumbnail(
 
 /**
  * Get or generate a thumbnail, returns the storage path
- * Note: SVGs are served directly and do not use this function
  */
 export async function getOrGenerateThumbnail(
   sourcePath: string,
@@ -171,7 +167,6 @@ export async function getOrGenerateThumbnail(
 
 /**
  * Download a thumbnail from storage
- * Note: SVGs are served directly and do not use thumbnails
  */
 export async function downloadThumbnail(
   assetId: number,
@@ -189,7 +184,6 @@ export async function downloadThumbnail(
 
 /**
  * Delete all thumbnails for an asset from storage
- * Note: SVGs are served directly and do not have thumbnails to delete
  */
 export async function deleteThumbnails(assetId: number): Promise<void> {
   const sizes: ThumbnailSize[] = ["small", "medium", "large"];

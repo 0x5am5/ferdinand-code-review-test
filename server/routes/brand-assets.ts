@@ -2315,23 +2315,6 @@ export function registerBrandAssetRoutes(app: Express) {
           getFileTypeIcon,
         } = await import("../services/thumbnail");
 
-        // For SVG files, serve them directly without thumbnail conversion
-        if (asset.fileType?.toLowerCase() === "image/svg+xml") {
-          const { downloadFile } = await import("../storage/index");
-          const downloadResult = await downloadFile(asset.storagePath);
-
-          if (!downloadResult.success || !downloadResult.data) {
-            return res
-              .status(404)
-              .json({ message: downloadResult.error || "File not found" });
-          }
-
-          // Serve raw SVG with appropriate headers
-          res.setHeader("Content-Type", "image/svg+xml");
-          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
-          return res.send(downloadResult.data);
-        }
-
         // Check if we can generate a thumbnail for this file type
         if (!canGenerateThumbnail(asset.fileType || "")) {
           // Return file type icon name instead
@@ -2376,11 +2359,7 @@ export function registerBrandAssetRoutes(app: Express) {
 
           // Download thumbnail from storage
           const { downloadThumbnail } = await import("../services/thumbnail");
-          const thumbnailBuffer = await downloadThumbnail(
-            assetId,
-            size,
-            asset.fileType || undefined
-          );
+          const thumbnailBuffer = await downloadThumbnail(assetId, size);
 
           res.setHeader("Content-Type", "image/jpeg");
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
