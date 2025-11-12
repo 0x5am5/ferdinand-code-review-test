@@ -379,7 +379,7 @@ export const AssetList: FC<AssetListProps> = ({
                   <img
                     src={`/api/assets/${asset.id}/thumbnail/medium`}
                     alt={asset.originalFileName}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   getFileTypeIcon(asset.fileType, false, "lg")
@@ -575,7 +575,7 @@ export const AssetList: FC<AssetListProps> = ({
                       <img
                         src={`/api/assets/${asset.id}/thumbnail/small`}
                         alt={asset.originalFileName}
-                        className="h-10 w-10 object-cover rounded"
+                        className="h-10 w-10 object-contain rounded"
                       />
                     ) : (
                       getFileTypeIcon(asset.fileType, asset.referenceOnly, "sm")

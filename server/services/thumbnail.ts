@@ -25,6 +25,7 @@ const SUPPORTED_IMAGE_TYPES = [
   "image/png",
   "image/gif",
   "image/webp",
+  "image/svg+xml",
 ];
 
 const SUPPORTED_PDF_TYPES = ["application/pdf"];
@@ -44,9 +45,12 @@ export function canGenerateThumbnail(mimeType: string): boolean {
  */
 export function getThumbnailStoragePath(
   assetId: number,
-  size: ThumbnailSize
+  size: ThumbnailSize,
+  mimeType?: string
 ): string {
-  return `thumbnails/${size}/${assetId}.jpg`;
+  // Use PNG for SVG thumbnails to preserve transparency
+  const extension = mimeType?.toLowerCase() === "image/svg+xml" ? "png" : "jpg";
+  return `thumbnails/${size}/${assetId}.${extension}`;
 }
 
 /**
@@ -111,7 +115,7 @@ export async function generateThumbnail(
     throw new Error(`Cannot generate thumbnail for type: ${mimeType}`);
   }
 
-  const storagePath = getThumbnailStoragePath(assetId, size);
+  const storagePath = getThumbnailStoragePath(assetId, size, mimeType);
   const dimensions = THUMBNAIL_SIZES[size];
 
   try {
@@ -120,8 +124,19 @@ export async function generateThumbnail(
     // Handle PDF files differently
     if (SUPPORTED_PDF_TYPES.includes(mimeType.toLowerCase())) {
       thumbnailBuffer = await generatePdfThumbnail(sourcePath, dimensions);
+    } else if (mimeType.toLowerCase() === "image/svg+xml") {
+      // Handle SVG files - Sharp can convert SVG to raster format
+      // Use higher density for better quality when rasterizing
+      thumbnailBuffer = await sharp(sourcePath, { density: 300 })
+        .resize(dimensions.width, dimensions.height, {
+          fit: "inside",
+          withoutEnlargement: false, // Allow enlargement for small SVGs
+          background: { r: 255, g: 255, b: 255, alpha: 0 }, // Transparent background
+        })
+        .png() // Use PNG to preserve transparency
+        .toBuffer();
     } else {
-      // Handle image files with Sharp
+      // Handle raster image files with Sharp
       thumbnailBuffer = await sharp(sourcePath)
         .resize(dimensions.width, dimensions.height, {
           fit: "inside",
@@ -154,10 +169,10 @@ export async function getOrGenerateThumbnail(
   size: ThumbnailSize,
   mimeType: string
 ): Promise<string> {
-  const storagePath = getThumbnailStoragePath(assetId, size);
+  const storagePath = getThumbnailStoragePath(assetId, size, mimeType);
 
   // Check if thumbnail already exists in storage
-  if (await thumbnailExists(assetId, size)) {
+  if (await fileExists(storagePath)) {
     return storagePath;
   }
 
@@ -170,9 +185,10 @@ export async function getOrGenerateThumbnail(
  */
 export async function downloadThumbnail(
   assetId: number,
-  size: ThumbnailSize
+  size: ThumbnailSize,
+  mimeType?: string
 ): Promise<Buffer> {
-  const storagePath = getThumbnailStoragePath(assetId, size);
+  const storagePath = getThumbnailStoragePath(assetId, size, mimeType);
   const result = await downloadFile(storagePath);
 
   if (!result.success || !result.data) {
@@ -185,16 +201,24 @@ export async function downloadThumbnail(
 /**
  * Delete all thumbnails for an asset from storage
  */
-export async function deleteThumbnails(assetId: number): Promise<void> {
+export async function deleteThumbnails(
+  assetId: number,
+  mimeType?: string
+): Promise<void> {
   const sizes: ThumbnailSize[] = ["small", "medium", "large"];
 
   await Promise.all(
     sizes.map(async (size) => {
-      const storagePath = getThumbnailStoragePath(assetId, size);
-      try {
-        await deleteFile(storagePath);
-      } catch {
-        // Ignore if file doesn't exist
+      // Try to delete both JPG and PNG versions (for migration/cleanup)
+      const extensions =
+        mimeType?.toLowerCase() === "image/svg+xml" ? ["png"] : ["jpg"];
+      for (const ext of extensions) {
+        const storagePath = `thumbnails/${size}/${assetId}.${ext}`;
+        try {
+          await deleteFile(storagePath);
+        } catch {
+          // Ignore if file doesn't exist
+        }
       }
     })
   );
