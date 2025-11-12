@@ -135,9 +135,9 @@ async function startServer(retries = 3) {
         // Development: Use a single fixed port
         console.log(`Starting development server on port ${PORT}`);
         await new Promise<void>((resolve, reject) => {
-          server?.listen(PORT, "0.0.0.0", () => {
+          server?.listen(PORT, "localhost", () => {
             console.log(`✓ Server started successfully on port ${PORT}`);
-            log(`Server listening at http://0.0.0.0:${PORT}`);
+            log(`Server listening at http://localhost:${PORT}`);
             resolve();
           });
 

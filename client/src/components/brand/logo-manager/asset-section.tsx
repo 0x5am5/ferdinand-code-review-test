@@ -26,15 +26,17 @@ export function AssetSection({
   children,
 }: AssetSectionProps) {
   const { user } = useAuth();
-  const isAdmin =
-    user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const canManageSections =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR;
 
   return (
     <div className="asset-section">
       <div className="asset-section__header">
         <div className="flex items-center justify-between w-full">
           <h3>{title}</h3>
-          {isAdmin && onRemoveSection && (
+          {canManageSections && onRemoveSection && (
             <Button
               variant="ghost"
               size="sm"

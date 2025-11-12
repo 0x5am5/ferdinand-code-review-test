@@ -19,11 +19,15 @@ const requireAdminRole = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Check if user is either admin or super_admin
-    if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
+    // Check if user is admin, super_admin, or editor
+    if (
+      user.role !== UserRole.ADMIN &&
+      user.role !== UserRole.SUPER_ADMIN &&
+      user.role !== UserRole.EDITOR
+    ) {
       return res
         .status(403)
-        .json({ message: "Forbidden - Admin role required" });
+        .json({ message: "Forbidden - Admin, Super Admin, or Editor role required" });
     }
 
     next();
