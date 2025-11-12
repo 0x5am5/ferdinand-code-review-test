@@ -998,7 +998,7 @@ export function registerFileAssetRoutes(app: Express) {
 
           // Delete thumbnails
           try {
-            await deleteThumbnails(asset.id, asset.fileType || undefined);
+            await deleteThumbnails(asset.id);
           } catch (error) {
             console.error(
               `Failed to delete thumbnails for asset ${asset.id}:`,

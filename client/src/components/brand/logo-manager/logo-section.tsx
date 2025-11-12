@@ -1,11 +1,14 @@
 import { PermissionAction, Resource } from "@shared/permissions";
 import type { BrandAsset } from "@shared/schema";
-import { FILE_FORMATS } from "@shared/schema";
+import { FILE_FORMATS, UserRole } from "@shared/schema";
 import type { QueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { FileType, Trash2, Upload } from "lucide-react";
 import { type DragEvent, useCallback, useState } from "react";
 import { PermissionGate } from "@/components/permission-gate";
+import { InlineEditable } from "@/components/ui/inline-editable";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { AssetDisplay } from "../asset-display";
 import { AssetSection } from "./asset-section";
@@ -34,9 +37,16 @@ export function LogoSection({
   onRemoveSection,
 }: LogoSectionProps) {
   const { toast } = useToast();
+  const { user = null } = useAuth();
   const hasLogos = logos.length > 0;
   const [isDarkVariantDragging, setIsDarkVariantDragging] = useState(false);
   const currentType = type;
+
+  // Check if user can edit descriptions
+  const canEditDescriptions =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR;
 
   const handleDarkVariantDragEnter = useCallback(
     (e: DragEvent<HTMLElement>) => {
@@ -176,6 +186,121 @@ export function LogoSection({
     }
   };
 
+  // Mutation for updating logo descriptions
+  const updateDescriptionMutation = useMutation({
+    mutationFn: async ({
+      assetId,
+      description,
+      darkVariantDescription,
+      variant,
+    }: {
+      assetId: number;
+      description?: string;
+      darkVariantDescription?: string;
+      variant: "light" | "dark";
+    }) => {
+      const response = await fetch(
+        `/api/clients/${clientId}/brand-assets/${assetId}/description`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            description,
+            darkVariantDescription,
+            variant,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update description");
+      }
+
+      return response.json();
+    },
+    onMutate: async ({
+      assetId,
+      description,
+      darkVariantDescription,
+      variant,
+    }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
+      });
+
+      // Snapshot the previous value
+      const previousAssets = queryClient.getQueryData([
+        `/api/clients/${clientId}/brand-assets`,
+      ]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(
+        [`/api/clients/${clientId}/brand-assets`],
+        (old: BrandAsset[] | undefined) => {
+          if (!old) return old;
+          return old.map((asset) => {
+            if (asset.id !== assetId) return asset;
+
+            const data =
+              typeof asset.data === "string"
+                ? JSON.parse(asset.data)
+                : asset.data;
+
+            const updatedData = { ...data };
+            if (variant === "light" && description !== undefined) {
+              updatedData.description = description;
+            }
+            if (variant === "dark" && darkVariantDescription !== undefined) {
+              updatedData.darkVariantDescription = darkVariantDescription;
+            }
+
+            return {
+              ...asset,
+              data: updatedData,
+            };
+          });
+        }
+      );
+
+      // Return a context object with the snapshotted value
+      return { previousAssets };
+    },
+    onError: (error: Error, _variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(
+        [`/api/clients/${clientId}/brand-assets`],
+        context?.previousAssets
+      );
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
+      });
+    },
+  });
+
+  const handleDescriptionUpdate = (
+    assetId: number,
+    variant: "light" | "dark",
+    value: string
+  ) => {
+    updateDescriptionMutation.mutate({
+      assetId,
+      description: variant === "light" ? value : undefined,
+      darkVariantDescription: variant === "dark" ? value : undefined,
+      variant,
+    });
+  };
+
   return (
     <AssetSection
       title={`${type.charAt(0).toUpperCase() + type.slice(1)} Logo`}
@@ -297,9 +422,38 @@ export function LogoSection({
                   />
                 )
               }
-              description={
-                logoUsageGuidance[type as keyof typeof logoUsageGuidance]
-              }
+              renderDescription={(variant) => {
+                const currentDescription =
+                  variant === "dark"
+                    ? parsedData.darkVariantDescription
+                    : parsedData.description;
+                const fallbackDescription =
+                  logoUsageGuidance[type as keyof typeof logoUsageGuidance];
+
+                if (canEditDescriptions) {
+                  return (
+                    <InlineEditable
+                      value={currentDescription || fallbackDescription || ""}
+                      onSave={(value) =>
+                        handleDescriptionUpdate(logo.id, variant, value)
+                      }
+                      inputType="textarea"
+                      placeholder={
+                        fallbackDescription || "Add a description..."
+                      }
+                      debounceMs={500}
+                      ariaLabel={`${variant} variant description`}
+                      className="asset-display__info-description"
+                    />
+                  );
+                }
+
+                return (
+                  <p className="asset-display__info-description">
+                    {currentDescription || fallbackDescription}
+                  </p>
+                );
+              }}
               supportsVariants={true}
               className=""
             />

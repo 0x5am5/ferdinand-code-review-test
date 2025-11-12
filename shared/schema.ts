@@ -842,10 +842,18 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
       type: z.enum(Object.values(LogoType) as [string, ...string[]]),
       format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
       fileName: z.string(),
+      description: z.string().optional(),
+      darkVariantDescription: z.string().optional(),
     }),
     fileData: z.string(),
     mimeType: z.string(),
   });
+
+export const updateBrandAssetDescriptionSchema = z.object({
+  description: z.string().optional(),
+  darkVariantDescription: z.string().optional(),
+  variant: z.enum(["light", "dark"]).optional(),
+});
 
 export const insertColorAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })

@@ -34,12 +34,14 @@ import {
   insertColorAssetSchema,
   insertFontAssetSchema,
   UserRole,
+  updateBrandAssetDescriptionSchema,
   userClients,
 } from "@shared/schema";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { requireAuth } from "server/middlewares/auth";
+import { requireMinimumRole } from "server/middlewares/requireMinimumRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
@@ -1291,6 +1293,93 @@ export function registerBrandAssetRoutes(app: Express) {
           error instanceof Error ? error.message : "Unknown error"
         );
         res.status(500).json({ message: "Error updating asset" });
+      }
+    }
+  );
+
+  // Update brand asset description endpoint
+  app.patch(
+    "/api/clients/:clientId/brand-assets/:assetId/description",
+    validateClientId,
+    requireAuth,
+    requireMinimumRole(UserRole.EDITOR),
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        const assetId = parseInt(req.params.assetId, 10);
+        if (isNaN(assetId)) {
+          return res.status(400).json({ message: "Invalid asset ID" });
+        }
+
+        // Validate request body
+        const parsed = updateBrandAssetDescriptionSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid request data",
+            errors: parsed.error.errors,
+          });
+        }
+
+        const { description, darkVariantDescription, variant } = parsed.data;
+
+        // Get the asset
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          return res.status(404).json({ message: "Asset not found" });
+        }
+
+        // Verify ownership
+        if (asset.clientId !== clientId) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to update this asset" });
+        }
+
+        // Only allow updating logo assets
+        if (asset.category !== "logo") {
+          return res
+            .status(400)
+            .json({ message: "Only logo assets support descriptions" });
+        }
+
+        // Parse existing data
+        const existingData =
+          typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+
+        // Update the description based on variant
+        const updatedData = { ...existingData };
+
+        if (variant === "dark" || darkVariantDescription !== undefined) {
+          updatedData.darkVariantDescription = darkVariantDescription;
+        }
+        if (variant === "light" || description !== undefined) {
+          updatedData.description = description;
+        }
+
+        // Update the asset
+        await db
+          .update(brandAssets)
+          .set({
+            data: updatedData,
+            updatedAt: new Date(),
+          })
+          .where(eq(brandAssets.id, assetId));
+
+        // Return the updated asset
+        const updatedAsset = await storage.getAsset(assetId);
+        res.json(updatedAsset);
+      } catch (error: unknown) {
+        console.error(
+          "Error updating brand asset description:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res
+          .status(500)
+          .json({ message: "Error updating brand asset description" });
       }
     }
   );
