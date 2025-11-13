@@ -1350,6 +1350,20 @@ export function registerBrandAssetRoutes(app: Express) {
         if (description !== undefined) {
           updatedData.description = description;
         }
+        // Copy any variant-specific fields from req.body (e.g., darkVariantDescription)
+        // These fields may not be in the schema but should still be persisted
+        if (typeof req.body === "object" && req.body !== null) {
+          Object.keys(req.body).forEach((key) => {
+            if (
+              (key.includes("Variant") ||
+                key.endsWith("VariantDescription") ||
+                key.includes("variant")) &&
+              key !== "variant" // Exclude the variant query param, only include data fields
+            ) {
+              updatedData[key] = req.body[key as keyof typeof req.body];
+            }
+          });
+        }
 
         // Update the asset
         await db

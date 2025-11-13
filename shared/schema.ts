@@ -9,6 +9,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -266,16 +267,22 @@ export const hiddenSections = pgTable("hidden_sections", {
 });
 
 // Table to store section-level metadata (descriptions, etc.) for each client
-export const sectionMetadata = pgTable("section_metadata", {
-  id: serial("id").primaryKey(),
-  clientId: integer("client_id")
-    .notNull()
-    .references(() => clients.id),
-  sectionType: text("section_type").notNull(), // e.g., "brand-colors", "neutral-colors", "interactive-colors"
-  description: text("description"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export const sectionMetadata = pgTable(
+  "section_metadata",
+  {
+    id: serial("id").primaryKey(),
+    clientId: integer("client_id")
+      .notNull()
+      .references(() => clients.id),
+    sectionType: text("section_type").notNull(), // e.g., "brand-colors", "neutral-colors", "interactive-colors"
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => ({
+    uniqueClientSection: unique().on(table.clientId, table.sectionType),
+  })
+);
 
 export const typeScales = pgTable("type_scales", {
   id: serial("id").primaryKey(),

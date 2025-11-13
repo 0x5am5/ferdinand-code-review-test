@@ -170,6 +170,7 @@ function TestLogoDescriptionComponent({
 describe("Logo Description Autosave Integration", () => {
   let queryClient: QueryClient;
   let fetchMock: jest.Mock;
+  const originalFetch = global.fetch;
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -206,6 +207,7 @@ describe("Logo Description Autosave Integration", () => {
     jest.runOnlyPendingTimers();
     jest.useRealTimers();
     jest.clearAllMocks();
+    global.fetch = originalFetch;
   });
 
   const renderComponent = (variant: "light" | "dark" = "light") => {
