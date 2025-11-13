@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import "../../styles/components/color-picker-popover.scss";
@@ -76,7 +76,6 @@ export function ColorCard({
   clientId,
 }: {
   color: ColorBrandAsset;
-  onEdit: (color: ColorBrandAsset) => void;
   onDelete: (id: number) => void;
   onGenerate?: () => void;
   neutralColorsCount?: number;
@@ -95,6 +94,24 @@ export function ColorCard({
   const [copiedFormats, setCopiedFormats] = useState<Record<string, boolean>>(
     {}
   );
+
+  // Refs to store drag event handlers for cleanup
+  const mouseMoveHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
+  const mouseUpHandlerRef = useRef<(() => void) | null>(null);
+
+  // Cleanup event listeners on unmount
+  useEffect(() => {
+    return () => {
+      if (mouseMoveHandlerRef.current) {
+        document.removeEventListener("mousemove", mouseMoveHandlerRef.current);
+        mouseMoveHandlerRef.current = null;
+      }
+      if (mouseUpHandlerRef.current) {
+        document.removeEventListener("mouseup", mouseUpHandlerRef.current);
+        mouseUpHandlerRef.current = null;
+      }
+    };
+  }, []);
 
   // Load saved Pantone value on mount
   useEffect(() => {
@@ -789,6 +806,20 @@ export function ColorCard({
                         const rect =
                           e.currentTarget.parentElement?.getBoundingClientRect();
 
+                        // Clean up any existing listeners
+                        if (mouseMoveHandlerRef.current) {
+                          document.removeEventListener(
+                            "mousemove",
+                            mouseMoveHandlerRef.current
+                          );
+                        }
+                        if (mouseUpHandlerRef.current) {
+                          document.removeEventListener(
+                            "mouseup",
+                            mouseUpHandlerRef.current
+                          );
+                        }
+
                         const handleMouseMove = (moveEvent: MouseEvent) => {
                           if (!rect) return;
                           const newPosition = Math.max(
@@ -806,15 +837,25 @@ export function ColorCard({
                         };
 
                         const handleMouseUp = () => {
-                          document.removeEventListener(
-                            "mousemove",
-                            handleMouseMove
-                          );
-                          document.removeEventListener(
-                            "mouseup",
-                            handleMouseUp
-                          );
+                          if (mouseMoveHandlerRef.current) {
+                            document.removeEventListener(
+                              "mousemove",
+                              mouseMoveHandlerRef.current
+                            );
+                            mouseMoveHandlerRef.current = null;
+                          }
+                          if (mouseUpHandlerRef.current) {
+                            document.removeEventListener(
+                              "mouseup",
+                              mouseUpHandlerRef.current
+                            );
+                            mouseUpHandlerRef.current = null;
+                          }
                         };
+
+                        // Store handlers in refs
+                        mouseMoveHandlerRef.current = handleMouseMove;
+                        mouseUpHandlerRef.current = handleMouseUp;
 
                         document.addEventListener("mousemove", handleMouseMove);
                         document.addEventListener("mouseup", handleMouseUp);

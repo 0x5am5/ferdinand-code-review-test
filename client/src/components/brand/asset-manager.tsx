@@ -81,15 +81,17 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   });
   const importMutation = useGoogleDriveImportMutation();
 
-  // Debug logging
+  // Debug logging (development only)
   useEffect(() => {
-    console.log("Google Drive Debug:", {
-      hasConnection: !!googleDriveQuery.data,
-      isLoadingToken,
-      tokenData,
-      tokenError,
-      accessToken,
-    });
+    if (process.env.NODE_ENV === "development") {
+      console.log("Google Drive Debug:", {
+        hasConnection: !!googleDriveQuery.data,
+        isLoadingToken,
+        tokenData,
+        tokenError,
+        accessToken,
+      });
+    }
   }, [
     googleDriveQuery.data,
     isLoadingToken,

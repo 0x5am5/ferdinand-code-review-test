@@ -85,9 +85,6 @@ const colorDescriptions = {
 export function ColorManager({
   clientId,
   colors,
-  designSystem: _designSystem,
-  updateDraftDesignSystem: _updateDraftDesignSystem,
-  addToHistory: _addToHistory,
 }: ColorManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();

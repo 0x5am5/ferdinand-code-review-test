@@ -326,6 +326,10 @@ export function canModifyResource(
       action === PermissionAction.UPDATE ||
       action === PermissionAction.DELETE
     ) {
+      // Ownerless resources cannot be modified by editors
+      if (resourceOwnerId === null) {
+        return false;
+      }
       return resourceOwnerId === currentUserId;
     }
   }

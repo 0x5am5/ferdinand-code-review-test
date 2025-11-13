@@ -3,9 +3,12 @@ import {
   type TypeScale,
   type TypeStyle,
   UserRole,
+  userClients,
 } from "@shared/schema";
+import { and, eq } from "drizzle-orm";
 import type { Express } from "express";
 import { requireAuth } from "../middlewares/auth";
+import { db } from "../db";
 import { storage } from "../storage";
 
 export function registerTypeScalesRoutes(app: Express) {
@@ -118,6 +121,31 @@ export function registerTypeScalesRoutes(app: Express) {
 
         if (Number.isNaN(clientId)) {
           return res.status(400).json({ error: "Invalid client ID" });
+        }
+
+        // Verify client exists and user has access to it
+        const client = await storage.getClient(clientId);
+        if (!client) {
+          return res.status(404).json({ error: "Client not found" });
+        }
+
+        // Verify user has access to this client (unless super admin)
+        if (user.role !== UserRole.SUPER_ADMIN) {
+          const userClient = await db
+            .select()
+            .from(userClients)
+            .where(
+              and(
+                eq(userClients.clientId, clientId),
+                eq(userClients.userId, user.id)
+              )
+            );
+
+          if (userClient.length === 0) {
+            return res.status(403).json({
+              error: "You do not have access to this client",
+            });
+          }
         }
 
         // Validate the request body
