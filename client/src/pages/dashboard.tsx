@@ -632,7 +632,7 @@ export default function Dashboard() {
               Get started by creating your first client to manage their brand
               assets and design systems.
             </CardDescription>
-            {user?.role === "super_admin" && (
+            {user?.role === UserRole.SUPER_ADMIN && (
               <div>
                 <Button asChild size="lg">
                   <Link href="/clients/new">

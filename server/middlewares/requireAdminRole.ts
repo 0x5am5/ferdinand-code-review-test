@@ -3,6 +3,11 @@ import type { NextFunction, Response } from "express";
 import type { RequestWithClientId } from "server/routes";
 import { storage } from "../storage";
 
+/**
+ * @deprecated Use requireMinimumRole(UserRole.ADMIN) instead.
+ * This middleware will be removed in a future version.
+ * See RBAC_AUDIT_REPORT.md for migration guidance.
+ */
 export const requireAdminRole = async (
   req: RequestWithClientId,
   res: Response,

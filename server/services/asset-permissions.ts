@@ -1,3 +1,10 @@
+import {
+  canModifyResource,
+  hasPermission,
+  PermissionAction,
+  type PermissionActionType,
+  Resource,
+} from "@shared/permissions";
 import { assets, UserRole, userClients, users } from "@shared/schema";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { db } from "../db";
@@ -10,13 +17,15 @@ interface PermissionCheck {
   reason?: string;
 }
 
-const ROLE_PERMISSIONS = {
-  [UserRole.GUEST]: ["read"],
-  [UserRole.STANDARD]: ["read", "write"], // Standard users cannot delete assets
-  [UserRole.EDITOR]: ["read", "write", "delete", "share"],
-  [UserRole.ADMIN]: ["read", "write", "delete", "share"],
-  [UserRole.SUPER_ADMIN]: ["read", "write", "delete", "share"],
-} as const;
+/**
+ * Map legacy permission strings to unified permission actions
+ */
+const PERMISSION_MAP: Record<Permission, PermissionActionType> = {
+  read: PermissionAction.READ,
+  write: PermissionAction.UPDATE,
+  delete: PermissionAction.DELETE,
+  share: PermissionAction.SHARE,
+};
 
 /**
  * Check if a user has permission to perform an action on an asset
@@ -71,11 +80,16 @@ export const checkAssetPermission = async (
       }
     }
 
-    // Check if user has required role-based permission
-    const allowedPermissions = ROLE_PERMISSIONS[
-      user.role as keyof typeof ROLE_PERMISSIONS
-    ] as readonly Permission[];
-    if (!allowedPermissions.includes(permission)) {
+    // Map legacy permission to unified action
+    const action = PERMISSION_MAP[permission];
+
+    // Check if user has required role-based permission using unified system
+    const hasBasePermission = hasPermission(
+      user.role,
+      action,
+      Resource.FILE_ASSETS
+    );
+    if (!hasBasePermission) {
       return {
         allowed: false,
         reason: `Role ${user.role} cannot ${permission} assets`,
@@ -87,9 +101,16 @@ export const checkAssetPermission = async (
       return { allowed: false, reason: "Asset is not shared" };
     }
 
-    // For standard users, check if they own the asset for write operations
-    if (user.role === UserRole.STANDARD && permission === "write") {
-      if (asset.uploadedBy !== userIdNum) {
+    // For ownership-based permissions (delete, update), check ownership
+    if (permission === "delete" || permission === "write") {
+      const canModify = canModifyResource(
+        user.role,
+        action,
+        Resource.FILE_ASSETS,
+        asset.uploadedBy,
+        userIdNum
+      );
+      if (!canModify) {
         return { allowed: false, reason: "Can only modify own assets" };
       }
     }

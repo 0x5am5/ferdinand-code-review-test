@@ -1,10 +1,11 @@
 import {
   insertInspirationImageSchema,
   insertInspirationSectionSchema,
+  UserRole,
 } from "@shared/schema";
 import type { Express } from "express";
 import multer from "multer";
-import { requireAdminRole } from "server/middlewares/requireAdminRole";
+import { requireMinimumRole } from "server/middlewares/requireMinimumRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { storage } from "../storage";
@@ -44,7 +45,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
   app.post(
     "/api/clients/:clientId/inspiration/sections",
     validateClientId,
-    requireAdminRole,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;
@@ -80,7 +81,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
   app.patch(
     "/api/clients/:clientId/inspiration/sections/:sectionId",
     validateClientId,
-    requireAdminRole,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;
@@ -120,7 +121,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
   app.delete(
     "/api/clients/:clientId/inspiration/sections/:sectionId",
     validateClientId,
-    requireAdminRole,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;
@@ -149,7 +150,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
     "/api/clients/:clientId/inspiration/sections/:sectionId/images",
     upload.single("image"),
     validateClientId,
-    requireAdminRole,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res) => {
       try {
         const sectionId = parseInt(req.params.sectionId, 10);

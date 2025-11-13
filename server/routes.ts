@@ -1,8 +1,8 @@
 import type { Express, Request } from "express";
 import type { OAuth2Client } from "google-auth-library";
 import { registerApiTokenRoutes } from "./routes/api-tokens";
-import { registerBrandAssetRoutes } from "./routes/brand-assets";
 import { registerAuthRoutes } from "./routes/auth";
+import { registerBrandAssetRoutes } from "./routes/brand-assets";
 import { registerClientRoutes } from "./routes/clients";
 import { registerDesignSystemRoutes } from "./routes/design-system";
 import { registerFigmaRoutes } from "./routes/figma";

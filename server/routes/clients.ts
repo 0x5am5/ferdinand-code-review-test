@@ -6,7 +6,6 @@ import {
 import type { Express } from "express";
 import { mutationRateLimit } from "../middlewares/rate-limit";
 import { requireMinimumRole } from "../middlewares/requireMinimumRole";
-import { requireSuperAdminRole } from "../middlewares/requireSuperAdminRole";
 import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
 
@@ -95,7 +94,7 @@ export function registerClientRoutes(app: Express) {
   app.delete(
     "/api/clients/:id",
     csrfProtection,
-    requireSuperAdminRole,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id, 10);
@@ -123,7 +122,7 @@ export function registerClientRoutes(app: Express) {
     "/api/clients",
     csrfProtection,
     mutationRateLimit,
-    requireSuperAdminRole,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (req, res) => {
       try {
         if (!req.session.userId) {
@@ -158,7 +157,7 @@ export function registerClientRoutes(app: Express) {
   app.patch(
     "/api/clients/order",
     csrfProtection,
-    requireSuperAdminRole,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (req, res) => {
       try {
         const { clientOrders } = updateClientOrderSchema.parse(req.body);

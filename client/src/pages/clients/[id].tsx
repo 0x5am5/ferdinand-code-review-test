@@ -1,4 +1,5 @@
 import type { BrandAsset, FeatureToggles } from "@shared/schema";
+import { UserRole } from "@shared/schema";
 import { AlertCircle, ArrowLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
@@ -339,7 +340,10 @@ export default function ClientDetails() {
 
       case "integrations":
         // Only admins and super_admins can access integrations page
-        if (user?.role !== "admin" && user?.role !== "super_admin") {
+        if (
+          user?.role !== UserRole.ADMIN &&
+          user?.role !== UserRole.SUPER_ADMIN
+        ) {
           return (
             <Card>
               <CardHeader>
