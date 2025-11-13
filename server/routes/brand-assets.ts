@@ -2116,7 +2116,11 @@ export function registerBrandAssetRoutes(app: Express) {
             .json({ message: "Failed to serve asset file" });
         }
 
+        // Set aggressive cache headers for better performance
+        // Brand assets rarely change, so we can cache them for a long time
         res.setHeader("Content-Type", mimeType);
+        res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); // 1 year
+        res.setHeader("ETag", `"${assetId}-${asset.updatedAt?.getTime() || asset.createdAt?.getTime()}"`);
         return res.send(fileBuffer);
       } catch (error: unknown) {
         console.error(

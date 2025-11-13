@@ -25,6 +25,7 @@ const SUPPORTED_IMAGE_TYPES = [
   "image/png",
   "image/gif",
   "image/webp",
+  "image/svg+xml",
 ];
 
 const SUPPORTED_PDF_TYPES = ["application/pdf"];
