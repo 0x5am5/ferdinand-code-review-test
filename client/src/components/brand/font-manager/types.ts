@@ -58,6 +58,7 @@ export interface FontData {
   weights: string[];
   styles: string[];
   sourceData: FontSourceData;
+  description?: string;
 }
 
 // Component prop interfaces
@@ -97,6 +98,7 @@ export interface FontCardProps {
   font: FontData;
   onEdit: () => void;
   onDelete: () => void;
+  clientId: number;
 }
 
 export interface WeightStyleSelectorProps {

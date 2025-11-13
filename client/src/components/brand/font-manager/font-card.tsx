@@ -1,17 +1,78 @@
-import { FontSource } from "@shared/schema";
+import { FontSource, UserRole } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { InlineEditable } from "@/components/ui/inline-editable";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import type { FontCardProps } from "./types";
 import { generateGoogleFontUrl } from "./utils";
 
-export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
+export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
   const [selectedWeight, setSelectedWeight] = useState("400");
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const isAbleToEdit =
     user && ["super_admin", "admin", "editor"].includes(user.role as string);
+
+  // Check if user can edit descriptions
+  const canEditDescriptions =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR;
+
+  // Mutation for updating font description
+  const updateDescriptionMutation = useMutation({
+    mutationFn: async ({
+      assetId,
+      description,
+    }: {
+      assetId: number;
+      description: string;
+    }) => {
+      const response = await fetch(
+        `/api/clients/${clientId}/brand-assets/${assetId}/description`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ description }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to update description");
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDescriptionUpdate = (value: string) => {
+    if (font.id) {
+      updateDescriptionMutation.mutate({
+        assetId: font.id,
+        description: value,
+      });
+    }
+  };
 
   // Set default weight to the first available weight or 400
   React.useEffect(() => {
@@ -146,6 +207,23 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
               </Badge>
             ))}
           </div>
+
+          {/* Description field */}
+          {canEditDescriptions ? (
+            <InlineEditable
+              value={font.description || ""}
+              onSave={handleDescriptionUpdate}
+              inputType="textarea"
+              placeholder="Add a description..."
+              debounceMs={500}
+              ariaLabel="Font description"
+              className="text-xs text-muted-foreground mt-2"
+            />
+          ) : font.description ? (
+            <p className="text-xs text-muted-foreground mt-2">
+              {font.description}
+            </p>
+          ) : null}
         </div>
       </div>
       {isAbleToEdit && (

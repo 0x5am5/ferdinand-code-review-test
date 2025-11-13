@@ -1,8 +1,11 @@
 import { PermissionAction, Resource } from "@shared/permissions";
+import { UserRole } from "@shared/schema";
 import { X } from "lucide-react";
 import type React from "react";
 import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
+import { InlineEditable } from "@/components/ui/inline-editable";
+import { useAuth } from "@/hooks/use-auth";
 import { usePermissions } from "@/hooks/use-permissions";
 
 interface AssetSectionProps {
@@ -14,6 +17,8 @@ interface AssetSectionProps {
   uploadComponent: React.ReactNode;
   emptyPlaceholder?: React.ReactNode;
   children: React.ReactNode;
+  onDescriptionUpdate?: (value: string) => void;
+  enableEditableDescription?: boolean;
 }
 
 export function AssetSection({
@@ -25,9 +30,17 @@ export function AssetSection({
   uploadComponent,
   emptyPlaceholder,
   children,
+  onDescriptionUpdate,
+  enableEditableDescription = false,
 }: AssetSectionProps) {
   const { can } = usePermissions();
+  const { user = null } = useAuth();
   const canUpload = can(PermissionAction.CREATE, Resource.BRAND_ASSETS);
+
+  const canEditDescriptions =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR;
 
   return (
     <div className="asset-section">
@@ -56,7 +69,21 @@ export function AssetSection({
       {isEmpty ? (
         <div className="asset-section__empty">
           <div className="asset-section__empty-info">
-            <p>{description}</p>
+            {enableEditableDescription &&
+            canEditDescriptions &&
+            onDescriptionUpdate ? (
+              <InlineEditable
+                value={description}
+                onSave={onDescriptionUpdate}
+                inputType="textarea"
+                placeholder="Add a section description..."
+                debounceMs={500}
+                ariaLabel={`${title} description`}
+                className="text-muted-foreground"
+              />
+            ) : (
+              <p>{description}</p>
+            )}
           </div>
           {canUpload ? uploadComponent : emptyPlaceholder}
         </div>

@@ -265,6 +265,18 @@ export const hiddenSections = pgTable("hidden_sections", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Table to store section-level metadata (descriptions, etc.) for each client
+export const sectionMetadata = pgTable("section_metadata", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id")
+    .notNull()
+    .references(() => clients.id),
+  sectionType: text("section_type").notNull(), // e.g., "brand-colors", "neutral-colors", "interactive-colors"
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const typeScales = pgTable("type_scales", {
   id: serial("id").primaryKey(),
   clientId: integer("client_id")
@@ -855,6 +867,28 @@ export const updateBrandAssetDescriptionSchema = z.object({
   variant: z.enum(["light", "dark"]).optional(),
 });
 
+export const updateColorAssetDescriptionSchema = z.object({
+  description: z.string(),
+});
+
+export const updateFontAssetDescriptionSchema = z.object({
+  description: z.string(),
+});
+
+// Section metadata schemas
+export const insertSectionMetadataSchema = z.object({
+  clientId: z.number(),
+  sectionType: z.enum(["brand-colors", "neutral-colors", "interactive-colors"]),
+  description: z.string().optional(),
+});
+
+export const updateSectionMetadataSchema = z.object({
+  description: z.string(),
+});
+
+export type InsertSectionMetadata = z.infer<typeof insertSectionMetadataSchema>;
+export type UpdateSectionMetadata = z.infer<typeof updateSectionMetadataSchema>;
+
 export const insertColorAssetSchema = createInsertSchema(brandAssets)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
@@ -862,6 +896,7 @@ export const insertColorAssetSchema = createInsertSchema(brandAssets)
     data: z.object({
       type: z.enum(["solid", "gradient"]),
       category: z.enum(Object.values(ColorCategory) as [string, ...string[]]),
+      description: z.string().optional(),
       colors: z
         .array(
           z.object({
@@ -911,6 +946,7 @@ export const insertFontAssetSchema = createInsertSchema(brandAssets)
     category: z.literal("font"),
     data: z.object({
       source: z.enum(Object.values(FontSource) as [string, ...string[]]),
+      description: z.string().optional(),
       weights: z.array(
         z.enum(Object.values(FontWeight) as [string, ...string[]])
       ),
@@ -1063,6 +1099,7 @@ export type InspirationSection = typeof inspirationSections.$inferSelect;
 export type InspirationImage = typeof inspirationImages.$inferSelect;
 export type Invitation = typeof invitations.$inferSelect;
 export type HiddenSection = typeof hiddenSections.$inferSelect;
+export type SectionMetadata = typeof sectionMetadata.$inferSelect;
 export type TypeScaleDB = typeof typeScales.$inferSelect;
 
 // Insert Types

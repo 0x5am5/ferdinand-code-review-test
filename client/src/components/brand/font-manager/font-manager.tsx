@@ -449,6 +449,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   font={font}
                   onEdit={() => handleEditFont(font)}
                   onDelete={() => font.id && deleteFont.mutate(font.id)}
+                  clientId={clientId}
                 />
               ))}
 

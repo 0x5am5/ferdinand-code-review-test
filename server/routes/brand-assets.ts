@@ -35,6 +35,8 @@ import {
   insertFontAssetSchema,
   UserRole,
   updateBrandAssetDescriptionSchema,
+  updateColorAssetDescriptionSchema,
+  updateFontAssetDescriptionSchema,
   userClients,
 } from "@shared/schema";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
@@ -1315,18 +1317,7 @@ export function registerBrandAssetRoutes(app: Express) {
           return res.status(400).json({ message: "Invalid asset ID" });
         }
 
-        // Validate request body
-        const parsed = updateBrandAssetDescriptionSchema.safeParse(req.body);
-        if (!parsed.success) {
-          return res.status(400).json({
-            message: "Invalid request data",
-            errors: parsed.error.errors,
-          });
-        }
-
-        const { description, darkVariantDescription, variant } = parsed.data;
-
-        // Get the asset
+        // Get the asset first to determine category
         const asset = await storage.getAsset(assetId);
         if (!asset) {
           return res.status(404).json({ message: "Asset not found" });
@@ -1339,24 +1330,44 @@ export function registerBrandAssetRoutes(app: Express) {
             .json({ message: "Not authorized to update this asset" });
         }
 
-        // Only allow updating logo assets
-        if (asset.category !== "logo") {
-          return res
-            .status(400)
-            .json({ message: "Only logo assets support descriptions" });
+        // Validate request body based on asset category
+        let parsed;
+        if (asset.category === "logo") {
+          parsed = updateBrandAssetDescriptionSchema.safeParse(req.body);
+        } else if (asset.category === "color") {
+          parsed = updateColorAssetDescriptionSchema.safeParse(req.body);
+        } else if (asset.category === "font") {
+          parsed = updateFontAssetDescriptionSchema.safeParse(req.body);
+        } else {
+          return res.status(400).json({
+            message: `Asset category '${asset.category}' does not support descriptions`,
+          });
+        }
+
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid request data",
+            errors: parsed.error.errors,
+          });
         }
 
         // Parse existing data
         const existingData =
           typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
 
-        // Update the description based on variant
+        // Update the description based on asset category
         const updatedData = { ...existingData };
 
-        if (variant === "dark" || darkVariantDescription !== undefined) {
-          updatedData.darkVariantDescription = darkVariantDescription;
-        }
-        if (variant === "light" || description !== undefined) {
+        if (asset.category === "logo" && "variant" in parsed.data) {
+          const { description, darkVariantDescription, variant } = parsed.data;
+          if (variant === "dark" || darkVariantDescription !== undefined) {
+            updatedData.darkVariantDescription = darkVariantDescription;
+          }
+          if (variant === "light" || description !== undefined) {
+            updatedData.description = description;
+          }
+        } else if (asset.category === "color" || asset.category === "font") {
+          const { description } = parsed.data;
           updatedData.description = description;
         }
 
