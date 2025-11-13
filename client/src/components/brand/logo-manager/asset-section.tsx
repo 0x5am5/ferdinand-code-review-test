@@ -1,8 +1,9 @@
-import { UserRole } from "@shared/schema";
+import { PermissionAction, Resource } from "@shared/permissions";
 import { X } from "lucide-react";
 import type React from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface AssetSectionProps {
   title: string;
@@ -25,28 +26,30 @@ export function AssetSection({
   emptyPlaceholder,
   children,
 }: AssetSectionProps) {
-  const { user } = useAuth();
-  const canManageSections =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
+  const { can } = usePermissions();
+  const canUpload = can(PermissionAction.CREATE, Resource.BRAND_ASSETS);
 
   return (
     <div className="asset-section">
       <div className="asset-section__header">
         <div className="flex items-center justify-between w-full">
           <h3>{title}</h3>
-          {canManageSections && onRemoveSection && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-destructive"
-              onClick={() => onRemoveSection(sectionType)}
-            >
-              <X className="h-4 w-4 mr-1" />
-              <span>Remove Section</span>
-            </Button>
-          )}
+          <PermissionGate
+            action={PermissionAction.DELETE}
+            resource={Resource.BRAND_ASSETS}
+          >
+            {onRemoveSection && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => onRemoveSection(sectionType)}
+              >
+                <X className="h-4 w-4 mr-1" />
+                <span>Remove Section</span>
+              </Button>
+            )}
+          </PermissionGate>
         </div>
       </div>
 
@@ -55,11 +58,7 @@ export function AssetSection({
           <div className="asset-section__empty-info">
             <p>{description}</p>
           </div>
-          {user &&
-          user.role !== UserRole.STANDARD &&
-          user.role !== UserRole.GUEST
-            ? uploadComponent
-            : emptyPlaceholder}
+          {canUpload ? uploadComponent : emptyPlaceholder}
         </div>
       ) : (
         <div>{children}</div>

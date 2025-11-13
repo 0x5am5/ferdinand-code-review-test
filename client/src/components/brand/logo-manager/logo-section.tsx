@@ -1,10 +1,11 @@
+import { PermissionAction, Resource } from "@shared/permissions";
 import type { BrandAsset } from "@shared/schema";
-import { FILE_FORMATS, UserRole } from "@shared/schema";
+import { FILE_FORMATS } from "@shared/schema";
 import type { QueryClient } from "@tanstack/react-query";
 import { FileType, Trash2, Upload } from "lucide-react";
 import { type DragEvent, useCallback, useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { AssetDisplay } from "../asset-display";
 import { AssetSection } from "./asset-section";
@@ -33,15 +34,9 @@ export function LogoSection({
   onRemoveSection,
 }: LogoSectionProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
   const hasLogos = logos.length > 0;
   const [isDarkVariantDragging, setIsDarkVariantDragging] = useState(false);
   const currentType = type;
-
-  const canEditLogos =
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR ||
-    user?.role === UserRole.ADMIN;
 
   const handleDarkVariantDragEnter = useCallback(
     (e: DragEvent<HTMLElement>) => {
@@ -214,7 +209,10 @@ export function LogoSection({
               key={logo.id}
               renderActions={(variant) => (
                 <>
-                  {canEditLogos && (
+                  <PermissionGate
+                    action={PermissionAction.UPDATE}
+                    resource={Resource.BRAND_ASSETS}
+                  >
                     <label className="cursor-pointer">
                       <Input
                         type="file"
@@ -249,7 +247,7 @@ export function LogoSection({
                         <span>Replace</span>
                       </button>
                     </label>
-                  )}
+                  </PermissionGate>
 
                   <LogoDownloadButton
                     logo={logo}
@@ -258,8 +256,11 @@ export function LogoSection({
                     parsedData={parsedData}
                   />
 
-                  {canEditLogos &&
-                    ((variant === "dark" && parsedData.hasDarkVariant) ||
+                  <PermissionGate
+                    action={PermissionAction.DELETE}
+                    resource={Resource.BRAND_ASSETS}
+                  >
+                    {((variant === "dark" && parsedData.hasDarkVariant) ||
                       variant === "light") && (
                       <button
                         type="button"
@@ -270,6 +271,7 @@ export function LogoSection({
                         <span>Delete</span>
                       </button>
                     )}
+                  </PermissionGate>
                 </>
               )}
               renderAsset={(variant) =>

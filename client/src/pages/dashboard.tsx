@@ -40,6 +40,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation } from "wouter";
 import { UserManager } from "@/components/client/user-manager";
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -152,12 +153,6 @@ export default function Dashboard() {
 
   // Handle OAuth callback for Google Drive
   useGoogleDriveOAuthCallback();
-
-  const isAbleToEdit = user
-    ? user.role === UserRole.SUPER_ADMIN ||
-      user.role === UserRole.ADMIN ||
-      user.role === UserRole.EDITOR
-    : false;
 
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
@@ -485,7 +480,7 @@ export default function Dashboard() {
                               >
                                 <Share className="h-4 w-4" />
                               </Button>
-                              {isAbleToEdit && (
+                              <PermissionGate minimumRole={UserRole.EDITOR}>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon">
@@ -516,7 +511,7 @@ export default function Dashboard() {
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
-                              )}
+                              </PermissionGate>
                             </div>
                             <Link
                               href={`/clients/${client.id}`}
@@ -594,7 +589,7 @@ export default function Dashboard() {
                 {provided.placeholder}
 
                 {/* Add New Client Card - Only visible to super admins */}
-                {user?.role === UserRole.SUPER_ADMIN && (
+                <PermissionGate minimumRole={UserRole.SUPER_ADMIN}>
                   <Link href="/clients/new">
                     <Card className="cursor-pointer border-2 border-dashed hover:border-primary transition-colors h-full">
                       <CardHeader className="h-full flex flex-col items-center justify-center text-center">
@@ -605,7 +600,7 @@ export default function Dashboard() {
                       </CardHeader>
                     </Card>
                   </Link>
-                )}
+                </PermissionGate>
               </div>
             )}
           </Droppable>
@@ -632,7 +627,7 @@ export default function Dashboard() {
               Get started by creating your first client to manage their brand
               assets and design systems.
             </CardDescription>
-            {user?.role === UserRole.SUPER_ADMIN && (
+            <PermissionGate minimumRole={UserRole.SUPER_ADMIN}>
               <div>
                 <Button asChild size="lg">
                   <Link href="/clients/new">
@@ -641,7 +636,7 @@ export default function Dashboard() {
                   </Link>
                 </Button>
               </div>
-            )}
+            </PermissionGate>
           </CardHeader>
         </Card>
       )}

@@ -1,3 +1,4 @@
+import { PermissionAction, Resource } from "@shared/permissions";
 import {
   Cloud,
   Download,
@@ -16,6 +17,7 @@ import React, {
   type MouseEvent,
   useState,
 } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,7 +64,6 @@ interface AssetListProps {
   ) => void;
   categories?: AssetCategory[];
   tags?: AssetTag[];
-  canEdit?: boolean;
 }
 
 export const AssetList: FC<AssetListProps> = ({
@@ -74,7 +75,6 @@ export const AssetList: FC<AssetListProps> = ({
   onBulkUpdate,
   categories = [],
   tags = [],
-  canEdit = true,
 }) => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
@@ -337,7 +337,10 @@ export const AssetList: FC<AssetListProps> = ({
               </DropdownMenu>
             )}
 
-            {canEdit && (
+            <PermissionGate
+              action={PermissionAction.DELETE}
+              resource={Resource.FILE_ASSETS}
+            >
               <Button
                 variant="destructive"
                 size="sm"
@@ -346,7 +349,7 @@ export const AssetList: FC<AssetListProps> = ({
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete {selectedAssets.size}
               </Button>
-            )}
+            </PermissionGate>
           </div>
         )}
         <div className="flex gap-2 ml-auto">
@@ -523,7 +526,11 @@ export const AssetList: FC<AssetListProps> = ({
                       <Download className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   )}
-                  {canEdit && (
+                  <PermissionGate
+                    action={PermissionAction.DELETE}
+                    resource={Resource.FILE_ASSETS}
+                    resourceOwnerId={asset.uploadedBy}
+                  >
                     <Button
                       variant="ghost"
                       size="sm"
@@ -535,7 +542,7 @@ export const AssetList: FC<AssetListProps> = ({
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
-                  )}
+                  </PermissionGate>
                 </div>
               </div>
             </Card>
@@ -698,7 +705,11 @@ export const AssetList: FC<AssetListProps> = ({
                           <Download className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       )}
-                      {canEdit && (
+                      <PermissionGate
+                        action={PermissionAction.DELETE}
+                        resource={Resource.FILE_ASSETS}
+                        resourceOwnerId={asset.uploadedBy}
+                      >
                         <Button
                           variant="ghost"
                           size="sm"
@@ -709,7 +720,7 @@ export const AssetList: FC<AssetListProps> = ({
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
+                      </PermissionGate>
                     </div>
                   </TableCell>
                 </TableRow>

@@ -11,6 +11,7 @@ import { InspirationBoard } from "@/components/brand/inspiration-board";
 import { LogoManager } from "@/components/brand/logo-manager/logo-manager";
 import { PersonaManager } from "@/components/brand/persona-manager";
 import { IntegrationsHub } from "@/components/integrations/integrations-hub";
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
@@ -340,33 +341,32 @@ export default function ClientDetails() {
 
       case "integrations":
         // Only admins and super_admins can access integrations page
-        if (
-          user?.role !== UserRole.ADMIN &&
-          user?.role !== UserRole.SUPER_ADMIN
-        ) {
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle>Access Restricted</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Only administrators can access the integrations page.
-                </p>
-              </CardContent>
-            </Card>
-          );
-        }
         return (
-          <IntegrationsHub
-            clientId={client?.id || 0}
-            featureToggles={{
-              figmaIntegration: featureToggles.figmaIntegration,
-              slackIntegration: featureToggles.slackIntegration,
-              brandAssets: featureToggles.brandAssets,
-            }}
-            userRole={user?.role}
-          />
+          <PermissionGate
+            minimumRole={UserRole.ADMIN}
+            fallback={
+              <Card>
+                <CardHeader>
+                  <CardTitle>Access Restricted</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Only administrators can access the integrations page.
+                  </p>
+                </CardContent>
+              </Card>
+            }
+          >
+            <IntegrationsHub
+              clientId={client?.id || 0}
+              featureToggles={{
+                figmaIntegration: featureToggles.figmaIntegration,
+                slackIntegration: featureToggles.slackIntegration,
+                brandAssets: featureToggles.brandAssets,
+              }}
+              userRole={user?.role}
+            />
+          </PermissionGate>
         );
 
       default:

@@ -1,4 +1,4 @@
-import { UserRole } from "@shared/schema";
+import { PermissionAction, Resource } from "@shared/permissions";
 import {
   Calendar,
   Copy,
@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import React, { type FC, useEffect, useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,7 +42,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import {
   type Asset,
@@ -67,7 +68,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
   open,
   onClose,
 }) => {
-  const { user } = useAuth();
+  const { canModify } = usePermissions();
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
@@ -77,15 +78,10 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
   const [linkExpiry, setLinkExpiry] = useState<string>("7");
   const { toast } = useToast();
 
-  // Permission checks: only editors, admins, and super admins can edit assets
-  const canEditAsset =
-    user?.role === UserRole.EDITOR ||
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN;
-  const canDeleteAsset =
-    user?.role === UserRole.EDITOR ||
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN;
+  // Permission checks using the unified RBAC system
+  const canUpdateAsset = asset
+    ? canModify(PermissionAction.UPDATE, Resource.FILE_ASSETS, asset.uploadedBy)
+    : false;
 
   // Update state when asset changes
   useEffect(() => {
@@ -273,7 +269,11 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     Download
                   </Button>
                 )}
-                {canDeleteAsset && (
+                <PermissionGate
+                  action={PermissionAction.DELETE}
+                  resource={Resource.FILE_ASSETS}
+                  resourceOwnerId={asset.uploadedBy}
+                >
                   <Button
                     variant="destructive"
                     size="sm"
@@ -282,7 +282,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
                   </Button>
-                )}
+                </PermissionGate>
               </div>
             </DialogTitle>
             <DialogDescription>
@@ -367,30 +367,32 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
             </div>
 
             {/* Visibility */}
-            {canEditAsset && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <Label>Visibility</Label>
-                  <Select
-                    value={visibility}
-                    onValueChange={(value: "private" | "shared") =>
-                      handleVisibilityChange(value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="shared">
-                        Shared (All team members)
-                      </SelectItem>
-                      <SelectItem value="private">Private (Only me)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
+            <PermissionGate
+              action={PermissionAction.UPDATE}
+              resource={Resource.FILE_ASSETS}
+              resourceOwnerId={asset.uploadedBy}
+            >
+              <Separator />
+              <div className="space-y-2">
+                <Label>Visibility</Label>
+                <Select
+                  value={visibility}
+                  onValueChange={(value: "private" | "shared") =>
+                    handleVisibilityChange(value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="shared">
+                      Shared (All team members)
+                    </SelectItem>
+                    <SelectItem value="private">Private (Only me)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </PermissionGate>
 
             <Separator />
 
@@ -404,13 +406,13 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     <Badge
                       key={category.id}
                       variant={isSelected ? "default" : "outline"}
-                      className={canEditAsset ? "cursor-pointer" : ""}
+                      className={canUpdateAsset ? "cursor-pointer" : ""}
                       onClick={() =>
-                        canEditAsset && handleCategoryToggle(category.id)
+                        canUpdateAsset && handleCategoryToggle(category.id)
                       }
                     >
                       {category.name}
-                      {isSelected && canEditAsset && (
+                      {isSelected && canUpdateAsset && (
                         <X className="h-3 w-3 ml-1" />
                       )}
                     </Badge>
@@ -431,11 +433,11 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     <Badge
                       key={tag.id}
                       variant={isSelected ? "default" : "outline"}
-                      className={canEditAsset ? "cursor-pointer" : ""}
-                      onClick={() => canEditAsset && handleTagToggle(tag.id)}
+                      className={canUpdateAsset ? "cursor-pointer" : ""}
+                      onClick={() => canUpdateAsset && handleTagToggle(tag.id)}
                     >
                       {tag.name}
-                      {isSelected && canEditAsset && (
+                      {isSelected && canUpdateAsset && (
                         <X className="h-3 w-3 ml-1" />
                       )}
                     </Badge>
@@ -444,7 +446,11 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
               </div>
 
               {/* Create new tag */}
-              {canEditAsset && (
+              <PermissionGate
+                action={PermissionAction.UPDATE}
+                resource={Resource.FILE_ASSETS}
+                resourceOwnerId={asset.uploadedBy}
+              >
                 <div className="flex gap-2 mt-3">
                   <Input
                     placeholder="Create new tag (press Enter or comma)..."
@@ -463,12 +469,15 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     Add
                   </Button>
                 </div>
-              )}
+              </PermissionGate>
             </div>
 
             {/* Public Links */}
-            {!asset.referenceOnly && !publicLinksError && canEditAsset && (
-              <>
+            {!asset.referenceOnly && !publicLinksError && (
+              <PermissionGate
+                action={PermissionAction.SHARE}
+                resource={Resource.FILE_ASSETS}
+              >
                 <Separator />
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
@@ -543,7 +552,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     </Button>
                   </div>
                 </div>
-              </>
+              </PermissionGate>
             )}
           </div>
         </DialogContent>
