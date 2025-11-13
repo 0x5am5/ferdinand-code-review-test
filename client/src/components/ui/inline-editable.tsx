@@ -1,4 +1,6 @@
+import { Check, X } from "lucide-react";
 import * as React from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,12 @@ export interface InlineEditableProps {
   disabled?: boolean;
   /** ARIA label for accessibility */
   ariaLabel?: string;
+  /** Whether to show explicit save/cancel buttons */
+  showControls?: boolean;
+  /** Optional validation function that returns error message or null */
+  validate?: (value: string) => string | null;
+  /** Callback when validation fails */
+  onValidationError?: (error: string) => void;
 }
 
 /**
@@ -57,17 +65,26 @@ export const InlineEditable = React.forwardRef<
       showPlaceholderInView = true,
       disabled = false,
       ariaLabel,
+      showControls = false,
+      validate,
+      onValidationError,
     },
     ref
   ) => {
     const [isEditing, setIsEditing] = React.useState(false);
     const [editValue, setEditValue] = React.useState(value);
+    const [validationError, setValidationError] = React.useState<string | null>(
+      null
+    );
+    const [originalValue, setOriginalValue] = React.useState(value);
     const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement>(null);
     const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+    const errorId = React.useId();
 
     // Update edit value when prop value changes
     React.useEffect(() => {
       setEditValue(value);
+      setOriginalValue(value);
     }, [value]);
 
     // Focus input when entering edit mode
@@ -76,8 +93,12 @@ export const InlineEditable = React.forwardRef<
         inputRef.current.focus();
         // Select all text for easy editing
         inputRef.current.select();
+        // Store original value when entering edit mode
+        setOriginalValue(value);
+        // Clear validation errors when entering edit mode
+        setValidationError(null);
       }
-    }, [isEditing]);
+    }, [isEditing, value]);
 
     // Cleanup debounce timer on unmount
     React.useEffect(() => {
@@ -90,40 +111,83 @@ export const InlineEditable = React.forwardRef<
 
     const handleSave = React.useCallback(() => {
       const trimmedValue = editValue.trim();
+
+      // Run validation if provided
+      if (validate) {
+        const error = validate(trimmedValue);
+        if (error) {
+          setValidationError(error);
+          if (onValidationError) {
+            onValidationError(error);
+          }
+          return; // Don't save if validation fails
+        }
+      }
+
+      // Clear any validation errors
+      setValidationError(null);
+
+      // Only save if value changed
       if (trimmedValue !== value) {
         onSave(trimmedValue);
       }
       setIsEditing(false);
-    }, [editValue, value, onSave]);
+    }, [editValue, value, onSave, validate, onValidationError]);
 
     const handleCancel = React.useCallback(() => {
-      setEditValue(value);
+      // Revert to original value
+      setEditValue(originalValue);
+      setValidationError(null);
       setIsEditing(false);
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
-    }, [value]);
+    }, [originalValue]);
 
     const handleChange = React.useCallback(
       (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const newValue = e.target.value;
         setEditValue(newValue);
 
-        // Handle debounced autosave
-        if (debounceMs > 0) {
+        // Clear validation error when user starts typing
+        if (validationError) {
+          setValidationError(null);
+        }
+
+        // Handle debounced autosave (only if controls are not shown)
+        if (debounceMs > 0 && !showControls) {
           if (debounceTimerRef.current) {
             clearTimeout(debounceTimerRef.current);
           }
           debounceTimerRef.current = setTimeout(() => {
             const trimmedValue = newValue.trim();
             if (trimmedValue !== value && trimmedValue.length > 0) {
+              // Run validation before auto-saving
+              if (validate) {
+                const error = validate(trimmedValue);
+                if (error) {
+                  setValidationError(error);
+                  if (onValidationError) {
+                    onValidationError(error);
+                  }
+                  return;
+                }
+              }
               onSave(trimmedValue);
             }
           }, debounceMs);
         }
       },
-      [debounceMs, value, onSave]
+      [
+        debounceMs,
+        value,
+        onSave,
+        showControls,
+        validate,
+        onValidationError,
+        validationError,
+      ]
     );
 
     const handleKeyDown = React.useCallback(
@@ -145,15 +209,34 @@ export const InlineEditable = React.forwardRef<
       [inputType, handleSave, handleCancel]
     );
 
-    const handleBlur = React.useCallback(() => {
-      // Clear any pending debounce timer
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
-      // Save on blur
-      handleSave();
-    }, [handleSave]);
+    const handleBlur = React.useCallback(
+      (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        // If showControls is true, don't auto-save on blur
+        // User must explicitly click save or cancel
+        if (showControls) {
+          // Check if the blur is because user clicked save/cancel button
+          const relatedTarget = e.relatedTarget as HTMLElement;
+          if (relatedTarget?.closest("[data-inline-editable-controls]")) {
+            // User clicked on a control button, don't do anything
+            // The button click handler will handle save/cancel
+            return;
+          }
+          // If blur is to something else, treat as cancel
+          handleCancel();
+          return;
+        }
+
+        // Original behavior: auto-save on blur
+        // Clear any pending debounce timer
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        // Save on blur
+        handleSave();
+      },
+      [handleSave, handleCancel, showControls]
+    );
 
     const handleViewClick = React.useCallback(() => {
       if (!disabled) {
@@ -174,17 +257,64 @@ export const InlineEditable = React.forwardRef<
         onKeyDown: handleKeyDown,
         onBlur: handleBlur,
         placeholder,
-        className: cn(editClassName),
+        className: cn(
+          editClassName,
+          validationError && "border-destructive focus-visible:ring-destructive"
+        ),
         "aria-label": ariaLabel || "Editable text field",
+        "aria-invalid": !!validationError,
+        "aria-describedby": validationError ? errorId : undefined,
       };
 
       return (
-        <div ref={ref} className={cn("w-full", className)}>
-          {inputType === "textarea" ? (
-            <Textarea {...commonProps} />
-          ) : (
-            <Input {...commonProps} />
-          )}
+        <div ref={ref} className={cn("w-full space-y-2", className)}>
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              {inputType === "textarea" ? (
+                <Textarea {...commonProps} />
+              ) : (
+                <Input {...commonProps} />
+              )}
+              {validationError && (
+                <p
+                  id={errorId}
+                  className="text-sm text-destructive mt-1"
+                  role="alert"
+                >
+                  {validationError}
+                </p>
+              )}
+            </div>
+            {showControls && (
+              <div
+                className="flex items-center gap-1 shrink-0"
+                data-inline-editable-controls
+              >
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="default"
+                  className="h-8 w-8"
+                  onClick={handleSave}
+                  aria-label="Save changes"
+                  title="Save changes"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8"
+                  onClick={handleCancel}
+                  aria-label="Cancel changes"
+                  title="Cancel changes"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       );
     }

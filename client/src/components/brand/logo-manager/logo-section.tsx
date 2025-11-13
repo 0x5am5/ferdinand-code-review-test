@@ -1,6 +1,10 @@
 import { PermissionAction, Resource } from "@shared/permissions";
 import type { BrandAsset } from "@shared/schema";
-import { FILE_FORMATS, UserRole } from "@shared/schema";
+import {
+  descriptionValidationSchema,
+  FILE_FORMATS,
+  UserRole,
+} from "@shared/schema";
 import type { QueryClient } from "@tanstack/react-query";
 import { useMutation } from "@tanstack/react-query";
 import { FileType, Trash2, Upload } from "lucide-react";
@@ -191,13 +195,9 @@ export function LogoSection({
     mutationFn: async ({
       assetId,
       description,
-      darkVariantDescription,
-      variant,
     }: {
       assetId: number;
-      description?: string;
-      darkVariantDescription?: string;
-      variant: "light" | "dark";
+      description: string;
     }) => {
       const response = await fetch(
         `/api/clients/${clientId}/brand-assets/${assetId}/description`,
@@ -208,8 +208,6 @@ export function LogoSection({
           },
           body: JSON.stringify({
             description,
-            darkVariantDescription,
-            variant,
           }),
         }
       );
@@ -221,12 +219,7 @@ export function LogoSection({
 
       return response.json();
     },
-    onMutate: async ({
-      assetId,
-      description,
-      darkVariantDescription,
-      variant,
-    }) => {
+    onMutate: async ({ assetId, description }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
@@ -250,13 +243,7 @@ export function LogoSection({
                 ? JSON.parse(asset.data)
                 : asset.data;
 
-            const updatedData = { ...data };
-            if (variant === "light" && description !== undefined) {
-              updatedData.description = description;
-            }
-            if (variant === "dark" && darkVariantDescription !== undefined) {
-              updatedData.darkVariantDescription = darkVariantDescription;
-            }
+            const updatedData = { ...data, description };
 
             return {
               ...asset,
@@ -285,19 +272,35 @@ export function LogoSection({
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
+      toast({
+        title: "Description saved",
+        description: "Logo description has been updated successfully.",
+      });
     },
   });
 
-  const handleDescriptionUpdate = (
-    assetId: number,
-    variant: "light" | "dark",
-    value: string
-  ) => {
+  const handleDescriptionUpdate = (assetId: number, value: string) => {
     updateDescriptionMutation.mutate({
       assetId,
-      description: variant === "light" ? value : undefined,
-      darkVariantDescription: variant === "dark" ? value : undefined,
-      variant,
+      description: value,
+    });
+  };
+
+  // Validation function for descriptions
+  const validateDescription = (value: string): string | null => {
+    const result = descriptionValidationSchema.safeParse(value);
+    if (!result.success) {
+      return result.error.errors[0]?.message || "Invalid description";
+    }
+    return null;
+  };
+
+  // Handle validation errors with toast
+  const handleValidationError = (error: string) => {
+    toast({
+      title: "Validation Error",
+      description: error,
+      variant: "destructive",
     });
   };
 
@@ -422,11 +425,9 @@ export function LogoSection({
                   />
                 )
               }
-              renderDescription={(variant) => {
-                const currentDescription =
-                  variant === "dark"
-                    ? parsedData.darkVariantDescription
-                    : parsedData.description;
+              renderDescription={(_variant) => {
+                // Use the same description for both light and dark variants
+                const currentDescription = parsedData.description;
                 const fallbackDescription =
                   logoUsageGuidance[type as keyof typeof logoUsageGuidance];
 
@@ -435,14 +436,16 @@ export function LogoSection({
                     <InlineEditable
                       value={currentDescription || fallbackDescription || ""}
                       onSave={(value) =>
-                        handleDescriptionUpdate(logo.id, variant, value)
+                        handleDescriptionUpdate(logo.id, value)
                       }
                       inputType="textarea"
                       placeholder={
                         fallbackDescription || "Add a description..."
                       }
-                      debounceMs={500}
-                      ariaLabel={`${variant} variant description`}
+                      showControls={true}
+                      validate={validateDescription}
+                      onValidationError={handleValidationError}
+                      ariaLabel="Logo description"
                       className="asset-display__info-description"
                     />
                   );

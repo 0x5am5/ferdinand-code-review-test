@@ -862,18 +862,28 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
   });
 
 export const updateBrandAssetDescriptionSchema = z.object({
-  description: z.string().optional(),
-  darkVariantDescription: z.string().optional(),
-  variant: z.enum(["light", "dark"]).optional(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less")
+    .optional(),
 });
 
 export const updateColorAssetDescriptionSchema = z.object({
-  description: z.string(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less"),
 });
 
 export const updateFontAssetDescriptionSchema = z.object({
-  description: z.string(),
+  description: z
+    .string()
+    .max(500, "Description must be 500 characters or less"),
 });
+
+// Client-side validation schema for descriptions
+export const descriptionValidationSchema = z
+  .string()
+  .max(500, "Description must be 500 characters or less");
 
 // Section metadata schemas
 export const insertSectionMetadataSchema = z.object({

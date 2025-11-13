@@ -1,4 +1,8 @@
-import { FontSource, UserRole } from "@shared/schema";
+import {
+  descriptionValidationSchema,
+  FontSource,
+  UserRole,
+} from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Trash2 } from "lucide-react";
 import React, { useState } from "react";
@@ -72,6 +76,24 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
         description: value,
       });
     }
+  };
+
+  // Validation function for descriptions
+  const validateDescription = (value: string): string | null => {
+    const result = descriptionValidationSchema.safeParse(value);
+    if (!result.success) {
+      return result.error.errors[0]?.message || "Invalid description";
+    }
+    return null;
+  };
+
+  // Handle validation errors with toast
+  const handleValidationError = (error: string) => {
+    toast({
+      title: "Validation Error",
+      description: error,
+      variant: "destructive",
+    });
   };
 
   // Set default weight to the first available weight or 400
@@ -215,7 +237,9 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
               onSave={handleDescriptionUpdate}
               inputType="textarea"
               placeholder="Add a description..."
-              debounceMs={500}
+              showControls={true}
+              validate={validateDescription}
+              onValidationError={handleValidationError}
               ariaLabel="Font description"
               className="text-xs text-muted-foreground mt-2"
             />
