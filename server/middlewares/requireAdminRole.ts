@@ -9,7 +9,7 @@ export const requireAdminRole = async (
   next: NextFunction
 ) => {
   try {
-    if (!req.session.userId) {
+    if (!req.session?.userId) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 

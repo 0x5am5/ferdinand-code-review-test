@@ -149,6 +149,7 @@ export function registerInspirationBoardsRoutes(app: Express) {
     "/api/clients/:clientId/inspiration/sections/:sectionId/images",
     upload.single("image"),
     validateClientId,
+    requireAdminRole,
     async (req: RequestWithClientId, res) => {
       try {
         const sectionId = parseInt(req.params.sectionId, 10);

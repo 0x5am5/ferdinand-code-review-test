@@ -5,59 +5,66 @@ import {
   UserRole,
 } from "@shared/schema";
 import type { Express } from "express";
+import { requireAuth } from "../middlewares/auth";
 import { storage } from "../storage";
 
 export function registerTypeScalesRoutes(app: Express) {
   // Get all type scales for a client
-  app.get("/api/clients/:clientId/type-scales", async (req, res) => {
-    try {
-      const clientId = parseInt(req.params.clientId, 10);
+  app.get(
+    "/api/clients/:clientId/type-scales",
+    requireAuth,
+    async (req, res) => {
+      try {
+        const clientId = parseInt(req.params.clientId, 10);
 
-      if (Number.isNaN(clientId)) {
-        return res.status(400).json({ error: "Invalid client ID" });
-      }
+        if (Number.isNaN(clientId)) {
+          return res.status(400).json({ error: "Invalid client ID" });
+        }
 
-      const typeScales = await storage.getClientTypeScales(clientId);
+        const typeScales = await storage.getClientTypeScales(clientId);
 
-      // Migrate type scales to new hierarchy if they don't have the new structure
-      const migratedTypeScales = typeScales.map((typeScale: TypeScale) => {
-        const currentTypeStyles = (typeScale.typeStyles as TypeStyle[]) || [];
-        const hasNewStructure = currentTypeStyles.some((style) =>
-          ["body-large", "body-small", "caption", "quote", "code"].includes(
-            style.level
-          )
-        );
+        // Migrate type scales to new hierarchy if they don't have the new structure
+        const migratedTypeScales = typeScales.map((typeScale: TypeScale) => {
+          const currentTypeStyles = (typeScale.typeStyles as TypeStyle[]) || [];
+          const hasNewStructure = currentTypeStyles.some((style) =>
+            ["body-large", "body-small", "caption", "quote", "code"].includes(
+              style.level
+            )
+          );
 
-        if (!hasNewStructure) {
-          console.log(`Migrating type scale ${typeScale.id} to new hierarchy`);
-          // Assuming migrateTypeScaleToNewHierarchy is defined elsewhere and accessible
-          // return migrateTypeScaleToNewHierarchy(typeScale);
+          if (!hasNewStructure) {
+            console.log(
+              `Migrating type scale ${typeScale.id} to new hierarchy`
+            );
+            // Assuming migrateTypeScaleToNewHierarchy is defined elsewhere and accessible
+            // return migrateTypeScaleToNewHierarchy(typeScale);
+            return {
+              ...typeScale,
+              individualHeaderStyles: typeScale.individualHeaderStyles || {},
+              individualBodyStyles: typeScale.individualBodyStyles || {},
+            }; // Placeholder, replace with actual migration logic
+          }
+
           return {
             ...typeScale,
             individualHeaderStyles: typeScale.individualHeaderStyles || {},
             individualBodyStyles: typeScale.individualBodyStyles || {},
-          }; // Placeholder, replace with actual migration logic
-        }
+          };
+        });
 
-        return {
-          ...typeScale,
-          individualHeaderStyles: typeScale.individualHeaderStyles || {},
-          individualBodyStyles: typeScale.individualBodyStyles || {},
-        };
-      });
-
-      res.json(migratedTypeScales);
-    } catch (error: unknown) {
-      console.error(
-        "Error fetching type scales:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ error: "Failed to fetch type scales" });
+        res.json(migratedTypeScales);
+      } catch (error: unknown) {
+        console.error(
+          "Error fetching type scales:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ error: "Failed to fetch type scales" });
+      }
     }
-  });
+  );
 
   // Get a specific type scale
-  app.get("/api/type-scales/:id", async (req, res) => {
+  app.get("/api/type-scales/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
 
@@ -82,61 +89,65 @@ export function registerTypeScalesRoutes(app: Express) {
   });
 
   // Create a new type scale
-  app.post("/api/clients/:clientId/type-scales", async (req, res) => {
-    try {
-      // Permission check: only editors, admins and super admins can create type scales
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
+  app.post(
+    "/api/clients/:clientId/type-scales",
+    requireAuth,
+    async (req, res) => {
+      try {
+        // Permission check: only editors, admins and super admins can create type scales
+        if (!req.session.userId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
 
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ error: "User not found" });
-      }
+        const user = await storage.getUser(req.session.userId);
+        if (!user) {
+          return res.status(401).json({ error: "User not found" });
+        }
 
-      if (
-        user.role !== UserRole.EDITOR &&
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
-        return res.status(403).json({
-          error: "Insufficient permissions to create type scales",
+        if (
+          user.role !== UserRole.EDITOR &&
+          user.role !== UserRole.ADMIN &&
+          user.role !== UserRole.SUPER_ADMIN
+        ) {
+          return res.status(403).json({
+            error: "Insufficient permissions to create type scales",
+          });
+        }
+
+        const clientId = parseInt(req.params.clientId, 10);
+
+        if (Number.isNaN(clientId)) {
+          return res.status(400).json({ error: "Invalid client ID" });
+        }
+
+        // Validate the request body
+        const validationResult = insertTypeScaleSchema.safeParse({
+          ...req.body,
+          clientId,
         });
+
+        if (!validationResult.success) {
+          return res.status(400).json({
+            error: "Invalid type scale data",
+            details: validationResult.error.errors,
+          });
+        }
+
+        const typeScale = await storage.createTypeScale(validationResult.data);
+        await storage.touchClient(clientId);
+        res.status(201).json(typeScale);
+      } catch (error: unknown) {
+        console.error(
+          "Error creating type scale:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ error: "Failed to create type scale" });
       }
-
-      const clientId = parseInt(req.params.clientId, 10);
-
-      if (Number.isNaN(clientId)) {
-        return res.status(400).json({ error: "Invalid client ID" });
-      }
-
-      // Validate the request body
-      const validationResult = insertTypeScaleSchema.safeParse({
-        ...req.body,
-        clientId,
-      });
-
-      if (!validationResult.success) {
-        return res.status(400).json({
-          error: "Invalid type scale data",
-          details: validationResult.error.errors,
-        });
-      }
-
-      const typeScale = await storage.createTypeScale(validationResult.data);
-      await storage.touchClient(clientId);
-      res.status(201).json(typeScale);
-    } catch (error: unknown) {
-      console.error(
-        "Error creating type scale:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ error: "Failed to create type scale" });
     }
-  });
+  );
 
   // Update a type scale
-  app.patch("/api/type-scales/:id", async (req, res) => {
+  app.patch("/api/type-scales/:id", requireAuth, async (req, res) => {
     try {
       // Permission check: only editors, admins and super admins can update type scales
       if (!req.session.userId) {
@@ -202,7 +213,7 @@ export function registerTypeScalesRoutes(app: Express) {
   });
 
   // Delete a type scale
-  app.delete("/api/type-scales/:id", async (req, res) => {
+  app.delete("/api/type-scales/:id", requireAuth, async (req, res) => {
     try {
       // Permission check: only admins and super admins can delete type scales
       if (!req.session.userId) {
@@ -214,10 +225,7 @@ export function registerTypeScalesRoutes(app: Express) {
         return res.status(401).json({ error: "User not found" });
       }
 
-      if (
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
+      if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({
           error: "Insufficient permissions to delete type scales",
         });
@@ -248,7 +256,7 @@ export function registerTypeScalesRoutes(app: Express) {
   });
 
   // Generate CSS export for a type scale
-  app.post("/api/type-scales/:id/export/css", async (req, res) => {
+  app.post("/api/type-scales/:id/export/css", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
 
@@ -291,47 +299,51 @@ export function registerTypeScalesRoutes(app: Express) {
   });
 
   // Generate SCSS export for a type scale
-  app.post("/api/type-scales/:id/export/scss", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
+  app.post(
+    "/api/type-scales/:id/export/scss",
+    requireAuth,
+    async (req, res) => {
+      try {
+        const id = parseInt(req.params.id, 10);
 
-      if (Number.isNaN(id)) {
-        return res.status(400).json({ error: "Invalid type scale ID" });
+        if (Number.isNaN(id)) {
+          return res.status(400).json({ error: "Invalid type scale ID" });
+        }
+
+        const typeScale = await storage.getTypeScale(id);
+        if (!typeScale) {
+          return res.status(404).json({ error: "Type scale not found" });
+        }
+
+        // Generate SCSS from type scale
+        const scss = generateSCSS(typeScale);
+
+        // Update exports array
+        const newExport = {
+          format: "scss" as const,
+          content: scss,
+          fileName: `${typeScale.name.toLowerCase().replace(/\s+/g, "-")}-type-scale.scss`,
+          exportedAt: new Date().toISOString(),
+        };
+
+        const updatedExports = [...(typeScale.exports || []), newExport];
+        await storage.updateTypeScale(id, { exports: updatedExports });
+        await storage.touchClient(typeScale.clientId);
+
+        res.json({
+          content: scss,
+          fileName: newExport.fileName,
+          mimeType: "text/scss",
+        });
+      } catch (error: unknown) {
+        console.error(
+          "Error generating SCSS export:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ error: "Failed to generate SCSS export" });
       }
-
-      const typeScale = await storage.getTypeScale(id);
-      if (!typeScale) {
-        return res.status(404).json({ error: "Type scale not found" });
-      }
-
-      // Generate SCSS from type scale
-      const scss = generateSCSS(typeScale);
-
-      // Update exports array
-      const newExport = {
-        format: "scss" as const,
-        content: scss,
-        fileName: `${typeScale.name.toLowerCase().replace(/\s+/g, "-")}-type-scale.scss`,
-        exportedAt: new Date().toISOString(),
-      };
-
-      const updatedExports = [...(typeScale.exports || []), newExport];
-      await storage.updateTypeScale(id, { exports: updatedExports });
-      await storage.touchClient(typeScale.clientId);
-
-      res.json({
-        content: scss,
-        fileName: newExport.fileName,
-        mimeType: "text/scss",
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Error generating SCSS export:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ error: "Failed to generate SCSS export" });
     }
-  });
+  );
 }
 
 // Helper function to calculate font size based on scale ratio and step
