@@ -544,6 +544,16 @@ export function registerBrandAssetRoutes(app: Express) {
           });
         }
 
+        // Color asset creation requires editor role or higher
+        if (category === "color" && user.role === UserRole.STANDARD) {
+          console.log(
+            `[Asset Upload] User ${userId} (role: ${user.role}) denied: insufficient permissions for color creation`
+          );
+          return res.status(403).json({
+            message: "Only editors and admins can create color assets",
+          });
+        }
+
         // Log user attempting upload
         console.log(
           `[Asset Upload] User ${userId} (role: ${user.role}) attempting upload to client ${clientId}`
@@ -989,6 +999,20 @@ export function registerBrandAssetRoutes(app: Express) {
           );
           return res.status(403).json({
             message: "Only editors and admins can update font assets",
+          });
+        }
+
+        // Color asset updates require editor role or higher
+        if (
+          asset &&
+          asset.category === "color" &&
+          user.role === UserRole.STANDARD
+        ) {
+          console.log(
+            `[Asset Update] User ${userId} (role: ${user.role}) denied: insufficient permissions for color updates`
+          );
+          return res.status(403).json({
+            message: "Only editors and admins can update color assets",
           });
         }
 

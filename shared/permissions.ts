@@ -62,7 +62,7 @@ export const ROLE_PERMISSIONS: Record<
     [Resource.HIDDEN_SECTIONS]: [PermissionAction.READ],
   },
   [UserRole.STANDARD]: {
-    [Resource.BRAND_ASSETS]: [PermissionAction.READ, PermissionAction.CREATE],
+    [Resource.BRAND_ASSETS]: [PermissionAction.READ],
     [Resource.FILE_ASSETS]: [PermissionAction.READ, PermissionAction.CREATE],
     [Resource.TYPE_SCALES]: [PermissionAction.READ],
     [Resource.USER_PERSONAS]: [PermissionAction.READ],
