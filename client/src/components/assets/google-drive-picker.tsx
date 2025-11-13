@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import type { PropsWithChildren } from 'react';
+import type React from "react";
+import type { PropsWithChildren } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // Declare google picker types
 declare global {
@@ -83,17 +84,19 @@ interface GoogleDrivePickerProps {
   mimeTypes?: string[];
 }
 
-const GOOGLE_PICKER_SCRIPT = 'https://apis.google.com/js/api.js';
-const GAPI_LOADER_SCRIPT = 'https://apis.google.com/js/platform.js';
+const GOOGLE_PICKER_SCRIPT = "https://apis.google.com/js/api.js";
+const GAPI_LOADER_SCRIPT = "https://apis.google.com/js/platform.js";
 
-export const GoogleDrivePicker: React.FC<PropsWithChildren<GoogleDrivePickerProps>> = ({
+export const GoogleDrivePicker: React.FC<
+  PropsWithChildren<GoogleDrivePickerProps>
+> = ({
   appId,
   oauthToken,
   onFilesSelected,
   allowFolders = true,
   allowMultiple = true,
   mimeTypes,
-  children
+  children,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPickerLoaded, setIsPickerLoaded] = useState(false);
@@ -125,12 +128,12 @@ export const GoogleDrivePicker: React.FC<PropsWithChildren<GoogleDrivePickerProp
   // Initialize and show picker
   const handleOpenPicker = useCallback(() => {
     if (!window.google || !window.google.picker) {
-      console.error('Google Picker API not loaded');
+      console.error("Google Picker API not loaded");
       return;
     }
 
     if (!oauthToken) {
-      console.error('No OAuth token available');
+      console.error("No OAuth token available");
       return;
     }
 
@@ -139,7 +142,7 @@ export const GoogleDrivePicker: React.FC<PropsWithChildren<GoogleDrivePickerProp
       .setOAuthToken(oauthToken)
       .setDeveloperKey(import.meta.env.VITE_GOOGLE_API_KEY || "")
       .setCallback((data: google.picker.ResponseObject) => {
-        if (data.action === 'picked') {
+        if (data.action === "picked") {
           onFilesSelected?.(data.docs || []);
         }
       });
@@ -168,7 +171,14 @@ export const GoogleDrivePicker: React.FC<PropsWithChildren<GoogleDrivePickerProp
 
     picker.addView(docsView);
     picker.build().setVisible(true);
-  }, [appId, oauthToken, onFilesSelected, allowFolders, allowMultiple, mimeTypes]);
+  }, [
+    appId,
+    oauthToken,
+    onFilesSelected,
+    allowFolders,
+    allowMultiple,
+    mimeTypes,
+  ]);
 
   if (isLoading) {
     return <div>Loading Google Drive integration...</div>;
@@ -195,7 +205,7 @@ const loadScript = (src: string): Promise<void> => {
       return;
     }
 
-    const script = document.createElement('script');
+    const script = document.createElement("script");
     script.src = src;
     script.onload = () => resolve();
     script.onerror = () => reject(new Error(`Failed to load script: ${src}`));

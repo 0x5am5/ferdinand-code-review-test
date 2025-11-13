@@ -180,7 +180,10 @@ export async function handleFontSubcommand({
               sentCodeBlocks++;
             } catch (ephemeralError) {
               // Fallback to DM
-              console.error('Failed to send font code via ephemeral:', ephemeralError);
+              console.error(
+                "Failed to send font code via ephemeral:",
+                ephemeralError
+              );
               try {
                 const conversationResponse =
                   await workspaceClient.conversations.open({

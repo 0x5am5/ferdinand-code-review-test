@@ -338,7 +338,11 @@ export const AssetList: FC<AssetListProps> = ({
             )}
 
             {canEdit && (
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+              >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete {selectedAssets.size}
               </Button>

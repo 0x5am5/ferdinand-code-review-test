@@ -205,7 +205,9 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
               deleteLogo.mutate({ logoId, variant })
             }
             queryClient={queryClient}
-            onRemoveSection={canManageSections ? handleRemoveSection : undefined}
+            onRemoveSection={
+              canManageSections ? handleRemoveSection : undefined
+            }
           />
         );
       })}

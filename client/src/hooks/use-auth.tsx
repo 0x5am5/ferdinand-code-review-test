@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return false;
       }
     } catch (error: unknown) {
-      console.error('Failed to fetch user:', error);
+      console.error("Failed to fetch user:", error);
       setUser(null);
       return false;
     } finally {

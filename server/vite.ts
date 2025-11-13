@@ -46,13 +46,14 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
-  
+
   // List of static file extensions that should not be treated as HTML pages
-  const staticExtensions = /\.(js|jsx|ts|tsx|css|map|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|json|txt|xml|webmanifest)$/i;
-  
+  const staticExtensions =
+    /\.(js|jsx|ts|tsx|css|map|svg|png|jpg|jpeg|gif|ico|woff|woff2|ttf|eot|json|txt|xml|webmanifest)$/i;
+
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
-    
+
     // Skip HTML transformation for static files - let Vite handle them
     if (staticExtensions.test(url)) {
       return next();

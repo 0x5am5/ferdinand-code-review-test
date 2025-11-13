@@ -16,7 +16,7 @@ export async function signInWithGoogle(invitationToken?: string) {
     // Send the token to our backend
     await apiRequest("POST", "/api/auth/google", {
       idToken,
-      ...(invitationToken && { invitationToken })
+      ...(invitationToken && { invitationToken }),
     });
 
     console.log("Authentication completed successfully");

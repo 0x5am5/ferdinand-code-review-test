@@ -33,8 +33,8 @@ import {
   type InsertFontAsset,
   insertColorAssetSchema,
   insertFontAssetSchema,
-  userClients,
   UserRole,
+  userClients,
 } from "@shared/schema";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
@@ -539,9 +539,9 @@ export function registerBrandAssetRoutes(app: Express) {
           console.log(
             `[Asset Upload] User ${userId} (role: ${user.role}) denied: insufficient permissions for font creation`
           );
-          return res
-            .status(403)
-            .json({ message: "Only editors and admins can create font assets" });
+          return res.status(403).json({
+            message: "Only editors and admins can create font assets",
+          });
         }
 
         // Log user attempting upload
@@ -979,13 +979,17 @@ export function registerBrandAssetRoutes(app: Express) {
         const asset = await storage.getAsset(assetId);
 
         // Font asset updates require editor role or higher
-        if (asset && asset.category === "font" && user.role === UserRole.STANDARD) {
+        if (
+          asset &&
+          asset.category === "font" &&
+          user.role === UserRole.STANDARD
+        ) {
           console.log(
             `[Asset Update] User ${userId} (role: ${user.role}) denied: insufficient permissions for font updates`
           );
-          return res
-            .status(403)
-            .json({ message: "Only editors and admins can update font assets" });
+          return res.status(403).json({
+            message: "Only editors and admins can update font assets",
+          });
         }
 
         if (!asset) {
@@ -1322,9 +1326,9 @@ export function registerBrandAssetRoutes(app: Express) {
           console.log(
             `[Asset Delete] User ${userId} (role: ${user.role}) denied: insufficient permissions for font deletion`
           );
-          return res
-            .status(403)
-            .json({ message: "Only editors and admins can delete font assets" });
+          return res.status(403).json({
+            message: "Only editors and admins can delete font assets",
+          });
         }
 
         // Verify user has access to this client (unless super admin)

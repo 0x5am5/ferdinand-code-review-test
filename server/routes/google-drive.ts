@@ -1,3 +1,9 @@
+import {
+  googleDriveConnections,
+  UserRole,
+  userClients,
+  users,
+} from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import type { Express } from "express";
 import { OAuth2Client } from "google-auth-library";
@@ -16,12 +22,6 @@ import {
   listDriveFiles,
   validateFileForImport,
 } from "../services/google-drive";
-import {
-  googleDriveConnections,
-  users,
-  userClients,
-  UserRole,
-} from "@shared/schema";
 import type { RequestWithClientId } from "./index";
 
 // Initialize OAuth2 client for generating auth URLs

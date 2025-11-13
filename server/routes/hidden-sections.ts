@@ -25,9 +25,9 @@ const requireAdminRole = async (
       user.role !== UserRole.SUPER_ADMIN &&
       user.role !== UserRole.EDITOR
     ) {
-      return res
-        .status(403)
-        .json({ message: "Forbidden - Admin, Super Admin, or Editor role required" });
+      return res.status(403).json({
+        message: "Forbidden - Admin, Super Admin, or Editor role required",
+      });
     }
 
     next();

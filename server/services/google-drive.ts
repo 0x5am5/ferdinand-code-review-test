@@ -1,7 +1,12 @@
-import { assets, insertAssetSchema, type UserRoleType, userClients } from "@shared/schema";
+import {
+  assets,
+  insertAssetSchema,
+  type UserRoleType,
+  userClients,
+} from "@shared/schema";
+import { and, eq } from "drizzle-orm";
 import type { OAuth2Client } from "google-auth-library";
 import { type drive_v3, google } from "googleapis";
-import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { generateStoragePath, generateUniqueFileName } from "../storage";
 import {
@@ -82,7 +87,9 @@ async function ensureUserClientAccess({
     const existingAccess = await db
       .select()
       .from(userClients)
-      .where(and(eq(userClients.userId, userId), eq(userClients.clientId, clientId)))
+      .where(
+        and(eq(userClients.userId, userId), eq(userClients.clientId, clientId))
+      )
       .limit(1);
 
     // If not, create the association

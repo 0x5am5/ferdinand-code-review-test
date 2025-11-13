@@ -868,12 +868,9 @@ export function registerFileAssetRoutes(app: Express) {
         console.log(
           `[Asset Delete] User ${req.session.userId} denied: ${permission.reason || "No permission"}`
         );
-        return res
-          .status(403)
-          .json({
-            message:
-              permission.reason || "Not authorized to delete this asset",
-          });
+        return res.status(403).json({
+          message: permission.reason || "Not authorized to delete this asset",
+        });
       }
 
       console.log(

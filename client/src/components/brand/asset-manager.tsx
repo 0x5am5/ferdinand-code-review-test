@@ -159,11 +159,15 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     importMutation.mutate({ files, clientId });
   };
 
-  // All users except guests can connect Google Drive
-  const canUseGoogleDrive = user?.role !== UserRole.GUEST;
+  const canUseGoogleDrive =
+    user?.role === UserRole.EDITOR ||
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN;
 
-  // Guest users cannot upload or delete assets
-  const canEditAssets = user?.role !== UserRole.GUEST;
+  const canEditAssets =
+    user?.role === UserRole.EDITOR ||
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN;
 
   return (
     <section

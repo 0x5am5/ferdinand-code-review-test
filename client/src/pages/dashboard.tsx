@@ -110,7 +110,7 @@ function ClientLogo({
               : asset.data;
           return data?.type === type;
         } catch (error) {
-          console.error('Failed to parse logo data:', error);
+          console.error("Failed to parse logo data:", error);
           return false;
         }
       });

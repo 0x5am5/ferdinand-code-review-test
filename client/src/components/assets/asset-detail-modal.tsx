@@ -1,3 +1,4 @@
+import { UserRole } from "@shared/schema";
 import {
   Calendar,
   Copy,
@@ -11,8 +12,6 @@ import {
   X,
 } from "lucide-react";
 import React, { type FC, useEffect, useState } from "react";
-import { UserRole } from "@shared/schema";
-import { useAuth } from "@/hooks/use-auth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +41,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import {
   type Asset,
@@ -366,7 +366,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
               </div>
             </div>
 
-            {/* Visibility - only show for users who can edit */}
+            {/* Visibility */}
             {canEditAsset && (
               <>
                 <Separator />
@@ -405,10 +405,14 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                       key={category.id}
                       variant={isSelected ? "default" : "outline"}
                       className={canEditAsset ? "cursor-pointer" : ""}
-                      onClick={() => canEditAsset && handleCategoryToggle(category.id)}
+                      onClick={() =>
+                        canEditAsset && handleCategoryToggle(category.id)
+                      }
                     >
                       {category.name}
-                      {isSelected && canEditAsset && <X className="h-3 w-3 ml-1" />}
+                      {isSelected && canEditAsset && (
+                        <X className="h-3 w-3 ml-1" />
+                      )}
                     </Badge>
                   );
                 })}
@@ -431,13 +435,15 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                       onClick={() => canEditAsset && handleTagToggle(tag.id)}
                     >
                       {tag.name}
-                      {isSelected && canEditAsset && <X className="h-3 w-3 ml-1" />}
+                      {isSelected && canEditAsset && (
+                        <X className="h-3 w-3 ml-1" />
+                      )}
                     </Badge>
                   );
                 })}
               </div>
 
-              {/* Create new tag - only show for users who can edit */}
+              {/* Create new tag */}
               {canEditAsset && (
                 <div className="flex gap-2 mt-3">
                   <Input
@@ -460,83 +466,83 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
               )}
             </div>
 
-            {/* Public Links - only show for non-reference assets and users who can edit */}
+            {/* Public Links */}
             {!asset.referenceOnly && !publicLinksError && canEditAsset && (
               <>
                 <Separator />
                 <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Link2 className="h-4 w-4" />
-                  Public Links
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Generate shareable links for this asset
-                </p>
+                  <Label className="flex items-center gap-2">
+                    <Link2 className="h-4 w-4" />
+                    Public Links
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Generate shareable links for this asset
+                  </p>
 
-                {/* Existing links */}
-                {publicLinks.length > 0 && (
-                  <div className="space-y-2 mt-3">
-                    {publicLinks.map((link) => (
-                      <div
-                        key={link.id}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="text-sm font-mono truncate">
-                              {`/public/assets/${link.token.substring(0, 16)}...`}
-                            </span>
+                  {/* Existing links */}
+                  {publicLinks.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {publicLinks.map((link) => (
+                        <div
+                          key={link.id}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="text-sm font-mono truncate">
+                                {`/public/assets/${link.token.substring(0, 16)}...`}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Expires: {formatExpiryDate(link.expiresAt)}
+                            </p>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Expires: {formatExpiryDate(link.expiresAt)}
-                          </p>
+                          <div className="flex gap-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopyLink(link.token)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeletePublicLink(link.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        <div className="flex gap-1 ml-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleCopyLink(link.token)}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeletePublicLink(link.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
 
-                {/* Create new link */}
-                <div className="flex gap-2 mt-3">
-                  <Select value={linkExpiry} onValueChange={setLinkExpiry}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 day</SelectItem>
-                      <SelectItem value="3">3 days</SelectItem>
-                      <SelectItem value="7">7 days</SelectItem>
-                      <SelectItem value="never">No expiry</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCreatePublicLink}
-                    disabled={createPublicLinkMutation.isPending}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Generate Link
-                  </Button>
+                  {/* Create new link */}
+                  <div className="flex gap-2 mt-3">
+                    <Select value={linkExpiry} onValueChange={setLinkExpiry}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 day</SelectItem>
+                        <SelectItem value="3">3 days</SelectItem>
+                        <SelectItem value="7">7 days</SelectItem>
+                        <SelectItem value="never">No expiry</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreatePublicLink}
+                      disabled={createPublicLinkMutation.isPending}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Generate Link
+                    </Button>
+                  </div>
                 </div>
-              </div>
               </>
             )}
           </div>
