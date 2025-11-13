@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useEffect, useId, useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import "../../styles/components/color-picker-popover.scss";
 import type { BrandAsset } from "@shared/schema";
-import { UserRole } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertDialog,
@@ -33,7 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useAuth } from "@/hooks/use-auth";
+import { PermissionAction, Resource } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import {
   generateTintsAndShades,
@@ -69,7 +69,6 @@ type ColorBrandAsset = BrandAsset & {
 // ColorCard component for the color manager
 export function ColorCard({
   color,
-  onEdit,
   onDelete,
   onGenerate,
   neutralColorsCount,
@@ -88,7 +87,6 @@ export function ColorCard({
   clientId: number;
 }) {
   const { toast } = useToast();
-  const { user } = useAuth();
   const queryClient = useQueryClient();
   const hexInputId = useId();
   const [showTints, setShowTints] = useState(false);
@@ -97,9 +95,6 @@ export function ColorCard({
   const [copiedFormats, setCopiedFormats] = useState<Record<string, boolean>>(
     {}
   );
-
-  // Guest users should only be able to copy colors
-  const canEditColors = user?.role !== UserRole.GUEST;
 
   // Load saved Pantone value on mount
   useEffect(() => {
@@ -513,27 +508,32 @@ export function ColorCard({
           {color.data.category === "neutral" &&
             onGenerate &&
             !/^Grey \d+$/.test(color.name) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
-                onClick={onGenerate}
-                title={
-                  neutralColorsCount && neutralColorsCount >= 11
-                    ? "Re-generate grey shades"
-                    : "Generate grey shades"
-                }
+              <PermissionGate
+                action={PermissionAction.CREATE}
+                resource={Resource.BRAND_ASSETS}
               >
-                <RotateCcw
-                  className="h-6 w-6"
-                  style={{
-                    color:
-                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                        ? "#000"
-                        : "#fff",
-                  }}
-                />
-              </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+                  onClick={onGenerate}
+                  title={
+                    neutralColorsCount && neutralColorsCount >= 11
+                      ? "Re-generate grey shades"
+                      : "Generate grey shades"
+                  }
+                >
+                  <RotateCcw
+                    className="h-6 w-6"
+                    style={{
+                      color:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#000"
+                          : "#fff",
+                    }}
+                  />
+                </Button>
+              </PermissionGate>
             )}
           <TooltipProvider>
             <Tooltip>
@@ -599,64 +599,69 @@ export function ColorCard({
               }}
             />
           </Button>
-          {canEditColors && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
-                onClick={handleStartEdit}
-              >
-                <Edit2
-                  className="h-6 w-6"
-                  style={{
-                    color:
-                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                        ? "#000"
-                        : "#fff",
-                  }}
-                />
-              </Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+          <PermissionGate
+            action={PermissionAction.UPDATE}
+            resource={Resource.BRAND_ASSETS}
+          >
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+              onClick={handleStartEdit}
+            >
+              <Edit2
+                className="h-6 w-6"
+                style={{
+                  color:
+                    parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                      ? "#000"
+                      : "#fff",
+                }}
+              />
+            </Button>
+          </PermissionGate>
+          <PermissionGate
+            action={PermissionAction.DELETE}
+            resource={Resource.BRAND_ASSETS}
+          >
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+                >
+                  <Trash2
+                    className="h-6 w-6"
+                    style={{
+                      color:
+                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
+                          ? "#000"
+                          : "#fff",
+                    }}
+                  />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Color</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{color.name}"? This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => onDelete(color.id)}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    <Trash2
-                      className="h-6 w-6"
-                      style={{
-                        color:
-                          parseInt(displayHex.replace("#", ""), 16) >
-                          0xffffff / 2
-                            ? "#000"
-                            : "#fff",
-                      }}
-                    />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Color</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete "{color.name}"? This
-                      action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => onDelete(color.id)}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </PermissionGate>
         </div>
       </motion.div>
 

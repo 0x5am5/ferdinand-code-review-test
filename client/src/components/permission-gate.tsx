@@ -6,13 +6,15 @@ import { usePermissions } from "@/hooks/use-permissions";
 interface PermissionGateProps {
   /**
    * The action to check (create, read, update, delete, etc.)
+   * Required when using action/resource-based permissions
    */
-  action: PermissionActionType;
+  action?: PermissionActionType;
 
   /**
    * The resource type to check (brand_assets, file_assets, etc.)
+   * Required when using action/resource-based permissions
    */
-  resource: ResourceType;
+  resource?: ResourceType;
 
   /**
    * Optional: The owner ID of the resource (for ownership checks)
@@ -96,25 +98,26 @@ export function PermissionGate({
 
   // Show loading state if provided
   if (isLoading && loadingFallback) {
-    return <>{loadingFallback}</>;
+    return loadingFallback;
   }
 
   // Check minimum role if provided
   if (minimumRole) {
-    return hasRole(minimumRole) ? <>{children}</> : <>{fallback}</>;
+    return hasRole(minimumRole) ? children : fallback;
   }
 
   // Check ownership-based permission if resourceOwnerId is provided
-  if (resourceOwnerId !== undefined) {
-    return canModify(action, resource, resourceOwnerId) ? (
-      <>{children}</>
-    ) : (
-      <>{fallback}</>
-    );
+  if (resourceOwnerId !== undefined && action && resource) {
+    return canModify(action, resource, resourceOwnerId) ? children : fallback;
   }
 
   // Check general permission
-  return can(action, resource) ? <>{children}</> : <>{fallback}</>;
+  if (action && resource) {
+    return can(action, resource) ? children : fallback;
+  }
+
+  // If neither minimumRole nor action/resource is provided, deny access
+  return fallback;
 }
 
 /**

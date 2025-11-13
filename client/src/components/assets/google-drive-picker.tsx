@@ -84,9 +84,6 @@ interface GoogleDrivePickerProps {
   mimeTypes?: string[];
 }
 
-const GOOGLE_PICKER_SCRIPT = "https://apis.google.com/js/api.js";
-const GAPI_LOADER_SCRIPT = "https://apis.google.com/js/platform.js";
-
 export const GoogleDrivePicker: React.FC<
   PropsWithChildren<GoogleDrivePickerProps>
 > = ({
@@ -99,7 +96,7 @@ export const GoogleDrivePicker: React.FC<
   children,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isPickerLoaded, setIsPickerLoaded] = useState(false);
+  const [_isPickerLoaded, setIsPickerLoaded] = useState(false);
 
   // Load Google Picker API
   useEffect(() => {
@@ -198,7 +195,7 @@ export const GoogleDrivePicker: React.FC<
 };
 
 // Helper function to load scripts
-const loadScript = (src: string): Promise<void> => {
+const _loadScript = (src: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
       resolve();

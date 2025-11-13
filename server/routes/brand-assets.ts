@@ -226,7 +226,7 @@ export function registerBrandAssetRoutes(app: Express) {
       }
 
       const user = await storage.getUser(req.session.userId);
-      if (!user || user.role !== "super_admin") {
+      if (!user || user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -246,7 +246,7 @@ export function registerBrandAssetRoutes(app: Express) {
       }
 
       const user = await storage.getUser(req.session.userId);
-      if (!user || user.role !== "super_admin") {
+      if (!user || user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -550,7 +550,7 @@ export function registerBrandAssetRoutes(app: Express) {
         );
 
         // Verify user has access to this client (unless super admin)
-        if (user.role !== "super_admin") {
+        if (user.role !== UserRole.SUPER_ADMIN) {
           console.log(
             `[Asset Upload] Checking client access for non-super-admin user ${userId}`
           );
@@ -1332,7 +1332,7 @@ export function registerBrandAssetRoutes(app: Express) {
         }
 
         // Verify user has access to this client (unless super admin)
-        if (user.role !== "super_admin") {
+        if (user.role !== UserRole.SUPER_ADMIN) {
           const userClient = await db
             .select()
             .from(userClients)
@@ -2120,7 +2120,10 @@ export function registerBrandAssetRoutes(app: Express) {
         // Brand assets rarely change, so we can cache them for a long time
         res.setHeader("Content-Type", mimeType);
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); // 1 year
-        res.setHeader("ETag", `"${assetId}-${asset.updatedAt?.getTime() || asset.createdAt?.getTime()}"`);
+        res.setHeader(
+          "ETag",
+          `"${assetId}-${asset.updatedAt?.getTime() || asset.createdAt?.getTime()}"`
+        );
         return res.send(fileBuffer);
       } catch (error: unknown) {
         console.error(

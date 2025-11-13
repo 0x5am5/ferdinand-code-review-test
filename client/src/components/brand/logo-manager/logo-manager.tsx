@@ -1,7 +1,8 @@
-import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
+import { type BrandAsset, LogoType } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +11,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useAuth } from "@/hooks/use-auth";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import {
   useAddHiddenSection,
@@ -27,7 +32,7 @@ interface LogoManagerProps {
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const { toast } = useToast();
-  const { user = null } = useAuth();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
   const [visibleSections, setVisibleSections] = useState<string[]>([]);
   const [showAddSection, setShowAddSection] = useState(false);
@@ -39,10 +44,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const addHiddenSection = useAddHiddenSection(clientId);
   const removeHiddenSection = useRemoveHiddenSection(clientId);
 
-  const canManageSections =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
+  const canManageSections = can(
+    PermissionAction.UPDATE,
+    Resource.HIDDEN_SECTIONS
+  );
 
   useEffect(() => {
     if (loadingHiddenSections) return;
@@ -174,24 +179,28 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             Manage and download the official logos for this brand
           </p>
         </div>
-        {canManageSections && availableSections.length > 0 && (
-          <Button
-            onClick={() => setShowAddSection(true)}
-            variant="outline"
-            className="flex items-center gap-1"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Section</span>
-          </Button>
-        )}
+        <PermissionGate
+          action={PermissionAction.UPDATE}
+          resource={Resource.HIDDEN_SECTIONS}
+        >
+          {availableSections.length > 0 && (
+            <Button
+              onClick={() => setShowAddSection(true)}
+              variant="outline"
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Section</span>
+            </Button>
+          )}
+        </PermissionGate>
       </div>
 
       {visibleSections.map((type) => {
         const logosForType = logosByType[type] || [];
-        const isGuest = user?.role === UserRole.GUEST;
 
         // Hide empty sections for guest users since they can't upload
-        if (isGuest && logosForType.length === 0) {
+        if (!canManageSections && logosForType.length === 0) {
           return null;
         }
 
@@ -212,7 +221,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         );
       })}
 
-      {canManageSections && (
+      <PermissionGate
+        action={PermissionAction.CREATE}
+        resource={Resource.HIDDEN_SECTIONS}
+      >
         <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
           <DialogContent>
             <DialogHeader>
@@ -241,7 +253,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             </div>
           </DialogContent>
         </Dialog>
-      )}
+      </PermissionGate>
     </div>
   );
 }

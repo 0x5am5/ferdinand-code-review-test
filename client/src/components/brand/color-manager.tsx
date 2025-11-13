@@ -594,9 +594,12 @@ export function ColorManager({
 
   if (!user) return null;
 
-  // Permission check: guests cannot edit/add colors
-  const canEditColors = user.role !== UserRole.GUEST;
-  const isGuest = user.role === UserRole.GUEST;
+  const canEditColors =
+    user.role === UserRole.SUPER_ADMIN ||
+    user.role === UserRole.EDITOR ||
+    user.role === UserRole.ADMIN;
+  const isGuest =
+    user.role === UserRole.GUEST || user.role === UserRole.STANDARD;
 
   return (
     <div>

@@ -119,15 +119,30 @@ export function registerGoogleDriveRoutes(app: Express) {
         const { refreshUserTokens } = await import(
           "../middlewares/google-drive-auth"
         );
-        const refreshedClient = await refreshUserTokens(
-          req.session.userId.toString()
-        );
-        const credentials = refreshedClient.credentials;
 
-        return res.json({
-          accessToken: credentials.access_token,
-          expiresAt: credentials.expiry_date,
-        });
+        try {
+          const refreshedClient = await refreshUserTokens(
+            req.session.userId.toString()
+          );
+          const credentials = refreshedClient.credentials;
+
+          return res.json({
+            accessToken: credentials.access_token,
+            expiresAt: credentials.expiry_date,
+          });
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+
+          // Delete the invalid connection so user can reconnect
+          await db
+            .delete(googleDriveConnections)
+            .where(eq(googleDriveConnections.userId, req.session.userId));
+
+          return res.status(401).json({
+            message: "Google Drive authentication expired. Please reconnect.",
+            requiresReauth: true,
+          });
+        }
       }
 
       // Decrypt and return valid token
