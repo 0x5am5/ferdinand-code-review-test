@@ -12,8 +12,9 @@
  * - SUPER_ADMIN: System-wide access
  */
 
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { UserRole } from '@shared/schema';
+import type { Client } from '@shared/schema';
 import type { Request, Response } from 'express';
 import {
   TEST_USERS,
@@ -26,26 +27,28 @@ import {
   expectBlocked,
 } from '../helpers/role-test-helpers';
 
-// Mock storage module - must be before imports
-import type { User } from '@shared/schema';
+// Import storage to spy on
+import { storage } from '../../server/storage';
 
-const mockGetUser = jest.fn() as jest.MockedFunction<(userId: number) => Promise<User | null>>;
-const mockGetUserClients = jest.fn() as jest.MockedFunction<(userId: number) => Promise<Array<{ id: number; name: string }>>>;
-
-jest.mock('../../server/storage.ts', () => ({
-  storage: {
-    getUser: mockGetUser,
-    getUserClients: mockGetUserClients,
-  },
-}));
-
+// Import modules under test
 import { requireAuth, requireAdmin, requireSuperAdmin, canAdminAccessClient } from '../../server/middlewares/auth';
 import { requireMinimumRole } from '../../server/middlewares/requireMinimumRole';
 import { requireAdminRole } from '../../server/middlewares/requireAdminRole';
 
 describe('Role-Based Access Control (RBAC)', () => {
+  // Spy on storage methods
+  let mockGetUser: jest.SpiedFunction<typeof storage.getUser>;
+  let mockGetUserClients: jest.SpiedFunction<typeof storage.getUserClients>;
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Create spies for storage methods
+    mockGetUser = jest.spyOn(storage, 'getUser');
+    mockGetUserClients = jest.spyOn(storage, 'getUserClients');
+  });
+
+  afterEach(() => {
+    // Restore original implementations
+    jest.restoreAllMocks();
   });
 
   describe('Authentication Middleware (requireAuth)', () => {
@@ -345,6 +348,32 @@ describe('Role-Based Access Control (RBAC)', () => {
   describe('Client-Scoped Admin Access (canAdminAccessClient)', () => {
     const TEST_CLIENT_ID = 100;
 
+    const createMockClient = (id: number, name: string): Client => ({
+      id,
+      name,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      description: null,
+      website: null,
+      address: null,
+      phone: null,
+      primaryColor: null,
+      displayOrder: null,
+      userId: null,
+      logo: null,
+      featureToggles: {
+        logoSystem: true,
+        colorSystem: true,
+        typeSystem: true,
+        userPersonas: true,
+        inspiration: true,
+        figmaIntegration: false,
+        slackIntegration: false,
+        brandAssets: true,
+      },
+      lastEditedBy: null,
+    });
+
     it('should allow SUPER_ADMIN to access any client', async () => {
       mockGetUser.mockResolvedValue(TEST_USERS.superAdmin);
 
@@ -356,7 +385,7 @@ describe('Role-Based Access Control (RBAC)', () => {
     it('should allow ADMIN to access assigned clients', async () => {
       mockGetUser.mockResolvedValue(TEST_USERS.admin);
       mockGetUserClients.mockResolvedValue([
-        { id: TEST_CLIENT_ID, name: 'Test Client' },
+        createMockClient(TEST_CLIENT_ID, 'Test Client'),
       ]);
 
       const hasAccess = await canAdminAccessClient(TEST_USERS.admin.id, TEST_CLIENT_ID);
@@ -368,7 +397,7 @@ describe('Role-Based Access Control (RBAC)', () => {
     it('should block ADMIN from accessing non-assigned clients', async () => {
       mockGetUser.mockResolvedValue(TEST_USERS.admin);
       mockGetUserClients.mockResolvedValue([
-        { id: 999, name: 'Other Client' },
+        createMockClient(999, 'Other Client'),
       ]);
 
       const hasAccess = await canAdminAccessClient(TEST_USERS.admin.id, TEST_CLIENT_ID);
@@ -433,7 +462,7 @@ describe('Role-Based Access Control (RBAC)', () => {
 
   describe('Edge Cases and Security', () => {
     it('should handle missing user gracefully', async () => {
-      mockGetUser.mockResolvedValue(null);
+      mockGetUser.mockResolvedValue(undefined);
 
       const req = createMockRequestWithRole('admin');
       const { res, spies } = createMockResponse();

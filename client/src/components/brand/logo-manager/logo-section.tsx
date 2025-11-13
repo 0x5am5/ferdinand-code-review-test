@@ -38,8 +38,10 @@ export function LogoSection({
   const [isDarkVariantDragging, setIsDarkVariantDragging] = useState(false);
   const currentType = type;
 
-  // Guest users should only be able to download logos
-  const canEditLogos = user?.role !== UserRole.GUEST;
+  const canEditLogos =
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR ||
+    user?.role === UserRole.ADMIN;
 
   const handleDarkVariantDragEnter = useCallback(
     (e: DragEvent<HTMLElement>) => {

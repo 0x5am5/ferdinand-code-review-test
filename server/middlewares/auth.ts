@@ -1,4 +1,8 @@
+import { userClients } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
+import { db } from "../db";
+import { storage } from "../storage";
 
 /**
  * Middleware to ensure user is authenticated
@@ -23,7 +27,6 @@ export async function canAdminAccessClient(
   clientId: number
 ): Promise<boolean> {
   try {
-    const { storage } = await import("../storage");
     const user = await storage.getUser(userId);
 
     if (!user) return false;
@@ -56,11 +59,6 @@ export async function canAdminAccessUser(
   targetUserId: number
 ): Promise<boolean> {
   try {
-    const { storage } = await import("../storage");
-    const { db } = await import("../db");
-    const { userClients } = await import("@shared/schema");
-    const { eq } = await import("drizzle-orm");
-
     const admin = await storage.getUser(adminId);
     if (!admin) return false;
 
@@ -102,7 +100,6 @@ export async function requireAdmin(
   }
 
   try {
-    const { storage } = await import("../storage");
     const user = await storage.getUser(req.session.userId);
 
     if (!user) {
@@ -133,7 +130,6 @@ export async function requireSuperAdmin(
   }
 
   try {
-    const { storage } = await import("../storage");
     const user = await storage.getUser(req.session.userId);
 
     if (!user) {
