@@ -55,7 +55,9 @@ export function AssetSection({
           <div className="asset-section__empty-info">
             <p>{description}</p>
           </div>
-          {user && user.role !== UserRole.STANDARD
+          {user &&
+          user.role !== UserRole.STANDARD &&
+          user.role !== UserRole.GUEST
             ? uploadComponent
             : emptyPlaceholder}
         </div>

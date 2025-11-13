@@ -162,6 +162,9 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   // All users except guests can connect Google Drive
   const canUseGoogleDrive = user?.role !== UserRole.GUEST;
 
+  // Guest users cannot upload or delete assets
+  const canEditAssets = user?.role !== UserRole.GUEST;
+
   return (
     <section
       aria-label="Asset upload drop zone"
@@ -224,17 +227,19 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
                 </Button>
               </GoogleDrivePicker>
             ))}
-          <AssetUpload
-            clientId={clientId}
-            open={uploadDialogOpen}
-            onOpenChange={(open) => {
-              setUploadDialogOpen(open);
-              if (!open) {
-                setDroppedFiles([]);
-              }
-            }}
-            initialFiles={droppedFiles}
-          />
+          {canEditAssets && (
+            <AssetUpload
+              clientId={clientId}
+              open={uploadDialogOpen}
+              onOpenChange={(open) => {
+                setUploadDialogOpen(open);
+                if (!open) {
+                  setDroppedFiles([]);
+                }
+              }}
+              initialFiles={droppedFiles}
+            />
+          )}
         </div>
       </div>
 
@@ -253,6 +258,7 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         onBulkUpdate={handleBulkUpdate}
         categories={categories}
         tags={tags}
+        canEdit={canEditAssets}
       />
 
       {/* Asset detail modal */}

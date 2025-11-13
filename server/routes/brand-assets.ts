@@ -34,6 +34,7 @@ import {
   insertColorAssetSchema,
   insertFontAssetSchema,
   userClients,
+  UserRole,
 } from "@shared/schema";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
@@ -525,10 +526,22 @@ export function registerBrandAssetRoutes(app: Express) {
         }
 
         // Guest users cannot create assets
-        if (user.role === "guest") {
+        if (user.role === UserRole.GUEST) {
           return res
             .status(403)
             .json({ message: "Guests cannot create assets" });
+        }
+
+        const { category } = req.body;
+
+        // Font asset creation requires editor role or higher
+        if (category === "font" && user.role === UserRole.STANDARD) {
+          console.log(
+            `[Asset Upload] User ${userId} (role: ${user.role}) denied: insufficient permissions for font creation`
+          );
+          return res
+            .status(403)
+            .json({ message: "Only editors and admins can create font assets" });
         }
 
         // Log user attempting upload
@@ -567,8 +580,6 @@ export function registerBrandAssetRoutes(app: Express) {
             `[Asset Upload] Super admin ${userId} bypassing client access check for client ${clientId}`
           );
         }
-
-        const { category } = req.body;
 
         // Font asset creation
         if (category === "font") {
@@ -924,12 +935,32 @@ export function registerBrandAssetRoutes(app: Express) {
     "/api/clients/:clientId/brand-assets/:assetId",
     upload.any(),
     validateClientId,
+    requireAuth,
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
+        const userId = req.session?.userId;
+
         if (!clientId) {
           return res.status(400).json({ message: "Client ID is required" });
         }
+
+        if (!userId) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        // Check user role - guests cannot edit brand assets
+        const user = await storage.getUser(userId);
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        if (user.role === UserRole.GUEST) {
+          return res
+            .status(403)
+            .json({ message: "Guest users cannot edit brand assets" });
+        }
+
         const assetId = parseInt(req.params.assetId, 10);
         // Get variant from query params with debugging
         const variant = req.query.variant as string;
@@ -946,6 +977,16 @@ export function registerBrandAssetRoutes(app: Express) {
         }
 
         const asset = await storage.getAsset(assetId);
+
+        // Font asset updates require editor role or higher
+        if (asset && asset.category === "font" && user.role === UserRole.STANDARD) {
+          console.log(
+            `[Asset Update] User ${userId} (role: ${user.role}) denied: insufficient permissions for font updates`
+          );
+          return res
+            .status(403)
+            .json({ message: "Only editors and admins can update font assets" });
+        }
 
         if (!asset) {
           return res.status(404).json({ message: "Asset not found" });
@@ -1268,6 +1309,23 @@ export function registerBrandAssetRoutes(app: Express) {
         console.log(
           `[Asset Delete] User ${userId} (role: ${user.role}) attempting delete for asset ${assetId} in client ${clientId}`
         );
+
+        // Guest users cannot delete brand assets
+        if (user.role === UserRole.GUEST) {
+          return res
+            .status(403)
+            .json({ message: "Guest users cannot delete brand assets" });
+        }
+
+        // Font asset deletion requires editor role or higher
+        if (asset.category === "font" && user.role === UserRole.STANDARD) {
+          console.log(
+            `[Asset Delete] User ${userId} (role: ${user.role}) denied: insufficient permissions for font deletion`
+          );
+          return res
+            .status(403)
+            .json({ message: "Only editors and admins can delete font assets" });
+        }
 
         // Verify user has access to this client (unless super admin)
         if (user.role !== "super_admin") {

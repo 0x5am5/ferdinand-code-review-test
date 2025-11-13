@@ -186,19 +186,29 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         )}
       </div>
 
-      {visibleSections.map((type) => (
-        <LogoSection
-          key={type}
-          type={type}
-          logos={logosByType[type] || []}
-          clientId={clientId}
-          onDeleteLogo={(logoId, variant) =>
-            deleteLogo.mutate({ logoId, variant })
-          }
-          queryClient={queryClient}
-          onRemoveSection={canManageSections ? handleRemoveSection : undefined}
-        />
-      ))}
+      {visibleSections.map((type) => {
+        const logosForType = logosByType[type] || [];
+        const isGuest = user?.role === UserRole.GUEST;
+
+        // Hide empty sections for guest users since they can't upload
+        if (isGuest && logosForType.length === 0) {
+          return null;
+        }
+
+        return (
+          <LogoSection
+            key={type}
+            type={type}
+            logos={logosForType}
+            clientId={clientId}
+            onDeleteLogo={(logoId, variant) =>
+              deleteLogo.mutate({ logoId, variant })
+            }
+            queryClient={queryClient}
+            onRemoveSection={canManageSections ? handleRemoveSection : undefined}
+          />
+        );
+      })}
 
       {canManageSections && (
         <Dialog open={showAddSection} onOpenChange={setShowAddSection}>

@@ -44,6 +44,7 @@ export function registerHiddenSectionsRoutes(app: Express) {
   // Get all hidden sections for a client
   app.get(
     "/api/clients/:clientId/hidden-sections",
+    requireAdminRole,
     async (req: Request, res: Response) => {
       try {
         const clientId = parseInt(req.params.clientId, 10);

@@ -11,6 +11,8 @@ import {
   X,
 } from "lucide-react";
 import React, { type FC, useEffect, useState } from "react";
+import { UserRole } from "@shared/schema";
+import { useAuth } from "@/hooks/use-auth";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +67,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
   open,
   onClose,
 }) => {
+  const { user } = useAuth();
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [selectedTags, setSelectedTags] = useState<number[]>([]);
@@ -73,6 +76,16 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
   const [visibility, setVisibility] = useState<"private" | "shared">("shared");
   const [linkExpiry, setLinkExpiry] = useState<string>("7");
   const { toast } = useToast();
+
+  // Permission checks: only editors, admins, and super admins can edit assets
+  const canEditAsset =
+    user?.role === UserRole.EDITOR ||
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN;
+  const canDeleteAsset =
+    user?.role === UserRole.EDITOR ||
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN;
 
   // Update state when asset changes
   useEffect(() => {
@@ -260,14 +273,16 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     Download
                   </Button>
                 )}
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowDeleteAlert(true)}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Button>
+                {canDeleteAsset && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteAlert(true)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                )}
               </div>
             </DialogTitle>
             <DialogDescription>
@@ -351,28 +366,31 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
               </div>
             </div>
 
-            <Separator />
-
-            {/* Visibility */}
-            <div className="space-y-2">
-              <Label>Visibility</Label>
-              <Select
-                value={visibility}
-                onValueChange={(value: "private" | "shared") =>
-                  handleVisibilityChange(value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="shared">
-                    Shared (All team members)
-                  </SelectItem>
-                  <SelectItem value="private">Private (Only me)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Visibility - only show for users who can edit */}
+            {canEditAsset && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <Label>Visibility</Label>
+                  <Select
+                    value={visibility}
+                    onValueChange={(value: "private" | "shared") =>
+                      handleVisibilityChange(value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="shared">
+                        Shared (All team members)
+                      </SelectItem>
+                      <SelectItem value="private">Private (Only me)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
 
             <Separator />
 
@@ -386,11 +404,11 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     <Badge
                       key={category.id}
                       variant={isSelected ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => handleCategoryToggle(category.id)}
+                      className={canEditAsset ? "cursor-pointer" : ""}
+                      onClick={() => canEditAsset && handleCategoryToggle(category.id)}
                     >
                       {category.name}
-                      {isSelected && <X className="h-3 w-3 ml-1" />}
+                      {isSelected && canEditAsset && <X className="h-3 w-3 ml-1" />}
                     </Badge>
                   );
                 })}
@@ -409,42 +427,44 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                     <Badge
                       key={tag.id}
                       variant={isSelected ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => handleTagToggle(tag.id)}
+                      className={canEditAsset ? "cursor-pointer" : ""}
+                      onClick={() => canEditAsset && handleTagToggle(tag.id)}
                     >
                       {tag.name}
-                      {isSelected && <X className="h-3 w-3 ml-1" />}
+                      {isSelected && canEditAsset && <X className="h-3 w-3 ml-1" />}
                     </Badge>
                   );
                 })}
               </div>
 
-              {/* Create new tag */}
-              <div className="flex gap-2 mt-3">
-                <Input
-                  placeholder="Create new tag (press Enter or comma)..."
-                  value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  onKeyDown={handleTagInputKeyDown}
-                  disabled={isCreatingTag}
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCreateTag}
-                  disabled={!newTagInput.trim() || isCreatingTag}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
+              {/* Create new tag - only show for users who can edit */}
+              {canEditAsset && (
+                <div className="flex gap-2 mt-3">
+                  <Input
+                    placeholder="Create new tag (press Enter or comma)..."
+                    value={newTagInput}
+                    onChange={(e) => setNewTagInput(e.target.value)}
+                    onKeyDown={handleTagInputKeyDown}
+                    disabled={isCreatingTag}
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCreateTag}
+                    disabled={!newTagInput.trim() || isCreatingTag}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+              )}
             </div>
 
-            <Separator />
-
-            {/* Public Links - only show for non-reference assets */}
-            {!asset.referenceOnly && !publicLinksError && (
-              <div className="space-y-2">
+            {/* Public Links - only show for non-reference assets and users who can edit */}
+            {!asset.referenceOnly && !publicLinksError && canEditAsset && (
+              <>
+                <Separator />
+                <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <Link2 className="h-4 w-4" />
                   Public Links
@@ -517,6 +537,7 @@ export const AssetDetailModal: FC<AssetDetailModalProps> = ({
                   </Button>
                 </div>
               </div>
+              </>
             )}
           </div>
         </DialogContent>

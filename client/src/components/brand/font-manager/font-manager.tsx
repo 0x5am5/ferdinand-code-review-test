@@ -323,8 +323,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     .map(parseFontAsset)
     .filter((font): font is FontData => font !== null);
 
-  console.log(transformedFonts);
-
   const renderFontPicker = () => {
     if (showGoogleFontPicker) {
       return (

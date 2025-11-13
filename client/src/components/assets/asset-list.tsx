@@ -62,6 +62,7 @@ interface AssetListProps {
   ) => void;
   categories?: AssetCategory[];
   tags?: AssetTag[];
+  canEdit?: boolean;
 }
 
 export const AssetList: FC<AssetListProps> = ({
@@ -73,6 +74,7 @@ export const AssetList: FC<AssetListProps> = ({
   onBulkUpdate,
   categories = [],
   tags = [],
+  canEdit = true,
 }) => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedAssets, setSelectedAssets] = useState<Set<number>>(new Set());
@@ -335,10 +337,12 @@ export const AssetList: FC<AssetListProps> = ({
               </DropdownMenu>
             )}
 
-            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete {selectedAssets.size}
-            </Button>
+            {canEdit && (
+              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete {selectedAssets.size}
+              </Button>
+            )}
           </div>
         )}
         <div className="flex gap-2 ml-auto">
@@ -515,17 +519,19 @@ export const AssetList: FC<AssetListProps> = ({
                       <Download className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(asset.id);
-                    }}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  {canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(asset.id);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -688,16 +694,18 @@ export const AssetList: FC<AssetListProps> = ({
                           <Download className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(asset.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(asset.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

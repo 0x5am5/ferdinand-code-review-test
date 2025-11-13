@@ -2,6 +2,7 @@ import {
   insertTypeScaleSchema,
   type TypeScale,
   type TypeStyle,
+  UserRole,
 } from "@shared/schema";
 import type { Express } from "express";
 import { storage } from "../storage";
@@ -83,6 +84,26 @@ export function registerTypeScalesRoutes(app: Express) {
   // Create a new type scale
   app.post("/api/clients/:clientId/type-scales", async (req, res) => {
     try {
+      // Permission check: only editors, admins and super admins can create type scales
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      if (
+        user.role !== UserRole.EDITOR &&
+        user.role !== UserRole.ADMIN &&
+        user.role !== UserRole.SUPER_ADMIN
+      ) {
+        return res.status(403).json({
+          error: "Insufficient permissions to create type scales",
+        });
+      }
+
       const clientId = parseInt(req.params.clientId, 10);
 
       if (Number.isNaN(clientId)) {
@@ -117,6 +138,26 @@ export function registerTypeScalesRoutes(app: Express) {
   // Update a type scale
   app.patch("/api/type-scales/:id", async (req, res) => {
     try {
+      // Permission check: only editors, admins and super admins can update type scales
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      if (
+        user.role !== UserRole.EDITOR &&
+        user.role !== UserRole.ADMIN &&
+        user.role !== UserRole.SUPER_ADMIN
+      ) {
+        return res.status(403).json({
+          error: "Insufficient permissions to update type scales",
+        });
+      }
+
       const id = parseInt(req.params.id, 10);
 
       if (Number.isNaN(id)) {
@@ -163,6 +204,25 @@ export function registerTypeScalesRoutes(app: Express) {
   // Delete a type scale
   app.delete("/api/type-scales/:id", async (req, res) => {
     try {
+      // Permission check: only admins and super admins can delete type scales
+      if (!req.session.userId) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+
+      if (
+        user.role !== UserRole.ADMIN &&
+        user.role !== UserRole.SUPER_ADMIN
+      ) {
+        return res.status(403).json({
+          error: "Insufficient permissions to delete type scales",
+        });
+      }
+
       const id = parseInt(req.params.id, 10);
 
       if (Number.isNaN(id)) {
