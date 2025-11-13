@@ -3,7 +3,7 @@ import type { Express } from "express";
 import { requireMinimumRole } from "server/middlewares/requireMinimumRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
-import { storage } from "server/storage";
+import { storage } from "../storage";
 
 export function registerPersonasRoutes(app: Express) {
   // User Persona routes

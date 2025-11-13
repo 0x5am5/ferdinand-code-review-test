@@ -2,7 +2,7 @@ import type { UserRoleType } from "@shared/schema";
 import { UserRole } from "@shared/schema";
 import type { NextFunction, Response } from "express";
 import type { RequestWithClientId } from "server/routes";
-import { storage } from "server/storage";
+import { storage } from "../storage";
 
 // Role hierarchy for comparison
 const ROLE_HIERARCHY: Record<UserRoleType, number> = {

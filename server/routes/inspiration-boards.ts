@@ -7,7 +7,7 @@ import multer from "multer";
 import { requireAdminRole } from "server/middlewares/requireAdminRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
-import { storage } from "server/storage";
+import { storage } from "../storage";
 
 const upload = multer();
 

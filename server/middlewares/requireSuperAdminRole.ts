@@ -1,7 +1,7 @@
 import { UserRole } from "@shared/schema";
 import type { NextFunction, Response } from "express";
 import type { RequestWithClientId } from "server/routes";
-import { storage } from "server/storage";
+import { storage } from "../storage";
 
 export const requireSuperAdminRole = async (
   req: RequestWithClientId,
