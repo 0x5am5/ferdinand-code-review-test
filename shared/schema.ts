@@ -895,7 +895,13 @@ export const descriptionValidationSchema = z
 // Section metadata schemas
 export const insertSectionMetadataSchema = z.object({
   clientId: z.number(),
-  sectionType: z.enum(["brand-colors", "neutral-colors", "interactive-colors"]),
+  sectionType: z.enum([
+    "brand-colors",
+    "neutral-colors",
+    "interactive-colors",
+    "brand-fonts",
+    "type-scales",
+  ]),
   description: z.string().optional(),
 });
 
