@@ -7,8 +7,8 @@ import {
 } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import type { Express } from "express";
-import { requireAuth } from "../middlewares/auth";
 import { db } from "../db";
+import { requireAuth } from "../middlewares/auth";
 import { storage } from "../storage";
 
 export function registerTypeScalesRoutes(app: Express) {

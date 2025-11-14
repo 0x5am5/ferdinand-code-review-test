@@ -27,9 +27,7 @@ export const AssetFilters: FC<AssetFiltersProps> = ({
   filters,
   onFiltersChange,
 }) => {
-  const memoizedOnFiltersChange = useCallback(onFiltersChange, [
-    onFiltersChange,
-  ]);
+  const memoizedOnFiltersChange = useCallback(onFiltersChange, []);
   const [searchInput, setSearchInput] = useState(filters.search || "");
   const [isTagManagementOpen, setIsTagManagementOpen] = useState(false);
   const { data: categories = [] } = useAssetCategoriesQuery();

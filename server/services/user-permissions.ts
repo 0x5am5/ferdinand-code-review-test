@@ -194,12 +194,16 @@ export async function filterUsersForRole(
     const adminClients = await storage.getUserClients(currentUser.id);
     const adminClientIds = adminClients.map((c) => c.id);
 
+    // Batch fetch all user-client relationships
+    const allUserIds = allUsers.map((u) => u.id);
+    const userClientMap = await storage.getBatchUserClients(allUserIds);
+
     const visibleUserIds: number[] = [];
 
     for (const user of allUsers) {
-      const userClients = await storage.getUserClients(user.id);
-      const hasSharedClient = userClients.some((c) =>
-        adminClientIds.includes(c.id)
+      const userClientIds = userClientMap.get(user.id) || [];
+      const hasSharedClient = userClientIds.some((clientId) =>
+        adminClientIds.includes(clientId)
       );
 
       if (hasSharedClient) {

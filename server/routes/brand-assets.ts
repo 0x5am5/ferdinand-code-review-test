@@ -2147,7 +2147,7 @@ export function registerBrandAssetRoutes(app: Express) {
         // Brand assets rarely change, so we can cache them for a long time
         res.setHeader("Content-Type", mimeType);
         res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); // 1 year
-        
+
         // Include variant and format in ETag to ensure distinct ETags for different variants/formats
         const variantValue = variant || "default";
         const formatValue = format || "default";

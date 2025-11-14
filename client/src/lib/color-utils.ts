@@ -189,7 +189,10 @@ export function hexToRgb(hex: string): string | null {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-export function hexToHsl(hex: string): string | null {
+// Internal helper: Convert hex to HSL values
+function parseHexToHslValues(
+  hex: string
+): { h: number; s: number; l: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return null;
 
@@ -223,7 +226,14 @@ export function hexToHsl(hex: string): string | null {
     h /= 6;
   }
 
-  return `hsl(${Math.round(h * 360)}, ${Math.round(s * 100)}%, ${Math.round(l * 100)}%)`;
+  return { h: h * 360, s, l };
+}
+
+export function hexToHsl(hex: string): string | null {
+  const hsl = parseHexToHslValues(hex);
+  if (!hsl) return null;
+
+  return `hsl(${Math.round(hsl.h)}, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%)`;
 }
 
 export function hexToCmyk(hex: string): string | null {
@@ -276,40 +286,7 @@ export function generateTintsAndShades(
 export function hexToHslValues(
   hex: string
 ): { h: number; s: number; l: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return null;
-
-  const r = parseInt(result[1], 16) / 255;
-  const g = parseInt(result[2], 16) / 255;
-  const b = parseInt(result[3], 16) / 255;
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  let h: number = 0;
-  let s: number;
-  const l: number = (max + min) / 2;
-
-  if (max === min) {
-    h = s = 0; // achromatic
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-
-    switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
-    }
-    h /= 6;
-  }
-
-  return { h: h * 360, s, l };
+  return parseHexToHslValues(hex);
 }
 
 // Convert HSL to hex
@@ -348,6 +325,12 @@ export function isColorFamily(
     default:
       return false;
   }
+}
+
+// Check if a color is light (for determining text contrast)
+export function isLightColor(hex: string): boolean {
+  const cleanHex = hex.replace("#", "");
+  return parseInt(cleanHex, 16) > 0xffffff / 2;
 }
 
 // Extract hue and saturation from brand colors for neutral generation

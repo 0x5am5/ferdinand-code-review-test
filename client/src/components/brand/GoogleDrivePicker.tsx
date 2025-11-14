@@ -1,5 +1,5 @@
 import { FileIcon, FolderIcon } from "lucide-react";
-import type { FC, PropsWithChildren, ReactNode } from "react";
+import type { FC, PropsWithChildren } from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {

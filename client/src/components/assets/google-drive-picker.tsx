@@ -96,14 +96,13 @@ export const GoogleDrivePicker: React.FC<
   children,
 }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [_isPickerLoaded, setIsPickerLoaded] = useState(false);
 
   // Load Google Picker API
   useEffect(() => {
     const loadPickerApi = () => {
       if (window.gapi) {
         window.gapi.load("picker", () => {
-          setIsPickerLoaded(true);
+          // Picker loaded
         });
       } else {
         // Load the GAPI script if not already loaded
@@ -111,7 +110,7 @@ export const GoogleDrivePicker: React.FC<
         script.src = "https://apis.google.com/js/api.js";
         script.onload = () => {
           window.gapi?.load("picker", () => {
-            setIsPickerLoaded(true);
+            // Picker loaded
           });
         };
         document.body.appendChild(script);

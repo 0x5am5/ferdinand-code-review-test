@@ -18,9 +18,7 @@ export async function findAvailablePort(
     let attempts = 0;
 
     const tryPort = (port: number) => {
-      attempts++;
-
-      if (attempts > maxAttempts) {
+      if (attempts >= maxAttempts) {
         reject(
           new Error(
             `No available port found after ${maxAttempts} attempts (tried ports ${startPort}-${currentPort - 1})`
@@ -28,6 +26,8 @@ export async function findAvailablePort(
         );
         return;
       }
+
+      attempts++;
 
       const server = createServer();
 

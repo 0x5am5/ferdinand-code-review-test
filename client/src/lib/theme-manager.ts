@@ -491,9 +491,9 @@ class ThemeManager {
 
           // Apply the primary color - only if we got valid HSL values
           if (
-            !isNaN(primaryHsl.h) &&
-            !isNaN(primaryHsl.s) &&
-            !isNaN(primaryHsl.l)
+            !Number.isNaN(primaryHsl.h) &&
+            !Number.isNaN(primaryHsl.s) &&
+            !Number.isNaN(primaryHsl.l)
           ) {
             root.style.setProperty("--primary", primaryHsl.hslString);
           } else {

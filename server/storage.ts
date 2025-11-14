@@ -108,6 +108,7 @@ export interface IStorage {
   createUserWithRole(user: InsertUser & { role: UserRoleType }): Promise<User>;
   updateUserRole(id: number, role: UserRoleType): Promise<User>;
   getUserClients(userId: number): Promise<Client[]>;
+  getBatchUserClients(userIds: number[]): Promise<Map<number, number[]>>;
   // Invitation methods
   createInvitation(invitation: InsertInvitation): Promise<Invitation>;
   getInvitation(token: string): Promise<Invitation | undefined>;
@@ -528,6 +529,29 @@ export class DatabaseStorage implements IStorage {
       ...client,
       featureToggles: client.featureToggles as FeatureToggles,
     }));
+  }
+
+  async getBatchUserClients(userIds: number[]): Promise<Map<number, number[]>> {
+    if (userIds.length === 0) {
+      return new Map();
+    }
+
+    // Fetch all user-client relationships in a single query
+    const userClientRecords = await db
+      .select()
+      .from(userClients)
+      .where(inArray(userClients.userId, userIds));
+
+    // Build a map of userId -> clientIds
+    const userClientMap = new Map<number, number[]>();
+
+    for (const record of userClientRecords) {
+      const existing = userClientMap.get(record.userId) || [];
+      existing.push(record.clientId);
+      userClientMap.set(record.userId, existing);
+    }
+
+    return userClientMap;
   }
 
   // Implement invitation methods

@@ -22,10 +22,7 @@ import {
 } from "../middlewares/auth";
 import { mutationRateLimit } from "../middlewares/rate-limit";
 import { csrfProtection } from "../middlewares/security-headers";
-import {
-  validateRoleChange,
-  validateUserDeletion,
-} from "../services/user-permissions";
+import { validateRoleChange } from "../services/user-permissions";
 import { storage } from "../storage";
 
 export function registerUserRoutes(app: Express) {

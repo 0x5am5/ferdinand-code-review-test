@@ -40,6 +40,7 @@ import {
   hexToCmyk,
   hexToHsl,
   hexToRgb,
+  isLightColor,
 } from "@/lib/color-utils";
 
 type GradientData = {
@@ -115,16 +116,24 @@ export function ColorCard({
 
   // Load saved Pantone value on mount
   useEffect(() => {
-    const savedPantone = localStorage.getItem(`pantone-${color.id}`);
-    if (savedPantone) {
-      setPantoneValue(savedPantone);
+    try {
+      const savedPantone = localStorage.getItem(`pantone-${color.id}`);
+      if (savedPantone) {
+        setPantoneValue(savedPantone);
+      }
+    } catch (error) {
+      console.warn("Failed to read from localStorage:", error);
     }
   }, [color.id]);
 
   // Save Pantone value when it changes
   const handlePantoneChange = (value: string) => {
     setPantoneValue(value);
-    localStorage.setItem(`pantone-${color.id}`, value);
+    try {
+      localStorage.setItem(`pantone-${color.id}`, value);
+    } catch (error) {
+      console.warn("Failed to save to localStorage:", error);
+    }
   };
 
   // Add updateColor mutation to ColorCard component
@@ -483,10 +492,7 @@ export function ColorCard({
               onKeyDown={handleNameKeyDown}
               className="color-chip--title bg-transparent border-none outline-none w-full"
               style={{
-                color:
-                  parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                    ? "#000"
-                    : "#fff",
+                color: isLightColor(displayHex) ? "#000" : "#fff",
               }}
             />
           ) : (
@@ -494,10 +500,7 @@ export function ColorCard({
               type="button"
               className="color-chip--title cursor-pointer font-semibold hover:opacity-80 transition-opacity bg-transparent border-none p-0 text-left"
               style={{
-                color:
-                  parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                    ? "#000"
-                    : "#fff",
+                color: isLightColor(displayHex) ? "#000" : "#fff",
               }}
               onClick={handleNameEdit}
               title="Click to edit name"
@@ -509,10 +512,7 @@ export function ColorCard({
             type="button"
             className="text-xs font-mono cursor-pointer hover:bg-black/10 hover:bg-white/10 rounded px-1 py-0.5 transition-colors bg-transparent border-none"
             style={{
-              color:
-                parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                  ? "#000"
-                  : "#fff",
+              color: isLightColor(displayHex) ? "#000" : "#fff",
             }}
             onClick={handleStartEdit}
             title="Click to edit color"
@@ -532,7 +532,7 @@ export function ColorCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+                  className={`h-9 w-9 p-2 ${isLightColor(displayHex) ? "" : "dark-bg"}`}
                   onClick={onGenerate}
                   title={
                     neutralColorsCount && neutralColorsCount >= 11
@@ -543,10 +543,7 @@ export function ColorCard({
                   <RotateCcw
                     className="h-6 w-6"
                     style={{
-                      color:
-                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                          ? "#000"
-                          : "#fff",
+                      color: isLightColor(displayHex) ? "#000" : "#fff",
                     }}
                   />
                 </Button>
@@ -558,7 +555,7 @@ export function ColorCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+                  className={`h-9 w-9 p-2 ${isLightColor(displayHex) ? "" : "dark-bg"}`}
                   onClick={() => {
                     if (showTints) setShowTints(false);
                     setIsInfoPanelOpen(!isInfoPanelOpen);
@@ -567,10 +564,7 @@ export function ColorCard({
                   <Info
                     className="h-6 w-6"
                     style={{
-                      color:
-                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                          ? "#000"
-                          : "#fff",
+                      color: isLightColor(displayHex) ? "#000" : "#fff",
                     }}
                   />
                 </Button>
@@ -585,17 +579,14 @@ export function ColorCard({
               <Button
                 variant="ghost"
                 size="icon"
-                className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+                className={`h-9 w-9 p-2 ${isLightColor(displayHex) ? "" : "dark-bg"}`}
                 onClick={() => setShowTints(!showTints)}
                 title={showTints ? "Hide tints/shades" : "Show tints/shades"}
               >
                 <Palette
                   className="h-6 w-6"
                   style={{
-                    color:
-                      parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                        ? "#000"
-                        : "#fff",
+                    color: isLightColor(displayHex) ? "#000" : "#fff",
                   }}
                 />
               </Button>
@@ -603,16 +594,13 @@ export function ColorCard({
           <Button
             variant="ghost"
             size="icon"
-            className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+            className={`h-9 w-9 p-2 ${isLightColor(displayHex) ? "" : "dark-bg"}`}
             onClick={() => copyHex(color.data.colors[0]?.hex || "#000000")}
           >
             <Copy
               className="h-6 w-6"
               style={{
-                color:
-                  parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                    ? "#000"
-                    : "#fff",
+                color: isLightColor(displayHex) ? "#000" : "#fff",
               }}
             />
           </Button>
@@ -623,16 +611,13 @@ export function ColorCard({
             <Button
               variant="ghost"
               size="icon"
-              className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+              className={`h-9 w-9 p-2 ${isLightColor(displayHex) ? "" : "dark-bg"}`}
               onClick={handleStartEdit}
             >
               <Edit2
                 className="h-6 w-6"
                 style={{
-                  color:
-                    parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                      ? "#000"
-                      : "#fff",
+                  color: isLightColor(displayHex) ? "#000" : "#fff",
                 }}
               />
             </Button>
@@ -646,15 +631,12 @@ export function ColorCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`h-9 w-9 p-2 ${parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2 ? "" : "dark-bg"}`}
+                  className={`h-9 w-9 p-2 ${isLightColor(displayHex) ? "" : "dark-bg"}`}
                 >
                   <Trash2
                     className="h-6 w-6"
                     style={{
-                      color:
-                        parseInt(displayHex.replace("#", ""), 16) > 0xffffff / 2
-                          ? "#000"
-                          : "#fff",
+                      color: isLightColor(displayHex) ? "#000" : "#fff",
                     }}
                   />
                 </Button>

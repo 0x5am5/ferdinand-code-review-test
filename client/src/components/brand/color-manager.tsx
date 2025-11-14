@@ -82,10 +82,7 @@ const colorDescriptions = {
 
 // Color conversion utilities are now imported from @/lib/color-utils
 
-export function ColorManager({
-  clientId,
-  colors,
-}: ColorManagerProps) {
+export function ColorManager({ clientId, colors }: ColorManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -845,7 +842,7 @@ export function ColorManager({
           >
             <div className="asset-display">
               <div className="asset-display__info">
-                {colorDescriptions.neutral}
+                {colorDescriptions.interactive}
               </div>
               <div className="asset-display__preview">
                 {interactiveColorsData.map((color) => (
