@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useFontMutations } from "@/hooks/use-font-mutations";
 import { useToast } from "@/hooks/use-toast";
-// import { sectionMetadataApi } from "@/lib/api"; // TODO: section-metadata API was removed
+import { sectionMetadataApi } from "@/lib/api";
 import { TypeScaleManager } from "../../type-scale/type-scale-manager";
 import { AssetSection } from "../logo-manager/asset-section";
 import { AdobeFontPicker } from "./adobe-font-picker";
@@ -44,9 +44,9 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { addFont, editFont, deleteFont } = useFontMutations(clientId);
 
   // Fetch section metadata for descriptions
-  const { data: sectionMetadataList = [] } = useQuery({
+  const { data: sectionMetadataList = [] } = useQuery<Array<{ sectionType: string; description?: string }>>({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
-    // queryFn: () => sectionMetadataApi.list(clientId),
+    queryFn: () => sectionMetadataApi.list(clientId),
   });
 
   // Extract brand-fonts description

@@ -415,7 +415,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   });
 
   // Fetch section metadata for description
-  const { data: sectionMetadataList = [] } = useQuery({
+  const { data: sectionMetadataList = [] } = useQuery<Array<{ sectionType: string; description?: string }>>({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
     queryFn: () => sectionMetadataApi.list(clientId),
   });

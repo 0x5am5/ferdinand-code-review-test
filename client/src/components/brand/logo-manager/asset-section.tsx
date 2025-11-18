@@ -1,9 +1,12 @@
 import { UserRole } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { InlineEditable } from "@/components/ui/inline-editable";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { sectionMetadataApi } from "@/lib/api";
 
 interface AssetSectionProps {
   title: string;
@@ -11,6 +14,7 @@ interface AssetSectionProps {
   isEmpty: boolean;
   onRemoveSection?: (type: string) => void;
   sectionType: string;
+  clientId?: number;
   uploadComponent: React.ReactNode;
   emptyPlaceholder?: React.ReactNode;
   children: React.ReactNode;
@@ -24,6 +28,7 @@ export function AssetSection({
   isEmpty,
   onRemoveSection,
   sectionType,
+  clientId,
   uploadComponent,
   emptyPlaceholder,
   children,
@@ -31,6 +36,9 @@ export function AssetSection({
   enableEditableDescription = false,
 }: AssetSectionProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const canManageSections =
     user?.role === UserRole.ADMIN ||
     user?.role === UserRole.SUPER_ADMIN ||
@@ -40,6 +48,50 @@ export function AssetSection({
     user?.role === UserRole.ADMIN ||
     user?.role === UserRole.SUPER_ADMIN ||
     user?.role === UserRole.EDITOR;
+
+  // Fetch section metadata if clientId is provided and editable descriptions are enabled
+  const { data: sectionMetadataList = [] } = useQuery<Array<{ sectionType: string; description?: string }>>({
+    queryKey: [`/api/clients/${clientId}/section-metadata`],
+    queryFn: () => sectionMetadataApi.list(clientId!),
+    enabled: enableEditableDescription && !!clientId,
+  });
+
+  // Get the description from section metadata, fallback to prop description
+  const sectionMetadata = sectionMetadataList.find((m) => m.sectionType === sectionType);
+  const displayDescription = sectionMetadata?.description || description;
+
+  // Section description update mutation
+  const updateSectionDescriptionMutation = useMutation({
+    mutationFn: ({ sectionType, description }: { sectionType: string; description: string }) =>
+      sectionMetadataApi.update(clientId!, sectionType, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/section-metadata`],
+      });
+      toast({
+        title: "Description saved",
+        description: "Section description has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSectionDescriptionUpdate = (value: string) => {
+    if (onDescriptionUpdate) {
+      onDescriptionUpdate(value);
+    } else if (clientId) {
+      updateSectionDescriptionMutation.mutate({
+        sectionType,
+        description: value,
+      });
+    }
+  };
 
   return (
     <div className="asset-section">
@@ -63,12 +115,10 @@ export function AssetSection({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Description - always shown regardless of isEmpty */}
         <div className="asset-section__description mb-4 col-span-1">
-          {enableEditableDescription &&
-          canEditDescriptions &&
-          onDescriptionUpdate ? (
+          {enableEditableDescription && canEditDescriptions ? (
             <InlineEditable
-              value={description}
-              onSave={onDescriptionUpdate}
+              value={displayDescription}
+              onSave={handleSectionDescriptionUpdate}
               inputType="textarea"
               placeholder="Add a section description..."
               showControls={true}
@@ -76,7 +126,7 @@ export function AssetSection({
               className="text-muted-foreground"
             />
           ) : (
-            <p className="text-muted-foreground">{description}</p>
+            <p className="text-muted-foreground">{displayDescription}</p>
           )}
         </div>
 
