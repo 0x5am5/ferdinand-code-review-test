@@ -71,7 +71,7 @@ export function AssetSection({
               onSave={onDescriptionUpdate}
               inputType="textarea"
               placeholder="Add a section description..."
-              debounceMs={500}
+              showControls={true}
               ariaLabel={`${title} description`}
               className="text-muted-foreground"
             />
