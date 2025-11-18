@@ -906,7 +906,7 @@ export const insertSectionMetadataSchema = z.object({
     "logo-horizontal",
     "logo-square",
     "logo-app_icon",
-    "logo-symbol",
+    "logo-favicon",
   ]),
   description: z.string().optional(),
 });
