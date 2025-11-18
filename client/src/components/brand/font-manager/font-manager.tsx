@@ -1,4 +1,4 @@
-import { FontSource } from "@shared/schema";
+import { FontSource, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Type } from "lucide-react";
 import { useState } from "react";
@@ -55,8 +55,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const brandFontsDescription =
     sectionMetadataList.find(
       (m: { sectionType: string }) => m.sectionType === "brand-fonts"
-    )?.description ||
-    "Typography assets that define the brand's visual identity and should be used consistently across all materials.";
+    )?.description || DEFAULT_SECTION_DESCRIPTIONS.FONT_BRAND;
 
   // Fetch Google Fonts
   const { data: googleFontsData, isLoading: isFontsLoading } = useQuery({

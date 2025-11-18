@@ -1,4 +1,4 @@
-import type { BrandAsset } from "@shared/schema";
+import { LogoType, type BrandAsset, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
 
 export interface ParsedLogoData {
   type: string;
@@ -8,6 +8,24 @@ export interface ParsedLogoData {
   figmaLink?: string;
   fileName?: string;
   description?: string;
+}
+
+/**
+ * Get default description for a logo type
+ * @param type - The logo type (main, vertical, horizontal, square, app_icon, favicon)
+ * @returns Default description for the logo section
+ */
+export function getDefaultLogoDescription(type: string): string {
+  const descriptions: Record<string, string> = {
+    [LogoType.MAIN]: DEFAULT_SECTION_DESCRIPTIONS.LOGO_MAIN,
+    [LogoType.VERTICAL]: DEFAULT_SECTION_DESCRIPTIONS.LOGO_VERTICAL,
+    [LogoType.HORIZONTAL]: DEFAULT_SECTION_DESCRIPTIONS.LOGO_HORIZONTAL,
+    [LogoType.SQUARE]: DEFAULT_SECTION_DESCRIPTIONS.LOGO_SQUARE,
+    [LogoType.APP_ICON]: DEFAULT_SECTION_DESCRIPTIONS.LOGO_APP_ICON,
+    [LogoType.FAVICON]: DEFAULT_SECTION_DESCRIPTIONS.LOGO_FAVICON,
+  };
+
+  return descriptions[type] || "";
 }
 
 export function parseBrandAssetData(logo: BrandAsset): ParsedLogoData | null {

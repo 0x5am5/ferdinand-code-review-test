@@ -15,7 +15,7 @@ import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import "../../styles/components/color-picker-popover.scss";
 import type { BrandAsset } from "@shared/schema";
-import { descriptionValidationSchema, UserRole } from "@shared/schema";
+import { descriptionValidationSchema, UserRole, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -2726,12 +2726,9 @@ interface ColorManagerProps {
 
 // Color category descriptions - default values
 const defaultColorDescriptions = {
-  brand:
-    "Primary colors that define the brand identity and should be used consistently across all materials.",
-  neutral:
-    "Supporting colors for backgrounds, text, and UI elements that provide balance to the color system.",
-  interactive:
-    "Colors used for buttons, links, and interactive elements to guide user actions.",
+  brand: DEFAULT_SECTION_DESCRIPTIONS.COLOR_BRAND,
+  neutral: DEFAULT_SECTION_DESCRIPTIONS.COLOR_NEUTRAL,
+  interactive: DEFAULT_SECTION_DESCRIPTIONS.COLOR_INTERACTIVE,
 };
 
 const colorFormSchema = z.object({

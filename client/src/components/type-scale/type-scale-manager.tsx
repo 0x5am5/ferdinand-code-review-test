@@ -5,7 +5,7 @@ import type {
   TypeScale,
   TypeStyle,
 } from "@shared/schema";
-import { UserRole } from "@shared/schema";
+import { UserRole, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, Save, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
@@ -426,8 +426,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const typeScalesDescription =
     sectionMetadataList.find(
       (m: { sectionType: string }) => m.sectionType === "type-scales"
-    )?.description ||
-    "Create and manage consistent typography scales for your brand.";
+    )?.description || DEFAULT_SECTION_DESCRIPTIONS.TYPE_SCALE;
 
   // Fetch brand fonts for this client from brand assets
   const { data: brandAssets = [] } = useQuery({

@@ -13,7 +13,7 @@ import { DarkVariantUploader } from "./dark-variant-uploader";
 import { LogoDownloadButton } from "./download-buttons/logo-download-button";
 import { FileUpload } from "./file-upload";
 import { LogoPreview } from "./logo-preview";
-import { type ParsedLogoData, parseBrandAssetData } from "./logo-utils";
+import { type ParsedLogoData, parseBrandAssetData, getDefaultLogoDescription } from "./logo-utils";
 
 interface LogoSectionProps {
   type: string;
@@ -178,7 +178,7 @@ export function LogoSection({
   return (
     <AssetSection
       title={`${type.charAt(0).toUpperCase() + type.slice(1)} Logo`}
-      description=""
+      description={getDefaultLogoDescription(type)}
       isEmpty={!hasLogos}
       onRemoveSection={onRemoveSection}
       sectionType={`logo-${type}`}
