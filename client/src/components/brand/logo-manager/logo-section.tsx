@@ -1,8 +1,10 @@
+import { PermissionAction, Resource } from "@shared/permissions";
 import type { BrandAsset } from "@shared/schema";
 import { FILE_FORMATS } from "@shared/schema";
 import type { QueryClient } from "@tanstack/react-query";
 import { FileType, Trash2, Upload } from "lucide-react";
 import { type DragEvent, useCallback, useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { AssetDisplay } from "../asset-display";
@@ -207,40 +209,45 @@ export function LogoSection({
               key={logo.id}
               renderActions={(variant) => (
                 <>
-                  <label className="cursor-pointer">
-                    <Input
-                      type="file"
-                      accept={Object.values(FILE_FORMATS)
-                        .map((format) => `.${format}`)
-                        .join(",")}
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          handleFileUpload(
-                            e.target.files[0],
-                            variant,
-                            parsedData,
-                            logo
-                          );
-                        }
-                      }}
-                      className="hidden"
-                    />
-                    <button
-                      className="asset-display__preview-action-button"
-                      type="button"
-                      onClick={(e) => {
-                        const fileInput = e.currentTarget
-                          .closest("label")
-                          ?.querySelector('input[type="file"]');
-                        if (fileInput) {
-                          (fileInput as HTMLInputElement).click();
-                        }
-                      }}
-                    >
-                      <Upload className="h-3 w-3" />
-                      <span>Replace</span>
-                    </button>
-                  </label>
+                  <PermissionGate
+                    action={PermissionAction.UPDATE}
+                    resource={Resource.BRAND_ASSETS}
+                  >
+                    <label className="cursor-pointer">
+                      <Input
+                        type="file"
+                        accept={Object.values(FILE_FORMATS)
+                          .map((format) => `.${format}`)
+                          .join(",")}
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            handleFileUpload(
+                              e.target.files[0],
+                              variant,
+                              parsedData,
+                              logo
+                            );
+                          }
+                        }}
+                        className="hidden"
+                      />
+                      <button
+                        className="asset-display__preview-action-button"
+                        type="button"
+                        onClick={(e) => {
+                          const fileInput = e.currentTarget
+                            .closest("label")
+                            ?.querySelector('input[type="file"]');
+                          if (fileInput) {
+                            (fileInput as HTMLInputElement).click();
+                          }
+                        }}
+                      >
+                        <Upload className="h-3 w-3" />
+                        <span>Replace</span>
+                      </button>
+                    </label>
+                  </PermissionGate>
 
                   <LogoDownloadButton
                     logo={logo}
@@ -249,17 +256,22 @@ export function LogoSection({
                     parsedData={parsedData}
                   />
 
-                  {((variant === "dark" && parsedData.hasDarkVariant) ||
-                    variant === "light") && (
-                    <button
-                      type="button"
-                      className="asset-display__preview-action-button"
-                      onClick={() => onDeleteLogo(logo.id, variant)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      <span>Delete</span>
-                    </button>
-                  )}
+                  <PermissionGate
+                    action={PermissionAction.DELETE}
+                    resource={Resource.BRAND_ASSETS}
+                  >
+                    {((variant === "dark" && parsedData.hasDarkVariant) ||
+                      variant === "light") && (
+                      <button
+                        type="button"
+                        className="asset-display__preview-action-button"
+                        onClick={() => onDeleteLogo(logo.id, variant)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span>Delete</span>
+                      </button>
+                    )}
+                  </PermissionGate>
                 </>
               )}
               renderAsset={(variant) =>

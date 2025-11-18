@@ -1,8 +1,9 @@
-import { insertUserPersonaSchema } from "@shared/schema";
+import { insertUserPersonaSchema, UserRole } from "@shared/schema";
 import type { Express } from "express";
+import { requireMinimumRole } from "server/middlewares/requireMinimumRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
-import { storage } from "server/storage";
+import { storage } from "../storage";
 
 export function registerPersonasRoutes(app: Express) {
   // User Persona routes
@@ -30,6 +31,7 @@ export function registerPersonasRoutes(app: Express) {
   app.post(
     "/api/clients/:clientId/personas",
     validateClientId,
+    requireMinimumRole(UserRole.STANDARD),
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;

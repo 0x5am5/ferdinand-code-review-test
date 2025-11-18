@@ -14,15 +14,16 @@ import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import { mutationRateLimit } from "../middlewares/rate-limit";
-import { csrfProtection } from "../middlewares/security-headers";
-import { storage } from "../storage";
 import {
   canAdminAccessClient,
   canAdminAccessUser,
   requireAdmin,
   requireSuperAdmin,
 } from "../middlewares/auth";
+import { mutationRateLimit } from "../middlewares/rate-limit";
+import { csrfProtection } from "../middlewares/security-headers";
+import { validateRoleChange } from "../services/user-permissions";
+import { storage } from "../storage";
 
 export function registerUserRoutes(app: Express) {
   // Get current user
@@ -209,7 +210,7 @@ export function registerUserRoutes(app: Express) {
                   ? `/api/assets/${logoAsset.id}/file`
                   : undefined;
               } catch (error) {
-                console.error('Failed to parse logo data:', error);
+                console.error("Failed to parse logo data:", error);
                 logoUrl = undefined;
               }
             }
@@ -287,80 +288,60 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Update user role
-  app.patch("/api/users/:id/role", csrfProtection, requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (Number.isNaN(id)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
+  app.patch(
+    "/api/users/:id/role",
+    csrfProtection,
+    requireAdmin,
+    async (req, res) => {
+      try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) {
+          return res.status(400).json({ message: "Invalid user ID" });
+        }
 
-      const { role } = req.body;
-      if (!role || !Object.values(UserRole).includes(role)) {
-        return res.status(400).json({ message: "Invalid role" });
-      }
+        const { role } = req.body;
+        if (!role || !Object.values(UserRole).includes(role)) {
+          return res.status(400).json({ message: "Invalid role" });
+        }
 
-      // Get the current user making the request
-      if (!req.session?.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const currentUser = await storage.getUser(req.session.userId);
-      if (!currentUser) {
-        return res.status(404).json({ message: "Current user not found" });
-      }
+        // Get the current user making the request
+        if (!req.session?.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+        const currentUser = await storage.getUser(req.session.userId);
+        if (!currentUser) {
+          return res.status(404).json({ message: "Current user not found" });
+        }
 
-      // Get the target user being modified
-      const targetUser = await storage.getUser(id);
-      if (!targetUser) {
-        return res.status(404).json({ message: "Target user not found" });
-      }
+        // Get the target user being modified
+        const targetUser = await storage.getUser(id);
+        if (!targetUser) {
+          return res.status(404).json({ message: "Target user not found" });
+        }
 
-      // Role-based restrictions
-      if (currentUser.role === UserRole.ADMIN) {
-        // Admins cannot assign super_admin or admin roles
-        if (role === UserRole.SUPER_ADMIN || role === UserRole.ADMIN) {
+        // Validate the role change using centralized service
+        const validation = await validateRoleChange(
+          currentUser,
+          targetUser,
+          role
+        );
+        if (!validation.allowed) {
           return res.status(403).json({
-            message: "Only super admins can assign admin roles",
+            message: validation.reason || "Role change not allowed",
           });
         }
 
-        // Admins cannot modify super_admin users
-        if (targetUser.role === UserRole.SUPER_ADMIN) {
-          return res.status(403).json({
-            message: "You cannot modify super admin roles",
-          });
-        }
-
-        // Admins cannot change their own role
-        if (targetUser.id === currentUser.id) {
-          return res.status(403).json({
-            message: "You cannot change your own role",
-          });
-        }
-
-        // ADMIN: Verify the target user is in one of their assigned clients
-        const hasAccess = await canAdminAccessUser(currentUser.id, id);
-        if (!hasAccess) {
-          return res.status(403).json({
-            message: "You can only modify users in your assigned clients",
-          });
-        }
-      } else if (currentUser.role !== UserRole.SUPER_ADMIN) {
-        // Only super admins and admins can change roles
-        return res.status(403).json({
-          message: "Insufficient permissions to change user roles",
-        });
+        const updatedUser = await storage.updateUserRole(id, role);
+        res.json(updatedUser);
+      } catch (error: unknown) {
+        console.error(
+          "Error updating user role:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error updating user role" });
       }
-
-      const updatedUser = await storage.updateUserRole(id, role);
-      res.json(updatedUser);
-    } catch (error: unknown) {
-      console.error(
-        "Error updating user role:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error updating user role" });
     }
-  });
+  );
 
   // Send password reset email
   app.post("/api/users/:id/reset-password", async (req, res) => {
@@ -494,129 +475,141 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Get all client assignments for all users (SUPER_ADMIN only)
-  app.get("/api/users/client-assignments", requireSuperAdmin, async (_req, res) => {
-    try {
-      // Get all users
-      const userList = await storage.getUsers();
+  app.get(
+    "/api/users/client-assignments",
+    requireSuperAdmin,
+    async (_req, res) => {
+      try {
+        // Get all users
+        const userList = await storage.getUsers();
 
-      // Create a map to store user assignments
-      const assignments: Record<number, Client[]> = {};
+        // Create a map to store user assignments
+        const assignments: Record<number, Client[]> = {};
 
-      // Get clients for each user
-      await Promise.all(
-        userList.map(async (user: User) => {
-          const userClients = await storage.getUserClients(user.id);
-          assignments[user.id] = userClients;
-        })
-      );
-
-      res.json(assignments);
-    } catch (error: unknown) {
-      console.error(
-        "Error fetching client assignments:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error fetching client assignments" });
-    }
-  });
-
-  // Create user-client relationship
-  app.post("/api/user-clients", csrfProtection, requireAdmin, async (req, res) => {
-    try {
-      const { userId, clientId } = req.body;
-
-      if (!userId || !clientId) {
-        return res.status(400).json({
-          message: "Both userId and clientId are required",
-        });
-      }
-
-      if (!req.session?.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const currentUser = await storage.getUser(req.session.userId);
-      if (!currentUser) {
-        return res.status(404).json({ message: "Current user not found" });
-      }
-
-      // ADMIN: Verify they can access this client
-      if (currentUser.role === UserRole.ADMIN) {
-        const hasAccess = await canAdminAccessClient(currentUser.id, clientId);
-        if (!hasAccess) {
-          return res.status(403).json({
-            message: "You can only assign users to your assigned clients",
-          });
-        }
-      }
-
-      // Check if this relationship already exists to prevent duplicates
-      const existingRelationship = await db
-        .select()
-        .from(userClients)
-        .where(
-          and(
-            eq(userClients.userId, userId),
-            eq(userClients.clientId, clientId)
-          )
+        // Get clients for each user
+        await Promise.all(
+          userList.map(async (user: User) => {
+            const userClients = await storage.getUserClients(user.id);
+            assignments[user.id] = userClients;
+          })
         );
 
-      if (existingRelationship.length > 0) {
-        return res.status(409).json({
-          message: "This user is already associated with this client",
-          userClient: existingRelationship[0],
-        });
+        res.json(assignments);
+      } catch (error: unknown) {
+        console.error(
+          "Error fetching client assignments:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error fetching client assignments" });
       }
-
-      const parsed = insertUserClientSchema.safeParse({
-        userId,
-        clientId,
-      });
-
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Invalid user-client data",
-          errors: parsed.error.errors,
-        });
-      }
-
-      // Verify user exists
-      const userExists = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, userId));
-
-      if (userExists.length === 0) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Verify client exists
-      const clientExists = await db
-        .select()
-        .from(clients)
-        .where(eq(clients.id, clientId));
-
-      if (clientExists.length === 0) {
-        return res.status(404).json({ message: "Client not found" });
-      }
-
-      const [userClient] = await db
-        .insert(userClients)
-        .values(parsed.data)
-        .returning();
-
-      res.status(201).json(userClient);
-    } catch (error: unknown) {
-      console.error(
-        "Error creating user-client relationship:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      // Return more detailed error message for debugging
-      res.status(500).json({
-        message: "Error creating user-client relationship",
-        error: error instanceof Error ? error.message : String(error),
-      });
     }
-  });
+  );
+
+  // Create user-client relationship
+  app.post(
+    "/api/user-clients",
+    csrfProtection,
+    requireAdmin,
+    async (req, res) => {
+      try {
+        const { userId, clientId } = req.body;
+
+        if (!userId || !clientId) {
+          return res.status(400).json({
+            message: "Both userId and clientId are required",
+          });
+        }
+
+        if (!req.session?.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+        const currentUser = await storage.getUser(req.session.userId);
+        if (!currentUser) {
+          return res.status(404).json({ message: "Current user not found" });
+        }
+
+        // ADMIN: Verify they can access this client
+        if (currentUser.role === UserRole.ADMIN) {
+          const hasAccess = await canAdminAccessClient(
+            currentUser.id,
+            clientId
+          );
+          if (!hasAccess) {
+            return res.status(403).json({
+              message: "You can only assign users to your assigned clients",
+            });
+          }
+        }
+
+        // Check if this relationship already exists to prevent duplicates
+        const existingRelationship = await db
+          .select()
+          .from(userClients)
+          .where(
+            and(
+              eq(userClients.userId, userId),
+              eq(userClients.clientId, clientId)
+            )
+          );
+
+        if (existingRelationship.length > 0) {
+          return res.status(409).json({
+            message: "This user is already associated with this client",
+            userClient: existingRelationship[0],
+          });
+        }
+
+        const parsed = insertUserClientSchema.safeParse({
+          userId,
+          clientId,
+        });
+
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid user-client data",
+            errors: parsed.error.errors,
+          });
+        }
+
+        // Verify user exists
+        const userExists = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, userId));
+
+        if (userExists.length === 0) {
+          return res.status(404).json({ message: "User not found" });
+        }
+
+        // Verify client exists
+        const clientExists = await db
+          .select()
+          .from(clients)
+          .where(eq(clients.id, clientId));
+
+        if (clientExists.length === 0) {
+          return res.status(404).json({ message: "Client not found" });
+        }
+
+        const [userClient] = await db
+          .insert(userClients)
+          .values(parsed.data)
+          .returning();
+
+        res.status(201).json(userClient);
+      } catch (error: unknown) {
+        console.error(
+          "Error creating user-client relationship:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        // Return more detailed error message for debugging
+        res.status(500).json({
+          message: "Error creating user-client relationship",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+  );
 
   // Delete user-client relationship
   app.delete(
@@ -694,7 +687,10 @@ export function registerUserRoutes(app: Express) {
 
         // ADMIN: Verify they can access this client
         if (currentUser.role === UserRole.ADMIN) {
-          const hasAccess = await canAdminAccessClient(currentUser.id, clientId);
+          const hasAccess = await canAdminAccessClient(
+            currentUser.id,
+            clientId
+          );
           if (!hasAccess) {
             return res.status(403).json({
               message: "You can only view users in your assigned clients",

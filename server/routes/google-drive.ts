@@ -1,3 +1,9 @@
+import {
+  googleDriveConnections,
+  UserRole,
+  userClients,
+  users,
+} from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import type { Express } from "express";
 import { OAuth2Client } from "google-auth-library";
@@ -16,12 +22,6 @@ import {
   listDriveFiles,
   validateFileForImport,
 } from "../services/google-drive";
-import {
-  googleDriveConnections,
-  users,
-  userClients,
-  UserRole,
-} from "@shared/schema";
 import type { RequestWithClientId } from "./index";
 
 // Initialize OAuth2 client for generating auth URLs
@@ -119,15 +119,30 @@ export function registerGoogleDriveRoutes(app: Express) {
         const { refreshUserTokens } = await import(
           "../middlewares/google-drive-auth"
         );
-        const refreshedClient = await refreshUserTokens(
-          req.session.userId.toString()
-        );
-        const credentials = refreshedClient.credentials;
 
-        return res.json({
-          accessToken: credentials.access_token,
-          expiresAt: credentials.expiry_date,
-        });
+        try {
+          const refreshedClient = await refreshUserTokens(
+            req.session.userId.toString()
+          );
+          const credentials = refreshedClient.credentials;
+
+          return res.json({
+            accessToken: credentials.access_token,
+            expiresAt: credentials.expiry_date,
+          });
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+
+          // Delete the invalid connection so user can reconnect
+          await db
+            .delete(googleDriveConnections)
+            .where(eq(googleDriveConnections.userId, req.session.userId));
+
+          return res.status(401).json({
+            message: "Google Drive authentication expired. Please reconnect.",
+            requiresReauth: true,
+          });
+        }
       }
 
       // Decrypt and return valid token

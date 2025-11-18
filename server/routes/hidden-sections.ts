@@ -1,49 +1,13 @@
 import { insertHiddenSectionSchema, UserRole } from "@shared/schema";
-import type { Express, NextFunction, Request, Response } from "express";
+import type { Express, Request, Response } from "express";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { storage } from "../storage";
-
-// User role middleware for admin checks
-const requireAdminRole = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const userId = req.session.userId;
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-
-  try {
-    const user = await storage.getUser(userId);
-    if (!user) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
-    // Check if user is admin, super_admin, or editor
-    if (
-      user.role !== UserRole.ADMIN &&
-      user.role !== UserRole.SUPER_ADMIN &&
-      user.role !== UserRole.EDITOR
-    ) {
-      return res
-        .status(403)
-        .json({ message: "Forbidden - Admin, Super Admin, or Editor role required" });
-    }
-
-    next();
-  } catch (error: unknown) {
-    console.error(
-      "Error in admin role check:",
-      error instanceof Error ? error.message : "Unknown error"
-    );
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
 
 export function registerHiddenSectionsRoutes(app: Express) {
   // Get all hidden sections for a client
   app.get(
     "/api/clients/:clientId/hidden-sections",
+    requireMinimumRole(UserRole.EDITOR),
     async (req: Request, res: Response) => {
       try {
         const clientId = parseInt(req.params.clientId, 10);
@@ -66,7 +30,7 @@ export function registerHiddenSectionsRoutes(app: Express) {
   // Add a section to the hidden list
   app.post(
     "/api/clients/:clientId/hidden-sections",
-    requireAdminRole,
+    requireMinimumRole(UserRole.EDITOR),
     async (req: Request, res: Response) => {
       try {
         const clientId = parseInt(req.params.clientId, 10);
@@ -104,7 +68,7 @@ export function registerHiddenSectionsRoutes(app: Express) {
   // Remove a section from the hidden list
   app.delete(
     "/api/clients/:clientId/hidden-sections/:sectionType",
-    requireAdminRole,
+    requireMinimumRole(UserRole.EDITOR),
     async (req: Request, res: Response) => {
       try {
         const clientId = parseInt(req.params.clientId, 10);

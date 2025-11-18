@@ -14,6 +14,7 @@ import { AssetList } from "@/components/assets/asset-list";
 import { AssetUpload } from "@/components/assets/asset-upload";
 import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
 import { GoogleDrivePicker } from "@/components/assets/google-drive-picker";
+import { PermissionGate } from "@/components/permission-gate";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { PermissionAction, Resource } from "@/hooks/use-permissions";
 import {
   type Asset,
   type AssetFilters as Filters,
@@ -52,7 +53,6 @@ interface AssetManagerProps {
  */
 export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
   const [, _setLocation] = useLocation();
-  const { user } = useAuth();
   const [filters, setFilters] = useState<Filters>({});
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [assetToDelete, setAssetToDelete] = useState<number | null>(null);
@@ -72,15 +72,33 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
 
   // Google Drive integration
   const googleDriveQuery = useGoogleDriveConnectionQuery();
-  const { data: tokenData, refetch: refetchToken } = useGoogleDriveTokenQuery();
+  const {
+    data: tokenData,
+    isLoading: isLoadingToken,
+    error: tokenError,
+  } = useGoogleDriveTokenQuery({
+    enabled: !!googleDriveQuery.data,
+  });
   const importMutation = useGoogleDriveImportMutation();
 
-  // Fetch access token when connection exists
+  // Debug logging (development only)
   useEffect(() => {
-    if (googleDriveQuery.data) {
-      refetchToken();
+    if (process.env.NODE_ENV === "development") {
+      console.log("Google Drive Debug:", {
+        hasConnection: !!googleDriveQuery.data,
+        isLoadingToken,
+        tokenData,
+        tokenError,
+        accessToken,
+      });
     }
-  }, [googleDriveQuery.data, refetchToken]);
+  }, [
+    googleDriveQuery.data,
+    isLoadingToken,
+    tokenData,
+    tokenError,
+    accessToken,
+  ]);
 
   // Update access token when token data changes
   useEffect(() => {
@@ -159,9 +177,6 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
     importMutation.mutate({ files, clientId });
   };
 
-  // All users except guests can connect Google Drive
-  const canUseGoogleDrive = user?.role !== UserRole.GUEST;
-
   return (
     <section
       aria-label="Asset upload drop zone"
@@ -195,8 +210,8 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
         </div>
         <div className="flex gap-2">
           {/* Google Drive Button - Smart button that changes based on connection status */}
-          {canUseGoogleDrive &&
-            (!googleDriveQuery.data ? (
+          <PermissionGate minimumRole={UserRole.EDITOR}>
+            {!googleDriveQuery.data ? (
               // Not connected - trigger Google Drive connect flow (consent modal / OAuth)
               <GoogleDriveConnect
                 clientId={clientId}
@@ -223,18 +238,24 @@ export const AssetManager: FC<AssetManagerProps> = ({ clientId }) => {
                     : "Import from Drive"}
                 </Button>
               </GoogleDrivePicker>
-            ))}
-          <AssetUpload
-            clientId={clientId}
-            open={uploadDialogOpen}
-            onOpenChange={(open) => {
-              setUploadDialogOpen(open);
-              if (!open) {
-                setDroppedFiles([]);
-              }
-            }}
-            initialFiles={droppedFiles}
-          />
+            )}
+          </PermissionGate>
+          <PermissionGate
+            action={PermissionAction.CREATE}
+            resource={Resource.FILE_ASSETS}
+          >
+            <AssetUpload
+              clientId={clientId}
+              open={uploadDialogOpen}
+              onOpenChange={(open) => {
+                setUploadDialogOpen(open);
+                if (!open) {
+                  setDroppedFiles([]);
+                }
+              }}
+              initialFiles={droppedFiles}
+            />
+          </PermissionGate>
         </div>
       </div>
 

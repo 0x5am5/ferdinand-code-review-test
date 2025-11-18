@@ -30,7 +30,10 @@ async function getClientLogoUrl(clientId: number): Promise<string | null> {
                 : asset.data;
             return data?.type === type;
           } catch (error) {
-            console.error(`Failed to parse logo data for asset ${asset.id}:`, error);
+            console.error(
+              `Failed to parse logo data for asset ${asset.id}:`,
+              error
+            );
             return false;
           }
         });

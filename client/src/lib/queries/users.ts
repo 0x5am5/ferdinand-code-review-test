@@ -69,7 +69,14 @@ export function useUpdateUserRoleMutation() {
       });
     },
     onSuccess: () => {
+      // Invalidate all user-related queries to update UI everywhere
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === "string" &&
+          query.queryKey[0].startsWith("/api/clients/") &&
+          query.queryKey[0].includes("/users"),
+      });
       toast({
         title: "Success",
         description: "User role updated successfully",

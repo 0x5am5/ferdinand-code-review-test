@@ -1,8 +1,8 @@
-import { UserRole } from "@shared/schema";
 import type { UserRoleType } from "@shared/schema";
+import { UserRole } from "@shared/schema";
 import type { NextFunction, Response } from "express";
 import type { RequestWithClientId } from "server/routes";
-import { storage } from "server/storage";
+import { storage } from "../storage";
 
 // Role hierarchy for comparison
 const ROLE_HIERARCHY: Record<UserRoleType, number> = {
@@ -20,7 +20,7 @@ export const requireMinimumRole = (minimumRole: UserRoleType) => {
     next: NextFunction
   ) => {
     try {
-      if (!req.session.userId) {
+      if (!req.session?.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 

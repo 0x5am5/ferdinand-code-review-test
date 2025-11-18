@@ -1,8 +1,8 @@
-import type { Express } from "express";
 import { userClients } from "@shared/schema";
+import type { Express } from "express";
+import { db } from "../db";
 import { auth as firebaseAuth } from "../firebase";
 import { authRateLimit } from "../middlewares/rate-limit";
-import { db } from "../db";
 import { storage } from "../storage";
 
 export function registerAuthRoutes(app: Express) {
@@ -63,12 +63,16 @@ export function registerAuthRoutes(app: Express) {
 
         // Check if invitation has already been used
         if (invitation.used) {
-          return res.status(403).json({ message: "Invitation has already been used" });
+          return res
+            .status(403)
+            .json({ message: "Invitation has already been used" });
         }
 
         // Check if invitation email matches the Google auth email
         if (invitation.email !== decodedToken.email) {
-          return res.status(403).json({ message: "Email does not match invitation" });
+          return res
+            .status(403)
+            .json({ message: "Email does not match invitation" });
         }
 
         // Create new user with the role from the invitation
@@ -81,12 +85,10 @@ export function registerAuthRoutes(app: Express) {
         // Associate user with the clients specified in the invitation
         if (invitation.clientIds && invitation.clientIds.length > 0) {
           for (const clientId of invitation.clientIds) {
-            await db
-              .insert(userClients)
-              .values({
-                userId: user.id,
-                clientId,
-              });
+            await db.insert(userClients).values({
+              userId: user.id,
+              clientId,
+            });
           }
         }
       }

@@ -1,3 +1,4 @@
+import { PermissionAction, Resource } from "@shared/permissions";
 import {
   Cloud,
   Download,
@@ -16,6 +17,7 @@ import React, {
   type MouseEvent,
   useState,
 } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -335,10 +337,19 @@ export const AssetList: FC<AssetListProps> = ({
               </DropdownMenu>
             )}
 
-            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete {selectedAssets.size}
-            </Button>
+            <PermissionGate
+              action={PermissionAction.DELETE}
+              resource={Resource.FILE_ASSETS}
+            >
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete {selectedAssets.size}
+              </Button>
+            </PermissionGate>
           </div>
         )}
         <div className="flex gap-2 ml-auto">
@@ -515,17 +526,23 @@ export const AssetList: FC<AssetListProps> = ({
                       <Download className="h-3 w-3" aria-hidden="true" />
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(asset.id);
-                    }}
+                  <PermissionGate
+                    action={PermissionAction.DELETE}
+                    resource={Resource.FILE_ASSETS}
+                    resourceOwnerId={asset.uploadedBy}
                   >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(asset.id);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </PermissionGate>
                 </div>
               </div>
             </Card>
@@ -688,16 +705,22 @@ export const AssetList: FC<AssetListProps> = ({
                           <Download className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(asset.id);
-                        }}
+                      <PermissionGate
+                        action={PermissionAction.DELETE}
+                        resource={Resource.FILE_ASSETS}
+                        resourceOwnerId={asset.uploadedBy}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(asset.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </PermissionGate>
                     </div>
                   </TableCell>
                 </TableRow>

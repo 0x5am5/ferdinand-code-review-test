@@ -1,4 +1,4 @@
-import { CloudIcon, Figma, Slack, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, CloudIcon, Figma, Slack } from "lucide-react";
 import { useState } from "react";
 import FigmaIntegration from "@/components/figma/figma-integration";
 import { GoogleDriveIntegration } from "@/components/integrations/google-drive-integration";
@@ -36,7 +36,9 @@ export function IntegrationsHub({
   const googleDriveEnabled = featureToggles.brandAssets ?? false;
 
   // Track open/closed state for each integration
-  const [openIntegrations, setOpenIntegrations] = useState<Record<string, boolean>>({
+  const [openIntegrations, setOpenIntegrations] = useState<
+    Record<string, boolean>
+  >({
     figma: false,
     slack: false,
     googleDrive: false,
@@ -77,7 +79,9 @@ export function IntegrationsHub({
             key: "googleDrive",
             name: "Google Drive",
             icon: CloudIcon,
-            component: <GoogleDriveIntegration clientId={clientId} userRole={userRole} />,
+            component: (
+              <GoogleDriveIntegration clientId={clientId} userRole={userRole} />
+            ),
           },
         ]
       : []),

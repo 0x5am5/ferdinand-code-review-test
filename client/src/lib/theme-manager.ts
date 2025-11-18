@@ -490,7 +490,11 @@ class ThemeManager {
           const primaryHsl = this.hexToHSL(activeTheme.theme.primary);
 
           // Apply the primary color - only if we got valid HSL values
-          if (!isNaN(primaryHsl.h) && !isNaN(primaryHsl.s) && !isNaN(primaryHsl.l)) {
+          if (
+            !Number.isNaN(primaryHsl.h) &&
+            !Number.isNaN(primaryHsl.s) &&
+            !Number.isNaN(primaryHsl.l)
+          ) {
             root.style.setProperty("--primary", primaryHsl.hslString);
           } else {
             // Fallback to default blue if conversion failed
@@ -806,7 +810,11 @@ class ThemeManager {
             // Apply all colors from the theme when in light mode
             // Skip 'primary' as it's already set from theme.primary above
             Object.entries(activeTheme.colors).forEach(([key, value]) => {
-              if (typeof value === "string" && !key.startsWith("dark-") && key !== "primary") {
+              if (
+                typeof value === "string" &&
+                !key.startsWith("dark-") &&
+                key !== "primary"
+              ) {
                 this.setCssColorProperty(`--${key}`, value);
               }
             });

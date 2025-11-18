@@ -5,9 +5,8 @@ import {
 } from "@shared/schema";
 import type { Express } from "express";
 import { mutationRateLimit } from "../middlewares/rate-limit";
-import { csrfProtection } from "../middlewares/security-headers";
-import { requireSuperAdminRole } from "../middlewares/requireSuperAdminRole";
 import { requireMinimumRole } from "../middlewares/requireMinimumRole";
+import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
 
 export function registerClientRoutes(app: Express) {
@@ -95,34 +94,35 @@ export function registerClientRoutes(app: Express) {
   app.delete(
     "/api/clients/:id",
     csrfProtection,
-    requireSuperAdminRole,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (req, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (Number.isNaN(id)) {
-        return res.status(400).json({ message: "Invalid client ID" });
+      try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) {
+          return res.status(400).json({ message: "Invalid client ID" });
+        }
+        const client = await storage.getClient(id);
+        if (!client) {
+          return res.status(404).json({ message: "Client not found" });
+        }
+        await storage.deleteClient(id);
+        res.status(200).json({ message: "Client deleted successfully" });
+      } catch (error: unknown) {
+        console.error(
+          "Error deleting client:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error deleting client" });
       }
-      const client = await storage.getClient(id);
-      if (!client) {
-        return res.status(404).json({ message: "Client not found" });
-      }
-      await storage.deleteClient(id);
-      res.status(200).json({ message: "Client deleted successfully" });
-    } catch (error: unknown) {
-      console.error(
-        "Error deleting client:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error deleting client" });
     }
-  });
+  );
 
   // Create new client
   app.post(
     "/api/clients",
     csrfProtection,
     mutationRateLimit,
-    requireSuperAdminRole,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (req, res) => {
       try {
         if (!req.session.userId) {
@@ -157,25 +157,26 @@ export function registerClientRoutes(app: Express) {
   app.patch(
     "/api/clients/order",
     csrfProtection,
-    requireSuperAdminRole,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (req, res) => {
-    try {
-      const { clientOrders } = updateClientOrderSchema.parse(req.body);
-      // Update each client's display order
-      await Promise.all(
-        clientOrders.map(({ id, displayOrder }) =>
-          storage.updateClient(id, { displayOrder })
-        )
-      );
-      res.json({ message: "Client order updated successfully" });
-    } catch (error: unknown) {
-      console.error(
-        "Error updating client order:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error updating client order" });
+      try {
+        const { clientOrders } = updateClientOrderSchema.parse(req.body);
+        // Update each client's display order
+        await Promise.all(
+          clientOrders.map(({ id, displayOrder }) =>
+            storage.updateClient(id, { displayOrder })
+          )
+        );
+        res.json({ message: "Client order updated successfully" });
+      } catch (error: unknown) {
+        console.error(
+          "Error updating client order:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error updating client order" });
+      }
     }
-  });
+  );
 
   // Update client information
   app.patch(
@@ -183,33 +184,34 @@ export function registerClientRoutes(app: Express) {
     csrfProtection,
     requireMinimumRole(UserRole.EDITOR),
     async (req, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (Number.isNaN(id)) {
-        return res.status(400).json({ message: "Invalid client ID" });
-      }
+      try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) {
+          return res.status(400).json({ message: "Invalid client ID" });
+        }
 
-      const client = await storage.getClient(id);
-      if (!client) {
-        return res.status(404).json({ message: "Client not found" });
-      }
+        const client = await storage.getClient(id);
+        if (!client) {
+          return res.status(404).json({ message: "Client not found" });
+        }
 
-      // If user is updating the client, record who made the change
-      const userId = req.session.userId;
-      if (userId) {
-        req.body.lastEditedBy = userId;
-        req.body.updatedAt = new Date();
-      }
+        // If user is updating the client, record who made the change
+        const userId = req.session.userId;
+        if (userId) {
+          req.body.lastEditedBy = userId;
+          req.body.updatedAt = new Date();
+        }
 
-      // Update the client
-      const updatedClient = await storage.updateClient(id, req.body);
-      res.json(updatedClient);
-    } catch (error: unknown) {
-      console.error(
-        "Error updating client:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error updating client" });
+        // Update the client
+        const updatedClient = await storage.updateClient(id, req.body);
+        res.json(updatedClient);
+      } catch (error: unknown) {
+        console.error(
+          "Error updating client:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error updating client" });
+      }
     }
-  });
+  );
 }

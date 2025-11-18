@@ -233,7 +233,7 @@ export async function validateAssetClientAccess(
  * ```
  */
 export async function checkAssetPermission(
-  userId: number,
+  _userId: number,
   assetId: number,
   _action: DriveFileAction
 ): Promise<{ allowed: boolean; reason?: string; asset?: Asset }> {

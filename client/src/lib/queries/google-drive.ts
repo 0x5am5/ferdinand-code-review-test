@@ -42,8 +42,10 @@ export const useGoogleDriveConnectionQuery = () =>
   });
 
 // Query to get OAuth access token for Google Picker
-export const useGoogleDriveTokenQuery = () =>
-  useQuery<{ accessToken: string; expiresAt: Date } | null>({
+export const useGoogleDriveTokenQuery = (options?: { enabled?: boolean }) => {
+  const queryClient = useQueryClient();
+
+  return useQuery<{ accessToken: string; expiresAt: Date } | null>({
     queryKey: ["/api/google-drive/token"],
     queryFn: async () => {
       const response = await fetch("/api/google-drive/token");
@@ -51,13 +53,32 @@ export const useGoogleDriveTokenQuery = () =>
         if (response.status === 404) {
           return null; // No connection found
         }
+        if (response.status === 401) {
+          // Token refresh failed, connection was deleted
+          // Invalidate connection query to update UI
+          queryClient.invalidateQueries({
+            queryKey: ["/api/google-drive/status"],
+          });
+
+          const error = await response.json();
+          if (error.requiresReauth) {
+            toast({
+              title: "Google Drive Disconnected",
+              description:
+                "Your connection expired. Please reconnect to continue using Google Drive.",
+              variant: "destructive",
+            });
+          }
+          return null;
+        }
         throw new Error("Failed to fetch Google Drive access token");
       }
       return response.json();
     },
     retry: false,
-    enabled: false, // Only fetch when explicitly requested
+    enabled: options?.enabled ?? false, // Only fetch when explicitly requested
   });
+};
 
 // Mutation to initiate Google OAuth flow
 export const useGoogleDriveConnectMutation = () => {

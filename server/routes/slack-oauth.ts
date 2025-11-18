@@ -2,12 +2,13 @@ import {
   insertSlackWorkspaceSchema,
   slackUserMappings,
   slackWorkspaces,
+  UserRole,
 } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
 import fetch from "node-fetch";
 import { db } from "../db";
-import { requireAdminRole } from "../middlewares/requireAdminRole";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
 import { encrypt, generateSecureRandom } from "../utils/crypto";
@@ -65,7 +66,7 @@ export function registerSlackOAuthRoutes(app: Express) {
   app.get(
     "/api/clients/:clientId/slack/oauth/install",
     validateClientId,
-    requireAdminRole,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res: Response) => {
       try {
         if (!req.session.userId) {
@@ -436,7 +437,7 @@ export function registerSlackOAuthRoutes(app: Express) {
   app.post(
     "/api/clients/:clientId/slack/workspaces/:workspaceId/reactivate",
     validateClientId,
-    requireAdminRole,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
@@ -490,7 +491,7 @@ export function registerSlackOAuthRoutes(app: Express) {
   app.delete(
     "/api/clients/:clientId/slack/workspaces/:workspaceId/delete",
     validateClientId,
-    requireAdminRole,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;

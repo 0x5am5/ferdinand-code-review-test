@@ -1,8 +1,14 @@
 import { CloudIcon, Settings as SettingsIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GoogleDriveIntegration } from "@/components/integrations/google-drive-integration";
 import { SlackIntegration } from "@/components/settings/SlackIntegration";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface SettingsPageProps {
   clientId: number;
@@ -49,7 +55,8 @@ export function SettingsPage({
                     Google Drive Integration
                   </CardTitle>
                   <CardDescription>
-                    Connect your Google Drive to import brand assets directly from your Drive files.
+                    Connect your Google Drive to import brand assets directly
+                    from your Drive files.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -67,7 +74,8 @@ export function SettingsPage({
                     Slack Integration
                   </CardTitle>
                   <CardDescription>
-                    Connect Slack to enable brand asset access and notifications.
+                    Connect Slack to enable brand asset access and
+                    notifications.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -104,12 +112,14 @@ export function SettingsPage({
                     No Integrations Available
                   </CardTitle>
                   <CardDescription className="text-orange-600">
-                    Contact your administrator to enable integrations for this client.
+                    Contact your administrator to enable integrations for this
+                    client.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm text-orange-700">
                   <p>
-                    Available integrations: Google Drive (asset import), Slack (brand asset access), Figma (design token sync)
+                    Available integrations: Google Drive (asset import), Slack
+                    (brand asset access), Figma (design token sync)
                   </p>
                 </CardContent>
               </Card>

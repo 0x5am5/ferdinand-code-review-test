@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚨 Critical RBAC Documents (READ FIRST for Permission Work)
+
+When working on ANY permission-related features or bug fixes:
+
+1. **`RBAC_GUIDELINES.md`** - Permission matrix, implementation patterns, best practices
+2. **`RBAC_AUDIT_REPORT.md`** - Current issues, files needing refactoring, priorities
+3. **See "RBAC System Implementation" section below** for task progress
+
+**Critical Rules:**
+- ❌ Never use string literals for roles (e.g., `"admin"`)
+- ✅ Always use `UserRole.ADMIN` constants
+- ✅ Use `requireMinimumRole()` middleware on backend
+- ❌ Do not duplicate permission checks - use shared utilities
+
 ## Development Commands
 
 ```bash
@@ -49,11 +63,19 @@ All database tables, types, and validation schemas are centralized in `shared/sc
 - TypeScript types inferred from database schema
 - Constants and enums used across the application
 
-### Authentication System
+### Authentication & Authorization System
 - **Frontend**: Firebase Authentication with Google OAuth
 - **Backend**: Firebase Admin SDK for token verification
 - **Sessions**: Express sessions stored in PostgreSQL
 - **Role-based access**: Multi-tenant system with user roles (super_admin, admin, editor, standard, guest)
+- **RBAC Guidelines**: See `RBAC_GUIDELINES.md` for complete permission matrix and implementation patterns
+
+#### RBAC Implementation Rules
+1. **Backend-First Enforcement**: All permission checks MUST be enforced on the backend. Frontend checks are for UX only.
+2. **Use Centralized Middleware**: Use `requireMinimumRole(UserRole.X)` from `server/middlewares/requireMinimumRole.ts`
+3. **Permission Matrix**: Follow the role hierarchy and permission matrix defined in `RBAC_GUIDELINES.md`
+4. **No Role Hardcoding**: Avoid checking roles directly (e.g., `if (user.role === 'admin')`). Use permission-based checks.
+5. **Ownership Checks**: Editors can only delete/update their own resources. Implement ownership validation in routes.
 
 ### API Architecture
 - RESTful API routes in `server/routes/`
@@ -141,6 +163,34 @@ The application uses feature toggles stored in the database (`clients.featureTog
 - Middleware validates user access to specific clients
 - Role-based permissions control feature access
 - Users can be associated with multiple clients
+
+### RBAC System Implementation (Task 7)
+The unified RBAC system is being implemented in Task 7. Key deliverables:
+- ✅ **Research & Permission Matrix**: Completed in subtask 7.1 (see `RBAC_GUIDELINES.md`)
+- ✅ **Audit**: Completed in subtask 7.2 (see `RBAC_AUDIT_REPORT.md`)
+- ⏳ **Middleware Consolidation**: Subtask 7.3 - Refactor backend middleware
+- ⏳ **Shared Module**: Subtask 7.4 - Create `shared/permissions.ts`
+- ⏳ **Refactoring**: Subtask 7.5 - Update all permission checks
+
+**IMPORTANT - Audit Findings:**
+Before making ANY permission-related changes, review `RBAC_AUDIT_REPORT.md` for:
+- Critical issues (string literals in 2 files)
+- Files requiring refactoring (35+ files identified)
+- Current permission patterns and their issues
+- Refactoring priority matrix
+
+**Critical Issues to Avoid:**
+1. ❌ **DO NOT use string literals** for roles (e.g., `"admin"` instead of `UserRole.ADMIN`)
+2. ❌ **DO NOT duplicate permission checks** - use shared utilities
+3. ❌ **DO NOT add inline role checks** - use middleware or hooks
+
+When implementing new features, always:
+1. Check `RBAC_GUIDELINES.md` for the permission matrix
+2. Check `RBAC_AUDIT_REPORT.md` for refactoring priorities
+3. Use `requireMinimumRole()` middleware on backend routes
+4. Enforce permissions on the backend before any sensitive operations
+5. Use `usePermissions()` hook in frontend (when available, subtask 7.4)
+6. Never use string literals for role comparisons
 
 ## User Preferences
 

@@ -1,5 +1,5 @@
 import { FileIcon, FolderIcon } from "lucide-react";
-import type { FC, ReactNode, PropsWithChildren } from "react";
+import type { FC, PropsWithChildren } from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,7 +98,9 @@ interface GoogleDrivePickerProps {
  * Google Drive Picker Component
  * Uses the native Google Picker API to allow users to select files from their Drive
  */
-export const GoogleDrivePicker: FC<PropsWithChildren<GoogleDrivePickerProps>> = ({
+export const GoogleDrivePicker: FC<
+  PropsWithChildren<GoogleDrivePickerProps>
+> = ({
   appId,
   oauthToken,
   onFilesSelected,
