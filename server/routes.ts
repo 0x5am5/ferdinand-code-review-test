@@ -14,7 +14,6 @@ import { registerHiddenSectionsRoutes } from "./routes/hidden-sections";
 import { registerInspirationBoardsRoutes } from "./routes/inspiration-boards";
 import { registerInvitationRoutes } from "./routes/invitations";
 import { registerPersonasRoutes } from "./routes/personas";
-import { registerSectionMetadataRoutes } from "./routes/section-metadata";
 import { registerSlackRoutes } from "./routes/slack";
 import { registerSlackOAuthRoutes } from "./routes/slack-oauth";
 import { registerTypeScalesRoutes } from "./routes/type-scales";
@@ -100,7 +99,6 @@ export function registerRoutes(app: Express) {
   registerPersonasRoutes(app);
   registerInspirationBoardsRoutes(app);
   registerHiddenSectionsRoutes(app);
-  registerSectionMetadataRoutes(app);
   registerTypeScalesRoutes(app);
   registerFigmaRoutes(app);
   registerGoogleDriveRoutes(app);
