@@ -1,8 +1,7 @@
-import { type BrandAsset, LogoType } from "@shared/schema";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,11 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  PermissionAction,
-  Resource,
-  usePermissions,
-} from "@/hooks/use-permissions";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import {
   useAddHiddenSection,
@@ -32,7 +27,7 @@ interface LogoManagerProps {
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const { toast } = useToast();
-  const { can } = usePermissions();
+  const { user = null } = useAuth();
   const queryClient = useQueryClient();
   const [visibleSections, setVisibleSections] = useState<string[]>([]);
   const [showAddSection, setShowAddSection] = useState(false);
@@ -44,10 +39,112 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const addHiddenSection = useAddHiddenSection(clientId);
   const removeHiddenSection = useRemoveHiddenSection(clientId);
 
-  const canManageSections = can(
-    PermissionAction.UPDATE,
-    Resource.HIDDEN_SECTIONS
-  );
+  // Fetch section metadata for descriptions
+  const { data: sectionMetadataList = [] } = useQuery({
+    queryKey: [`/api/clients/${clientId}/section-metadata`],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/clients/${clientId}/section-metadata`,
+        {
+          credentials: "include",
+        }
+      );
+      if (!response.ok) throw new Error("Failed to fetch section metadata");
+      return response.json();
+    },
+  });
+
+  // Section description update mutation
+  const updateSectionDescriptionMutation = useMutation({
+    mutationFn: async ({
+      sectionType,
+      description,
+    }: {
+      sectionType: string;
+      description: string;
+    }) => {
+      const response = await fetch(
+        `/api/clients/${clientId}/section-metadata/${sectionType}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ description }),
+          credentials: "include",
+        }
+      );
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(
+          error.message || "Failed to update section description"
+        );
+      }
+      return response.json();
+    },
+    onMutate: async ({ sectionType, description }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: [`/api/clients/${clientId}/section-metadata`],
+      });
+
+      // Snapshot the previous value
+      const previousMetadata = queryClient.getQueryData([
+        `/api/clients/${clientId}/section-metadata`,
+      ]);
+
+      // Optimistically update to the new value
+      queryClient.setQueryData(
+        [`/api/clients/${clientId}/section-metadata`],
+        (
+          old: Array<{ sectionType: string; description?: string }> | undefined
+        ) => {
+          if (!old) return old;
+
+          const existingIndex = old.findIndex(
+            (m) => m.sectionType === sectionType
+          );
+
+          if (existingIndex >= 0) {
+            // Update existing metadata
+            const updated = [...old];
+            updated[existingIndex] = { ...updated[existingIndex], description };
+            return updated;
+          }
+
+          // Add new metadata if it doesn't exist
+          return [...old, { sectionType, description }];
+        }
+      );
+
+      // Return a context object with the snapshotted value
+      return { previousMetadata };
+    },
+    onError: (error: Error, _variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      queryClient.setQueryData(
+        [`/api/clients/${clientId}/section-metadata`],
+        context?.previousMetadata
+      );
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/section-metadata`],
+      });
+      toast({
+        title: "Success",
+        description: "Section description updated",
+      });
+    },
+  });
+
+  const canManageSections =
+    user?.role === UserRole.ADMIN ||
+    user?.role === UserRole.SUPER_ADMIN ||
+    user?.role === UserRole.EDITOR;
 
   useEffect(() => {
     if (loadingHiddenSections) return;
@@ -170,6 +267,21 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     });
   };
 
+  // Handler for updating section description
+  const handleSectionDescriptionUpdate = (type: string, value: string) => {
+    updateSectionDescriptionMutation.mutate({
+      sectionType: `logo-${type}`,
+      description: value,
+    });
+  };
+
+  // Get section description from metadata
+  const getSectionDescription = (type: string): string | undefined => {
+    return sectionMetadataList.find(
+      (m: { sectionType: string }) => m.sectionType === `logo-${type}`
+    )?.description;
+  };
+
   return (
     <div>
       <div className="flex justify-between items-start mb-6">
@@ -179,28 +291,24 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             Manage and download the official logos for this brand
           </p>
         </div>
-        <PermissionGate
-          action={PermissionAction.UPDATE}
-          resource={Resource.HIDDEN_SECTIONS}
-        >
-          {availableSections.length > 0 && (
-            <Button
-              onClick={() => setShowAddSection(true)}
-              variant="outline"
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Section</span>
-            </Button>
-          )}
-        </PermissionGate>
+        {canManageSections && availableSections.length > 0 && (
+          <Button
+            onClick={() => setShowAddSection(true)}
+            variant="outline"
+            className="flex items-center gap-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Section</span>
+          </Button>
+        )}
       </div>
 
       {visibleSections.map((type) => {
         const logosForType = logosByType[type] || [];
+        const isGuest = user?.role === UserRole.GUEST;
 
         // Hide empty sections for guest users since they can't upload
-        if (!canManageSections && logosForType.length === 0) {
+        if (isGuest && logosForType.length === 0) {
           return null;
         }
 
@@ -217,14 +325,15 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             onRemoveSection={
               canManageSections ? handleRemoveSection : undefined
             }
+            sectionDescription={getSectionDescription(type)}
+            onSectionDescriptionUpdate={(value) =>
+              handleSectionDescriptionUpdate(type, value)
+            }
           />
         );
       })}
 
-      <PermissionGate
-        action={PermissionAction.CREATE}
-        resource={Resource.HIDDEN_SECTIONS}
-      >
+      {canManageSections && (
         <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
           <DialogContent>
             <DialogHeader>
@@ -253,7 +362,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             </div>
           </DialogContent>
         </Dialog>
-      </PermissionGate>
+      )}
     </div>
   );
 }
