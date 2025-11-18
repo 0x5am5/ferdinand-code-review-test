@@ -81,22 +81,34 @@ export const InlineEditable = React.forwardRef<
     const debounceTimerRef = React.useRef<NodeJS.Timeout | null>(null);
     const errorId = React.useId();
 
-    // Update edit value when prop value changes
+    // Update edit value when prop value changes (but only when not actively editing)
     React.useEffect(() => {
-      setEditValue(value);
-      setOriginalValue(value);
-    }, [value]);
+      if (!isEditing) {
+        setEditValue(value);
+        setOriginalValue(value);
+      }
+    }, [value, isEditing]);
+
+    // Track if we just entered edit mode
+    const justEnteredEditMode = React.useRef(true);
 
     // Focus input when entering edit mode
     React.useEffect(() => {
       if (isEditing && inputRef.current) {
-        inputRef.current.focus();
-        // Select all text for easy editing
-        inputRef.current.select();
-        // Store original value when entering edit mode
-        setOriginalValue(value);
-        // Clear validation errors when entering edit mode
-        setValidationError(null);
+        // Only select text when first entering edit mode
+        if (justEnteredEditMode.current) {
+          inputRef.current.focus();
+          // Select all text for easy editing
+          inputRef.current.select();
+          // Store original value when entering edit mode
+          setOriginalValue(value);
+          // Clear validation errors when entering edit mode
+          setValidationError(null);
+          justEnteredEditMode.current = false;
+        }
+      } else if (!isEditing) {
+        // Reset flag when exiting edit mode
+        justEnteredEditMode.current = true;
       }
     }, [isEditing, value]);
 
@@ -211,31 +223,24 @@ export const InlineEditable = React.forwardRef<
 
     const handleBlur = React.useCallback(
       (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        // If showControls is true, don't auto-save on blur
-        // User must explicitly click save or cancel
-        if (showControls) {
-          // Check if the blur is because user clicked save/cancel button
-          const relatedTarget = e.relatedTarget as HTMLElement;
-          if (relatedTarget?.closest("[data-inline-editable-controls]")) {
-            // User clicked on a control button, don't do anything
-            // The button click handler will handle save/cancel
-            return;
-          }
-          // If blur is to something else, treat as cancel
-          handleCancel();
+        // Check if the blur is because user clicked save/cancel button
+        const relatedTarget = e.relatedTarget as HTMLElement;
+        if (relatedTarget?.closest("[data-inline-editable-controls]")) {
+          // User clicked on a control button, don't do anything
+          // The button click handler will handle save/cancel
           return;
         }
 
-        // Original behavior: auto-save on blur
         // Clear any pending debounce timer
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
           debounceTimerRef.current = null;
         }
-        // Save on blur
+
+        // Save on blur regardless of showControls setting
         handleSave();
       },
-      [handleSave, handleCancel, showControls]
+      [handleSave]
     );
 
     const handleViewClick = React.useCallback(() => {
