@@ -901,6 +901,12 @@ export const insertSectionMetadataSchema = z.object({
     "interactive-colors",
     "brand-fonts",
     "type-scales",
+    "logo-main",
+    "logo-vertical",
+    "logo-horizontal",
+    "logo-square",
+    "logo-app_icon",
+    "logo-symbol",
   ]),
   description: z.string().optional(),
 });

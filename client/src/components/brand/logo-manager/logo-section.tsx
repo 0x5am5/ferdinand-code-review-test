@@ -30,6 +30,8 @@ interface LogoSectionProps {
   onDeleteLogo: (logoId: number, variant: "light" | "dark") => void;
   queryClient: QueryClient;
   onRemoveSection?: (type: string) => void;
+  sectionDescription?: string;
+  onSectionDescriptionUpdate?: (value: string) => void;
 }
 
 export function LogoSection({
@@ -39,6 +41,8 @@ export function LogoSection({
   onDeleteLogo,
   queryClient,
   onRemoveSection,
+  sectionDescription,
+  onSectionDescriptionUpdate,
 }: LogoSectionProps) {
   const { toast } = useToast();
   const { user = null } = useAuth();
@@ -307,10 +311,15 @@ export function LogoSection({
   return (
     <AssetSection
       title={`${type.charAt(0).toUpperCase() + type.slice(1)} Logo`}
-      description={logoDescriptions[type as keyof typeof logoDescriptions]}
+      description={
+        sectionDescription ||
+        logoDescriptions[type as keyof typeof logoDescriptions]
+      }
       isEmpty={!hasLogos}
       onRemoveSection={onRemoveSection}
       sectionType={type}
+      enableEditableDescription={true}
+      onDescriptionUpdate={onSectionDescriptionUpdate}
       uploadComponent={
         <FileUpload
           type={type}
