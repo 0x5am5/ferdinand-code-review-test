@@ -1,16 +1,8 @@
-import { PermissionAction, Resource } from "@shared/permissions";
 import type { BrandAsset } from "@shared/schema";
-import {
-  descriptionValidationSchema,
-  FILE_FORMATS,
-  UserRole,
-} from "@shared/schema";
+import { FILE_FORMATS, UserRole } from "@shared/schema";
 import type { QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
 import { FileType, Trash2, Upload } from "lucide-react";
 import { type DragEvent, useCallback, useState } from "react";
-import { PermissionGate } from "@/components/permission-gate";
-import { InlineEditable } from "@/components/ui/inline-editable";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +11,7 @@ import { AssetSection } from "./asset-section";
 import { DarkVariantUploader } from "./dark-variant-uploader";
 import { LogoDownloadButton } from "./download-buttons/logo-download-button";
 import { FileUpload } from "./file-upload";
-import { logoDescriptions, logoUsageGuidance } from "./logo-constants";
+import { logoDescriptions } from "./logo-constants";
 import { LogoPreview } from "./logo-preview";
 import { type ParsedLogoData, parseBrandAssetData } from "./logo-utils";
 
@@ -45,16 +37,13 @@ export function LogoSection({
   onSectionDescriptionUpdate,
 }: LogoSectionProps) {
   const { toast } = useToast();
-  const { user = null } = useAuth();
+  const { user } = useAuth();
   const hasLogos = logos.length > 0;
   const [isDarkVariantDragging, setIsDarkVariantDragging] = useState(false);
   const currentType = type;
 
-  // Check if user can edit descriptions
-  const canEditDescriptions =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
+  // Guest users should only be able to download logos
+  const canEditLogos = user?.role !== UserRole.GUEST;
 
   const handleDarkVariantDragEnter = useCallback(
     (e: DragEvent<HTMLElement>) => {
@@ -194,120 +183,6 @@ export function LogoSection({
     }
   };
 
-  // Mutation for updating logo descriptions
-  const updateDescriptionMutation = useMutation({
-    mutationFn: async ({
-      assetId,
-      description,
-    }: {
-      assetId: number;
-      description: string;
-    }) => {
-      const response = await fetch(
-        `/api/clients/${clientId}/brand-assets/${assetId}/description`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            description,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update description");
-      }
-
-      return response.json();
-    },
-    onMutate: async ({ assetId, description }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: [`/api/clients/${clientId}/brand-assets`],
-      });
-
-      // Snapshot the previous value
-      const previousAssets = queryClient.getQueryData([
-        `/api/clients/${clientId}/brand-assets`,
-      ]);
-
-      // Optimistically update to the new value
-      queryClient.setQueryData(
-        [`/api/clients/${clientId}/brand-assets`],
-        (old: BrandAsset[] | undefined) => {
-          if (!old) return old;
-          return old.map((asset) => {
-            if (asset.id !== assetId) return asset;
-
-            const data =
-              typeof asset.data === "string"
-                ? JSON.parse(asset.data)
-                : asset.data;
-
-            const updatedData = { ...data, description };
-
-            return {
-              ...asset,
-              data: updatedData,
-            };
-          });
-        }
-      );
-
-      // Return a context object with the snapshotted value
-      return { previousAssets };
-    },
-    onError: (error: Error, _variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      queryClient.setQueryData(
-        [`/api/clients/${clientId}/brand-assets`],
-        context?.previousAssets
-      );
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/brand-assets`],
-      });
-      toast({
-        title: "Description saved",
-        description: "Logo description has been updated successfully.",
-      });
-    },
-  });
-
-  const handleDescriptionUpdate = (assetId: number, value: string) => {
-    updateDescriptionMutation.mutate({
-      assetId,
-      description: value,
-    });
-  };
-
-  // Validation function for descriptions
-  const validateDescription = (value: string): string | null => {
-    const result = descriptionValidationSchema.safeParse(value);
-    if (!result.success) {
-      return result.error.errors[0]?.message || "Invalid description";
-    }
-    return null;
-  };
-
-  // Handle validation errors with toast
-  const handleValidationError = (error: string) => {
-    toast({
-      title: "Validation Error",
-      description: error,
-      variant: "destructive",
-    });
-  };
-
   return (
     <AssetSection
       title={`${type.charAt(0).toUpperCase() + type.slice(1)} Logo`}
@@ -346,10 +221,7 @@ export function LogoSection({
               key={logo.id}
               renderActions={(variant) => (
                 <>
-                  <PermissionGate
-                    action={PermissionAction.UPDATE}
-                    resource={Resource.BRAND_ASSETS}
-                  >
+                  {canEditLogos && (
                     <label className="cursor-pointer">
                       <Input
                         type="file"
@@ -384,7 +256,7 @@ export function LogoSection({
                         <span>Replace</span>
                       </button>
                     </label>
-                  </PermissionGate>
+                  )}
 
                   <LogoDownloadButton
                     logo={logo}
@@ -393,11 +265,8 @@ export function LogoSection({
                     parsedData={parsedData}
                   />
 
-                  <PermissionGate
-                    action={PermissionAction.DELETE}
-                    resource={Resource.BRAND_ASSETS}
-                  >
-                    {((variant === "dark" && parsedData.hasDarkVariant) ||
+                  {canEditLogos &&
+                    ((variant === "dark" && parsedData.hasDarkVariant) ||
                       variant === "light") && (
                       <button
                         type="button"
@@ -408,7 +277,6 @@ export function LogoSection({
                         <span>Delete</span>
                       </button>
                     )}
-                  </PermissionGate>
                 </>
               )}
               renderAsset={(variant) =>
@@ -434,38 +302,6 @@ export function LogoSection({
                   />
                 )
               }
-              renderDescription={(_variant) => {
-                // Use the same description for both light and dark variants
-                const currentDescription = parsedData.description;
-                const fallbackDescription =
-                  logoUsageGuidance[type as keyof typeof logoUsageGuidance];
-
-                if (canEditDescriptions) {
-                  return (
-                    <InlineEditable
-                      value={currentDescription || fallbackDescription || ""}
-                      onSave={(value) =>
-                        handleDescriptionUpdate(logo.id, value)
-                      }
-                      inputType="textarea"
-                      placeholder={
-                        fallbackDescription || "Add a description..."
-                      }
-                      showControls={true}
-                      validate={validateDescription}
-                      onValidationError={handleValidationError}
-                      ariaLabel="Logo description"
-                      className="asset-display__info-description"
-                    />
-                  );
-                }
-
-                return (
-                  <p className="asset-display__info-description">
-                    {currentDescription || fallbackDescription}
-                  </p>
-                );
-              }}
               supportsVariants={true}
               className=""
             />
