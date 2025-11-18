@@ -1,7 +1,13 @@
-import pkg, { LogLevel } from "@slack/bolt";
+import pkg, {
+  type BlockAction,
+  LogLevel,
+  type SlackActionMiddlewareArgs,
+} from "@slack/bolt";
 import type { Express, Response } from "express";
 
 const { App, ExpressReceiver } = pkg;
+
+type ActionMiddlewareArgs = SlackActionMiddlewareArgs<BlockAction>;
 
 import {
   insertSlackUserMappingSchema,
@@ -83,24 +89,25 @@ function initializeSlackApp() {
     slackApp.command("/ferdinand", handleUnifiedCommand);
 
     // Register interactive button handlers
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    slackApp.action("show_all_colors", async ({ ack, body, respond }: any) => {
-      await ack();
-      const [clientId, variant] = body.actions[0].value.split("|");
-      // Re-trigger color command with override to show all
-      await handleColorSubcommandWithLimit(
-        body,
-        respond,
-        variant,
-        parseInt(clientId, 10),
-        "all"
-      );
-    });
+    slackApp.action(
+      "show_all_colors",
+      async ({ ack, body, respond }: ActionMiddlewareArgs) => {
+        await ack();
+        const [clientId, variant] = body.actions[0].value.split("|");
+        // Re-trigger color command with override to show all
+        await handleColorSubcommandWithLimit(
+          body,
+          respond,
+          variant,
+          parseInt(clientId, 10),
+          "all"
+        );
+      }
+    );
 
     slackApp.action(
       "show_limited_colors",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async ({ ack, body, respond }: any) => {
+      async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
         const [clientId, variant] = body.actions[0].value.split("|");
         // Re-trigger color command with limit of 3
@@ -114,24 +121,25 @@ function initializeSlackApp() {
       }
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    slackApp.action("upload_all_logos", async ({ ack, body, respond }: any) => {
-      await ack();
-      const [clientId, query] = body.actions[0].value.split("|");
-      // Re-trigger logo command with override to upload all
-      await handleLogoSubcommandWithLimit(
-        body,
-        respond,
-        query,
-        parseInt(clientId, 10),
-        "all"
-      );
-    });
+    slackApp.action(
+      "upload_all_logos",
+      async ({ ack, body, respond }: ActionMiddlewareArgs) => {
+        await ack();
+        const [clientId, query] = body.actions[0].value.split("|");
+        // Re-trigger logo command with override to upload all
+        await handleLogoSubcommandWithLimit(
+          body,
+          respond,
+          query,
+          parseInt(clientId, 10),
+          "all"
+        );
+      }
+    );
 
     slackApp.action(
       "upload_limited_logos",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async ({ ack, body, respond }: any) => {
+      async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
         const [clientId, query] = body.actions[0].value.split("|");
         // Re-trigger logo command with limit of 3
@@ -147,8 +155,7 @@ function initializeSlackApp() {
 
     slackApp.action(
       "process_all_fonts",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async ({ ack, body, respond }: any) => {
+      async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
         const [clientId, variant] = body.actions[0].value.split("|");
         // Re-trigger font command with override to process all
@@ -164,8 +171,7 @@ function initializeSlackApp() {
 
     slackApp.action(
       "process_limited_fonts",
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      async ({ ack, body, respond }: any) => {
+      async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
         const [clientId, variant] = body.actions[0].value.split("|");
         // Re-trigger font command with limit of 3
@@ -180,50 +186,52 @@ function initializeSlackApp() {
     );
 
     // Unified action handler to manage all interactive button events
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    slackApp.action(/.*/, async ({ ack, body, respond }: any) => {
-      await ack();
-      const actionId = body.actions[0].action_id;
-      const actionValue = body.actions[0].value;
+    slackApp.action(
+      /.*/,
+      async ({ ack, body, respond }: ActionMiddlewareArgs) => {
+        await ack();
+        const actionId = body.actions[0].action_id;
+        const actionValue = body.actions[0].value;
 
-      if (
-        actionId === "show_all_colors" ||
-        actionId === "show_limited_colors"
-      ) {
-        const [clientId, variant, limit] = actionValue.split("|");
-        await handleColorSubcommandWithLimit(
-          body,
-          respond,
-          variant,
-          parseInt(clientId, 10),
-          limit === "all" ? "all" : parseInt(limit, 10)
-        );
-      } else if (
-        actionId === "show_all_logos" ||
-        actionId === "show_limited_logos"
-      ) {
-        const [clientId, query, limit] = actionValue.split("|");
-        await handleLogoSubcommandWithLimit(
-          body,
-          respond,
-          query,
-          parseInt(clientId, 10),
-          limit === "all" ? "all" : parseInt(limit, 10)
-        );
-      } else if (
-        actionId === "process_all_fonts" ||
-        actionId === "process_limited_fonts"
-      ) {
-        const [clientId, variant, limit] = actionValue.split("|");
-        await handleFontSubcommandWithLimit(
-          body,
-          respond,
-          variant,
-          parseInt(clientId, 10),
-          limit === "all" ? "all" : parseInt(limit, 10)
-        );
+        if (
+          actionId === "show_all_colors" ||
+          actionId === "show_limited_colors"
+        ) {
+          const [clientId, variant, limit] = actionValue.split("|");
+          await handleColorSubcommandWithLimit(
+            body,
+            respond,
+            variant,
+            parseInt(clientId, 10),
+            limit === "all" ? "all" : parseInt(limit, 10)
+          );
+        } else if (
+          actionId === "show_all_logos" ||
+          actionId === "show_limited_logos"
+        ) {
+          const [clientId, query, limit] = actionValue.split("|");
+          await handleLogoSubcommandWithLimit(
+            body,
+            respond,
+            query,
+            parseInt(clientId, 10),
+            limit === "all" ? "all" : parseInt(limit, 10)
+          );
+        } else if (
+          actionId === "process_all_fonts" ||
+          actionId === "process_limited_fonts"
+        ) {
+          const [clientId, variant, limit] = actionValue.split("|");
+          await handleFontSubcommandWithLimit(
+            body,
+            respond,
+            variant,
+            parseInt(clientId, 10),
+            limit === "all" ? "all" : parseInt(limit, 10)
+          );
+        }
       }
-    });
+    );
 
     return slackApp;
   } else {

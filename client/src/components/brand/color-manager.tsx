@@ -246,8 +246,10 @@ function ColorCard({
 
   // Mutation for updating color description
   const updateDescriptionMutation = useMutation({
-    mutationFn: ({ description }: { description: string }) =>
-      brandAssetApi.updateDescription(clientId, color.id!, description),
+    mutationFn: ({ description }: { description: string }) => {
+      if (!color.id) throw new Error("Color ID is required");
+      return brandAssetApi.updateDescription(clientId, color.id, description);
+    },
     onMutate: async ({ description }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({

@@ -54,7 +54,10 @@ export function AssetSection({
     Array<{ sectionType: string; description?: string }>
   >({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
-    queryFn: () => sectionMetadataApi.list(clientId!),
+    queryFn: () => {
+      if (!clientId) throw new Error("Client ID is required");
+      return sectionMetadataApi.list(clientId);
+    },
     enabled: enableEditableDescription && !!clientId,
   });
 
@@ -72,7 +75,10 @@ export function AssetSection({
     }: {
       sectionType: string;
       description: string;
-    }) => sectionMetadataApi.update(clientId!, sectionType, description),
+    }) => {
+      if (!clientId) throw new Error("Client ID is required");
+      return sectionMetadataApi.update(clientId, sectionType, description);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/section-metadata`],

@@ -325,10 +325,11 @@ export const InlineEditable = React.forwardRef<
     }
 
     return (
-      <div
+      <button
+        type="button"
         ref={ref}
         className={cn(
-          "w-full cursor-text rounded-md px-3 py-2 text-sm transition-colors",
+          "w-full cursor-text rounded-md px-3 py-2 text-sm transition-colors text-left",
           "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           isEmpty && "text-muted-foreground",
           disabled && "cursor-not-allowed opacity-50",
@@ -336,19 +337,11 @@ export const InlineEditable = React.forwardRef<
           className
         )}
         onClick={handleViewClick}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleViewClick();
-          }
-        }}
-        role="button"
-        tabIndex={disabled ? -1 : 0}
+        disabled={disabled}
         aria-label={ariaLabel || "Click to edit"}
-        aria-disabled={disabled}
       >
         {displayValue}
-      </div>
+      </button>
     );
   }
 );
