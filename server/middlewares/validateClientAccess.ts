@@ -7,10 +7,10 @@
  * - Returning 403 if the user doesn't have access
  */
 
+import { userClients, users } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import type { NextFunction, Response } from "express";
 import { db } from "../db";
-import { userClients, users } from "@shared/schema";
 import type { RequestWithClientId } from "../routes";
 
 export async function validateClientAccess(
@@ -70,4 +70,3 @@ export async function validateClientAccess(
     res.status(500).json({ message: "Error verifying client access" });
   }
 }
-

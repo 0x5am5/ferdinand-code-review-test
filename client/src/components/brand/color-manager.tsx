@@ -655,10 +655,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
             }
           >
             {/* This is the layout of the brand colors */}
-            <div className="asset-display">
-              <div className="asset-display__info">
-                {colorDescriptions.brand}
-              </div>
+            <div>
               <div className="asset-display__preview">
                 {brandColorsData.map((color) => (
                   <ColorCard
@@ -746,10 +743,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
             }
           >
             {/* This is the layout of neutral colors */}
-            <div className="asset-display">
-              <div className="asset-display__info">
-                {colorDescriptions.neutral}
-              </div>
+            <div>
               <div className="asset-display__preview">
                 {neutralColorsData.map((color) => (
                   <ColorCard
@@ -840,10 +834,7 @@ export function ColorManager({ clientId, colors }: ColorManagerProps) {
               </div>
             }
           >
-            <div className="asset-display">
-              <div className="asset-display__info">
-                {colorDescriptions.interactive}
-              </div>
+            <div>
               <div className="asset-display__preview">
                 {interactiveColorsData.map((color) => (
                   <ColorCard
