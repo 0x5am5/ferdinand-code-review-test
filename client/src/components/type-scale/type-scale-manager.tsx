@@ -43,6 +43,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { sectionMetadataApi } from "@/lib/api";
 import { TypeScalePreview } from "./type-scale-preview";
 
 type BrandColor = {
@@ -416,16 +417,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   // Fetch section metadata for description
   const { data: sectionMetadataList = [] } = useQuery({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/clients/${clientId}/section-metadata`,
-        {
-          credentials: "include",
-        }
-      );
-      if (!response.ok) throw new Error("Failed to fetch section metadata");
-      return response.json();
-    },
+    queryFn: () => sectionMetadataApi.list(clientId),
   });
 
   // Extract type-scales description
@@ -747,30 +739,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Section description update mutation
   const updateSectionDescriptionMutation = useMutation({
-    mutationFn: async ({
-      sectionType,
-      description,
-    }: {
-      sectionType: string;
-      description: string;
-    }) => {
-      const response = await fetch(
-        `/api/clients/${clientId}/section-metadata/${sectionType}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ description }),
-          credentials: "include",
-        }
-      );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(
-          error.message || "Failed to update section description"
-        );
-      }
-      return response.json();
-    },
+    mutationFn: ({ sectionType, description }: { sectionType: string; description: string }) =>
+      sectionMetadataApi.update(clientId, sectionType, description),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/section-metadata`],

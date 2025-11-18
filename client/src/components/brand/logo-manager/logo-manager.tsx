@@ -2,6 +2,7 @@ import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
+import { brandAssetApi, sectionMetadataApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,44 +43,13 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   // Fetch section metadata for descriptions
   const { data: sectionMetadataList = [] } = useQuery({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/clients/${clientId}/section-metadata`,
-        {
-          credentials: "include",
-        }
-      );
-      if (!response.ok) throw new Error("Failed to fetch section metadata");
-      return response.json();
-    },
+    queryFn: () => sectionMetadataApi.list(clientId),
   });
 
   // Section description update mutation
   const updateSectionDescriptionMutation = useMutation({
-    mutationFn: async ({
-      sectionType,
-      description,
-    }: {
-      sectionType: string;
-      description: string;
-    }) => {
-      const response = await fetch(
-        `/api/clients/${clientId}/section-metadata/${sectionType}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ description }),
-          credentials: "include",
-        }
-      );
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(
-          error.message || "Failed to update section description"
-        );
-      }
-      return response.json();
-    },
+    mutationFn: ({ sectionType, description }: { sectionType: string; description: string }) =>
+      sectionMetadataApi.update(clientId, sectionType, description),
     onMutate: async ({ sectionType, description }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({
@@ -172,25 +142,8 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   }, [visibleSections]);
 
   const deleteLogo = useMutation({
-    mutationFn: async ({
-      logoId,
-      variant,
-    }: {
-      logoId: number;
-      variant: "light" | "dark";
-    }) => {
-      const response = await fetch(
-        `/api/clients/${clientId}/brand-assets/${logoId}${variant === "dark" ? "?variant=dark" : ""}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete logo");
-      }
-    },
+    mutationFn: ({ logoId, variant }: { logoId: number; variant: "light" | "dark" }) =>
+      brandAssetApi.delete(clientId, logoId, variant),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],

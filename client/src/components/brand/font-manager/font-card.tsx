@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { InlineEditable } from "@/components/ui/inline-editable";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { brandAssetApi } from "@/lib/api";
 import type { FontCardProps } from "./types";
 import { generateGoogleFontUrl } from "./utils";
 
@@ -30,31 +31,8 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
 
   // Mutation for updating font description
   const updateDescriptionMutation = useMutation({
-    mutationFn: async ({
-      assetId,
-      description,
-    }: {
-      assetId: number;
-      description: string;
-    }) => {
-      const response = await fetch(
-        `/api/clients/${clientId}/brand-assets/${assetId}/description`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ description }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update description");
-      }
-
-      return response.json();
-    },
+    mutationFn: ({ assetId, description }: { assetId: number; description: string }) =>
+      brandAssetApi.updateDescription(clientId, assetId, description),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
