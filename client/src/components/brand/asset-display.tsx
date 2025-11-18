@@ -6,6 +6,8 @@ interface AssetDisplayProps {
   renderActions: (variant: "light" | "dark") => React.ReactNode;
   renderAsset: (variant: "light" | "dark") => React.ReactNode;
   supportsVariants?: boolean;
+  description?: string;
+  renderDescription?: (variant: "light" | "dark") => React.ReactNode;
   className: string;
 }
 
@@ -13,12 +15,22 @@ export function AssetDisplay({
   renderActions,
   renderAsset,
   supportsVariants = true,
+  description,
+  renderDescription,
   className,
 }: AssetDisplayProps) {
   const [variant, setVariant] = useState<"light" | "dark">("light");
 
   return (
-    <div className={`${className} bg-white`}>
+    <div className={`asset-display ${className} bg-white`}>
+      <div className="asset-display__info">
+        {renderDescription ? (
+          renderDescription(variant)
+        ) : (
+          <p className="asset-display__info-description">{description}</p>
+        )}
+      </div>
+
       <div className="asset-display__preview">
         <div
           className={`asset-display__preview-container ${

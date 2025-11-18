@@ -46,7 +46,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Fetch section metadata for descriptions
   const { data: sectionMetadataList = [] } = useQuery({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
-    // queryFn: () => sectionMetadataApi.list(clientId),
+    queryFn: () => sectionMetadataApi.list(clientId),
   });
 
   // Extract brand-fonts description

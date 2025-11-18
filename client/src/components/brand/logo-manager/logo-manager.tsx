@@ -1,8 +1,8 @@
 import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { brandAssetApi, sectionMetadataApi } from "@/lib/api";
+import { brandAssetApi } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,77 +39,6 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
   const addHiddenSection = useAddHiddenSection(clientId);
   const removeHiddenSection = useRemoveHiddenSection(clientId);
-
-  // Fetch section metadata for descriptions
-  const { data: sectionMetadataList = [] } = useQuery({
-    queryKey: [`/api/clients/${clientId}/section-metadata`],
-    queryFn: () => sectionMetadataApi.list(clientId),
-  });
-
-  // Section description update mutation
-  const updateSectionDescriptionMutation = useMutation({
-    mutationFn: ({ sectionType, description }: { sectionType: string; description: string }) =>
-      sectionMetadataApi.update(clientId, sectionType, description),
-    onMutate: async ({ sectionType, description }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({
-        queryKey: [`/api/clients/${clientId}/section-metadata`],
-      });
-
-      // Snapshot the previous value
-      const previousMetadata = queryClient.getQueryData([
-        `/api/clients/${clientId}/section-metadata`,
-      ]);
-
-      // Optimistically update to the new value
-      queryClient.setQueryData(
-        [`/api/clients/${clientId}/section-metadata`],
-        (
-          old: Array<{ sectionType: string; description?: string }> | undefined
-        ) => {
-          if (!old) return old;
-
-          const existingIndex = old.findIndex(
-            (m) => m.sectionType === sectionType
-          );
-
-          if (existingIndex >= 0) {
-            // Update existing metadata
-            const updated = [...old];
-            updated[existingIndex] = { ...updated[existingIndex], description };
-            return updated;
-          }
-
-          // Add new metadata if it doesn't exist
-          return [...old, { sectionType, description }];
-        }
-      );
-
-      // Return a context object with the snapshotted value
-      return { previousMetadata };
-    },
-    onError: (error: Error, _variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      queryClient.setQueryData(
-        [`/api/clients/${clientId}/section-metadata`],
-        context?.previousMetadata
-      );
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [`/api/clients/${clientId}/section-metadata`],
-      });
-      toast({
-        title: "Success",
-        description: "Section description updated",
-      });
-    },
-  });
 
   const canManageSections =
     user?.role === UserRole.ADMIN ||
@@ -220,21 +149,6 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     });
   };
 
-  // Handler for updating section description
-  const handleSectionDescriptionUpdate = (type: string, value: string) => {
-    updateSectionDescriptionMutation.mutate({
-      sectionType: `logo-${type}`,
-      description: value,
-    });
-  };
-
-  // Get section description from metadata
-  const getSectionDescription = (type: string): string | undefined => {
-    return sectionMetadataList.find(
-      (m: { sectionType: string }) => m.sectionType === `logo-${type}`
-    )?.description;
-  };
-
   return (
     <div>
       <div className="flex justify-between items-start mb-6">
@@ -277,10 +191,6 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             queryClient={queryClient}
             onRemoveSection={
               canManageSections ? handleRemoveSection : undefined
-            }
-            sectionDescription={getSectionDescription(type)}
-            onSectionDescriptionUpdate={(value) =>
-              handleSectionDescriptionUpdate(type, value)
             }
           />
         );

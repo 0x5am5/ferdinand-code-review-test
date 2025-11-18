@@ -60,28 +60,6 @@ export async function getSlackUserStatus(): Promise<SlackUserStatus> {
   return apiRequest<SlackUserStatus>("GET", "/api/slack/user-status");
 }
 
-// Section Metadata Types
-export interface SectionMetadata {
-  sectionType: string;
-  description?: string;
-}
-
-// Section Metadata API helpers
-export const sectionMetadataApi = {
-  list: (clientId: number) =>
-    apiRequest<SectionMetadata[]>(
-      "GET",
-      `/api/clients/${clientId}/section-metadata`
-    ),
-
-  update: (clientId: number, sectionType: string, description: string) =>
-    apiRequest(
-      "PUT",
-      `/api/clients/${clientId}/section-metadata/${sectionType}`,
-      { description }
-    ),
-};
-
 // Brand Asset API helpers
 export const brandAssetApi = {
   updateDescription: (clientId: number, assetId: number, description: string) =>
