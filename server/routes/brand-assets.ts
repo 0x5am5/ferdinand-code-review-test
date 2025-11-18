@@ -531,23 +531,13 @@ export function registerBrandAssetRoutes(app: Express) {
         }
 
         // Guest users cannot create assets
-        if (user.role === UserRole.GUEST) {
+        if (user.role === UserRole.GUEST || user.role === UserRole.STANDARD) {
           return res
             .status(403)
             .json({ message: "Guests cannot create assets" });
         }
 
         const { category } = req.body;
-
-        // Font asset creation requires editor role or higher
-        if (category === "font" && user.role === UserRole.STANDARD) {
-          console.log(
-            `[Asset Upload] User ${userId} (role: ${user.role}) denied: insufficient permissions for font creation`
-          );
-          return res.status(403).json({
-            message: "Only editors and admins can create font assets",
-          });
-        }
 
         // Log user attempting upload
         console.log(
@@ -1433,20 +1423,10 @@ export function registerBrandAssetRoutes(app: Express) {
         );
 
         // Guest users cannot delete brand assets
-        if (user.role === UserRole.GUEST) {
+        if (user.role === UserRole.GUEST || user.role === UserRole.STANDARD) {
           return res
             .status(403)
             .json({ message: "Guest users cannot delete brand assets" });
-        }
-
-        // Font asset deletion requires editor role or higher
-        if (asset.category === "font" && user.role === UserRole.STANDARD) {
-          console.log(
-            `[Asset Delete] User ${userId} (role: ${user.role}) denied: insufficient permissions for font deletion`
-          );
-          return res.status(403).json({
-            message: "Only editors and admins can delete font assets",
-          });
         }
 
         // Verify user has access to this client (unless super admin)

@@ -43,7 +43,8 @@ export function LogoSection({
   const currentType = type;
 
   // Guest users should only be able to download logos
-  const canEditLogos = user?.role !== UserRole.GUEST;
+  const canEditLogos =
+    user?.role !== UserRole.GUEST && user?.role !== UserRole.STANDARD;
 
   const handleDarkVariantDragEnter = useCallback(
     (e: DragEvent<HTMLElement>) => {
