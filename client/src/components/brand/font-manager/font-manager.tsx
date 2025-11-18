@@ -46,7 +46,12 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { data: sectionMetadataList = [] } = useQuery({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
     queryFn: async () => {
-      const response = await fetch(`/api/clients/${clientId}/section-metadata`);
+      const response = await fetch(
+        `/api/clients/${clientId}/section-metadata`,
+        {
+          credentials: "include",
+        }
+      );
       if (!response.ok) throw new Error("Failed to fetch section metadata");
       return response.json();
     },
@@ -82,6 +87,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ description }),
+          credentials: "include",
         }
       );
       if (!response.ok) {
