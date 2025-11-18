@@ -862,7 +862,6 @@ export const insertBrandAssetSchema = createInsertSchema(brandAssets)
       format: z.enum(Object.values(FILE_FORMATS) as [string, ...string[]]),
       fileName: z.string(),
       description: z.string().optional(),
-      darkVariantDescription: z.string().optional(),
     }),
     fileData: z.string(),
     mimeType: z.string(),

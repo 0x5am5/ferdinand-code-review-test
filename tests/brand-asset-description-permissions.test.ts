@@ -104,7 +104,6 @@ async function setupTestAssets(): Promise<void> {
         fileName: 'test-logo.svg',
         hasDarkVariant: true,
         description: 'Original light description',
-        darkVariantDescription: 'Original dark description',
       },
       sortOrder: 0,
     })
@@ -449,7 +448,7 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            darkVariantDescription: 'Valid dark description',
+            description: 'Valid dark description',
             variant: 'dark',
           }),
         }
@@ -457,7 +456,7 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
 
       expect(response.status).toBe(200);
       const data = await response.json();
-      expect(data.data.darkVariantDescription).toBe('Valid dark description');
+      expect(data.data.description).toBe('Valid dark description');
     });
 
     it('should accept both light and dark descriptions together', async () => {
@@ -469,7 +468,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Both light',
-            darkVariantDescription: 'Both dark',
             variant: 'light',
           }),
         }

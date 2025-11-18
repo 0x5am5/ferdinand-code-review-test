@@ -44,7 +44,9 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { addFont, editFont, deleteFont } = useFontMutations(clientId);
 
   // Fetch section metadata for descriptions
-  const { data: sectionMetadataList = [] } = useQuery<Array<{ sectionType: string; description?: string }>>({
+  const { data: sectionMetadataList = [] } = useQuery<
+    Array<{ sectionType: string; description?: string }>
+  >({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
     queryFn: () => sectionMetadataApi.list(clientId),
   });
@@ -66,8 +68,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
 
   // Section description update mutation
   const updateSectionDescriptionMutation = useMutation({
-    mutationFn: ({ sectionType, description }: { sectionType: string; description: string }) =>
-      sectionMetadataApi.update(clientId, sectionType, description),
+    mutationFn: ({
+      sectionType,
+      description,
+    }: {
+      sectionType: string;
+      description: string;
+    }) => sectionMetadataApi.update(clientId, sectionType, description),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/section-metadata`],

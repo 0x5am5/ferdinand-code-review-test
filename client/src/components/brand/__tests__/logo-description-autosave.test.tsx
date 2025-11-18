@@ -47,12 +47,10 @@ function TestLogoDescriptionComponent({
     mutationFn: async ({
       assetId,
       description,
-      darkVariantDescription,
       variant,
     }: {
       assetId: number;
       description?: string;
-      darkVariantDescription?: string;
       variant: "light" | "dark";
     }) => {
       const response = await fetch(
@@ -64,7 +62,6 @@ function TestLogoDescriptionComponent({
           },
           body: JSON.stringify({
             description,
-            darkVariantDescription,
             variant,
           }),
         }
@@ -77,12 +74,7 @@ function TestLogoDescriptionComponent({
 
       return response.json();
     },
-    onMutate: async ({
-      assetId,
-      description,
-      darkVariantDescription,
-      variant,
-    }) => {
+    onMutate: async ({ assetId, description, variant: _variant }) => {
       await queryClient.cancelQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
@@ -105,11 +97,8 @@ function TestLogoDescriptionComponent({
                 : assetObj.data;
 
             const updatedData = { ...(data as Record<string, unknown>) };
-            if (variant === "light" && description !== undefined) {
+            if (description !== undefined) {
               updatedData.description = description;
-            }
-            if (variant === "dark" && darkVariantDescription !== undefined) {
-              updatedData.darkVariantDescription = darkVariantDescription;
             }
 
             return {
@@ -147,8 +136,7 @@ function TestLogoDescriptionComponent({
   const handleDescriptionUpdate = (value: string) => {
     updateDescriptionMutation.mutate({
       assetId,
-      description: variant === "light" ? value : undefined,
-      darkVariantDescription: variant === "dark" ? value : undefined,
+      description: value,
       variant,
     });
   };
@@ -191,7 +179,6 @@ describe("Logo Description Autosave Integration", () => {
           name: "Primary Logo",
           data: {
             description: "Light variant description",
-            darkVariantDescription: "Dark variant description",
           },
         },
       ]
@@ -273,7 +260,6 @@ describe("Logo Description Autosave Integration", () => {
             },
             body: JSON.stringify({
               description: "Updated light",
-              darkVariantDescription: undefined,
               variant: "light",
             }),
           })
@@ -317,7 +303,6 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "ABCD",
-              darkVariantDescription: undefined,
               variant: "light",
             }),
           })
@@ -367,8 +352,7 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             method: "PATCH",
             body: JSON.stringify({
-              description: undefined,
-              darkVariantDescription: "Updated dark",
+              description: "Updated dark",
               variant: "dark",
             }),
           })
@@ -550,7 +534,6 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Blur save light",
-              darkVariantDescription: undefined,
               variant: "light",
             }),
           })
@@ -582,8 +565,7 @@ describe("Logo Description Autosave Integration", () => {
           "/api/clients/1/brand-assets/1/description",
           expect.objectContaining({
             body: JSON.stringify({
-              description: undefined,
-              darkVariantDescription: "Blur save dark",
+              description: "Blur save dark",
               variant: "dark",
             }),
           })
@@ -704,7 +686,6 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Trimmed",
-              darkVariantDescription: undefined,
               variant: "light",
             }),
           })

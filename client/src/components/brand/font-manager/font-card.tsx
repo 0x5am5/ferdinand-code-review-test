@@ -1,15 +1,16 @@
-import {
-  descriptionValidationSchema,
-  FontSource,
-} from "@shared/schema";
+import { descriptionValidationSchema, FontSource } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Trash2 } from "lucide-react";
 import React, { useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineEditable } from "@/components/ui/inline-editable";
-import { PermissionGate } from "@/components/permission-gate";
-import { usePermissions, PermissionAction, Resource } from "@/hooks/use-permissions";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { brandAssetApi } from "@/lib/api";
 import type { FontCardProps } from "./types";
@@ -21,12 +22,20 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
   const queryClient = useQueryClient();
   const { can } = usePermissions();
 
-  const canEditDescriptions = can(PermissionAction.UPDATE, Resource.BRAND_ASSETS);
+  const canEditDescriptions = can(
+    PermissionAction.UPDATE,
+    Resource.BRAND_ASSETS
+  );
 
   // Mutation for updating font description
   const updateDescriptionMutation = useMutation({
-    mutationFn: ({ assetId, description }: { assetId: number; description: string }) =>
-      brandAssetApi.updateDescription(clientId, assetId, description),
+    mutationFn: ({
+      assetId,
+      description,
+    }: {
+      assetId: number;
+      description: string;
+    }) => brandAssetApi.updateDescription(clientId, assetId, description),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
@@ -223,7 +232,10 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
         </div>
       </div>
       <div className="absolute top-4 right-4 flex gap-1">
-        <PermissionGate action={PermissionAction.UPDATE} resource={Resource.BRAND_ASSETS}>
+        <PermissionGate
+          action={PermissionAction.UPDATE}
+          resource={Resource.BRAND_ASSETS}
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -233,7 +245,10 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
             <Edit2 className="h-3 w-3" />
           </Button>
         </PermissionGate>
-        <PermissionGate action={PermissionAction.DELETE} resource={Resource.BRAND_ASSETS}>
+        <PermissionGate
+          action={PermissionAction.DELETE}
+          resource={Resource.BRAND_ASSETS}
+        >
           <Button
             variant="ghost"
             size="sm"

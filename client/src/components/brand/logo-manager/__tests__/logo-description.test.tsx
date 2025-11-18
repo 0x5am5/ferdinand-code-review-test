@@ -29,7 +29,6 @@ const createMockLogo = (
   id: number,
   type: string,
   description?: string,
-  darkVariantDescription?: string,
   hasDarkVariant = false
 ): BrandAsset => ({
   id,
@@ -44,7 +43,6 @@ const createMockLogo = (
     fileName: `${type}-logo.svg`,
     hasDarkVariant,
     description,
-    darkVariantDescription,
   },
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -190,14 +188,7 @@ describe("LogoSection - Description Editing", () => {
 
     it("should show custom dark variant description when available", async () => {
       const user = userEvent.setup({ delay: null });
-      const darkDescription = "Use this version on dark backgrounds";
-      const logo = createMockLogo(
-        1,
-        "main",
-        "Light variant description",
-        darkDescription,
-        true
-      );
+      const logo = createMockLogo(1, "main", "Light variant description", true);
       renderLogoSection([logo], UserRole.EDITOR);
 
       // First verify light description is showing
@@ -209,23 +200,18 @@ describe("LogoSection - Description Editing", () => {
       });
       await user.click(darkButton);
 
-      // Now the dark description should be visible
+      // Now the fallback description for dark should be visible
       await waitFor(() => {
-        expect(screen.getByText(darkDescription)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Use this logo anywhere brand visibility matters/i)
+        ).toBeInTheDocument();
       });
     });
 
     it("should handle separate descriptions for light and dark variants", async () => {
       const user = userEvent.setup({ delay: null });
       const lightDescription = "Light mode logo description";
-      const darkDescription = "Dark mode logo description";
-      const logo = createMockLogo(
-        1,
-        "main",
-        lightDescription,
-        darkDescription,
-        true
-      );
+      const logo = createMockLogo(1, "main", lightDescription, true);
       renderLogoSection([logo], UserRole.EDITOR);
 
       // Light description should be showing initially
@@ -237,9 +223,11 @@ describe("LogoSection - Description Editing", () => {
       });
       await user.click(darkButton);
 
-      // Now dark description should be showing
+      // Now fallback description should be showing
       await waitFor(() => {
-        expect(screen.getByText(darkDescription)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Use this logo anywhere brand visibility matters/i)
+        ).toBeInTheDocument();
       });
 
       // Switch back to light
@@ -325,7 +313,6 @@ describe("LogoSection - Description Editing", () => {
               },
               body: JSON.stringify({
                 description: "Modified",
-                darkVariantDescription: undefined,
                 variant: "light",
               }),
             })
@@ -428,7 +415,6 @@ describe("LogoSection - Description Editing", () => {
             },
             body: JSON.stringify({
               description: "New description",
-              darkVariantDescription: undefined,
               variant: "light",
             }),
           })
@@ -438,7 +424,7 @@ describe("LogoSection - Description Editing", () => {
 
     it("should call correct endpoint with proper payload for dark variant", async () => {
       const user = userEvent.setup({ delay: null });
-      const logo = createMockLogo(1, "main", "Light desc", undefined, true);
+      const logo = createMockLogo(1, "main", "Light desc", true);
       renderLogoSection([logo], UserRole.EDITOR);
 
       const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
@@ -472,8 +458,7 @@ describe("LogoSection - Description Editing", () => {
           expect.objectContaining({
             method: "PATCH",
             body: JSON.stringify({
-              description: undefined,
-              darkVariantDescription: "Dark variant description",
+              description: "Dark variant description",
               variant: "dark",
             }),
           })
@@ -519,7 +504,6 @@ describe("LogoSection - Description Editing", () => {
             method: "PATCH",
             body: JSON.stringify({
               description: "Modified description",
-              darkVariantDescription: undefined,
               variant: "light",
             }),
           })
@@ -651,7 +635,6 @@ describe("LogoSection - Description Editing", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Test",
-              darkVariantDescription: undefined,
               variant: "light",
             }),
           })

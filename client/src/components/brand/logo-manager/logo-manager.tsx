@@ -2,7 +2,7 @@ import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { brandAssetApi } from "@/lib/api";
+import { PermissionGate } from "@/components/permission-gate";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,10 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PermissionGate } from "@/components/permission-gate";
 import { useAuth } from "@/hooks/use-auth";
-import { usePermissions, PermissionAction, Resource } from "@/hooks/use-permissions";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
+import { brandAssetApi } from "@/lib/api";
 import {
   useAddHiddenSection,
   useHiddenSections,
@@ -43,7 +47,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const addHiddenSection = useAddHiddenSection(clientId);
   const removeHiddenSection = useRemoveHiddenSection(clientId);
 
-  const canManageSections = can(PermissionAction.UPDATE, Resource.HIDDEN_SECTIONS);
+  const canManageSections = can(
+    PermissionAction.UPDATE,
+    Resource.HIDDEN_SECTIONS
+  );
 
   useEffect(() => {
     if (loadingHiddenSections) return;
@@ -71,8 +78,13 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   }, [visibleSections]);
 
   const deleteLogo = useMutation({
-    mutationFn: ({ logoId, variant }: { logoId: number; variant: "light" | "dark" }) =>
-      brandAssetApi.delete(clientId, logoId, variant),
+    mutationFn: ({
+      logoId,
+      variant,
+    }: {
+      logoId: number;
+      variant: "light" | "dark";
+    }) => brandAssetApi.delete(clientId, logoId, variant),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
@@ -158,7 +170,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             Manage and download the official logos for this brand
           </p>
         </div>
-        <PermissionGate action={PermissionAction.UPDATE} resource={Resource.HIDDEN_SECTIONS}>
+        <PermissionGate
+          action={PermissionAction.UPDATE}
+          resource={Resource.HIDDEN_SECTIONS}
+        >
           {availableSections.length > 0 && (
             <Button
               onClick={() => setShowAddSection(true)}
@@ -198,7 +213,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         );
       })}
 
-      <PermissionGate action={PermissionAction.UPDATE} resource={Resource.HIDDEN_SECTIONS}>
+      <PermissionGate
+        action={PermissionAction.UPDATE}
+        resource={Resource.HIDDEN_SECTIONS}
+      >
         <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
           <DialogContent>
             <DialogHeader>

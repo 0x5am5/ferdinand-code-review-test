@@ -415,7 +415,9 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   });
 
   // Fetch section metadata for description
-  const { data: sectionMetadataList = [] } = useQuery<Array<{ sectionType: string; description?: string }>>({
+  const { data: sectionMetadataList = [] } = useQuery<
+    Array<{ sectionType: string; description?: string }>
+  >({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
     queryFn: () => sectionMetadataApi.list(clientId),
   });
@@ -739,8 +741,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   // Section description update mutation
   const updateSectionDescriptionMutation = useMutation({
-    mutationFn: ({ sectionType, description }: { sectionType: string; description: string }) =>
-      sectionMetadataApi.update(clientId, sectionType, description),
+    mutationFn: ({
+      sectionType,
+      description,
+    }: {
+      sectionType: string;
+      description: string;
+    }) => sectionMetadataApi.update(clientId, sectionType, description),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/section-metadata`],

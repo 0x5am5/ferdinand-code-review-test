@@ -1342,16 +1342,6 @@ export function registerBrandAssetRoutes(app: Express) {
         if (description !== undefined) {
           updatedData.description = description;
         }
-        // Copy allowed variant-specific fields from req.body (e.g., darkVariantDescription)
-        // Use explicit allowlist to prevent unintended fields from being persisted
-        const allowedVariantFields = ["darkVariantDescription"] as const;
-        if (typeof req.body === "object" && req.body !== null) {
-          allowedVariantFields.forEach((field) => {
-            if (field in req.body && typeof req.body[field] === "string") {
-              updatedData[field] = req.body[field];
-            }
-          });
-        }
 
         // Update the asset
         await db
