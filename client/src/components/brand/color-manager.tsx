@@ -1584,7 +1584,7 @@ function isColorFamily(
   const hsl = hexToHslValues(hex);
   if (!hsl) return false;
 
-  const hue = hsl.h * 360;
+  const hue = hsl.h;
 
   switch (family) {
     case "green":

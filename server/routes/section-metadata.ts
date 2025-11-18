@@ -1,9 +1,9 @@
-import { sectionMetadata } from "@shared/schema";
+import { sectionMetadata, UserRole, userClients, users } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
+import { db } from "../db";
 import { requireAuth } from "../middlewares/auth";
 import { requireMinimumRole } from "../middlewares/requireMinimumRole";
-import { db } from "../db";
 
 export function registerSectionMetadataRoutes(app: Express) {
   // List section metadata for a client
@@ -14,8 +14,42 @@ export function registerSectionMetadataRoutes(app: Express) {
       try {
         const clientId = parseInt(req.params.clientId, 10);
 
-        if (isNaN(clientId)) {
+        if (Number.isNaN(clientId)) {
           return res.status(400).json({ message: "Invalid client ID" });
+        }
+
+        // Authorization check: verify user has access to this client
+        if (!req.session?.userId) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
+
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, req.session.userId));
+
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        // Super admins have access to all clients
+        if (user.role !== UserRole.SUPER_ADMIN) {
+          // Check if user has access to this client
+          const [userClient] = await db
+            .select()
+            .from(userClients)
+            .where(
+              and(
+                eq(userClients.userId, req.session.userId),
+                eq(userClients.clientId, clientId)
+              )
+            );
+
+          if (!userClient) {
+            return res.status(403).json({
+              message: "You do not have access to this client",
+            });
+          }
         }
 
         const metadata = await db
@@ -26,7 +60,9 @@ export function registerSectionMetadataRoutes(app: Express) {
         return res.json(metadata);
       } catch (error) {
         console.error("Error fetching section metadata:", error);
-        return res.status(500).json({ message: "Failed to fetch section metadata" });
+        return res
+          .status(500)
+          .json({ message: "Failed to fetch section metadata" });
       }
     }
   );
@@ -42,7 +78,7 @@ export function registerSectionMetadataRoutes(app: Express) {
         const { sectionType } = req.params;
         const { description } = req.body;
 
-        if (isNaN(clientId)) {
+        if (Number.isNaN(clientId)) {
           return res.status(400).json({ message: "Invalid client ID" });
         }
 
@@ -50,42 +86,85 @@ export function registerSectionMetadataRoutes(app: Express) {
           return res.status(400).json({ message: "Section type is required" });
         }
 
-        // Check if metadata already exists
-        const existing = await db
-          .select()
-          .from(sectionMetadata)
-          .where(
-            and(
-              eq(sectionMetadata.clientId, clientId),
-              eq(sectionMetadata.sectionType, sectionType)
-            )
-          )
-          .limit(1);
+        // Authorization check: verify user has access to this client
+        if (!req.session?.userId) {
+          return res.status(401).json({ message: "Authentication required" });
+        }
 
-        if (existing.length > 0) {
-          // Update existing
-          await db
-            .update(sectionMetadata)
-            .set({ description })
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, req.session.userId));
+
+        if (!user) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        // Super admins have access to all clients
+        if (user.role !== UserRole.SUPER_ADMIN) {
+          // Check if user has access to this client
+          const [userClient] = await db
+            .select()
+            .from(userClients)
             .where(
               and(
-                eq(sectionMetadata.clientId, clientId),
-                eq(sectionMetadata.sectionType, sectionType)
+                eq(userClients.userId, req.session.userId),
+                eq(userClients.clientId, clientId)
               )
             );
-        } else {
-          // Insert new
-          await db.insert(sectionMetadata).values({
-            clientId,
-            sectionType,
-            description,
+
+          if (!userClient) {
+            return res.status(403).json({
+              message: "You do not have access to this client",
+            });
+          }
+        }
+
+        // Validate description
+        if (description === undefined || description === null) {
+          return res.status(400).json({ message: "Description is required" });
+        }
+
+        if (typeof description !== "string") {
+          return res
+            .status(400)
+            .json({ message: "Description must be a string" });
+        }
+
+        const trimmedDescription = description.trim();
+
+        // Enforce length limits (e.g., 2000 characters)
+        const MAX_DESCRIPTION_LENGTH = 2000;
+        if (trimmedDescription.length > MAX_DESCRIPTION_LENGTH) {
+          return res.status(400).json({
+            message: `Description must be ${MAX_DESCRIPTION_LENGTH} characters or less`,
           });
         }
 
-        return res.json({ success: true });
+        // Atomic upsert using onConflictDoUpdate to avoid race conditions
+        const [result] = await db
+          .insert(sectionMetadata)
+          .values({
+            clientId,
+            sectionType,
+            description: trimmedDescription,
+            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: [sectionMetadata.clientId, sectionMetadata.sectionType],
+            set: {
+              description: trimmedDescription,
+              updatedAt: new Date(),
+            },
+          })
+          .returning();
+
+        return res.json({ success: true, data: result });
       } catch (error) {
         console.error("Error updating section metadata:", error);
-        return res.status(500).json({ message: "Failed to update section metadata" });
+        return res
+          .status(500)
+          .json({ message: "Failed to update section metadata" });
       }
     }
   );

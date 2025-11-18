@@ -6,8 +6,6 @@ interface AssetDisplayProps {
   renderActions: (variant: "light" | "dark") => React.ReactNode;
   renderAsset: (variant: "light" | "dark") => React.ReactNode;
   supportsVariants?: boolean;
-  description?: string;
-  renderDescription?: (variant: "light" | "dark") => React.ReactNode;
   className: string;
 }
 

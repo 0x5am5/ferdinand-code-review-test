@@ -231,7 +231,7 @@ export function registerBrandAssetRoutes(app: Express) {
       }
 
       const user = await storage.getUser(req.session.userId);
-      if (!user || user.role !== "super_admin") {
+      if (!user || user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -251,7 +251,7 @@ export function registerBrandAssetRoutes(app: Express) {
       }
 
       const user = await storage.getUser(req.session.userId);
-      if (!user || user.role !== "super_admin") {
+      if (!user || user.role !== UserRole.SUPER_ADMIN) {
         return res.status(403).json({ message: "Super admin access required" });
       }
 
@@ -545,7 +545,7 @@ export function registerBrandAssetRoutes(app: Express) {
         );
 
         // Verify user has access to this client (unless super admin)
-        if (user.role !== "super_admin") {
+        if (user.role !== UserRole.SUPER_ADMIN) {
           console.log(
             `[Asset Upload] Checking client access for non-super-admin user ${userId}`
           );
@@ -1340,17 +1340,13 @@ export function registerBrandAssetRoutes(app: Express) {
         if (description !== undefined) {
           updatedData.description = description;
         }
-        // Copy any variant-specific fields from req.body (e.g., darkVariantDescription)
-        // These fields may not be in the schema but should still be persisted
+        // Copy allowed variant-specific fields from req.body (e.g., darkVariantDescription)
+        // Use explicit allowlist to prevent unintended fields from being persisted
+        const allowedVariantFields = ["darkVariantDescription"] as const;
         if (typeof req.body === "object" && req.body !== null) {
-          Object.keys(req.body).forEach((key) => {
-            if (
-              (key.includes("Variant") ||
-                key.endsWith("VariantDescription") ||
-                key.includes("variant")) &&
-              key !== "variant" // Exclude the variant query param, only include data fields
-            ) {
-              updatedData[key] = req.body[key as keyof typeof req.body];
+          allowedVariantFields.forEach((field) => {
+            if (field in req.body && typeof req.body[field] === "string") {
+              updatedData[field] = req.body[field];
             }
           });
         }
@@ -1430,7 +1426,7 @@ export function registerBrandAssetRoutes(app: Express) {
         }
 
         // Verify user has access to this client (unless super admin)
-        if (user.role !== "super_admin") {
+        if (user.role !== UserRole.SUPER_ADMIN) {
           const userClient = await db
             .select()
             .from(userClients)

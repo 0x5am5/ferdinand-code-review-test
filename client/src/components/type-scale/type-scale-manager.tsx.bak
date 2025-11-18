@@ -43,7 +43,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-// import { sectionMetadataApi } from "@/lib/api";
+import { sectionMetadataApi } from "@/lib/api";
 import { TypeScalePreview } from "./type-scale-preview";
 
 type BrandColor = {
@@ -417,7 +417,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   // Fetch section metadata for description
   const { data: sectionMetadataList = [] } = useQuery({
     queryKey: [`/api/clients/${clientId}/section-metadata`],
-    // queryFn: () => sectionMetadataApi.list(clientId),
+    queryFn: () => sectionMetadataApi.list(clientId),
   });
 
   // Extract type-scales description
