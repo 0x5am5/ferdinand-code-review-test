@@ -6,7 +6,7 @@
 
 import { db } from '../../server/db';
 import { users, clients, userClients, session } from '@shared/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, and } from 'drizzle-orm';
 import type { UserRoleType } from '@shared/schema';
 
 export interface TestUser {
@@ -281,4 +281,26 @@ export async function cleanupTestTags(tagIds: number[]): Promise<void> {
 
   // Delete tags
   await db.delete(assetTags).where(inArray(assetTags.id, tagIds));
+}
+
+/**
+ * Clean up section metadata by client and section types
+ */
+export async function cleanupTestSectionMetadata(
+  metadata: Array<{ clientId: number; sectionType: string }>,
+): Promise<void> {
+  if (metadata.length === 0) return;
+
+  const { sectionMetadata } = await import('@shared/schema');
+
+  for (const { clientId, sectionType } of metadata) {
+    await db
+      .delete(sectionMetadata)
+      .where(
+        and(
+          eq(sectionMetadata.clientId, clientId),
+          eq(sectionMetadata.sectionType, sectionType),
+        ),
+      );
+  }
 }

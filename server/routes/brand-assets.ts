@@ -34,14 +34,19 @@ import {
   insertColorAssetSchema,
   insertFontAssetSchema,
   UserRole,
+  updateBrandAssetDescriptionSchema,
+  updateColorAssetDescriptionSchema,
+  updateFontAssetDescriptionSchema,
   userClients,
 } from "@shared/schema";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Express, Request, Response } from "express";
 import multer from "multer";
 import { requireAuth } from "server/middlewares/auth";
+import { requireMinimumRole } from "server/middlewares/requireMinimumRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
+import type { z } from "zod";
 import { db } from "../db";
 import { mutationRateLimit } from "../middlewares/rate-limit";
 import { checkAssetPermission } from "../services/asset-permissions";
@@ -506,6 +511,7 @@ export function registerBrandAssetRoutes(app: Express) {
     upload.any(),
     validateClientId,
     requireAuth,
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
@@ -526,33 +532,13 @@ export function registerBrandAssetRoutes(app: Express) {
         }
 
         // Guest users cannot create assets
-        if (user.role === UserRole.GUEST) {
+        if (user.role === UserRole.GUEST || user.role === UserRole.STANDARD) {
           return res
             .status(403)
             .json({ message: "Guests cannot create assets" });
         }
 
         const { category } = req.body;
-
-        // Font asset creation requires editor role or higher
-        if (category === "font" && user.role === UserRole.STANDARD) {
-          console.log(
-            `[Asset Upload] User ${userId} (role: ${user.role}) denied: insufficient permissions for font creation`
-          );
-          return res.status(403).json({
-            message: "Only editors and admins can create font assets",
-          });
-        }
-
-        // Color asset creation requires editor role or higher
-        if (category === "color" && user.role === UserRole.STANDARD) {
-          console.log(
-            `[Asset Upload] User ${userId} (role: ${user.role}) denied: insufficient permissions for color creation`
-          );
-          return res.status(403).json({
-            message: "Only editors and admins can create color assets",
-          });
-        }
 
         // Log user attempting upload
         console.log(
@@ -946,6 +932,7 @@ export function registerBrandAssetRoutes(app: Express) {
     upload.any(),
     validateClientId,
     requireAuth,
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
@@ -999,20 +986,6 @@ export function registerBrandAssetRoutes(app: Express) {
           );
           return res.status(403).json({
             message: "Only editors and admins can update font assets",
-          });
-        }
-
-        // Color asset updates require editor role or higher
-        if (
-          asset &&
-          asset.category === "color" &&
-          user.role === UserRole.STANDARD
-        ) {
-          console.log(
-            `[Asset Update] User ${userId} (role: ${user.role}) denied: insufficient permissions for color updates`
-          );
-          return res.status(403).json({
-            message: "Only editors and admins can update color assets",
           });
         }
 
@@ -1295,11 +1268,111 @@ export function registerBrandAssetRoutes(app: Express) {
     }
   );
 
+  // Update brand asset description endpoint
+  app.patch(
+    "/api/clients/:clientId/brand-assets/:assetId/description",
+    validateClientId,
+    requireAuth,
+    requireMinimumRole(UserRole.EDITOR),
+    async (req: RequestWithClientId, res: Response) => {
+      try {
+        const clientId = req.clientId;
+        if (!clientId) {
+          return res.status(400).json({ message: "Client ID is required" });
+        }
+
+        const assetId = parseInt(req.params.assetId, 10);
+        if (Number.isNaN(assetId)) {
+          return res.status(400).json({ message: "Invalid asset ID" });
+        }
+
+        // Get the asset first to determine category
+        const asset = await storage.getAsset(assetId);
+        if (!asset) {
+          return res.status(404).json({ message: "Asset not found" });
+        }
+
+        // Verify ownership
+        if (asset.clientId !== clientId) {
+          return res
+            .status(403)
+            .json({ message: "Not authorized to update this asset" });
+        }
+
+        // Validate request body based on asset category
+        let parsed:
+          | z.SafeParseReturnType<
+              z.infer<typeof updateBrandAssetDescriptionSchema>,
+              z.infer<typeof updateBrandAssetDescriptionSchema>
+            >
+          | z.SafeParseReturnType<
+              z.infer<typeof updateColorAssetDescriptionSchema>,
+              z.infer<typeof updateColorAssetDescriptionSchema>
+            >
+          | z.SafeParseReturnType<
+              z.infer<typeof updateFontAssetDescriptionSchema>,
+              z.infer<typeof updateFontAssetDescriptionSchema>
+            >;
+        if (asset.category === "logo") {
+          parsed = updateBrandAssetDescriptionSchema.safeParse(req.body);
+        } else if (asset.category === "color") {
+          parsed = updateColorAssetDescriptionSchema.safeParse(req.body);
+        } else if (asset.category === "font") {
+          parsed = updateFontAssetDescriptionSchema.safeParse(req.body);
+        } else {
+          return res.status(400).json({
+            message: `Asset category '${asset.category}' does not support descriptions`,
+          });
+        }
+
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid request data",
+            errors: parsed.error.errors,
+          });
+        }
+
+        // Parse existing data
+        const existingData =
+          typeof asset.data === "string" ? JSON.parse(asset.data) : asset.data;
+
+        // Update the description for all asset categories
+        const updatedData = { ...existingData };
+        const { description } = parsed.data;
+        if (description !== undefined) {
+          updatedData.description = description;
+        }
+
+        // Update the asset
+        await db
+          .update(brandAssets)
+          .set({
+            data: updatedData,
+            updatedAt: new Date(),
+          })
+          .where(eq(brandAssets.id, assetId));
+
+        // Return the updated asset
+        const updatedAsset = await storage.getAsset(assetId);
+        res.json(updatedAsset);
+      } catch (error: unknown) {
+        console.error(
+          "Error updating brand asset description:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res
+          .status(500)
+          .json({ message: "Error updating brand asset description" });
+      }
+    }
+  );
+
   // Delete brand asset endpoint
   app.delete(
     "/api/clients/:clientId/brand-assets/:assetId",
     validateClientId,
     requireAuth,
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
@@ -1339,23 +1412,10 @@ export function registerBrandAssetRoutes(app: Express) {
         );
 
         // Guest users cannot delete brand assets
-        if (user.role === UserRole.GUEST) {
+        if (user.role === UserRole.GUEST || user.role === UserRole.STANDARD) {
           return res
             .status(403)
             .json({ message: "Guest users cannot delete brand assets" });
-        }
-
-        // Font and color asset deletion requires editor role or higher
-        if (
-          (asset.category === "font" || asset.category === "color") &&
-          user.role === UserRole.STANDARD
-        ) {
-          console.log(
-            `[Asset Delete] User ${userId} (role: ${user.role}) denied: insufficient permissions for ${asset.category} deletion`
-          );
-          return res.status(403).json({
-            message: "Only editors and admins can delete font and color assets",
-          });
         }
 
         // Verify user has access to this client (unless super admin)
@@ -2143,18 +2203,7 @@ export function registerBrandAssetRoutes(app: Express) {
             .json({ message: "Failed to serve asset file" });
         }
 
-        // Set aggressive cache headers for better performance
-        // Brand assets rarely change, so we can cache them for a long time
         res.setHeader("Content-Type", mimeType);
-        res.setHeader("Cache-Control", "public, max-age=31536000, immutable"); // 1 year
-
-        // Include variant and format in ETag to ensure distinct ETags for different variants/formats
-        const variantValue = variant || "default";
-        const formatValue = format || "default";
-        res.setHeader(
-          "ETag",
-          `"${assetId}-${variantValue}-${formatValue}-${asset.updatedAt?.getTime() || asset.createdAt?.getTime()}"`
-        );
         return res.send(fileBuffer);
       } catch (error: unknown) {
         console.error(

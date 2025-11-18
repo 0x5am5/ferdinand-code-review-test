@@ -17,6 +17,7 @@ export async function runMigrations() {
     await migrateIndividualHeaderStyles();
     await migrateTypeScaleHierarchy();
     await migrateDefaultAssetCategories();
+    await migrateSectionMetadata();
 
     console.log("All migrations completed successfully!");
   } catch (error: unknown) {
@@ -340,5 +341,34 @@ async function migrateDefaultAssetCategories() {
       error instanceof Error ? error.message : "Unknown error"
     );
     throw error;
+  }
+}
+
+async function migrateSectionMetadata() {
+  // Check if section_metadata table exists
+  const checkSectionMetadata = await db.execute(sql`
+    SELECT table_name
+    FROM information_schema.tables
+    WHERE table_name = 'section_metadata'
+  `);
+
+  if (checkSectionMetadata.rows.length === 0) {
+    console.log("Creating section_metadata table...");
+
+    await db.execute(sql`
+      CREATE TABLE section_metadata (
+        id SERIAL PRIMARY KEY,
+        client_id INTEGER NOT NULL REFERENCES clients(id),
+        section_type TEXT NOT NULL,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(client_id, section_type)
+      )
+    `);
+
+    console.log("✓ section_metadata table created successfully");
+  } else {
+    console.log("section_metadata table already exists.");
   }
 }

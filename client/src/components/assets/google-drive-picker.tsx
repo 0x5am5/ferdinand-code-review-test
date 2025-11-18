@@ -183,9 +183,13 @@ export const GoogleDrivePicker: React.FC<
   // If children is provided, render as wrapper around children
   if (children) {
     return (
-      <div onClick={handleOpenPicker} role="button" tabIndex={0}>
+      <button
+        type="button"
+        onClick={handleOpenPicker}
+        className="appearance-none border-0 bg-transparent p-0 cursor-pointer"
+      >
         {children}
-      </div>
+      </button>
     );
   }
 

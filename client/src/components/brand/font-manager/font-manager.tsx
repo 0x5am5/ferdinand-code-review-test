@@ -1,11 +1,12 @@
 import { FontSource } from "@shared/schema";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Type } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useFontMutations } from "@/hooks/use-font-mutations";
 import { useToast } from "@/hooks/use-toast";
+import { sectionMetadataApi } from "@/lib/api";
 import { TypeScaleManager } from "../../type-scale/type-scale-manager";
 import { AssetSection } from "../logo-manager/asset-section";
 import { AdobeFontPicker } from "./adobe-font-picker";
@@ -30,6 +31,7 @@ import {
 
 export function FontManager({ clientId, fonts }: FontManagerProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [editingFont, setEditingFont] = useState<FontData | null>(null);
   const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
@@ -41,6 +43,21 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   // Font mutations
   const { addFont, editFont, deleteFont } = useFontMutations(clientId);
 
+  // Fetch section metadata for descriptions
+  const { data: sectionMetadataList = [] } = useQuery<
+    Array<{ sectionType: string; description?: string }>
+  >({
+    queryKey: [`/api/clients/${clientId}/section-metadata`],
+    queryFn: () => sectionMetadataApi.list(clientId),
+  });
+
+  // Extract brand-fonts description
+  const brandFontsDescription =
+    sectionMetadataList.find(
+      (m: { sectionType: string }) => m.sectionType === "brand-fonts"
+    )?.description ||
+    "Typography assets that define the brand's visual identity and should be used consistently across all materials.";
+
   // Fetch Google Fonts
   const { data: googleFontsData, isLoading: isFontsLoading } = useQuery({
     queryKey: ["/api/google-fonts"],
@@ -48,6 +65,37 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     retry: false,
     throwOnError: false,
   });
+
+  // Section description update mutation
+  const updateSectionDescriptionMutation = useMutation({
+    mutationFn: ({
+      sectionType,
+      description,
+    }: {
+      sectionType: string;
+      description: string;
+    }) => sectionMetadataApi.update(clientId, sectionType, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/section-metadata`],
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler for updating brand fonts section description
+  const handleFontDescriptionUpdate = (sectionType: string, value: string) => {
+    updateSectionDescriptionMutation.mutate({
+      sectionType,
+      description: value,
+    });
+  };
 
   if (!user) return null;
 
@@ -423,9 +471,13 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       <div className="space-y-8">
         <AssetSection
           title="Brand Fonts"
-          description="Typography assets that define the brand's visual identity and should be used consistently across all materials."
+          description={brandFontsDescription}
           isEmpty={transformedFonts.length === 0}
           sectionType="brand-fonts"
+          enableEditableDescription={true}
+          onDescriptionUpdate={(value) =>
+            handleFontDescriptionUpdate("brand-fonts", value)
+          }
           emptyPlaceholder={
             <div className="text-center py-12 text-muted-foreground">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
@@ -437,11 +489,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
           }
           uploadComponent={isAbleToEdit ? renderFontPicker() : null}
         >
-          <div className="asset-display">
-            <div className="asset-display__info">
-              Typography assets that define the brand's visual identity and
-              should be used consistently across all materials.
-            </div>
+          <div>
             <div className="asset-display__preview">
               {transformedFonts.map((font) => (
                 <FontCard
@@ -449,6 +497,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
                   font={font}
                   onEdit={() => handleEditFont(font)}
                   onDelete={() => font.id && deleteFont.mutate(font.id)}
+                  clientId={clientId}
                 />
               ))}
 

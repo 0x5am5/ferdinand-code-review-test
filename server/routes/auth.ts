@@ -1,4 +1,4 @@
-import { userClients } from "@shared/schema";
+import { type UserRoleType, userClients } from "@shared/schema";
 import type { Express } from "express";
 import { db } from "../db";
 import { auth as firebaseAuth } from "../firebase";
@@ -79,7 +79,7 @@ export function registerAuthRoutes(app: Express) {
         user = await storage.createUserWithRole({
           email: decodedToken.email,
           name: decodedToken.name || decodedToken.email.split("@")[0],
-          role: invitation.role as any,
+          role: invitation.role as UserRoleType,
         });
 
         // Associate user with the clients specified in the invitation

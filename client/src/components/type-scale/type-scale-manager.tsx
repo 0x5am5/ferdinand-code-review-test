@@ -24,6 +24,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { InlineEditable } from "@/components/ui/inline-editable";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -42,6 +43,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
+import { sectionMetadataApi } from "@/lib/api";
 import { TypeScalePreview } from "./type-scale-preview";
 
 type BrandColor = {
@@ -412,6 +414,21 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
+  // Fetch section metadata for description
+  const { data: sectionMetadataList = [] } = useQuery<
+    Array<{ sectionType: string; description?: string }>
+  >({
+    queryKey: [`/api/clients/${clientId}/section-metadata`],
+    queryFn: () => sectionMetadataApi.list(clientId),
+  });
+
+  // Extract type-scales description
+  const typeScalesDescription =
+    sectionMetadataList.find(
+      (m: { sectionType: string }) => m.sectionType === "type-scales"
+    )?.description ||
+    "Create and manage consistent typography scales for your brand.";
+
   // Fetch brand fonts for this client from brand assets
   const { data: brandAssets = [] } = useQuery({
     queryKey: [`/api/clients/${clientId}/brand-assets`],
@@ -722,6 +739,41 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
     },
   });
 
+  // Section description update mutation
+  const updateSectionDescriptionMutation = useMutation({
+    mutationFn: ({
+      sectionType,
+      description,
+    }: {
+      sectionType: string;
+      description: string;
+    }) => sectionMetadataApi.update(clientId, sectionType, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/section-metadata`],
+      });
+      toast({
+        title: "Success",
+        description: "Section description updated",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler for updating description
+  const handleDescriptionUpdate = (value: string) => {
+    updateSectionDescriptionMutation.mutate({
+      sectionType: "type-scales",
+      description: value,
+    });
+  };
+
   const updateScale = (updates: Partial<TypeScale>) => {
     const newScale = currentScale
       ? { ...currentScale, ...updates }
@@ -955,9 +1007,17 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
             <div className="space-y-6">
               {/* Scale Settings */}
               <div>
-                <p className="mb-8">
-                  Create and manage consistent typography scales for your brand.
-                </p>
+                <div className="mb-8">
+                  <InlineEditable
+                    value={typeScalesDescription}
+                    onSave={handleDescriptionUpdate}
+                    inputType="textarea"
+                    placeholder="Add a description for your typography scales..."
+                    showControls={true}
+                    ariaLabel="Type scales section description"
+                    className="text-muted-foreground"
+                  />
+                </div>
 
                 <h4 className="text-base font-semibold mb-4">Scale Settings</h4>
 

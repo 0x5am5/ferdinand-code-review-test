@@ -26,6 +26,7 @@ import {
   type InsertInspirationImage,
   type InsertInspirationSection,
   type InsertInvitation,
+  type InsertSectionMetadata,
   type InsertTypeScale,
   type InsertUser,
   type InsertUserPersona,
@@ -36,6 +37,8 @@ import {
   inspirationImages,
   inspirationSections,
   invitations,
+  type SectionMetadata,
+  sectionMetadata,
   type TypeScale,
   type TypeScaleDB,
   typeScales,
@@ -119,6 +122,16 @@ export interface IStorage {
   getClientHiddenSections(clientId: number): Promise<HiddenSection[]>;
   createHiddenSection(section: InsertHiddenSection): Promise<HiddenSection>;
   deleteHiddenSection(clientId: number, sectionType: string): Promise<void>;
+  // Section metadata methods
+  getClientSectionMetadata(clientId: number): Promise<SectionMetadata[]>;
+  getSectionMetadata(
+    clientId: number,
+    sectionType: string
+  ): Promise<SectionMetadata | undefined>;
+  upsertSectionMetadata(
+    metadata: InsertSectionMetadata
+  ): Promise<SectionMetadata>;
+  deleteSectionMetadata(clientId: number, sectionType: string): Promise<void>;
   // Type scale methods
   getClientTypeScales(clientId: number): Promise<TypeScale[]>;
   getTypeScale(id: number): Promise<TypeScale | undefined>;
@@ -668,6 +681,66 @@ export class DatabaseStorage implements IStorage {
         and(
           eq(hiddenSections.clientId, clientId),
           eq(hiddenSections.sectionType, sectionType)
+        )
+      );
+  }
+
+  // Section metadata implementations
+  async getClientSectionMetadata(clientId: number): Promise<SectionMetadata[]> {
+    return await db
+      .select()
+      .from(sectionMetadata)
+      .where(eq(sectionMetadata.clientId, clientId));
+  }
+
+  async getSectionMetadata(
+    clientId: number,
+    sectionType: string
+  ): Promise<SectionMetadata | undefined> {
+    const [result] = await db
+      .select()
+      .from(sectionMetadata)
+      .where(
+        and(
+          eq(sectionMetadata.clientId, clientId),
+          eq(sectionMetadata.sectionType, sectionType)
+        )
+      );
+    return result;
+  }
+
+  async upsertSectionMetadata(
+    metadata: InsertSectionMetadata
+  ): Promise<SectionMetadata> {
+    // Try to insert, and if it conflicts (duplicate clientId + sectionType), update instead
+    const [result] = await db
+      .insert(sectionMetadata)
+      .values({
+        ...metadata,
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: [sectionMetadata.clientId, sectionMetadata.sectionType],
+        set: {
+          description: metadata.description,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+
+    return result;
+  }
+
+  async deleteSectionMetadata(
+    clientId: number,
+    sectionType: string
+  ): Promise<void> {
+    await db
+      .delete(sectionMetadata)
+      .where(
+        and(
+          eq(sectionMetadata.clientId, clientId),
+          eq(sectionMetadata.sectionType, sectionType)
         )
       );
   }

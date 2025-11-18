@@ -7,6 +7,7 @@ export interface ParsedLogoData {
   isDarkVariant?: boolean;
   figmaLink?: string;
   fileName?: string;
+  description?: string;
 }
 
 export function parseBrandAssetData(logo: BrandAsset): ParsedLogoData | null {

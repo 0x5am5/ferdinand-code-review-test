@@ -12,7 +12,6 @@ import { AssetSection } from "./asset-section";
 import { DarkVariantUploader } from "./dark-variant-uploader";
 import { LogoDownloadButton } from "./download-buttons/logo-download-button";
 import { FileUpload } from "./file-upload";
-import { logoDescriptions, logoUsageGuidance } from "./logo-constants";
 import { LogoPreview } from "./logo-preview";
 import { type ParsedLogoData, parseBrandAssetData } from "./logo-utils";
 
@@ -179,10 +178,12 @@ export function LogoSection({
   return (
     <AssetSection
       title={`${type.charAt(0).toUpperCase() + type.slice(1)} Logo`}
-      description={logoDescriptions[type as keyof typeof logoDescriptions]}
+      description=""
       isEmpty={!hasLogos}
       onRemoveSection={onRemoveSection}
-      sectionType={type}
+      sectionType={`logo-${type}`}
+      clientId={clientId}
+      enableEditableDescription={true}
       uploadComponent={
         <FileUpload
           type={type}
@@ -296,9 +297,6 @@ export function LogoSection({
                     imageUrl={imageUrl}
                   />
                 )
-              }
-              description={
-                logoUsageGuidance[type as keyof typeof logoUsageGuidance]
               }
               supportsVariants={true}
               className=""

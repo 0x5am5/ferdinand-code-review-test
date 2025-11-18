@@ -1,4 +1,4 @@
-import { type BrandAsset, LogoType } from "@shared/schema";
+import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -11,12 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/use-auth";
 import {
   PermissionAction,
   Resource,
   usePermissions,
 } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
+import { brandAssetApi } from "@/lib/api";
 import {
   useAddHiddenSection,
   useHiddenSections,
@@ -32,11 +34,12 @@ interface LogoManagerProps {
 
 export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const { toast } = useToast();
-  const { can } = usePermissions();
+  const { user = null } = useAuth();
   const queryClient = useQueryClient();
   const [visibleSections, setVisibleSections] = useState<string[]>([]);
   const [showAddSection, setShowAddSection] = useState(false);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const { can } = usePermissions();
 
   const { data: hiddenSections, isLoading: loadingHiddenSections } =
     useHiddenSections(clientId);
@@ -75,25 +78,13 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   }, [visibleSections]);
 
   const deleteLogo = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       logoId,
       variant,
     }: {
       logoId: number;
       variant: "light" | "dark";
-    }) => {
-      const response = await fetch(
-        `/api/clients/${clientId}/brand-assets/${logoId}${variant === "dark" ? "?variant=dark" : ""}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to delete logo");
-      }
-    },
+    }) => brandAssetApi.delete(clientId, logoId, variant),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
@@ -198,9 +189,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
       {visibleSections.map((type) => {
         const logosForType = logosByType[type] || [];
+        const isGuest = user?.role === UserRole.GUEST;
 
         // Hide empty sections for guest users since they can't upload
-        if (!canManageSections && logosForType.length === 0) {
+        if (isGuest && logosForType.length === 0) {
           return null;
         }
 
@@ -222,7 +214,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
       })}
 
       <PermissionGate
-        action={PermissionAction.CREATE}
+        action={PermissionAction.UPDATE}
         resource={Resource.HIDDEN_SECTIONS}
       >
         <Dialog open={showAddSection} onOpenChange={setShowAddSection}>

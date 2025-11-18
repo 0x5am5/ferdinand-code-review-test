@@ -1,17 +1,81 @@
-import { FontSource } from "@shared/schema";
+import { descriptionValidationSchema, FontSource } from "@shared/schema";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Trash2 } from "lucide-react";
 import React, { useState } from "react";
+import { PermissionGate } from "@/components/permission-gate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { InlineEditable } from "@/components/ui/inline-editable";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
+import { useToast } from "@/hooks/use-toast";
+import { brandAssetApi } from "@/lib/api";
 import type { FontCardProps } from "./types";
 import { generateGoogleFontUrl } from "./utils";
 
-export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
+export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
   const [selectedWeight, setSelectedWeight] = useState("400");
-  const { user } = useAuth();
-  const isAbleToEdit =
-    user && ["super_admin", "admin", "editor"].includes(user.role as string);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { can } = usePermissions();
+
+  const canEditDescriptions = can(
+    PermissionAction.UPDATE,
+    Resource.BRAND_ASSETS
+  );
+
+  // Mutation for updating font description
+  const updateDescriptionMutation = useMutation({
+    mutationFn: ({
+      assetId,
+      description,
+    }: {
+      assetId: number;
+      description: string;
+    }) => brandAssetApi.updateDescription(clientId, assetId, description),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [`/api/clients/${clientId}/brand-assets`],
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDescriptionUpdate = (value: string) => {
+    if (font.id) {
+      updateDescriptionMutation.mutate({
+        assetId: font.id,
+        description: value,
+      });
+    }
+  };
+
+  // Validation function for descriptions
+  const validateDescription = (value: string): string | null => {
+    const result = descriptionValidationSchema.safeParse(value);
+    if (!result.success) {
+      return result.error.errors[0]?.message || "Invalid description";
+    }
+    return null;
+  };
+
+  // Handle validation errors with toast
+  const handleValidationError = (error: string) => {
+    toast({
+      title: "Validation Error",
+      description: error,
+      variant: "destructive",
+    });
+  };
 
   // Set default weight to the first available weight or 400
   React.useEffect(() => {
@@ -146,10 +210,32 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
               </Badge>
             ))}
           </div>
+
+          {/* Description field */}
+          {canEditDescriptions ? (
+            <InlineEditable
+              value={font.description || ""}
+              onSave={handleDescriptionUpdate}
+              inputType="textarea"
+              placeholder="Add a description..."
+              showControls={true}
+              validate={validateDescription}
+              onValidationError={handleValidationError}
+              ariaLabel="Font description"
+              className="text-xs text-muted-foreground mt-2"
+            />
+          ) : font.description ? (
+            <p className="text-xs text-muted-foreground mt-2">
+              {font.description}
+            </p>
+          ) : null}
         </div>
       </div>
-      {isAbleToEdit && (
-        <div className="absolute top-4 right-4 flex gap-1">
+      <div className="absolute top-4 right-4 flex gap-1">
+        <PermissionGate
+          action={PermissionAction.UPDATE}
+          resource={Resource.BRAND_ASSETS}
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -158,6 +244,11 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
           >
             <Edit2 className="h-3 w-3" />
           </Button>
+        </PermissionGate>
+        <PermissionGate
+          action={PermissionAction.DELETE}
+          resource={Resource.BRAND_ASSETS}
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -166,8 +257,8 @@ export function FontCard({ font, onEdit, onDelete }: FontCardProps) {
           >
             <Trash2 className="h-3 w-3" />
           </Button>
-        </div>
-      )}
+        </PermissionGate>
+      </div>
     </div>
   );
 }
