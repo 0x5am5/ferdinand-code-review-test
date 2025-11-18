@@ -1,11 +1,9 @@
-import { UserRole } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { InlineEditable } from "@/components/ui/inline-editable";
 import { PermissionGate } from "@/components/permission-gate";
-import { useAuth } from "@/hooks/use-auth";
 import { usePermissions, PermissionAction, Resource } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { sectionMetadataApi } from "@/lib/api";
@@ -37,11 +35,11 @@ export function AssetSection({
   onDescriptionUpdate,
   enableEditableDescription = false,
 }: AssetSectionProps) {
-  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { can } = usePermissions();
 
+  const canUpload = can(PermissionAction.CREATE, Resource.BRAND_ASSETS);
   const canEditDescriptions = can(PermissionAction.UPDATE, Resource.BRAND_ASSETS);
 
   // Fetch section metadata if clientId is provided and editable descriptions are enabled
@@ -129,11 +127,7 @@ export function AssetSection({
 
         {isEmpty ? (
           <div className="col-span-2">
-            {user &&
-            user.role !== UserRole.STANDARD &&
-            user.role !== UserRole.GUEST
-              ? uploadComponent
-              : emptyPlaceholder}
+            {canUpload ? uploadComponent : emptyPlaceholder}
           </div>
         ) : (
           <div className="col-span-2">{children}</div>
