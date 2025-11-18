@@ -1,7 +1,6 @@
 import {
   descriptionValidationSchema,
   FontSource,
-  UserRole,
 } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit2, Trash2 } from "lucide-react";
@@ -9,7 +8,8 @@ import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InlineEditable } from "@/components/ui/inline-editable";
-import { useAuth } from "@/hooks/use-auth";
+import { PermissionGate } from "@/components/permission-gate";
+import { usePermissions, PermissionAction, Resource } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { brandAssetApi } from "@/lib/api";
 import type { FontCardProps } from "./types";
@@ -17,17 +17,11 @@ import { generateGoogleFontUrl } from "./utils";
 
 export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
   const [selectedWeight, setSelectedWeight] = useState("400");
-  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isAbleToEdit =
-    user && ["super_admin", "admin", "editor"].includes(user.role as string);
+  const { can } = usePermissions();
 
-  // Check if user can edit descriptions
-  const canEditDescriptions =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
+  const canEditDescriptions = can(PermissionAction.UPDATE, Resource.BRAND_ASSETS);
 
   // Mutation for updating font description
   const updateDescriptionMutation = useMutation({
@@ -228,8 +222,8 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
           ) : null}
         </div>
       </div>
-      {isAbleToEdit && (
-        <div className="absolute top-4 right-4 flex gap-1">
+      <div className="absolute top-4 right-4 flex gap-1">
+        <PermissionGate action={PermissionAction.UPDATE} resource={Resource.BRAND_ASSETS}>
           <Button
             variant="ghost"
             size="sm"
@@ -238,6 +232,8 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
           >
             <Edit2 className="h-3 w-3" />
           </Button>
+        </PermissionGate>
+        <PermissionGate action={PermissionAction.DELETE} resource={Resource.BRAND_ASSETS}>
           <Button
             variant="ghost"
             size="sm"
@@ -246,8 +242,8 @@ export function FontCard({ font, onEdit, onDelete, clientId }: FontCardProps) {
           >
             <Trash2 className="h-3 w-3" />
           </Button>
-        </div>
-      )}
+        </PermissionGate>
+      </div>
     </div>
   );
 }

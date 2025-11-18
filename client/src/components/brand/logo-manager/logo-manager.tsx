@@ -11,7 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { PermissionGate } from "@/components/permission-gate";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions, PermissionAction, Resource } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import {
   useAddHiddenSection,
@@ -33,6 +35,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const [visibleSections, setVisibleSections] = useState<string[]>([]);
   const [showAddSection, setShowAddSection] = useState(false);
   const [availableSections, setAvailableSections] = useState<string[]>([]);
+  const { can } = usePermissions();
 
   const { data: hiddenSections, isLoading: loadingHiddenSections } =
     useHiddenSections(clientId);
@@ -40,10 +43,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   const addHiddenSection = useAddHiddenSection(clientId);
   const removeHiddenSection = useRemoveHiddenSection(clientId);
 
-  const canManageSections =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
+  const canManageSections = can(PermissionAction.UPDATE, Resource.HIDDEN_SECTIONS);
 
   useEffect(() => {
     if (loadingHiddenSections) return;
@@ -158,16 +158,18 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             Manage and download the official logos for this brand
           </p>
         </div>
-        {canManageSections && availableSections.length > 0 && (
-          <Button
-            onClick={() => setShowAddSection(true)}
-            variant="outline"
-            className="flex items-center gap-1"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Section</span>
-          </Button>
-        )}
+        <PermissionGate action={PermissionAction.UPDATE} resource={Resource.HIDDEN_SECTIONS}>
+          {availableSections.length > 0 && (
+            <Button
+              onClick={() => setShowAddSection(true)}
+              variant="outline"
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Section</span>
+            </Button>
+          )}
+        </PermissionGate>
       </div>
 
       {visibleSections.map((type) => {
@@ -196,7 +198,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         );
       })}
 
-      {canManageSections && (
+      <PermissionGate action={PermissionAction.UPDATE} resource={Resource.HIDDEN_SECTIONS}>
         <Dialog open={showAddSection} onOpenChange={setShowAddSection}>
           <DialogContent>
             <DialogHeader>
@@ -225,7 +227,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
             </div>
           </DialogContent>
         </Dialog>
-      )}
+      </PermissionGate>
     </div>
   );
 }

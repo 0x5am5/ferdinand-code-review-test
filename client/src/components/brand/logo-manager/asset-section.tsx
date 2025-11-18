@@ -4,7 +4,9 @@ import { X } from "lucide-react";
 import type React from "react";
 import { Button } from "@/components/ui/button";
 import { InlineEditable } from "@/components/ui/inline-editable";
+import { PermissionGate } from "@/components/permission-gate";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions, PermissionAction, Resource } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { sectionMetadataApi } from "@/lib/api";
 
@@ -38,16 +40,9 @@ export function AssetSection({
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
-  const canManageSections =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
-
-  const canEditDescriptions =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
+  const canEditDescriptions = can(PermissionAction.UPDATE, Resource.BRAND_ASSETS);
 
   // Fetch section metadata if clientId is provided and editable descriptions are enabled
   const { data: sectionMetadataList = [] } = useQuery<Array<{ sectionType: string; description?: string }>>({
@@ -98,17 +93,19 @@ export function AssetSection({
       <div className="asset-section__header">
         <div className="flex items-center justify-between w-full">
           <h3>{title}</h3>
-          {canManageSections && onRemoveSection && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-destructive"
-              onClick={() => onRemoveSection(sectionType)}
-            >
-              <X className="h-4 w-4 mr-1" />
-              <span>Remove Section</span>
-            </Button>
-          )}
+          <PermissionGate action={PermissionAction.UPDATE} resource={Resource.HIDDEN_SECTIONS}>
+            {onRemoveSection && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={() => onRemoveSection(sectionType)}
+              >
+                <X className="h-4 w-4 mr-1" />
+                <span>Remove Section</span>
+              </Button>
+            )}
+          </PermissionGate>
         </div>
       </div>
 
