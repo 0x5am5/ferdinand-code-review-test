@@ -53,7 +53,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { useThemeManager } from "@/hooks/use-theme-manager";
+import { type DesignSystem } from "@/lib/theme-manager";
 import { useToast } from "@/hooks/use-toast";
 
 // Form schema for validation
@@ -85,12 +85,10 @@ const ColorPreview = ({ color }: { color: string | undefined }) => (
 
 export default function DesignBuilder() {
   const { toast } = useToast();
-  const {
-    designSystem: appliedDesignSystem,
-  } = useThemeManager();
 
-  // Use only the applied (saved) design system - no draft functionality
-  const designSystem = appliedDesignSystem;
+  // Fetch design system directly without using theme manager hook
+  const [designSystem, setDesignSystem] = useState<DesignSystem | null>(null);
+  const [isLoadingTheme, setIsLoadingTheme] = useState(true);
 
   // State for handling navigation confirmation
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
@@ -98,6 +96,30 @@ export default function DesignBuilder() {
   const { user, isLoading } = useAuth();
   const userRole = user?.role; // Replace with actual user role fetch mechanism.
   const canEdit = userRole ? ["editor", "admin"].includes(userRole) : false;
+
+  // Fetch theme data directly from API without applying to DOM
+  useEffect(() => {
+    const fetchTheme = async () => {
+      try {
+        const response = await fetch("/api/design-system");
+        if (response.ok) {
+          const data = await response.json();
+          setDesignSystem(data);
+        }
+      } catch (error) {
+        console.error("Error fetching theme:", error);
+        toast({
+          title: "Error loading theme",
+          description: "Could not load design system data.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingTheme(false);
+      }
+    };
+
+    fetchTheme();
+  }, [toast]);
 
   // Generate unique IDs for form inputs
   const previewInputId = useId();
@@ -108,13 +130,13 @@ export default function DesignBuilder() {
   const form = useForm<z.infer<typeof themeFormSchema>>({
     resolver: zodResolver(themeFormSchema),
     defaultValues: {
-      variant: designSystem.theme.variant,
-      primary: designSystem.theme.primary,
-      secondary: designSystem.theme.secondary || "#666666",
-      tertiary: designSystem.theme.tertiary || "#444444",
-      appearance: designSystem.theme.appearance,
-      radius: designSystem.theme.radius,
-      animation: designSystem.theme.animation,
+      variant: designSystem?.theme.variant || "professional",
+      primary: designSystem?.theme.primary || "#000000",
+      secondary: designSystem?.theme.secondary || "#666666",
+      tertiary: designSystem?.theme.tertiary || "#444444",
+      appearance: designSystem?.theme.appearance || "light",
+      radius: designSystem?.theme.radius || 0.5,
+      animation: designSystem?.theme.animation || "smooth",
     },
   });
 
@@ -130,7 +152,7 @@ export default function DesignBuilder() {
     setShowLeaveAlert(false);
   };
 
-  if (isLoading) return null;
+  if (isLoading || isLoadingTheme || !designSystem) return null;
 
   return (
     <div className="p-8">
