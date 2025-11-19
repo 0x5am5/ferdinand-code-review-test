@@ -52,6 +52,7 @@ import { and, eq, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
 import { uploadRateLimit } from "../middlewares/rate-limit";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { csrfProtection } from "../middlewares/security-headers";
 import { upload, virusScan } from "../middlewares/upload";
 import { validateClientId } from "../middlewares/vaildateClientId";
@@ -1190,6 +1191,7 @@ export function registerFileAssetRoutes(app: Express) {
     "/api/assets/upload",
     csrfProtection,
     uploadRateLimit,
+    requireMinimumRole(UserRole.EDITOR),
     upload.single("file"),
     virusScan,
     async (req, res: Response) => {
@@ -1198,7 +1200,7 @@ export function registerFileAssetRoutes(app: Express) {
           return res.status(401).json({ message: "Not authenticated" });
         }
 
-        // Check user role - guests cannot upload
+        // Get user for client ID logic
         const [user] = await db
           .select()
           .from(users)
@@ -1206,12 +1208,6 @@ export function registerFileAssetRoutes(app: Express) {
 
         if (!user) {
           return res.status(401).json({ message: "User not found" });
-        }
-
-        if (user.role === UserRole.GUEST) {
-          return res
-            .status(403)
-            .json({ message: "Guests cannot upload files" });
         }
 
         // Get client ID - super admins can specify it in body, others use their first assigned client
@@ -1415,6 +1411,7 @@ export function registerFileAssetRoutes(app: Express) {
     csrfProtection,
     uploadRateLimit,
     validateClientId,
+    requireMinimumRole(UserRole.EDITOR),
     upload.single("file"),
     virusScan,
     async (req: RequestWithClientId, res: Response) => {
@@ -1426,22 +1423,6 @@ export function registerFileAssetRoutes(app: Express) {
         const clientId = req.clientId;
         if (!clientId) {
           return res.status(400).json({ message: "Client ID is required" });
-        }
-
-        // Check user role - guests cannot upload
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, req.session.userId));
-
-        if (!user) {
-          return res.status(401).json({ message: "User not found" });
-        }
-
-        if (user.role === UserRole.GUEST) {
-          return res
-            .status(403)
-            .json({ message: "Guests cannot upload files" });
         }
 
         const file = req.file;

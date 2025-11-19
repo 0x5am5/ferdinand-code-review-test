@@ -62,31 +62,11 @@ export const ROLE_PERMISSIONS: Record<
     [Resource.HIDDEN_SECTIONS]: [PermissionAction.READ],
   },
   [UserRole.STANDARD]: {
-    [Resource.BRAND_ASSETS]: [
-      PermissionAction.READ,
-      PermissionAction.CREATE,
-      PermissionAction.UPDATE,
-    ],
-    [Resource.FILE_ASSETS]: [
-      PermissionAction.READ,
-      PermissionAction.CREATE,
-      PermissionAction.UPDATE,
-    ],
-    [Resource.TYPE_SCALES]: [
-      PermissionAction.READ,
-      PermissionAction.CREATE,
-      PermissionAction.UPDATE,
-    ],
-    [Resource.USER_PERSONAS]: [
-      PermissionAction.READ,
-      PermissionAction.CREATE,
-      PermissionAction.UPDATE,
-    ],
-    [Resource.INSPIRATION_BOARDS]: [
-      PermissionAction.READ,
-      PermissionAction.CREATE,
-      PermissionAction.UPDATE,
-    ],
+    [Resource.BRAND_ASSETS]: [PermissionAction.READ],
+    [Resource.FILE_ASSETS]: [PermissionAction.READ],
+    [Resource.TYPE_SCALES]: [PermissionAction.READ],
+    [Resource.USER_PERSONAS]: [PermissionAction.READ],
+    [Resource.INSPIRATION_BOARDS]: [PermissionAction.READ],
     [Resource.HIDDEN_SECTIONS]: [PermissionAction.READ],
   },
   [UserRole.EDITOR]: {
@@ -345,18 +325,8 @@ export function canModifyResource(
     return true;
   }
 
-  // Standard users can create and update any resource in their assigned clients
-  // but cannot delete (no DELETE permission in matrix)
-  if (userRole === UserRole.STANDARD) {
-    if (
-      action === PermissionAction.CREATE ||
-      action === PermissionAction.UPDATE
-    ) {
-      return true;
-    }
-  }
-
-  // For other actions (read, share), if they have permission, they can do it
+  // For other roles (GUEST, STANDARD), rely on permission matrix check above
+  // which already validated they have the required permission
   return true;
 }
 
