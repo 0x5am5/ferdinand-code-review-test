@@ -1208,10 +1208,10 @@ export function registerFileAssetRoutes(app: Express) {
           return res.status(401).json({ message: "User not found" });
         }
 
-        if (user.role === UserRole.GUEST) {
+        if (user.role === UserRole.GUEST || user.role === UserRole.STANDARD) {
           return res
             .status(403)
-            .json({ message: "Guests cannot upload files" });
+            .json({ message: "Insufficient permissions to upload files" });
         }
 
         // Get client ID - super admins can specify it in body, others use their first assigned client
@@ -1438,10 +1438,10 @@ export function registerFileAssetRoutes(app: Express) {
           return res.status(401).json({ message: "User not found" });
         }
 
-        if (user.role === UserRole.GUEST) {
+        if (user.role === UserRole.GUEST || user.role === UserRole.STANDARD) {
           return res
             .status(403)
-            .json({ message: "Guests cannot upload files" });
+            .json({ message: "Insufficient permissions to upload files" });
         }
 
         const file = req.file;

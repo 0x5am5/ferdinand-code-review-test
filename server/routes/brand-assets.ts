@@ -511,7 +511,7 @@ export function registerBrandAssetRoutes(app: Express) {
     upload.any(),
     validateClientId,
     requireAuth,
-    requireMinimumRole(UserRole.STANDARD),
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
@@ -925,7 +925,7 @@ export function registerBrandAssetRoutes(app: Express) {
     upload.any(),
     validateClientId,
     requireAuth,
-    requireMinimumRole(UserRole.STANDARD),
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
