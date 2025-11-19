@@ -6,7 +6,7 @@ import {
   Resource,
 } from "@shared/permissions";
 import { assets, UserRole, userClients, users } from "@shared/schema";
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "../db";
 
 export type Permission = "read" | "write" | "delete" | "share";
@@ -155,24 +155,7 @@ export const getAccessibleAssets = async (
         );
       return accessibleAssets;
     }
-    // Standard users can see shared assets and their own private assets
-    else if (user.role === UserRole.STANDARD) {
-      const accessibleAssets = await db
-        .select()
-        .from(assets)
-        .where(
-          and(
-            eq(assets.clientId, clientId),
-            or(
-              eq(assets.visibility, "shared"),
-              eq(assets.uploadedBy, userIdNum)
-            ),
-            isNull(assets.deletedAt)
-          )
-        );
-      return accessibleAssets;
-    }
-    // Admins and editors can see all assets in the client
+    // Standard users, editors, and admins can see all assets in their assigned clients
     const accessibleAssets = await db
       .select()
       .from(assets)
