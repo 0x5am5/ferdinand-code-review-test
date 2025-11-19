@@ -511,7 +511,7 @@ export function registerBrandAssetRoutes(app: Express) {
     upload.any(),
     validateClientId,
     requireAuth,
-    requireMinimumRole(UserRole.EDITOR),
+    requireMinimumRole(UserRole.STANDARD),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
@@ -529,13 +529,6 @@ export function registerBrandAssetRoutes(app: Express) {
         const user = await storage.getUser(userId);
         if (!user) {
           return res.status(401).json({ message: "User not found" });
-        }
-
-        // Guest users cannot create assets
-        if (user.role === UserRole.GUEST || user.role === UserRole.STANDARD) {
-          return res
-            .status(403)
-            .json({ message: "Guests cannot create assets" });
         }
 
         const { category } = req.body;
@@ -932,7 +925,7 @@ export function registerBrandAssetRoutes(app: Express) {
     upload.any(),
     validateClientId,
     requireAuth,
-    requireMinimumRole(UserRole.EDITOR),
+    requireMinimumRole(UserRole.STANDARD),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;
@@ -946,20 +939,8 @@ export function registerBrandAssetRoutes(app: Express) {
           return res.status(401).json({ message: "Authentication required" });
         }
 
-        // Check user role - guests cannot edit brand assets
-        const user = await storage.getUser(userId);
-        if (!user) {
-          return res.status(401).json({ message: "User not found" });
-        }
-
-        if (user.role === UserRole.GUEST) {
-          return res
-            .status(403)
-            .json({ message: "Guest users cannot edit brand assets" });
-        }
-
-        const assetId = parseInt(req.params.assetId, 10);
         // Get variant from query params with debugging
+        const assetId = parseInt(req.params.assetId, 10);
         const variant = req.query.variant as string;
         console.log(
           `PATCH request received - assetId: ${assetId}, variant: ${variant}, isDarkVariant: ${req.body.isDarkVariant}`
@@ -974,20 +955,6 @@ export function registerBrandAssetRoutes(app: Express) {
         }
 
         const asset = await storage.getAsset(assetId);
-
-        // Font asset updates require editor role or higher
-        if (
-          asset &&
-          asset.category === "font" &&
-          user.role === UserRole.STANDARD
-        ) {
-          console.log(
-            `[Asset Update] User ${userId} (role: ${user.role}) denied: insufficient permissions for font updates`
-          );
-          return res.status(403).json({
-            message: "Only editors and admins can update font assets",
-          });
-        }
 
         if (!asset) {
           return res.status(404).json({ message: "Asset not found" });

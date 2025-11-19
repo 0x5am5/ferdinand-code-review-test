@@ -62,13 +62,30 @@ export const ROLE_PERMISSIONS: Record<
     [Resource.HIDDEN_SECTIONS]: [PermissionAction.READ],
   },
   [UserRole.STANDARD]: {
-    [Resource.BRAND_ASSETS]: [PermissionAction.READ],
-    [Resource.FILE_ASSETS]: [PermissionAction.READ, PermissionAction.CREATE],
-    [Resource.TYPE_SCALES]: [PermissionAction.READ],
-    [Resource.USER_PERSONAS]: [PermissionAction.READ],
+    [Resource.BRAND_ASSETS]: [
+      PermissionAction.READ,
+      PermissionAction.CREATE,
+      PermissionAction.UPDATE,
+    ],
+    [Resource.FILE_ASSETS]: [
+      PermissionAction.READ,
+      PermissionAction.CREATE,
+      PermissionAction.UPDATE,
+    ],
+    [Resource.TYPE_SCALES]: [
+      PermissionAction.READ,
+      PermissionAction.CREATE,
+      PermissionAction.UPDATE,
+    ],
+    [Resource.USER_PERSONAS]: [
+      PermissionAction.READ,
+      PermissionAction.CREATE,
+      PermissionAction.UPDATE,
+    ],
     [Resource.INSPIRATION_BOARDS]: [
       PermissionAction.READ,
       PermissionAction.CREATE,
+      PermissionAction.UPDATE,
     ],
     [Resource.HIDDEN_SECTIONS]: [PermissionAction.READ],
   },
@@ -77,32 +94,32 @@ export const ROLE_PERMISSIONS: Record<
       PermissionAction.READ,
       PermissionAction.CREATE,
       PermissionAction.UPDATE,
-      PermissionAction.DELETE, // Own items only
+      PermissionAction.DELETE,
     ],
     [Resource.FILE_ASSETS]: [
       PermissionAction.READ,
       PermissionAction.CREATE,
       PermissionAction.UPDATE,
-      PermissionAction.DELETE, // Own items only
+      PermissionAction.DELETE,
       PermissionAction.SHARE,
     ],
     [Resource.TYPE_SCALES]: [
       PermissionAction.READ,
       PermissionAction.CREATE,
       PermissionAction.UPDATE,
-      PermissionAction.DELETE, // Own items only
+      PermissionAction.DELETE,
     ],
     [Resource.USER_PERSONAS]: [
       PermissionAction.READ,
       PermissionAction.CREATE,
       PermissionAction.UPDATE,
-      PermissionAction.DELETE, // Own items only
+      PermissionAction.DELETE,
     ],
     [Resource.INSPIRATION_BOARDS]: [
       PermissionAction.READ,
       PermissionAction.CREATE,
       PermissionAction.UPDATE,
-      PermissionAction.DELETE, // Own items only
+      PermissionAction.DELETE,
     ],
     [Resource.HIDDEN_SECTIONS]: [
       PermissionAction.READ,
@@ -294,11 +311,14 @@ export function hasPermission(
  * @returns true if user can perform the action on this specific resource
  *
  * @example
- * // Editor trying to delete their own asset
- * canModifyResource(UserRole.EDITOR, PermissionAction.DELETE, Resource.BRAND_ASSETS, 5, 5) // true
+ * // Editor trying to delete any asset in their assigned clients
+ * canModifyResource(UserRole.EDITOR, PermissionAction.DELETE, Resource.BRAND_ASSETS, 5, 10) // true
  *
- * // Editor trying to delete someone else's asset
- * canModifyResource(UserRole.EDITOR, PermissionAction.DELETE, Resource.BRAND_ASSETS, 5, 10) // false
+ * // Standard trying to delete an asset (no delete permission)
+ * canModifyResource(UserRole.STANDARD, PermissionAction.DELETE, Resource.BRAND_ASSETS, 5, 5) // false
+ *
+ * // Standard trying to update any asset in their assigned clients
+ * canModifyResource(UserRole.STANDARD, PermissionAction.UPDATE, Resource.BRAND_ASSETS, 5, 10) // true
  *
  * // Admin trying to delete anyone's asset
  * canModifyResource(UserRole.ADMIN, PermissionAction.DELETE, Resource.BRAND_ASSETS, 5, 10) // true
@@ -307,34 +327,36 @@ export function canModifyResource(
   userRole: string,
   action: PermissionActionType,
   resource: ResourceType,
-  resourceOwnerId: number | null,
-  currentUserId: number
+  _resourceOwnerId: number | null,
+  _currentUserId: number
 ): boolean {
   // First check if the role has the permission at all
   if (!hasPermission(userRole, action, resource)) {
     return false;
   }
 
-  // Admins and super_admins can modify any resource
-  if (userRole === UserRole.ADMIN || userRole === UserRole.SUPER_ADMIN) {
+  // Editor, Admin, and Super_Admin can modify any resource in their assigned clients
+  // No ownership restrictions for these roles
+  if (
+    userRole === UserRole.EDITOR ||
+    userRole === UserRole.ADMIN ||
+    userRole === UserRole.SUPER_ADMIN
+  ) {
     return true;
   }
 
-  // Editors can only modify/delete their own resources
-  if (userRole === UserRole.EDITOR) {
+  // Standard users can create and update any resource in their assigned clients
+  // but cannot delete (no DELETE permission in matrix)
+  if (userRole === UserRole.STANDARD) {
     if (
-      action === PermissionAction.UPDATE ||
-      action === PermissionAction.DELETE
+      action === PermissionAction.CREATE ||
+      action === PermissionAction.UPDATE
     ) {
-      // Ownerless resources cannot be modified by editors
-      if (resourceOwnerId === null) {
-        return false;
-      }
-      return resourceOwnerId === currentUserId;
+      return true;
     }
   }
 
-  // For other actions (create, read, share), if they have permission, they can do it
+  // For other actions (read, share), if they have permission, they can do it
   return true;
 }
 
