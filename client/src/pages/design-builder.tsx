@@ -11,6 +11,7 @@ import {
 import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,19 +87,14 @@ export default function DesignBuilder() {
   const { toast } = useToast();
   const {
     designSystem: appliedDesignSystem,
-    draftDesignSystem,
-    updateDraftDesignSystem,
-    applyDraftChanges,
-    clearDraft,
   } = useThemeManager();
 
-  // Define the designSystem variable to use throughout the component
-  const designSystem = draftDesignSystem || appliedDesignSystem;
+  // Use only the applied (saved) design system - no draft functionality
+  const designSystem = appliedDesignSystem;
 
   // State for handling navigation confirmation
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
   const [activeTab, setActiveTab] = useState("theme");
-  const [hasChanges, setHasChanges] = useState(false);
   const { user, isLoading } = useAuth();
   const userRole = user?.role; // Replace with actual user role fetch mechanism.
   const canEdit = userRole ? ["editor", "admin"].includes(userRole) : false;
@@ -122,73 +118,30 @@ export default function DesignBuilder() {
     },
   });
 
-  // Handle form submission
+  // Handle form submission - disabled for now
   const onSubmit = async (values: z.infer<typeof themeFormSchema>) => {
-    try {
-      // Update the draft theme
-      updateDraftDesignSystem({
-        theme: values,
-      });
-
-      setHasChanges(true);
-      toast({
-        title: "Changes applied to preview",
-        description:
-          "Your changes have been applied to the preview. Save to make them permanent.",
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Error applying changes:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-
-      toast({
-        title: "Error",
-        description: "There was an error applying your changes.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle saving changes permanently
-  const handleSaveChanges = async () => {
-    try {
-      await applyDraftChanges();
-      setHasChanges(false);
-      toast({
-        title: "Changes saved",
-        description: "Your design changes have been saved successfully.",
-      });
-    } catch (error: unknown) {
-      console.error(
-        "Error saving changes:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-
-      toast({
-        title: "Error saving changes",
-        description: "There was an error saving your changes.",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Feature Coming Soon",
+      description: "Theme editing functionality is currently being redesigned and will be available soon.",
+    });
   };
 
   const confirmNavigation = () => {
     setShowLeaveAlert(false);
   };
 
-  // Clear draft theme when component unmounts to prevent it from persisting
-  useEffect(() => {
-    return () => {
-      // Clear the draft when leaving the design builder page
-      clearDraft();
-    };
-  }, [clearDraft]);
-
   if (isLoading) return null;
 
   return (
     <div className="p-8">
+      <Alert className="mb-6">
+        <AlertTitle>Feature In Development</AlertTitle>
+        <AlertDescription>
+          The Design Builder is currently being redesigned for better performance and stability.
+          You can preview the current theme settings below, but editing is temporarily disabled.
+        </AlertDescription>
+      </Alert>
+
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-4xl font-bold">Design Builder</h1>
@@ -199,16 +152,8 @@ export default function DesignBuilder() {
             </p>
           ) : (
             <p className="text-muted-foreground">
-              Customize your application's design system
+              Preview your application's design system
             </p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {hasChanges && (
-            <Button onClick={handleSaveChanges} variant="default">
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
           )}
         </div>
       </div>
@@ -261,7 +206,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!canEdit}
+                          disabled={true}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -313,7 +258,7 @@ export default function DesignBuilder() {
                               {...field}
                               type="color"
                               className="w-10 h-10 p-1"
-                              disabled={!canEdit}
+                              disabled={true}
                             />
                           </FormControl>
                           <FormControl>
@@ -321,7 +266,7 @@ export default function DesignBuilder() {
                               value={field.value}
                               onChange={field.onChange}
                               className="w-32"
-                              disabled={!canEdit}
+                              disabled={true}
                             />
                           </FormControl>
                         </div>
@@ -348,7 +293,7 @@ export default function DesignBuilder() {
                                   {...field}
                                   type="color"
                                   className="w-10 h-10 p-1"
-                                  disabled={!canEdit}
+                                  disabled={true}
                                 />
                               </FormControl>
                               <FormControl>
@@ -356,7 +301,7 @@ export default function DesignBuilder() {
                                   value={field.value || "#666666"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  disabled={!canEdit}
+                                  disabled={true}
                                 />
                               </FormControl>
                             </div>
@@ -382,7 +327,7 @@ export default function DesignBuilder() {
                                   {...field}
                                   type="color"
                                   className="w-10 h-10 p-1"
-                                  disabled={!canEdit}
+                                  disabled={true}
                                 />
                               </FormControl>
                               <FormControl>
@@ -390,7 +335,7 @@ export default function DesignBuilder() {
                                   value={field.value || "#444444"}
                                   onChange={field.onChange}
                                   className="w-32"
-                                  disabled={!canEdit}
+                                  disabled={true}
                                 />
                               </FormControl>
                             </div>
@@ -414,7 +359,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!canEdit}
+                          disabled={true}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -466,7 +411,7 @@ export default function DesignBuilder() {
                               field.onChange(values[0])
                             }
                             className="w-full"
-                            disabled={!canEdit}
+                            disabled={true}
                           />
                         </FormControl>
                         <FormDescription>
@@ -486,7 +431,7 @@ export default function DesignBuilder() {
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!canEdit}
+                          disabled={true}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -508,8 +453,6 @@ export default function DesignBuilder() {
                       </FormItem>
                     )}
                   />
-
-                  {canEdit && <Button type="submit">Apply Changes</Button>}
                 </form>
               </Form>
             </CardContent>
@@ -534,16 +477,8 @@ export default function DesignBuilder() {
                         <Label>Primary Font</Label>
                         <Input
                           value={designSystem.typography.primary}
-                          onChange={(e) => {
-                            updateDraftDesignSystem({
-                              typography: {
-                                ...designSystem.typography,
-                                primary: e.target.value,
-                              },
-                            });
-                            setHasChanges(true);
-                          }}
-                          disabled={!canEdit}
+                          disabled={true}
+                          readOnly
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for body text throughout the application.
@@ -553,16 +488,8 @@ export default function DesignBuilder() {
                         <Label>Heading Font</Label>
                         <Input
                           value={designSystem.typography.heading}
-                          onChange={(e) => {
-                            updateDraftDesignSystem({
-                              typography: {
-                                ...designSystem.typography,
-                                heading: e.target.value,
-                              },
-                            });
-                            setHasChanges(true);
-                          }}
-                          disabled={!canEdit}
+                          disabled={true}
+                          readOnly
                         />
                         <p className="text-sm text-muted-foreground mt-1">
                           Used for headings and emphasized text.
@@ -571,21 +498,6 @@ export default function DesignBuilder() {
                     </div>
                   </div>
                 </div>
-
-                {canEdit && (
-                  <Button
-                    onClick={() => {
-                      // Just apply changes without any further API call
-                      toast({
-                        title: "Changes applied to preview",
-                        description:
-                          "Typography changes have been applied to the preview.",
-                      });
-                    }}
-                  >
-                    Apply Typography Changes
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -639,12 +551,12 @@ export default function DesignBuilder() {
                       <Input
                         id={previewInputId}
                         placeholder="Enter some text"
-                        readOnly={!canEdit}
+                        readOnly={true}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor={previewSelectId}>Select Menu</Label>
-                      <Select disabled={!canEdit}>
+                      <Select disabled={true}>
                         <SelectTrigger id={previewSelectId}>
                           <SelectValue placeholder="Select an option" />
                         </SelectTrigger>
@@ -658,7 +570,7 @@ export default function DesignBuilder() {
                     <div className="space-y-2">
                       <Label htmlFor={previewCheckboxId}>Checkbox</Label>
                       <div className="flex items-center space-x-2">
-                        <Switch id={previewCheckboxId} disabled={!canEdit} />
+                        <Switch id={previewCheckboxId} disabled={true} />
                         <Label htmlFor={previewCheckboxId}>Toggle me</Label>
                       </div>
                     </div>

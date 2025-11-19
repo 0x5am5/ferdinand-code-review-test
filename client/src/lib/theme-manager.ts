@@ -188,14 +188,15 @@ class ThemeManager {
         const data = await response.json();
         console.log("Theme settings loaded from API");
         this.currentTheme = data;
-        this.draftTheme = { ...data };
+        // Draft theme is no longer initialized by default
+        // this.draftTheme = { ...data };
       } else {
         console.log("API returned non-200 status, using default theme");
-        this.draftTheme = { ...this.currentTheme };
+        // this.draftTheme = { ...this.currentTheme };
       }
     } catch {
       console.log("Error encountered, falling back to default theme");
-      this.draftTheme = { ...this.currentTheme };
+      // this.draftTheme = { ...this.currentTheme };
     } finally {
       console.log("Theme initialization complete");
       this.applyTheme();
