@@ -21,7 +21,7 @@ export const LogoType = {
   VERTICAL: "vertical",
   HORIZONTAL: "horizontal",
   SQUARE: "square",
-  APP_ICON: "app_icon",
+  APP_ICON: "app-icon",
   FAVICON: "favicon",
 } as const;
 
@@ -48,20 +48,30 @@ export const AssetVisibility = {
 // Default Section Descriptions
 export const DEFAULT_SECTION_DESCRIPTIONS = {
   // Logo Sections
-  LOGO_MAIN: "Primary logo for general use across marketing materials, websites, and brand communications.",
-  LOGO_VERTICAL: "Vertical orientation logo ideal for narrow spaces, social media profiles, and tall layouts.",
-  LOGO_HORIZONTAL: "Horizontal orientation logo perfect for headers, email signatures, and wide layouts.",
-  LOGO_SQUARE: "Square format logo optimized for profile pictures, app tiles, and social media avatars.",
-  LOGO_APP_ICON: "App icon designed for mobile applications, typically 1024x1024px with rounded corners.",
-  LOGO_FAVICON: "Small icon displayed in browser tabs and bookmarks, typically 16x16px or 32x32px.",
+  LOGO_MAIN:
+    "Primary logo for general use across marketing materials, websites, and brand communications.",
+  LOGO_VERTICAL:
+    "Vertical orientation logo ideal for narrow spaces, social media profiles, and tall layouts.",
+  LOGO_HORIZONTAL:
+    "Horizontal orientation logo perfect for headers, email signatures, and wide layouts.",
+  LOGO_SQUARE:
+    "Square format logo optimized for profile pictures, app tiles, and social media avatars.",
+  LOGO_APP_ICON:
+    "App icon designed for mobile applications, typically 1024x1024px with rounded corners.",
+  LOGO_FAVICON:
+    "Small icon displayed in browser tabs and bookmarks, typically 16x16px or 32x32px.",
 
   // Color Sections
-  COLOR_BRAND: "Primary colors that define the brand identity and should be used consistently across all materials.",
-  COLOR_NEUTRAL: "Supporting colors for backgrounds, text, and UI elements that provide balance to the color system.",
-  COLOR_INTERACTIVE: "Colors used for buttons, links, and interactive elements to guide user actions.",
+  COLOR_BRAND:
+    "Primary colors that define the brand identity and should be used consistently across all materials.",
+  COLOR_NEUTRAL:
+    "Supporting colors for backgrounds, text, and UI elements that provide balance to the color system.",
+  COLOR_INTERACTIVE:
+    "Colors used for buttons, links, and interactive elements to guide user actions.",
 
   // Typography Sections
-  FONT_BRAND: "Typography assets that define the brand's visual identity and should be used consistently across all materials.",
+  FONT_BRAND:
+    "Typography assets that define the brand's visual identity and should be used consistently across all materials.",
   TYPE_SCALE: "Create and manage consistent typography scales for your brand.",
 } as const;
 

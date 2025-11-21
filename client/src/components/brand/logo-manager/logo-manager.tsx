@@ -58,8 +58,8 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     const allLogoTypes: string[] = Object.values(LogoType);
 
     if (hiddenSections && Array.isArray(hiddenSections)) {
-      const hiddenTypes: string[] = hiddenSections.map(
-        (section) => section.sectionType
+      const hiddenTypes: string[] = hiddenSections.map((section) =>
+        section.sectionType.replace(/^logo-/, "")
       );
       const visible: string[] = allLogoTypes.filter(
         (type) => !hiddenTypes.includes(type)
@@ -117,17 +117,23 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   );
 
   const handleRemoveSection = (type: string) => {
-    setVisibleSections((prev) => prev.filter((section) => section !== type));
+    // Strip the "logo-" prefix since it comes from AssetSection pre-prefixed
+    const baseType = type.replace(/^logo-/, "");
 
-    addHiddenSection.mutate(type, {
+    // Optimistic update using base type
+    setVisibleSections((prev) => prev.filter((section) => section !== baseType));
+
+    // Send to API with "logo-" prefix added
+    addHiddenSection.mutate(`logo-${baseType}`, {
       onSuccess: () => {
         toast({
           title: "Section removed",
-          description: `${type.charAt(0).toUpperCase() + type.slice(1)} logo section has been removed`,
+          description: `${baseType.charAt(0).toUpperCase() + baseType.slice(1)} logo section has been removed`,
         });
       },
       onError: (error) => {
-        setVisibleSections((prev) => [...prev, type]);
+        // Revert optimistic update on error
+        setVisibleSections((prev) => [...prev, baseType]);
         toast({
           title: "Error",
           description: `Failed to remove section: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -138,10 +144,11 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
   };
 
   const handleAddSection = (type: string) => {
+    // Optimistic update
     setVisibleSections((prev) => [...prev, type]);
     setShowAddSection(false);
 
-    removeHiddenSection.mutate(type, {
+    removeHiddenSection.mutate(`logo-${type}`, {
       onSuccess: () => {
         toast({
           title: "Section added",
@@ -149,6 +156,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
         });
       },
       onError: (error) => {
+        // Revert optimistic update on error
         setVisibleSections((prev) =>
           prev.filter((section) => section !== type)
         );
