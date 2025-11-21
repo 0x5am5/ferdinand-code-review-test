@@ -77,8 +77,8 @@ app.get("/api/health", (_req, res) => {
 // Increase the maximum number of listeners to prevent warnings
 EventEmitter.defaultMaxListeners = 20;
 
-// Port configuration: use PORT env var or default to 3001
-const DEFAULT_PORT = parseInt(process.env.PORT ?? "3001", 10);
+// Port configuration: use PORT env var or default to 5000
+const DEFAULT_PORT = parseInt(process.env.PORT ?? "5000", 10);
 
 // Improved server startup function
 async function startServer(retries = 3) {
@@ -144,9 +144,9 @@ async function startServer(retries = 3) {
         // Development: Use the found available port
         console.log(`Starting development server on port ${PORT}`);
         await new Promise<void>((resolve, reject) => {
-          server?.listen(PORT, "localhost", () => {
+          server?.listen(PORT, "0.0.0.0", () => {
             console.log(`✓ Server started successfully on port ${PORT}`);
-            log(`Server listening at http://localhost:${PORT}`);
+            log(`Server listening at http://0.0.0.0:${PORT}`);
             resolve();
           });
 
