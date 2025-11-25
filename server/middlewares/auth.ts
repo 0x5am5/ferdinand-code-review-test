@@ -1,4 +1,4 @@
-import { userClients } from "@shared/schema";
+import { userClients, UserRole } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
 import { db } from "../db";
@@ -32,10 +32,10 @@ export async function canAdminAccessClient(
     if (!user) return false;
 
     // Super admins can access any client
-    if (user.role === "super_admin") return true;
+    if (user.role === UserRole.SUPER_ADMIN) return true;
 
     // Admins can only access clients they're assigned to
-    if (user.role === "admin") {
+    if (user.role === UserRole.ADMIN) {
       const adminClients = await storage.getUserClients(userId);
       return adminClients.some((c) => c.id === clientId);
     }
@@ -63,10 +63,10 @@ export async function canAdminAccessUser(
     if (!admin) return false;
 
     // Super admins can access any user
-    if (admin.role === "super_admin") return true;
+    if (admin.role === UserRole.SUPER_ADMIN) return true;
 
     // Admins can only access users in their assigned clients
-    if (admin.role === "admin") {
+    if (admin.role === UserRole.ADMIN) {
       const adminClients = await storage.getUserClients(adminId);
       const adminClientIds = adminClients.map((c) => c.id);
 
@@ -87,62 +87,3 @@ export async function canAdminAccessUser(
   }
 }
 
-/**
- * Middleware to ensure user is authenticated and has admin or super admin role
- */
-export async function requireAdmin(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  if (!req.session?.userId) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-
-  try {
-    const user = await storage.getUser(req.session.userId);
-
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
-    if (user.role !== "admin" && user.role !== "super_admin") {
-      return res.status(403).json({ message: "Admin access required" });
-    }
-
-    next();
-  } catch (error) {
-    console.error("Error checking admin role:", error);
-    return res.status(500).json({ message: "Error verifying permissions" });
-  }
-}
-
-/**
- * Middleware to ensure user is authenticated and has super admin role
- */
-export async function requireSuperAdmin(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  if (!req.session?.userId) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-
-  try {
-    const user = await storage.getUser(req.session.userId);
-
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
-    }
-
-    if (user.role !== "super_admin") {
-      return res.status(403).json({ message: "Super admin access required" });
-    }
-
-    next();
-  } catch (error) {
-    console.error("Error checking super admin role:", error);
-    return res.status(500).json({ message: "Error verifying permissions" });
-  }
-}

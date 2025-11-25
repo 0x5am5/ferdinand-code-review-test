@@ -17,10 +17,9 @@ import { emailService } from "../email-service";
 import {
   canAdminAccessClient,
   canAdminAccessUser,
-  requireAdmin,
-  requireSuperAdmin,
 } from "../middlewares/auth";
 import { mutationRateLimit } from "../middlewares/rate-limit";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { csrfProtection } from "../middlewares/security-headers";
 import { validateRoleChange } from "../services/user-permissions";
 import { storage } from "../storage";
@@ -291,7 +290,7 @@ export function registerUserRoutes(app: Express) {
   app.patch(
     "/api/users/:id/role",
     csrfProtection,
-    requireAdmin,
+    requireMinimumRole(UserRole.ADMIN),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id, 10);
@@ -438,7 +437,7 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Get clients for a user
-  app.get("/api/users/:id/clients", requireAdmin, async (req, res) => {
+  app.get("/api/users/:id/clients", requireMinimumRole(UserRole.ADMIN), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -477,7 +476,7 @@ export function registerUserRoutes(app: Express) {
   // Get all client assignments for all users (SUPER_ADMIN only)
   app.get(
     "/api/users/client-assignments",
-    requireSuperAdmin,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (_req, res) => {
       try {
         // Get all users
@@ -509,7 +508,7 @@ export function registerUserRoutes(app: Express) {
   app.post(
     "/api/user-clients",
     csrfProtection,
-    requireAdmin,
+    requireMinimumRole(UserRole.ADMIN),
     async (req, res) => {
       try {
         const { userId, clientId } = req.body;
@@ -668,7 +667,7 @@ export function registerUserRoutes(app: Express) {
   // Get users for a specific client
   app.get(
     "/api/clients/:clientId/users",
-    requireAdmin,
+    requireMinimumRole(UserRole.ADMIN),
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {
