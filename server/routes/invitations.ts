@@ -4,6 +4,7 @@ import type { Express } from "express";
 import { db } from "../db";
 import { emailService } from "../email-service";
 import { invitationRateLimit } from "../middlewares/rate-limit";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { csrfProtection } from "../middlewares/security-headers";
 import { storage } from "../storage";
 import {
@@ -54,23 +55,8 @@ async function getClientLogoUrl(clientId: number): Promise<string | null> {
 
 export function registerInvitationRoutes(app: Express) {
   // Get all pending invitations
-  app.get("/api/invitations", async (req, res) => {
+  app.get("/api/invitations", requireMinimumRole(UserRole.ADMIN), async (req, res) => {
     try {
-      // Make sure the user is authenticated
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
-      // Get the user to check their role
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-
-      // Only allow admins and super admins to view all invitations
-      if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
-        return res.status(403).json({ message: "Insufficient permissions" });
-      }
 
       // Get all pending invitations
       const pendingInvitations = await db
@@ -133,6 +119,7 @@ export function registerInvitationRoutes(app: Express) {
     "/api/invitations",
     csrfProtection,
     invitationRateLimit,
+    requireMinimumRole(UserRole.ADMIN),
     async (req, res) => {
       try {
         const parsed = insertInvitationSchema.safeParse(req.body);
@@ -369,29 +356,11 @@ export function registerInvitationRoutes(app: Express) {
   });
 
   // Delete invitation
-  app.delete("/api/invitations/:id", async (req, res) => {
+  app.delete("/api/invitations/:id", requireMinimumRole(UserRole.ADMIN), async (req, res) => {
     try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
       const id = parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         return res.status(400).json({ message: "Invalid invitation ID" });
-      }
-
-      // Get the current user to check permissions
-      const currentUser = await storage.getUser(req.session.userId);
-      if (!currentUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Only super admins and admins can delete invitations
-      if (
-        currentUser.role !== UserRole.SUPER_ADMIN &&
-        currentUser.role !== UserRole.ADMIN
-      ) {
-        return res.status(403).json({ message: "Insufficient permissions" });
       }
 
       // Check if invitation exists
@@ -518,38 +487,25 @@ export function registerInvitationRoutes(app: Express) {
   });
 
   // Get pending invitations for a specific client
-  app.get("/api/clients/:clientId/invitations", async (req, res) => {
+  app.get("/api/clients/:clientId/invitations", requireMinimumRole(UserRole.ADMIN), async (req, res) => {
     try {
-      // Make sure the user is authenticated
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Unauthorized" });
-      }
-
       const clientId = parseInt(req.params.clientId, 10);
       if (Number.isNaN(clientId)) {
         return res.status(400).json({ message: "Invalid client ID" });
       }
 
-      // Get the user to check their role
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-
-      // Only allow admins and super admins to view invitations
-      if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
-        return res.status(403).json({ message: "Insufficient permissions" });
-      }
-
       // For admins (non-super_admin), check if they have access to this client
-      if (user.role === UserRole.ADMIN) {
-        const userClients = await storage.getUserClients(user.id);
-        const hasAccess = userClients.some((client) => client.id === clientId);
+      if (req.session?.userId) {
+        const user = await storage.getUser(req.session.userId);
+        if (user && user.role === UserRole.ADMIN) {
+          const userClients = await storage.getUserClients(user.id);
+          const hasAccess = userClients.some((client) => client.id === clientId);
 
-        if (!hasAccess) {
-          return res
-            .status(403)
-            .json({ message: "Access denied to this client" });
+          if (!hasAccess) {
+            return res
+              .status(403)
+              .json({ message: "Access denied to this client" });
+          }
         }
       }
 
