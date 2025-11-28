@@ -1,6 +1,7 @@
 import { insertFigmaConnectionSchema, UserRole } from "@shared/schema";
 import type { Express } from "express";
 import { z } from "zod";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { storage } from "../storage";
 
 // Figma API Base URL
@@ -197,26 +198,10 @@ export function registerFigmaRoutes(app: Express) {
   });
 
   // Connect a Figma file to a client
-  app.post("/api/figma/connections", async (req, res) => {
+  app.post("/api/figma/connections", requireMinimumRole(UserRole.EDITOR), async (req, res) => {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Only allow editors, admins, and super admins to create connections
-      if (
-        user.role !== UserRole.EDITOR &&
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
-        return res.status(403).json({
-          message: "Insufficient permissions to create Figma connections",
-        });
       }
 
       const validatedData = insertFigmaConnectionSchema.parse({
@@ -344,28 +329,13 @@ export function registerFigmaRoutes(app: Express) {
   // Sync design tokens from Figma to Ferdinand
   app.post(
     "/api/figma/connections/:connectionId/sync-from-figma",
+    requireMinimumRole(UserRole.EDITOR),
     async (req, res) => {
       try {
         const { connectionId } = req.params;
 
         if (!req.session.userId) {
           return res.status(401).json({ message: "Not authenticated" });
-        }
-
-        const user = await storage.getUser(req.session.userId);
-        if (!user) {
-          return res.status(404).json({ message: "User not found" });
-        }
-
-        // Only allow editors, admins, and super admins to sync
-        if (
-          user.role !== UserRole.EDITOR &&
-          user.role !== UserRole.ADMIN &&
-          user.role !== UserRole.SUPER_ADMIN
-        ) {
-          return res.status(403).json({
-            message: "Insufficient permissions to sync design tokens",
-          });
         }
 
         const connection = await storage.getFigmaConnection(
@@ -505,28 +475,12 @@ export function registerFigmaRoutes(app: Express) {
   );
 
   // Delete a Figma connection
-  app.delete("/api/figma/connections/:connectionId", async (req, res) => {
+  app.delete("/api/figma/connections/:connectionId", requireMinimumRole(UserRole.EDITOR), async (req, res) => {
     try {
       const { connectionId } = req.params;
 
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Only allow editors, admins, and super admins to delete connections
-      if (
-        user.role !== UserRole.EDITOR &&
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
-        return res.status(403).json({
-          message: "Insufficient permissions to delete Figma connections",
-        });
       }
 
       const connection = await storage.getFigmaConnection(

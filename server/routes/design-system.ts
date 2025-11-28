@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import { UserRole } from "@shared/schema";
 import chroma from "chroma-js";
 import type { Express } from "express";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { storage } from "../storage";
 
 interface RawTokens {
@@ -640,29 +641,8 @@ export function registerDesignSystemRoutes(app: Express) {
   });
 
   // Update design system
-  app.patch("/api/design-system", async (req, res) => {
+  app.patch("/api/design-system", requireMinimumRole(UserRole.EDITOR), async (req, res) => {
     try {
-      // Check if user is authenticated
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      // Get user to check permissions
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Only allow editors, admins and super admins to modify the design system
-      if (
-        user.role !== UserRole.EDITOR &&
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
-        return res.status(403).json({
-          message: "Insufficient permissions to modify design system",
-        });
-      }
 
       const { theme, typography, colors, raw_tokens } = req.body;
 
@@ -827,11 +807,8 @@ export function registerDesignSystemRoutes(app: Express) {
   });
 
   // Extended typography settings route
-  app.patch("/api/design-system/typography", async (req, res) => {
+  app.patch("/api/design-system/typography", requireMinimumRole(UserRole.EDITOR), async (req, res) => {
     try {
-      // For development, we're temporarily removing authentication
-      // In production, we'd want to check if user has admin rights
-
       const typographySettings = req.body;
 
       if (!typographySettings || Object.keys(typographySettings).length === 0) {
@@ -882,27 +859,9 @@ export function registerDesignSystemRoutes(app: Express) {
   });
 
   // Export design system as comprehensive CSS with semantic tokens
-  app.get("/api/design-system/export/css/:clientId", async (req, res) => {
+  app.get("/api/design-system/export/css/:clientId", requireMinimumRole(UserRole.GUEST), async (req, res) => {
     try {
       const { clientId } = req.params;
-
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Allow access for guests and above
-      if (
-        !["super_admin", "admin", "editor", "standard", "guest"].includes(
-          user.role
-        )
-      ) {
-        return res.status(403).json({ message: "Access denied" });
-      }
 
       // Read current theme.json
       const themeData = fs.readFileSync("./theme.json", "utf8");
@@ -1302,27 +1261,9 @@ a:hover {
   });
 
   // Export design system as comprehensive SCSS with semantic tokens
-  app.get("/api/design-system/export/scss/:clientId", async (req, res) => {
+  app.get("/api/design-system/export/scss/:clientId", requireMinimumRole(UserRole.GUEST), async (req, res) => {
     try {
       const { clientId } = req.params;
-
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Allow access for guests and above
-      if (
-        !["super_admin", "admin", "editor", "standard", "guest"].includes(
-          user.role
-        )
-      ) {
-        return res.status(403).json({ message: "Access denied" });
-      }
 
       // Read current theme.json
       const themeData = fs.readFileSync("./theme.json", "utf8");
@@ -1654,27 +1595,9 @@ $brand-secondary-colors: (
   });
 
   // Export design system as comprehensive Tailwind config with semantic config with semantic tokens
-  app.get("/api/design-system/export/tailwind/:clientId", async (req, res) => {
+  app.get("/api/design-system/export/tailwind/:clientId", requireMinimumRole(UserRole.GUEST), async (req, res) => {
     try {
       const { clientId } = req.params;
-
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Allow access for guests and above
-      if (
-        !["super_admin", "admin", "editor", "standard", "guest"].includes(
-          user.role
-        )
-      ) {
-        return res.status(403).json({ message: "Access denied" });
-      }
 
       // Read current theme.json
       const themeData = fs.readFileSync("./theme.json", "utf8");
