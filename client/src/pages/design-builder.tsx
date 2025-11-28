@@ -53,8 +53,9 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
-import { type DesignSystem } from "@/lib/theme-manager";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
+import type { DesignSystem } from "@/lib/theme-manager";
 
 // Form schema for validation
 const themeFormSchema = z.object({
@@ -94,8 +95,8 @@ export default function DesignBuilder() {
   const [showLeaveAlert, setShowLeaveAlert] = useState(false);
   const [activeTab, setActiveTab] = useState("theme");
   const { user, isLoading } = useAuth();
-  const userRole = user?.role; // Replace with actual user role fetch mechanism.
-  const canEdit = userRole ? ["editor", "admin"].includes(userRole) : false;
+  const { can } = usePermissions();
+  const canEdit = can("edit", "design_system");
 
   // Fetch theme data directly from API without applying to DOM
   useEffect(() => {
@@ -144,7 +145,8 @@ export default function DesignBuilder() {
   const onSubmit = async (values: z.infer<typeof themeFormSchema>) => {
     toast({
       title: "Feature Coming Soon",
-      description: "Theme editing functionality is currently being redesigned and will be available soon.",
+      description:
+        "Theme editing functionality is currently being redesigned and will be available soon.",
     });
   };
 
@@ -159,8 +161,9 @@ export default function DesignBuilder() {
       <Alert className="mb-6">
         <AlertTitle>Feature In Development</AlertTitle>
         <AlertDescription>
-          The Design Builder is currently being redesigned for better performance and stability.
-          You can preview the current theme settings below, but editing is temporarily disabled.
+          The Design Builder is currently being redesigned for better
+          performance and stability. You can preview the current theme settings
+          below, but editing is temporarily disabled.
         </AlertDescription>
       </Alert>
 

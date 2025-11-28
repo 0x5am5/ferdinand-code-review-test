@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 
 interface Image {
@@ -239,10 +240,8 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
 
   if (!user) return null;
 
-  // This code can be conditional since it's just calculating a boolean, not a hook
-  const isAbleToEdit = ["super_admin", "admin", "editor"].includes(
-    user.role as string
-  );
+  const { can } = usePermissions();
+  const isAbleToEdit = can("edit", "inspiration_board");
 
   return (
     <div>
