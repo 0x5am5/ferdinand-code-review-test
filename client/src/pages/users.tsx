@@ -564,16 +564,16 @@ export default function UsersPage() {
                             {USER_ROLES.filter((role) => {
                               // Only super admins can see/assign super_admin role
                               if (
-                                role === "super_admin" &&
-                                currentUser?.role !== "super_admin"
+                                role === UserRole.SUPER_ADMIN &&
+                                currentUser?.role !== UserRole.SUPER_ADMIN
                               ) {
                                 return false;
                               }
 
                               // Admins cannot assign admin role to others
                               if (
-                                role === "admin" &&
-                                currentUser?.role === "admin"
+                                role === UserRole.ADMIN &&
+                                currentUser?.role === UserRole.ADMIN
                               ) {
                                 return false;
                               }

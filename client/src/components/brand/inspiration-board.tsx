@@ -71,6 +71,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { can } = usePermissions();
 
   // Fetch sections
   const { data: sections = [] } = useQuery<Section[]>({
@@ -238,10 +239,9 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     [uploadImage, toast]
   );
 
-  if (!user) return null;
+  const isAbleToEdit = can("update", "inspiration_boards");
 
-  const { can } = usePermissions();
-  const isAbleToEdit = can("edit", "inspiration_board");
+  if (!user) return null;
 
   return (
     <div>

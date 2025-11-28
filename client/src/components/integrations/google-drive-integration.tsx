@@ -1,3 +1,4 @@
+import { UserRole } from "@shared/schema";
 import { CheckCircle2, CloudOffIcon } from "lucide-react";
 import type { FC } from "react";
 import { GoogleDriveConnect } from "@/components/assets/google-drive-connect";
@@ -47,13 +48,14 @@ export const GoogleDriveIntegration: FC<GoogleDriveIntegrationProps> = ({
   // Not connected state - show connect button
   if (!connection) {
     // Guests cannot connect
-    if (userRole === "guest") return null;
+    if (userRole === UserRole.GUEST) return null;
 
     // If a super admin initiates the connection from the Integrations Hub,
     // treat it the same as connecting from the Settings page by omitting
     // the clientId. The backend will interpret a missing clientId as a
     // tenant-wide (super-admin) connection.
-    const connectClientId = userRole === "super_admin" ? undefined : clientId;
+    const connectClientId =
+      userRole === UserRole.SUPER_ADMIN ? undefined : clientId;
 
     return (
       <div className="space-y-4">

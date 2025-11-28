@@ -37,6 +37,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
   const { user } = useAuth();
+  const { can } = usePermissions();
   const [showGoogleFontPicker, setShowGoogleFontPicker] = useState(false);
   const [showAdobeFontPicker, setShowAdobeFontPicker] = useState(false);
   const [showCustomFontPicker, setShowCustomFontPicker] = useState(false);
@@ -97,6 +98,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     });
   };
 
+  const isAbleToEdit = can("update", "brand_assets");
+
   if (!user) return null;
 
   // Validate clientId is available
@@ -116,9 +119,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       </div>
     );
   }
-
-  const { can } = usePermissions();
-  const isAbleToEdit = can("edit", "fonts");
 
   // Fallback Google Fonts data
   const allGoogleFonts: ProcessedGoogleFont[] = [

@@ -1,13 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  ArrowUpDown,
-  Code,
-  Moon,
-  Palette,
-  Save,
-  Sun,
-  Type,
-} from "lucide-react";
+import { ArrowUpDown, Code, Moon, Palette, Sun, Type } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -96,7 +88,7 @@ export default function DesignBuilder() {
   const [activeTab, setActiveTab] = useState("theme");
   const { user, isLoading } = useAuth();
   const { can } = usePermissions();
-  const canEdit = can("edit", "design_system");
+  const canEdit = can("update", "type_scales");
 
   // Fetch theme data directly from API without applying to DOM
   useEffect(() => {
@@ -142,7 +134,7 @@ export default function DesignBuilder() {
   });
 
   // Handle form submission - disabled for now
-  const onSubmit = async (values: z.infer<typeof themeFormSchema>) => {
+  const onSubmit = async (_values: z.infer<typeof themeFormSchema>) => {
     toast({
       title: "Feature Coming Soon",
       description:
