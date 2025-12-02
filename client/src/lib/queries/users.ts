@@ -1,6 +1,13 @@
-import type { InviteUserForm, UpdateUserRoleForm, User } from "@shared/schema";
+import type {
+  Client,
+  Invitation,
+  InviteUserForm,
+  UpdateUserRoleForm,
+  User,
+} from "@shared/schema";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 import { getUserFriendlyErrorMessage } from "@/lib/errorMessages";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -8,44 +15,37 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 export function useUsersQuery() {
   return useQuery<User[]>({
     queryKey: ["/api/users"],
-    queryFn: async () => {
-      const response = await fetch("/api/users");
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-      return response.json();
-    },
+    queryFn: () => apiFetch<User[]>("/api/users"),
   });
 }
 
 // Get pending invitations
 export function usePendingInvitationsQuery() {
-  return useQuery({
+  return useQuery<Invitation[]>({
     queryKey: ["/api/invitations"],
     queryFn: async () => {
-      const response = await fetch("/api/invitations");
-      if (!response.ok) {
-        if (response.status === 403) {
+      try {
+        return await apiFetch<Invitation[]>("/api/invitations");
+      } catch (error: unknown) {
+        // Return empty array for 403 (forbidden) errors
+        if (error instanceof Error && error.message.includes("403")) {
           return [];
         }
-        throw new Error("Failed to fetch pending invitations");
+        throw error;
       }
-      return response.json();
     },
   });
 }
 
 // Get client assignments for users
 export function useUserClientAssignmentsQuery(userIds: number[]) {
-  return useQuery({
+  return useQuery<Record<number, Client[]>>({
     queryKey: ["/api/users/client-assignments"],
     queryFn: async () => {
       try {
-        const response = await fetch(`/api/users/client-assignments`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch client assignments");
-        }
-        return await response.json();
+        return await apiFetch<Record<number, Client[]>>(
+          "/api/users/client-assignments"
+        );
       } catch (error: unknown) {
         console.error(
           "Failed to fetch client assignments:",

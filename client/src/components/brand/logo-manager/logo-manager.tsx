@@ -1,4 +1,4 @@
-import { type BrandAsset, LogoType, UserRole } from "@shared/schema";
+import { type BrandAsset, LogoType } from "@shared/schema";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -197,10 +197,10 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
 
       {visibleSections.map((type) => {
         const logosForType = logosByType[type] || [];
-        const isGuest = user?.role === UserRole.GUEST;
+        const canUpload = can(PermissionAction.CREATE, Resource.BRAND_ASSETS);
 
-        // Hide empty sections for guest users since they can't upload
-        if (isGuest && logosForType.length === 0) {
+        // Hide empty sections if user can't upload
+        if (!canUpload && logosForType.length === 0) {
           return null;
         }
 

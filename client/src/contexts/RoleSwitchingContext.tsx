@@ -1,4 +1,5 @@
 import { UserRole, type UserRoleType } from "@shared/schema";
+import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import {
   createContext,
@@ -9,26 +10,14 @@ import {
 } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
-interface ViewingUser {
-  id: number;
-  name: string;
-  email: string;
-  role: UserRoleType;
-  client_id?: number | null;
-}
-
 interface RoleSwitchingContextType {
   currentViewingRole: UserRoleType;
   actualUserRole: UserRoleType;
-  currentViewingUser: ViewingUser | null;
   switchRole: (role: UserRoleType) => void;
-  switchToUser: (user: ViewingUser) => void;
   resetRole: () => void;
   isRoleSwitched: boolean;
-  isUserSwitched: boolean;
   isReady: boolean; // role switching state is initialized and ready to use
   canAccessCurrentPage: (role: UserRoleType) => boolean;
-  getEffectiveClientId: () => number | null;
 }
 
 const RoleSwitchingContext = createContext<
@@ -41,11 +30,10 @@ export function RoleSwitchingProvider({
   children: React.ReactNode;
 }) {
   const { user, isLoading } = useAuth();
+  const queryClient = useQueryClient();
   const [currentViewingRole, setCurrentViewingRole] = useState<UserRoleType>(
     UserRole.GUEST
   );
-  const [currentViewingUser, setCurrentViewingUser] =
-    useState<ViewingUser | null>(null);
   const [isReady, setIsReady] = useState(false);
   const actualUserRole = user?.role || UserRole.GUEST;
 
@@ -55,35 +43,19 @@ export function RoleSwitchingProvider({
 
     if (user && user.role === UserRole.SUPER_ADMIN) {
       const persistedRole = sessionStorage.getItem("ferdinand_viewing_role");
-      const persistedUser = sessionStorage.getItem("ferdinand_viewing_user");
 
-      if (persistedUser) {
-        try {
-          const parsedUser = JSON.parse(persistedUser);
-          setCurrentViewingUser(parsedUser);
-          setCurrentViewingRole(parsedUser.role);
-        } catch (e: unknown) {
-          console.error("Error parsing persisted user:", e);
-          sessionStorage.removeItem("ferdinand_viewing_user");
-          setCurrentViewingUser(null);
-          setCurrentViewingRole(UserRole.SUPER_ADMIN);
-        }
-      } else if (
+      if (
         persistedRole &&
         Object.values(UserRole).includes(persistedRole as UserRoleType)
       ) {
-        setCurrentViewingUser(null);
         setCurrentViewingRole(persistedRole as UserRoleType);
       } else {
-        setCurrentViewingUser(null);
         setCurrentViewingRole(UserRole.SUPER_ADMIN);
       }
     } else {
       // Not super admin: role switching disabled; use actual role and clear persisted values
-      setCurrentViewingUser(null);
       setCurrentViewingRole(actualUserRole);
       sessionStorage.removeItem("ferdinand_viewing_role");
-      sessionStorage.removeItem("ferdinand_viewing_user");
     }
 
     setIsReady(true);
@@ -93,42 +65,46 @@ export function RoleSwitchingProvider({
   useEffect(() => {
     if (!isReady) return;
     if (user?.role === UserRole.SUPER_ADMIN) {
-      if (currentViewingUser) {
-        sessionStorage.setItem(
-          "ferdinand_viewing_user",
-          JSON.stringify(currentViewingUser)
+      sessionStorage.setItem("ferdinand_viewing_role", currentViewingRole);
+    }
+  }, [isReady, currentViewingRole, user?.role]);
+
+  // Invalidate queries that depend on role/permissions
+  const invalidateRoleRelatedQueries = useCallback(() => {
+    queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        if (typeof key !== "string") return false;
+        // Invalidate queries that fetch role-dependent data
+        return (
+          key.startsWith("/api/clients") ||
+          key.startsWith("/api/assets") ||
+          key.startsWith("/api/users") ||
+          key.startsWith("/api/invitations")
         );
-        sessionStorage.removeItem("ferdinand_viewing_role");
-      } else {
-        sessionStorage.setItem("ferdinand_viewing_role", currentViewingRole);
-        sessionStorage.removeItem("ferdinand_viewing_user");
+      },
+    });
+  }, [queryClient]);
+
+  const switchRole = useCallback(
+    (role: UserRoleType) => {
+      if (user?.role === UserRole.SUPER_ADMIN) {
+        setCurrentViewingRole(role);
+        // Invalidate role-related queries to force fresh data fetch with new role
+        invalidateRoleRelatedQueries();
       }
-    }
-  }, [isReady, currentViewingRole, currentViewingUser, user?.role]);
-
-  const switchRole = (role: UserRoleType) => {
-    if (user?.role === UserRole.SUPER_ADMIN) {
-      setCurrentViewingRole(role);
-      setCurrentViewingUser(null);
-    }
-  };
-
-  const switchToUser = (viewingUser: ViewingUser) => {
-    if (user?.role === UserRole.SUPER_ADMIN) {
-      setCurrentViewingUser(viewingUser);
-      setCurrentViewingRole(viewingUser.role);
-    }
-  };
+    },
+    [user?.role, invalidateRoleRelatedQueries]
+  );
 
   const resetRole = useCallback(() => {
     setCurrentViewingRole(actualUserRole);
-    setCurrentViewingUser(null);
     sessionStorage.removeItem("ferdinand_viewing_role");
-    sessionStorage.removeItem("ferdinand_viewing_user");
-  }, [actualUserRole]);
+    // Invalidate role-related queries to force fresh data fetch with actual role
+    invalidateRoleRelatedQueries();
+  }, [actualUserRole, invalidateRoleRelatedQueries]);
 
   const isRoleSwitched = currentViewingRole !== actualUserRole;
-  const isUserSwitched = currentViewingUser !== null;
 
   // Determine if a role can access the current page
   const canAccessCurrentPage = useCallback((role: UserRoleType): boolean => {
@@ -170,10 +146,7 @@ export function RoleSwitchingProvider({
   // Auto-revert when navigating to restricted pages
   useEffect(() => {
     const handleRouteChange = () => {
-      if (
-        (isRoleSwitched || isUserSwitched) &&
-        !canAccessCurrentPage(currentViewingRole)
-      ) {
+      if (isRoleSwitched && !canAccessCurrentPage(currentViewingRole)) {
         resetRole();
       }
     };
@@ -191,39 +164,16 @@ export function RoleSwitchingProvider({
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [
-    currentViewingRole,
-    isRoleSwitched,
-    isUserSwitched,
-    resetRole,
-    canAccessCurrentPage,
-  ]);
-
-  // Get the effective client ID for data filtering
-  const getEffectiveClientId = (): number | null => {
-    if (currentViewingUser) {
-      // If viewing as a specific user, use their client ID for filtering
-      return currentViewingUser.id;
-    }
-
-    // If just role switching (not user switching), the client ID should be managed
-    // through the userClients relationship instead of user.client_id
-    // For now, return null to indicate no direct client association
-    return null;
-  };
+  }, [currentViewingRole, isRoleSwitched, resetRole, canAccessCurrentPage]);
 
   const value: RoleSwitchingContextType = {
     currentViewingRole,
     actualUserRole,
-    currentViewingUser,
     switchRole,
-    switchToUser,
     resetRole,
     isRoleSwitched,
-    isUserSwitched,
     isReady,
     canAccessCurrentPage,
-    getEffectiveClientId,
   };
 
   return (

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { apiFetch, apiUpload } from "@/lib/api";
 import { apiRequest } from "../queryClient";
 
 // Types for assets
@@ -85,51 +86,27 @@ export const useAssetsQuery = (filters?: AssetFilters) => {
 
   return useQuery<Asset[]>({
     queryKey: ["/api/assets", filters],
-    queryFn: async () => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Failed to fetch assets");
-      }
-      return response.json();
-    },
+    queryFn: () => apiFetch<Asset[]>(url),
   });
 };
 
 export const useAssetQuery = (assetId: number | null) =>
   useQuery<Asset>({
     queryKey: [`/api/assets/${assetId}`],
-    queryFn: async () => {
-      const response = await fetch(`/api/assets/${assetId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch asset");
-      }
-      return response.json();
-    },
+    queryFn: () => apiFetch<Asset>(`/api/assets/${assetId}`),
     enabled: !!assetId,
   });
 
 export const useAssetCategoriesQuery = () =>
   useQuery<AssetCategory[]>({
     queryKey: ["/api/asset-categories"],
-    queryFn: async () => {
-      const response = await fetch("/api/asset-categories");
-      if (!response.ok) {
-        throw new Error("Failed to fetch asset categories");
-      }
-      return response.json();
-    },
+    queryFn: () => apiFetch<AssetCategory[]>("/api/asset-categories"),
   });
 
 export const useAssetTagsQuery = () =>
   useQuery<AssetTag[]>({
     queryKey: ["/api/asset-tags"],
-    queryFn: async () => {
-      const response = await fetch("/api/asset-tags");
-      if (!response.ok) {
-        throw new Error("Failed to fetch asset tags");
-      }
-      return response.json();
-    },
+    queryFn: () => apiFetch<AssetTag[]>("/api/asset-tags"),
   });
 
 // Mutation hooks
@@ -138,16 +115,7 @@ export const useUploadAssetMutation = () => {
 
   return useMutation({
     mutationFn: async (formData: FormData) => {
-      const response = await fetch("/api/assets/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to upload asset");
-      }
-
+      const response = await apiUpload("/api/assets/upload", formData);
       return response.json();
     },
     onSuccess: () => {
@@ -496,15 +464,10 @@ export const useAssetPublicLinksQuery = (
 ) =>
   useQuery<AssetPublicLink[]>({
     queryKey: [`/api/clients/${clientId}/assets/${assetId}/public-links`],
-    queryFn: async () => {
-      const response = await fetch(
+    queryFn: () =>
+      apiFetch<AssetPublicLink[]>(
         `/api/clients/${clientId}/assets/${assetId}/public-links`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch public links");
-      }
-      return response.json();
-    },
+      ),
     enabled: !!clientId && !!assetId,
   });
 

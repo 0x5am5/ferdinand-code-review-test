@@ -36,7 +36,7 @@ import {
   UserCircle,
   Users,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation } from "wouter";
 import { UserManager } from "@/components/client/user-manager";
@@ -74,7 +74,6 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -144,7 +143,6 @@ function ClientLogo({
 export default function Dashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { currentViewingUser, isUserSwitched } = useRoleSwitching();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | "custom">(
     "custom"
@@ -188,19 +186,8 @@ export default function Dashboard() {
   const deleteClient = useDeleteClientMutation();
   const [orderedClients, setOrderedClients] = useState<Client[]>([]);
 
-  // Filter clients based on current viewing user
-  const clients = React.useMemo(() => {
-    if (!allClients) return [];
-
-    // If viewing as a specific user, filter by their client access
-    if (isUserSwitched && currentViewingUser) {
-      // For user switching, we should show all clients they have access to
-      // The userClients relationship is handled elsewhere
-      return allClients;
-    }
-
-    return allClients;
-  }, [allClients, isUserSwitched, currentViewingUser]);
+  // Use all clients directly
+  const clients = allClients || [];
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;

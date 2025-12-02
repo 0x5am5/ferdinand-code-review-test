@@ -37,14 +37,29 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
+/**
+ * Makes an API request and returns the raw Response object.
+ * Use for cases where you need to call .json() on the result yourself.
+ * For new code, prefer apiRequest from @/lib/api which returns parsed JSON.
+ */
+async function apiRequestRaw(
   method: string,
   url: string,
   data?: unknown | undefined
 ): Promise<Response> {
+  const headers: HeadersInit = data
+    ? { "Content-Type": "application/json" }
+    : {};
+
+  // Add viewing role header for super admin role switching
+  const viewingRole = sessionStorage.getItem("ferdinand_viewing_role");
+  if (viewingRole) {
+    headers["X-Viewing-Role"] = viewingRole;
+  }
+
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -53,14 +68,27 @@ export async function apiRequest(
   return res;
 }
 
+// Export apiRequestRaw and also as apiRequest for backward compatibility
+// New code should prefer apiRequest from @/lib/api which returns parsed JSON
+export { apiRequestRaw, apiRequestRaw as apiRequest };
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const headers: HeadersInit = {};
+
+    // Add viewing role header for super admin role switching
+    const viewingRole = sessionStorage.getItem("ferdinand_viewing_role");
+    if (viewingRole) {
+      headers["X-Viewing-Role"] = viewingRole;
+    }
+
     const res = await fetch(queryKey[0] as string, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

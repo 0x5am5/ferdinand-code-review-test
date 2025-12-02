@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
+import { apiFetch, apiRequest } from "@/lib/api";
 
 // Types for Google Drive integration
 export interface GoogleDriveConnection {
@@ -29,14 +30,17 @@ export const useGoogleDriveConnectionQuery = () =>
   useQuery<GoogleDriveConnection | null>({
     queryKey: ["/api/google-drive/status"],
     queryFn: async () => {
-      const response = await fetch("/api/google-drive/status");
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // No connection found
+      try {
+        return await apiFetch<GoogleDriveConnection>(
+          "/api/google-drive/status"
+        );
+      } catch (error: unknown) {
+        // Return null for 404 (no connection found)
+        if (error instanceof Error && error.message.includes("404")) {
+          return null;
         }
-        throw new Error("Failed to fetch Google Drive connection status");
+        throw error;
       }
-      return response.json();
     },
     retry: false, // Don't retry on 404
   });
@@ -48,32 +52,32 @@ export const useGoogleDriveTokenQuery = (options?: { enabled?: boolean }) => {
   return useQuery<{ accessToken: string; expiresAt: Date } | null>({
     queryKey: ["/api/google-drive/token"],
     queryFn: async () => {
-      const response = await fetch("/api/google-drive/token");
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // No connection found
-        }
-        if (response.status === 401) {
-          // Token refresh failed, connection was deleted
-          // Invalidate connection query to update UI
-          queryClient.invalidateQueries({
-            queryKey: ["/api/google-drive/status"],
-          });
-
-          const error = await response.json();
-          if (error.requiresReauth) {
+      try {
+        return await apiFetch<{ accessToken: string; expiresAt: Date }>(
+          "/api/google-drive/token"
+        );
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          // Return null for 404 (no connection found)
+          if (error.message.includes("404")) {
+            return null;
+          }
+          // Handle 401 - token refresh failed
+          if (error.message.includes("401")) {
+            queryClient.invalidateQueries({
+              queryKey: ["/api/google-drive/status"],
+            });
             toast({
               title: "Google Drive Disconnected",
               description:
                 "Your connection expired. Please reconnect to continue using Google Drive.",
               variant: "destructive",
             });
+            return null;
           }
-          return null;
         }
-        throw new Error("Failed to fetch Google Drive access token");
+        throw error;
       }
-      return response.json();
     },
     retry: false,
     enabled: options?.enabled ?? false, // Only fetch when explicitly requested
@@ -89,11 +93,7 @@ export const useGoogleDriveConnectMutation = () => {
         ? `/api/auth/google/url?clientId=${clientId}`
         : "/api/auth/google/url";
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Failed to get Google authorization URL");
-      }
-      const { url: authUrl } = await response.json();
+      const { url: authUrl } = await apiFetch<{ url: string }>(url);
 
       // Redirect to Google OAuth consent screen
       window.location.href = authUrl;
@@ -114,14 +114,7 @@ export const useGoogleDriveDisconnectMutation = () => {
 
   return useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/google-drive/disconnect", {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to disconnect Google Drive");
-      }
-      return response.json();
+      return await apiRequest("DELETE", "/api/google-drive/disconnect");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/google-drive/status"] });
@@ -160,11 +153,20 @@ export const useGoogleDriveImportMutation = () => {
     }
   >({
     mutationFn: async ({ files, clientId, onProgress }) => {
+      // Note: This endpoint uses Server-Sent Events for progress, so we need to use fetch directly
+      // but we add the viewing role header manually
+      const viewingRole = sessionStorage.getItem("ferdinand_viewing_role");
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      if (viewingRole) {
+        headers["X-Viewing-Role"] = viewingRole;
+      }
+
       const response = await fetch("/api/google-drive/import", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
+        credentials: "include",
         body: JSON.stringify({
           files: files.map((file) => ({
             id: file.id,
@@ -322,14 +324,17 @@ export const useGoogleDriveTokenQueryWithRefresh = () => {
   const baseQuery = useQuery<{ accessToken: string; expiresAt: Date } | null>({
     queryKey: ["/api/google-drive/token"],
     queryFn: async () => {
-      const response = await fetch("/api/google-drive/token");
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // No connection found
+      try {
+        return await apiFetch<{ accessToken: string; expiresAt: Date }>(
+          "/api/google-drive/token"
+        );
+      } catch (error: unknown) {
+        // Return null for 404 (no connection found)
+        if (error instanceof Error && error.message.includes("404")) {
+          return null;
         }
-        throw new Error("Failed to fetch Google Drive access token");
+        throw error;
       }
-      return response.json();
     },
     retry: false,
     enabled: false, // Only fetch when explicitly requested

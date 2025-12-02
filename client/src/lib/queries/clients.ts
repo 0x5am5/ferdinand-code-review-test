@@ -1,6 +1,7 @@
 import type { BrandAsset, Client, User, UserPersona } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 import { apiRequest } from "../queryClient";
 
 export const useClientsQuery = () =>
@@ -11,13 +12,7 @@ export const useClientsQuery = () =>
 export function useFilteredClientsQuery() {
   return useQuery<Client[]>({
     queryKey: ["/api/clients/filtered"],
-    queryFn: async () => {
-      const response = await fetch("/api/clients/filtered");
-      if (!response.ok) {
-        throw new Error("Failed to fetch filtered clients");
-      }
-      return response.json();
-    },
+    queryFn: () => apiFetch<Client[]>("/api/clients/filtered"),
   });
 }
 
@@ -42,13 +37,7 @@ export const useClientPersonasById = (clientId: number | null) =>
 export const useClientUsersQuery = (clientId: number | null) =>
   useQuery<User[]>({
     queryKey: [`/api/clients/${clientId}/users`],
-    queryFn: async () => {
-      const response = await fetch(`/api/clients/${clientId}/users`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch client users");
-      }
-      return response.json();
-    },
+    queryFn: () => apiFetch<User[]>(`/api/clients/${clientId}/users`),
     enabled: !!clientId,
   });
 

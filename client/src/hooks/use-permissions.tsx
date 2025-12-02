@@ -9,7 +9,9 @@ import {
   Resource,
   type ResourceType,
 } from "@shared/permissions";
+import { UserRole } from "@shared/schema";
 import { useMemo } from "react";
+import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
 import { useAuth } from "./use-auth";
 
 export interface UsePermissionsResult {
@@ -91,10 +93,16 @@ export interface UsePermissionsResult {
  * }
  */
 export function usePermissions(): UsePermissionsResult {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { currentViewingRole, isReady } = useRoleSwitching();
 
   const result = useMemo(() => {
-    const role = user?.role || null;
+    // Use switched role for super_admins, actual role for others
+    const role =
+      user?.role === UserRole.SUPER_ADMIN
+        ? currentViewingRole
+        : user?.role || null;
+
     const isAuthenticated = !!user;
     const userId = user?.id || 0;
 
@@ -128,9 +136,9 @@ export function usePermissions(): UsePermissionsResult {
       canManageClients: role ? canManageClients(role) : false,
       role,
       isAuthenticated,
-      isLoading,
+      isLoading: authLoading || !isReady,
     };
-  }, [user, isLoading]);
+  }, [user, authLoading, currentViewingRole, isReady]);
 
   return result;
 }

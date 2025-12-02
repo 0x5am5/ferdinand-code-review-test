@@ -9,6 +9,7 @@ import { and, eq } from "drizzle-orm";
 import type { Express } from "express";
 import { db } from "../db";
 import { requireAuth } from "../middlewares/auth";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { storage } from "../storage";
 
 export function registerTypeScalesRoutes(app: Express) {
@@ -95,9 +96,9 @@ export function registerTypeScalesRoutes(app: Express) {
   app.post(
     "/api/clients/:clientId/type-scales",
     requireAuth,
+    requireMinimumRole(UserRole.EDITOR),
     async (req, res) => {
       try {
-        // Permission check: only editors, admins and super admins can create type scales
         if (!req.session.userId) {
           return res.status(401).json({ error: "Not authenticated" });
         }
@@ -105,16 +106,6 @@ export function registerTypeScalesRoutes(app: Express) {
         const user = await storage.getUser(req.session.userId);
         if (!user) {
           return res.status(401).json({ error: "User not found" });
-        }
-
-        if (
-          user.role !== UserRole.EDITOR &&
-          user.role !== UserRole.ADMIN &&
-          user.role !== UserRole.SUPER_ADMIN
-        ) {
-          return res.status(403).json({
-            error: "Insufficient permissions to create type scales",
-          });
         }
 
         const clientId = parseInt(req.params.clientId, 10);
@@ -175,113 +166,87 @@ export function registerTypeScalesRoutes(app: Express) {
   );
 
   // Update a type scale
-  app.patch("/api/type-scales/:id", requireAuth, async (req, res) => {
-    try {
-      // Permission check: only editors, admins and super admins can update type scales
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Not authenticated" });
+  app.patch(
+    "/api/type-scales/:id",
+    requireAuth,
+    requireMinimumRole(UserRole.EDITOR),
+    async (req, res) => {
+      try {
+        const id = parseInt(req.params.id, 10);
+
+        if (Number.isNaN(id)) {
+          return res.status(400).json({ error: "Invalid type scale ID" });
+        }
+
+        // Check if type scale exists
+        const existingTypeScale = await storage.getTypeScale(id);
+        if (!existingTypeScale) {
+          return res.status(404).json({ error: "Type scale not found" });
+        }
+
+        // Validate the update data - allow individual styles to pass through
+        const updateData = { ...req.body };
+        delete updateData.clientId; // Remove clientId from updates
+        delete updateData.id; // Remove id from updates
+        delete updateData.createdAt; // Remove createdAt from updates
+
+        // Ensure any timestamp strings are converted to Date objects
+        if (updateData.updatedAt && typeof updateData.updatedAt === "string") {
+          updateData.updatedAt = new Date(updateData.updatedAt);
+        }
+        if (updateData.createdAt && typeof updateData.createdAt === "string") {
+          delete updateData.createdAt; // Don't update createdAt
+        }
+
+        console.log(
+          "Updating type scale with data:",
+          JSON.stringify(updateData, null, 2)
+        );
+
+        const updatedTypeScale = await storage.updateTypeScale(id, updateData);
+        await storage.touchClient(existingTypeScale.clientId);
+        res.json(updatedTypeScale);
+      } catch (error: unknown) {
+        console.error(
+          "Error updating type scale:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ error: "Failed to update type scale" });
       }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ error: "User not found" });
-      }
-
-      if (
-        user.role !== UserRole.EDITOR &&
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
-        return res.status(403).json({
-          error: "Insufficient permissions to update type scales",
-        });
-      }
-
-      const id = parseInt(req.params.id, 10);
-
-      if (Number.isNaN(id)) {
-        return res.status(400).json({ error: "Invalid type scale ID" });
-      }
-
-      // Check if type scale exists
-      const existingTypeScale = await storage.getTypeScale(id);
-      if (!existingTypeScale) {
-        return res.status(404).json({ error: "Type scale not found" });
-      }
-
-      // Validate the update data - allow individual styles to pass through
-      const updateData = { ...req.body };
-      delete updateData.clientId; // Remove clientId from updates
-      delete updateData.id; // Remove id from updates
-      delete updateData.createdAt; // Remove createdAt from updates
-
-      // Ensure any timestamp strings are converted to Date objects
-      if (updateData.updatedAt && typeof updateData.updatedAt === "string") {
-        updateData.updatedAt = new Date(updateData.updatedAt);
-      }
-      if (updateData.createdAt && typeof updateData.createdAt === "string") {
-        delete updateData.createdAt; // Don't update createdAt
-      }
-
-      console.log(
-        "Updating type scale with data:",
-        JSON.stringify(updateData, null, 2)
-      );
-
-      const updatedTypeScale = await storage.updateTypeScale(id, updateData);
-      await storage.touchClient(existingTypeScale.clientId);
-      res.json(updatedTypeScale);
-    } catch (error: unknown) {
-      console.error(
-        "Error updating type scale:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ error: "Failed to update type scale" });
     }
-  });
+  );
 
   // Delete a type scale
-  app.delete("/api/type-scales/:id", requireAuth, async (req, res) => {
-    try {
-      // Permission check: only admins and super admins can delete type scales
-      if (!req.session.userId) {
-        return res.status(401).json({ error: "Not authenticated" });
+  app.delete(
+    "/api/type-scales/:id",
+    requireAuth,
+    requireMinimumRole(UserRole.ADMIN),
+    async (req, res) => {
+      try {
+        const id = parseInt(req.params.id, 10);
+
+        if (Number.isNaN(id)) {
+          return res.status(400).json({ error: "Invalid type scale ID" });
+        }
+
+        // Check if type scale exists
+        const existingTypeScale = await storage.getTypeScale(id);
+        if (!existingTypeScale) {
+          return res.status(404).json({ error: "Type scale not found" });
+        }
+
+        await storage.deleteTypeScale(id);
+        await storage.touchClient(existingTypeScale.clientId);
+        res.status(204).send();
+      } catch (error: unknown) {
+        console.error(
+          "Error deleting type scale:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ error: "Failed to delete type scale" });
       }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(401).json({ error: "User not found" });
-      }
-
-      if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
-        return res.status(403).json({
-          error: "Insufficient permissions to delete type scales",
-        });
-      }
-
-      const id = parseInt(req.params.id, 10);
-
-      if (Number.isNaN(id)) {
-        return res.status(400).json({ error: "Invalid type scale ID" });
-      }
-
-      // Check if type scale exists
-      const existingTypeScale = await storage.getTypeScale(id);
-      if (!existingTypeScale) {
-        return res.status(404).json({ error: "Type scale not found" });
-      }
-
-      await storage.deleteTypeScale(id);
-      await storage.touchClient(existingTypeScale.clientId);
-      res.status(204).send();
-    } catch (error: unknown) {
-      console.error(
-        "Error deleting type scale:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ error: "Failed to delete type scale" });
     }
-  });
+  );
 
   // Generate CSS export for a type scale
   app.post("/api/type-scales/:id/export/css", requireAuth, async (req, res) => {

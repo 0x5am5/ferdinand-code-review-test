@@ -29,8 +29,29 @@ export const requireMinimumRole = (minimumRole: UserRoleType) => {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Check if user's role meets minimum requirement
-      const userHierarchy = ROLE_HIERARCHY[user.role];
+      // Determine effective role (support role switching for super admins)
+      let effectiveRole = user.role;
+
+      // Check for role switching via X-Viewing-Role header (super admins only)
+      if (user.role === UserRole.SUPER_ADMIN) {
+        const viewingRole = req.headers["x-viewing-role"] as
+          | UserRoleType
+          | undefined;
+
+        if (viewingRole) {
+          // Validate viewing role is a valid UserRole enum value
+          if (Object.values(UserRole).includes(viewingRole)) {
+            effectiveRole = viewingRole;
+          } else {
+            return res.status(400).json({
+              message: "Invalid viewing role specified",
+            });
+          }
+        }
+      }
+
+      // Check if effective role meets minimum requirement
+      const userHierarchy = ROLE_HIERARCHY[effectiveRole];
       const minimumHierarchy = ROLE_HIERARCHY[minimumRole];
 
       if (userHierarchy < minimumHierarchy) {

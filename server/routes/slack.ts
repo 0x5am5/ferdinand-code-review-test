@@ -1,25 +1,21 @@
-import pkg, {
-  type BlockAction,
-  LogLevel,
-  type SlackActionMiddlewareArgs,
-} from "@slack/bolt";
-import type { Express, Response } from "express";
-
-const { App, ExpressReceiver } = pkg;
-
-type ActionMiddlewareArgs = SlackActionMiddlewareArgs<BlockAction>;
-
 import {
   insertSlackUserMappingSchema,
   slackUserMappings,
   slackWorkspaces,
 } from "@shared/schema";
+import pkg, {
+  type BlockAction,
+  LogLevel,
+  type SlackActionMiddlewareArgs,
+} from "@slack/bolt";
 import * as dotenv from "dotenv";
 import { and, eq, or } from "drizzle-orm";
+import type { Express, Response } from "express";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { storage } from "../storage";
+import type { SlackInteractionBody } from "../types/slack-types";
 import {
   handleColorSubcommandWithLimit,
   handleFontSubcommandWithLimit,
@@ -32,6 +28,10 @@ import { handleHelpCommand } from "./slack-commands/help-command";
 import { handleLogoCommand } from "./slack-commands/logo-command";
 import { handleSearchCommand } from "./slack-commands/search-command";
 import { handleUnifiedCommand } from "./slack-commands/unified-command";
+
+const { App, ExpressReceiver } = pkg;
+
+type ActionMiddlewareArgs = SlackActionMiddlewareArgs<BlockAction>;
 
 dotenv.config();
 
@@ -93,10 +93,12 @@ function initializeSlackApp() {
       "show_all_colors",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const [clientId, variant] = (
+          body.actions[0] as unknown as { value?: string }
+        ).value?.split("|") || ["", ""];
         // Re-trigger color command with override to show all
         await handleColorSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
           parseInt(clientId, 10),
@@ -109,10 +111,12 @@ function initializeSlackApp() {
       "show_limited_colors",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const [clientId, variant] = (
+          body.actions[0] as unknown as { value?: string }
+        ).value?.split("|") || ["", ""];
         // Re-trigger color command with limit of 3
         await handleColorSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
           parseInt(clientId, 10),
@@ -125,10 +129,12 @@ function initializeSlackApp() {
       "upload_all_logos",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, query] = body.actions[0].value.split("|");
+        const [clientId, query] = (
+          body.actions[0] as unknown as { value?: string }
+        ).value?.split("|") || ["", ""];
         // Re-trigger logo command with override to upload all
         await handleLogoSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           query,
           parseInt(clientId, 10),
@@ -141,10 +147,12 @@ function initializeSlackApp() {
       "upload_limited_logos",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, query] = body.actions[0].value.split("|");
+        const [clientId, query] = (
+          body.actions[0] as unknown as { value?: string }
+        ).value?.split("|") || ["", ""];
         // Re-trigger logo command with limit of 3
         await handleLogoSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           query,
           parseInt(clientId, 10),
@@ -157,10 +165,12 @@ function initializeSlackApp() {
       "process_all_fonts",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const [clientId, variant] = (
+          body.actions[0] as unknown as { value?: string }
+        ).value?.split("|") || ["", ""];
         // Re-trigger font command with override to process all
         await handleFontSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
           parseInt(clientId, 10),
@@ -173,10 +183,12 @@ function initializeSlackApp() {
       "process_limited_fonts",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const [clientId, variant] = (
+          body.actions[0] as unknown as { value?: string }
+        ).value?.split("|") || ["", ""];
         // Re-trigger font command with limit of 3
         await handleFontSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
           parseInt(clientId, 10),
@@ -191,15 +203,17 @@ function initializeSlackApp() {
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
         const actionId = body.actions[0].action_id;
-        const actionValue = body.actions[0].value;
+        const actionValue =
+          (body.actions[0] as unknown as { value?: string }).value || "";
 
+        const slackBody = body as unknown as SlackInteractionBody;
         if (
           actionId === "show_all_colors" ||
           actionId === "show_limited_colors"
         ) {
           const [clientId, variant, limit] = actionValue.split("|");
           await handleColorSubcommandWithLimit(
-            body,
+            slackBody,
             respond,
             variant,
             parseInt(clientId, 10),
@@ -211,7 +225,7 @@ function initializeSlackApp() {
         ) {
           const [clientId, query, limit] = actionValue.split("|");
           await handleLogoSubcommandWithLimit(
-            body,
+            slackBody,
             respond,
             query,
             parseInt(clientId, 10),
@@ -223,7 +237,7 @@ function initializeSlackApp() {
         ) {
           const [clientId, variant, limit] = actionValue.split("|");
           await handleFontSubcommandWithLimit(
-            body,
+            slackBody,
             respond,
             variant,
             parseInt(clientId, 10),

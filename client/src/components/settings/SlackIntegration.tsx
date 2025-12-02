@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card";
 import { useSlackStatusPolling } from "@/hooks/use-slack-status";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch, apiRequest } from "@/lib/api";
 
 interface SlackWorkspace {
   id: number;
@@ -50,13 +51,10 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
       setLoading(true);
 
       // Fetch workspaces
-      const workspacesRes = await fetch(
+      const workspacesData = await apiFetch<SlackWorkspace[]>(
         `/api/clients/${clientId}/slack/workspaces`
       );
-      if (workspacesRes.ok) {
-        const workspacesData = await workspacesRes.json();
-        setWorkspaces(workspacesData);
-      }
+      setWorkspaces(workspacesData);
     } catch (error) {
       console.error("Failed to fetch Slack data:", error);
       toast({
@@ -111,16 +109,10 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
 
   const deactivateWorkspace = async (workspaceId: number) => {
     try {
-      const response = await fetch(
-        `/api/clients/${clientId}/slack/workspaces/${workspaceId}`,
-        {
-          method: "DELETE",
-        }
+      await apiRequest(
+        "DELETE",
+        `/api/clients/${clientId}/slack/workspaces/${workspaceId}`
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to deactivate workspace");
-      }
 
       toast({
         title: "Workspace Deactivated",
@@ -140,16 +132,10 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
 
   const reactivateWorkspace = async (workspaceId: number) => {
     try {
-      const response = await fetch(
-        `/api/clients/${clientId}/slack/workspaces/${workspaceId}/reactivate`,
-        {
-          method: "POST",
-        }
+      await apiRequest(
+        "POST",
+        `/api/clients/${clientId}/slack/workspaces/${workspaceId}/reactivate`
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to reactivate workspace");
-      }
 
       toast({
         title: "Workspace Reactivated",
@@ -169,16 +155,10 @@ export function SlackIntegration({ clientId }: SlackIntegrationProps) {
 
   const deleteWorkspace = async (workspaceId: number) => {
     try {
-      const response = await fetch(
-        `/api/clients/${clientId}/slack/workspaces/${workspaceId}/delete`,
-        {
-          method: "DELETE",
-        }
+      await apiRequest(
+        "DELETE",
+        `/api/clients/${clientId}/slack/workspaces/${workspaceId}/delete`
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete workspace");
-      }
 
       toast({
         title: "Integration Deleted",

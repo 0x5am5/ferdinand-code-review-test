@@ -1343,23 +1343,8 @@ export interface TypeScale {
   headerTextTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
   headerFontStyle?: "normal" | "italic" | "oblique";
   headerTextDecoration?: "none" | "underline" | "overline" | "line-through";
-  individualHeaderStyles?: {
-    h1?: IndividualHeaderStyle;
-    h2?: IndividualHeaderStyle;
-    h3?: IndividualHeaderStyle;
-    h4?: IndividualHeaderStyle;
-    h5?: IndividualHeaderStyle;
-    h6?: IndividualHeaderStyle;
-  };
-  individualBodyStyles?: {
-    "body-large"?: IndividualBodyStyle;
-    body?: IndividualBodyStyle;
-    "body-small"?: IndividualBodyStyle;
-    caption?: IndividualBodyStyle;
-    quote?: IndividualBodyStyle;
-    code?: IndividualBodyStyle;
-    small?: IndividualBodyStyle;
-  };
+  individualHeaderStyles?: Record<string, IndividualHeaderStyle>;
+  individualBodyStyles?: Record<string, IndividualBodyStyle>;
   responsiveSizes?: {
     mobile: { baseSize: number; scaleRatio: number };
     tablet: { baseSize: number; scaleRatio: number };

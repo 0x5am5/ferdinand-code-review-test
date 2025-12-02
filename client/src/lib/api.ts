@@ -1,14 +1,88 @@
+/**
+ * Gets headers with viewing role for super admin role switching
+ */
+function getViewingRoleHeaders(): HeadersInit {
+  const headers: HeadersInit = {};
+  const viewingRole = sessionStorage.getItem("ferdinand_viewing_role");
+  if (viewingRole) {
+    headers["X-Viewing-Role"] = viewingRole;
+  }
+  return headers;
+}
+
+/**
+ * Simple GET request with viewing role header support
+ * Use this for queries that need the X-Viewing-Role header
+ */
+export async function apiFetch<T>(path: string): Promise<T> {
+  const headers = getViewingRoleHeaders();
+
+  const response = await fetch(path, {
+    method: "GET",
+    headers,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    let errorMessage = `HTTP error! status: ${response.status}`;
+    try {
+      const error = await response.json();
+      errorMessage = error.message || errorMessage;
+    } catch {
+      // If response.json() fails, use default error message
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+/**
+ * Upload FormData with viewing role header support
+ * Use this for file uploads that need the X-Viewing-Role header
+ */
+export async function apiUpload(
+  path: string,
+  formData: FormData,
+  method: "POST" | "PATCH" = "POST"
+): Promise<Response> {
+  const headers = getViewingRoleHeaders();
+
+  const response = await fetch(path, {
+    method,
+    headers,
+    body: formData,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Upload failed: ${response.statusText}`;
+    try {
+      const error = await response.json();
+      errorMessage = error.message || errorMessage;
+    } catch {
+      // If response.json() fails, use default error message
+    }
+    throw new Error(errorMessage);
+  }
+
+  return response;
+}
+
 export async function apiRequest<T>(
   method: string,
   path: string,
   data?: unknown,
   options?: { credentials?: RequestCredentials }
 ): Promise<T> {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...getViewingRoleHeaders(),
+  };
+
   const fetchOptions: RequestInit = {
     method,
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     credentials: options?.credentials || "include",
   };
 

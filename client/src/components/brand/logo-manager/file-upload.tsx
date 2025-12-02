@@ -11,6 +11,7 @@ import React, {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { apiUpload } from "@/lib/api";
 
 export interface FileUploadProps {
   type: string;
@@ -72,18 +73,11 @@ export function FileUpload({
           `${type.charAt(0).toUpperCase() + type.slice(1)} Logo (Dark)`
         );
 
-        const response = await fetch(
+        const response = await apiUpload(
           `/api/clients/${clientId}/brand-assets/${parentLogoId}?variant=dark`,
-          {
-            method: "PATCH",
-            body: formData,
-          }
+          formData,
+          "PATCH"
         );
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to update logo");
-        }
 
         return await response.json();
       } else {
@@ -96,15 +90,10 @@ export function FileUpload({
           })
         );
 
-        const response = await fetch(`/api/clients/${clientId}/brand-assets`, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || "Failed to upload logo");
-        }
+        const response = await apiUpload(
+          `/api/clients/${clientId}/brand-assets`,
+          formData
+        );
 
         return await response.json();
       }

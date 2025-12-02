@@ -1,4 +1,4 @@
-import { userClients, UserRole } from "@shared/schema";
+import { UserRole, userClients } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { NextFunction, Request, Response } from "express";
 import { db } from "../db";
@@ -86,4 +86,3 @@ export async function canAdminAccessUser(
     return false;
   }
 }
-
