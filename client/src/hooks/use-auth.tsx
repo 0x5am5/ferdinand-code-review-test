@@ -145,6 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       await signOut(auth);
 
+      // Clear role switching state to prevent residual state after logout
+      sessionStorage.removeItem("ferdinand_viewing_role");
+
       // Clear session on backend using apiRequest (includes proper CSRF headers)
       await apiRequest("POST", "/api/auth/logout", {});
 

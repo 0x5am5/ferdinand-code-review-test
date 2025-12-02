@@ -239,9 +239,9 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
     [uploadImage, toast]
   );
 
-  const isAbleToEdit = can("update", "inspiration_boards");
-
   if (!user) return null;
+
+  const isAbleToEdit = can("update", "inspiration_boards");
 
   return (
     <div>

@@ -136,10 +136,80 @@ Defined in `RoleSwitchingContext.tsx` lines 84-118:
 
 ## Security Considerations
 
+### Critical Security Requirements
+
+The `X-Viewing-Role` header is **treated as untrusted input** and must be validated and authorized on every request.
+
 1. **Super Admin Only**: Only users with `SUPER_ADMIN` role can use role switching
-2. **Header Validation**: Backend validates the viewing role is a valid enum value
+   - Non-super-admin users attempting to use the header will receive a **403 Forbidden** response
+   - This prevents privilege escalation attacks where users manipulate sessionStorage
+
+2. **Header Validation**: Backend validates the viewing role is a valid `UserRole` enum value
+   - Invalid role values result in **403 Forbidden** response
+   - Empty or malformed headers are rejected
+
 3. **Server-Side Enforcement**: All permission checks happen on the backend - frontend is for UX only
+   - The frontend header is never trusted alone
+   - Every request validates the authenticated user's actual role from the database
+   - Authorization decision is made server-side based on actual user permissions
+
 4. **Cannot Escalate**: Super admin can only switch to lower roles, never higher
+   - Effective role is used for permission checks, not actual role
+   - Super admin viewing as GUEST will be denied access to ADMIN-only endpoints
+
+5. **Audit Logging**: All role switching attempts are logged for security monitoring
+   - Logs include: authenticated user ID, requested viewing role, authorization decision, timestamp, request path/method, IP address
+   - Both allowed and denied attempts are logged
+   - Denied attempts are logged at WARN level for security monitoring
+
+### Security Implementation Details
+
+#### Backend Validation (`server/middlewares/requireMinimumRole.ts`)
+
+The middleware implements a `validateViewingRoleHeader()` function that:
+
+1. **Checks user's actual role FIRST** - Verifies user is `SUPER_ADMIN` before processing header
+2. **Validates header value** - Ensures it's a valid `UserRole` enum value
+3. **Logs all attempts** - Records both allowed and denied attempts with full context
+4. **Returns 403 for unauthorized** - Clear error message for privilege escalation attempts
+
+```typescript
+// Security check: Only SUPER_ADMIN can use role switching
+if (userRole !== UserRole.SUPER_ADMIN) {
+  // Log denied attempt
+  logRoleSwitchingAudit({
+    userId,
+    userRole,
+    requestedViewingRole: requestedRole,
+    authorizationDecision: "denied",
+    reason: "Non-super-admin user attempted to use X-Viewing-Role header",
+    // ... additional audit fields
+  });
+  return {
+    allowed: false,
+    effectiveRole: userRole,
+    reason: "Role switching is only available for super administrators",
+  };
+}
+```
+
+#### Audit Logging (`server/utils/audit-logger.ts`)
+
+All role switching events are logged with:
+- **User identification**: User ID, email, actual role
+- **Request details**: Requested viewing role, authorization decision, reason (if denied)
+- **Request context**: Path, HTTP method, IP address, timestamp
+- **Log levels**: INFO for allowed, WARN for denied (for security monitoring)
+
+#### Testing
+
+Comprehensive test suite (`tests/security/role-switching-validation.test.ts`) covers:
+- ✅ Super admin can use role switching (all roles)
+- ✅ Non-super-admin users are denied (prevents privilege escalation)
+- ✅ Invalid role values are rejected
+- ✅ Audit logging is called for all attempts
+- ✅ 403 responses for unauthorized attempts
+- ✅ Effective role permission enforcement
 
 ## Testing the Feature
 

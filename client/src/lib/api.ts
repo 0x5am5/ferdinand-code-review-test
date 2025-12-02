@@ -26,15 +26,49 @@ export async function apiFetch<T>(path: string): Promise<T> {
   if (!response.ok) {
     let errorMessage = `HTTP error! status: ${response.status}`;
     try {
-      const error = await response.json();
-      errorMessage = error.message || errorMessage;
+      const text = await response.text();
+      if (text) {
+        try {
+          const error = JSON.parse(text);
+          errorMessage = error.message || errorMessage;
+        } catch {
+          // If JSON parsing fails, include raw body in error
+          errorMessage = `HTTP error! status: ${response.status}, body: ${text}`;
+        }
+      }
     } catch {
-      // If response.json() fails, use default error message
+      // If response.text() fails, use default error message
     }
     throw new Error(errorMessage);
   }
 
-  return response.json();
+  // Return null for 204 No Content responses or if the response is empty
+  if (
+    response.status === 204 ||
+    response.headers.get("content-length") === "0"
+  ) {
+    return null as unknown as T;
+  }
+
+  // Check if there's content to parse
+  let text: string;
+  try {
+    text = await response.text();
+  } catch (_e) {
+    throw new Error(`Failed to read response text`);
+  }
+
+  if (!text) {
+    return null as unknown as T;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (e: unknown) {
+    throw new Error(
+      `Invalid JSON response (status: ${response.status}): ${text}. Parse error: ${(e as Error).message}`
+    );
+  }
 }
 
 /**
@@ -56,12 +90,20 @@ export async function apiUpload(
   });
 
   if (!response.ok) {
-    let errorMessage = `Upload failed: ${response.statusText}`;
+    let errorMessage = `Upload failed: ${response.statusText} (status: ${response.status})`;
     try {
-      const error = await response.json();
-      errorMessage = error.message || errorMessage;
+      const text = await response.text();
+      if (text) {
+        try {
+          const error = JSON.parse(text);
+          errorMessage = error.message || errorMessage;
+        } catch {
+          // If JSON parsing fails, include raw body in error
+          errorMessage = `Upload failed: status ${response.status}, body: ${text}`;
+        }
+      }
     } catch {
-      // If response.json() fails, use default error message
+      // If response.text() fails, use default error message
     }
     throw new Error(errorMessage);
   }
@@ -95,10 +137,18 @@ export async function apiRequest<T>(
   if (!response.ok) {
     let errorMessage = `HTTP error! status: ${response.status}`;
     try {
-      const error = await response.json();
-      errorMessage = error.message || errorMessage;
+      const text = await response.text();
+      if (text) {
+        try {
+          const error = JSON.parse(text);
+          errorMessage = error.message || errorMessage;
+        } catch {
+          // If JSON parsing fails, include raw body in error
+          errorMessage = `HTTP error! status: ${response.status}, body: ${text}`;
+        }
+      }
     } catch {
-      // If response.json() fails, use default error message
+      // If response.text() fails, use default error message
     }
     throw new Error(errorMessage);
   }

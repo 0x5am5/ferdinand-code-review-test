@@ -23,7 +23,7 @@ type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
 
 const getRoleDisplayName = (role: UserRoleType): string => {
   return role
-    .replace("_", " ")
+    .replace(/_/g, " ")
     .replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 

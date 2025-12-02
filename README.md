@@ -410,7 +410,27 @@ brew services restart postgresql@14
 
 
 ### Testing
+
+#### Test Environment Setup
+
+Before running tests, configure your test environment:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.test.example .env.test
+   ```
+
+2. Edit `.env.test` with your test credentials (use test/development values, not production)
+
+3. **Important**: Never commit `.env.test` to version control - it contains sensitive test credentials
+
+See `tests/README.md` for detailed test setup instructions.
+
+#### Running Tests
 - Run `npm run check` for TypeScript validation
+- Run `npm test` to execute the test suite
+- Run `npm run test:watch` for watch mode
+- Run `npm run test:coverage` for coverage reports
 - Ensure all type errors are resolved before committing
 - Create tests for new features focusing on the current task
 

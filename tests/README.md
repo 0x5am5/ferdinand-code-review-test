@@ -96,9 +96,28 @@ npx tsx tests/file-assets-manual.ts
 
 ### Prerequisites
 1. PostgreSQL database running
-2. Environment variables configured
+2. Environment variables configured (see [Test Environment Setup](#test-environment-setup))
 3. Server running on `http://localhost:3001`
 4. Valid test client in database
+
+### Test Environment Setup
+
+Before running tests, you need to configure your test environment variables:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.test.example .env.test
+   ```
+
+2. Edit `.env.test` and fill in your actual test values:
+   - Database connection string for your test database
+   - Test API keys and secrets (use test/development credentials, not production)
+   - Firebase test project credentials
+   - Other service-specific test credentials
+
+3. **Important**: Never commit `.env.test` to version control. It contains sensitive test credentials.
+
+The `.env.test.example` file in the repository root shows all required environment variables with example/dummy values.
 
 ### Quick Start
 ```bash

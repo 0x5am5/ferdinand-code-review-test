@@ -2313,8 +2313,8 @@ export function ColorManager({
         )} */}
       </div>
       <div className="space-y-8">
-        {/* Hide empty brand colors section if user can't edit */}
-        {!(!canEditColors && brandColorsData.length === 0) && (
+        {/* Show brand colors section if user can edit or if there are brand colors */}
+        {(canEditColors || brandColorsData.length > 0) && (
           <AssetSection
             title="Brand Colors"
             description={colorDescriptions.brand}
@@ -2401,8 +2401,8 @@ export function ColorManager({
           </AssetSection>
         )}
 
-        {/* Hide empty neutral colors section if user can't edit */}
-        {!(!canEditColors && neutralColorsData.length === 0) && (
+        {/* Show neutral colors section if user can edit or if there are neutral colors */}
+        {(canEditColors || neutralColorsData.length > 0) && (
           <AssetSection
             title="Neutral Colors"
             description={colorDescriptions.neutral}
@@ -2497,8 +2497,8 @@ export function ColorManager({
           </AssetSection>
         )}
 
-        {/* Hide empty interactive colors section if user can't edit */}
-        {!(!canEditColors && interactiveColorsData.length === 0) && (
+        {/* Show interactive colors section if user can edit or if there are interactive colors */}
+        {(canEditColors || interactiveColorsData.length > 0) && (
           <AssetSection
             title="Interactive Colors"
             description={colorDescriptions.interactive}

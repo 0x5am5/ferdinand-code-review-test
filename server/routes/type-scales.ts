@@ -184,6 +184,33 @@ export function registerTypeScalesRoutes(app: Express) {
           return res.status(404).json({ error: "Type scale not found" });
         }
 
+        // Verify client access - only users belonging to the owning client may modify its type scales
+        if (!req.session.userId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        const user = await storage.getUser(req.session.userId);
+        if (!user) {
+          return res.status(401).json({ error: "User not found" });
+        }
+
+        // Verify user has access to the client that owns this type scale (unless super admin)
+        if (user.role !== UserRole.SUPER_ADMIN) {
+          const userClient = await db
+            .select()
+            .from(userClients)
+            .where(
+              and(
+                eq(userClients.clientId, existingTypeScale.clientId),
+                eq(userClients.userId, user.id)
+              )
+            );
+
+          if (userClient.length === 0) {
+            return res.status(403).json({ error: "Forbidden" });
+          }
+        }
+
         // Validate the update data - allow individual styles to pass through
         const updateData = { ...req.body };
         delete updateData.clientId; // Remove clientId from updates
@@ -194,14 +221,6 @@ export function registerTypeScalesRoutes(app: Express) {
         if (updateData.updatedAt && typeof updateData.updatedAt === "string") {
           updateData.updatedAt = new Date(updateData.updatedAt);
         }
-        if (updateData.createdAt && typeof updateData.createdAt === "string") {
-          delete updateData.createdAt; // Don't update createdAt
-        }
-
-        console.log(
-          "Updating type scale with data:",
-          JSON.stringify(updateData, null, 2)
-        );
 
         const updatedTypeScale = await storage.updateTypeScale(id, updateData);
         await storage.touchClient(existingTypeScale.clientId);
@@ -233,6 +252,33 @@ export function registerTypeScalesRoutes(app: Express) {
         const existingTypeScale = await storage.getTypeScale(id);
         if (!existingTypeScale) {
           return res.status(404).json({ error: "Type scale not found" });
+        }
+
+        // Verify client access - only users belonging to the owning client may delete its type scales
+        if (!req.session.userId) {
+          return res.status(401).json({ error: "Not authenticated" });
+        }
+
+        const user = await storage.getUser(req.session.userId);
+        if (!user) {
+          return res.status(401).json({ error: "User not found" });
+        }
+
+        // Verify user has access to the client that owns this type scale (unless super admin)
+        if (user.role !== UserRole.SUPER_ADMIN) {
+          const userClient = await db
+            .select()
+            .from(userClients)
+            .where(
+              and(
+                eq(userClients.clientId, existingTypeScale.clientId),
+                eq(userClients.userId, user.id)
+              )
+            );
+
+          if (userClient.length === 0) {
+            return res.status(403).json({ error: "Forbidden" });
+          }
         }
 
         await storage.deleteTypeScale(id);

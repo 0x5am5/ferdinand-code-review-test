@@ -98,7 +98,7 @@ export function registerInvitationRoutes(app: Express) {
               }
 
               // Exclude token from response
-              const { ...safeInvitation } = invitation;
+              const { token: _token, ...safeInvitation } = invitation;
 
               return {
                 ...safeInvitation,
@@ -566,8 +566,10 @@ export function registerInvitationRoutes(app: Express) {
                 }
               }
 
+              const { token: _token, ...safeInvitation } = invitation;
+
               return {
-                ...invitation,
+                ...safeInvitation,
                 clientData,
               };
             }
