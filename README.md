@@ -169,6 +169,46 @@ VALUES (
 | View all users | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Access all clients | ❌ | ❌ | ❌ | ❌ | ✅ |
 
+### Using Permissions in Frontend Code
+
+The application provides a `usePermissions()` hook for checking permissions in React components:
+
+```typescript
+import { usePermissions, PermissionAction, Resource } from '@/hooks/use-permissions';
+
+function MyComponent() {
+  const { can, hasRole, canModify, canManageUsers } = usePermissions();
+
+  // Check if user can perform an action on a resource
+  if (can(PermissionAction.CREATE, Resource.BRAND_ASSETS)) {
+    return <Button>Create Asset</Button>;
+  }
+
+  // Check if user has minimum role
+  if (hasRole(UserRole.EDITOR)) {
+    return <Button>Edit Content</Button>;
+  }
+
+  // Check if user can modify a specific resource (with ownership check)
+  if (canModify(PermissionAction.DELETE, Resource.BRAND_ASSETS, assetOwnerId)) {
+    return <Button>Delete</Button>;
+  }
+
+  // Use pre-computed permission checks
+  if (canManageUsers) {
+    return <UserManagementPanel />;
+  }
+
+  return null;
+}
+```
+
+**Important Notes:**
+- Frontend permission checks are for UX only - always enforce permissions on the backend
+- The hook automatically respects role switching for super admins
+- See `client/src/hooks/use-permissions.tsx` for complete API documentation
+- Backend uses `requireMinimumRole()` middleware from `server/middlewares/requireMinimumRole.ts`
+
 ### Multi-tenant Setup
 
 To associate a user with a specific client organization:

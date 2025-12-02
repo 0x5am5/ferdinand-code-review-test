@@ -49,11 +49,67 @@ All database tables, types, and validation schemas are centralized in `shared/sc
 - TypeScript types inferred from database schema
 - Constants and enums used across the application
 
-### Authentication System
+### Authentication & Authorization System
 - **Frontend**: Firebase Authentication with Google OAuth
 - **Backend**: Firebase Admin SDK for token verification
 - **Sessions**: Express sessions stored in PostgreSQL
 - **Role-based access**: Multi-tenant system with user roles (super_admin, admin, editor, standard, guest)
+- **RBAC Guidelines**: See `RBAC_GUIDELINES.md` for complete permission matrix and implementation patterns
+
+#### RBAC Implementation Rules
+1. **Backend-First Enforcement**: All permission checks MUST be enforced on the backend. Frontend checks are for UX only.
+2. **Use Centralized Middleware**: Use `requireMinimumRole(UserRole.X)` from `server/middlewares/requireMinimumRole.ts`
+3. **Use Permission Hook in Frontend**: Use `usePermissions()` hook from `client/src/hooks/use-permissions.tsx` for frontend checks
+4. **Permission Matrix**: Follow the role hierarchy and permission matrix defined in `RBAC_GUIDELINES.md`
+5. **No Role Hardcoding**: Avoid checking roles directly (e.g., `if (user.role === 'admin')`). Use permission-based checks.
+6. **Ownership Checks**: Editors can only delete/update their own resources. Implement ownership validation in routes.
+
+**Frontend Permission Checking:**
+```typescript
+import { usePermissions, PermissionAction, Resource } from '@/hooks/use-permissions';
+
+// In your component:
+const { can, hasRole, canModify, canManageUsers } = usePermissions();
+
+// Check permissions:
+if (can(PermissionAction.CREATE, Resource.BRAND_ASSETS)) { /* ... */ }
+if (hasRole(UserRole.EDITOR)) { /* ... */ }
+if (canModify(PermissionAction.DELETE, Resource.BRAND_ASSETS, ownerId)) { /* ... */ }
+```
+
+The `usePermissions()` hook automatically:
+- Respects role switching for super admins
+- Returns loading states during authentication
+- Provides convenient permission checking methods
+- Uses the shared permission system from `@shared/permissions`
+
+#### Role Switching System (JUP-38)
+Super admins can temporarily view the application as if they had a different role for testing purposes.
+
+**Architecture:**
+- **Frontend**: Stores viewing role in sessionStorage (`ferdinand_viewing_role`)
+- **HTTP Header**: `X-Viewing-Role` sent with every API request
+- **Backend**: `requireMinimumRole` middleware validates and enforces viewing role
+- **Security**: Only `SUPER_ADMIN` users can use role switching; all attempts are audit logged
+
+**Key Files:**
+- `server/middlewares/requireMinimumRole.ts` - Backend validation and enforcement
+- `server/utils/audit-logger.ts` - Audit logging for role switching events
+- `client/src/contexts/RoleSwitchingContext.tsx` - Frontend state management
+- `client/src/lib/queryClient.ts` & `client/src/lib/api.ts` - Add `X-Viewing-Role` header
+- `tests/security/role-switching-validation.test.ts` - Security test suite
+
+**Security Requirements:**
+- ✅ Only `SUPER_ADMIN` can use role switching (403 for others)
+- ✅ `X-Viewing-Role` header is validated as valid `UserRole` enum
+- ✅ All attempts (allowed/denied) are audit logged with full context
+- ✅ Backend enforces permissions using viewing role, not actual role
+- ✅ Cannot escalate privileges (can only switch to lower roles)
+
+**Documentation:**
+- See `ROLE_SWITCHING_IMPLEMENTATION.md` for complete architecture and implementation details
+- Session storage key: `ferdinand_viewing_role`
+- HTTP header: `X-Viewing-Role`
 
 ### API Architecture
 - RESTful API routes in `server/routes/`
