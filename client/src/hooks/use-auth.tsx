@@ -15,8 +15,9 @@ import {
   useState,
 } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch, apiRequest } from "@/lib/api";
 import { auth, googleProvider } from "@/lib/firebase";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 
 type AuthContextType = {
   user: User | null;
@@ -40,15 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user data from our backend
   const fetchUser = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch("/api/user");
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data);
-        return true;
-      } else {
-        setUser(null);
-        return false;
-      }
+      const data = await apiFetch<User>("/api/user");
+      setUser(data);
+      return true;
     } catch (error: unknown) {
       console.error("Failed to fetch user:", error);
       setUser(null);
@@ -81,20 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const idToken = await fbUser.getIdToken();
 
             // Create session on backend
-            const response = await fetch("/api/auth/google", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ idToken }),
-            });
-
-            if (response.ok) {
+            try {
+              await apiRequest("POST", "/api/auth/google", { idToken });
               // Fetch user data
               await fetchUser();
-            } else {
-              const data = await response.json();
-              setError(new Error(data.message || "Authentication failed"));
+            } catch (authError: unknown) {
+              setError(
+                authError instanceof Error
+                  ? authError
+                  : new Error("Authentication failed")
+              );
               setIsLoading(false);
             }
           } catch (e: unknown) {
@@ -153,6 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoggingOutRef.current = true;
 
       await signOut(auth);
+
+      // Clear role switching state to prevent residual state after logout
+      sessionStorage.removeItem("ferdinand_viewing_role");
 
       // Clear session on backend using apiRequest (includes proper CSRF headers)
       await apiRequest("POST", "/api/auth/logout", {});

@@ -14,13 +14,9 @@ import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { emailService } from "../email-service";
-import {
-  canAdminAccessClient,
-  canAdminAccessUser,
-  requireAdmin,
-  requireSuperAdmin,
-} from "../middlewares/auth";
+import { canAdminAccessClient, canAdminAccessUser } from "../middlewares/auth";
 import { mutationRateLimit } from "../middlewares/rate-limit";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { csrfProtection } from "../middlewares/security-headers";
 import { validateRoleChange } from "../services/user-permissions";
 import { storage } from "../storage";
@@ -291,7 +287,7 @@ export function registerUserRoutes(app: Express) {
   app.patch(
     "/api/users/:id/role",
     csrfProtection,
-    requireAdmin,
+    requireMinimumRole(UserRole.ADMIN),
     async (req, res) => {
       try {
         const id = parseInt(req.params.id, 10);
@@ -438,46 +434,50 @@ export function registerUserRoutes(app: Express) {
   });
 
   // Get clients for a user
-  app.get("/api/users/:id/clients", requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (Number.isNaN(id)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-
-      if (!req.session?.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const currentUser = await storage.getUser(req.session.userId);
-      if (!currentUser) {
-        return res.status(404).json({ message: "Current user not found" });
-      }
-
-      // ADMIN: Verify they can access this user
-      if (currentUser.role === UserRole.ADMIN) {
-        const hasAccess = await canAdminAccessUser(currentUser.id, id);
-        if (!hasAccess) {
-          return res.status(403).json({
-            message: "You can only view users in your assigned clients",
-          });
+  app.get(
+    "/api/users/:id/clients",
+    requireMinimumRole(UserRole.ADMIN),
+    async (req, res) => {
+      try {
+        const id = parseInt(req.params.id, 10);
+        if (Number.isNaN(id)) {
+          return res.status(400).json({ message: "Invalid user ID" });
         }
-      }
 
-      const clients = await storage.getUserClients(id);
-      res.json(clients);
-    } catch (error: unknown) {
-      console.error(
-        "Error fetching user clients:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error fetching user clients" });
+        if (!req.session?.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+        const currentUser = await storage.getUser(req.session.userId);
+        if (!currentUser) {
+          return res.status(404).json({ message: "Current user not found" });
+        }
+
+        // ADMIN: Verify they can access this user
+        if (currentUser.role === UserRole.ADMIN) {
+          const hasAccess = await canAdminAccessUser(currentUser.id, id);
+          if (!hasAccess) {
+            return res.status(403).json({
+              message: "You can only view users in your assigned clients",
+            });
+          }
+        }
+
+        const clients = await storage.getUserClients(id);
+        res.json(clients);
+      } catch (error: unknown) {
+        console.error(
+          "Error fetching user clients:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error fetching user clients" });
+      }
     }
-  });
+  );
 
   // Get all client assignments for all users (SUPER_ADMIN only)
   app.get(
     "/api/users/client-assignments",
-    requireSuperAdmin,
+    requireMinimumRole(UserRole.SUPER_ADMIN),
     async (_req, res) => {
       try {
         // Get all users
@@ -509,7 +509,7 @@ export function registerUserRoutes(app: Express) {
   app.post(
     "/api/user-clients",
     csrfProtection,
-    requireAdmin,
+    requireMinimumRole(UserRole.ADMIN),
     async (req, res) => {
       try {
         const { userId, clientId } = req.body;
@@ -668,7 +668,7 @@ export function registerUserRoutes(app: Express) {
   // Get users for a specific client
   app.get(
     "/api/clients/:clientId/users",
-    requireAdmin,
+    requireMinimumRole(UserRole.ADMIN),
     validateClientId,
     async (req: RequestWithClientId, res) => {
       try {

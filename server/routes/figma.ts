@@ -1,6 +1,7 @@
 import { insertFigmaConnectionSchema, UserRole } from "@shared/schema";
 import type { Express } from "express";
 import { z } from "zod";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { storage } from "../storage";
 
 // Figma API Base URL
@@ -197,80 +198,68 @@ export function registerFigmaRoutes(app: Express) {
   });
 
   // Connect a Figma file to a client
-  app.post("/api/figma/connections", async (req, res) => {
-    try {
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Only allow editors, admins, and super admins to create connections
-      if (
-        user.role !== UserRole.EDITOR &&
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
-        return res.status(403).json({
-          message: "Insufficient permissions to create Figma connections",
-        });
-      }
-
-      const validatedData = insertFigmaConnectionSchema.parse({
-        ...req.body,
-        userId: req.session.userId,
-      });
-
-      // Test the connection before saving
-      const testResponse = await fetch(
-        `${FIGMA_API_BASE}/files/${validatedData.figmaFileKey}`,
-        {
-          headers: {
-            "X-Figma-Token": validatedData.accessToken,
-          },
+  app.post(
+    "/api/figma/connections",
+    requireMinimumRole(UserRole.EDITOR),
+    async (req, res) => {
+      try {
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
         }
-      );
 
-      if (!testResponse.ok) {
-        return res.status(400).json({
-          message: "Unable to access Figma file with provided token",
+        const validatedData = insertFigmaConnectionSchema.parse({
+          ...req.body,
+          userId: req.session.userId,
         });
+
+        // Test the connection before saving
+        const testResponse = await fetch(
+          `${FIGMA_API_BASE}/files/${validatedData.figmaFileKey}`,
+          {
+            headers: {
+              "X-Figma-Token": validatedData.accessToken,
+            },
+          }
+        );
+
+        if (!testResponse.ok) {
+          return res.status(400).json({
+            message: "Unable to access Figma file with provided token",
+          });
+        }
+
+        const fileData = await testResponse.json();
+
+        // Update the connection with actual file name if different
+        validatedData.figmaFileName =
+          fileData.name || validatedData.figmaFileName;
+
+        const connection = await storage.createFigmaConnection(validatedData);
+        await storage.touchClient(validatedData.clientId);
+
+        // Remove sensitive data from response
+        const sanitizedConnection = {
+          ...connection,
+          accessToken: "[REDACTED]",
+          refreshToken: connection.refreshToken ? "[REDACTED]" : null,
+        };
+
+        res.json(sanitizedConnection);
+      } catch (error: unknown) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({
+            message: "Invalid data",
+            errors: error.errors,
+          });
+        }
+        console.error(
+          "Error creating Figma connection:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error creating Figma connection" });
       }
-
-      const fileData = await testResponse.json();
-
-      // Update the connection with actual file name if different
-      validatedData.figmaFileName =
-        fileData.name || validatedData.figmaFileName;
-
-      const connection = await storage.createFigmaConnection(validatedData);
-      await storage.touchClient(validatedData.clientId);
-
-      // Remove sensitive data from response
-      const sanitizedConnection = {
-        ...connection,
-        accessToken: "[REDACTED]",
-        refreshToken: connection.refreshToken ? "[REDACTED]" : null,
-      };
-
-      res.json(sanitizedConnection);
-    } catch (error: unknown) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          message: "Invalid data",
-          errors: error.errors,
-        });
-      }
-      console.error(
-        "Error creating Figma connection:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error creating Figma connection" });
     }
-  });
+  );
 
   // Get design tokens from a Figma file
   app.get("/api/figma/connections/:connectionId/tokens", async (req, res) => {
@@ -344,28 +333,13 @@ export function registerFigmaRoutes(app: Express) {
   // Sync design tokens from Figma to Ferdinand
   app.post(
     "/api/figma/connections/:connectionId/sync-from-figma",
+    requireMinimumRole(UserRole.EDITOR),
     async (req, res) => {
       try {
         const { connectionId } = req.params;
 
         if (!req.session.userId) {
           return res.status(401).json({ message: "Not authenticated" });
-        }
-
-        const user = await storage.getUser(req.session.userId);
-        if (!user) {
-          return res.status(404).json({ message: "User not found" });
-        }
-
-        // Only allow editors, admins, and super admins to sync
-        if (
-          user.role !== UserRole.EDITOR &&
-          user.role !== UserRole.ADMIN &&
-          user.role !== UserRole.SUPER_ADMIN
-        ) {
-          return res.status(403).json({
-            message: "Insufficient permissions to sync design tokens",
-          });
         }
 
         const connection = await storage.getFigmaConnection(
@@ -505,49 +479,39 @@ export function registerFigmaRoutes(app: Express) {
   );
 
   // Delete a Figma connection
-  app.delete("/api/figma/connections/:connectionId", async (req, res) => {
-    try {
-      const { connectionId } = req.params;
+  app.delete(
+    "/api/figma/connections/:connectionId",
+    requireMinimumRole(UserRole.EDITOR),
+    async (req, res) => {
+      try {
+        const { connectionId } = req.params;
 
-      if (!req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
+        if (!req.session.userId) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+
+        const connection = await storage.getFigmaConnection(
+          parseInt(connectionId, 10)
+        );
+        if (!connection) {
+          return res
+            .status(404)
+            .json({ message: "Figma connection not found" });
+        }
+
+        await storage.deleteFigmaConnection(parseInt(connectionId, 10));
+        await storage.touchClient(connection.clientId);
+
+        res.json({ message: "Figma connection deleted successfully" });
+      } catch (error: unknown) {
+        console.error(
+          "Error deleting Figma connection:",
+          error instanceof Error ? error.message : "Unknown error"
+        );
+        res.status(500).json({ message: "Error deleting Figma connection" });
       }
-
-      const user = await storage.getUser(req.session.userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Only allow editors, admins, and super admins to delete connections
-      if (
-        user.role !== UserRole.EDITOR &&
-        user.role !== UserRole.ADMIN &&
-        user.role !== UserRole.SUPER_ADMIN
-      ) {
-        return res.status(403).json({
-          message: "Insufficient permissions to delete Figma connections",
-        });
-      }
-
-      const connection = await storage.getFigmaConnection(
-        parseInt(connectionId, 10)
-      );
-      if (!connection) {
-        return res.status(404).json({ message: "Figma connection not found" });
-      }
-
-      await storage.deleteFigmaConnection(parseInt(connectionId, 10));
-      await storage.touchClient(connection.clientId);
-
-      res.json({ message: "Figma connection deleted successfully" });
-    } catch (error: unknown) {
-      console.error(
-        "Error deleting Figma connection:",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-      res.status(500).json({ message: "Error deleting Figma connection" });
     }
-  });
+  );
 
   // Get sync logs for a connection
   app.get(

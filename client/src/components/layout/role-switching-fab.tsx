@@ -1,5 +1,5 @@
 import { UserRole } from "@shared/schema";
-import { Eye, User, UserCheck, X } from "lucide-react";
+import { Eye, X } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,29 +15,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
 import { useAuth } from "@/hooks/use-auth";
-import { useUsersQuery } from "@/lib/queries/users";
 import { cn } from "@/lib/utils";
 
-const getRoleDisplayName = (role: string): string => {
+type UserRoleType = (typeof UserRole)[keyof typeof UserRole];
+
+const getRoleDisplayName = (role: UserRoleType): string => {
   return role
-    .replace("_", " ")
+    .replace(/_/g, " ")
     .replace(/\b\w/g, (l: string) => l.toUpperCase());
 };
 
-const getRoleColor = (role: string): string => {
+const getRoleColor = (role: UserRoleType): string => {
   switch (role) {
-    case "super_admin":
+    case UserRole.SUPER_ADMIN:
       return "bg-red-100 text-red-800";
-    case "admin":
+    case UserRole.ADMIN:
       return "bg-blue-100 text-blue-800";
-    case "editor":
+    case UserRole.EDITOR:
       return "bg-green-100 text-green-800";
-    case "standard":
+    case UserRole.STANDARD:
       return "bg-yellow-100 text-yellow-800";
-    case "guest":
+    case UserRole.GUEST:
       return "bg-gray-100 text-gray-800";
     default:
       return "bg-gray-100 text-gray-800";
@@ -46,17 +46,12 @@ const getRoleColor = (role: string): string => {
 
 export function RoleSwitchingFAB() {
   const { user } = useAuth();
-  const { data: users = [] } = useUsersQuery();
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"role" | "user">("role");
   const {
     currentViewingRole,
-    currentViewingUser,
     switchRole,
-    switchToUser,
     resetRole,
     isRoleSwitched,
-    isUserSwitched,
     canAccessCurrentPage,
   } = useRoleSwitching();
 
@@ -66,9 +61,7 @@ export function RoleSwitchingFAB() {
   }
 
   const allRoles = Object.values(UserRole);
-  const filteredUsers = users.filter((u) => u.id !== user.id);
-
-  const isActive = isRoleSwitched || isUserSwitched;
+  const isActive = isRoleSwitched;
 
   return (
     <div className="fixed bottom-6 right-6 z-50">
@@ -130,16 +123,28 @@ export function RoleSwitchingFAB() {
                   Currently viewing as:
                 </div>
                 <div className="flex items-center gap-2">
-                  {currentViewingUser ? (
-                    <>
-                      <Badge variant="secondary" className="text-xs">
-                        {currentViewingUser.name}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        ({getRoleDisplayName(currentViewingUser.role)})
-                      </span>
-                    </>
-                  ) : (
+                  <Badge
+                    variant="secondary"
+                    className={cn("text-xs", getRoleColor(currentViewingRole))}
+                  >
+                    {getRoleDisplayName(currentViewingRole)}
+                  </Badge>
+                </div>
+              </div>
+            )}
+
+            {/* Role Selection */}
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Select Role</div>
+              <Select
+                value={currentViewingRole}
+                onValueChange={(value: string) => {
+                  switchRole(value as (typeof UserRole)[keyof typeof UserRole]);
+                  setIsOpen(false);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
                     <Badge
                       variant="secondary"
                       className={cn(
@@ -149,169 +154,37 @@ export function RoleSwitchingFAB() {
                     >
                       {getRoleDisplayName(currentViewingRole)}
                     </Badge>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Tabs */}
-            <Tabs
-              value={activeTab}
-              onValueChange={(value) => setActiveTab(value as "role" | "user")}
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="role" className="text-xs">
-                  <UserCheck className="h-3 w-3 mr-1" />
-                  Role
-                </TabsTrigger>
-                <TabsTrigger value="user" className="text-xs">
-                  <User className="h-3 w-3 mr-1" />
-                  User
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="role" className="mt-3">
-                <Select
-                  value={currentViewingUser ? "" : currentViewingRole}
-                  onValueChange={(value: string) => {
-                    switchRole(
-                      value as (typeof UserRole)[keyof typeof UserRole]
-                    );
-                    setIsOpen(false);
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue>
-                      {currentViewingUser ? (
-                        <span className="text-muted-foreground">
-                          Select a role...
-                        </span>
-                      ) : (
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "text-xs",
-                            getRoleColor(currentViewingRole)
-                          )}
-                        >
-                          {getRoleDisplayName(currentViewingRole)}
-                        </Badge>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allRoles.map((role) => {
-                      const canAccess = canAccessCurrentPage(role);
-                      return (
-                        <SelectItem
-                          key={role}
-                          value={role}
-                          disabled={!canAccess}
-                          className={cn(!canAccess && "opacity-50")}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant="secondary"
-                              className={cn("text-xs", getRoleColor(role))}
-                            >
-                              {getRoleDisplayName(role)}
-                            </Badge>
-                            {!canAccess && (
-                              <span className="text-xs text-muted-foreground">
-                                (No access)
-                              </span>
-                            )}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </TabsContent>
-
-              <TabsContent value="user" className="mt-3">
-                <Select
-                  value={currentViewingUser?.id.toString() || ""}
-                  onValueChange={(value) => {
-                    const selectedUser = filteredUsers.find(
-                      (u) => u.id.toString() === value
-                    );
-                    if (selectedUser) {
-                      switchToUser({
-                        id: selectedUser.id,
-                        name: selectedUser.name,
-                        email: selectedUser.email,
-                        role: selectedUser.role,
-                      });
-                      setIsOpen(false);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a user...">
-                      {currentViewingUser ? (
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {allRoles.map((role) => {
+                    const canAccess = canAccessCurrentPage(role);
+                    return (
+                      <SelectItem
+                        key={role}
+                        value={role}
+                        disabled={!canAccess}
+                        className={cn(!canAccess && "opacity-50")}
+                      >
                         <div className="flex items-center gap-2">
-                          <span className="font-medium">
-                            {currentViewingUser.name}
-                          </span>
                           <Badge
                             variant="secondary"
-                            className={cn(
-                              "text-xs",
-                              getRoleColor(currentViewingUser.role)
-                            )}
+                            className={cn("text-xs", getRoleColor(role))}
                           >
-                            {getRoleDisplayName(currentViewingUser.role)}
+                            {getRoleDisplayName(role)}
                           </Badge>
+                          {!canAccess && (
+                            <span className="text-xs text-muted-foreground">
+                              (No access)
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">
-                          Select a user...
-                        </span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredUsers.map((userData) => {
-                      const canAccess = canAccessCurrentPage(userData.role);
-                      return (
-                        <SelectItem
-                          key={userData.id}
-                          value={userData.id.toString()}
-                          disabled={!canAccess}
-                          className={cn(!canAccess && "opacity-50")}
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">
-                                {userData.name}
-                              </span>
-                              <Badge
-                                variant="secondary"
-                                className={cn(
-                                  "text-xs",
-                                  getRoleColor(userData.role)
-                                )}
-                              >
-                                {getRoleDisplayName(userData.role)}
-                              </Badge>
-                              {!canAccess && (
-                                <span className="text-xs text-muted-foreground">
-                                  (No access)
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {userData.email}
-                            </div>
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </TabsContent>
-            </Tabs>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </PopoverContent>
       </Popover>

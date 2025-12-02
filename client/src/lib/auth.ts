@@ -78,6 +78,8 @@ export async function signInWithGoogle(invitationToken?: string) {
 export async function signOut() {
   try {
     await firebaseSignOut(auth);
+    // Clear role switching state to prevent residual state after logout
+    sessionStorage.removeItem("ferdinand_viewing_role");
     // Call the logout endpoint to destroy the session
     await apiRequest("POST", "/api/auth/logout", {});
     // Clear the user data from React Query cache

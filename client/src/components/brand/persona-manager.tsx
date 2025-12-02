@@ -34,6 +34,11 @@ import {
 } from "@/components/ui/form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 
 // Form schema for persona creation/editing
@@ -66,11 +71,10 @@ function PersonaCard({
   onDelete?: () => void;
 }) {
   const { user } = useAuth();
+  const { can } = usePermissions();
   if (!user) return null;
 
-  const isAbleToEdit = ["super_admin", "admin", "editor"].includes(
-    user.role as string
-  );
+  const isAbleToEdit = can(PermissionAction.UPDATE, Resource.USER_PERSONAS);
 
   return (
     <div className="relative p-6 border rounded-lg bg-white shadow-sm group">
@@ -158,12 +162,11 @@ export function PersonaManager({
     null
   );
   const { user } = useAuth();
+  const { can } = usePermissions();
 
   // if (!user) return null;
 
-  const isAbleToEdit = ["super_admin", "admin", "editor"].includes(
-    user?.role as string
-  );
+  const isAbleToEdit = can(PermissionAction.CREATE, Resource.USER_PERSONAS);
 
   // Move useForm to top level
   const form = useForm<PersonaFormData>({

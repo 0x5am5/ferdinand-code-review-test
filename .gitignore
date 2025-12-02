@@ -11,6 +11,7 @@ uploads/
 .env
 .env.production
 .env.remote
+.env.test
 
 # Logs
 logs

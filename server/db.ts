@@ -45,16 +45,18 @@ if (isLocalPostgres) {
   db = drizzleNeon({ client: pool, schema });
 }
 
-// Test database connection immediately
-(async () => {
-  try {
-    console.log("Testing database connection...");
-    await db.execute(sql`SELECT 1`);
-    console.log("✓ Database connection successful");
-  } catch (err) {
-    console.error("✗ Database connection failed:", err);
-    process.exit(1);
-  }
-})();
+// Test database connection immediately (skip in tests)
+if (process.env.NODE_ENV !== "test") {
+  (async () => {
+    try {
+      console.log("Testing database connection...");
+      await db.execute(sql`SELECT 1`);
+      console.log("✓ Database connection successful");
+    } catch (err) {
+      console.error("✗ Database connection failed:", err);
+      process.exit(1);
+    }
+  })();
+}
 
 export { pool, db };

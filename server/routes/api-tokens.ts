@@ -1,8 +1,9 @@
-import { apiTokens, insertApiTokenSchema } from "@shared/schema";
+import { apiTokens, insertApiTokenSchema, UserRole } from "@shared/schema";
 import { and, desc, eq } from "drizzle-orm";
 import type { Express, Response } from "express";
 import { db } from "../db";
 import { tokenCreationRateLimit } from "../middlewares/rate-limit";
+import { requireMinimumRole } from "../middlewares/requireMinimumRole";
 import { csrfProtection } from "../middlewares/security-headers";
 import { validateClientId } from "../middlewares/vaildateClientId";
 import type { RequestWithClientId } from "../routes";
@@ -22,6 +23,7 @@ export function registerApiTokenRoutes(app: Express) {
     csrfProtection,
     tokenCreationRateLimit,
     validateClientId,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res: Response) => {
       try {
         if (!req.session.userId) {
@@ -141,6 +143,7 @@ export function registerApiTokenRoutes(app: Express) {
   app.patch(
     "/api/clients/:clientId/tokens/:tokenId",
     validateClientId,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res: Response) => {
       try {
         if (!req.session.userId) {
@@ -210,6 +213,7 @@ export function registerApiTokenRoutes(app: Express) {
   app.delete(
     "/api/clients/:clientId/tokens/:tokenId",
     validateClientId,
+    requireMinimumRole(UserRole.ADMIN),
     async (req: RequestWithClientId, res: Response) => {
       try {
         const clientId = req.clientId;

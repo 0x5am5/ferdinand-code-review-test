@@ -15,7 +15,10 @@ import { useEffect, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import "../../styles/components/color-picker-popover.scss";
 import type { BrandAsset } from "@shared/schema";
-import { descriptionValidationSchema, UserRole, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
+import {
+  DEFAULT_SECTION_DESCRIPTIONS,
+  descriptionValidationSchema,
+} from "@shared/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,8 +99,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
-import { brandAssetApi } from "@/lib/api";
+import { apiRequest, brandAssetApi } from "@/lib/api";
 import { AssetSection } from "./logo-manager/asset-section";
 
 // ColorCard component for the color manager
@@ -123,6 +131,7 @@ function ColorCard({
 }) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { can } = usePermissions();
   const queryClient = useQueryClient();
   const hexInputId = useId();
   const [showTints, setShowTints] = useState(false);
@@ -132,13 +141,13 @@ function ColorCard({
     {}
   );
 
-  // Guest users should only be able to copy colors
-  const canEditColors = user?.role !== UserRole.GUEST;
-  // Check if user can edit descriptions
-  const canEditDescriptions =
-    user?.role === UserRole.ADMIN ||
-    user?.role === UserRole.SUPER_ADMIN ||
-    user?.role === UserRole.EDITOR;
+  // Only editors and above can edit colors
+  const canEditColors = can(PermissionAction.UPDATE, Resource.BRAND_ASSETS);
+  // Check if user can edit descriptions (same permission for now)
+  const canEditDescriptions = can(
+    PermissionAction.UPDATE,
+    Resource.BRAND_ASSETS
+  );
 
   // Load saved Pantone value on mount
   useEffect(() => {
@@ -162,27 +171,15 @@ function ColorCard({
       category: string;
       data: ColorAssetData;
     }) => {
-      const response = await fetch(
+      return await apiRequest<BrandAsset>(
+        "PATCH",
         `/api/clients/${clientId}/brand-assets/${data.id}`,
         {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: data.name,
-            category: data.category,
-            data: data.data,
-          }),
+          name: data.name,
+          category: data.category,
+          data: data.data,
         }
       );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to update color");
-      }
-
-      return await response.json();
     },
     onMutate: async (newData) => {
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
@@ -1698,6 +1695,7 @@ export function ColorManager({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { can } = usePermissions();
   const [isAddingColor, setIsAddingColor] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<
     "brand" | "neutral" | "interactive"
@@ -2283,9 +2281,8 @@ export function ColorManager({
 
   if (!user) return null;
 
-  // Permission check: guests cannot edit/add colors
-  const canEditColors = user.role !== UserRole.GUEST;
-  const isGuest = user.role === UserRole.GUEST;
+  // Permission check: only editors and above can edit/add colors
+  const canEditColors = can(PermissionAction.UPDATE, Resource.BRAND_ASSETS);
 
   return (
     <div>
@@ -2316,8 +2313,8 @@ export function ColorManager({
         )} */}
       </div>
       <div className="space-y-8">
-        {/* Hide empty brand colors section for guest users */}
-        {!(isGuest && brandColorsData.length === 0) && (
+        {/* Show brand colors section if user can edit or if there are brand colors */}
+        {(canEditColors || brandColorsData.length > 0) && (
           <AssetSection
             title="Brand Colors"
             description={colorDescriptions.brand}
@@ -2404,8 +2401,8 @@ export function ColorManager({
           </AssetSection>
         )}
 
-        {/* Hide empty neutral colors section for guest users */}
-        {!(isGuest && neutralColorsData.length === 0) && (
+        {/* Show neutral colors section if user can edit or if there are neutral colors */}
+        {(canEditColors || neutralColorsData.length > 0) && (
           <AssetSection
             title="Neutral Colors"
             description={colorDescriptions.neutral}
@@ -2500,8 +2497,8 @@ export function ColorManager({
           </AssetSection>
         )}
 
-        {/* Hide empty interactive colors section for guest users */}
-        {!(isGuest && interactiveColorsData.length === 0) && (
+        {/* Show interactive colors section if user can edit or if there are interactive colors */}
+        {(canEditColors || interactiveColorsData.length > 0) && (
           <AssetSection
             title="Interactive Colors"
             description={colorDescriptions.interactive}

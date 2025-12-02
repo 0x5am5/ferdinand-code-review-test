@@ -1,4 +1,8 @@
-import { LogoType, type BrandAsset, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
+import {
+  type BrandAsset,
+  DEFAULT_SECTION_DESCRIPTIONS,
+  LogoType,
+} from "@shared/schema";
 
 export interface ParsedLogoData {
   type: string;

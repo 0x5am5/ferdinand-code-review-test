@@ -24,7 +24,7 @@ export default {
         '!server/index.ts',
         '!server/**/*.d.ts',
       ],
-      setupFiles: ['dotenv/config'],
+      setupFiles: ['<rootDir>/tests/setup-env.js'],
     },
     {
       displayName: 'server-js',
@@ -35,7 +35,7 @@ export default {
         '!server/index.ts',
         '!server/**/*.d.ts',
       ],
-      setupFiles: ['dotenv/config'],
+      setupFiles: ['<rootDir>/tests/setup-env.js'],
       globals: {
         require: 'readonly',
         console: 'readonly',

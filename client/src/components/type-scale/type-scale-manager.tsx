@@ -5,7 +5,7 @@ import type {
   TypeScale,
   TypeStyle,
 } from "@shared/schema";
-import { UserRole, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
+import { DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronDown, Save, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
@@ -42,8 +42,13 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
-import { sectionMetadataApi } from "@/lib/api";
+import { apiFetch, apiRequest, sectionMetadataApi } from "@/lib/api";
 import { TypeScalePreview } from "./type-scale-preview";
 
 type BrandColor = {
@@ -93,10 +98,16 @@ const DEFAULT_TYPE_SCALE = {
   bodyFontWeight: "400",
   bodyLetterSpacing: 0,
   bodyColor: "#000000",
+  bodyTextTransform: "none" as const,
+  bodyFontStyle: "normal" as const,
+  bodyTextDecoration: "none" as const,
   headerFontFamily: "",
   headerFontWeight: "700",
   headerLetterSpacing: 0,
   headerColor: "#000000",
+  headerTextTransform: "none" as const,
+  headerFontStyle: "normal" as const,
+  headerTextDecoration: "none" as const,
   responsiveSizes: {
     mobile: { baseSize: 14, scaleRatio: 1.125 },
     tablet: { baseSize: 15, scaleRatio: 1.2 },
@@ -387,13 +398,12 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { can } = usePermissions();
   const [currentScale, setCurrentScale] = useState<TypeScale | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Permission checks: guests and standard users cannot edit type scales
-  const canEditTypeScale =
-    user?.role !== UserRole.GUEST && user?.role !== UserRole.STANDARD;
-  const _isGuest = user?.role === UserRole.GUEST;
+  // Permission checks: only editors and above can edit type scales
+  const canEditTypeScale = can(PermissionAction.UPDATE, Resource.TYPE_SCALES);
 
   // Generate unique IDs for form inputs
   const scaleNameId = useId();
@@ -405,13 +415,8 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
 
   const { data: typeScales = [], isLoading } = useQuery({
     queryKey: [`/api/clients/${clientId}/type-scales`],
-    queryFn: async () => {
-      const response = await fetch(`/api/clients/${clientId}/type-scales`, {
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Failed to fetch type scales");
-      return response.json();
-    },
+    queryFn: () =>
+      apiFetch<TypeScale[]>(`/api/clients/${clientId}/type-scales`),
   });
 
   // Fetch section metadata for description
@@ -432,11 +437,13 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   const { data: brandAssets = [] } = useQuery({
     queryKey: [`/api/clients/${clientId}/brand-assets`],
     queryFn: async () => {
-      const response = await fetch(`/api/clients/${clientId}/brand-assets`, {
-        credentials: "include",
-      });
-      if (!response.ok) return [];
-      return response.json();
+      try {
+        return await apiFetch<BrandAsset[]>(
+          `/api/clients/${clientId}/brand-assets`
+        );
+      } catch {
+        return [];
+      }
     },
   });
 
@@ -607,7 +614,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
   // Initialize with existing scale or create new one
   const defaultFontFamily =
     brandFonts.length === 1 ? brandFonts[0].fontFamily : undefined;
-  const activeScale =
+  const activeScale: TypeScale =
     currentScale ||
     (typeScales.length > 0
       ? typeScales[0]
@@ -693,29 +700,7 @@ export function TypeScaleManager({ clientId }: TypeScaleManagerProps) {
         headerColor: data.headerColor || "#000000",
       };
 
-      const response = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(transformedData),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Save error response:", errorText);
-        let errorData: { error?: string };
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { error: errorText };
-        }
-        throw new Error(
-          `Failed to save type scale: ${errorData.error || errorText}`
-        );
-      }
-
-      const result = await response.json();
-      return result;
+      return await apiRequest<TypeScale>(method, url, transformedData);
     },
     onSuccess: (data) => {
       toast({

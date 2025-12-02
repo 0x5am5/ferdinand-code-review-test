@@ -1,4 +1,5 @@
 import type { Client, FeatureToggles, User } from "@shared/schema";
+import { UserRole } from "@shared/schema";
 import {
   Edit2,
   Eye,
@@ -165,14 +166,17 @@ export default function Clients() {
     if (currentUser.id === userToRemove.id) return false;
 
     // Super admins can remove anyone (except themselves)
-    if (currentUser.role === "super_admin") return true;
+    if (currentUser.role === UserRole.SUPER_ADMIN) return true;
 
     // Admins cannot remove super admins
-    if (currentUser.role === "admin" && userToRemove.role === "super_admin")
+    if (
+      currentUser.role === UserRole.ADMIN &&
+      userToRemove.role === UserRole.SUPER_ADMIN
+    )
       return false;
 
     // Admins can remove other roles
-    if (currentUser.role === "admin") return true;
+    if (currentUser.role === UserRole.ADMIN) return true;
 
     // Other roles cannot remove users
     return false;
@@ -420,8 +424,8 @@ export default function Clients() {
                   )}
 
                   {/* Add buttons for disabled features (admin/super_admin only) */}
-                  {(currentUser?.role === "admin" ||
-                    currentUser?.role === "super_admin") && (
+                  {(currentUser?.role === UserRole.ADMIN ||
+                    currentUser?.role === UserRole.SUPER_ADMIN) && (
                     <>
                       {!client.featureToggles?.logoSystem && (
                         <Button
@@ -895,8 +899,8 @@ export default function Clients() {
                         )}
 
                         {/* Add buttons for disabled features (admin/super_admin only) */}
-                        {(currentUser?.role === "admin" ||
-                          currentUser?.role === "super_admin") && (
+                        {(currentUser?.role === UserRole.ADMIN ||
+                          currentUser?.role === UserRole.SUPER_ADMIN) && (
                           <>
                             {!clientFeatures.logoSystem && (
                               <Button

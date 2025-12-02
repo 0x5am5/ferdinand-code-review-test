@@ -16,7 +16,13 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  PermissionAction,
+  Resource,
+  usePermissions,
+} from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/api";
 import { TypeScalePreview } from "./type-scale-preview";
 import { TypeStyleEditor } from "./type-style-editor";
 
@@ -163,6 +169,7 @@ export function TypeScaleBuilder({
   const baseSizeId = useId();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
 
   const [name, setName] = useState(typeScale?.name || "New Type Scale");
   const [unit, setUnit] = useState<"px" | "rem" | "em">(
@@ -198,16 +205,11 @@ export function TypeScaleBuilder({
 
   const createTypeScaleMutation = useMutation({
     mutationFn: async (data: TypeScale) => {
-      const response = await fetch(`/api/clients/${clientId}/type-scales`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Failed to create type scale");
-      return response.json();
+      return await apiRequest<TypeScale>(
+        "POST",
+        `/api/clients/${clientId}/type-scales`,
+        data
+      );
     },
     onSuccess: (data) => {
       toast({
@@ -235,16 +237,11 @@ export function TypeScaleBuilder({
 
   const updateTypeScaleMutation = useMutation({
     mutationFn: async (data: TypeScale) => {
-      const response = await fetch(`/api/type-scales/${typeScale?.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-        credentials: "include",
-      });
-      if (!response.ok) throw new Error("Failed to update type scale");
-      return response.json();
+      return await apiRequest<TypeScale>(
+        "PATCH",
+        `/api/type-scales/${typeScale?.id}`,
+        data
+      );
     },
     onSuccess: (data) => {
       toast({
@@ -272,15 +269,11 @@ export function TypeScaleBuilder({
 
   const exportMutation = useMutation({
     mutationFn: async ({ format }: { format: "css" | "scss" }) => {
-      const response = await fetch(
-        `/api/type-scales/${typeScale?.id}/export/${format}`,
-        {
-          method: "POST",
-          credentials: "include",
-        }
-      );
-      if (!response.ok) throw new Error("Failed to export type scale");
-      return response.json();
+      return await apiRequest<{
+        content: string;
+        mimeType: string;
+        fileName: string;
+      }>("POST", `/api/type-scales/${typeScale?.id}/export/${format}`);
     },
     onSuccess: (data, variables) => {
       const blob = new Blob([data.content], { type: data.mimeType });
@@ -308,6 +301,15 @@ export function TypeScaleBuilder({
   });
 
   const handleSave = () => {
+    if (!can(PermissionAction.UPDATE, Resource.TYPE_SCALES)) {
+      toast({
+        title: "Permission Denied",
+        description: "You do not have permission to save type scales.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const data = {
       ...(typeScale?.id && { id: typeScale.id }),
       clientId,
@@ -414,16 +416,18 @@ export function TypeScaleBuilder({
               </Button>
             </>
           )}
-          <Button
-            onClick={handleSave}
-            disabled={
-              createTypeScaleMutation.isPending ||
-              updateTypeScaleMutation.isPending
-            }
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {typeScale ? "Update" : "Save"}
-          </Button>
+          {can(PermissionAction.UPDATE, Resource.TYPE_SCALES) && (
+            <Button
+              onClick={handleSave}
+              disabled={
+                createTypeScaleMutation.isPending ||
+                updateTypeScaleMutation.isPending
+              }
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {typeScale ? "Update" : "Save"}
+            </Button>
+          )}
           {onCancel && (
             <Button variant="outline" onClick={onCancel}>
               Cancel

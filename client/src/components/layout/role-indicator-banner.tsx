@@ -28,10 +28,9 @@ const getRoleColor = (role: string): string => {
 };
 
 export function RoleIndicatorBanner() {
-  const { isRoleSwitched, isUserSwitched, currentViewingRole, resetRole } =
-    useRoleSwitching();
+  const { isRoleSwitched, currentViewingRole, resetRole } = useRoleSwitching();
 
-  if (!isRoleSwitched && !isUserSwitched) {
+  if (!isRoleSwitched) {
     return null;
   }
 

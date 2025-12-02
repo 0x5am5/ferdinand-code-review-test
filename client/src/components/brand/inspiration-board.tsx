@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 
 interface Image {
@@ -70,6 +71,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { can } = usePermissions();
 
   // Fetch sections
   const { data: sections = [] } = useQuery<Section[]>({
@@ -239,10 +241,7 @@ export function InspirationBoard({ clientId }: InspirationBoardProps) {
 
   if (!user) return null;
 
-  // This code can be conditional since it's just calculating a boolean, not a hook
-  const isAbleToEdit = ["super_admin", "admin", "editor"].includes(
-    user.role as string
-  );
+  const isAbleToEdit = can("update", "inspiration_boards");
 
   return (
     <div>

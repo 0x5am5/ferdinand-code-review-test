@@ -13,7 +13,11 @@ import { DarkVariantUploader } from "./dark-variant-uploader";
 import { LogoDownloadButton } from "./download-buttons/logo-download-button";
 import { FileUpload } from "./file-upload";
 import { LogoPreview } from "./logo-preview";
-import { type ParsedLogoData, parseBrandAssetData, getDefaultLogoDescription } from "./logo-utils";
+import {
+  getDefaultLogoDescription,
+  type ParsedLogoData,
+  parseBrandAssetData,
+} from "./logo-utils";
 
 interface LogoSectionProps {
   type: string;

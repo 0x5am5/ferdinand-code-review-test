@@ -31,7 +31,7 @@ export function registerPersonasRoutes(app: Express) {
   app.post(
     "/api/clients/:clientId/personas",
     validateClientId,
-    requireMinimumRole(UserRole.STANDARD),
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;
@@ -68,6 +68,7 @@ export function registerPersonasRoutes(app: Express) {
   app.patch(
     "/api/clients/:clientId/personas/:personaId",
     validateClientId,
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;
@@ -119,6 +120,7 @@ export function registerPersonasRoutes(app: Express) {
   app.delete(
     "/api/clients/:clientId/personas/:personaId",
     validateClientId,
+    requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res) => {
       try {
         const clientId = req.clientId;

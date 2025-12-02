@@ -49,7 +49,7 @@ export interface InlineEditableProps {
  * - Fully accessible with ARIA attributes
  */
 export const InlineEditable = React.forwardRef<
-  HTMLDivElement,
+  HTMLButtonElement | HTMLDivElement,
   InlineEditableProps
 >(
   (
@@ -272,7 +272,10 @@ export const InlineEditable = React.forwardRef<
       };
 
       return (
-        <div ref={ref} className={cn("w-full space-y-2", className)}>
+        <div
+          ref={ref as React.ForwardedRef<HTMLDivElement>}
+          className={cn("w-full space-y-2", className)}
+        >
           <div className="flex items-start gap-2">
             <div className="flex-1">
               {inputType === "textarea" ? (
@@ -327,7 +330,7 @@ export const InlineEditable = React.forwardRef<
     return (
       <button
         type="button"
-        ref={ref}
+        ref={ref as React.ForwardedRef<HTMLButtonElement>}
         className={cn(
           "w-full cursor-text rounded-md px-3 py-2 text-sm transition-colors text-left",
           "hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",

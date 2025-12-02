@@ -29,6 +29,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useSpotlight } from "@/hooks/use-spotlight";
 import { useClientAssetsById, useClientsQuery } from "@/lib/queries/clients";
 
@@ -59,6 +60,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
   const [, setLocation] = useLocation();
   const [internalActiveTab, setInternalActiveTab] = useState(activeTab);
   const { user, logout } = useAuth();
+  const { hasRole } = usePermissions();
   const {
     isOpen: showSearch,
     open: openSearch,
@@ -130,8 +132,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       id: "users",
       title: "Users",
       icon: <Users className="h-4 w-4" />,
-      enabled:
-        user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN,
+      enabled: hasRole(UserRole.ADMIN),
     },
     {
       id: "logos",
@@ -177,7 +178,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
         (featureToggles.figmaIntegration ||
           featureToggles.slackIntegration ||
           featureToggles.brandAssets) &&
-        (user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN),
+        hasRole(UserRole.ADMIN),
     },
   ];
 
@@ -299,7 +300,7 @@ export const ClientSidebar: FC<ClientSidebarProps> = ({
       ) : (
         <div className="flex-1 flex flex-col">
           <div className="px-4 py-2">
-            {user?.role === UserRole.SUPER_ADMIN && allClients && (
+            {hasRole(UserRole.SUPER_ADMIN) && allClients && (
               <div className="mb-3">
                 <Button
                   variant="ghost"

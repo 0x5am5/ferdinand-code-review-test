@@ -1,10 +1,11 @@
-import { FontSource, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
+import { DEFAULT_SECTION_DESCRIPTIONS, FontSource } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Type } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useFontMutations } from "@/hooks/use-font-mutations";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useToast } from "@/hooks/use-toast";
 import { sectionMetadataApi } from "@/lib/api";
 import { TypeScaleManager } from "../../type-scale/type-scale-manager";
@@ -36,6 +37,7 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
   const [selectedWeights, setSelectedWeights] = useState<string[]>(["400"]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(["normal"]);
   const { user } = useAuth();
+  const { can } = usePermissions();
   const [showGoogleFontPicker, setShowGoogleFontPicker] = useState(false);
   const [showAdobeFontPicker, setShowAdobeFontPicker] = useState(false);
   const [showCustomFontPicker, setShowCustomFontPicker] = useState(false);
@@ -96,6 +98,8 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
     });
   };
 
+  const isAbleToEdit = can("update", "brand_assets");
+
   if (!user) return null;
 
   // Validate clientId is available
@@ -115,10 +119,6 @@ export function FontManager({ clientId, fonts }: FontManagerProps) {
       </div>
     );
   }
-
-  const isAbleToEdit = user
-    ? ["super_admin", "admin", "editor"].includes(user.role as string)
-    : false;
 
   // Fallback Google Fonts data
   const allGoogleFonts: ProcessedGoogleFont[] = [

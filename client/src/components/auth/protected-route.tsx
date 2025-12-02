@@ -1,3 +1,4 @@
+import { UserRole } from "@shared/schema";
 import type { FC, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Redirect } from "wouter";
@@ -20,7 +21,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
 
   // Determine which role to check: super_admins use the viewing role, others use their actual role
   const roleToCheck =
-    user?.role === "super_admin" ? currentViewingRole : user?.role;
+    user?.role === UserRole.SUPER_ADMIN ? currentViewingRole : user?.role;
 
   useEffect(() => {
     // Clear any stale redirect once authorized or when loading changes
@@ -28,7 +29,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
       !!user &&
       (roles.length === 0 || (roleToCheck && roles.includes(roleToCheck)));
 
-    if (isLoading || (user?.role === "super_admin" && !isReady)) {
+    if (isLoading || (user?.role === UserRole.SUPER_ADMIN && !isReady)) {
       return; // wait until ready to evaluate access for super_admins
     }
 
@@ -40,7 +41,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
 
     if (!isAuthorized) {
       setRedirecting(true);
-      if (user.role !== "super_admin") {
+      if (user.role !== UserRole.SUPER_ADMIN) {
         // Fetch their assigned clients and redirect to first one
         fetch("/api/user/clients")
           .then((res) => res.json())
@@ -85,7 +86,7 @@ export const ProtectedRoute: FC<ProtectedRouteProps> = ({
   }, [roles, roleToCheck, user, isLoading, isReady, redirectTo, redirecting]);
 
   // Wait for auth and role switching readiness (for super_admins)
-  if (isLoading || (user?.role === "super_admin" && !isReady)) {
+  if (isLoading || (user?.role === UserRole.SUPER_ADMIN && !isReady)) {
     return <div>Loading...</div>;
   }
 

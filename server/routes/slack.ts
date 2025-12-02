@@ -1,25 +1,21 @@
-import pkg, {
-  type BlockAction,
-  LogLevel,
-  type SlackActionMiddlewareArgs,
-} from "@slack/bolt";
-import type { Express, Response } from "express";
-
-const { App, ExpressReceiver } = pkg;
-
-type ActionMiddlewareArgs = SlackActionMiddlewareArgs<BlockAction>;
-
 import {
   insertSlackUserMappingSchema,
   slackUserMappings,
   slackWorkspaces,
 } from "@shared/schema";
+import pkg, {
+  type BlockAction,
+  LogLevel,
+  type SlackActionMiddlewareArgs,
+} from "@slack/bolt";
 import * as dotenv from "dotenv";
 import { and, eq, or } from "drizzle-orm";
+import type { Express, Response } from "express";
 import { validateClientId } from "server/middlewares/vaildateClientId";
 import type { RequestWithClientId } from "server/routes";
 import { db } from "../db";
 import { storage } from "../storage";
+import type { SlackInteractionBody } from "../types/slack-types";
 import {
   handleColorSubcommandWithLimit,
   handleFontSubcommandWithLimit,
@@ -33,7 +29,26 @@ import { handleLogoCommand } from "./slack-commands/logo-command";
 import { handleSearchCommand } from "./slack-commands/search-command";
 import { handleUnifiedCommand } from "./slack-commands/unified-command";
 
+const { App, ExpressReceiver } = pkg;
+
+type ActionMiddlewareArgs = SlackActionMiddlewareArgs<BlockAction>;
+
 dotenv.config();
+
+/**
+ * Safely parses a clientId string to a number.
+ * Returns null if the value is invalid, empty, or not numeric.
+ */
+function parseClientId(clientId: string | undefined): number | null {
+  if (!clientId || clientId.trim() === "") {
+    return null;
+  }
+  const parsed = parseInt(clientId, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+}
 
 // Initialize Slack App (we'll make this conditional based on env vars)
 let slackApp: InstanceType<typeof App> | null = null;
@@ -93,13 +108,34 @@ function initializeSlackApp() {
       "show_all_colors",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const actionValue = (body.actions[0] as unknown as { value?: string })
+          .value;
+
+        if (!actionValue) {
+          await respond({
+            text: "Error: Missing action value",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
+        const [clientId, variant] = actionValue.split("|");
+        const parsedClientId = parseClientId(clientId);
+
+        if (parsedClientId === null) {
+          await respond({
+            text: "Error: Invalid client ID",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
         // Re-trigger color command with override to show all
         await handleColorSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
-          parseInt(clientId, 10),
+          parsedClientId,
           "all"
         );
       }
@@ -109,13 +145,34 @@ function initializeSlackApp() {
       "show_limited_colors",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const actionValue = (body.actions[0] as unknown as { value?: string })
+          .value;
+
+        if (!actionValue) {
+          await respond({
+            text: "Error: Missing action value",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
+        const [clientId, variant] = actionValue.split("|");
+        const parsedClientId = parseClientId(clientId);
+
+        if (parsedClientId === null) {
+          await respond({
+            text: "Error: Invalid client ID",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
         // Re-trigger color command with limit of 3
         await handleColorSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
-          parseInt(clientId, 10),
+          parsedClientId,
           3
         );
       }
@@ -125,13 +182,34 @@ function initializeSlackApp() {
       "upload_all_logos",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, query] = body.actions[0].value.split("|");
+        const actionValue = (body.actions[0] as unknown as { value?: string })
+          .value;
+
+        if (!actionValue) {
+          await respond({
+            text: "Error: Missing action value",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
+        const [clientId, query] = actionValue.split("|");
+        const parsedClientId = parseClientId(clientId);
+
+        if (parsedClientId === null) {
+          await respond({
+            text: "Error: Invalid client ID",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
         // Re-trigger logo command with override to upload all
         await handleLogoSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           query,
-          parseInt(clientId, 10),
+          parsedClientId,
           "all"
         );
       }
@@ -141,13 +219,34 @@ function initializeSlackApp() {
       "upload_limited_logos",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, query] = body.actions[0].value.split("|");
+        const actionValue = (body.actions[0] as unknown as { value?: string })
+          .value;
+
+        if (!actionValue) {
+          await respond({
+            text: "Error: Missing action value",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
+        const [clientId, query] = actionValue.split("|");
+        const parsedClientId = parseClientId(clientId);
+
+        if (parsedClientId === null) {
+          await respond({
+            text: "Error: Invalid client ID",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
         // Re-trigger logo command with limit of 3
         await handleLogoSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           query,
-          parseInt(clientId, 10),
+          parsedClientId,
           3
         );
       }
@@ -157,13 +256,34 @@ function initializeSlackApp() {
       "process_all_fonts",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const actionValue = (body.actions[0] as unknown as { value?: string })
+          .value;
+
+        if (!actionValue) {
+          await respond({
+            text: "Error: Missing action value",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
+        const [clientId, variant] = actionValue.split("|");
+        const parsedClientId = parseClientId(clientId);
+
+        if (parsedClientId === null) {
+          await respond({
+            text: "Error: Invalid client ID",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
         // Re-trigger font command with override to process all
         await handleFontSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
-          parseInt(clientId, 10),
+          parsedClientId,
           "all"
         );
       }
@@ -173,13 +293,34 @@ function initializeSlackApp() {
       "process_limited_fonts",
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
-        const [clientId, variant] = body.actions[0].value.split("|");
+        const actionValue = (body.actions[0] as unknown as { value?: string })
+          .value;
+
+        if (!actionValue) {
+          await respond({
+            text: "Error: Missing action value",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
+        const [clientId, variant] = actionValue.split("|");
+        const parsedClientId = parseClientId(clientId);
+
+        if (parsedClientId === null) {
+          await respond({
+            text: "Error: Invalid client ID",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
         // Re-trigger font command with limit of 3
         await handleFontSubcommandWithLimit(
-          body,
+          body as unknown as SlackInteractionBody,
           respond,
           variant,
-          parseInt(clientId, 10),
+          parsedClientId,
           3
         );
       }
@@ -191,18 +332,38 @@ function initializeSlackApp() {
       async ({ ack, body, respond }: ActionMiddlewareArgs) => {
         await ack();
         const actionId = body.actions[0].action_id;
-        const actionValue = body.actions[0].value;
+        const actionValue = (body.actions[0] as unknown as { value?: string })
+          .value;
 
+        if (!actionValue) {
+          await respond({
+            text: "Error: Missing action value",
+            response_type: "ephemeral",
+          });
+          return;
+        }
+
+        const slackBody = body as unknown as SlackInteractionBody;
         if (
           actionId === "show_all_colors" ||
           actionId === "show_limited_colors"
         ) {
           const [clientId, variant, limit] = actionValue.split("|");
+          const parsedClientId = parseClientId(clientId);
+
+          if (parsedClientId === null) {
+            await respond({
+              text: "Error: Invalid client ID",
+              response_type: "ephemeral",
+            });
+            return;
+          }
+
           await handleColorSubcommandWithLimit(
-            body,
+            slackBody,
             respond,
             variant,
-            parseInt(clientId, 10),
+            parsedClientId,
             limit === "all" ? "all" : parseInt(limit, 10)
           );
         } else if (
@@ -210,11 +371,21 @@ function initializeSlackApp() {
           actionId === "show_limited_logos"
         ) {
           const [clientId, query, limit] = actionValue.split("|");
+          const parsedClientId = parseClientId(clientId);
+
+          if (parsedClientId === null) {
+            await respond({
+              text: "Error: Invalid client ID",
+              response_type: "ephemeral",
+            });
+            return;
+          }
+
           await handleLogoSubcommandWithLimit(
-            body,
+            slackBody,
             respond,
             query,
-            parseInt(clientId, 10),
+            parsedClientId,
             limit === "all" ? "all" : parseInt(limit, 10)
           );
         } else if (
@@ -222,11 +393,21 @@ function initializeSlackApp() {
           actionId === "process_limited_fonts"
         ) {
           const [clientId, variant, limit] = actionValue.split("|");
+          const parsedClientId = parseClientId(clientId);
+
+          if (parsedClientId === null) {
+            await respond({
+              text: "Error: Invalid client ID",
+              response_type: "ephemeral",
+            });
+            return;
+          }
+
           await handleFontSubcommandWithLimit(
-            body,
+            slackBody,
             respond,
             variant,
-            parseInt(clientId, 10),
+            parsedClientId,
             limit === "all" ? "all" : parseInt(limit, 10)
           );
         }
