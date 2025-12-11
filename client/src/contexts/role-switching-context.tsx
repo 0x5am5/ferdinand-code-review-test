@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,10 +37,14 @@ export function RoleSwitchingProvider({
   );
   const [isReady, setIsReady] = useState(false);
   const actualUserRole = user?.role || UserRole.GUEST;
+  const isInitialMount = useRef(true);
+  const hasCheckedInitialRoute = useRef(false);
 
   // Initialize role switching state once auth is resolved
   useEffect(() => {
     if (isLoading) return; // wait for auth to resolve
+
+    const userRole = user?.role || UserRole.GUEST;
 
     if (user && user.role === UserRole.SUPER_ADMIN) {
       const persistedRole = sessionStorage.getItem("ferdinand_viewing_role");
@@ -54,20 +59,33 @@ export function RoleSwitchingProvider({
       }
     } else {
       // Not super admin: role switching disabled; use actual role and clear persisted values
-      setCurrentViewingRole(actualUserRole);
+      setCurrentViewingRole(userRole);
       sessionStorage.removeItem("ferdinand_viewing_role");
     }
 
     setIsReady(true);
-  }, [isLoading, user, actualUserRole]);
+  }, [isLoading, user]);
 
   // Persist changes to sessionStorage (only for super_admins and after ready)
   useEffect(() => {
     if (!isReady) return;
-    if (user?.role === UserRole.SUPER_ADMIN) {
-      sessionStorage.setItem("ferdinand_viewing_role", currentViewingRole);
+
+    // Skip persistence on initial mount to avoid race condition
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }, [isReady, currentViewingRole, user?.role]);
+
+    if (user?.role === UserRole.SUPER_ADMIN) {
+      // If viewing role equals actual role, clear sessionStorage (not role switching)
+      if (currentViewingRole === actualUserRole) {
+        sessionStorage.removeItem("ferdinand_viewing_role");
+      } else {
+        // Otherwise persist the switched role
+        sessionStorage.setItem("ferdinand_viewing_role", currentViewingRole);
+      }
+    }
+  }, [currentViewingRole, user?.role, isReady, actualUserRole]);
 
   // Invalidate queries that depend on role/permissions
   const invalidateRoleRelatedQueries = useCallback(() => {
@@ -151,8 +169,11 @@ export function RoleSwitchingProvider({
       }
     };
 
-    // Check on mount
-    handleRouteChange();
+    // Check on initial mount only, not on every currentViewingRole change
+    if (!hasCheckedInitialRoute.current && isReady) {
+      hasCheckedInitialRoute.current = true;
+      handleRouteChange();
+    }
 
     // Listen for route changes (for SPA navigation)
     const handlePopState = () => {
@@ -164,7 +185,7 @@ export function RoleSwitchingProvider({
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [currentViewingRole, isRoleSwitched, resetRole, canAccessCurrentPage]);
+  }, [currentViewingRole, isRoleSwitched, resetRole, canAccessCurrentPage, isReady]);
 
   const value: RoleSwitchingContextType = {
     currentViewingRole,

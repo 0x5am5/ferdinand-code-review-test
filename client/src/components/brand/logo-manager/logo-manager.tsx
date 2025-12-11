@@ -121,7 +121,9 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     const baseType = type.replace(/^logo-/, "");
 
     // Optimistic update using base type
-    setVisibleSections((prev) => prev.filter((section) => section !== baseType));
+    setVisibleSections((prev) =>
+      prev.filter((section) => section !== baseType)
+    );
 
     // Send to API with "logo-" prefix added
     addHiddenSection.mutate(`logo-${baseType}`, {

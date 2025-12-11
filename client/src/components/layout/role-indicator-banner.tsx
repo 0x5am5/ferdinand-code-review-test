@@ -1,7 +1,7 @@
 import { Eye, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
+import { useRoleSwitching } from "@/contexts/role-switching-context";
 import { cn } from "@/lib/utils";
 
 const getRoleDisplayName = (role: string): string => {

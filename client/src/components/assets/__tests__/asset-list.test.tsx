@@ -1,6 +1,10 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+/**
+ * @vitest-environment jsdom
+ */
+
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import type { Asset } from "@/lib/queries/assets";
 import { AssetList } from "../asset-list";
 
@@ -91,18 +95,18 @@ const mockTags = [
 ];
 
 describe("AssetList", () => {
-  const mockOnAssetClick = jest.fn();
-  const mockOnDelete = jest.fn();
-  const mockOnBulkDelete = jest.fn();
-  const mockOnBulkUpdate = jest.fn();
+  const mockOnAssetClick = vi.fn();
+  const mockOnDelete = vi.fn();
+  const mockOnBulkDelete = vi.fn();
+  const mockOnBulkUpdate = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
     // Clean up any pending timers or async operations
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   describe("Loading State", () => {
@@ -336,7 +340,7 @@ describe("AssetList", () => {
     it("should open download in new tab when download button is clicked", async () => {
       const user = userEvent.setup();
       // Mock window.open
-      const mockOpen = jest.fn();
+      const mockOpen = vi.fn();
       window.open = mockOpen;
 
       render(

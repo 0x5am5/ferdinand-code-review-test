@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
+import { useRoleSwitching } from "@/contexts/role-switching-context";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 

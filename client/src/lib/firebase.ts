@@ -55,14 +55,18 @@ googleProvider.setCustomParameters({
   prompt: "select_account",
 });
 
-// Add persistent logging for debugging
+// Add persistent logging for debugging (only in browser environment)
 const persistLog = (message: string) => {
-  const logElement = document.createElement("div");
-  logElement.textContent = message;
-  logElement.style.display = "none";
-  document.body.appendChild(logElement);
+  if (typeof document !== "undefined" && typeof window !== "undefined") {
+    const logElement = document.createElement("div");
+    logElement.textContent = message;
+    logElement.style.display = "none";
+    document.body.appendChild(logElement);
+  }
   console.log(message);
 };
 
-persistLog(`Auth domain: ${firebaseConfig.authDomain}`);
-persistLog(`Current domain: ${window.location.hostname}`);
+if (typeof window !== "undefined") {
+  persistLog(`Auth domain: ${firebaseConfig.authDomain}`);
+  persistLog(`Current domain: ${window.location.hostname}`);
+}

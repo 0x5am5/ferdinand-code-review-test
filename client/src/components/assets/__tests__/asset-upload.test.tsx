@@ -1,25 +1,29 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+/**
+ * @vitest-environment jsdom
+ */
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import { AssetUpload } from "../asset-upload";
 
 // Mock the asset queries
-jest.mock("@/lib/queries/assets", () => ({
-  useAssetCategoriesQuery: jest.fn(() => ({
+vi.mock("@/lib/queries/assets", () => ({
+  useAssetCategoriesQuery: vi.fn(() => ({
     data: [
       { id: 1, name: "Documents", slug: "documents" },
       { id: 2, name: "Images", slug: "images" },
     ],
   })),
-  useAssetTagsQuery: jest.fn(() => ({
+  useAssetTagsQuery: vi.fn(() => ({
     data: [
       { id: 1, name: "marketing", slug: "marketing" },
       { id: 2, name: "design", slug: "design" },
     ],
   })),
-  useUploadAssetMutation: jest.fn(() => ({
-    mutateAsync: jest.fn().mockResolvedValue({}),
+  useUploadAssetMutation: vi.fn(() => ({
+    mutateAsync: vi.fn().mockResolvedValue({}),
     isPending: false,
   })),
 }));
@@ -38,7 +42,7 @@ const createWrapper = () => {
 
 describe("AssetUpload", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("File Upload Flow", () => {
@@ -64,7 +68,7 @@ describe("AssetUpload", () => {
 
     it("should allow file selection via input", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -82,7 +86,7 @@ describe("AssetUpload", () => {
 
     it("should display file preview for selected files", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -103,7 +107,7 @@ describe("AssetUpload", () => {
 
     it("should allow removing files from selection", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -135,7 +139,7 @@ describe("AssetUpload", () => {
 
     it("should support multiple file selection", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -162,7 +166,7 @@ describe("AssetUpload", () => {
 
   describe("Drag and Drop Upload", () => {
     it("should handle drag and drop events", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -191,7 +195,7 @@ describe("AssetUpload", () => {
     });
 
     it("should highlight drop zone on drag over", () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -204,7 +208,7 @@ describe("AssetUpload", () => {
     });
 
     it("should remove highlight when drag leaves", () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -220,7 +224,7 @@ describe("AssetUpload", () => {
 
   describe("Metadata Selection", () => {
     it("should allow selecting visibility option", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -231,7 +235,7 @@ describe("AssetUpload", () => {
     });
 
     it("should allow selecting categories", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -241,7 +245,7 @@ describe("AssetUpload", () => {
 
     it("should allow entering tags", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -252,7 +256,7 @@ describe("AssetUpload", () => {
     });
 
     it("should display selected categories as badges", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -263,7 +267,7 @@ describe("AssetUpload", () => {
 
   describe("Upload Progress", () => {
     it("should disable upload button when no files selected", () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -277,7 +281,7 @@ describe("AssetUpload", () => {
 
     it("should enable upload button when files are selected", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -299,7 +303,7 @@ describe("AssetUpload", () => {
 
     it("should show correct file count in upload button text", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
+      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
         wrapper: createWrapper(),
       });
 
@@ -323,7 +327,7 @@ describe("AssetUpload", () => {
   describe("Dialog Actions", () => {
     it("should close dialog when cancel button is clicked", async () => {
       const user = userEvent.setup();
-      const onOpenChange = jest.fn();
+      const onOpenChange = vi.fn();
       render(<AssetUpload open={true} onOpenChange={onOpenChange} />, {
         wrapper: createWrapper(),
       });
@@ -342,7 +346,7 @@ describe("AssetUpload", () => {
       render(
         <AssetUpload
           open={true}
-          onOpenChange={jest.fn()}
+          onOpenChange={vi.fn()}
           initialFiles={initialFiles}
         />,
         { wrapper: createWrapper() }

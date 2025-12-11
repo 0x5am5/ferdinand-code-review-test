@@ -40,9 +40,11 @@ function TestLogoDescriptionAutosave({
     mutationFn: async ({
       assetId,
       description,
+      variant,
     }: {
       assetId: number;
       description?: string;
+      variant: "light" | "dark";
     }) => {
       const response = await fetch(
         `/api/clients/${clientId}/brand-assets/${assetId}/description`,
@@ -53,8 +55,9 @@ function TestLogoDescriptionAutosave({
           },
           body: JSON.stringify({
             description,
+            variant,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -64,7 +67,7 @@ function TestLogoDescriptionAutosave({
 
       return response.json();
     },
-    onMutate: async ({ assetId, description }) => {
+    onMutate: async ({ assetId, description, variant: _variant }) => {
       await queryClient.cancelQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
@@ -96,7 +99,7 @@ function TestLogoDescriptionAutosave({
               data: updatedData,
             };
           });
-        },
+        }
       );
 
       return { previousAssets };
@@ -104,7 +107,7 @@ function TestLogoDescriptionAutosave({
     onError: (error: Error, _variables, context) => {
       queryClient.setQueryData(
         [`/api/clients/${clientId}/brand-assets`],
-        context?.previousAssets,
+        context?.previousAssets
       );
       toast({
         title: "Error",
@@ -127,6 +130,7 @@ function TestLogoDescriptionAutosave({
     updateDescriptionMutation.mutate({
       assetId,
       description: value,
+      variant,
     });
   };
 
@@ -174,7 +178,7 @@ describe("Logo Description Autosave Integration", () => {
             description: "Light variant description",
           },
         },
-      ],
+      ]
     );
 
     fetchMock = vi.fn();
@@ -204,7 +208,7 @@ describe("Logo Description Autosave Integration", () => {
           variant={variant}
           initialDescription={description}
         />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
   };
 
@@ -213,15 +217,11 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, {
-          target: { value: "New light description" },
-        });
+      fireEvent.change(textarea, {
+        target: { value: "New light description" },
       });
 
       expect(fetchMock).not.toHaveBeenCalled();
@@ -236,14 +236,10 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Updated light" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Updated light" } });
 
       act(() => vi.advanceTimersByTime(500));
 
@@ -257,8 +253,9 @@ describe("Logo Description Autosave Integration", () => {
             },
             body: JSON.stringify({
               description: "Updated light",
+              variant: "light",
             }),
-          }),
+          })
         );
       });
     });
@@ -272,30 +269,20 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
 
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "A" } });
-      });
+      fireEvent.change(textarea, { target: { value: "A" } });
       act(() => vi.advanceTimersByTime(100));
 
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "AB" } });
-      });
+      fireEvent.change(textarea, { target: { value: "AB" } });
       act(() => vi.advanceTimersByTime(100));
 
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "ABC" } });
-      });
+      fireEvent.change(textarea, { target: { value: "ABC" } });
       act(() => vi.advanceTimersByTime(100));
 
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "ABCD" } });
-      });
+      fireEvent.change(textarea, { target: { value: "ABCD" } });
 
       act(() => vi.advanceTimersByTime(500));
 
@@ -306,8 +293,9 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "ABCD",
+              variant: "light",
             }),
-          }),
+          })
         );
       });
     });
@@ -323,14 +311,10 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Failed update" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Failed update" } });
 
       act(() => vi.advanceTimersByTime(500));
 
@@ -340,7 +324,7 @@ describe("Logo Description Autosave Integration", () => {
             title: "Error",
             description: "Failed to update logo description",
             variant: "destructive",
-          }),
+          })
         );
       });
     });
@@ -354,24 +338,18 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "This will fail" } });
-      });
+      fireEvent.change(textarea, { target: { value: "This will fail" } });
 
-      act(() => {
-        fireEvent.blur(textarea);
-      });
+      fireEvent.blur(textarea);
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith(
           expect.objectContaining({
             variant: "destructive",
-          }),
+          })
         );
       });
 
@@ -384,14 +362,10 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Network fail" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Network fail" } });
 
       act(() => vi.advanceTimersByTime(500));
 
@@ -399,7 +373,7 @@ describe("Logo Description Autosave Integration", () => {
         expect(mockToast).toHaveBeenCalledWith(
           expect.objectContaining({
             variant: "destructive",
-          }),
+          })
         );
       });
     });
@@ -415,15 +389,11 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, {
-          target: { value: "Successfully saved light" },
-        });
+      fireEvent.change(textarea, {
+        target: { value: "Successfully saved light" },
       });
 
       act(() => vi.advanceTimersByTime(500));
@@ -433,7 +403,7 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             title: "Description saved",
             description: "Logo description has been updated successfully.",
-          }),
+          })
         );
       });
     });
@@ -447,9 +417,7 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
       fireEvent.change(textarea, {
@@ -463,7 +431,7 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             title: "Description saved",
             description: "Logo description has been updated successfully.",
-          }),
+          })
         );
       });
     });
@@ -479,18 +447,12 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Blur save light" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Blur save light" } });
 
-      act(() => {
-        fireEvent.blur(textarea);
-      });
+      fireEvent.blur(textarea);
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -498,8 +460,9 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Blur save light",
+              variant: "light",
             }),
-          }),
+          })
         );
       });
     });
@@ -513,18 +476,12 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Blur save dark" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Blur save dark" } });
 
-      act(() => {
-        fireEvent.blur(textarea);
-      });
+      fireEvent.blur(textarea);
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -532,8 +489,9 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Blur save dark",
+              variant: "dark",
             }),
-          }),
+          })
         );
       });
     });
@@ -547,19 +505,13 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Clear pending" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Clear pending" } });
 
       act(() => vi.advanceTimersByTime(300));
-      act(() => {
-        fireEvent.blur(textarea);
-      });
+      fireEvent.blur(textarea);
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -575,20 +527,14 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Cancelled light" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Cancelled light" } });
 
       act(() => vi.advanceTimersByTime(300));
 
-      act(() => {
-        fireEvent.keyDown(textarea, { key: "Escape" });
-      });
+      fireEvent.keyDown(textarea, { key: "Escape" });
 
       expect(fetchMock).not.toHaveBeenCalled();
 
@@ -597,7 +543,7 @@ describe("Logo Description Autosave Integration", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("Light variant description"),
+          screen.getByText("Light variant description")
         ).toBeInTheDocument();
       });
     });
@@ -606,20 +552,14 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "Cancelled dark" } });
-      });
+      fireEvent.change(textarea, { target: { value: "Cancelled dark" } });
 
       act(() => vi.advanceTimersByTime(300));
 
-      act(() => {
-        fireEvent.keyDown(textarea, { key: "Escape" });
-      });
+      fireEvent.keyDown(textarea, { key: "Escape" });
 
       expect(fetchMock).not.toHaveBeenCalled();
 
@@ -628,7 +568,7 @@ describe("Logo Description Autosave Integration", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("Dark variant description"),
+          screen.getByText("Dark variant description")
         ).toBeInTheDocument();
       });
     });
@@ -644,14 +584,10 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      act(() => {
-        fireEvent.click(descriptionField);
-      });
+      fireEvent.click(descriptionField);
 
       const textarea = screen.getByRole("textbox");
-      act(() => {
-        fireEvent.change(textarea, { target: { value: "  Trimmed  " } });
-      });
+      fireEvent.change(textarea, { target: { value: "  Trimmed  " } });
 
       act(() => vi.advanceTimersByTime(500));
 
@@ -661,8 +597,9 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Trimmed",
+              variant: "light",
             }),
-          }),
+          })
         );
       });
     });

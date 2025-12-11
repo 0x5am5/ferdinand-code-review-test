@@ -23,7 +23,7 @@ export interface RoleSwitchingAuditLog {
 export function logRoleSwitchingAudit(entry: RoleSwitchingAuditLog): void {
   const timestamp = entry.timestamp.toISOString();
   const logLevel = entry.authorizationDecision === "denied" ? "WARN" : "INFO";
-  
+
   const logMessage = [
     `[ROLE_SWITCHING_AUDIT] ${timestamp}`,
     `[${logLevel}]`,
@@ -33,7 +33,9 @@ export function logRoleSwitchingAudit(entry: RoleSwitchingAuditLog): void {
     `Requested Viewing Role: ${entry.requestedViewingRole ?? "none"}`,
     `Decision: ${entry.authorizationDecision.toUpperCase()}`,
     entry.reason ? `Reason: ${entry.reason}` : null,
-    entry.requestPath ? `Path: ${entry.requestMethod} ${entry.requestPath}` : null,
+    entry.requestPath
+      ? `Path: ${entry.requestMethod} ${entry.requestPath}`
+      : null,
     entry.ipAddress ? `IP: ${entry.ipAddress}` : null,
   ]
     .filter(Boolean)
@@ -72,4 +74,3 @@ export function getClientIp(req: {
   // Fallback to req.ip
   return req.ip;
 }
-

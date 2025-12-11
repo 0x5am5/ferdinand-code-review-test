@@ -1,28 +1,25 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
+/**
+ * @vitest-environment jsdom
+ */
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import "@testing-library/jest-dom";
+import { vi } from "vitest";
+import "@testing-library/jest-dom/vitest";
 import { type BrandAsset, UserRole } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { LogoSection } from "../logo-section";
 
 // Mock hooks
-jest.mock("@/hooks/use-auth");
-jest.mock("@/hooks/use-toast", () => ({
+vi.mock("@/hooks/use-auth");
+vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({
-    toast: jest.fn(),
+    toast: vi.fn(),
   }),
 }));
 
-const mockUseAuth = jest.mocked(useAuth);
+const mockUseAuth = vi.mocked(useAuth);
 
 // Helper to create a mock logo asset
 const createMockLogo = (
@@ -51,13 +48,13 @@ const createMockLogo = (
 
 describe("LogoSection - Description Editing", () => {
   let queryClient: QueryClient;
-  const mockOnDeleteLogo = jest.fn();
-  const mockOnRemoveSection = jest.fn();
+  const mockOnDeleteLogo = vi.fn();
+  const mockOnRemoveSection = vi.fn();
   const clientId = 1;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },
@@ -66,13 +63,13 @@ describe("LogoSection - Description Editing", () => {
     });
 
     // Mock fetch globally
-    global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+    global.fetch = vi.fn() as vi.MockedFunction<typeof fetch>;
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
     queryClient.clear();
   });
 
@@ -283,7 +280,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main", "Original");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ ...logo, data: { description: "Modified" } }),
@@ -326,7 +323,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main", "Original");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ ...logo, data: { description: "Modified" } }),
@@ -359,7 +356,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main", "Original");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
 
       const editableElement = screen.getAllByRole("button", {
         name: /light variant description/i,
@@ -386,7 +383,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ ...logo }),
@@ -403,7 +400,7 @@ describe("LogoSection - Description Editing", () => {
       await user.type(textarea, "New description");
 
       // Advance debounce timer
-      jest.advanceTimersByTime(500);
+      vi.advanceTimersByTime(500);
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
@@ -427,7 +424,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main", "Light desc", true);
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ ...logo }),
@@ -450,7 +447,7 @@ describe("LogoSection - Description Editing", () => {
       await user.clear(textarea);
       await user.type(textarea, "Dark variant description");
 
-      jest.advanceTimersByTime(500);
+      vi.advanceTimersByTime(500);
 
       await waitFor(() => {
         expect(mockFetch).toHaveBeenCalledWith(
@@ -479,7 +476,7 @@ describe("LogoSection - Description Editing", () => {
 
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValueOnce({
         ok: false,
         json: async () => ({ message: "Update failed" }),
@@ -494,7 +491,7 @@ describe("LogoSection - Description Editing", () => {
       await user.clear(textarea);
       await user.type(textarea, "Modified description");
 
-      jest.advanceTimersByTime(500);
+      vi.advanceTimersByTime(500);
 
       // Verify the API was called with the modified description
       await waitFor(() => {
@@ -519,7 +516,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main", "Original");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockImplementation(
         () =>
           new Promise((resolve) => {
@@ -542,7 +539,7 @@ describe("LogoSection - Description Editing", () => {
         await user.clear(textarea);
         await user.type(textarea, "New");
 
-        jest.advanceTimersByTime(500);
+        vi.advanceTimersByTime(500);
 
         // Should see updated description immediately (optimistic update)
         await waitFor(() => {
@@ -558,7 +555,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ ...logo }),
@@ -577,11 +574,11 @@ describe("LogoSection - Description Editing", () => {
         expect(mockFetch).not.toHaveBeenCalled();
 
         // Advance by 300ms - still shouldn't call
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
         expect(mockFetch).not.toHaveBeenCalled();
 
         // Advance by remaining 200ms to reach 500ms total
-        jest.advanceTimersByTime(200);
+        vi.advanceTimersByTime(200);
 
         await waitFor(() => {
           expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -594,7 +591,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ ...logo }),
@@ -611,13 +608,13 @@ describe("LogoSection - Description Editing", () => {
 
       // Type multiple characters with small delays
       await user.type(textarea, "T");
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
 
       await user.type(textarea, "e");
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
 
       await user.type(textarea, "s");
-      jest.advanceTimersByTime(200);
+      vi.advanceTimersByTime(200);
 
       await user.type(textarea, "t");
 
@@ -625,7 +622,7 @@ describe("LogoSection - Description Editing", () => {
       expect(mockFetch).not.toHaveBeenCalled();
 
       // Now advance the full 500ms
-      jest.advanceTimersByTime(500);
+      vi.advanceTimersByTime(500);
 
       await waitFor(() => {
         // Should only call once with final value
@@ -647,7 +644,7 @@ describe("LogoSection - Description Editing", () => {
       const logo = createMockLogo(1, "main", "Original");
       renderLogoSection([logo], UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
 
       const editableElement = screen.getAllByRole("button", {
         name: /light variant description/i,
@@ -659,13 +656,13 @@ describe("LogoSection - Description Editing", () => {
         await user.type(textarea, " Modified");
 
         // Advance partway through debounce
-        jest.advanceTimersByTime(300);
+        vi.advanceTimersByTime(300);
 
         // Cancel with Escape
         await user.keyboard("{Escape}");
 
         // Advance remaining time
-        jest.advanceTimersByTime(200);
+        vi.advanceTimersByTime(200);
 
         // Should not have called API
         expect(mockFetch).not.toHaveBeenCalled();
@@ -741,7 +738,7 @@ describe("LogoSection - Description Editing", () => {
       ];
       renderLogoSection(logos, UserRole.EDITOR);
 
-      const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+      const mockFetch = global.fetch as vi.MockedFunction<typeof fetch>;
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({}),

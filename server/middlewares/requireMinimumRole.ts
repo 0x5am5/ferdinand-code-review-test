@@ -3,10 +3,7 @@ import { UserRole } from "@shared/schema";
 import type { NextFunction, Response } from "express";
 import type { RequestWithClientId } from "server/routes";
 import { storage } from "../storage";
-import {
-  getClientIp,
-  logRoleSwitchingAudit,
-} from "../utils/audit-logger";
+import { getClientIp, logRoleSwitchingAudit } from "../utils/audit-logger";
 
 // Role hierarchy for comparison
 const ROLE_HIERARCHY: Record<UserRoleType, number> = {
