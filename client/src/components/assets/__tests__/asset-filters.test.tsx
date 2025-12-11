@@ -88,11 +88,14 @@ describe("AssetFilters", () => {
       expect(mockOnFiltersChange).not.toHaveBeenCalled();
 
       // Wait for debounce delay (300ms + buffer)
-      await waitFor(() => {
-        expect(mockOnFiltersChange).toHaveBeenCalledWith({
-          search: "test query",
-        });
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockOnFiltersChange).toHaveBeenCalledWith({
+            search: "test query",
+          });
+        },
+        { timeout: 500 }
+      );
 
       vi.useFakeTimers();
     });
@@ -113,12 +116,15 @@ describe("AssetFilters", () => {
       await user.type(searchInput, "test");
 
       // Should only call once after debounce period
-      await waitFor(() => {
-        expect(mockOnFiltersChange).toHaveBeenCalledTimes(1);
-        expect(mockOnFiltersChange).toHaveBeenCalledWith({
-          search: "test",
-        });
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockOnFiltersChange).toHaveBeenCalledTimes(1);
+          expect(mockOnFiltersChange).toHaveBeenCalledWith({
+            search: "test",
+          });
+        },
+        { timeout: 500 }
+      );
 
       vi.useFakeTimers();
     });
@@ -446,13 +452,16 @@ describe("AssetFilters", () => {
       const searchInput = screen.getByPlaceholderText(/search assets/i);
       await user.type(searchInput, "new search");
 
-      await waitFor(() => {
-        expect(mockOnFiltersChange).toHaveBeenCalledWith({
-          categoryId: 1,
-          tagIds: [1],
-          search: "new search",
-        });
-      }, { timeout: 500 });
+      await waitFor(
+        () => {
+          expect(mockOnFiltersChange).toHaveBeenCalledWith({
+            categoryId: 1,
+            tagIds: [1],
+            search: "new search",
+          });
+        },
+        { timeout: 500 }
+      );
 
       vi.useFakeTimers();
     });

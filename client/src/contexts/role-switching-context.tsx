@@ -185,7 +185,13 @@ export function RoleSwitchingProvider({
     return () => {
       window.removeEventListener("popstate", handlePopState);
     };
-  }, [currentViewingRole, isRoleSwitched, resetRole, canAccessCurrentPage, isReady]);
+  }, [
+    currentViewingRole,
+    isRoleSwitched,
+    resetRole,
+    canAccessCurrentPage,
+    isReady,
+  ]);
 
   const value: RoleSwitchingContextType = {
     currentViewingRole,

@@ -182,11 +182,7 @@ export const GoogleDrivePicker: React.FC<
 
   // If children is provided, render as wrapper around children
   if (children) {
-    return (
-      <div onClick={handleOpenPicker}>
-        {children}
-      </div>
-    );
+    return <div onClick={handleOpenPicker}>{children}</div>;
   }
 
   // Otherwise render nothing (children prop should be required)

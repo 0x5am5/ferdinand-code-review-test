@@ -54,7 +54,7 @@ function TestLogoDescriptionAutosave({
           body: JSON.stringify({
             description,
           }),
-        },
+        }
       );
 
       if (!response.ok) {
@@ -96,7 +96,7 @@ function TestLogoDescriptionAutosave({
               data: updatedData,
             };
           });
-        },
+        }
       );
 
       return { previousAssets };
@@ -104,7 +104,7 @@ function TestLogoDescriptionAutosave({
     onError: (error: Error, _variables, context) => {
       queryClient.setQueryData(
         [`/api/clients/${clientId}/brand-assets`],
-        context?.previousAssets,
+        context?.previousAssets
       );
       toast({
         title: "Error",
@@ -174,7 +174,7 @@ describe("Logo Description Autosave Integration", () => {
             description: "Light variant description",
           },
         },
-      ],
+      ]
     );
 
     fetchMock = vi.fn();
@@ -204,7 +204,7 @@ describe("Logo Description Autosave Integration", () => {
           variant={variant}
           initialDescription={description}
         />
-      </QueryClientProvider>,
+      </QueryClientProvider>
     );
   };
 
@@ -258,7 +258,7 @@ describe("Logo Description Autosave Integration", () => {
             body: JSON.stringify({
               description: "Updated light",
             }),
-          }),
+          })
         );
       });
     });
@@ -307,7 +307,7 @@ describe("Logo Description Autosave Integration", () => {
             body: JSON.stringify({
               description: "ABCD",
             }),
-          }),
+          })
         );
       });
     });
@@ -340,7 +340,7 @@ describe("Logo Description Autosave Integration", () => {
             title: "Error",
             description: "Failed to update logo description",
             variant: "destructive",
-          }),
+          })
         );
       });
     });
@@ -371,7 +371,7 @@ describe("Logo Description Autosave Integration", () => {
         expect(mockToast).toHaveBeenCalledWith(
           expect.objectContaining({
             variant: "destructive",
-          }),
+          })
         );
       });
 
@@ -399,7 +399,7 @@ describe("Logo Description Autosave Integration", () => {
         expect(mockToast).toHaveBeenCalledWith(
           expect.objectContaining({
             variant: "destructive",
-          }),
+          })
         );
       });
     });
@@ -433,7 +433,7 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             title: "Description saved",
             description: "Logo description has been updated successfully.",
-          }),
+          })
         );
       });
     });
@@ -463,7 +463,7 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             title: "Description saved",
             description: "Logo description has been updated successfully.",
-          }),
+          })
         );
       });
     });
@@ -499,7 +499,7 @@ describe("Logo Description Autosave Integration", () => {
             body: JSON.stringify({
               description: "Blur save light",
             }),
-          }),
+          })
         );
       });
     });
@@ -533,7 +533,7 @@ describe("Logo Description Autosave Integration", () => {
             body: JSON.stringify({
               description: "Blur save dark",
             }),
-          }),
+          })
         );
       });
     });
@@ -597,7 +597,7 @@ describe("Logo Description Autosave Integration", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("Light variant description"),
+          screen.getByText("Light variant description")
         ).toBeInTheDocument();
       });
     });
@@ -628,7 +628,7 @@ describe("Logo Description Autosave Integration", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("Dark variant description"),
+          screen.getByText("Dark variant description")
         ).toBeInTheDocument();
       });
     });
@@ -662,7 +662,7 @@ describe("Logo Description Autosave Integration", () => {
             body: JSON.stringify({
               description: "Trimmed",
             }),
-          }),
+          })
         );
       });
     });
