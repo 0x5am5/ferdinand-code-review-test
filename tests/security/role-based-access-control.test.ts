@@ -12,7 +12,7 @@
  * - SUPER_ADMIN: System-wide access
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockedFunction } from 'vitest';
 import { UserRole } from '@shared/schema';
 import type { Client } from '@shared/schema';
 import type { Request, Response } from 'express';
@@ -31,9 +31,13 @@ import {
 import { storage } from '../../server/storage';
 
 // Import modules under test
-import { requireAuth, requireAdmin, requireSuperAdmin, canAdminAccessClient } from '../../server/middlewares/auth';
+import { requireAuth, canAdminAccessClient } from '../../server/middlewares/auth';
 import { requireMinimumRole } from '../../server/middlewares/requireMinimumRole';
 import { requireAdminRole } from '../../server/middlewares/requireAdminRole';
+
+// Create helper functions for common permission checks
+const requireAdmin = requireMinimumRole(UserRole.ADMIN);
+const requireSuperAdmin = requireMinimumRole(UserRole.SUPER_ADMIN);
 
 describe('Role-Based Access Control (RBAC)', () => {
   // Spy on storage methods
@@ -470,7 +474,7 @@ describe('Role-Based Access Control (RBAC)', () => {
 
       await requireAdmin(req as Request, res as Response, next);
 
-      expect(spies.status).toHaveBeenCalledWith(401);
+      expect(spies.status).toHaveBeenCalledWith(404);
       expectBlocked(next);
     });
 

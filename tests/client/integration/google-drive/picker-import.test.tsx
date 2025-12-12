@@ -1,4 +1,5 @@
 /**
+ * @vitest-environment jsdom
  * Drive Picker Import Tests
  *
  * This test file validates Drive picker opening and import functionality,
@@ -14,15 +15,33 @@ import { QueryClient } from '@tanstack/react-query';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 
+// Set up mocks at the top level
+vi.mock('@/hooks/use-toast', () => ({
+  toast: vi.fn(),
+}));
+
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      id: 1,
+      email: 'test@example.com',
+      name: 'Test User',
+      role: 'super_admin',
+    },
+  })),
+}));
+
+vi.mock('@/lib/queries/google-drive');
+
 // Import utilities we created
 import {
   TestScenarioBuilder,
   createMockQueryClient,
   createTestWrapper,
-} from './test-utils';
+} from '../../test-utils';
 
 // Import the hooks we're testing
-import { useGoogleDriveImportMutation } from '../../client/src/lib/queries/google-drive';
+import { useGoogleDriveImportMutation } from '@/lib/queries/google-drive';
 
 // Mock Google Picker API
 const mockGooglePicker = {
@@ -171,6 +190,7 @@ describe('Drive Picker Import', () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           files: mockFiles.map(file => ({
             id: file.id,
@@ -227,6 +247,7 @@ describe('Drive Picker Import', () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           files: mockFiles.map(file => ({
             id: file.id,
@@ -280,6 +301,7 @@ describe('Drive Picker Import', () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           files: mockFiles.map(file => ({
             id: file.id,
@@ -332,6 +354,7 @@ describe('Drive Picker Import', () => {
             headers: {
               'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify({
               files: mockFiles.map(file => ({
                 id: file.id,
@@ -449,6 +472,7 @@ describe('Drive Picker Import', () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           files: mockFiles.map(file => ({
             id: file.id,

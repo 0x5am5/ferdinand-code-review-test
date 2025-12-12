@@ -1,4 +1,5 @@
 /**
+ * @vitest-environment jsdom
  * Token Refresh Behavior Tests
  *
  * This test file validates token retrieval and refresh behavior for Google Drive,
@@ -19,13 +20,13 @@ import {
   TestScenarioBuilder,
   createMockQueryClient,
   createTestWrapper,
-} from './test-utils';
+} from '../../test-utils';
 
 // Import the hooks we're testing
-import { 
+import {
   useGoogleDriveTokenQuery,
-  useGoogleDriveTokenQueryWithRefresh 
-} from '../../client/src/lib/queries/google-drive';
+  useGoogleDriveTokenQueryWithRefresh
+} from '@/lib/queries/google-drive';
 
 describe('Token Refresh Behavior', () => {
   let queryClient: QueryClient;

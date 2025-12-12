@@ -1,4 +1,5 @@
 /**
+ * @vitest-environment jsdom
  * Dashboard OAuth Flow Tests
  *
  * This test file validates the OAuth flow for linking Google Drive
@@ -19,7 +20,7 @@ import '@testing-library/jest-dom';
 import {
   TestScenarioBuilder,
   createMockQueryClient,
-} from './test-utils';
+} from '../../test-utils';
 
 // Mock the dashboard component
 const MockDashboard = ({ onLinkDrive }: { onLinkDrive: () => void }) => (

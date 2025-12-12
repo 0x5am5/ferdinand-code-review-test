@@ -8,6 +8,7 @@
  * - Common test scenarios and mock data
  */
 
+import React from 'react';
 import { vi } from 'vitest';
 import { TextEncoder } from 'util';
 
@@ -112,22 +113,28 @@ export class MockSSEStream {
 
 // OAuth Mock Utilities
 export class MockOAuthFlow {
-  private originalWindowLocation: typeof window.location;
-  private originalWindowHistory: typeof window.history;
+  private originalWindowLocation: any;
+  private originalWindowHistory: any;
+  private hasWindow: boolean;
 
   constructor() {
-    this.originalWindowLocation = window.location;
-    this.originalWindowHistory = window.history;
+    this.hasWindow = typeof window !== 'undefined';
+    if (this.hasWindow) {
+      this.originalWindowLocation = window.location;
+      this.originalWindowHistory = window.history;
+    }
   }
 
   mockOAuthRedirect() {
+    if (!this.hasWindow) return;
+
     // Mock window.location.href for OAuth redirect - simplified to avoid JSDOM issues
     const mockLocation = {
       href: '',
       assign: vi.fn(),
       replace: vi.fn(),
     };
-    
+
     // Store original location descriptor
     const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
     if (originalDescriptor) {
@@ -142,6 +149,8 @@ export class MockOAuthFlow {
   }
 
   mockOAuthCallback(status: 'success' | 'error', _reason?: string) {
+    if (!this.hasWindow) return;
+
     // Mock URL parameters for OAuth callback
     const mockUrl = new URL('http://localhost:3001/dashboard');
     mockUrl.searchParams.set('google_auth', status);
@@ -164,6 +173,8 @@ export class MockOAuthFlow {
   }
 
   restore() {
+    if (!this.hasWindow) return;
+
     delete (window as any).location;
     delete (window as any).history;
     (window as any).location = this.originalWindowLocation;
@@ -173,7 +184,7 @@ export class MockOAuthFlow {
 
 // Fetch Mock Utilities
 export class MockFetchResponses {
-  private responses: Map<string, any> = new Map();
+  public responses: Map<string, any> = new Map();
 
   setConnectionResponse(connection: MockGoogleDriveConnection | null) {
     if (connection) {
@@ -350,11 +361,17 @@ export class TestScenarioBuilder {
     return this;
   }
 
+  mockFetch(url: string, response: any) {
+    this.fetchResponses.responses.set(url, response);
+    return this;
+  }
+
   build() {
     const mockFetch = this.fetchResponses.setupFetchMock();
-    
+
     return {
       mockFetch,
+      mockFetch: (url: string, response: any) => this.mockFetch(url, response),
       cleanup: () => {
         this.oauthFlow.restore();
         vi.clearAllMocks();
@@ -400,14 +417,8 @@ export const createMockErrorResult = () => ({
   errors: ['Failed to download test-file-2.jpg: File too large'],
 });
 
-// Toast mock helper
-export const mockToast = () => {
-  const toast = vi.fn();
-  vi.mock('@/hooks/use-toast', () => ({
-    toast,
-  }));
-  return toast;
-};
+// Toast mock helper (Note: mocks should be defined at top level, not in functions)
+export const mockToast = vi.fn();
 
 // Query client mock helper
 export const createMockQueryClient = () => {
@@ -423,7 +434,6 @@ export const createMockQueryClient = () => {
 // Component render wrapper helper
 export const createTestWrapper = (queryClient: any) => {
   const { QueryClientProvider } = require('@tanstack/react-query');
-  return ({ children }: { children: React.ReactNode }) => (
-    React.createElement(QueryClientProvider, { client: queryClient }, children)
-  );
+  return ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
 };

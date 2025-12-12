@@ -32,7 +32,7 @@ import { defineConfig } from 'vitest/config';
            name: 'client',
            environment: 'jsdom',
            include: ['tests/client/**/*.test.{ts,tsx}', 'client/**/*.test.{ts,tsx}'],
-           setupFiles: ['./tests/setup.ts'],
+           setupFiles: ['./tests/setup-env.js', './tests/setup.ts'],
          },
        },
      ],

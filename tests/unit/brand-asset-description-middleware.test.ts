@@ -1,5 +1,4 @@
 /**
-import type { MockedFunction } from 'vitest';
  * Brand Asset Description Middleware Unit Tests (JUP-29)
  *
  * This test suite validates that the middleware stack properly enforces
@@ -14,18 +13,17 @@ import type { MockedFunction } from 'vitest';
  * Run: npm test tests/unit/brand-asset-description-middleware.test.ts
  */
 
-import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { UserRole } from '@shared/schema';
 
-// Mock storage module with proper vitest mock functions
-// Use vi.hoisted() to avoid hoisting issues with mock functions
+// Create mock functions using vi.hoisted() - must be called before vi.mock()
 const { mockGetUser } = vi.hoisted(() => ({
-  mockGetUser: vi.fn() as MockedFunction<any>,
+  mockGetUser: vi.fn(),
 }));
 
 // Mock the storage module before importing middlewares
-vi.mock('../../server/storage', () => ({
+vi.mock('../../server/storage.ts', () => ({
   storage: {
     getUser: mockGetUser,
   },
@@ -40,6 +38,7 @@ function createMockRequest(overrides = {}): any {
     session: { userId: 1 } as any,
     params: { clientId: '1', assetId: '1' },
     body: {},
+    headers: {},
     ...overrides,
   };
 }

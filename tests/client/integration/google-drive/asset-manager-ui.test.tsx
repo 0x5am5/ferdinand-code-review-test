@@ -1,31 +1,54 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { render, screen } from "@testing-library/react";
-import { UserRole } from "../../shared/schema";
-import { AssetManager } from "../../client/src/components/brand/asset-manager";
+import { UserRole } from "@shared/schema";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import "@testing-library/jest-dom";
+import { AssetManager } from "@/components/brand/asset-manager";
+import { RoleSwitchingProvider } from "@/contexts/role-switching-context";
+import { createMockQueryClient } from "../../test-utils";
 
 // Mock the modules that would cause import issues
-vi.mock("../../client/src/hooks/use-auth", () => ({
+vi.mock("@/hooks/use-auth", () => ({
   useAuth: vi.fn(),
 }));
 
-vi.mock("../../client/src/lib/queries/clients", () => ({
+vi.mock("@/lib/queries/clients", () => ({
   useClientsQuery: vi.fn(),
 }));
 
-vi.mock("../../client/src/lib/queries/google-drive", () => ({
+vi.mock("@/lib/queries/google-drive", () => ({
   useGoogleDriveConnectionQuery: vi.fn(),
+  useGoogleDriveTokenQuery: vi.fn(() => ({ data: null, isLoading: false, error: null })),
+  useGoogleDriveImportMutation: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+  })),
+  useGoogleDriveConnectMutation: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+  })),
+  useGoogleDriveDisconnectMutation: vi.fn(() => ({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isSuccess: false,
+    isError: false,
+  })),
+  useGoogleDriveOAuthCallback: vi.fn(),
 }));
 
-vi.mock("../../client/src/lib/queries/assets", () => ({
-  useAssetCategoriesQuery: () => ({ data: [] }),
-  useAssetTagsQuery: () => ({ data: [] }),
-  useBulkDeleteAssetsMutation: () => ({ mutateAsync: vi.fn() }),
-  useBulkUpdateAssetsMutation: () => ({ mutateAsync: vi.fn() }),
-  useDeleteAssetMutation: () => ({ mutateAsync: vi.fn() }),
-}));
-
-import { useAuth } from "../../client/src/hooks/use-auth";
-import { useClientsQuery } from "../../client/src/lib/queries/clients";
-import { useGoogleDriveConnectionQuery } from "../../client/src/lib/queries/google-drive";
+import { useAuth } from "@/hooks/use-auth";
+import { useClientsQuery } from "@/lib/queries/clients";
+import { useGoogleDriveConnectionQuery } from "@/lib/queries/google-drive";
 
 const mockUseAuth = useAuth as MockedFunction<typeof useAuth>;
 const mockUseClientsQuery = useClientsQuery as MockedFunction<typeof useClientsQuery>;
@@ -33,10 +56,12 @@ const mockUseGoogleDriveConnectionQuery = useGoogleDriveConnectionQuery as Mocke
 
 describe("AssetManager - Google Drive UI Indicator", () => {
   const mockClientId = 123;
+  let queryClient: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+    queryClient = createMockQueryClient();
+
     // Default mock implementations
     mockUseAuth.mockReturnValue({
       user: {
@@ -61,6 +86,16 @@ describe("AssetManager - Google Drive UI Indicator", () => {
     });
   });
 
+  const renderAssetManager = (clientId: number) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <RoleSwitchingProvider>
+          <AssetManager clientId={clientId} />
+        </RoleSwitchingProvider>
+      </QueryClientProvider>
+    );
+  };
+
   it("should not show Google Drive indicator for non-super-admin users", () => {
     mockUseAuth.mockReturnValue({
       user: {
@@ -84,7 +119,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
       refetch: vi.fn(),
     });
 
-    render(<AssetManager clientId={mockClientId} />);
+    renderAssetManager(mockClientId);
 
     expect(screen.queryByText("Google Drive Connected")).not.toBeInTheDocument();
   });
@@ -105,7 +140,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
       refetch: vi.fn(),
     });
 
-    render(<AssetManager clientId={mockClientId} />);
+    renderAssetManager(mockClientId);
 
     expect(screen.queryByText("Google Drive Connected")).not.toBeInTheDocument();
   });
@@ -133,7 +168,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
       refetch: vi.fn(),
     });
 
-    render(<AssetManager clientId={mockClientId} />);
+    renderAssetManager(mockClientId);
 
     expect(screen.getByText("Google Drive Connected")).toBeInTheDocument();
     expect(screen.getByText("Account: superadmin@example.com")).toBeInTheDocument();
@@ -163,7 +198,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
       refetch: vi.fn(),
     });
 
-    render(<AssetManager clientId={mockClientId} />);
+    renderAssetManager(mockClientId);
 
     expect(screen.getByText("Google Drive Connected")).toBeInTheDocument();
     expect(screen.getByText("Account: You")).toBeInTheDocument();
@@ -193,7 +228,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
       refetch: vi.fn(),
     });
 
-    render(<AssetManager clientId={mockClientId} />);
+    renderAssetManager(mockClientId);
 
     expect(screen.getByText("Google Drive Connected")).toBeInTheDocument();
     expect(screen.getByText("Account: User 2")).toBeInTheDocument();
@@ -230,7 +265,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
       refetch: vi.fn(),
     });
 
-    render(<AssetManager clientId={999} />);
+    renderAssetManager(999);
 
     expect(screen.getByText("Google Drive Connected")).toBeInTheDocument();
     expect(screen.getByText("Account: superadmin@example.com")).toBeInTheDocument();
@@ -260,7 +295,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
       refetch: vi.fn(),
     });
 
-    render(<AssetManager clientId={mockClientId} />);
+    renderAssetManager(mockClientId);
 
     expect(screen.getByText("Google Drive Connected")).toBeInTheDocument();
     expect(screen.queryByText(/Account:/)).not.toBeInTheDocument();
