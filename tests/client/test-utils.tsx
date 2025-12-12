@@ -8,7 +8,7 @@
  * - Common test scenarios and mock data
  */
 
-import { jest } from '@jest/globals';
+import { vi } from 'vitest';
 import { TextEncoder } from 'util';
 
 // Mock data types
@@ -81,7 +81,7 @@ export class MockSSEStream {
 
   createMockReader() {
     return {
-      read: jest.fn().mockImplementation(async () => {
+      read: vi.fn().mockImplementation(async () => {
         if (this.currentIndex >= this.chunks.length) {
           return { done: true, value: new Uint8Array() };
         }
@@ -94,7 +94,7 @@ export class MockSSEStream {
           value: new TextEncoder().encode(chunk),
         };
       }),
-      releaseLock: jest.fn(),
+      releaseLock: vi.fn(),
     };
   }
 
@@ -124,8 +124,8 @@ export class MockOAuthFlow {
     // Mock window.location.href for OAuth redirect - simplified to avoid JSDOM issues
     const mockLocation = {
       href: '',
-      assign: jest.fn(),
-      replace: jest.fn(),
+      assign: vi.fn(),
+      replace: vi.fn(),
     };
     
     // Store original location descriptor
@@ -159,7 +159,7 @@ export class MockOAuthFlow {
     // Mock history.replaceState for URL cleanup
     (window as any).history = {
       ...window.history,
-      replaceState: jest.fn(),
+      replaceState: vi.fn(),
     };
   }
 
@@ -226,7 +226,7 @@ export class MockFetchResponses {
   }
 
   setupFetchMock() {
-    const mockFetch = jest.fn().mockImplementation((...args: any[]) => {
+    const mockFetch = vi.fn().mockImplementation((...args: any[]) => {
       const url = args[0] as string;
       const response = this.responses.get(url);
       if (response) {
@@ -357,7 +357,7 @@ export class TestScenarioBuilder {
       mockFetch,
       cleanup: () => {
         this.oauthFlow.restore();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
       },
     };
   }
@@ -402,8 +402,8 @@ export const createMockErrorResult = () => ({
 
 // Toast mock helper
 export const mockToast = () => {
-  const toast = jest.fn();
-  jest.mock('@/hooks/use-toast', () => ({
+  const toast = vi.fn();
+  vi.mock('@/hooks/use-toast', () => ({
     toast,
   }));
   return toast;

@@ -15,7 +15,7 @@
  * npm test -- drive-file-permissions.test.ts
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { UserRole } from '@shared/schema';
 import {
   hasPermission,

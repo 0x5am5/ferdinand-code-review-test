@@ -22,7 +22,7 @@
  */
 
 // @ts-nocheck - Disabling type checks for test file to avoid Jest mock type issues
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   trackQuotaUsage,
   trackQuotaError,
@@ -94,7 +94,7 @@ describe('Drive Quota Monitor - trackQuotaUsage()', () => {
   beforeEach(() => {
     // Reset quota tracking before each test
     resetQuotaTracking();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Basic Quota Tracking', () => {
@@ -310,8 +310,8 @@ describe('Drive Quota Monitor - trackQuotaUsage()', () => {
 describe('Drive Quota Monitor - trackQuotaError()', () => {
   beforeEach(() => {
     resetQuotaTracking();
-    jest.clearAllMocks();
-    jest.spyOn(console, 'error').mockImplementation(() => {});
+    vi.clearAllMocks();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   it('should track rate limit exceeded error', () => {
@@ -394,7 +394,7 @@ describe('Drive Quota Monitor - trackQuotaError()', () => {
   });
 
   it('should log error to console', () => {
-    const consoleErrorSpy = jest.spyOn(console, 'error');
+    const consoleErrorSpy = vi.spyOn(console, 'error');
     const error = createGaxiosError(429);
     const parsedError = parseDriveError(error);
 
@@ -520,7 +520,7 @@ describe('Drive Quota Monitor - getQuotaStats()', () => {
 
 describe('Drive Quota Monitor - resetQuotaTracking()', () => {
   beforeEach(() => {
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   it('should reset specific user quota', () => {
@@ -565,7 +565,7 @@ describe('Drive Quota Monitor - resetQuotaTracking()', () => {
   });
 
   it('should log reset message', () => {
-    const consoleLogSpy = jest.spyOn(console, 'log');
+    const consoleLogSpy = vi.spyOn(console, 'log');
 
     resetQuotaTracking('user123');
 
@@ -582,12 +582,12 @@ describe('Drive Quota Monitor - resetQuotaTracking()', () => {
 describe('Drive Quota Monitor - withQuotaTracking()', () => {
   beforeEach(() => {
     resetQuotaTracking();
-    jest.clearAllMocks();
-    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.clearAllMocks();
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
   });
 
   it('should track quota and execute operation successfully', async () => {
-    const operation = jest.fn().mockResolvedValue('success');
+    const operation = vi.fn().mockResolvedValue('success');
 
     const result = await withQuotaTracking('user123', 'files.list', operation);
 
@@ -605,7 +605,7 @@ describe('Drive Quota Monitor - withQuotaTracking()', () => {
       trackQuotaUsage('user123', 'files.list');
     }
 
-    const operation = jest.fn().mockResolvedValue('success');
+    const operation = vi.fn().mockResolvedValue('success');
 
     await expect(
       withQuotaTracking('user123', 'files.list', operation)
@@ -620,7 +620,7 @@ describe('Drive Quota Monitor - withQuotaTracking()', () => {
       trackQuotaUsage(`user${i % 100}`, 'files.list');
     }
 
-    const operation = jest.fn().mockResolvedValue('success');
+    const operation = vi.fn().mockResolvedValue('success');
 
     await expect(
       withQuotaTracking('user999', 'files.list', operation)
@@ -630,14 +630,14 @@ describe('Drive Quota Monitor - withQuotaTracking()', () => {
   });
 
   it('should warn at high quota usage', async () => {
-    const consoleWarnSpy = jest.spyOn(console, 'warn');
+    const consoleWarnSpy = vi.spyOn(console, 'warn');
 
     // Use 16,000 requests (80% of 20,000)
     for (let i = 0; i < 16000; i++) {
       trackQuotaUsage('user123', 'files.list');
     }
 
-    const operation = jest.fn().mockResolvedValue('success');
+    const operation = vi.fn().mockResolvedValue('success');
     await withQuotaTracking('user123', 'files.list', operation);
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(
@@ -650,7 +650,7 @@ describe('Drive Quota Monitor - withQuotaTracking()', () => {
 
   it('should track quota errors on operation failure', async () => {
     const error = createGaxiosError(429);
-    const operation = jest.fn().mockRejectedValue(error);
+    const operation = vi.fn().mockRejectedValue(error);
 
     await expect(
       withQuotaTracking('user123', 'files.list', operation)
@@ -664,7 +664,7 @@ describe('Drive Quota Monitor - withQuotaTracking()', () => {
 
   it('should return operation result data', async () => {
     const mockData = { id: '123', name: 'Test File' };
-    const operation = jest.fn().mockResolvedValue(mockData);
+    const operation = vi.fn().mockResolvedValue(mockData);
 
     const result = await withQuotaTracking('user123', 'files.get', operation);
 
@@ -837,7 +837,7 @@ describe('Drive Quota Monitor - getRecentQuotaErrors()', () => {
 describe('Drive Quota Monitor - cleanupExpiredQuotas()', () => {
   beforeEach(() => {
     resetQuotaTracking();
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   it('should clean up expired user quotas', async () => {
@@ -871,7 +871,7 @@ describe('Drive Quota Monitor - cleanupExpiredQuotas()', () => {
   });
 
   it('should log cleanup message when quotas cleaned', async () => {
-    const consoleLogSpy = jest.spyOn(console, 'log');
+    const consoleLogSpy = vi.spyOn(console, 'log');
 
     // Track requests
     trackQuotaUsage('user1', 'files.list');

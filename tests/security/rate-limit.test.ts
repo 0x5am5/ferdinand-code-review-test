@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { rateLimit } from '../../server/middlewares/rate-limit';
 
@@ -16,22 +16,22 @@ function createMockRequest(overrides = {}): Partial<Request> {
 // Mock Response object
 function createMockResponse(): Partial<Response> {
   const res: any = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-    setHeader: jest.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    setHeader: vi.fn().mockReturnThis(),
   };
   return res;
 }
 
 // Mock NextFunction
 function createMockNext(): NextFunction {
-  return jest.fn() as any;
+  return vi.fn() as any;
 }
 
 describe('Rate Limiting Middleware', () => {
   beforeEach(() => {
     // Clear any existing rate limit records between tests
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Basic rate limiting', () => {

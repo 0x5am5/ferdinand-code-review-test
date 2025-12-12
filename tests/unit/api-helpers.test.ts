@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, vi, MockedFunction } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import {
   apiRequest,
   brandAssetApi,
@@ -7,17 +8,17 @@ import {
 } from "../../client/src/lib/api";
 
 // Mock fetch globally
-global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+global.fetch = vi.fn() as MockedFunction<typeof fetch>;
 
 describe("apiRequest", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("successful requests", () => {
     it("should make a GET request with correct parameters", async () => {
       const mockResponse = { data: "test" };
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify(mockResponse), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -38,7 +39,7 @@ describe("apiRequest", () => {
       const mockResponse = { id: 1 };
       const requestData = { name: "test" };
 
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify(mockResponse), {
           status: 201,
           headers: { "Content-Type": "application/json" },
@@ -57,7 +58,7 @@ describe("apiRequest", () => {
     });
 
     it("should handle 204 No Content responses", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(null, {
           status: 204,
         })
@@ -69,7 +70,7 @@ describe("apiRequest", () => {
     });
 
     it("should handle empty response bodies", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response("", {
           status: 200,
           headers: { "Content-Length": "0" },
@@ -82,7 +83,7 @@ describe("apiRequest", () => {
     });
 
     it("should respect custom credentials option", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify({ data: "test" }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -105,7 +106,7 @@ describe("apiRequest", () => {
     it("should throw error with message from JSON response", async () => {
       const errorResponse = { message: "Custom error message" };
 
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify(errorResponse), {
           status: 400,
           headers: { "Content-Type": "application/json" },
@@ -118,7 +119,7 @@ describe("apiRequest", () => {
     });
 
     it("should throw default error when JSON parsing fails", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response("not json", {
           status: 500,
           headers: { "Content-Type": "text/plain" },
@@ -131,7 +132,7 @@ describe("apiRequest", () => {
     });
 
     it("should throw error for invalid JSON in successful response", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response("invalid json", {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -147,7 +148,7 @@ describe("apiRequest", () => {
 
 describe("sectionMetadataApi", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("list", () => {
@@ -157,7 +158,7 @@ describe("sectionMetadataApi", () => {
         { sectionType: "brand-fonts", description: "Brand fonts" },
       ];
 
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify(mockMetadata), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -184,7 +185,7 @@ describe("sectionMetadataApi", () => {
         description: "Updated description",
       };
 
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify(mockResponse), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -212,7 +213,7 @@ describe("sectionMetadataApi", () => {
 
 describe("brandAssetApi", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("updateDescription", () => {
@@ -222,7 +223,7 @@ describe("brandAssetApi", () => {
         description: "New description",
       };
 
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify(mockResponse), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -247,7 +248,7 @@ describe("brandAssetApi", () => {
     });
 
     it("should handle errors when updating description", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify({ message: "Permission denied" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },
@@ -262,7 +263,7 @@ describe("brandAssetApi", () => {
 
   describe("delete", () => {
     it("should delete brand asset without variant", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(null, {
           status: 204,
         })
@@ -281,7 +282,7 @@ describe("brandAssetApi", () => {
     });
 
     it("should delete brand asset light variant", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(null, {
           status: 204,
         })
@@ -298,7 +299,7 @@ describe("brandAssetApi", () => {
     });
 
     it("should delete brand asset dark variant with query parameter", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(null, {
           status: 204,
         })
@@ -315,7 +316,7 @@ describe("brandAssetApi", () => {
     });
 
     it("should handle errors when deleting asset", async () => {
-      (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce(
+      (global.fetch as MockedFunction<typeof fetch>).mockResolvedValueOnce(
         new Response(JSON.stringify({ message: "Asset not found" }), {
           status: 404,
           headers: { "Content-Type": "application/json" },

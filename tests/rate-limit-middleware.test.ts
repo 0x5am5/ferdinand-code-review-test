@@ -1,4 +1,5 @@
 /**
+import type { MockedFunction } from 'vitest';
  * Rate Limit Middleware Tests
  *
  * Comprehensive test suite for Express rate limiting middleware.
@@ -18,7 +19,7 @@
  */
 
 // @ts-nocheck - Disabling type checks for test file to avoid Jest mock type issues
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import {
   rateLimit,
@@ -60,9 +61,9 @@ function createMockResponse(): Response & {
   statusCode: number;
   jsonData: any;
   headerData: Record<string, any>;
-  status: jest.MockedFunction<(code: number) => any>;
-  json: jest.MockedFunction<(data: any) => any>;
-  setHeader: jest.MockedFunction<(name: string, value: any) => any>;
+  status: MockedFunction<(code: number) => any>;
+  json: MockedFunction<(data: any) => any>;
+  setHeader: MockedFunction<(name: string, value: any) => any>;
 } {
   const res: any = {
     statusCode: 200,
@@ -70,17 +71,17 @@ function createMockResponse(): Response & {
     headerData: {},
   };
 
-  res.status = jest.fn((code: number) => {
+  res.status = vi.fn((code: number) => {
     res.statusCode = code;
     return res;
   });
 
-  res.json = jest.fn((data: any) => {
+  res.json = vi.fn((data: any) => {
     res.jsonData = data;
     return res;
   });
 
-  res.setHeader = jest.fn((name: string, value: any) => {
+  res.setHeader = vi.fn((name: string, value: any) => {
     res.headerData[name] = value;
     return res;
   });
@@ -91,8 +92,8 @@ function createMockResponse(): Response & {
 /**
  * Creates a mock next function
  */
-function createMockNext(): jest.MockedFunction<NextFunction> {
-  return jest.fn();
+function createMockNext(): MockedFunction<NextFunction> {
+  return vi.fn();
 }
 
 /**

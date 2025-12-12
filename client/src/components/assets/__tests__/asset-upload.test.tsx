@@ -2,11 +2,103 @@
  * @vitest-environment jsdom
  */
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import "@testing-library/react/dont-cleanup-after-each";
+
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { AssetUpload } from "../asset-upload";
+
+// Mock Dialog to avoid Radix Portal/focus locking issues in JSDOM
+vi.mock("@/components/ui/dialog", async () => {
+  const React = await import("react");
+
+  const DialogContext = React.createContext<{
+    open: boolean;
+    onOpenChange?: (open: boolean) => void;
+  } | null>(null);
+
+  const Dialog = ({ open, onOpenChange, children }: any) => (
+    <DialogContext.Provider value={{ open: Boolean(open), onOpenChange }}>
+      {children}
+    </DialogContext.Provider>
+  );
+
+  const DialogTrigger = ({ asChild, children }: any) => {
+    const ctx = React.useContext(DialogContext);
+    const child = React.Children.only(children);
+
+    if (!asChild || !React.isValidElement(child)) {
+      return (
+        <button type="button" onClick={() => ctx?.onOpenChange?.(true)}>
+          {children}
+        </button>
+      );
+    }
+
+    const handleClick = (event: any) => {
+      child.props.onClick?.(event);
+      ctx?.onOpenChange?.(true);
+    };
+
+    return React.cloneElement(child, { onClick: handleClick });
+  };
+
+  const DialogContent = ({ children, ...props }: any) => {
+    const ctx = React.useContext(DialogContext);
+    if (!ctx?.open) return null;
+
+    return (
+      <div role="dialog" {...props}>
+        {children}
+      </div>
+    );
+  };
+
+  const DialogHeader = ({ children, ...props }: any) => (
+    <div {...props}>{children}</div>
+  );
+
+  const DialogTitle = ({ children, ...props }: any) => (
+    <h2 {...props}>{children}</h2>
+  );
+
+  const DialogDescription = ({ children, ...props }: any) => (
+    <p {...props}>{children}</p>
+  );
+
+  return {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  };
+});
+
+// Mock Select to avoid Radix Portal behavior in JSDOM
+vi.mock("@/components/ui/select", async () => {
+  const Select = ({ children }: any) => <div>{children}</div>;
+  const SelectTrigger = ({ children, ...props }: any) => (
+    <button type="button" {...props}>
+      {children}
+    </button>
+  );
+  const SelectValue = ({ placeholder }: any) => <span>{placeholder ?? ""}</span>;
+  const SelectContent = ({ children }: any) => <div>{children}</div>;
+  const SelectItem = ({ children, ...props }: any) => (
+    <div {...props}>{children}</div>
+  );
+
+  return {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+  };
+});
 
 // Mock the asset queries
 vi.mock("@/lib/queries/assets", () => ({
@@ -28,26 +120,18 @@ vi.mock("@/lib/queries/assets", () => ({
   })),
 }));
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-  return ({ children }: { children: JSX.Element }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
-
 describe("AssetUpload", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    cleanup();
+  });
+
   describe("File Upload Flow", () => {
     it("should render upload dialog trigger button", () => {
-      render(<AssetUpload />, { wrapper: createWrapper() });
+      render(<AssetUpload clientId={1} />);
 
       expect(
         screen.getByRole("button", { name: /upload assets/i })
@@ -56,7 +140,7 @@ describe("AssetUpload", () => {
 
     it("should open dialog when upload button is clicked", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload />, { wrapper: createWrapper() });
+      render(<AssetUpload clientId={1} />);
 
       const uploadButton = screen.getByRole("button", {
         name: /upload assets/i,
@@ -67,70 +151,58 @@ describe("AssetUpload", () => {
     });
 
     it("should allow file selection via input", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const file = new File(["hello"], "test.txt", { type: "text/plain" });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
 
-      await user.upload(input, file);
+      expect(input).toBeInTheDocument();
+      fireEvent.change(input, { target: { files: [file] } });
 
       await waitFor(() => {
         expect(screen.getByText("test.txt")).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     });
 
     it("should display file preview for selected files", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const file = new File(["content"], "document.pdf", {
         type: "application/pdf",
       });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
 
-      await user.upload(input, file);
+      expect(input).toBeInTheDocument();
+      fireEvent.change(input, { target: { files: [file] } });
 
       await waitFor(() => {
         expect(screen.getByText("document.pdf")).toBeInTheDocument();
         expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     });
 
     it("should allow removing files from selection", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const file = new File(["content"], "test.txt", { type: "text/plain" });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
 
-      await user.upload(input, file);
+      expect(input).toBeInTheDocument();
+      fireEvent.change(input, { target: { files: [file] } });
 
       await waitFor(() => {
         expect(screen.getByText("test.txt")).toBeInTheDocument();
       });
 
-      // Find and click the remove button (X button)
-      const removeButtons = screen.getAllByRole("button");
-      const removeButton = removeButtons.find((btn) =>
-        btn.querySelector("svg.lucide-x")
-      );
-
-      if (removeButton) {
-        await user.click(removeButton);
-      }
+      const removeButton = screen.getByRole("button", {
+        name: /remove test\.txt/i,
+      });
+      await user.click(removeButton);
 
       await waitFor(() => {
         expect(screen.queryByText("test.txt")).not.toBeInTheDocument();
@@ -138,10 +210,7 @@ describe("AssetUpload", () => {
     });
 
     it("should support multiple file selection", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const files = [
         new File(["content1"], "file1.txt", { type: "text/plain" }),
@@ -149,11 +218,10 @@ describe("AssetUpload", () => {
         new File(["content3"], "file3.txt", { type: "text/plain" }),
       ];
 
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
 
-      await user.upload(input, files);
+      expect(input).toBeInTheDocument();
+      fireEvent.change(input, { target: { files } });
 
       await waitFor(() => {
         expect(screen.getByText("file1.txt")).toBeInTheDocument();
@@ -161,14 +229,14 @@ describe("AssetUpload", () => {
         expect(screen.getByText("file3.txt")).toBeInTheDocument();
         expect(screen.getByText(/selected files \(3\)/i)).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     });
   });
 
   describe("Drag and Drop Upload", () => {
     it("should handle drag and drop events", async () => {
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const dropZone = screen.getByRole("button", { name: /drag and drop/i });
       const file = new File(["content"], "dropped.txt", { type: "text/plain" });
@@ -192,12 +260,12 @@ describe("AssetUpload", () => {
       await waitFor(() => {
         expect(screen.getByText("dropped.txt")).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     });
 
     it("should highlight drop zone on drag over", () => {
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const dropZone = screen.getByRole("button", { name: /drag and drop/i });
 
@@ -208,9 +276,7 @@ describe("AssetUpload", () => {
     });
 
     it("should remove highlight when drag leaves", () => {
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const dropZone = screen.getByRole("button", { name: /drag and drop/i });
 
@@ -224,9 +290,7 @@ describe("AssetUpload", () => {
 
   describe("Metadata Selection", () => {
     it("should allow selecting visibility option", async () => {
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       // Default visibility should be "shared"
       expect(
@@ -235,9 +299,7 @@ describe("AssetUpload", () => {
     });
 
     it("should allow selecting categories", async () => {
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       // Categories should be available
       expect(screen.getByText(/categories \(optional\)/i)).toBeInTheDocument();
@@ -245,9 +307,7 @@ describe("AssetUpload", () => {
 
     it("should allow entering tags", async () => {
       const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const tagInput = screen.getByPlaceholderText(/enter new tags/i);
       await user.type(tagInput, "test, example");
@@ -256,9 +316,7 @@ describe("AssetUpload", () => {
     });
 
     it("should display selected categories as badges", async () => {
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       // Test that category selection UI is present
       expect(screen.getByText(/categories \(optional\)/i)).toBeInTheDocument();
@@ -267,60 +325,54 @@ describe("AssetUpload", () => {
 
   describe("Upload Progress", () => {
     it("should disable upload button when no files selected", () => {
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
-      const uploadButtons = screen.getAllByRole("button");
-      const uploadButton = uploadButtons.find((btn) =>
-        btn.textContent?.includes("Upload")
-      );
+      const uploadButton = screen.getByRole("button", {
+        name: /upload 0 files/i,
+      });
 
       expect(uploadButton).toBeDisabled();
     });
 
     it("should enable upload button when files are selected", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const file = new File(["content"], "test.txt", { type: "text/plain" });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
 
-      await user.upload(input, file);
+      expect(input).toBeInTheDocument();
+      fireEvent.change(input, { target: { files: [file] } });
 
       await waitFor(() => {
-        const uploadButtons = screen.getAllByRole("button");
-        const uploadButton = uploadButtons.find((btn) =>
-          btn.textContent?.includes("Upload 1 file")
-        );
+        const uploadButton = screen.getByRole("button", {
+          name: /upload 1 file/i,
+        });
         expect(uploadButton).not.toBeDisabled();
       });
+
+      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     });
 
     it("should show correct file count in upload button text", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={vi.fn()} />, {
-        wrapper: createWrapper(),
-      });
+      render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
       const files = [
         new File(["content1"], "file1.txt", { type: "text/plain" }),
         new File(["content2"], "file2.txt", { type: "text/plain" }),
       ];
 
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
+      const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
 
-      await user.upload(input, files);
+      expect(input).toBeInTheDocument();
+      fireEvent.change(input, { target: { files } });
 
       await waitFor(() => {
-        expect(screen.getByText(/upload 2 files/i)).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: /upload 2 files/i })
+        ).toBeInTheDocument();
       });
+
+      fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     });
   });
 
@@ -328,9 +380,9 @@ describe("AssetUpload", () => {
     it("should close dialog when cancel button is clicked", async () => {
       const user = userEvent.setup();
       const onOpenChange = vi.fn();
-      render(<AssetUpload open={true} onOpenChange={onOpenChange} />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <AssetUpload clientId={1} open={true} onOpenChange={onOpenChange} />
+      );
 
       const cancelButton = screen.getByRole("button", { name: /cancel/i });
       await user.click(cancelButton);
@@ -345,11 +397,11 @@ describe("AssetUpload", () => {
 
       render(
         <AssetUpload
+          clientId={1}
           open={true}
           onOpenChange={vi.fn()}
           initialFiles={initialFiles}
-        />,
-        { wrapper: createWrapper() }
+        />
       );
 
       expect(screen.getByText("initial.txt")).toBeInTheDocument();

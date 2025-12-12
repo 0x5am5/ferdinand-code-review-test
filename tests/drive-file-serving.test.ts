@@ -1,4 +1,5 @@
 /**
+import type { MockedFunction } from 'vitest';
  * Drive File Serving Endpoint Integration Tests
  *
  * These tests verify the security, permission enforcement, and functionality
@@ -27,63 +28,63 @@
  * npm test -- drive-file-serving.test.ts
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach, afterEach, MockedFunction } from 'vitest';
 import { UserRole, type Asset } from '@shared/schema';
 import type { drive_v3 } from 'googleapis';
 
 // Mock dependencies
 const mockDb: any = {
-  select: jest.fn().mockReturnThis(),
-  from: jest.fn().mockReturnThis(),
-  where: jest.fn().mockResolvedValue([]),
-  update: jest.fn().mockReturnThis(),
-  set: jest.fn().mockReturnThis(),
+  select: vi.fn().mockReturnThis(),
+  from: vi.fn().mockReturnThis(),
+  where: vi.fn().mockResolvedValue([]),
+  update: vi.fn().mockReturnThis(),
+  set: vi.fn().mockReturnThis(),
 };
 
 const mockDriveClient: Partial<drive_v3.Drive> = {
   files: {
-    get: jest.fn(),
+    get: vi.fn(),
   } as any,
 };
 
 // Mock services
-jest.mock('../server/db', () => ({
+vi.mock('../server/db', () => ({
   db: mockDb,
 }));
 
-jest.mock('../server/services/drive-thumbnail-cache', () => ({
-  fetchAndCacheThumbnail: jest.fn(),
+vi.mock('../server/services/drive-thumbnail-cache', () => ({
+  fetchAndCacheThumbnail: vi.fn(),
 }));
 
-jest.mock('../server/services/drive-secure-access', () => ({
-  validateSecureToken: jest.fn(),
-  revokeSecureToken: jest.fn(),
+vi.mock('../server/services/drive-secure-access', () => ({
+  validateSecureToken: vi.fn(),
+  revokeSecureToken: vi.fn(),
 }));
 
-jest.mock('../server/services/asset-permissions', () => ({
-  checkAssetPermission: jest.fn(),
+vi.mock('../server/services/asset-permissions', () => ({
+  checkAssetPermission: vi.fn(),
 }));
 
-jest.mock('../server/middlewares/drive-file-permissions', () => ({
-  checkAssetPermission: jest.fn(),
+vi.mock('../server/middlewares/drive-file-permissions', () => ({
+  checkAssetPermission: vi.fn(),
 }));
 
-jest.mock('../server/services/google-drive', () => ({
-  createDriveClient: jest.fn(() => mockDriveClient),
+vi.mock('../server/services/google-drive', () => ({
+  createDriveClient: vi.fn(() => mockDriveClient),
 }));
 
-jest.mock('../server/utils/encryption', () => ({
-  isTokenExpired: jest.fn(),
-  decryptTokens: jest.fn(),
+vi.mock('../server/utils/encryption', () => ({
+  isTokenExpired: vi.fn(),
+  decryptTokens: vi.fn(),
 }));
 
-jest.mock('../server/middlewares/google-drive-auth', () => ({
-  refreshUserTokens: jest.fn(),
+vi.mock('../server/middlewares/google-drive-auth', () => ({
+  refreshUserTokens: vi.fn(),
 }));
 
-jest.mock('../server/services/drive-audit-logger', () => ({
-  logDriveFileAccess: jest.fn(),
-  logFailedAccess: jest.fn(),
+vi.mock('../server/services/drive-audit-logger', () => ({
+  logDriveFileAccess: vi.fn(),
+  logFailedAccess: vi.fn(),
 }));
 
 // Import after mocks
@@ -104,7 +105,7 @@ import {
 } from '../server/services/drive-audit-logger';
 
 // Type-safe mock cast helper
-const asMock = <T extends (...args: any[]) => any>(fn: T) => fn as jest.MockedFunction<T>;
+const asMock = <T extends (...args: any[]) => any>(fn: T) => fn as MockedFunction<T>;
 
 // Test data factories
 const createMockAsset = (overrides?: Partial<Asset>): Asset => ({
@@ -163,11 +164,11 @@ const createMockDriveConnection = () => ({
 
 describe('Drive File Serving Endpoints', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('Thumbnail Serving Endpoint: /api/google-drive/files/:fileId/thumbnail', () => {
@@ -304,7 +305,7 @@ describe('Drive File Serving Endpoints', () => {
       });
 
       it('should return 403 when user lacks asset read permission', async () => {
-        (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+        (checkAssetPermissionService as Mock).mockResolvedValue({
           allowed: false,
           reason: 'You don\'t have permission to view this file',
         });
@@ -324,7 +325,7 @@ describe('Drive File Serving Endpoints', () => {
         const asset = createMockAsset();
         const userId = 50;
 
-        (checkDrivePermission as jest.Mock).mockResolvedValue({
+        (checkDrivePermission as Mock).mockResolvedValue({
           allowed: true,
         });
 
@@ -334,7 +335,7 @@ describe('Drive File Serving Endpoints', () => {
       });
 
       it('should return 403 when user lacks Drive file permission', async () => {
-        (checkDrivePermission as jest.Mock).mockResolvedValue({
+        (checkDrivePermission as Mock).mockResolvedValue({
           allowed: false,
           reason: 'You don\'t have permission to access this Drive file',
         });
@@ -358,7 +359,7 @@ describe('Drive File Serving Endpoints', () => {
           thumbnailCacheVersion: 'abc123',
         });
 
-        (fetchAndCacheThumbnail as jest.Mock).mockResolvedValue({
+        (fetchAndCacheThumbnail as Mock).mockResolvedValue({
           path: asset.cachedThumbnailPath,
           url: `/api/assets/${asset.id}/thumbnail`,
           cached: true,
@@ -385,7 +386,7 @@ describe('Drive File Serving Endpoints', () => {
           thumbnailCacheVersion: null,
         });
 
-        (fetchAndCacheThumbnail as jest.Mock).mockResolvedValue({
+        (fetchAndCacheThumbnail as Mock).mockResolvedValue({
           path: '/uploads/drive-thumbnails/drive-file-123_medium.jpg',
           url: `/api/assets/${asset.id}/thumbnail`,
           cached: false,
@@ -410,7 +411,7 @@ describe('Drive File Serving Endpoints', () => {
         const asset = createMockAsset();
 
         for (const size of sizes) {
-          (fetchAndCacheThumbnail as jest.Mock).mockResolvedValue({
+          (fetchAndCacheThumbnail as Mock).mockResolvedValue({
             path: `/uploads/drive-thumbnails/drive-file-123_${size}.jpg`,
             url: `/api/assets/${asset.id}/thumbnail`,
             cached: false,
@@ -446,7 +447,7 @@ describe('Drive File Serving Endpoints', () => {
 
     describe('Error Handling', () => {
       it('should return 500 with proper error code on thumbnail fetch failure', async () => {
-        (fetchAndCacheThumbnail as jest.Mock).mockRejectedValue(
+        (fetchAndCacheThumbnail as Mock).mockRejectedValue(
           new Error('Failed to download Drive thumbnail')
         );
 
@@ -489,7 +490,7 @@ describe('Drive File Serving Endpoints', () => {
       });
 
       it('should return 401 when token is invalid', async () => {
-        (validateSecureToken as jest.Mock).mockResolvedValue(null);
+        (validateSecureToken as Mock).mockResolvedValue(null);
 
         const token = 'invalid-token';
         const result = await validateSecureToken(token);
@@ -513,7 +514,7 @@ describe('Drive File Serving Endpoints', () => {
           action: 'read' as const,
         };
 
-        (validateSecureToken as jest.Mock).mockResolvedValue(null);
+        (validateSecureToken as Mock).mockResolvedValue(null);
 
         const result = await validateSecureToken('expired-token');
 
@@ -530,7 +531,7 @@ describe('Drive File Serving Endpoints', () => {
           action: 'read' as const,
         };
 
-        (validateSecureToken as jest.Mock).mockResolvedValue(validToken);
+        (validateSecureToken as Mock).mockResolvedValue(validToken);
 
         const result = await validateSecureToken('valid-token');
 
@@ -660,7 +661,7 @@ describe('Drive File Serving Endpoints', () => {
           assetId: asset.id,
         };
 
-        (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+        (checkAssetPermissionService as Mock).mockResolvedValue({
           allowed: true,
           asset,
         });
@@ -681,7 +682,7 @@ describe('Drive File Serving Endpoints', () => {
       });
 
       it('should return 403 when asset permission is revoked', async () => {
-        (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+        (checkAssetPermissionService as Mock).mockResolvedValue({
           allowed: false,
           reason: 'You no longer have permission to access this file',
         });
@@ -699,7 +700,7 @@ describe('Drive File Serving Endpoints', () => {
       it('should check Drive-specific permissions', async () => {
         const asset = createMockAsset();
 
-        (checkDrivePermission as jest.Mock).mockResolvedValue({
+        (checkDrivePermission as Mock).mockResolvedValue({
           allowed: true,
         });
 
@@ -709,7 +710,7 @@ describe('Drive File Serving Endpoints', () => {
       });
 
       it('should return 403 when Drive permission is denied', async () => {
-        (checkDrivePermission as jest.Mock).mockResolvedValue({
+        (checkDrivePermission as Mock).mockResolvedValue({
           allowed: false,
           reason: 'Drive file access denied',
         });
@@ -747,8 +748,8 @@ describe('Drive File Serving Endpoints', () => {
       it('should use existing token when not expired', () => {
         const connection = createMockDriveConnection();
 
-        (isTokenExpired as jest.Mock).mockReturnValue(false);
-        (decryptTokens as jest.Mock).mockReturnValue({
+        (isTokenExpired as Mock).mockReturnValue(false);
+        (decryptTokens as Mock).mockReturnValue({
           access_token: 'valid-access-token',
           refresh_token: 'refresh-token',
         });
@@ -769,8 +770,8 @@ describe('Drive File Serving Endpoints', () => {
       it('should refresh token when expired', async () => {
         const connection = createMockDriveConnection();
 
-        (isTokenExpired as jest.Mock).mockReturnValue(true);
-        (refreshUserTokens as jest.Mock).mockResolvedValue({
+        (isTokenExpired as Mock).mockReturnValue(true);
+        (refreshUserTokens as Mock).mockResolvedValue({
           credentials: {
             access_token: 'refreshed-access-token',
           },
@@ -785,8 +786,8 @@ describe('Drive File Serving Endpoints', () => {
       });
 
       it('should return 401 when token refresh fails', async () => {
-        (isTokenExpired as jest.Mock).mockReturnValue(true);
-        (refreshUserTokens as jest.Mock).mockRejectedValue(
+        (isTokenExpired as Mock).mockReturnValue(true);
+        (refreshUserTokens as Mock).mockRejectedValue(
           new Error('Token refresh failed')
         );
 
@@ -938,11 +939,11 @@ describe('Drive File Serving Endpoints', () => {
       const asset = createMockAsset();
       const userId = 50;
 
-      (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+      (checkAssetPermissionService as Mock).mockResolvedValue({
         allowed: true,
         asset,
       });
-      (checkDrivePermission as jest.Mock).mockResolvedValue({
+      (checkDrivePermission as Mock).mockResolvedValue({
         allowed: true,
       });
 
@@ -957,11 +958,11 @@ describe('Drive File Serving Endpoints', () => {
       const asset = createMockAsset();
       const userId = 50;
 
-      (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+      (checkAssetPermissionService as Mock).mockResolvedValue({
         allowed: true,
         asset,
       });
-      (checkDrivePermission as jest.Mock).mockResolvedValue({
+      (checkDrivePermission as Mock).mockResolvedValue({
         allowed: true,
       });
 
@@ -973,11 +974,11 @@ describe('Drive File Serving Endpoints', () => {
     });
 
     it('should deny access if asset permission fails even if Drive permission passes', async () => {
-      (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+      (checkAssetPermissionService as Mock).mockResolvedValue({
         allowed: false,
         reason: 'No asset access',
       });
-      (checkDrivePermission as jest.Mock).mockResolvedValue({
+      (checkDrivePermission as Mock).mockResolvedValue({
         allowed: true,
       });
 
@@ -988,11 +989,11 @@ describe('Drive File Serving Endpoints', () => {
     });
 
     it('should deny access if Drive permission fails even if asset permission passes', async () => {
-      (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+      (checkAssetPermissionService as Mock).mockResolvedValue({
         allowed: true,
         asset: createMockAsset(),
       });
-      (checkDrivePermission as jest.Mock).mockResolvedValue({
+      (checkDrivePermission as Mock).mockResolvedValue({
         allowed: false,
         reason: 'No Drive access',
       });
@@ -1011,7 +1012,7 @@ describe('Drive File Serving Endpoints', () => {
         driveOwner: null,
       });
 
-      (checkDrivePermission as jest.Mock).mockResolvedValue({
+      (checkDrivePermission as Mock).mockResolvedValue({
         allowed: true,
       });
 
@@ -1039,8 +1040,8 @@ describe('Drive File Serving Endpoints', () => {
         action: 'read' as const,
       };
 
-      (validateSecureToken as jest.Mock).mockResolvedValue(validToken);
-      (checkAssetPermissionService as jest.Mock).mockResolvedValue({
+      (validateSecureToken as Mock).mockResolvedValue(validToken);
+      (checkAssetPermissionService as Mock).mockResolvedValue({
         allowed: false,
         reason: 'Permission revoked',
       });
@@ -1056,7 +1057,7 @@ describe('Drive File Serving Endpoints', () => {
 
   describe('Audit Logging Integration', () => {
     beforeEach(() => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
     });
 
     it('should log successful file access', () => {
@@ -1070,7 +1071,7 @@ describe('Drive File Serving Endpoints', () => {
         clientId: 100,
       };
 
-      (logDriveFileAccess as jest.Mock).mockResolvedValue(undefined);
+      (logDriveFileAccess as Mock).mockResolvedValue(undefined);
       logDriveFileAccess(mockContext);
 
       expect(logDriveFileAccess).toHaveBeenCalledWith(mockContext);
@@ -1085,7 +1086,7 @@ describe('Drive File Serving Endpoints', () => {
         errorMessage: 'Permission denied',
       };
 
-      (logFailedAccess as jest.Mock).mockResolvedValue(undefined);
+      (logFailedAccess as Mock).mockResolvedValue(undefined);
       logFailedAccess(mockContext);
 
       expect(logFailedAccess).toHaveBeenCalledWith(mockContext);
@@ -1105,7 +1106,7 @@ describe('Drive File Serving Endpoints', () => {
         success: true,
       };
 
-      (logDriveFileAccess as jest.Mock).mockResolvedValue(undefined);
+      (logDriveFileAccess as Mock).mockResolvedValue(undefined);
       logDriveFileAccess(mockContext, mockRequest as any);
 
       expect(logDriveFileAccess).toHaveBeenCalledWith(mockContext, mockRequest);

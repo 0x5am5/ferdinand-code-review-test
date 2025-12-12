@@ -323,6 +323,8 @@ export const AssetUpload: FC<AssetUploadProps> = ({
             multiple
             onChange={handleFileSelect}
             className="hidden"
+            data-testid="asset-upload-input"
+            aria-label="Upload files"
           />
 
           {/* File previews */}
@@ -356,6 +358,7 @@ export const AssetUpload: FC<AssetUploadProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => removeFile(index)}
+                      aria-label={`Remove ${filePreview.file.name}`}
                     >
                       <X className="h-4 w-4" />
                     </Button>

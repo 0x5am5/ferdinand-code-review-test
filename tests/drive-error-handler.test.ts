@@ -1,4 +1,5 @@
 /**
+import type { MockedFunction } from 'vitest';
  * Drive Error Handler Tests
  *
  * These tests verify the standardized error handling for Drive file operations.
@@ -21,7 +22,7 @@
  * npm test -- drive-error-handler.test.ts
  */
 
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect, vi, MockedFunction } from 'vitest';
 import type { Response } from 'express';
 
 // Import the error handler module
@@ -44,20 +45,20 @@ import {
 const createMockResponse = (): Partial<Response> & {
   statusCode: number;
   jsonData: any;
-  status: jest.MockedFunction<(code: number) => any>;
-  json: jest.MockedFunction<(data: any) => any>;
+  status: MockedFunction<(code: number) => any>;
+  json: MockedFunction<(data: any) => any>;
 } => {
   const res: any = {
     statusCode: 200,
     jsonData: null,
   };
 
-  res.status = jest.fn((code: number) => {
+  res.status = vi.fn((code: number) => {
     res.statusCode = code;
     return res;
   });
 
-  res.json = jest.fn((data: any) => {
+  res.json = vi.fn((data: any) => {
     res.jsonData = data;
     return res;
   });
@@ -67,7 +68,7 @@ const createMockResponse = (): Partial<Response> & {
 
 describe('Drive Error Handler Service', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('DriveErrorCode Constants', () => {
@@ -513,7 +514,7 @@ describe('Drive Error Handler Service', () => {
     });
 
     it('should log error to console', () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
       const res = createMockResponse() as Response;
       const error = new Error('Critical error');
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { describe, expect, it, jest, beforeEach } from "@jest/globals";
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useGoogleDriveImportMutation } from "../../client/src/lib/queries/google-drive";
@@ -12,7 +12,7 @@ global.TextDecoder = class TextDecoder {
 } as any;
 
 // Mock fetch globally
-const mockFetch = global.fetch = jest.fn() as any;
+const mockFetch = global.fetch = vi.fn() as any;
 
 // Mock Response globally with proper implementation
 class MockResponse {
@@ -78,7 +78,7 @@ describe("Google Drive Import - Permission Enforcement", () => {
   );
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Reset fetch mock to default successful response
     mockFetch.mockReset();
@@ -108,7 +108,7 @@ describe("Google Drive Import - Permission Enforcement", () => {
       };
       mockFetch.mockResolvedValueOnce(mockResponse);
 
-      const onError = jest.fn();
+      const onError = vi.fn();
       result.current.mutate(
         { files: mockFiles, clientId: mockUnassociatedClientId },
         { onError }
@@ -155,7 +155,7 @@ describe("Google Drive Import - Permission Enforcement", () => {
         return new MockResponse();
       });
 
-      const onError = jest.fn();
+      const onError = vi.fn();
       result.current.mutate(
         { files: mockFiles, clientId: 999 }, // Non-existent client ID
         { onError }
@@ -170,7 +170,7 @@ describe("Google Drive Import - Permission Enforcement", () => {
 
     it("should handle 403 error via direct API call", async () => {
       // Simulate direct API call (beyond the React hook)
-      const directFetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+      const directFetch = vi.fn() as MockedFunction<typeof fetch>;
       
       // Mock 403 response for direct API call
       directFetch.mockResolvedValueOnce({
@@ -217,8 +217,8 @@ describe("Google Drive Import - Permission Enforcement", () => {
         return new MockResponse();
       });
 
-      const onProgress = jest.fn();
-      const onError = jest.fn();
+      const onProgress = vi.fn();
+      const onError = vi.fn();
 
       result.current.mutate(
         { files: mockFiles, clientId: mockUnassociatedClientId, onProgress },
@@ -255,7 +255,7 @@ describe("Google Drive Import - Permission Enforcement", () => {
         return new MockResponse();
       });
 
-      const onError = jest.fn();
+      const onError = vi.fn();
       
       result.current.mutate(
         { files: mockFiles, clientId: mockUnassociatedClientId },
@@ -277,7 +277,7 @@ describe("Google Drive Import - Permission Enforcement", () => {
       ];
 
       for (const scenario of unauthorizedScenarios) {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         
         const { result } = renderHook(() => useGoogleDriveImportMutation(), { wrapper });
         
@@ -294,7 +294,7 @@ describe("Google Drive Import - Permission Enforcement", () => {
           return new MockResponse();
         });
 
-        const onError = jest.fn();
+        const onError = vi.fn();
         
         result.current.mutate(
           { files: mockFiles, clientId: scenario.clientId },

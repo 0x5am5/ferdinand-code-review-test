@@ -1,4 +1,5 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import { UserRole } from "@shared/schema";
 import type { Request, Response, NextFunction } from "express";
 
@@ -90,17 +91,17 @@ export function createMockRequestWithRole(
 export function createMockResponse(): {
   res: Partial<Response>;
   spies: {
-    status: jest.MockedFunction<any>;
-    json: jest.MockedFunction<any>;
-    send: jest.MockedFunction<any>;
-    sendStatus: jest.MockedFunction<any>;
+    status: MockedFunction<any>;
+    json: MockedFunction<any>;
+    send: MockedFunction<any>;
+    sendStatus: MockedFunction<any>;
   };
 } {
   const spies = {
-    status: jest.fn().mockReturnThis() as jest.MockedFunction<any>,
-    json: jest.fn().mockReturnThis() as jest.MockedFunction<any>,
-    send: jest.fn().mockReturnThis() as jest.MockedFunction<any>,
-    sendStatus: jest.fn().mockReturnThis() as jest.MockedFunction<any>,
+    status: vi.fn().mockReturnThis() as MockedFunction<any>,
+    json: vi.fn().mockReturnThis() as MockedFunction<any>,
+    send: vi.fn().mockReturnThis() as MockedFunction<any>,
+    sendStatus: vi.fn().mockReturnThis() as MockedFunction<any>,
   };
 
   return {
@@ -112,8 +113,8 @@ export function createMockResponse(): {
 /**
  * Create a mock NextFunction
  */
-export function createMockNext(): jest.MockedFunction<any> {
-  return jest.fn() as jest.MockedFunction<any>;
+export function createMockNext(): MockedFunction<any> {
+  return vi.fn() as MockedFunction<any>;
 }
 
 /**

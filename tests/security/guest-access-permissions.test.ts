@@ -1,19 +1,16 @@
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
+import type { MockedFunction } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { UserRole } from '@shared/schema';
 
-// Mock storage module with proper jest mock functions - must be defined before jest.mock()
-const mockGetUser = jest.fn() as jest.MockedFunction<any>;
-
-// Mock the storage module before importing middlewares (matches auth-middleware.test.ts pattern)
-jest.mock('../../server/storage', () => ({
-  storage: {
-    getUser: mockGetUser,
-  },
+// Mock storage module with proper vitest mock functions
+// Use vi.hoisted() to avoid hoisting issues with mock functions
+const { mockGetUser } = vi.hoisted(() => ({
+  mockGetUser: vi.fn() as MockedFunction<any>,
 }));
 
-// Also mock with the absolute server/storage path for requireMinimumRole and requireAdminRole
-jest.mock('server/storage', () => ({
+// Mock the storage module before importing middlewares (matches auth-middleware.test.ts pattern)
+vi.mock('../../server/storage', () => ({
   storage: {
     getUser: mockGetUser,
   },
@@ -36,21 +33,21 @@ function createMockRequest(overrides = {}): any {
 // Mock Response object
 function createMockResponse(): Partial<Response> {
   const res: any = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    send: vi.fn().mockReturnThis(),
   };
   return res;
 }
 
 // Mock NextFunction
 function createMockNext(): NextFunction {
-  return jest.fn() as any;
+  return vi.fn() as any;
 }
 
 describe('Guest Access Permissions (JUP-26 Security Fixes)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Type Scales Endpoints - requireAuth middleware', () => {

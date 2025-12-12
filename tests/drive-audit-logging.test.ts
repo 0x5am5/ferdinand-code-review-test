@@ -1,4 +1,5 @@
 /**
+import type { MockedFunction } from 'vitest';
  * Drive File Access Audit Logging Tests
  *
  * These tests verify the audit logging functionality for Drive file operations.
@@ -18,14 +19,14 @@
  * npm test -- drive-audit-logging.test.ts
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach, afterEach, MockedFunction } from 'vitest';
 import type { Request } from 'express';
 import { UserRole } from '@shared/schema';
 
 // Mock database
 const mockDb: any = {
-  insert: jest.fn().mockReturnThis(),
-  values: jest.fn().mockResolvedValue([{ id: 1 }]),
+  insert: vi.fn().mockReturnThis(),
+  values: vi.fn().mockResolvedValue([{ id: 1 }]),
 };
 
 // Mock schema
@@ -36,14 +37,14 @@ const mockDriveFileAccessLogs = {
 };
 
 // Setup mocks
-jest.mock('../server/db', () => ({
+vi.mock('../server/db', () => ({
   db: mockDb,
 }));
 
-jest.mock('@shared/schema', () => ({
+vi.mock('@shared/schema', () => ({
   driveFileAccessLogs: mockDriveFileAccessLogs,
   insertDriveFileAccessLogSchema: {
-    parse: jest.fn((data) => data),
+    parse: vi.fn((data) => data),
   },
   UserRole: {
     GUEST: 'guest',
@@ -68,7 +69,7 @@ import {
 import { insertDriveFileAccessLogSchema } from '@shared/schema';
 
 // Type-safe mock cast
-const asMock = <T extends (...args: any[]) => any>(fn: T) => fn as jest.MockedFunction<T>;
+const asMock = <T extends (...args: any[]) => any>(fn: T) => fn as MockedFunction<T>;
 
 // Test data factories
 const createMockRequest = (overrides?: Partial<Request>): Partial<Request> => ({
@@ -84,7 +85,7 @@ const createMockRequest = (overrides?: Partial<Request>): Partial<Request> => ({
 
 describe('Drive Audit Logging Service', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Reset mock implementations
     asMock(mockDb.insert).mockReturnValue(mockDb);
     asMock(mockDb.values).mockResolvedValue([{ id: 1 }]);
@@ -92,7 +93,7 @@ describe('Drive Audit Logging Service', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('logDriveFileAccess() - Main Logging Function', () => {
@@ -279,7 +280,7 @@ describe('Drive Audit Logging Service', () => {
     });
 
     it('should not throw errors if logging fails', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
       asMock(mockDb.insert).mockImplementation(() => {
         throw new Error('Database connection failed');
       });
@@ -845,7 +846,7 @@ describe('Drive Audit Logging Service', () => {
 
   describe('Edge Cases and Error Resilience', () => {
     it('should handle validation errors gracefully', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
       asMock(insertDriveFileAccessLogSchema.parse).mockImplementation(() => {
         throw new Error('Validation failed');
       });
@@ -860,7 +861,7 @@ describe('Drive Audit Logging Service', () => {
     });
 
     it('should handle database insertion errors gracefully', async () => {
-      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation();
       asMock(mockDb.values).mockRejectedValue(new Error('Database error'));
 
       await logDriveFileAccess({

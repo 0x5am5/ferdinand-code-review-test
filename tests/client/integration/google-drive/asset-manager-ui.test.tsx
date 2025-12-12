@@ -3,39 +3,39 @@ import { UserRole } from "../../shared/schema";
 import { AssetManager } from "../../client/src/components/brand/asset-manager";
 
 // Mock the modules that would cause import issues
-jest.mock("../../client/src/hooks/use-auth", () => ({
-  useAuth: jest.fn(),
+vi.mock("../../client/src/hooks/use-auth", () => ({
+  useAuth: vi.fn(),
 }));
 
-jest.mock("../../client/src/lib/queries/clients", () => ({
-  useClientsQuery: jest.fn(),
+vi.mock("../../client/src/lib/queries/clients", () => ({
+  useClientsQuery: vi.fn(),
 }));
 
-jest.mock("../../client/src/lib/queries/google-drive", () => ({
-  useGoogleDriveConnectionQuery: jest.fn(),
+vi.mock("../../client/src/lib/queries/google-drive", () => ({
+  useGoogleDriveConnectionQuery: vi.fn(),
 }));
 
-jest.mock("../../client/src/lib/queries/assets", () => ({
+vi.mock("../../client/src/lib/queries/assets", () => ({
   useAssetCategoriesQuery: () => ({ data: [] }),
   useAssetTagsQuery: () => ({ data: [] }),
-  useBulkDeleteAssetsMutation: () => ({ mutateAsync: jest.fn() }),
-  useBulkUpdateAssetsMutation: () => ({ mutateAsync: jest.fn() }),
-  useDeleteAssetMutation: () => ({ mutateAsync: jest.fn() }),
+  useBulkDeleteAssetsMutation: () => ({ mutateAsync: vi.fn() }),
+  useBulkUpdateAssetsMutation: () => ({ mutateAsync: vi.fn() }),
+  useDeleteAssetMutation: () => ({ mutateAsync: vi.fn() }),
 }));
 
 import { useAuth } from "../../client/src/hooks/use-auth";
 import { useClientsQuery } from "../../client/src/lib/queries/clients";
 import { useGoogleDriveConnectionQuery } from "../../client/src/lib/queries/google-drive";
 
-const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
-const mockUseClientsQuery = useClientsQuery as jest.MockedFunction<typeof useClientsQuery>;
-const mockUseGoogleDriveConnectionQuery = useGoogleDriveConnectionQuery as jest.MockedFunction<typeof useGoogleDriveConnectionQuery>;
+const mockUseAuth = useAuth as MockedFunction<typeof useAuth>;
+const mockUseClientsQuery = useClientsQuery as MockedFunction<typeof useClientsQuery>;
+const mockUseGoogleDriveConnectionQuery = useGoogleDriveConnectionQuery as MockedFunction<typeof useGoogleDriveConnectionQuery>;
 
 describe("AssetManager - Google Drive UI Indicator", () => {
   const mockClientId = 123;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Default mock implementations
     mockUseAuth.mockReturnValue({
@@ -57,7 +57,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
     mockUseGoogleDriveConnectionQuery.mockReturnValue({
       data: null,
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
   });
 
@@ -81,7 +81,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
         lastUsedAt: null,
       },
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
     render(<AssetManager clientId={mockClientId} />);
@@ -102,7 +102,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
     mockUseGoogleDriveConnectionQuery.mockReturnValue({
       data: null,
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
     render(<AssetManager clientId={mockClientId} />);
@@ -130,7 +130,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
         lastUsedAt: null,
       },
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
     render(<AssetManager clientId={mockClientId} />);
@@ -160,7 +160,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
         lastUsedAt: null,
       },
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
     render(<AssetManager clientId={mockClientId} />);
@@ -190,7 +190,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
         lastUsedAt: null,
       },
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
     render(<AssetManager clientId={mockClientId} />);
@@ -227,7 +227,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
         lastUsedAt: null,
       },
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
     render(<AssetManager clientId={999} />);
@@ -257,7 +257,7 @@ describe("AssetManager - Google Drive UI Indicator", () => {
         lastUsedAt: null,
       },
       isLoading: false,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
     render(<AssetManager clientId={mockClientId} />);

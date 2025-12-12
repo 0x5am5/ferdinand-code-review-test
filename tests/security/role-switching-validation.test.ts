@@ -1,4 +1,5 @@
 /**
+import type { MockedFunction } from 'vitest';
  * Role Switching Validation Security Tests
  *
  * Comprehensive test suite for X-Viewing-Role header validation and authorization.
@@ -14,7 +15,7 @@
  * Run: npm test -- tests/security/role-switching-validation.test.ts
  */
 
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { UserRole } from '@shared/schema';
 import {
@@ -28,26 +29,32 @@ import {
 } from '../helpers/role-test-helpers';
 
 // Mock storage module
-const mockGetUser = jest.fn() as jest.MockedFunction<any>;
+// Use vi.hoisted() to avoid hoisting issues with mock functions
+const { mockGetUser } = vi.hoisted(() => ({
+  mockGetUser: vi.fn() as MockedFunction<any>,
+}));
 
-jest.mock('../../server/storage/index.js', () => ({
+vi.mock('../../server/storage', () => ({
   storage: {
     getUser: mockGetUser,
   },
 }));
 
 // Mock audit logger to verify logging calls
-const mockLogRoleSwitchingAudit = jest.fn() as jest.MockedFunction<any>;
-const mockGetClientIp = jest.fn((req: any) => {
-  if (req?.ip) return req.ip;
-  if (req?.headers?.['x-forwarded-for']) {
-    const forwarded = req.headers['x-forwarded-for'];
-    return Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0].trim();
-  }
-  return undefined;
-});
+// Use vi.hoisted() for these mocks as well
+const { mockLogRoleSwitchingAudit, mockGetClientIp } = vi.hoisted(() => ({
+  mockLogRoleSwitchingAudit: vi.fn() as MockedFunction<any>,
+  mockGetClientIp: vi.fn((req: any) => {
+    if (req?.ip) return req.ip;
+    if (req?.headers?.['x-forwarded-for']) {
+      const forwarded = req.headers['x-forwarded-for'];
+      return Array.isArray(forwarded) ? forwarded[0] : forwarded.split(',')[0].trim();
+    }
+    return undefined;
+  }),
+}));
 
-jest.mock('../../server/utils/audit-logger.js', () => ({
+vi.mock('../../server/utils/audit-logger', () => ({
   logRoleSwitchingAudit: (arg: any) => mockLogRoleSwitchingAudit(arg),
   getClientIp: (arg: any) => mockGetClientIp(arg),
 }));
@@ -57,7 +64,7 @@ import { requireMinimumRole } from '../../server/middlewares/requireMinimumRole'
 
 describe('Role Switching Validation Security', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockGetUser.mockImplementation((userId: number) => {
       const user = Object.values(TEST_USERS).find((u) => u.id === userId);
       return Promise.resolve(user || null);

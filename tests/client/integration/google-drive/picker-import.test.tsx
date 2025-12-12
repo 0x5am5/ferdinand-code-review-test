@@ -11,7 +11,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Import utilities we created
@@ -26,8 +26,8 @@ import { useGoogleDriveImportMutation } from '../../client/src/lib/queries/googl
 
 // Mock Google Picker API
 const mockGooglePicker = {
-  PickerBuilder: jest.fn(),
-  Document: jest.fn(),
+  PickerBuilder: vi.fn(),
+  Document: vi.fn(),
 };
 
 // Mock window.google
@@ -44,7 +44,7 @@ describe('Drive Picker Import', () => {
 
   beforeEach(() => {
     queryClient = createMockQueryClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -59,12 +59,12 @@ describe('Drive Picker Import', () => {
 
       // Mock picker builder
       const mockBuilder = {
-        addView: jest.fn().mockReturnThis(),
-        setOAuthToken: jest.fn().mockReturnThis(),
-        setCallback: jest.fn().mockReturnThis(),
-        build: jest.fn().mockReturnValue({
-          setVisible: jest.fn(),
-          show: jest.fn(),
+        addView: vi.fn().mockReturnThis(),
+        setOAuthToken: vi.fn().mockReturnThis(),
+        setCallback: vi.fn().mockReturnThis(),
+        build: vi.fn().mockReturnValue({
+          setVisible: vi.fn(),
+          show: vi.fn(),
         }),
       };
 
@@ -72,9 +72,9 @@ describe('Drive Picker Import', () => {
 
       // Mock document
       const mockDocument = {
-        createDocument: jest.fn().mockReturnValue({
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn(),
+        createDocument: vi.fn().mockReturnValue({
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
         }),
       };
 
@@ -106,13 +106,13 @@ describe('Drive Picker Import', () => {
       // Mock picker callback
       let pickerCallback;
       const mockBuilder = {
-        addView: jest.fn().mockReturnThis(),
-        setOAuthToken: jest.fn().mockReturnThis(),
-        setCallback: jest.fn().mockImplementation((callback) => {
+        addView: vi.fn().mockReturnThis(),
+        setOAuthToken: vi.fn().mockReturnThis(),
+        setCallback: vi.fn().mockImplementation((callback) => {
           pickerCallback = callback;
         }).mockReturnThis(),
-        build: jest.fn().mockReturnValue({
-          setVisible: jest.fn(),
+        build: vi.fn().mockReturnValue({
+          setVisible: vi.fn(),
         }),
       };
 
@@ -344,7 +344,7 @@ describe('Drive Picker Import', () => {
         });
 
         // Clear mocks for next iteration
-        jest.clearAllMocks();
+        vi.clearAllMocks();
         scenario.mockFetch('/api/google-drive/import', {
           ok: true,
           status: 200,
@@ -375,7 +375,7 @@ describe('Drive Picker Import', () => {
       ];
 
       // Mock progress callback
-      const onProgress = jest.fn();
+      const onProgress = vi.fn();
 
       // Mock successful import response
       scenario.mockFetch('/api/google-drive/import', {

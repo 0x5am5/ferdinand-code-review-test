@@ -1,4 +1,4 @@
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { csrfProtection, securityHeaders } from '../../server/middlewares/security-headers';
 
@@ -7,7 +7,7 @@ function createMockRequest(overrides = {}): Partial<Request> {
   return {
     method: 'POST',
     protocol: 'https',
-    get: jest.fn((header: string) => {
+    get: vi.fn((header: string) => {
       const headers: Record<string, string> = {
         host: 'example.com',
         origin: 'https://example.com',
@@ -22,16 +22,16 @@ function createMockRequest(overrides = {}): Partial<Request> {
 // Mock Response object
 function createMockResponse(): Partial<Response> {
   const res: any = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-    setHeader: jest.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    setHeader: vi.fn().mockReturnThis(),
   };
   return res;
 }
 
 // Mock NextFunction
 function createMockNext(): NextFunction {
-  return jest.fn() as any;
+  return vi.fn() as any;
 }
 
 describe('CSRF Protection Middleware', () => {
@@ -75,7 +75,7 @@ describe('CSRF Protection Middleware', () => {
       const req = createMockRequest({
         method: 'POST',
         protocol: 'https',
-        get: jest.fn((header: string) => {
+        get: vi.fn((header: string) => {
           if (header === 'host') return 'example.com';
           if (header === 'origin') return 'https://example.com';
           return null;
@@ -94,7 +94,7 @@ describe('CSRF Protection Middleware', () => {
       const req = createMockRequest({
         method: 'POST',
         protocol: 'https',
-        get: jest.fn((header: string) => {
+        get: vi.fn((header: string) => {
           if (header === 'host') return 'example.com';
           if (header === 'origin') return 'https://evil.com';
           return null;
@@ -115,7 +115,7 @@ describe('CSRF Protection Middleware', () => {
     it('should block POST requests without origin or referer', () => {
       const req = createMockRequest({
         method: 'POST',
-        get: jest.fn(() => null),
+        get: vi.fn(() => null),
       });
       const res = createMockResponse();
       const next = createMockNext();
@@ -130,7 +130,7 @@ describe('CSRF Protection Middleware', () => {
       const req = createMockRequest({
         method: 'POST',
         protocol: 'https',
-        get: jest.fn((header: string) => {
+        get: vi.fn((header: string) => {
           if (header === 'host') return 'example.com';
           if (header === 'referer') return 'https://example.com/some/path';
           if (header === 'origin') return null;
@@ -153,7 +153,7 @@ describe('CSRF Protection Middleware', () => {
         const req = createMockRequest({
           method,
           protocol: 'https',
-          get: jest.fn((header: string) => {
+          get: vi.fn((header: string) => {
             if (header === 'host') return 'example.com';
             if (header === 'origin') return 'https://evil.com';
             return null;

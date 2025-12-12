@@ -14,7 +14,7 @@
  * npm test -- google-drive-import-permissions.test.ts
  */
 
-const { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } = require('@jest/globals');
+const { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach } = require('vitest');
 const request = require('supertest');
 const { db } = require('../../server/db');
 const { users, clients, userClients, googleDriveConnections, assets } = require('../../shared/schema');

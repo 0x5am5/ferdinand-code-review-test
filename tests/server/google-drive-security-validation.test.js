@@ -11,7 +11,7 @@
  * - Permission validation
  */
 
-const { describe, it, expect, beforeEach, afterEach } = require('@jest/globals');
+const { describe, it, expect, beforeEach, afterEach } = require('vitest');
 const request = require('supertest');
 const { db } = require('../../server/db');
 const { 
@@ -114,7 +114,7 @@ describe("Google Drive Security Validation", () => {
       // Mock successful Google Drive download
       const mockDriveClient = {
         files: {
-          get: jest.fn().mockResolvedValue({
+          get: vi.fn().mockResolvedValue({
             data: Buffer.alloc(50 * 1024 * 1024) // 50MB buffer
           })
         }
@@ -371,11 +371,11 @@ describe("Google Drive Security Validation", () => {
       const originalInsert = db.insert;
       let capturedData = null;
       
-      (db.insert) = jest.fn().mockImplementation((table) => ({
-        values: jest.fn().mockImplementation((data) => {
+      (db.insert) = vi.fn().mockImplementation((table) => ({
+        values: vi.fn().mockImplementation((data) => {
           capturedData = data;
           return {
-            returning: jest.fn().mockResolvedValue([mockAsset])
+            returning: vi.fn().mockResolvedValue([mockAsset])
           };
         })
       }));
@@ -409,7 +409,7 @@ describe("Google Drive Security Validation", () => {
       const originalConsoleError = console.error;
       let capturedError = null;
       
-      console.error = jest.fn().mockImplementation((...args) => {
+      console.error = vi.fn().mockImplementation((...args) => {
         capturedError = args;
       });
 

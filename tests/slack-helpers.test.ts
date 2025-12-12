@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import type { BrandAsset } from '@shared/schema';
 import {
   findBestLogoMatch,

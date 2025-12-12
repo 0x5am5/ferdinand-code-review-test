@@ -11,7 +11,7 @@
 
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Import utilities we created
@@ -52,7 +52,7 @@ describe('Master Admin UI Indicator', () => {
 
   beforeEach(() => {
     queryClient = createMockQueryClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {

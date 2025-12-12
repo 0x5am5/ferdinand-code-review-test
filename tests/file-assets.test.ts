@@ -9,7 +9,7 @@
  * 3. Run: npx tsx tests/file-assets.test.ts
  */
 
-import { describe, it, expect, beforeAll, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 // fs and path imports removed - not used in this test suite
 import { cleanupTestAssets, cleanupTestCategories, cleanupTestTags } from './helpers/test-server';
 

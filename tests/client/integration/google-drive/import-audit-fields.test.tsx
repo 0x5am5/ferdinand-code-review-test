@@ -1,10 +1,10 @@
-import { describe, expect, it, jest, beforeEach } from "@jest/globals";
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { renderHook } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useGoogleDriveImportMutation } from "../../client/src/lib/queries/google-drive";
 
 // Mock fetch globally
-const mockFetch = global.fetch = jest.fn() as any;
+const mockFetch = global.fetch = vi.fn() as any;
 
 // Mock Response globally with proper implementation
 class MockResponse {
@@ -66,7 +66,7 @@ describe("Google Drive Import - Audit Fields", () => {
   );
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 
@@ -178,7 +178,7 @@ describe("Google Drive Import - Audit Fields", () => {
         return new MockResponse();
       });
 
-      const onError = jest.fn();
+      const onError = vi.fn();
 
       result.current.mutate(
         { files: [mockFiles[0]], clientId: mockClientId },

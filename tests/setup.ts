@@ -12,10 +12,10 @@ vi.mock('firebase/auth', () => ({
   getAuth: vi.fn(),
   setPersistence: vi.fn(() => Promise.resolve()),
   browserLocalPersistence: {},
-  GoogleAuthProvider: vi.fn().mockImplementation(() => ({
-    addScope: vi.fn(),
-    setCustomParameters: vi.fn(),
-  })),
+  GoogleAuthProvider: class MockGoogleAuthProvider {
+    addScope = vi.fn()
+    setCustomParameters = vi.fn()
+  },
 }));
 
 // Mock import.meta.env for Jest

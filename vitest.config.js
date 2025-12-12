@@ -16,16 +16,16 @@ import { defineConfig } from 'vitest/config';
      },
       // Projects configuration for different test types
       projects: [
-      //  {
-      //    extends: true,
-      //    test: {
-      //      name: 'server',
-      //      environment: 'node',
-      //      include: ['tests/**/*.test.ts', 'tests/**/*.test.js'],
-      //      exclude: ['tests/client/**'],
-      //      setupFiles: ['./tests/setup-env.js'],
-      //    },
-      //  },
+        {
+          extends: true,
+          test: {
+            name: 'server',
+            environment: 'node',
+            include: ['tests/**/*.test.ts', 'tests/**/*.test.js'],
+            exclude: ['tests/client/**'],
+            setupFiles: ['./tests/setup-env.js'],
+          },
+        },
        {
          extends: true,
          test: {

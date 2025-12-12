@@ -15,7 +15,7 @@
  * Note: These are integration tests that require a running server instance
  */
 
-import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { UserRole, type UserRoleType } from '@shared/schema';
 import {
   createTestUser,

@@ -1,4 +1,5 @@
 /**
+import type { MockedFunction } from 'vitest';
  * Brand Asset Description Middleware Unit Tests (JUP-29)
  *
  * This test suite validates that the middleware stack properly enforces
@@ -13,15 +14,18 @@
  * Run: npm test tests/unit/brand-asset-description-middleware.test.ts
  */
 
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { UserRole } from '@shared/schema';
 
-// Mock storage module with proper jest mock functions
-const mockGetUser = jest.fn() as jest.MockedFunction<any>;
+// Mock storage module with proper vitest mock functions
+// Use vi.hoisted() to avoid hoisting issues with mock functions
+const { mockGetUser } = vi.hoisted(() => ({
+  mockGetUser: vi.fn() as MockedFunction<any>,
+}));
 
 // Mock the storage module before importing middlewares
-jest.mock('../../server/storage/index.js', () => ({
+vi.mock('../../server/storage', () => ({
   storage: {
     getUser: mockGetUser,
   },
@@ -43,21 +47,21 @@ function createMockRequest(overrides = {}): any {
 // Mock Response object
 function createMockResponse(): Partial<Response> {
   const res: any = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
+    status: vi.fn().mockReturnThis(),
+    json: vi.fn().mockReturnThis(),
+    send: vi.fn().mockReturnThis(),
   };
   return res;
 }
 
 // Mock NextFunction
 function createMockNext(): NextFunction {
-  return jest.fn() as any;
+  return vi.fn() as any;
 }
 
 describe('Brand Asset Description Middleware (JUP-29)', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     // Reset mock implementation to avoid cross-test pollution
     mockGetUser.mockReset();
   });

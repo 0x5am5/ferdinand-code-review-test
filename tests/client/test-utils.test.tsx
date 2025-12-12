@@ -6,7 +6,7 @@
  */
 
 import { QueryClient } from '@tanstack/react-query';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 import { TextDecoder } from 'util';
 
@@ -29,7 +29,7 @@ describe('Shared Frontend Test Utilities', () => {
 
   beforeEach(() => {
     queryClient = createMockQueryClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {

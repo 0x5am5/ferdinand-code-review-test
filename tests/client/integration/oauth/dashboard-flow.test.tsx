@@ -11,7 +11,7 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 // Note: matchers are already extended in setup.ts
 
@@ -64,7 +64,7 @@ describe('Dashboard OAuth Flow', () => {
 
   beforeEach(() => {
     queryClient = createMockQueryClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -77,7 +77,7 @@ describe('Dashboard OAuth Flow', () => {
         .withDisconnectedDrive()
         .build();
 
-      const onLinkDrive = jest.fn();
+      const onLinkDrive = vi.fn();
       
       render(
         <QueryClientProvider client={queryClient}>
@@ -98,7 +98,7 @@ describe('Dashboard OAuth Flow', () => {
         .withOAuthRedirect('https://accounts.google.com/oauth/authorize?test=true')
         .build();
 
-      const onLinkDrive = jest.fn();
+      const onLinkDrive = vi.fn();
       
       render(
         <QueryClientProvider client={queryClient}>
@@ -215,7 +215,7 @@ describe('Dashboard OAuth Flow', () => {
         .withValidToken()
         .build();
 
-      const onUnlinkDrive = jest.fn();
+      const onUnlinkDrive = vi.fn();
       
       render(
         <QueryClientProvider client={queryClient}>
@@ -240,7 +240,7 @@ describe('Dashboard OAuth Flow', () => {
         .withDisconnectCapability()
         .build();
 
-      const onUnlinkDrive = jest.fn();
+      const onUnlinkDrive = vi.fn();
       
       render(
         <QueryClientProvider client={queryClient}>

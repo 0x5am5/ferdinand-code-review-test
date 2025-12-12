@@ -6,7 +6,7 @@
  * only supported runtime features (no ambient `require` in ESM test runner).
  */
  
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import request from 'supertest';
 import { db } from '../../server/db';
 import { users, clients, userClients, googleDriveConnections, assets } from '../../shared/schema';

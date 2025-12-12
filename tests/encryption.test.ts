@@ -4,7 +4,7 @@
  * Tests for AES-256-GCM encryption used for OAuth tokens
  */
 
-import { describe, test, expect, beforeAll } from '@jest/globals';
+import { describe, test, expect, beforeAll } from 'vitest';
 import {
   encrypt,
   decrypt,

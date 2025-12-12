@@ -7,7 +7,7 @@
  * 3. Proper permission enforcement for share operations
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { db } from '../../server/db.js';
 import { eq } from 'drizzle-orm';
 import { checkAssetPermission } from '../../server/services/asset-permissions.js';

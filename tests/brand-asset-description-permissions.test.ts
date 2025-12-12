@@ -15,7 +15,7 @@
  * 2. Run: npm test tests/brand-asset-description-permissions.test.ts
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { UserRole, type UserRoleType } from '@shared/schema';
 import {
   createTestUser,

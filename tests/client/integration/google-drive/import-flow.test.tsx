@@ -19,7 +19,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 describe('Google Drive Import Flow - Frontend', () => {
@@ -35,7 +35,7 @@ describe('Google Drive Import Flow - Frontend', () => {
     });
     
     // Reset all mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -45,7 +45,7 @@ describe('Google Drive Import Flow - Frontend', () => {
   describe('Basic Import Flow', () => {
     it('should render import button when Drive is connected', () => {
       // Mock Drive connection and token
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveConnectionQuery: () => ({
           data: {
             id: 1,
@@ -54,7 +54,7 @@ describe('Google Drive Import Flow - Frontend', () => {
           },
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
         useGoogleDriveTokenQuery: () => ({
           data: {
@@ -63,10 +63,10 @@ describe('Google Drive Import Flow - Frontend', () => {
           },
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
         useGoogleDriveImportMutation: () => ({
-          mutate: jest.fn(),
+          mutate: vi.fn(),
           isPending: false,
         }),
       }));
@@ -91,7 +91,7 @@ describe('Google Drive Import Flow - Frontend', () => {
 
     it('should disable import button when no token available', () => {
       // Mock Drive connection but no token
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveConnectionQuery: () => ({
           data: {
             id: 1,
@@ -100,16 +100,16 @@ describe('Google Drive Import Flow - Frontend', () => {
           },
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
         useGoogleDriveTokenQuery: () => ({
           data: null,
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
         useGoogleDriveImportMutation: () => ({
-          mutate: jest.fn(),
+          mutate: vi.fn(),
           isPending: false,
         }),
       }));
@@ -135,9 +135,9 @@ describe('Google Drive Import Flow - Frontend', () => {
 
     it('should show loading state during import', () => {
       // Mock import in progress
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveImportMutation: () => ({
-          mutate: jest.fn(),
+          mutate: vi.fn(),
           isPending: true,
         }),
       }));
@@ -166,13 +166,13 @@ describe('Google Drive Import Flow - Frontend', () => {
   describe('Super Admin UI Features', () => {
     it('should show Drive connection indicator for super admin', () => {
       // Mock super admin user and Drive connection
-      jest.mock('@/hooks/use-auth', () => ({
+      vi.mock('@/hooks/use-auth', () => ({
         useAuth: () => ({
           user: { id: 1, email: 'superadmin@test.com', role: 'super_admin' },
         }),
       }));
 
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveConnectionQuery: () => ({
           data: {
             id: 1,
@@ -183,7 +183,7 @@ describe('Google Drive Import Flow - Frontend', () => {
           },
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
       }));
 
@@ -214,13 +214,13 @@ describe('Google Drive Import Flow - Frontend', () => {
 
     it('should not show Drive connection indicator for non-super admin', () => {
       // Mock non-super admin user
-      jest.mock('@/hooks/use-auth', () => ({
+      vi.mock('@/hooks/use-auth', () => ({
         useAuth: () => ({
           user: { id: 2, email: 'user@test.com', role: 'admin' },
         }),
       }));
 
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveConnectionQuery: () => ({
           data: {
             id: 1,
@@ -231,7 +231,7 @@ describe('Google Drive Import Flow - Frontend', () => {
           },
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
       }));
 
@@ -256,9 +256,9 @@ describe('Google Drive Import Flow - Frontend', () => {
 
   describe('Import Mutation', () => {
     it('should call import mutation with correct clientId', async () => {
-      const mutate = jest.fn();
+      const mutate = vi.fn();
       
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveImportMutation: () => ({
           mutate,
           isPending: false,
@@ -303,12 +303,12 @@ describe('Google Drive Import Flow - Frontend', () => {
   describe('Error Handling', () => {
     it('should handle connection errors gracefully', () => {
       // Mock connection error
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveConnectionQuery: () => ({
           data: null,
           isLoading: false,
           error: new Error('Connection failed'),
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
       }));
 
@@ -332,10 +332,10 @@ describe('Google Drive Import Flow - Frontend', () => {
     });
 
     it('should handle token refresh on expiry', () => {
-      const refetch = jest.fn();
+      const refetch = vi.fn();
       
       // Mock expired token
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveTokenQuery: () => ({
           data: {
             accessToken: 'expired-token',
@@ -373,16 +373,16 @@ describe('Google Drive Import Flow - Frontend', () => {
 
   describe('Integration Flow End-to-End', () => {
     it('should complete full import flow for super admin', async () => {
-      const mutate = jest.fn();
+      const mutate = vi.fn();
       
       // Mock successful connection and token
-      jest.mock('@/hooks/use-auth', () => ({
+      vi.mock('@/hooks/use-auth', () => ({
         useAuth: () => ({
           user: { id: 1, email: 'superadmin@test.com', role: 'super_admin' },
         }),
       }));
 
-      jest.mock('@/lib/queries/google-drive', () => ({
+      vi.mock('@/lib/queries/google-drive', () => ({
         useGoogleDriveConnectionQuery: () => ({
           data: {
             id: 1,
@@ -391,7 +391,7 @@ describe('Google Drive Import Flow - Frontend', () => {
           },
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
         useGoogleDriveTokenQuery: () => ({
           data: {
@@ -400,7 +400,7 @@ describe('Google Drive Import Flow - Frontend', () => {
           },
           isLoading: false,
           error: null,
-          refetch: jest.fn(),
+          refetch: vi.fn(),
         }),
         useGoogleDriveImportMutation: () => ({
           mutate,
