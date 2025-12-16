@@ -1387,32 +1387,6 @@ export function registerBrandAssetRoutes(app: Express) {
             .json({ message: "Guest users cannot delete brand assets" });
         }
 
-        // Verify user has access to this client (unless super admin)
-        if (user.role !== UserRole.SUPER_ADMIN) {
-          const userClient = await db
-            .select()
-            .from(userClients)
-            .where(
-              and(
-                eq(userClients.clientId, clientId),
-                eq(userClients.userId, userId)
-              )
-            );
-
-          if (userClient.length === 0) {
-            console.log(
-              `[Asset Delete] User ${userId} denied: not authorized for client ${clientId}`
-            );
-            return res
-              .status(403)
-              .json({ message: "Not authorized for this client" });
-          }
-        } else {
-          console.log(
-            `[Asset Delete] Super admin ${userId} bypassing client access check for client ${clientId}`
-          );
-        }
-
         if (variant === "dark" && asset.category === "logo") {
           // Remove the dark variant from both the old system and new converted assets
           const data =
