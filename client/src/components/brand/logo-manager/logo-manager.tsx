@@ -68,7 +68,7 @@ export function LogoManager({ clientId, logos }: LogoManagerProps) {
     } else {
       setVisibleSections(allLogoTypes);
     }
-  }, [hiddenSections, loadingHiddenSections]);
+  }, [loadingHiddenSections]); // Missing 'hiddenSections'
 
   useEffect(() => {
     const available: string[] = Object.values(LogoType).filter(
