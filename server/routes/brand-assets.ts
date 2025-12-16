@@ -45,6 +45,7 @@ import multer from "multer";
 import { requireAuth } from "server/middlewares/auth";
 import { requireMinimumRole } from "server/middlewares/requireMinimumRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
+import { validateClientAccess } from "server/middlewares/validateClientAccess";
 import type { RequestWithClientId } from "server/routes";
 import type { z } from "zod";
 import { db } from "../db";
@@ -1240,6 +1241,7 @@ export function registerBrandAssetRoutes(app: Express) {
     "/api/clients/:clientId/brand-assets/:assetId/description",
     validateClientId,
     requireAuth,
+    validateClientAccess,
     requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res: Response) => {
       try {
@@ -1383,32 +1385,6 @@ export function registerBrandAssetRoutes(app: Express) {
           return res
             .status(403)
             .json({ message: "Guest users cannot delete brand assets" });
-        }
-
-        // Verify user has access to this client (unless super admin)
-        if (user.role !== UserRole.SUPER_ADMIN) {
-          const userClient = await db
-            .select()
-            .from(userClients)
-            .where(
-              and(
-                eq(userClients.clientId, clientId),
-                eq(userClients.userId, userId)
-              )
-            );
-
-          if (userClient.length === 0) {
-            console.log(
-              `[Asset Delete] User ${userId} denied: not authorized for client ${clientId}`
-            );
-            return res
-              .status(403)
-              .json({ message: "Not authorized for this client" });
-          }
-        } else {
-          console.log(
-            `[Asset Delete] Super admin ${userId} bypassing client access check for client ${clientId}`
-          );
         }
 
         if (variant === "dark" && asset.category === "logo") {

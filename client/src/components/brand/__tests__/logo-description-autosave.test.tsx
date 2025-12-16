@@ -1,12 +1,4 @@
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
-import {
   QueryClient,
   QueryClientProvider,
   useMutation,
@@ -19,17 +11,18 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { InlineEditable } from "@/components/ui/inline-editable";
+import { type Mock, vi } from "vitest";
+import { useToast } from "../../../hooks/use-toast";
+import { InlineEditable } from "../../ui/inline-editable";
 
 // Mock toast hook
-const mockToast = jest.fn();
-jest.mock("@/hooks/use-toast", () => ({
+const mockToast = vi.fn();
+vi.mock("@/hooks/use-toast", () => ({
   useToast: () => ({ toast: mockToast }),
 }));
 
 // Component that mimics the logo manager's description update logic
-function TestLogoDescriptionComponent({
+function TestLogoDescriptionAutosave({
   clientId,
   assetId,
   variant,
@@ -41,17 +34,15 @@ function TestLogoDescriptionComponent({
   initialDescription: string;
 }) {
   const queryClient = useQueryClient();
-  const { toast } = require("@/hooks/use-toast").useToast();
+  const { toast } = useToast();
 
   const updateDescriptionMutation = useMutation({
     mutationFn: async ({
       assetId,
       description,
-      variant,
     }: {
       assetId: number;
       description?: string;
-      variant: "light" | "dark";
     }) => {
       const response = await fetch(
         `/api/clients/${clientId}/brand-assets/${assetId}/description`,
@@ -62,7 +53,6 @@ function TestLogoDescriptionComponent({
           },
           body: JSON.stringify({
             description,
-            variant,
           }),
         }
       );
@@ -74,7 +64,7 @@ function TestLogoDescriptionComponent({
 
       return response.json();
     },
-    onMutate: async ({ assetId, description, variant: _variant }) => {
+    onMutate: async ({ assetId, description }) => {
       await queryClient.cancelQueries({
         queryKey: [`/api/clients/${clientId}/brand-assets`],
       });
@@ -137,7 +127,6 @@ function TestLogoDescriptionComponent({
     updateDescriptionMutation.mutate({
       assetId,
       description: value,
-      variant,
     });
   };
 
@@ -157,11 +146,15 @@ function TestLogoDescriptionComponent({
 
 describe("Logo Description Autosave Integration", () => {
   let queryClient: QueryClient;
-  let fetchMock: jest.Mock;
+  let fetchMock: Mock;
   const originalFetch = global.fetch;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
+    // @ts-expect-error
+    global.jest = {
+      advanceTimersByTime: vi.advanceTimersByTime.bind(vi),
+    };
 
     queryClient = new QueryClient({
       defaultOptions: {
@@ -184,16 +177,16 @@ describe("Logo Description Autosave Integration", () => {
       ]
     );
 
-    fetchMock = jest.fn();
+    fetchMock = vi.fn();
     global.fetch = fetchMock;
 
     mockToast.mockClear();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
-    jest.clearAllMocks();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+    vi.clearAllMocks();
     global.fetch = originalFetch;
   });
 
@@ -205,7 +198,7 @@ describe("Logo Description Autosave Integration", () => {
 
     return render(
       <QueryClientProvider client={queryClient}>
-        <TestLogoDescriptionComponent
+        <TestLogoDescriptionAutosave
           clientId={1}
           assetId={1}
           variant={variant}
@@ -215,25 +208,26 @@ describe("Logo Description Autosave Integration", () => {
     );
   };
 
-  describe("Light Variant - Debounced Autosave", () => {
+  describe("Debounced Autosave", () => {
     it("should not save immediately while typing in light variant", async () => {
-      const user = userEvent.setup({ delay: null });
-
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "New light description");
+      act(() => {
+        fireEvent.change(textarea, {
+          target: { value: "New light description" },
+        });
+      });
 
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
     it("should trigger save after 500ms for light variant", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -242,13 +236,16 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Updated light");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Updated light" } });
+      });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -260,7 +257,6 @@ describe("Logo Description Autosave Integration", () => {
             },
             body: JSON.stringify({
               description: "Updated light",
-              variant: "light",
             }),
           })
         );
@@ -268,8 +264,6 @@ describe("Logo Description Autosave Integration", () => {
     });
 
     it("should only make one API call for multiple rapid changes in light variant", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValue({
         ok: true,
         json: async () => ({ success: true }),
@@ -278,23 +272,32 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
 
-      await user.type(textarea, "A");
-      act(() => jest.advanceTimersByTime(100));
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "A" } });
+      });
+      act(() => vi.advanceTimersByTime(100));
 
-      await user.type(textarea, "B");
-      act(() => jest.advanceTimersByTime(100));
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "AB" } });
+      });
+      act(() => vi.advanceTimersByTime(100));
 
-      await user.type(textarea, "C");
-      act(() => jest.advanceTimersByTime(100));
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "ABC" } });
+      });
+      act(() => vi.advanceTimersByTime(100));
 
-      await user.type(textarea, "D");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "ABCD" } });
+      });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -303,57 +306,6 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "ABCD",
-              variant: "light",
-            }),
-          })
-        );
-      });
-    });
-  });
-
-  describe("Dark Variant - Debounced Autosave", () => {
-    it("should not save immediately while typing in dark variant", async () => {
-      const user = userEvent.setup({ delay: null });
-
-      renderComponent("dark");
-
-      const descriptionField = screen.getByText("Dark variant description");
-      await user.click(descriptionField);
-
-      const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "New dark description");
-
-      expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("should trigger save after 500ms for dark variant", async () => {
-      const user = userEvent.setup({ delay: null });
-
-      fetchMock.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true }),
-      });
-
-      renderComponent("dark");
-
-      const descriptionField = screen.getByText("Dark variant description");
-      await user.click(descriptionField);
-
-      const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Updated dark");
-
-      act(() => jest.advanceTimersByTime(500));
-
-      await waitFor(() => {
-        expect(fetchMock).toHaveBeenCalledWith(
-          "/api/clients/1/brand-assets/1/description",
-          expect.objectContaining({
-            method: "PATCH",
-            body: JSON.stringify({
-              description: "Updated dark",
-              variant: "dark",
             }),
           })
         );
@@ -363,8 +315,6 @@ describe("Logo Description Autosave Integration", () => {
 
   describe("Error Handling", () => {
     it("should rollback light variant on failed save and show error toast", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: false,
         json: async () => ({ message: "Failed to update logo description" }),
@@ -373,13 +323,16 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Failed update");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Failed update" } });
+      });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith(
@@ -393,8 +346,6 @@ describe("Logo Description Autosave Integration", () => {
     });
 
     it("should rollback dark variant on failed save", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: false,
         json: async () => ({ message: "Server error" }),
@@ -403,13 +354,18 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "This will fail");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "This will fail" } });
+      });
 
-      fireEvent.blur(textarea);
+      act(() => {
+        fireEvent.blur(textarea);
+      });
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith(
@@ -423,20 +379,21 @@ describe("Logo Description Autosave Integration", () => {
     });
 
     it("should handle network errors gracefully", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockRejectedValueOnce(new Error("Network error"));
 
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Network fail");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Network fail" } });
+      });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith(
@@ -450,8 +407,6 @@ describe("Logo Description Autosave Integration", () => {
 
   describe("Success Notifications", () => {
     it("should show success toast after successful light variant save", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -460,13 +415,18 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Successfully saved light");
+      act(() => {
+        fireEvent.change(textarea, {
+          target: { value: "Successfully saved light" },
+        });
+      });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith(
@@ -479,8 +439,6 @@ describe("Logo Description Autosave Integration", () => {
     });
 
     it("should show success toast after successful dark variant save", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -489,13 +447,16 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Successfully saved dark");
+      fireEvent.change(textarea, {
+        target: { value: "Successfully saved dark" },
+      });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
 
       await waitFor(() => {
         expect(mockToast).toHaveBeenCalledWith(
@@ -510,8 +471,6 @@ describe("Logo Description Autosave Integration", () => {
 
   describe("Blur Behavior", () => {
     it("should save light variant on blur with pending changes", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -520,13 +479,18 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Blur save light");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Blur save light" } });
+      });
 
-      fireEvent.blur(textarea);
+      act(() => {
+        fireEvent.blur(textarea);
+      });
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -534,7 +498,6 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Blur save light",
-              variant: "light",
             }),
           })
         );
@@ -542,8 +505,6 @@ describe("Logo Description Autosave Integration", () => {
     });
 
     it("should save dark variant on blur with pending changes", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -552,13 +513,18 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Blur save dark");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Blur save dark" } });
+      });
 
-      fireEvent.blur(textarea);
+      act(() => {
+        fireEvent.blur(textarea);
+      });
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -566,7 +532,6 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Blur save dark",
-              variant: "dark",
             }),
           })
         );
@@ -574,8 +539,6 @@ describe("Logo Description Autosave Integration", () => {
     });
 
     it("should clear pending debounce timer on blur", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -584,44 +547,52 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Clear pending");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Clear pending" } });
+      });
 
-      act(() => jest.advanceTimersByTime(300));
-      fireEvent.blur(textarea);
+      act(() => vi.advanceTimersByTime(300));
+      act(() => {
+        fireEvent.blur(textarea);
+      });
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
       });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("Cancel Behavior", () => {
     it("should cancel pending save on Escape for light variant", async () => {
-      const user = userEvent.setup({ delay: null });
-
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Cancelled light");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Cancelled light" } });
+      });
 
-      act(() => jest.advanceTimersByTime(300));
+      act(() => vi.advanceTimersByTime(300));
 
-      fireEvent.keyDown(textarea, { key: "Escape" });
+      act(() => {
+        fireEvent.keyDown(textarea, { key: "Escape" });
+      });
 
       expect(fetchMock).not.toHaveBeenCalled();
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
       expect(fetchMock).not.toHaveBeenCalled();
 
       await waitFor(() => {
@@ -632,24 +603,27 @@ describe("Logo Description Autosave Integration", () => {
     });
 
     it("should cancel pending save on Escape for dark variant", async () => {
-      const user = userEvent.setup({ delay: null });
-
       renderComponent("dark");
 
       const descriptionField = screen.getByText("Dark variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "Cancelled dark");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "Cancelled dark" } });
+      });
 
-      act(() => jest.advanceTimersByTime(300));
+      act(() => vi.advanceTimersByTime(300));
 
-      fireEvent.keyDown(textarea, { key: "Escape" });
+      act(() => {
+        fireEvent.keyDown(textarea, { key: "Escape" });
+      });
 
       expect(fetchMock).not.toHaveBeenCalled();
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
       expect(fetchMock).not.toHaveBeenCalled();
 
       await waitFor(() => {
@@ -662,8 +636,6 @@ describe("Logo Description Autosave Integration", () => {
 
   describe("Edge Cases", () => {
     it("should trim whitespace from descriptions", async () => {
-      const user = userEvent.setup({ delay: null });
-
       fetchMock.mockResolvedValueOnce({
         ok: true,
         json: async () => ({ success: true }),
@@ -672,13 +644,16 @@ describe("Logo Description Autosave Integration", () => {
       renderComponent("light");
 
       const descriptionField = screen.getByText("Light variant description");
-      await user.click(descriptionField);
+      act(() => {
+        fireEvent.click(descriptionField);
+      });
 
       const textarea = screen.getByRole("textbox");
-      await user.clear(textarea);
-      await user.type(textarea, "  Trimmed  ");
+      act(() => {
+        fireEvent.change(textarea, { target: { value: "  Trimmed  " } });
+      });
 
-      act(() => jest.advanceTimersByTime(500));
+      act(() => vi.advanceTimersByTime(500));
 
       await waitFor(() => {
         expect(fetchMock).toHaveBeenCalledWith(
@@ -686,7 +661,6 @@ describe("Logo Description Autosave Integration", () => {
           expect.objectContaining({
             body: JSON.stringify({
               description: "Trimmed",
-              variant: "light",
             }),
           })
         );

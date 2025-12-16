@@ -1,3 +1,9 @@
+// Polyfill for SlowBuffer (removed in Node.js v25+)
+// Required for buffer-equal-constant-time dependency
+if (typeof (globalThis as any).SlowBuffer === "undefined") {
+  (globalThis as any).SlowBuffer = (globalThis as any).Buffer;
+}
+
 import "dotenv/config";
 import { EventEmitter } from "node:events";
 import { createServer } from "node:http";

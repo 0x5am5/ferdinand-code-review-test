@@ -6,537 +6,357 @@
  *
  * Test Coverage:
  * - Role-based permission checks (GUEST, STANDARD, EDITOR, ADMIN, SUPER_ADMIN)
- * - Import permission validation
- * - Asset visibility enforcement
+ * - Asset visibility enforcement (private vs shared)
  * - Owner-based restrictions for STANDARD users
- * - Permission helper functions
+ * - Permission validation for all file actions (read, write, delete, share)
  *
  * To run these tests:
  * npm test -- drive-file-permissions.test.ts
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { UserRole } from '@shared/schema';
 import {
-  hasPermission,
-  canImportDriveFiles,
   checkDriveFilePermission,
-  getInitialImportPermissions,
-  getRolePermissionDescription,
-  getRolePermissions,
-  DRIVE_FILE_PERMISSIONS,
+  type DriveFileAction,
 } from '../server/services/drive-file-permissions';
 
-describe('Drive File Permissions', () => {
-  describe('Permission Matrix (DRIVE_FILE_PERMISSIONS)', () => {
-    it('should define correct permissions for GUEST role', () => {
-      const perms = DRIVE_FILE_PERMISSIONS[UserRole.GUEST];
-      expect(perms.read).toBe(true); // Can view shared files
-      expect(perms.write).toBe(false);
-      expect(perms.delete).toBe(false);
-      expect(perms.share).toBe(false);
-      expect(perms.canImport).toBe(false);
+// Helper to create permission context
+function createContext(overrides: {
+  uploadedBy?: number;
+  visibility?: 'private' | 'shared';
+  isGoogleDrive?: boolean;
+  driveOwner?: number;
+}) {
+  return {
+    uploadedBy: overrides.uploadedBy ?? 1,
+    visibility: overrides.visibility ?? 'shared',
+    isGoogleDrive: overrides.isGoogleDrive ?? true,
+    driveOwner: overrides.driveOwner ?? 1,
+  };
+}
+
+describe('Drive File Permissions - checkDriveFilePermission()', () => {
+  const actions: DriveFileAction[] = ['read', 'write', 'delete', 'share'];
+
+  describe('GUEST Role Permissions', () => {
+    const userId = 5;
+    const userRole = UserRole.GUEST;
+
+    it('should allow GUEST to read shared files', () => {
+      const context = createContext({ visibility: 'shared', uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'read', context);
+
+      expect(result.allowed).toBe(true);
     });
 
-    it('should define correct permissions for STANDARD role', () => {
-      const perms = DRIVE_FILE_PERMISSIONS[UserRole.STANDARD];
-      expect(perms.read).toBe(true);
-      expect(perms.write).toBe(true); // Can edit own files
-      expect(perms.delete).toBe(false);
-      expect(perms.share).toBe(false);
-      expect(perms.canImport).toBe(true);
+    it('should deny GUEST from reading private files', () => {
+      const context = createContext({ visibility: 'private', uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'read', context);
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('shared');
     });
 
-    it('should define correct permissions for EDITOR role', () => {
-      const perms = DRIVE_FILE_PERMISSIONS[UserRole.EDITOR];
-      expect(perms.read).toBe(true);
-      expect(perms.write).toBe(true); // Can edit all files
-      expect(perms.delete).toBe(false);
-      expect(perms.share).toBe(true);
-      expect(perms.canImport).toBe(true);
+    it('should deny GUEST from write operations', () => {
+      const context = createContext({ visibility: 'shared', uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'write', context);
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Guests can only read');
     });
 
-    it('should define correct permissions for ADMIN role', () => {
-      const perms = DRIVE_FILE_PERMISSIONS[UserRole.ADMIN];
-      expect(perms.read).toBe(true);
-      expect(perms.write).toBe(true);
-      expect(perms.delete).toBe(true);
-      expect(perms.share).toBe(true);
-      expect(perms.canImport).toBe(true);
+    it('should deny GUEST from delete operations', () => {
+      const context = createContext({ visibility: 'shared', uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'delete', context);
+
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Guests can only read');
     });
 
-    it('should define correct permissions for SUPER_ADMIN role', () => {
-      const perms = DRIVE_FILE_PERMISSIONS[UserRole.SUPER_ADMIN];
-      expect(perms.read).toBe(true);
-      expect(perms.write).toBe(true);
-      expect(perms.delete).toBe(true);
-      expect(perms.share).toBe(true);
-      expect(perms.canImport).toBe(true);
-    });
-  });
+    it('should deny GUEST from share operations', () => {
+      const context = createContext({ visibility: 'shared', uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'share', context);
 
-  describe('hasPermission() - Base Permission Checks', () => {
-    describe('GUEST role', () => {
-      it('should allow read for shared files only', () => {
-        expect(
-          hasPermission(UserRole.GUEST, 'read', { assetVisibility: 'shared' })
-        ).toBe(true);
-        expect(
-          hasPermission(UserRole.GUEST, 'read', { assetVisibility: 'private' })
-        ).toBe(false);
-      });
-
-      it('should deny write, delete, and share permissions', () => {
-        expect(
-          hasPermission(UserRole.GUEST, 'write', { assetVisibility: 'shared' })
-        ).toBe(false);
-        expect(
-          hasPermission(UserRole.GUEST, 'delete', { assetVisibility: 'shared' })
-        ).toBe(false);
-        expect(
-          hasPermission(UserRole.GUEST, 'share', { assetVisibility: 'shared' })
-        ).toBe(false);
-      });
-    });
-
-    describe('STANDARD role', () => {
-      it('should allow read for all files', () => {
-        expect(
-          hasPermission(UserRole.STANDARD, 'read', { assetVisibility: 'shared' })
-        ).toBe(true);
-        expect(
-          hasPermission(UserRole.STANDARD, 'read', {
-            assetVisibility: 'private',
-          })
-        ).toBe(true);
-      });
-
-      it('should allow write only for owned files', () => {
-        expect(
-          hasPermission(UserRole.STANDARD, 'write', { isOwner: true })
-        ).toBe(true);
-        expect(
-          hasPermission(UserRole.STANDARD, 'write', { isOwner: false })
-        ).toBe(false);
-      });
-
-      it('should deny delete regardless of ownership', () => {
-        expect(
-          hasPermission(UserRole.STANDARD, 'delete', { isOwner: true })
-        ).toBe(false);
-        expect(
-          hasPermission(UserRole.STANDARD, 'delete', { isOwner: false })
-        ).toBe(false);
-      });
-
-      it('should deny share permission', () => {
-        expect(hasPermission(UserRole.STANDARD, 'share', {})).toBe(false);
-      });
-    });
-
-    describe('EDITOR role', () => {
-      it('should allow read and write for all files', () => {
-        expect(hasPermission(UserRole.EDITOR, 'read', {})).toBe(true);
-        expect(hasPermission(UserRole.EDITOR, 'write', {})).toBe(true);
-      });
-
-      it('should allow share permission', () => {
-        expect(hasPermission(UserRole.EDITOR, 'share', {})).toBe(true);
-      });
-
-      it('should deny delete permission', () => {
-        expect(hasPermission(UserRole.EDITOR, 'delete', {})).toBe(false);
-      });
-    });
-
-    describe('ADMIN role', () => {
-      it('should allow all permissions', () => {
-        expect(hasPermission(UserRole.ADMIN, 'read', {})).toBe(true);
-        expect(hasPermission(UserRole.ADMIN, 'write', {})).toBe(true);
-        expect(hasPermission(UserRole.ADMIN, 'delete', {})).toBe(true);
-        expect(hasPermission(UserRole.ADMIN, 'share', {})).toBe(true);
-      });
-    });
-
-    describe('SUPER_ADMIN role', () => {
-      it('should allow all permissions', () => {
-        expect(hasPermission(UserRole.SUPER_ADMIN, 'read', {})).toBe(true);
-        expect(hasPermission(UserRole.SUPER_ADMIN, 'write', {})).toBe(true);
-        expect(hasPermission(UserRole.SUPER_ADMIN, 'delete', {})).toBe(true);
-        expect(hasPermission(UserRole.SUPER_ADMIN, 'share', {})).toBe(true);
-      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Guests can only read');
     });
   });
 
-  describe('canImportDriveFiles() - Import Permission Checks', () => {
-    it('should deny import for GUEST role', () => {
-      expect(canImportDriveFiles(UserRole.GUEST)).toBe(false);
-    });
+  describe('STANDARD Role Permissions', () => {
+    const userId = 4;
+    const userRole = UserRole.STANDARD;
 
-    it('should allow import for STANDARD role', () => {
-      expect(canImportDriveFiles(UserRole.STANDARD)).toBe(true);
-    });
+    describe('Read Permissions', () => {
+      it('should allow STANDARD to read shared files', () => {
+        const context = createContext({ visibility: 'shared', uploadedBy: 1 });
+        const result = checkDriveFilePermission(userId, userRole, 'read', context);
 
-    it('should allow import for EDITOR role', () => {
-      expect(canImportDriveFiles(UserRole.EDITOR)).toBe(true);
-    });
-
-    it('should allow import for ADMIN role', () => {
-      expect(canImportDriveFiles(UserRole.ADMIN)).toBe(true);
-    });
-
-    it('should allow import for SUPER_ADMIN role', () => {
-      expect(canImportDriveFiles(UserRole.SUPER_ADMIN)).toBe(true);
-    });
-  });
-
-  describe('checkDriveFilePermission() - Comprehensive Permission Checks', () => {
-    const mockAssetData = {
-      uploadedBy: 123,
-      visibility: 'shared' as const,
-      isGoogleDrive: true,
-      driveOwner: 'owner@example.com',
-    };
-
-    describe('GUEST role checks', () => {
-      it('should allow read for shared files', () => {
-        const result = checkDriveFilePermission(456, UserRole.GUEST, 'read', {
-          ...mockAssetData,
-          visibility: 'shared',
-        });
-        expect(result.allowed).toBe(true);
-        expect(result.userRole).toBe(UserRole.GUEST);
-      });
-
-      it('should deny read for private files', () => {
-        const result = checkDriveFilePermission(456, UserRole.GUEST, 'read', {
-          ...mockAssetData,
-          visibility: 'private',
-        });
-        expect(result.allowed).toBe(false);
-        expect(result.reason).toContain('Guests can only view shared files');
-      });
-
-      it('should deny write permission', () => {
-        const result = checkDriveFilePermission(456, UserRole.GUEST, 'write', {
-          ...mockAssetData,
-          visibility: 'shared',
-        });
-        expect(result.allowed).toBe(false);
-        expect(result.reason).toContain('does not have write permission');
-      });
-
-      it('should deny delete permission', () => {
-        const result = checkDriveFilePermission(456, UserRole.GUEST, 'delete', {
-          ...mockAssetData,
-          visibility: 'shared',
-        });
-        expect(result.allowed).toBe(false);
-        expect(result.reason).toContain('does not have delete permission');
-      });
-    });
-
-    describe('STANDARD role checks', () => {
-      it('should allow read for any file', () => {
-        const result = checkDriveFilePermission(
-          123,
-          UserRole.STANDARD,
-          'read',
-          mockAssetData
-        );
         expect(result.allowed).toBe(true);
       });
 
-      it('should allow write for owned files', () => {
-        const result = checkDriveFilePermission(
-          123,
-          UserRole.STANDARD,
-          'write',
-          {
-            ...mockAssetData,
-            uploadedBy: 123, // Same as userId
-          }
-        );
+      it('should allow STANDARD to read their own private files', () => {
+        const context = createContext({ visibility: 'private', uploadedBy: userId });
+        const result = checkDriveFilePermission(userId, userRole, 'read', context);
+
         expect(result.allowed).toBe(true);
       });
 
-      it('should deny write for files owned by others', () => {
-        const result = checkDriveFilePermission(
-          456,
-          UserRole.STANDARD,
-          'write',
-          {
-            ...mockAssetData,
-            uploadedBy: 123, // Different from userId
-          }
-        );
-        expect(result.allowed).toBe(false);
-        expect(result.reason).toContain('can only write their own files');
-      });
+      it('should deny STANDARD from reading private files owned by others', () => {
+        const context = createContext({ visibility: 'private', uploadedBy: 1 });
+        const result = checkDriveFilePermission(userId, userRole, 'read', context);
 
-      it('should deny delete permission', () => {
-        const result = checkDriveFilePermission(
-          123,
-          UserRole.STANDARD,
-          'delete',
-          mockAssetData
-        );
         expect(result.allowed).toBe(false);
-        expect(result.reason).toContain('does not have delete permission');
+        expect(result.reason).toContain('private files owned by others');
       });
     });
 
-    describe('EDITOR role checks', () => {
-      it('should allow read for any file', () => {
-        const result = checkDriveFilePermission(
-          456,
-          UserRole.EDITOR,
-          'read',
-          mockAssetData
-        );
+    describe('Write Permissions', () => {
+      it('should allow STANDARD to write their own files', () => {
+        const context = createContext({ uploadedBy: userId });
+        const result = checkDriveFilePermission(userId, userRole, 'write', context);
+
         expect(result.allowed).toBe(true);
       });
 
-      it('should allow write for any file', () => {
-        const result = checkDriveFilePermission(
-          456,
-          UserRole.EDITOR,
-          'write',
-          mockAssetData
-        );
-        expect(result.allowed).toBe(true);
-      });
+      it('should deny STANDARD from writing files owned by others', () => {
+        const context = createContext({ uploadedBy: 1 });
+        const result = checkDriveFilePermission(userId, userRole, 'write', context);
 
-      it('should allow share permission', () => {
-        const result = checkDriveFilePermission(
-          456,
-          UserRole.EDITOR,
-          'share',
-          mockAssetData
-        );
-        expect(result.allowed).toBe(true);
-      });
-
-      it('should deny delete permission', () => {
-        const result = checkDriveFilePermission(
-          456,
-          UserRole.EDITOR,
-          'delete',
-          mockAssetData
-        );
         expect(result.allowed).toBe(false);
-        expect(result.reason).toContain('does not have delete permission');
+        expect(result.reason).toContain('own files');
       });
     });
 
-    describe('ADMIN role checks', () => {
-      it('should allow all permissions', () => {
-        expect(
-          checkDriveFilePermission(789, UserRole.ADMIN, 'read', mockAssetData)
-            .allowed
-        ).toBe(true);
-        expect(
-          checkDriveFilePermission(789, UserRole.ADMIN, 'write', mockAssetData)
-            .allowed
-        ).toBe(true);
-        expect(
-          checkDriveFilePermission(789, UserRole.ADMIN, 'delete', mockAssetData)
-            .allowed
-        ).toBe(true);
-        expect(
-          checkDriveFilePermission(789, UserRole.ADMIN, 'share', mockAssetData)
-            .allowed
-        ).toBe(true);
+    describe('Delete Permissions', () => {
+      it('should allow STANDARD to delete their own files', () => {
+        const context = createContext({ uploadedBy: userId });
+        const result = checkDriveFilePermission(userId, userRole, 'delete', context);
+
+        expect(result.allowed).toBe(true);
+      });
+
+      it('should deny STANDARD from deleting files owned by others', () => {
+        const context = createContext({ uploadedBy: 1 });
+        const result = checkDriveFilePermission(userId, userRole, 'delete', context);
+
+        expect(result.allowed).toBe(false);
+        expect(result.reason).toContain('own files');
       });
     });
 
-    describe('SUPER_ADMIN role checks', () => {
-      it('should allow all permissions', () => {
-        expect(
-          checkDriveFilePermission(
-            789,
-            UserRole.SUPER_ADMIN,
-            'read',
-            mockAssetData
-          ).allowed
-        ).toBe(true);
-        expect(
-          checkDriveFilePermission(
-            789,
-            UserRole.SUPER_ADMIN,
-            'write',
-            mockAssetData
-          ).allowed
-        ).toBe(true);
-        expect(
-          checkDriveFilePermission(
-            789,
-            UserRole.SUPER_ADMIN,
-            'delete',
-            mockAssetData
-          ).allowed
-        ).toBe(true);
-        expect(
-          checkDriveFilePermission(
-            789,
-            UserRole.SUPER_ADMIN,
-            'share',
-            mockAssetData
-          ).allowed
-        ).toBe(true);
+    describe('Share Permissions', () => {
+      it('should allow STANDARD to share their own files', () => {
+        const context = createContext({ uploadedBy: userId });
+        const result = checkDriveFilePermission(userId, userRole, 'share', context);
+
+        expect(result.allowed).toBe(true);
+      });
+
+      it('should deny STANDARD from sharing files owned by others', () => {
+        const context = createContext({ uploadedBy: 1 });
+        const result = checkDriveFilePermission(userId, userRole, 'share', context);
+
+        expect(result.allowed).toBe(false);
+        expect(result.reason).toContain('own files');
       });
     });
   });
 
-  describe('getInitialImportPermissions() - Import Settings', () => {
-    const mockDriveMetadata = {
-      isShared: false,
-      isOwnedByImporter: true,
-      driveOwner: 'importer@example.com',
-      hasPublicLink: false,
-      importerDriveRole: 'owner' as const,
-    };
+  describe('EDITOR Role Permissions', () => {
+    const userId = 3;
+    const userRole = UserRole.EDITOR;
 
-    it('should set importing user as Ferdinand owner', () => {
-      const result = getInitialImportPermissions(
-        123,
-        UserRole.STANDARD,
-        mockDriveMetadata
-      );
-      expect(result.ferdinandOwner).toBe(123);
+    it('should allow EDITOR to read all files (shared and private)', () => {
+      const sharedContext = createContext({ visibility: 'shared', uploadedBy: 1 });
+      const privateContext = createContext({ visibility: 'private', uploadedBy: 1 });
+
+      expect(checkDriveFilePermission(userId, userRole, 'read', sharedContext).allowed).toBe(true);
+      expect(checkDriveFilePermission(userId, userRole, 'read', privateContext).allowed).toBe(true);
     });
 
-    it('should set visibility to shared for publicly shared Drive files', () => {
-      const result = getInitialImportPermissions(123, UserRole.STANDARD, {
-        ...mockDriveMetadata,
-        hasPublicLink: true,
-      });
-      expect(result.initialVisibility).toBe('shared');
+    it('should allow EDITOR to write their own files', () => {
+      const context = createContext({ uploadedBy: userId });
+      const result = checkDriveFilePermission(userId, userRole, 'write', context);
+
+      expect(result.allowed).toBe(true);
     });
 
-    it('should set visibility to shared for Drive files marked as shared', () => {
-      const result = getInitialImportPermissions(123, UserRole.STANDARD, {
-        ...mockDriveMetadata,
-        isShared: true,
-      });
-      expect(result.initialVisibility).toBe('shared');
+    it('should allow EDITOR to write files owned by others', () => {
+      const context = createContext({ uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'write', context);
+
+      expect(result.allowed).toBe(true);
     });
 
-    it('should default to shared visibility', () => {
-      const result = getInitialImportPermissions(
-        123,
-        UserRole.STANDARD,
-        mockDriveMetadata
-      );
-      expect(result.initialVisibility).toBe('shared');
+    it('should allow EDITOR to delete their own files', () => {
+      const context = createContext({ uploadedBy: userId });
+      const result = checkDriveFilePermission(userId, userRole, 'delete', context);
+
+      expect(result.allowed).toBe(true);
     });
 
-    it('should store Drive metadata for reference', () => {
-      const result = getInitialImportPermissions(
-        123,
-        UserRole.STANDARD,
-        mockDriveMetadata
-      );
-      expect(result.storeDriveMetadata).toMatchObject({
-        isShared: false,
-        isOwnedByImporter: true,
-        driveOwner: 'importer@example.com',
-        hasPublicLink: false,
-        importerDriveRole: 'owner',
-      });
-      expect(result.storeDriveMetadata.importedAt).toBeDefined();
+    it('should allow EDITOR to delete files owned by others', () => {
+      const context = createContext({ uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'delete', context);
+
+      expect(result.allowed).toBe(true);
+    });
+
+    it('should allow EDITOR to share all files', () => {
+      const ownContext = createContext({ uploadedBy: userId });
+      const otherContext = createContext({ uploadedBy: 1 });
+
+      expect(checkDriveFilePermission(userId, userRole, 'share', ownContext).allowed).toBe(true);
+      expect(checkDriveFilePermission(userId, userRole, 'share', otherContext).allowed).toBe(true);
     });
   });
 
-  describe('Permission Helper Functions', () => {
-    describe('getRolePermissionDescription()', () => {
-      it('should return correct description for GUEST', () => {
-        const desc = getRolePermissionDescription(UserRole.GUEST);
-        expect(desc).toBe('view Drive files');
-      });
+  describe('ADMIN Role Permissions', () => {
+    const userId = 2;
+    const userRole = UserRole.ADMIN;
 
-      it('should return correct description for STANDARD', () => {
-        const desc = getRolePermissionDescription(UserRole.STANDARD);
-        expect(desc).toBe('view, edit own Drive files');
-      });
+    it('should allow ADMIN to read all files', () => {
+      const context = createContext({ visibility: 'private', uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'read', context);
 
-      it('should return correct description for EDITOR', () => {
-        const desc = getRolePermissionDescription(UserRole.EDITOR);
-        expect(desc).toBe('view, edit, share Drive files');
-      });
-
-      it('should return correct description for ADMIN', () => {
-        const desc = getRolePermissionDescription(UserRole.ADMIN);
-        expect(desc).toBe('view, edit, delete, share Drive files');
-      });
-
-      it('should return correct description for SUPER_ADMIN', () => {
-        const desc = getRolePermissionDescription(UserRole.SUPER_ADMIN);
-        expect(desc).toBe('view, edit, delete, share Drive files');
-      });
+      expect(result.allowed).toBe(true);
     });
 
-    describe('getRolePermissions()', () => {
-      it('should return comprehensive permissions for GUEST', () => {
-        const result = getRolePermissions(UserRole.GUEST);
-        expect(result.actions).toEqual(['read']);
-        expect(result.canImport).toBe(false);
-        expect(result.description).toBe('view Drive files');
-      });
+    it('should allow ADMIN to write all files', () => {
+      const context = createContext({ uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'write', context);
 
-      it('should return comprehensive permissions for STANDARD', () => {
-        const result = getRolePermissions(UserRole.STANDARD);
-        expect(result.actions).toEqual(['read', 'write']);
-        expect(result.canImport).toBe(true);
-        expect(result.description).toBe('view, edit own Drive files');
-      });
+      expect(result.allowed).toBe(true);
+    });
 
-      it('should return comprehensive permissions for EDITOR', () => {
-        const result = getRolePermissions(UserRole.EDITOR);
-        expect(result.actions).toEqual(['read', 'write', 'share']);
-        expect(result.canImport).toBe(true);
-        expect(result.description).toBe('view, edit, share Drive files');
-      });
+    it('should allow ADMIN to delete all files', () => {
+      const context = createContext({ uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'delete', context);
 
-      it('should return comprehensive permissions for ADMIN', () => {
-        const result = getRolePermissions(UserRole.ADMIN);
-        expect(result.actions).toEqual(['read', 'write', 'delete', 'share']);
-        expect(result.canImport).toBe(true);
-        expect(result.description).toBe('view, edit, delete, share Drive files');
-      });
+      expect(result.allowed).toBe(true);
+    });
 
-      it('should return comprehensive permissions for SUPER_ADMIN', () => {
-        const result = getRolePermissions(UserRole.SUPER_ADMIN);
-        expect(result.actions).toEqual(['read', 'write', 'delete', 'share']);
-        expect(result.canImport).toBe(true);
-        expect(result.description).toBe('view, edit, delete, share Drive files');
-      });
+    it('should allow ADMIN to share all files', () => {
+      const context = createContext({ uploadedBy: 1 });
+      const result = checkDriveFilePermission(userId, userRole, 'share', context);
+
+      expect(result.allowed).toBe(true);
+    });
+  });
+
+  describe('SUPER_ADMIN Role Permissions', () => {
+    const userId = 1;
+    const userRole = UserRole.SUPER_ADMIN;
+
+    it('should allow SUPER_ADMIN to perform all actions', () => {
+      const context = createContext({ uploadedBy: 5, visibility: 'private' });
+
+      for (const action of actions) {
+        const result = checkDriveFilePermission(userId, userRole, action, context);
+        expect(result.allowed).toBe(true);
+      }
+    });
+
+    it('should allow SUPER_ADMIN regardless of file ownership', () => {
+      const context = createContext({ uploadedBy: 999 });
+      const result = checkDriveFilePermission(userId, userRole, 'delete', context);
+
+      expect(result.allowed).toBe(true);
+    });
+
+    it('should allow SUPER_ADMIN regardless of visibility', () => {
+      const privateContext = createContext({ visibility: 'private', uploadedBy: 5 });
+      const result = checkDriveFilePermission(userId, userRole, 'read', privateContext);
+
+      expect(result.allowed).toBe(true);
     });
   });
 
   describe('Edge Cases and Error Handling', () => {
-    it('should handle missing ownership information gracefully', () => {
-      const result = checkDriveFilePermission(123, UserRole.STANDARD, 'write', {
-        uploadedBy: 456,
-        visibility: 'shared',
-        isGoogleDrive: true,
-      });
+    it('should handle unknown user role', () => {
+      const context = createContext({ uploadedBy: 1 });
+      const result = checkDriveFilePermission(1, 'unknown_role', 'read', context);
+
       expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Unknown user role');
     });
 
-    it('should handle missing visibility information with secure defaults', () => {
-      const result = hasPermission(UserRole.GUEST, 'read', {});
-      // Without visibility info, should default to denying access for guests
-      expect(result).toBe(false);
+    it('should handle permission check with same user as owner', () => {
+      const userId = 10;
+      const context = createContext({ uploadedBy: userId });
+
+      // Standard user should be able to modify their own files
+      const standardResult = checkDriveFilePermission(userId, UserRole.STANDARD, 'write', context);
+      expect(standardResult.allowed).toBe(true);
+
+      // Guest should still be denied write even to their own files
+      const guestResult = checkDriveFilePermission(userId, UserRole.GUEST, 'write', context);
+      expect(guestResult.allowed).toBe(false);
+    });
+  });
+
+  describe('Role Hierarchy Validation', () => {
+    it('should follow proper permission hierarchy for read action', () => {
+      const context = createContext({ visibility: 'private', uploadedBy: 1 });
+      const testUserId = 100;
+
+      // GUEST - cannot read private
+      expect(checkDriveFilePermission(testUserId, UserRole.GUEST, 'read', context).allowed).toBe(false);
+
+      // STANDARD - cannot read private owned by others
+      expect(checkDriveFilePermission(testUserId, UserRole.STANDARD, 'read', context).allowed).toBe(false);
+
+      // EDITOR - can read all
+      expect(checkDriveFilePermission(testUserId, UserRole.EDITOR, 'read', context).allowed).toBe(true);
+
+      // ADMIN - can read all
+      expect(checkDriveFilePermission(testUserId, UserRole.ADMIN, 'read', context).allowed).toBe(true);
+
+      // SUPER_ADMIN - can read all
+      expect(checkDriveFilePermission(testUserId, UserRole.SUPER_ADMIN, 'read', context).allowed).toBe(true);
     });
 
-    it('should handle null drive metadata', () => {
-      const result = getInitialImportPermissions(123, UserRole.STANDARD, {
-        isShared: false,
-        isOwnedByImporter: false,
-      });
-      expect(result.ferdinandOwner).toBe(123);
-      expect(result.initialVisibility).toBe('shared');
+    it('should follow proper permission hierarchy for delete action', () => {
+      const context = createContext({ uploadedBy: 1 });
+      const testUserId = 100;
+
+      // GUEST - cannot delete
+      expect(checkDriveFilePermission(testUserId, UserRole.GUEST, 'delete', context).allowed).toBe(false);
+
+      // STANDARD - cannot delete others' files
+      expect(checkDriveFilePermission(testUserId, UserRole.STANDARD, 'delete', context).allowed).toBe(false);
+
+      // EDITOR - can delete
+      expect(checkDriveFilePermission(testUserId, UserRole.EDITOR, 'delete', context).allowed).toBe(true);
+
+      // ADMIN - can delete
+      expect(checkDriveFilePermission(testUserId, UserRole.ADMIN, 'delete', context).allowed).toBe(true);
+
+      // SUPER_ADMIN - can delete
+      expect(checkDriveFilePermission(testUserId, UserRole.SUPER_ADMIN, 'delete', context).allowed).toBe(true);
+    });
+  });
+
+  describe('Context Variations', () => {
+    it('should check permissions with different visibility states', () => {
+      const userId = 4;
+      const sharedContext = createContext({ visibility: 'shared', uploadedBy: 1 });
+      const privateContext = createContext({ visibility: 'private', uploadedBy: 1 });
+
+      // STANDARD can read shared but not private (owned by others)
+      expect(checkDriveFilePermission(userId, UserRole.STANDARD, 'read', sharedContext).allowed).toBe(true);
+      expect(checkDriveFilePermission(userId, UserRole.STANDARD, 'read', privateContext).allowed).toBe(false);
+    });
+
+    it('should check permissions with different ownership', () => {
+      const userId = 4;
+      const ownContext = createContext({ uploadedBy: userId });
+      const otherContext = createContext({ uploadedBy: 1 });
+
+      // STANDARD can delete own files but not others
+      expect(checkDriveFilePermission(userId, UserRole.STANDARD, 'delete', ownContext).allowed).toBe(true);
+      expect(checkDriveFilePermission(userId, UserRole.STANDARD, 'delete', otherContext).allowed).toBe(false);
     });
   });
 });

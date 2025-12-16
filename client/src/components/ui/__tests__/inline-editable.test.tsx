@@ -1,30 +1,27 @@
+/**
+ * @vitest-environment jsdom
+ */
+
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
-import { render, screen, waitFor } from "@testing-library/react";
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import { InlineEditable } from "../inline-editable";
 
 describe("InlineEditable", () => {
-  const mockOnSave = jest.fn();
+  const mockOnSave = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    // Run all pending timers to ensure cleanup
-    jest.runOnlyPendingTimers();
-    // Clear all timers
-    jest.clearAllTimers();
-    // Restore real timers
-    jest.useRealTimers();
+    vi.clearAllMocks();
   });
 
   describe("Initial Rendering", () => {
@@ -90,7 +87,7 @@ describe("InlineEditable", () => {
 
   describe("View Mode Interactions", () => {
     it("should switch to edit mode when clicked", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Test value" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Test value");
@@ -104,7 +101,7 @@ describe("InlineEditable", () => {
     });
 
     it("should switch to edit mode when Enter key is pressed", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Test value" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Test value");
@@ -119,7 +116,7 @@ describe("InlineEditable", () => {
     });
 
     it("should switch to edit mode when Space key is pressed", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Test value" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Test value");
@@ -134,7 +131,7 @@ describe("InlineEditable", () => {
     });
 
     it("should not switch to edit mode when disabled", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Test value"
@@ -150,7 +147,7 @@ describe("InlineEditable", () => {
       expect(screen.queryByDisplayValue("Test value")).not.toBeInTheDocument();
     });
 
-    it("should have tabIndex of -1 when disabled", () => {
+    it("should be disabled when disabled prop is set", () => {
       render(
         <InlineEditable
           value="Test value"
@@ -159,21 +156,21 @@ describe("InlineEditable", () => {
         />
       );
 
-      const viewElement = screen.getByText("Test value");
-      expect(viewElement).toHaveAttribute("tabIndex", "-1");
+      const viewElement = screen.getByRole("button");
+      expect(viewElement).toBeDisabled();
     });
 
-    it("should have tabIndex of 0 when not disabled", () => {
+    it("should be enabled when disabled prop is not set", () => {
       render(<InlineEditable value="Test value" onSave={mockOnSave} />);
 
-      const viewElement = screen.getByText("Test value");
-      expect(viewElement).toHaveAttribute("tabIndex", "0");
+      const viewElement = screen.getByRole("button");
+      expect(viewElement).not.toBeDisabled();
     });
   });
 
   describe("Edit Mode - Input Type", () => {
     it("should render input element when inputType is 'input'", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Test value"
@@ -192,7 +189,7 @@ describe("InlineEditable", () => {
     });
 
     it("should render textarea element when inputType is 'textarea'", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Test value"
@@ -211,7 +208,7 @@ describe("InlineEditable", () => {
     });
 
     it("should focus and select text when entering edit mode", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Test value" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Test value");
@@ -229,7 +226,7 @@ describe("InlineEditable", () => {
     });
 
     it("should render with custom editClassName", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       const { container } = render(
         <InlineEditable
           value="Test"
@@ -250,18 +247,16 @@ describe("InlineEditable", () => {
 
   describe("Value Changes", () => {
     it("should update input value when typing", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Test" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Test");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Test");
-        await user.clear(input);
-        await user.type(input, "New value");
-        expect(input).toHaveValue("New value");
-      });
+      const input = await screen.findByDisplayValue("Test");
+      await user.clear(input);
+      await user.type(input, "New value");
+      expect(input).toHaveValue("New value");
     });
 
     it("should update editValue when prop value changes", () => {
@@ -277,7 +272,7 @@ describe("InlineEditable", () => {
     });
 
     it("should show placeholder in edit mode when value is empty", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value=""
@@ -298,7 +293,7 @@ describe("InlineEditable", () => {
 
   describe("Keyboard Interactions - Input Type", () => {
     it("should save on Enter key for input type", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Original"
@@ -310,89 +305,83 @@ describe("InlineEditable", () => {
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-        await user.type(input, "Modified");
-        await user.keyboard("{Enter}");
+      const input = await screen.findByDisplayValue("Original");
+      await user.clear(input);
+      await user.type(input, "Modified");
+      await user.keyboard("{Enter}");
 
-        expect(mockOnSave).toHaveBeenCalledWith("Modified");
-      });
+      expect(mockOnSave).toHaveBeenCalledWith("Modified");
     });
 
     it("should cancel on Escape key", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Original" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-        await user.type(input, "Modified");
-        await user.keyboard("{Escape}");
+      const input = await screen.findByDisplayValue("Original");
+      await user.clear(input);
+      await user.type(input, "Modified");
+      await user.keyboard("{Escape}");
 
-        expect(mockOnSave).not.toHaveBeenCalled();
-        // Should return to view mode with original value
+      expect(mockOnSave).not.toHaveBeenCalled();
+      // Should return to view mode with original value
+      await waitFor(() => {
         expect(screen.getByText("Original")).toBeInTheDocument();
       });
     });
 
     it("should trim whitespace before saving", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Original" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-        await user.type(input, "  Modified  ");
-        await user.keyboard("{Enter}");
+      const input = await screen.findByDisplayValue("Original");
+      await user.clear(input);
+      await user.type(input, "  Modified  ");
+      await user.keyboard("{Enter}");
 
-        expect(mockOnSave).toHaveBeenCalledWith("Modified");
-      });
+      expect(mockOnSave).toHaveBeenCalledWith("Modified");
     });
 
     it("should not call onSave when value is unchanged", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Original" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        screen.getByDisplayValue("Original");
-        await user.keyboard("{Enter}");
+      await screen.findByDisplayValue("Original");
+      await user.keyboard("{Enter}");
 
-        expect(mockOnSave).not.toHaveBeenCalled();
-      });
+      expect(mockOnSave).not.toHaveBeenCalled();
     });
 
     it("should exit edit mode after saving", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Original" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-        await user.type(input, "Modified");
-        await user.keyboard("{Enter}");
+      const input = await screen.findByDisplayValue("Original");
+      await user.clear(input);
+      await user.type(input, "Modified");
+      await user.keyboard("{Enter}");
 
-        // Should be back in view mode
-        expect(screen.queryByDisplayValue("Modified")).not.toBeInTheDocument();
+      // Should be back in view mode
+      await waitFor(() => {
+        expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
       });
     });
   });
 
   describe("Keyboard Interactions - Textarea Type", () => {
     it("should not save on Enter key alone for textarea", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Original"
@@ -419,7 +408,7 @@ describe("InlineEditable", () => {
     });
 
     it("should save on Ctrl+Enter for textarea", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Original"
@@ -431,18 +420,16 @@ describe("InlineEditable", () => {
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const textarea = screen.getByDisplayValue("Original");
-        await user.clear(textarea);
-        await user.type(textarea, "Modified");
-        await user.keyboard("{Control>}{Enter}{/Control}");
+      const textarea = await screen.findByDisplayValue("Original");
+      await user.clear(textarea);
+      await user.type(textarea, "Modified");
+      await user.keyboard("{Control>}{Enter}{/Control}");
 
-        expect(mockOnSave).toHaveBeenCalledWith("Modified");
-      });
+      expect(mockOnSave).toHaveBeenCalledWith("Modified");
     });
 
     it("should cancel on Escape key for textarea", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Original"
@@ -454,13 +441,13 @@ describe("InlineEditable", () => {
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const textarea = screen.getByDisplayValue("Original");
-        await user.clear(textarea);
-        await user.type(textarea, "Modified");
-        await user.keyboard("{Escape}");
+      const textarea = await screen.findByDisplayValue("Original");
+      await user.clear(textarea);
+      await user.type(textarea, "Modified");
+      await user.keyboard("{Escape}");
 
-        expect(mockOnSave).not.toHaveBeenCalled();
+      expect(mockOnSave).not.toHaveBeenCalled();
+      await waitFor(() => {
         expect(screen.getByText("Original")).toBeInTheDocument();
       });
     });
@@ -468,181 +455,229 @@ describe("InlineEditable", () => {
 
   describe("Blur Behavior", () => {
     it("should save on blur", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <div>
           <InlineEditable value="Original" onSave={mockOnSave} />
           <button type="button">Other element</button>
         </div>
-      );
-
-      const viewElement = screen.getByText("Original");
-      await user.click(viewElement);
-
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-        await user.type(input, "Modified");
-
-        // Click outside to trigger blur
-        const otherButton = screen.getByText("Other element");
-        await user.click(otherButton);
-
-        expect(mockOnSave).toHaveBeenCalledWith("Modified");
-      });
-    });
-
-    it("should not save on blur if value is unchanged", async () => {
-      const user = userEvent.setup({ delay: null });
-      render(
-        <div>
-          <InlineEditable value="Original" onSave={mockOnSave} />
-          <button type="button">Other element</button>
-        </div>
-      );
-
-      const viewElement = screen.getByText("Original");
-      await user.click(viewElement);
-
-      await waitFor(async () => {
-        screen.getByDisplayValue("Original");
-
-        // Click outside to trigger blur without changing value
-        const otherButton = screen.getByText("Other element");
-        await user.click(otherButton);
-
-        expect(mockOnSave).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe("Debounced Autosave", () => {
-    it("should not trigger autosave when debounceMs is 0", async () => {
-      const user = userEvent.setup({ delay: null });
-      render(
-        <InlineEditable value="Original" onSave={mockOnSave} debounceMs={0} />
       );
 
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
       const input = await screen.findByDisplayValue("Original");
-      await user.type(input, " Modified");
+      await user.clear(input);
+      await user.type(input, "Modified");
 
-      // Advance timers
-      jest.advanceTimersByTime(1000);
+      // Click outside to trigger blur
+      const otherButton = screen.getByText("Other element");
+      await user.click(otherButton);
 
-      // Should not have called onSave automatically
-      expect(mockOnSave).not.toHaveBeenCalled();
+      expect(mockOnSave).toHaveBeenCalledWith("Modified");
     });
 
-    it("should trigger autosave after debounce delay", async () => {
-      const user = userEvent.setup({ delay: null });
+    it("should not save on blur if value is unchanged", async () => {
+      const user = userEvent.setup();
       render(
-        <InlineEditable value="Original" onSave={mockOnSave} debounceMs={500} />
+        <div>
+          <InlineEditable value="Original" onSave={mockOnSave} />
+          <button type="button">Other element</button>
+        </div>
       );
 
       const viewElement = screen.getByText("Original");
       await user.click(viewElement);
 
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-        await user.type(input, "Modified");
+      await screen.findByDisplayValue("Original");
 
-        // Should not call immediately
-        expect(mockOnSave).not.toHaveBeenCalled();
+      // Click outside to trigger blur without changing value
+      const otherButton = screen.getByText("Other element");
+      await user.click(otherButton);
 
-        // Advance timers by debounce delay
-        jest.advanceTimersByTime(500);
+      expect(mockOnSave).not.toHaveBeenCalled();
+    });
+  });
 
-        await waitFor(() => {
-          expect(mockOnSave).toHaveBeenCalledWith("Modified");
-        });
+  describe("Debounced Autosave", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    });
+
+    it("should not trigger autosave when debounceMs is 0", async () => {
+      render(
+        <InlineEditable value="Original" onSave={mockOnSave} debounceMs={0} />
+      );
+
+      // Click to enter edit mode
+      const viewElement = screen.getByText("Original");
+      await act(async () => {
+        viewElement.click();
       });
+
+      const input = screen.getByDisplayValue("Original") as HTMLInputElement;
+
+      // Type using fireEvent (works with fake timers)
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Original Modified" } });
+      });
+
+      // Advance timers
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      // Should not have called onSave automatically (no autosave when debounceMs is 0)
+      expect(mockOnSave).not.toHaveBeenCalled();
+    });
+
+    it("should trigger autosave after debounce delay", async () => {
+      render(
+        <InlineEditable value="Original" onSave={mockOnSave} debounceMs={500} />
+      );
+
+      // Click to enter edit mode
+      const viewElement = screen.getByText("Original");
+      await act(async () => {
+        viewElement.click();
+      });
+
+      const input = screen.getByDisplayValue("Original") as HTMLInputElement;
+
+      // Type using fireEvent
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Modified" } });
+      });
+
+      // Should not call immediately
+      expect(mockOnSave).not.toHaveBeenCalled();
+
+      // Advance timers by debounce delay
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+
+      expect(mockOnSave).toHaveBeenCalledWith("Modified");
     });
 
     it("should reset debounce timer on each keystroke", async () => {
-      const user = userEvent.setup({ delay: null });
       render(<InlineEditable value="" onSave={mockOnSave} debounceMs={500} />);
 
       const viewElement = screen.getByRole("button");
-      await user.click(viewElement);
+      await act(async () => {
+        viewElement.click();
+      });
 
-      const input = await screen.findByRole("textbox");
+      const input = screen.getByRole("textbox") as HTMLInputElement;
 
-      await user.type(input, "T");
-      jest.advanceTimersByTime(300);
+      // Type 'T'
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "T" } });
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
-      await user.type(input, "e");
-      jest.advanceTimersByTime(300);
+      // Type 'e'
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Te" } });
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
-      await user.type(input, "s");
-      jest.advanceTimersByTime(300);
+      // Type 's'
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Tes" } });
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
 
-      await user.type(input, "t");
+      // Type 't'
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Test" } });
+      });
 
       // Should not have called yet
       expect(mockOnSave).not.toHaveBeenCalled();
 
       // Now advance the full debounce time
-      jest.advanceTimersByTime(500);
-
-      await waitFor(() => {
-        expect(mockOnSave).toHaveBeenCalledTimes(1);
-        expect(mockOnSave).toHaveBeenCalledWith("Test");
+      await act(async () => {
+        vi.advanceTimersByTime(500);
       });
+
+      expect(mockOnSave).toHaveBeenCalledTimes(1);
+      expect(mockOnSave).toHaveBeenCalledWith("Test");
     });
 
     it("should not autosave empty values", async () => {
-      const user = userEvent.setup({ delay: null });
       render(
         <InlineEditable value="Original" onSave={mockOnSave} debounceMs={500} />
       );
 
       const viewElement = screen.getByText("Original");
-      await user.click(viewElement);
-
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-
-        jest.advanceTimersByTime(500);
-
-        // Should not save empty value
-        expect(mockOnSave).not.toHaveBeenCalled();
+      await act(async () => {
+        viewElement.click();
       });
+
+      const input = screen.getByDisplayValue("Original") as HTMLInputElement;
+
+      // Clear to empty
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "" } });
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+
+      // Should not save empty value
+      expect(mockOnSave).not.toHaveBeenCalled();
     });
 
     it("should cancel pending autosave on Escape", async () => {
-      const user = userEvent.setup({ delay: null });
       render(
         <InlineEditable value="Original" onSave={mockOnSave} debounceMs={500} />
       );
 
       const viewElement = screen.getByText("Original");
-      await user.click(viewElement);
-
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.type(input, " Modified");
-
-        // Advance timers partway through debounce
-        jest.advanceTimersByTime(300);
-
-        // Cancel with Escape
-        await user.keyboard("{Escape}");
-
-        // Advance the rest of the time
-        jest.advanceTimersByTime(200);
-
-        // Should not have called onSave
-        expect(mockOnSave).not.toHaveBeenCalled();
+      await act(async () => {
+        viewElement.click();
       });
+
+      const input = screen.getByDisplayValue("Original") as HTMLInputElement;
+
+      // Type new value
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Original Modified" } });
+      });
+
+      // Advance timers partway through debounce
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      // Cancel with Escape
+      await act(async () => {
+        fireEvent.keyDown(input, { key: "Escape" });
+      });
+
+      // Advance the rest of the time
+      await act(async () => {
+        vi.advanceTimersByTime(200);
+      });
+
+      // Should not have called onSave
+      expect(mockOnSave).not.toHaveBeenCalled();
     });
 
     it("should clear pending autosave on blur", async () => {
-      const user = userEvent.setup({ delay: null });
       render(
         <div>
           <InlineEditable
@@ -655,29 +690,37 @@ describe("InlineEditable", () => {
       );
 
       const viewElement = screen.getByText("Original");
-      await user.click(viewElement);
-
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.clear(input);
-        await user.type(input, "Modified");
-
-        // Advance timers partway through debounce
-        jest.advanceTimersByTime(300);
-
-        // Blur should trigger immediate save and clear debounce
-        const otherButton = screen.getByText("Other element");
-        await user.click(otherButton);
-
-        // Should have called onSave once from blur
-        expect(mockOnSave).toHaveBeenCalledTimes(1);
-        expect(mockOnSave).toHaveBeenCalledWith("Modified");
-
-        // Advance remaining time - should not trigger another call
-        jest.advanceTimersByTime(200);
-
-        expect(mockOnSave).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        viewElement.click();
       });
+
+      const input = screen.getByDisplayValue("Original") as HTMLInputElement;
+
+      // Type new value
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Modified" } });
+      });
+
+      // Advance timers partway through debounce
+      await act(async () => {
+        vi.advanceTimersByTime(300);
+      });
+
+      // Blur should trigger immediate save and clear debounce
+      await act(async () => {
+        fireEvent.blur(input);
+      });
+
+      // Should have called onSave once from blur
+      expect(mockOnSave).toHaveBeenCalledTimes(1);
+      expect(mockOnSave).toHaveBeenCalledWith("Modified");
+
+      // Advance remaining time - should not trigger another call
+      await act(async () => {
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(mockOnSave).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -709,17 +752,17 @@ describe("InlineEditable", () => {
       expect(element).toBeInTheDocument();
     });
 
-    it("should have aria-disabled when disabled", () => {
+    it("should be disabled when disabled prop is set", () => {
       render(
         <InlineEditable value="Test" onSave={mockOnSave} disabled={true} />
       );
 
       const element = screen.getByRole("button");
-      expect(element).toHaveAttribute("aria-disabled", "true");
+      expect(element).toBeDisabled();
     });
 
     it("should have default aria-label in edit mode", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(<InlineEditable value="Test" onSave={mockOnSave} />);
 
       const viewElement = screen.getByText("Test");
@@ -732,7 +775,7 @@ describe("InlineEditable", () => {
     });
 
     it("should use custom ariaLabel in edit mode", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable
           value="Test"
@@ -782,7 +825,7 @@ describe("InlineEditable", () => {
     });
 
     it("should not respond to keyboard events when disabled", async () => {
-      const user = userEvent.setup({ delay: null });
+      const user = userEvent.setup();
       render(
         <InlineEditable value="Test" onSave={mockOnSave} disabled={true} />
       );
@@ -819,79 +862,104 @@ describe("InlineEditable", () => {
   });
 
   describe("Cleanup", () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.runOnlyPendingTimers();
+      vi.useRealTimers();
+    });
+
     it("should cleanup debounce timer on unmount", async () => {
-      const user = userEvent.setup({ delay: null });
       const { unmount } = render(
         <InlineEditable value="Original" onSave={mockOnSave} debounceMs={500} />
       );
 
+      // Click to enter edit mode
       const viewElement = screen.getByText("Original");
-      await user.click(viewElement);
-
-      await waitFor(async () => {
-        const input = screen.getByDisplayValue("Original");
-        await user.type(input, " Modified");
-
-        // Unmount before debounce completes
-        unmount();
-
-        // Advance timers
-        jest.advanceTimersByTime(500);
-
-        // Should not have called onSave after unmount
-        expect(mockOnSave).not.toHaveBeenCalled();
+      await act(async () => {
+        viewElement.click();
       });
+
+      const input = screen.getByDisplayValue("Original") as HTMLInputElement;
+
+      // Type new value using fireEvent
+      await act(async () => {
+        fireEvent.change(input, { target: { value: "Original Modified" } });
+      });
+
+      // Unmount before debounce completes
+      unmount();
+
+      // Advance timers
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+
+      // Should not have called onSave after unmount
+      expect(mockOnSave).not.toHaveBeenCalled();
     });
 
     it("should not leak memory with multiple rapid edits", async () => {
-      const user = userEvent.setup({ delay: null });
       render(
         <InlineEditable value="Original" onSave={mockOnSave} debounceMs={500} />
       );
 
+      // Click to enter edit mode
       const viewElement = screen.getByText("Original");
-      await user.click(viewElement);
+      await act(async () => {
+        viewElement.click();
+      });
 
-      const input = await screen.findByDisplayValue("Original");
+      const input = screen.getByDisplayValue("Original") as HTMLInputElement;
 
-      // Type multiple times rapidly
+      // Type multiple times rapidly using fireEvent
+      let currentValue = "Original";
       for (let i = 0; i < 10; i++) {
-        await user.type(input, "x");
-        jest.advanceTimersByTime(100);
+        currentValue += "x";
+        await act(async () => {
+          fireEvent.change(input, { target: { value: currentValue } });
+        });
+        await act(async () => {
+          vi.advanceTimersByTime(100);
+        });
       }
 
       // Complete the debounce
-      jest.advanceTimersByTime(500);
-
-      await waitFor(() => {
-        // Should only call once with final value
-        expect(mockOnSave).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        vi.advanceTimersByTime(500);
       });
+
+      // Should only call once with final value
+      expect(mockOnSave).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("ForwardRef", () => {
-    it("should forward ref to the container div", () => {
+    it("should forward ref to the button element in view mode", () => {
       const ref = { current: null };
       render(<InlineEditable value="Test" onSave={mockOnSave} ref={ref} />);
 
-      expect(ref.current).toBeInstanceOf(HTMLDivElement);
+      // In view mode, component renders a button
+      expect(ref.current).toBeInstanceOf(HTMLButtonElement);
     });
 
-    it("should maintain ref when switching modes", async () => {
-      const user = userEvent.setup({ delay: null });
+    it("should update ref when switching to edit mode", async () => {
+      const user = userEvent.setup();
       const ref = { current: null };
       render(<InlineEditable value="Test" onSave={mockOnSave} ref={ref} />);
 
-      const initialRef = ref.current;
+      // In view mode, ref should be button
+      expect(ref.current).toBeInstanceOf(HTMLButtonElement);
 
       const viewElement = screen.getByText("Test");
       await user.click(viewElement);
 
       await waitFor(() => {
         screen.getByDisplayValue("Test");
-        // Ref should remain the same
-        expect(ref.current).toBe(initialRef);
+        // In edit mode, ref should be the wrapper div
+        expect(ref.current).toBeInstanceOf(HTMLDivElement);
       });
     });
   });

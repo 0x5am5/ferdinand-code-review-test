@@ -241,6 +241,7 @@ export const AssetList: FC<AssetListProps> = ({
                         onBulkUpdate(Array.from(selectedAssets), {
                           categoryId: category.id,
                         });
+                        setSelectedAssets(new Set());
                       }}
                     >
                       {category.name}
@@ -253,6 +254,7 @@ export const AssetList: FC<AssetListProps> = ({
                       onBulkUpdate(Array.from(selectedAssets), {
                         categoryId: null,
                       });
+                      setSelectedAssets(new Set());
                     }}
                   >
                     Remove Category
@@ -320,6 +322,7 @@ export const AssetList: FC<AssetListProps> = ({
                                   addTags: [tag.id],
                                 });
                               }
+                              setSelectedAssets(new Set());
                             }}
                             className={
                               isShared

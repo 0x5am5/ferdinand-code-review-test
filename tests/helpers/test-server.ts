@@ -127,6 +127,50 @@ export async function createTestSession(userId: number): Promise<string> {
  * Clean up test data
  */
 export async function cleanupTestUser(userId: number): Promise<void> {
+  // Import necessary schemas
+  const { assets, assetCategoryAssignments, assetTagAssignments } = await import('@shared/schema');
+
+  // Get all assets uploaded by this user
+  const userAssets = await db
+    .select()
+    .from(assets)
+    .where(eq(assets.uploadedBy, userId));
+
+  const assetIds = userAssets.map(a => a.id);
+
+  if (assetIds.length > 0) {
+    // Delete physical files and thumbnails for each asset
+    const { deleteFile } = await import('../../server/storage/index');
+    const { deleteThumbnails } = await import('../../server/services/thumbnail');
+
+    for (const asset of userAssets) {
+      // Delete the actual file
+      if (asset.storagePath) {
+        try {
+          await deleteFile(asset.storagePath);
+        } catch (error) {
+          // Ignore file deletion errors (file might not exist in test environment)
+          console.warn(`Warning: Could not delete file ${asset.storagePath}:`, error);
+        }
+      }
+
+      // Delete thumbnails
+      try {
+        await deleteThumbnails(asset.id);
+      } catch (error) {
+        // Ignore thumbnail deletion errors
+        console.warn(`Warning: Could not delete thumbnails for asset ${asset.id}:`, error);
+      }
+    }
+
+    // Delete category and tag assignments
+    await db.delete(assetCategoryAssignments).where(inArray(assetCategoryAssignments.assetId, assetIds));
+    await db.delete(assetTagAssignments).where(inArray(assetTagAssignments.assetId, assetIds));
+
+    // Delete the assets themselves
+    await db.delete(assets).where(eq(assets.uploadedBy, userId));
+  }
+
   // Delete user-client associations
   await db.delete(userClients).where(eq(userClients.userId, userId));
 
@@ -140,6 +184,10 @@ export async function cleanupTestUser(userId: number): Promise<void> {
 export async function cleanupTestClient(clientId: number): Promise<void> {
   // Delete user-client associations
   await db.delete(userClients).where(eq(userClients.clientId, clientId));
+
+  // Delete brand assets for this client
+  const { brandAssets } = await import('@shared/schema');
+  await db.delete(brandAssets).where(eq(brandAssets.clientId, clientId));
 
   // Delete assets associated with this client
   const { assets, assetCategoryAssignments, assetTagAssignments, assetCategories, assetTags } = await import('@shared/schema');

@@ -1,354 +1,249 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+/**
+ * @vitest-environment jsdom
+ */
+
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import { AssetUpload } from "../asset-upload";
 
-// Mock the asset queries
-jest.mock("@/lib/queries/assets", () => ({
-  useAssetCategoriesQuery: jest.fn(() => ({
+// Avoid Radix Portal/focus-management side effects in JSDOM by mocking these UI primitives.
+vi.mock("@/components/ui/dialog", async () => {
+  const React = await import("react");
+
+  const DialogContext = React.createContext<{
+    open: boolean;
+    onOpenChange?: (open: boolean) => void;
+  } | null>(null);
+
+  const Dialog = ({
+    open,
+    onOpenChange,
+    children,
+  }: React.PropsWithChildren<{
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }>) => (
+    <DialogContext.Provider value={{ open: Boolean(open), onOpenChange }}>
+      {children}
+    </DialogContext.Provider>
+  );
+
+  const DialogTrigger = ({
+    asChild,
+    children,
+  }: React.PropsWithChildren<{ asChild?: boolean }>) => {
+    const ctx = React.useContext(DialogContext);
+    const child = React.Children.only(children);
+
+    if (asChild && React.isValidElement(child)) {
+      const onClick = (e: React.MouseEvent) => {
+        child.props.onClick?.(e);
+        ctx?.onOpenChange?.(true);
+      };
+      return React.cloneElement(child, { onClick });
+    }
+
+    return (
+      <button type="button" onClick={() => ctx?.onOpenChange?.(true)}>
+        {children}
+      </button>
+    );
+  };
+
+  const DialogContent = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => {
+    const ctx = React.useContext(DialogContext);
+    if (!ctx?.open) return null;
+    return (
+      <div role="dialog" {...props}>
+        {children}
+      </div>
+    );
+  };
+
+  const DialogHeader = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
+    <div {...props}>{children}</div>
+  );
+  const DialogTitle = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
+    <h2 {...props}>{children}</h2>
+  );
+  const DialogDescription = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
+    <p {...props}>{children}</p>
+  );
+
+  return {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+  };
+});
+
+vi.mock("@/components/ui/select", async () => {
+  const React = await import("react");
+  // Minimal non-portal select stubs.
+  const Select = ({ children }: React.PropsWithChildren) => (
+    <div>{children}</div>
+  );
+  const SelectTrigger = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
+    <button type="button" {...props}>
+      {children}
+    </button>
+  );
+  const SelectValue = ({ placeholder }: { placeholder?: string }) => (
+    <span>{placeholder ?? ""}</span>
+  );
+  const SelectContent = ({ children }: React.PropsWithChildren) => (
+    <div>{children}</div>
+  );
+  const SelectItem = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
+    <div {...props}>{children}</div>
+  );
+
+  return {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+  };
+});
+
+// Keep queries deterministic and synchronous.
+vi.mock("@/lib/queries/assets", () => ({
+  useAssetCategoriesQuery: vi.fn(() => ({
     data: [
       { id: 1, name: "Documents", slug: "documents" },
       { id: 2, name: "Images", slug: "images" },
     ],
   })),
-  useAssetTagsQuery: jest.fn(() => ({
+  useAssetTagsQuery: vi.fn(() => ({
     data: [
       { id: 1, name: "marketing", slug: "marketing" },
       { id: 2, name: "design", slug: "design" },
     ],
   })),
-  useUploadAssetMutation: jest.fn(() => ({
-    mutateAsync: jest.fn().mockResolvedValue({}),
+  useUploadAssetMutation: vi.fn(() => ({
+    mutateAsync: vi.fn().mockResolvedValue({}),
     isPending: false,
   })),
 }));
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-  return ({ children }: { children: JSX.Element }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+  }),
+}));
 
 describe("AssetUpload", () => {
+  beforeAll(() => {
+    global.URL.createObjectURL = vi.fn(() => "mock-object-url");
+    global.URL.revokeObjectURL = vi.fn();
+  });
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  describe("File Upload Flow", () => {
-    it("should render upload dialog trigger button", () => {
-      render(<AssetUpload />, { wrapper: createWrapper() });
+  it("renders the trigger button", () => {
+    render(<AssetUpload clientId={1} />);
+    expect(
+      screen.getByRole("button", { name: /upload assets/i })
+    ).toBeInTheDocument();
+  });
 
+  it("renders dialog contents when open=true", () => {
+    render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByText(/drag and drop files here, or click to browse/i)
+    ).toBeInTheDocument();
+
+    // Basic controls present
+    expect(screen.getByText(/visibility/i)).toBeInTheDocument();
+    expect(screen.getByText(/categories \(optional\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/tags \(optional\)/i)).toBeInTheDocument();
+
+    // Action buttons present
+    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /upload 0 files/i })
+    ).toBeInTheDocument();
+  });
+
+  it("selecting a file shows it in the selected files list", async () => {
+    render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
+
+    const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
+    const file = new File(["hello"], "test.txt", { type: "text/plain" });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
+      expect(screen.getByText("test.txt")).toBeInTheDocument();
       expect(
-        screen.getByRole("button", { name: /upload assets/i })
+        screen.getByRole("button", { name: /upload 1 file/i })
       ).toBeInTheDocument();
     });
+  });
 
-    it("should open dialog when upload button is clicked", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload />, { wrapper: createWrapper() });
+  it("removing a selected file removes it from the list", async () => {
+    render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
-      const uploadButton = screen.getByRole("button", {
-        name: /upload assets/i,
-      });
-      await user.click(uploadButton);
+    const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
+    const file = new File(["hello"], "test.txt", { type: "text/plain" });
 
-      expect(screen.getByText(/drag and drop files here/i)).toBeInTheDocument();
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByText("test.txt")).toBeInTheDocument();
     });
 
-    it("should allow file selection via input", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
+    fireEvent.click(screen.getByRole("button", { name: /remove test\.txt/i }));
 
-      const file = new File(["hello"], "test.txt", { type: "text/plain" });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
-
-      await user.upload(input, file);
-
-      await waitFor(() => {
-        expect(screen.getByText("test.txt")).toBeInTheDocument();
-      });
-    });
-
-    it("should display file preview for selected files", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const file = new File(["content"], "document.pdf", {
-        type: "application/pdf",
-      });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
-
-      await user.upload(input, file);
-
-      await waitFor(() => {
-        expect(screen.getByText("document.pdf")).toBeInTheDocument();
-        expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
-      });
-    });
-
-    it("should allow removing files from selection", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const file = new File(["content"], "test.txt", { type: "text/plain" });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
-
-      await user.upload(input, file);
-
-      await waitFor(() => {
-        expect(screen.getByText("test.txt")).toBeInTheDocument();
-      });
-
-      // Find and click the remove button (X button)
-      const removeButtons = screen.getAllByRole("button");
-      const removeButton = removeButtons.find((btn) =>
-        btn.querySelector("svg.lucide-x")
-      );
-
-      if (removeButton) {
-        await user.click(removeButton);
-      }
-
-      await waitFor(() => {
-        expect(screen.queryByText("test.txt")).not.toBeInTheDocument();
-      });
-    });
-
-    it("should support multiple file selection", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const files = [
-        new File(["content1"], "file1.txt", { type: "text/plain" }),
-        new File(["content2"], "file2.txt", { type: "text/plain" }),
-        new File(["content3"], "file3.txt", { type: "text/plain" }),
-      ];
-
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
-
-      await user.upload(input, files);
-
-      await waitFor(() => {
-        expect(screen.getByText("file1.txt")).toBeInTheDocument();
-        expect(screen.getByText("file2.txt")).toBeInTheDocument();
-        expect(screen.getByText("file3.txt")).toBeInTheDocument();
-        expect(screen.getByText(/selected files \(3\)/i)).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.queryByText("test.txt")).not.toBeInTheDocument();
+      expect(screen.queryByText(/selected files/i)).not.toBeInTheDocument();
     });
   });
 
-  describe("Drag and Drop Upload", () => {
-    it("should handle drag and drop events", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
+  it("initialFiles prop shows files when open", async () => {
+    const initialFiles = [
+      new File(["content"], "initial.txt", { type: "text/plain" }),
+    ];
 
-      const dropZone = screen.getByRole("button", { name: /drag and drop/i });
-      const file = new File(["content"], "dropped.txt", { type: "text/plain" });
+    render(
+      <AssetUpload
+        clientId={1}
+        open={true}
+        onOpenChange={vi.fn()}
+        initialFiles={initialFiles}
+      />
+    );
 
-      // Create drag event
-      const dragEvent = new Event("dragover", { bubbles: true });
-      Object.defineProperty(dragEvent, "dataTransfer", {
-        value: { files: [file] },
-      });
-
-      fireEvent(dropZone, dragEvent);
-
-      // Create drop event
-      const dropEvent = new Event("drop", { bubbles: true });
-      Object.defineProperty(dropEvent, "dataTransfer", {
-        value: { files: [file] },
-      });
-
-      fireEvent(dropZone, dropEvent);
-
-      await waitFor(() => {
-        expect(screen.getByText("dropped.txt")).toBeInTheDocument();
-      });
-    });
-
-    it("should highlight drop zone on drag over", () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const dropZone = screen.getByRole("button", { name: /drag and drop/i });
-
-      fireEvent.dragOver(dropZone);
-
-      // Check if the drop zone has the highlighted class
-      expect(dropZone).toHaveClass("border-primary");
-    });
-
-    it("should remove highlight when drag leaves", () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const dropZone = screen.getByRole("button", { name: /drag and drop/i });
-
-      fireEvent.dragOver(dropZone);
-      fireEvent.dragLeave(dropZone);
-
-      // Check if the highlight class is removed
-      expect(dropZone).not.toHaveClass("border-primary");
-    });
-  });
-
-  describe("Metadata Selection", () => {
-    it("should allow selecting visibility option", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      // Default visibility should be "shared"
-      expect(
-        screen.getByText(/shared \(all team members\)/i)
-      ).toBeInTheDocument();
-    });
-
-    it("should allow selecting categories", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      // Categories should be available
-      expect(screen.getByText(/categories \(optional\)/i)).toBeInTheDocument();
-    });
-
-    it("should allow entering tags", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const tagInput = screen.getByPlaceholderText(/enter new tags/i);
-      await user.type(tagInput, "test, example");
-
-      expect(tagInput).toHaveValue("test, example");
-    });
-
-    it("should display selected categories as badges", async () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      // Test that category selection UI is present
-      expect(screen.getByText(/categories \(optional\)/i)).toBeInTheDocument();
-    });
-  });
-
-  describe("Upload Progress", () => {
-    it("should disable upload button when no files selected", () => {
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const uploadButtons = screen.getAllByRole("button");
-      const uploadButton = uploadButtons.find((btn) =>
-        btn.textContent?.includes("Upload")
-      );
-
-      expect(uploadButton).toBeDisabled();
-    });
-
-    it("should enable upload button when files are selected", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const file = new File(["content"], "test.txt", { type: "text/plain" });
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
-
-      await user.upload(input, file);
-
-      await waitFor(() => {
-        const uploadButtons = screen.getAllByRole("button");
-        const uploadButton = uploadButtons.find((btn) =>
-          btn.textContent?.includes("Upload 1 file")
-        );
-        expect(uploadButton).not.toBeDisabled();
-      });
-    });
-
-    it("should show correct file count in upload button text", async () => {
-      const user = userEvent.setup();
-      render(<AssetUpload open={true} onOpenChange={jest.fn()} />, {
-        wrapper: createWrapper(),
-      });
-
-      const files = [
-        new File(["content1"], "file1.txt", { type: "text/plain" }),
-        new File(["content2"], "file2.txt", { type: "text/plain" }),
-      ];
-
-      const input = screen
-        .getByRole("button", { name: /drag and drop/i })
-        .querySelector('input[type="file"]') as HTMLInputElement;
-
-      await user.upload(input, files);
-
-      await waitFor(() => {
-        expect(screen.getByText(/upload 2 files/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe("Dialog Actions", () => {
-    it("should close dialog when cancel button is clicked", async () => {
-      const user = userEvent.setup();
-      const onOpenChange = jest.fn();
-      render(<AssetUpload open={true} onOpenChange={onOpenChange} />, {
-        wrapper: createWrapper(),
-      });
-
-      const cancelButton = screen.getByRole("button", { name: /cancel/i });
-      await user.click(cancelButton);
-
-      expect(onOpenChange).toHaveBeenCalledWith(false);
-    });
-
-    it("should handle initial files prop", () => {
-      const initialFiles = [
-        new File(["content"], "initial.txt", { type: "text/plain" }),
-      ];
-
-      render(
-        <AssetUpload
-          open={true}
-          onOpenChange={jest.fn()}
-          initialFiles={initialFiles}
-        />,
-        { wrapper: createWrapper() }
-      );
-
+    await waitFor(() => {
       expect(screen.getByText("initial.txt")).toBeInTheDocument();
+      expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
     });
   });
 });

@@ -5,7 +5,7 @@ import { ClientProtectedRoute } from "@/components/auth/client-protected-route";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Toaster } from "@/components/ui/toaster";
-import { RoleSwitchingProvider } from "@/contexts/RoleSwitchingContext";
+import { RoleSwitchingProvider } from "@/contexts/role-switching-context";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SpotlightProvider } from "@/hooks/use-spotlight";
 import { queryClient } from "@/lib/queryClient";

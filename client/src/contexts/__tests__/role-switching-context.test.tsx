@@ -1,23 +1,21 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
+/**
+ * @vitest-environment jsdom
+ */
+
 import type { User } from "@shared/schema";
 import { UserRole } from "@shared/schema";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen, waitFor } from "@testing-library/react";
+import { vi } from "vitest";
 import {
   RoleSwitchingProvider,
   useRoleSwitching,
-} from "../RoleSwitchingContext";
+} from "../role-switching-context";
 
 // Mock the useAuth hook
-const mockUseAuth = jest.fn();
+const mockUseAuth = vi.fn();
 
-jest.mock("../../hooks/use-auth", () => ({
+vi.mock("../../hooks/use-auth", () => ({
   useAuth: () => mockUseAuth(),
 }));
 
@@ -75,16 +73,27 @@ function TestComponent() {
 }
 
 describe("RoleSwitchingContext", () => {
+  let queryClient: QueryClient;
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     sessionStorage.clear();
     // Mock window.location.pathname
     delete (window as any).location;
     (window as any).location = { pathname: "/design-builder" };
+
+    // Create a new QueryClient for each test
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   });
 
   afterEach(() => {
     sessionStorage.clear();
+    queryClient.clear();
   });
 
   describe("Initialization", () => {
@@ -105,9 +114,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -144,18 +155,23 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
         expect(screen.getByTestId("is-ready")).toHaveTextContent("ready");
       });
 
-      expect(screen.getByTestId("viewing-role")).toHaveTextContent(
-        UserRole.EDITOR
-      );
+      await waitFor(() => {
+        expect(screen.getByTestId("viewing-role")).toHaveTextContent(
+          UserRole.EDITOR
+        );
+      });
+
       expect(screen.getByTestId("actual-role")).toHaveTextContent(
         UserRole.SUPER_ADMIN
       );
@@ -179,9 +195,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -205,9 +223,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -239,9 +259,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       // Should be not-ready while loading
@@ -267,9 +289,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -298,9 +322,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -341,9 +367,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -385,9 +413,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -447,9 +477,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -478,9 +510,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -516,9 +550,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -568,9 +604,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -617,9 +655,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -655,9 +695,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -686,9 +728,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -722,9 +766,11 @@ describe("RoleSwitchingContext", () => {
       (window as any).location.pathname = "/dashboard";
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -755,9 +801,11 @@ describe("RoleSwitchingContext", () => {
       (window as any).location.pathname = "/dashboard";
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -772,7 +820,7 @@ describe("RoleSwitchingContext", () => {
       // EDITOR should not be able to access dashboard
       // Note: canAccessCurrentPage is evaluated at initialization,
       // so we check if it would allow EDITOR role access
-      const _function_TestComponent = () => {
+      const EditorAccessTest = () => {
         const { canAccessCurrentPage } = useRoleSwitching();
         return (
           <div>
@@ -784,9 +832,11 @@ describe("RoleSwitchingContext", () => {
       };
 
       const { container } = render(
-        <RoleSwitchingProvider>
-          <function_TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <EditorAccessTest />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       (window as any).location.pathname = "/dashboard";
@@ -815,9 +865,11 @@ describe("RoleSwitchingContext", () => {
       (window as any).location.pathname = "/users";
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -837,9 +889,11 @@ describe("RoleSwitchingContext", () => {
       };
 
       const { container } = render(
-        <RoleSwitchingProvider>
-          <AdminAccessTest />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <AdminAccessTest />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       (window as any).location.pathname = "/users";
@@ -868,9 +922,11 @@ describe("RoleSwitchingContext", () => {
       (window as any).location.pathname = "/design-builder";
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -902,29 +958,24 @@ describe("RoleSwitchingContext", () => {
 
       const ClientAccessTest = () => {
         const { canAccessCurrentPage } = useRoleSwitching();
-        return (
-          <div>
-            {[
-              UserRole.SUPER_ADMIN,
-              UserRole.ADMIN,
-              UserRole.EDITOR,
-              UserRole.STANDARD,
-              UserRole.GUEST,
-            ]
-              .map((role) => (
-                <span key={role}>
-                  {canAccessCurrentPage(role) ? "can" : "cannot"}
-                </span>
-              ))
-              .join(",")}
-          </div>
-        );
+        const results = [
+          UserRole.SUPER_ADMIN,
+          UserRole.ADMIN,
+          UserRole.EDITOR,
+          UserRole.STANDARD,
+          UserRole.GUEST,
+        ]
+          .map((role) => (canAccessCurrentPage(role) ? "can" : "cannot"))
+          .join(",");
+        return <div>{results}</div>;
       };
 
       render(
-        <RoleSwitchingProvider>
-          <ClientAccessTest />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <ClientAccessTest />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -953,9 +1004,11 @@ describe("RoleSwitchingContext", () => {
       (window as any).location.pathname = "/design-builder";
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -1008,9 +1061,11 @@ describe("RoleSwitchingContext", () => {
       (window as any).location.pathname = "/design-builder";
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -1069,9 +1124,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -1111,9 +1168,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       const { rerender } = render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
@@ -1138,9 +1197,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       rerender(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       // Should update actual role
@@ -1162,9 +1223,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       expect(screen.getByTestId("is-ready")).toHaveTextContent("not-ready");
@@ -1187,9 +1250,11 @@ describe("RoleSwitchingContext", () => {
       });
 
       render(
-        <RoleSwitchingProvider>
-          <TestComponent />
-        </RoleSwitchingProvider>
+        <QueryClientProvider client={queryClient}>
+          <RoleSwitchingProvider>
+            <TestComponent />
+          </RoleSwitchingProvider>
+        </QueryClientProvider>
       );
 
       await waitFor(() => {
