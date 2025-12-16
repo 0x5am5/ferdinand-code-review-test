@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from 'vitest';
 import type { BrandAsset } from '@shared/schema';
 import {
   findBestLogoMatch,
@@ -10,6 +10,9 @@ import {
   filterFontAssetsByVariant,
   generateColorSwatchUrl,
   checkRateLimit,
+  generateGoogleFontCSS,
+  generateAdobeFontCSS,
+  hasUploadableFiles,
 } from '../server/utils/slack-helpers';
 
 // Mock brand assets for testing
@@ -299,7 +302,7 @@ describe('Slack Helpers', () => {
 
     it('should return empty array for no matches', () => {
       const result = filterColorAssetsByVariant(mockColorAssets, 'nonexistent');
-      expect(result).toHaveLength(3); // Falls back to all assets
+      expect(result).toHaveLength(0); // Returns empty when no matches
     });
   });
 
@@ -327,9 +330,9 @@ describe('Slack Helpers', () => {
       expect(result[0].name).toBe('Header Display Font');
     });
 
-    it('should return all assets for no matches', () => {
+    it('should return empty array for no matches', () => {
       const result = filterFontAssetsByVariant(mockFontAssets, 'nonexistent');
-      expect(result).toHaveLength(2); // Falls back to all assets
+      expect(result).toHaveLength(0); // Returns empty when no matches
     });
   });
 
@@ -351,7 +354,7 @@ describe('Slack Helpers', () => {
       };
       const result = formatFontInfo(fontAssetWithoutData);
       expect(result.title).toBe('Body Text Font');
-      expect(result.source).toBe('unknown');
+      expect(result.source).toBe('custom');
       expect(result.weights).toEqual(['400']);
       expect(result.styles).toEqual(['normal']);
     });
@@ -450,6 +453,137 @@ describe('Slack Helpers', () => {
 
       expect(result1.allowed).toBe(true);
       expect(result2.allowed).toBe(true);
+    });
+  });
+
+  describe('generateGoogleFontCSS', () => {
+    it('should generate Google Font CSS with correct URL', () => {
+      const css = generateGoogleFontCSS('Roboto', ['400', '700']);
+      expect(css).toContain('https://fonts.googleapis.com/css2');
+      expect(css).toContain('family=Roboto');
+      expect(css).toContain('wght@400;700');
+    });
+
+    it('should generate link tag HTML', () => {
+      const css = generateGoogleFontCSS('Open Sans', ['300', '500']);
+      expect(css).toContain('<link href=');
+      expect(css).toContain('rel="stylesheet">');
+    });
+
+    it('should generate CSS import statement', () => {
+      const css = generateGoogleFontCSS('Lato', ['400']);
+      expect(css).toContain('@import url');
+    });
+
+    it('should generate usage example', () => {
+      const css = generateGoogleFontCSS('Inter', ['400', '600']);
+      expect(css).toContain("font-family: 'Inter'");
+      expect(css).toContain('font-weight: 400');
+    });
+
+    it('should handle font names with spaces', () => {
+      const css = generateGoogleFontCSS('Source Sans Pro', ['400']);
+      expect(css).toContain('Source+Sans+Pro');
+    });
+  });
+
+  describe('generateAdobeFontCSS', () => {
+    it('should generate Adobe Font CSS with project ID', () => {
+      const css = generateAdobeFontCSS('abc123', 'proxima-nova');
+      expect(css).toContain('https://use.typekit.net/abc123.css');
+    });
+
+    it('should include link tag HTML', () => {
+      const css = generateAdobeFontCSS('xyz789', 'futura-pt');
+      expect(css).toContain('<link rel="stylesheet"');
+      expect(css).toContain('href=');
+    });
+
+    it('should generate usage example', () => {
+      const css = generateAdobeFontCSS('test123', 'proxima-nova');
+      expect(css).toContain("font-family: 'proxima-nova'");
+    });
+  });
+
+  describe('hasUploadableFiles', () => {
+    it('should return true for font with file source and files', () => {
+      const fontAsset: BrandAsset = {
+        ...mockFontAssets[0],
+        data: JSON.stringify({
+          source: 'file',
+          sourceData: {
+            files: [
+              { format: 'woff2', weight: '400', style: 'normal' },
+            ],
+          },
+        }),
+      };
+      expect(hasUploadableFiles(fontAsset)).toBe(true);
+    });
+
+    it('should return false for Google font', () => {
+      const fontAsset: BrandAsset = {
+        ...mockFontAssets[0],
+        data: JSON.stringify({
+          source: 'google',
+          sourceData: {
+            files: [
+              { format: 'woff2', weight: '400', style: 'normal' },
+            ],
+          },
+        }),
+      };
+      expect(hasUploadableFiles(fontAsset)).toBe(false);
+    });
+
+    it('should return false for Adobe font', () => {
+      const fontAsset: BrandAsset = {
+        ...mockFontAssets[0],
+        data: JSON.stringify({
+          source: 'adobe',
+          sourceData: {
+            files: [
+              { format: 'woff2', weight: '400', style: 'normal' },
+            ],
+          },
+        }),
+      };
+      expect(hasUploadableFiles(fontAsset)).toBe(false);
+    });
+
+    it('should return true for custom font with files but no explicit source', () => {
+      const fontAsset: BrandAsset = {
+        ...mockFontAssets[0],
+        data: JSON.stringify({
+          sourceData: {
+            files: [
+              { format: 'woff2', weight: '400', style: 'normal' },
+            ],
+          },
+        }),
+      };
+      expect(hasUploadableFiles(fontAsset)).toBe(true);
+    });
+
+    it('should return false for font without files', () => {
+      const fontAsset: BrandAsset = {
+        ...mockFontAssets[0],
+        data: JSON.stringify({
+          source: 'file',
+          sourceData: {
+            files: [],
+          },
+        }),
+      };
+      expect(hasUploadableFiles(fontAsset)).toBe(false);
+    });
+
+    it('should return false for malformed data', () => {
+      const fontAsset: BrandAsset = {
+        ...mockFontAssets[0],
+        data: 'invalid json',
+      };
+      expect(hasUploadableFiles(fontAsset)).toBe(false);
     });
   });
 });

@@ -1,8 +1,58 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+/**
+ * @vitest-environment jsdom
+ */
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import type { Asset } from "@/lib/queries/assets";
 import { AssetList } from "../asset-list";
+
+// Mock the asset queries
+vi.mock("@/lib/queries/assets", async () => {
+  const actual = await vi.importActual("@/lib/queries/assets");
+  return {
+    ...actual,
+    useCreateTagMutation: vi.fn(() => ({
+      mutateAsync: vi.fn().mockResolvedValue({
+        id: 99,
+        name: "New Tag",
+        slug: "new-tag",
+        clientId: 1,
+      }),
+      isPending: false,
+    })),
+  };
+});
+
+// Mock useAuth hook
+vi.mock("@/hooks/use-auth", () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      id: 1,
+      name: "Test User",
+      email: "test@example.com",
+      role: "admin",
+    },
+    currentClient: {
+      id: 1,
+      name: "Test Client",
+    },
+    isLoading: false,
+  })),
+}));
+
+// Mock useRoleSwitching hook
+vi.mock("@/contexts/role-switching-context", () => ({
+  useRoleSwitching: vi.fn(() => ({
+    viewingRole: null,
+    effectiveRole: "admin",
+    setViewingRole: vi.fn(),
+    clearViewingRole: vi.fn(),
+    isRoleSwitching: false,
+  })),
+}));
 
 const mockAssets: Asset[] = [
   {
@@ -91,23 +141,37 @@ const mockTags = [
 ];
 
 describe("AssetList", () => {
-  const mockOnAssetClick = jest.fn();
-  const mockOnDelete = jest.fn();
-  const mockOnBulkDelete = jest.fn();
-  const mockOnBulkUpdate = jest.fn();
+  const mockOnAssetClick = vi.fn();
+  const mockOnDelete = vi.fn();
+  const mockOnBulkDelete = vi.fn();
+  const mockOnBulkUpdate = vi.fn();
+  let queryClient: QueryClient;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   });
 
   afterEach(() => {
     // Clean up any pending timers or async operations
-    jest.clearAllTimers();
+    vi.clearAllTimers();
+    queryClient.clear();
   });
+
+  const renderWithQueryClient = (ui: React.ReactElement) => {
+    return render(
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    );
+  };
 
   describe("Loading State", () => {
     it("should render loading skeletons when loading", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={[]}
           isLoading={true}
@@ -124,7 +188,7 @@ describe("AssetList", () => {
 
   describe("Empty State", () => {
     it("should show empty state when no assets are available", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={[]}
           isLoading={false}
@@ -140,7 +204,7 @@ describe("AssetList", () => {
 
   describe("Asset Rendering", () => {
     it("should render all assets in grid view", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -155,7 +219,7 @@ describe("AssetList", () => {
     });
 
     it("should display file sizes correctly", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -174,7 +238,7 @@ describe("AssetList", () => {
     });
 
     it("should display visibility badges", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -191,7 +255,7 @@ describe("AssetList", () => {
     });
 
     it("should display category badges for assets with categories", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -206,7 +270,7 @@ describe("AssetList", () => {
     });
 
     it("should show thumbnail for image files", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -229,7 +293,7 @@ describe("AssetList", () => {
   describe("View Mode Toggle", () => {
     it("should toggle between grid and list view", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -258,7 +322,7 @@ describe("AssetList", () => {
 
     it("should render list view with table headers", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -280,7 +344,7 @@ describe("AssetList", () => {
         expect(screen.getByText("Name")).toBeInTheDocument();
         expect(screen.getByText("Type")).toBeInTheDocument();
         expect(screen.getByText("Size")).toBeInTheDocument();
-        expect(screen.getByText("Uploaded")).toBeInTheDocument();
+        expect(screen.getByText("Last Modified")).toBeInTheDocument();
         expect(screen.getByText("Visibility")).toBeInTheDocument();
       }
     });
@@ -289,7 +353,7 @@ describe("AssetList", () => {
   describe("Asset Interactions", () => {
     it("should call onAssetClick when asset is clicked in grid view", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -309,7 +373,7 @@ describe("AssetList", () => {
 
     it("should call onDelete when delete button is clicked", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -336,10 +400,10 @@ describe("AssetList", () => {
     it("should open download in new tab when download button is clicked", async () => {
       const user = userEvent.setup();
       // Mock window.open
-      const mockOpen = jest.fn();
+      const mockOpen = vi.fn();
       window.open = mockOpen;
 
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -368,7 +432,7 @@ describe("AssetList", () => {
 
     it("should call onAssetClick when view button is clicked", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -405,7 +469,7 @@ describe("AssetList", () => {
         ],
       };
 
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={[assetWithManyCategories]}
           isLoading={false}
@@ -420,7 +484,7 @@ describe("AssetList", () => {
 
   describe("File Type Icons", () => {
     it("should render file icon for non-image files", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={[mockAssets[2]]} // text file
           isLoading={false}
@@ -438,7 +502,7 @@ describe("AssetList", () => {
   describe("Date Formatting", () => {
     it("should format dates correctly in list view", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -466,7 +530,7 @@ describe("AssetList", () => {
 
   describe("Bulk Delete Functionality", () => {
     it("should not show bulk delete button when no assets are selected", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -486,7 +550,7 @@ describe("AssetList", () => {
     });
 
     it("should show checkboxes on hover in grid view", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -503,7 +567,7 @@ describe("AssetList", () => {
 
     it("should show checkboxes in list view", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -531,7 +595,7 @@ describe("AssetList", () => {
 
     it("should select and deselect assets when checkbox is clicked", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -565,7 +629,7 @@ describe("AssetList", () => {
 
     it("should show correct count when multiple assets are selected", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -588,7 +652,7 @@ describe("AssetList", () => {
 
     it("should use singular form when one asset is selected", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -610,7 +674,7 @@ describe("AssetList", () => {
 
     it("should call onBulkDelete with selected asset IDs when delete button is clicked", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -639,7 +703,7 @@ describe("AssetList", () => {
 
     it("should clear selection after bulk delete is called", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -670,7 +734,7 @@ describe("AssetList", () => {
     });
 
     it("should not call onBulkDelete when no assets are selected", async () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -686,7 +750,7 @@ describe("AssetList", () => {
 
     it("should prevent asset click when clicking checkbox", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -707,7 +771,7 @@ describe("AssetList", () => {
 
     it("should work in both grid and list views", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -744,7 +808,7 @@ describe("AssetList", () => {
 
   describe("Bulk Update Functionality", () => {
     it("should not show bulk actions when no assets are selected", () => {
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -762,7 +826,7 @@ describe("AssetList", () => {
 
     it("should show bulk actions UI when assets are selected", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -783,7 +847,7 @@ describe("AssetList", () => {
 
     it("should show Change Category button when categories are provided", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -803,7 +867,7 @@ describe("AssetList", () => {
 
     it("should show Add Tags button when tags are provided", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -823,7 +887,7 @@ describe("AssetList", () => {
 
     it("should not show category dropdown when no categories provided", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -841,9 +905,9 @@ describe("AssetList", () => {
       expect(screen.queryByText("Change Category")).not.toBeInTheDocument();
     });
 
-    it("should not show tags dropdown when no tags provided", async () => {
+    it("should show tags dropdown even when no tags provided (for creating new tags)", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -858,12 +922,13 @@ describe("AssetList", () => {
       const checkboxes = screen.getAllByRole("checkbox");
       await user.click(checkboxes[0]);
 
-      expect(screen.queryByText("Add Tags")).not.toBeInTheDocument();
+      // Tags dropdown should still appear for creating new tags
+      expect(screen.getByText("Add Tags")).toBeInTheDocument();
     });
 
     it("should call onBulkUpdate with category when category is selected", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -895,7 +960,7 @@ describe("AssetList", () => {
 
     it("should call onBulkUpdate with null category when Remove Category is selected", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -927,7 +992,7 @@ describe("AssetList", () => {
 
     it("should call onBulkUpdate with tag when tag is selected", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -947,19 +1012,19 @@ describe("AssetList", () => {
       const tagsButton = screen.getByText("Add Tags");
       await user.click(tagsButton);
 
-      // Click on a tag
-      const importantTag = screen.getByText("important");
-      await user.click(importantTag);
+      // Click on a tag that the asset doesn't have yet
+      const draftTag = screen.getByText("draft");
+      await user.click(draftTag);
 
-      // Should call onBulkUpdate with correct parameters
+      // Should call onBulkUpdate with correct parameters (draft is tag id 2)
       expect(mockOnBulkUpdate).toHaveBeenCalledWith([mockAssets[0].id], {
-        addTags: [1],
+        addTags: [2],
       });
     });
 
     it("should clear selection after bulk update is called", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -988,7 +1053,7 @@ describe("AssetList", () => {
 
     it("should handle multiple selected assets", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -1021,7 +1086,7 @@ describe("AssetList", () => {
 
     it("should show all available categories in dropdown", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
@@ -1052,7 +1117,7 @@ describe("AssetList", () => {
 
     it("should show all available tags in dropdown", async () => {
       const user = userEvent.setup();
-      render(
+      renderWithQueryClient(
         <AssetList
           assets={mockAssets}
           isLoading={false}
