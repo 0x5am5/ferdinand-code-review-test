@@ -38,29 +38,6 @@ function validateViewingRoleHeader(
     return { allowed: true, effectiveRole: userRole };
   }
 
-  // CRITICAL SECURITY CHECK: Only SUPER_ADMIN can use role switching
-  // This prevents privilege escalation attacks where non-admins manipulate sessionStorage
-  if (userRole !== UserRole.SUPER_ADMIN) {
-    const reason = `Non-super-admin user (${userRole}) attempted to use X-Viewing-Role header`;
-    logRoleSwitchingAudit({
-      userId,
-      userEmail: userEmail ?? undefined,
-      userRole,
-      requestedViewingRole: requestedRole,
-      authorizationDecision: "denied",
-      reason,
-      timestamp: new Date(),
-      requestPath: req.path,
-      requestMethod: req.method,
-      ipAddress: getClientIp(req),
-    });
-    return {
-      allowed: false,
-      effectiveRole: userRole,
-      reason: "Role switching is only available for super administrators",
-    };
-  }
-
   // Validate that the requested role is a valid UserRole enum value
   if (!Object.values(UserRole).includes(requestedRole as UserRoleType)) {
     const reason = `Invalid role value: ${requestedRole}`;
