@@ -6,6 +6,10 @@ const IV_LENGTH = 16; // For GCM mode
 const AUTH_TAG_LENGTH = 16;
 const _SALT_LENGTH = 64;
 
+// Cache for the derived encryption key to avoid expensive scryptSync calls
+let cachedKey: Buffer | null = null;
+let lastEncryptionKeyValue: string | undefined;
+
 // Get encryption key from environment or generate one
 function getEncryptionKey(): Buffer {
   const key = process.env.ENCRYPTION_KEY;
@@ -14,8 +18,24 @@ function getEncryptionKey(): Buffer {
     throw new Error("ENCRYPTION_KEY environment variable is required");
   }
 
-  // Ensure key is 32 bytes for AES-256
-  return crypto.scryptSync(key, "salt", 32);
+  // Return cached key if ENCRYPTION_KEY hasn't changed
+  if (cachedKey && lastEncryptionKeyValue === key) {
+    return cachedKey;
+  }
+
+  // Derive new key and cache it (scryptSync is expensive, ~50-100ms per call)
+  cachedKey = crypto.scryptSync(key, "salt", 32);
+  lastEncryptionKeyValue = key;
+
+  return cachedKey;
+}
+
+/**
+ * Clear the cached encryption key (useful for testing)
+ */
+export function clearKeyCache(): void {
+  cachedKey = null;
+  lastEncryptionKeyValue = undefined;
 }
 
 /**
@@ -43,6 +63,13 @@ export function encrypt(text: string): string {
 
     return combined.toString("base64");
   } catch (error) {
+    // Preserve error message if it's about missing ENCRYPTION_KEY
+    if (
+      error instanceof Error &&
+      error.message === "ENCRYPTION_KEY environment variable is required"
+    ) {
+      throw error;
+    }
     console.error("Encryption error:", error);
     throw new Error("Failed to encrypt token");
   }
@@ -69,6 +96,13 @@ export function decrypt(encryptedData: string): string {
 
     return decrypted;
   } catch (error) {
+    // Preserve error message if it's about missing ENCRYPTION_KEY
+    if (
+      error instanceof Error &&
+      error.message === "ENCRYPTION_KEY environment variable is required"
+    ) {
+      throw error;
+    }
     console.error("Decryption error:", error);
     throw new Error("Failed to decrypt token");
   }

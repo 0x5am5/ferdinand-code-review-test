@@ -1,4 +1,7 @@
-import { describe, expect, it } from "@jest/globals";
+/**
+ * @vitest-environment jsdom
+ */
+
 import {
   type Asset,
   canChangeVisibility,

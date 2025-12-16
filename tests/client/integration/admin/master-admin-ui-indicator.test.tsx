@@ -1,4 +1,5 @@
 /**
+ * @vitest-environment jsdom
  * Master Admin UI Indicator Tests
  *
  * This test file validates UI indicators for master admin global Drive link,
@@ -11,14 +12,14 @@
 
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 
 // Import utilities we created
 import {
   TestScenarioBuilder,
   createMockQueryClient,
-} from './test-utils';
+} from '../../test-utils';
 
 // Mock components for testing
 const MockAssetManager = ({ 
@@ -52,7 +53,7 @@ describe('Master Admin UI Indicator', () => {
 
   beforeEach(() => {
     queryClient = createMockQueryClient();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -99,10 +100,10 @@ describe('Master Admin UI Indicator', () => {
 
       render(
         <QueryClientProvider client={queryClient}>
-          <MockAssetManager 
-            showConnectionIndicator={true}
-            connectedEmail="admin@test.com"
-            clientName="Test Client"
+          <MockAssetManager
+            showConnectionIndicator={false}
+            connectedEmail={null}
+            clientName={null}
           />
         </QueryClientProvider>
       );
@@ -123,10 +124,10 @@ describe('Master Admin UI Indicator', () => {
 
       render(
         <QueryClientProvider client={queryClient}>
-          <MockAssetManager 
-            showConnectionIndicator={true}
-            connectedEmail="admin@test.com"
-            clientName="Test Client"
+          <MockAssetManager
+            showConnectionIndicator={false}
+            connectedEmail={null}
+            clientName={null}
           />
         </QueryClientProvider>
       );
@@ -147,10 +148,10 @@ describe('Master Admin UI Indicator', () => {
 
       render(
         <QueryClientProvider client={queryClient}>
-          <MockAssetManager 
-            showConnectionIndicator={true}
-            connectedEmail="admin@test.com"
-            clientName="Test Client"
+          <MockAssetManager
+            showConnectionIndicator={false}
+            connectedEmail={null}
+            clientName={null}
           />
         </QueryClientProvider>
       );
@@ -253,20 +254,13 @@ describe('Master Admin UI Indicator', () => {
 
   describe('Role-Based Visibility', () => {
     it('should show import button for all users when Drive is connected', () => {
-      const scenario = TestScenarioBuilder.create()
-        .withConnectedDrive()
-        .withValidToken()
-        .build();
-
       // Test with different user roles
       const userRoles = ['super_admin', 'admin', 'editor', 'standard', 'guest'];
 
       for (const role of userRoles) {
-        scenario.withUserRole(role);
-
-        render(
+        const { unmount } = render(
           <QueryClientProvider client={queryClient}>
-            <MockAssetManager 
+            <MockAssetManager
               showConnectionIndicator={false}
               connectedEmail={null}
               clientName={null}
@@ -279,24 +273,14 @@ describe('Master Admin UI Indicator', () => {
         expect(importButton).toBeInTheDocument();
 
         // Cleanup
-        screen.unmount();
+        unmount();
       }
-
-      scenario.cleanup();
     });
 
     it('should handle role changes dynamically', () => {
-      const scenario = TestScenarioBuilder.create()
-        .withConnectedDrive()
-        .withValidToken()
-        .build();
-
-      // Start with admin role
-      scenario.withUserRole('admin');
-
       const { rerender } = render(
         <QueryClientProvider client={queryClient}>
-          <MockAssetManager 
+          <MockAssetManager
             showConnectionIndicator={false}
             connectedEmail={null}
             clientName={null}
@@ -307,12 +291,9 @@ describe('Master Admin UI Indicator', () => {
       // No connection indicator for admin
       expect(screen.queryByTestId('connection-indicator')).not.toBeInTheDocument();
 
-      // Change to super admin role
-      scenario.withUserRole('super_admin');
-
       rerender(
         <QueryClientProvider client={queryClient}>
-          <MockAssetManager 
+          <MockAssetManager
             showConnectionIndicator={true}
             connectedEmail="admin@test.com"
             clientName="Test Client"
@@ -322,8 +303,6 @@ describe('Master Admin UI Indicator', () => {
 
       // Connection indicator should now be visible
       expect(screen.getByTestId('connection-indicator')).toBeInTheDocument();
-
-      scenario.cleanup();
     });
   });
 

@@ -2,7 +2,7 @@ import { UserRole } from "@shared/schema";
 import type { FC, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { Redirect } from "wouter";
-import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
+import { useRoleSwitching } from "@/contexts/role-switching-context";
 import { useAuth } from "@/hooks/use-auth";
 
 interface ProtectedRouteProps {

@@ -8,8 +8,11 @@
  * - Common test scenarios and mock data
  */
 
-import { jest } from '@jest/globals';
+import React from 'react';
+import { vi } from 'vitest';
 import { TextEncoder } from 'util';
+import { QueryClient } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 // Mock data types
 export interface MockGoogleDriveConnection {
@@ -81,7 +84,7 @@ export class MockSSEStream {
 
   createMockReader() {
     return {
-      read: jest.fn().mockImplementation(async () => {
+      read: vi.fn().mockImplementation(async () => {
         if (this.currentIndex >= this.chunks.length) {
           return { done: true, value: new Uint8Array() };
         }
@@ -94,7 +97,7 @@ export class MockSSEStream {
           value: new TextEncoder().encode(chunk),
         };
       }),
-      releaseLock: jest.fn(),
+      releaseLock: vi.fn(),
     };
   }
 
@@ -112,22 +115,28 @@ export class MockSSEStream {
 
 // OAuth Mock Utilities
 export class MockOAuthFlow {
-  private originalWindowLocation: typeof window.location;
-  private originalWindowHistory: typeof window.history;
+  private originalWindowLocation: any;
+  private originalWindowHistory: any;
+  private hasWindow: boolean;
 
   constructor() {
-    this.originalWindowLocation = window.location;
-    this.originalWindowHistory = window.history;
+    this.hasWindow = typeof window !== 'undefined';
+    if (this.hasWindow) {
+      this.originalWindowLocation = window.location;
+      this.originalWindowHistory = window.history;
+    }
   }
 
   mockOAuthRedirect() {
+    if (!this.hasWindow) return;
+
     // Mock window.location.href for OAuth redirect - simplified to avoid JSDOM issues
     const mockLocation = {
       href: '',
-      assign: jest.fn(),
-      replace: jest.fn(),
+      assign: vi.fn(),
+      replace: vi.fn(),
     };
-    
+
     // Store original location descriptor
     const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'location');
     if (originalDescriptor) {
@@ -142,6 +151,8 @@ export class MockOAuthFlow {
   }
 
   mockOAuthCallback(status: 'success' | 'error', _reason?: string) {
+    if (!this.hasWindow) return;
+
     // Mock URL parameters for OAuth callback
     const mockUrl = new URL('http://localhost:3001/dashboard');
     mockUrl.searchParams.set('google_auth', status);
@@ -159,11 +170,13 @@ export class MockOAuthFlow {
     // Mock history.replaceState for URL cleanup
     (window as any).history = {
       ...window.history,
-      replaceState: jest.fn(),
+      replaceState: vi.fn(),
     };
   }
 
   restore() {
+    if (!this.hasWindow) return;
+
     delete (window as any).location;
     delete (window as any).history;
     (window as any).location = this.originalWindowLocation;
@@ -173,7 +186,7 @@ export class MockOAuthFlow {
 
 // Fetch Mock Utilities
 export class MockFetchResponses {
-  private responses: Map<string, any> = new Map();
+  public responses: Map<string, any> = new Map();
 
   setConnectionResponse(connection: MockGoogleDriveConnection | null) {
     if (connection) {
@@ -226,7 +239,7 @@ export class MockFetchResponses {
   }
 
   setupFetchMock() {
-    const mockFetch = jest.fn().mockImplementation((...args: any[]) => {
+    const mockFetch = vi.fn().mockImplementation((...args: any[]) => {
       const url = args[0] as string;
       const response = this.responses.get(url);
       if (response) {
@@ -350,14 +363,20 @@ export class TestScenarioBuilder {
     return this;
   }
 
+  mockFetch(url: string, response: any) {
+    this.fetchResponses.responses.set(url, response);
+    return this;
+  }
+
   build() {
     const mockFetch = this.fetchResponses.setupFetchMock();
-    
+
     return {
       mockFetch,
+      addMockFetch: (url: string, response: any) => this.mockFetch(url, response),
       cleanup: () => {
         this.oauthFlow.restore();
-        jest.clearAllMocks();
+        vi.clearAllMocks();
       },
     };
   }
@@ -400,18 +419,11 @@ export const createMockErrorResult = () => ({
   errors: ['Failed to download test-file-2.jpg: File too large'],
 });
 
-// Toast mock helper
-export const mockToast = () => {
-  const toast = jest.fn();
-  jest.mock('@/hooks/use-toast', () => ({
-    toast,
-  }));
-  return toast;
-};
+// Toast mock helper (Note: mocks should be defined at top level, not in functions)
+export const mockToast = vi.fn();
 
 // Query client mock helper
 export const createMockQueryClient = () => {
-  const { QueryClient } = require('@tanstack/react-query');
   return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -421,9 +433,7 @@ export const createMockQueryClient = () => {
 };
 
 // Component render wrapper helper
-export const createTestWrapper = (queryClient: any) => {
-  const { QueryClientProvider } = require('@tanstack/react-query');
-  return ({ children }: { children: React.ReactNode }) => (
-    React.createElement(QueryClientProvider, { client: queryClient }, children)
-  );
+export const createTestWrapper = (queryClient: QueryClient) => {
+  return ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
 };

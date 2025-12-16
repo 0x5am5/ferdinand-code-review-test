@@ -10,6 +10,13 @@ interface RateLimitRecord {
 
 const rateLimitStore = new Map<string, RateLimitRecord>();
 
+/**
+ * Clear all rate limit records (for testing purposes)
+ */
+export function clearRateLimitStore() {
+  rateLimitStore.clear();
+}
+
 // Cleanup old entries every 10 minutes
 setInterval(
   () => {

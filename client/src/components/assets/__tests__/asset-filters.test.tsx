@@ -1,33 +1,34 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
+/**
+ * @vitest-environment jsdom
+ */
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import type { AssetFilters as Filters } from "@/lib/queries/assets";
 import { AssetFilters } from "../asset-filters";
 
 // Mock the asset queries
-jest.mock("@/lib/queries/assets", () => ({
-  ...(jest.requireActual("@/lib/queries/assets") as object),
-  useAssetCategoriesQuery: jest.fn(() => ({
+vi.mock("@/lib/queries/assets", () => ({
+  ...(vi.importActual("@/lib/queries/assets") as object),
+  useAssetCategoriesQuery: vi.fn(() => ({
     data: [
       { id: 1, name: "Documents", slug: "documents" },
       { id: 2, name: "Images", slug: "images" },
       { id: 3, name: "Videos", slug: "videos" },
     ],
   })),
-  useAssetTagsQuery: jest.fn(() => ({
+  useAssetTagsQuery: vi.fn(() => ({
     data: [
       { id: 1, name: "marketing", slug: "marketing" },
       { id: 2, name: "design", slug: "design" },
       { id: 3, name: "social", slug: "social" },
     ],
+  })),
+  useDeleteTagMutation: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
   })),
 }));
 
@@ -44,20 +45,20 @@ const createWrapper = () => {
 };
 
 describe("AssetFilters", () => {
-  const mockOnFiltersChange = jest.fn();
+  const mockOnFiltersChange = vi.fn();
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     // Run all pending timers to ensure cleanup
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     // Clear all timers
-    jest.clearAllTimers();
+    vi.clearAllTimers();
     // Restore real timers
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe("Search Functionality", () => {
@@ -71,30 +72,39 @@ describe("AssetFilters", () => {
     });
 
     it("should debounce search input", async () => {
-      const user = userEvent.setup({ delay: null });
+      // Use real timers for this test
+      vi.useRealTimers();
+
+      const user = userEvent.setup();
       render(
         <AssetFilters filters={{}} onFiltersChange={mockOnFiltersChange} />,
         { wrapper: createWrapper() }
       );
 
       const searchInput = screen.getByPlaceholderText(/search assets/i);
-      await user.type(searchInput, "test query");
 
-      // Should not call immediately
+      // Should not call immediately after typing
+      await user.type(searchInput, "test query");
       expect(mockOnFiltersChange).not.toHaveBeenCalled();
 
-      // Fast-forward time by 300ms (debounce delay)
-      jest.advanceTimersByTime(300);
+      // Wait for debounce delay (300ms + buffer)
+      await waitFor(
+        () => {
+          expect(mockOnFiltersChange).toHaveBeenCalledWith({
+            search: "test query",
+          });
+        },
+        { timeout: 500 }
+      );
 
-      await waitFor(() => {
-        expect(mockOnFiltersChange).toHaveBeenCalledWith({
-          search: "test query",
-        });
-      });
+      vi.useFakeTimers();
     });
 
     it("should only trigger search after debounce period", async () => {
-      const user = userEvent.setup({ delay: null });
+      // Use real timers for this test
+      vi.useRealTimers();
+
+      const user = userEvent.setup();
       render(
         <AssetFilters filters={{}} onFiltersChange={mockOnFiltersChange} />,
         { wrapper: createWrapper() }
@@ -102,28 +112,21 @@ describe("AssetFilters", () => {
 
       const searchInput = screen.getByPlaceholderText(/search assets/i);
 
-      await user.type(searchInput, "t");
-      jest.advanceTimersByTime(100);
+      // Type multiple characters
+      await user.type(searchInput, "test");
 
-      await user.type(searchInput, "e");
-      jest.advanceTimersByTime(100);
+      // Should only call once after debounce period
+      await waitFor(
+        () => {
+          expect(mockOnFiltersChange).toHaveBeenCalledTimes(1);
+          expect(mockOnFiltersChange).toHaveBeenCalledWith({
+            search: "test",
+          });
+        },
+        { timeout: 500 }
+      );
 
-      await user.type(searchInput, "s");
-      jest.advanceTimersByTime(100);
-
-      await user.type(searchInput, "t");
-
-      // Should only call once after final debounce period
-      expect(mockOnFiltersChange).not.toHaveBeenCalled();
-
-      jest.advanceTimersByTime(300);
-
-      await waitFor(() => {
-        expect(mockOnFiltersChange).toHaveBeenCalledTimes(1);
-        expect(mockOnFiltersChange).toHaveBeenCalledWith({
-          search: "test",
-        });
-      });
+      vi.useFakeTimers();
     });
 
     it("should display existing search value", () => {
@@ -227,7 +230,9 @@ describe("AssetFilters", () => {
     });
 
     it("should toggle tag selection when clicked", async () => {
-      const user = userEvent.setup({ delay: null });
+      vi.useRealTimers();
+
+      const user = userEvent.setup();
       render(
         <AssetFilters filters={{}} onFiltersChange={mockOnFiltersChange} />,
         { wrapper: createWrapper() }
@@ -239,7 +244,9 @@ describe("AssetFilters", () => {
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
         tagIds: [1],
       });
-    }, 10000);
+
+      vi.useFakeTimers();
+    });
 
     it("should show selected tags with different styling", () => {
       const filters: Filters = { tagIds: [1, 2] };
@@ -260,7 +267,9 @@ describe("AssetFilters", () => {
     });
 
     it("should remove tag when clicked again", async () => {
-      const user = userEvent.setup({ delay: null });
+      vi.useRealTimers();
+
+      const user = userEvent.setup();
       const filters: Filters = { tagIds: [1] };
 
       render(
@@ -277,10 +286,14 @@ describe("AssetFilters", () => {
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
         tagIds: undefined,
       });
-    }, 10000);
+
+      vi.useFakeTimers();
+    });
 
     it("should handle multiple tag selection", async () => {
-      const user = userEvent.setup({ delay: null });
+      vi.useRealTimers();
+
+      const user = userEvent.setup();
       const filters: Filters = { tagIds: [1] };
 
       render(
@@ -297,7 +310,9 @@ describe("AssetFilters", () => {
       expect(mockOnFiltersChange).toHaveBeenCalledWith({
         tagIds: [1, 2],
       });
-    }, 10000);
+
+      vi.useFakeTimers();
+    });
   });
 
   describe("Clear Filters", () => {
@@ -325,7 +340,9 @@ describe("AssetFilters", () => {
     });
 
     it("should clear all filters when clicked", async () => {
-      const user = userEvent.setup({ delay: null });
+      vi.useRealTimers();
+
+      const user = userEvent.setup();
       const filters: Filters = {
         search: "test",
         categoryId: 1,
@@ -345,7 +362,9 @@ describe("AssetFilters", () => {
       await user.click(clearButton);
 
       expect(mockOnFiltersChange).toHaveBeenCalledWith({});
-    }, 10000);
+
+      vi.useFakeTimers();
+    });
 
     it("should show clear button for category filter", () => {
       const filters: Filters = { categoryId: 1 };
@@ -414,7 +433,9 @@ describe("AssetFilters", () => {
     });
 
     it("should preserve other filters when updating one filter", async () => {
-      const user = userEvent.setup({ delay: null });
+      vi.useRealTimers();
+
+      const user = userEvent.setup();
       const filters: Filters = {
         categoryId: 1,
         tagIds: [1],
@@ -431,15 +452,80 @@ describe("AssetFilters", () => {
       const searchInput = screen.getByPlaceholderText(/search assets/i);
       await user.type(searchInput, "new search");
 
-      jest.advanceTimersByTime(300);
+      await waitFor(
+        () => {
+          expect(mockOnFiltersChange).toHaveBeenCalledWith({
+            categoryId: 1,
+            tagIds: [1],
+            search: "new search",
+          });
+        },
+        { timeout: 500 }
+      );
 
-      await waitFor(() => {
-        expect(mockOnFiltersChange).toHaveBeenCalledWith({
-          categoryId: 1,
-          tagIds: [1],
-          search: "new search",
-        });
-      });
+      vi.useFakeTimers();
+    });
+  });
+
+  describe("Source Filter", () => {
+    it("should render source dropdown", () => {
+      render(
+        <AssetFilters filters={{}} onFiltersChange={mockOnFiltersChange} />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText(/^source$/i)).toBeInTheDocument();
+    });
+
+    it('should display "All Sources" by default', () => {
+      render(
+        <AssetFilters filters={{}} onFiltersChange={mockOnFiltersChange} />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText(/all sources/i)).toBeInTheDocument();
+    });
+
+    it("should show Google Drive when isGoogleDrive is true", () => {
+      const filters: Filters = { isGoogleDrive: true };
+
+      render(
+        <AssetFilters
+          filters={filters}
+          onFiltersChange={mockOnFiltersChange}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText(/google drive/i)).toBeInTheDocument();
+    });
+
+    it("should show Uploaded when isGoogleDrive is false", () => {
+      const filters: Filters = { isGoogleDrive: false };
+
+      render(
+        <AssetFilters
+          filters={filters}
+          onFiltersChange={mockOnFiltersChange}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText(/uploaded/i)).toBeInTheDocument();
+    });
+
+    it("should show clear button for source filter", () => {
+      const filters: Filters = { isGoogleDrive: true };
+
+      render(
+        <AssetFilters
+          filters={filters}
+          onFiltersChange={mockOnFiltersChange}
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText(/clear filters/i)).toBeInTheDocument();
     });
   });
 
@@ -462,6 +548,7 @@ describe("AssetFilters", () => {
 
       expect(screen.getByText(/^search$/i)).toBeInTheDocument();
       expect(screen.getByText(/^category$/i)).toBeInTheDocument();
+      expect(screen.getByText(/^source$/i)).toBeInTheDocument();
       expect(screen.getByText(/^visibility$/i)).toBeInTheDocument();
       expect(screen.getByText(/^tags$/i)).toBeInTheDocument();
     });

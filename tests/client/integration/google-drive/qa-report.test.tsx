@@ -1,7 +1,7 @@
-import { describe, expect, it, jest, beforeEach } from "@jest/globals";
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 // Mock fetch globally
-const mockFetch = global.fetch = jest.fn() as any;
+const mockFetch = global.fetch = vi.fn() as any;
 
 // Mock Response globally with proper implementation
 class MockResponse {
@@ -37,7 +37,7 @@ global.Response = MockResponse as any;
 describe("Google Drive Import - QA Report Generation", () => {
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockFetch.mockReset();
   });
 
