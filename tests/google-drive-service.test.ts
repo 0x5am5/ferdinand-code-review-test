@@ -103,6 +103,13 @@ vi.mock("../server/storage", () => ({
   uploadFile: vi.fn(() => ({ success: true })),
 }));
 
+// Also mock the storage/index path for dynamic imports
+vi.mock("../server/storage/index", () => ({
+  generateUniqueFileName: vi.fn((name: string) => `unique-${name}`),
+  generateStoragePath: vi.fn((clientId: number, fileName: string) => `/uploads/${clientId}/${fileName}`),
+  uploadFile: vi.fn(() => ({ success: true })),
+}));
+
 // Mock categorization
 vi.mock("../server/utils/asset-categorization", () => ({
   autoSelectCategory: vi.fn(() => 1),
@@ -130,6 +137,7 @@ import {
   MAX_FILE_SIZE,
 } from "../server/services/google-drive";
 import { uploadFile } from "../server/storage";
+import * as storageIndex from "../server/storage/index";
 import { db } from "../server/db";
 
 // Get reference to mocked db
@@ -374,7 +382,7 @@ describe("Google Drive Service", () => {
       ).rejects.toThrow("Failed to import Drive file");
     });
 
-    it.skip("should handle storage failures", async () => {
+    it("should handle storage failures", async () => {
       const driveFile = createMockDriveFile();
       const fileBuffer = Buffer.from("file content");
 
@@ -387,7 +395,7 @@ describe("Google Drive Service", () => {
       mockDb.where.mockReturnThis();
       mockDb.limit.mockResolvedValue([]);
 
-      vi.mocked(uploadFile).mockResolvedValue({
+      vi.mocked(storageIndex.uploadFile).mockResolvedValue({
         success: false,
         error: "Storage full",
       } as any);
@@ -401,7 +409,7 @@ describe("Google Drive Service", () => {
           visibility: "shared",
           driveClient: mockDriveClient,
         })
-      ).rejects.toThrow("Failed to store file");
+      ).rejects.toThrow(/Failed to store file/);
     });
   });
 

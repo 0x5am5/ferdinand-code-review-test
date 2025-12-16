@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { AssetUpload } from "../asset-upload";
 
@@ -15,18 +15,28 @@ vi.mock("@/components/ui/dialog", async () => {
     onOpenChange?: (open: boolean) => void;
   } | null>(null);
 
-  const Dialog = ({ open, onOpenChange, children }: any) => (
+  const Dialog = ({
+    open,
+    onOpenChange,
+    children,
+  }: React.PropsWithChildren<{
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }>) => (
     <DialogContext.Provider value={{ open: Boolean(open), onOpenChange }}>
       {children}
     </DialogContext.Provider>
   );
 
-  const DialogTrigger = ({ asChild, children }: any) => {
+  const DialogTrigger = ({
+    asChild,
+    children,
+  }: React.PropsWithChildren<{ asChild?: boolean }>) => {
     const ctx = React.useContext(DialogContext);
     const child = React.Children.only(children);
 
     if (asChild && React.isValidElement(child)) {
-      const onClick = (e: any) => {
+      const onClick = (e: React.MouseEvent) => {
         child.props.onClick?.(e);
         ctx?.onOpenChange?.(true);
       };
@@ -40,7 +50,10 @@ vi.mock("@/components/ui/dialog", async () => {
     );
   };
 
-  const DialogContent = ({ children, ...props }: any) => {
+  const DialogContent = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => {
     const ctx = React.useContext(DialogContext);
     if (!ctx?.open) return null;
     return (
@@ -50,13 +63,22 @@ vi.mock("@/components/ui/dialog", async () => {
     );
   };
 
-  const DialogHeader = ({ children, ...props }: any) => (
+  const DialogHeader = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
     <div {...props}>{children}</div>
   );
-  const DialogTitle = ({ children, ...props }: any) => (
+  const DialogTitle = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
     <h2 {...props}>{children}</h2>
   );
-  const DialogDescription = ({ children, ...props }: any) => (
+  const DialogDescription = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
     <p {...props}>{children}</p>
   );
 
@@ -71,18 +93,29 @@ vi.mock("@/components/ui/dialog", async () => {
 });
 
 vi.mock("@/components/ui/select", async () => {
+  const React = await import("react");
   // Minimal non-portal select stubs.
-  const Select = ({ children }: any) => <div>{children}</div>;
-  const SelectTrigger = ({ children, ...props }: any) => (
+  const Select = ({ children }: React.PropsWithChildren) => (
+    <div>{children}</div>
+  );
+  const SelectTrigger = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
     <button type="button" {...props}>
       {children}
     </button>
   );
-  const SelectValue = ({ placeholder }: any) => (
+  const SelectValue = ({ placeholder }: { placeholder?: string }) => (
     <span>{placeholder ?? ""}</span>
   );
-  const SelectContent = ({ children }: any) => <div>{children}</div>;
-  const SelectItem = ({ children, ...props }: any) => (
+  const SelectContent = ({ children }: React.PropsWithChildren) => (
+    <div>{children}</div>
+  );
+  const SelectItem = ({
+    children,
+    ...props
+  }: React.PropsWithChildren<Record<string, unknown>>) => (
     <div {...props}>{children}</div>
   );
 
@@ -115,7 +148,17 @@ vi.mock("@/lib/queries/assets", () => ({
   })),
 }));
 
+vi.mock("@/hooks/use-toast", () => ({
+  useToast: () => ({
+    toast: vi.fn(),
+  }),
+}));
+
 describe("AssetUpload", () => {
+  beforeAll(() => {
+    global.URL.createObjectURL = vi.fn(() => "mock-object-url");
+    global.URL.revokeObjectURL = vi.fn();
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -127,7 +170,7 @@ describe("AssetUpload", () => {
     ).toBeInTheDocument();
   });
 
-  it.skip("renders dialog contents when open=true", () => {
+  it("renders dialog contents when open=true", () => {
     render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
@@ -147,7 +190,7 @@ describe("AssetUpload", () => {
     ).toBeInTheDocument();
   });
 
-  it.skip("selecting a file shows it in the selected files list", () => {
+  it("selecting a file shows it in the selected files list", async () => {
     render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
     const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
@@ -155,29 +198,36 @@ describe("AssetUpload", () => {
 
     fireEvent.change(input, { target: { files: [file] } });
 
-    expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
-    expect(screen.getByText("test.txt")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /upload 1 file/i })
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
+      expect(screen.getByText("test.txt")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /upload 1 file/i })
+      ).toBeInTheDocument();
+    });
   });
 
-  it.skip("removing a selected file removes it from the list", () => {
+  it("removing a selected file removes it from the list", async () => {
     render(<AssetUpload clientId={1} open={true} onOpenChange={vi.fn()} />);
 
     const input = screen.getByTestId("asset-upload-input") as HTMLInputElement;
     const file = new File(["hello"], "test.txt", { type: "text/plain" });
 
     fireEvent.change(input, { target: { files: [file] } });
-    expect(screen.getByText("test.txt")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText("test.txt")).toBeInTheDocument();
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /remove test\.txt/i }));
 
-    expect(screen.queryByText("test.txt")).not.toBeInTheDocument();
-    expect(screen.queryByText(/selected files/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText("test.txt")).not.toBeInTheDocument();
+      expect(screen.queryByText(/selected files/i)).not.toBeInTheDocument();
+    });
   });
 
-  it.skip("initialFiles prop shows files when open", () => {
+  it("initialFiles prop shows files when open", async () => {
     const initialFiles = [
       new File(["content"], "initial.txt", { type: "text/plain" }),
     ];
@@ -191,7 +241,9 @@ describe("AssetUpload", () => {
       />
     );
 
-    expect(screen.getByText("initial.txt")).toBeInTheDocument();
-    expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("initial.txt")).toBeInTheDocument();
+      expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
+    });
   });
 });
