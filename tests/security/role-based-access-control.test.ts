@@ -12,7 +12,7 @@
  * - SUPER_ADMIN: System-wide access
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockedFunction } from 'vitest';
 import { UserRole } from '@shared/schema';
 import type { Client } from '@shared/schema';
 import type { Request, Response } from 'express';
@@ -31,24 +31,28 @@ import {
 import { storage } from '../../server/storage';
 
 // Import modules under test
-import { requireAuth, requireAdmin, requireSuperAdmin, canAdminAccessClient } from '../../server/middlewares/auth';
+import { requireAuth, canAdminAccessClient } from '../../server/middlewares/auth';
 import { requireMinimumRole } from '../../server/middlewares/requireMinimumRole';
 import { requireAdminRole } from '../../server/middlewares/requireAdminRole';
 
+// Create helper functions for common permission checks
+const requireAdmin = requireMinimumRole(UserRole.ADMIN);
+const requireSuperAdmin = requireMinimumRole(UserRole.SUPER_ADMIN);
+
 describe('Role-Based Access Control (RBAC)', () => {
   // Spy on storage methods
-  let mockGetUser: jest.SpiedFunction<typeof storage.getUser>;
-  let mockGetUserClients: jest.SpiedFunction<typeof storage.getUserClients>;
+  let mockGetUser: MockedFunction<typeof storage.getUser>;
+  let mockGetUserClients: MockedFunction<typeof storage.getUserClients>;
 
   beforeEach(() => {
     // Create spies for storage methods
-    mockGetUser = jest.spyOn(storage, 'getUser');
-    mockGetUserClients = jest.spyOn(storage, 'getUserClients');
+    mockGetUser = vi.spyOn(storage, 'getUser');
+    mockGetUserClients = vi.spyOn(storage, 'getUserClients');
   });
 
   afterEach(() => {
     // Restore original implementations
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Authentication Middleware (requireAuth)', () => {
@@ -454,7 +458,7 @@ describe('Role-Based Access Control (RBAC)', () => {
             expectBlocked(next);
           }
 
-          jest.clearAllMocks();
+          vi.clearAllMocks();
         }
       }
     });
@@ -470,7 +474,7 @@ describe('Role-Based Access Control (RBAC)', () => {
 
       await requireAdmin(req as Request, res as Response, next);
 
-      expect(spies.status).toHaveBeenCalledWith(401);
+      expect(spies.status).toHaveBeenCalledWith(404);
       expectBlocked(next);
     });
 

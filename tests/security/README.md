@@ -48,31 +48,34 @@ Tests for CSRF protection and security headers middleware.
 - ✅ All security headers are set
 - ✅ CSRF blocks cross-origin attacks
 
-### 3. `auth-middleware.test.ts`
-Tests for authentication middleware (requireAuth, requireAdmin, requireSuperAdmin).
+### 3. `role-based-access-control.test.ts`
+Comprehensive tests for RBAC middleware (requireAuth, requireMinimumRole).
 
-**requireAuth Tests:**
-- Allows requests with valid session
-- Blocks requests without session (401)
-- Blocks requests without userId in session
-
-**requireAdmin Tests:**
-- Allows admin users
-- Allows super_admin users
-- Blocks non-admin users (403)
+**Authentication Tests:**
+- Allows all authenticated users regardless of role
 - Blocks unauthenticated requests (401)
-- Handles user not found
-- Handles database errors gracefully (500)
 
-**requireSuperAdmin Tests:**
-- Allows only super_admin users
-- Blocks admin users (not super_admin)
-- Blocks standard users
-- Blocks unauthenticated requests
+**Admin Access Tests:**
+- Allows ADMIN and SUPER_ADMIN roles
+- Blocks GUEST, STANDARD, and EDITOR roles (403)
+
+**Super Admin Access Tests:**
+- Allows only SUPER_ADMIN role
+- Blocks all other roles (403)
+
+**Role Hierarchy Tests:**
+- Validates correct role hierarchy order (GUEST < STANDARD < EDITOR < ADMIN < SUPER_ADMIN)
+- Tests requireMinimumRole with various role levels
+
+**Edge Cases:**
+- Handles missing user gracefully (404)
+- Handles database errors gracefully (500)
+- Blocks session without userId
 
 **Key scenarios:**
 - ✅ Authentication check works
 - ✅ Role-based authorization works
+- ✅ Role hierarchy is enforced correctly
 - ✅ Error handling is robust
 
 ## Running Tests

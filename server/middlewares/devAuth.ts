@@ -86,8 +86,9 @@ export async function devAuthBypass(
 
     // Don't auto-login on the homepage or login page - allow user to stay logged out
     // This prevents immediate re-login after logout
+    // Also, if no session exists, allow requireAuth middleware to handle it (return 401)
     const publicPaths = ["/", "/api/user"];
-    if (publicPaths.includes(req.path)) {
+    if (publicPaths.includes(req.path) || !req.session.userId) {
       return next();
     }
 

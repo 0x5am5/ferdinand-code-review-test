@@ -238,7 +238,9 @@ npm test tests/file-assets-comprehensive.test.ts
 
 ### `security/` Directory
 Security-focused tests:
-- ✅ `auth-middleware.test.ts`: Authentication middleware
+- ✅ `role-based-access-control.test.ts`: Comprehensive RBAC tests (authentication, authorization, role hierarchy)
+- ✅ `role-switching-validation.test.ts`: Super admin role switching security
+- ✅ `guest-access-permissions.test.ts`: Guest role permission validation
 - ✅ `rate-limit.test.ts`: Rate limiting enforcement
 - ✅ `csrf-and-headers.test.ts`: CSRF protection and security headers
 

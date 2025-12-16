@@ -11,7 +11,7 @@ import {
 } from "@shared/permissions";
 import { UserRole } from "@shared/schema";
 import { useMemo } from "react";
-import { useRoleSwitching } from "@/contexts/RoleSwitchingContext";
+import { useRoleSwitching } from "@/contexts/role-switching-context";
 import { useAuth } from "./use-auth";
 
 export interface UsePermissionsResult {
