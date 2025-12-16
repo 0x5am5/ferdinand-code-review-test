@@ -1,26 +1,33 @@
-import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
-import type { MockedFunction } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
-
-// Mock storage module with proper vitest mock functions
-// Use vi.hoisted() to avoid hoisting issues with mock functions
-const { mockGetUser } = vi.hoisted(() => ({
-  mockGetUser: vi.fn() as MockedFunction<any>,
-}));
 
 // Mock the storage module before importing auth
 vi.mock('../../server/storage', () => ({
   storage: {
-    getUser: mockGetUser,
+    getUser: vi.fn(),
   },
 }));
 
-import { requireAuth, requireAdmin, requireSuperAdmin } from '../../server/middlewares/auth';
+// Mock the audit-logger module to prevent side effects during tests
+vi.mock('../../server/utils/audit-logger', () => ({
+  logRoleSwitchingAudit: vi.fn(),
+  getClientIp: vi.fn().mockReturnValue('127.0.0.1'),
+}));
+
+import { requireAuth, canAdminAccessClient, canAdminAccessUser } from '../../server/middlewares/auth';
+import { requireMinimumRole } from '../../server/middlewares/requireMinimumRole';
+import { UserRole } from '@shared/schema';
+import { storage } from '../../server/storage';
+
+const mockGetUser = storage.getUser as ReturnType<typeof vi.fn>;
 
 // Mock Request object
 function createMockRequest(overrides = {}): any {
   return {
     session: { userId: 1 } as any,
+    path: '/test',
+    method: 'GET',
+    headers: {},
     ...overrides,
   };
 }
@@ -82,11 +89,11 @@ describe('Auth Middleware', () => {
     });
   });
 
-  describe('requireAdmin', () => {
+  describe('requireMinimumRole(ADMIN)', () => {
     it('should allow admin users', async () => {
       mockGetUser.mockResolvedValue({
         id: 1,
-        role: 'admin',
+        role: UserRole.ADMIN,
         email: 'admin@example.com',
       });
 
@@ -94,7 +101,7 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
 
       expect(mockGetUser).toHaveBeenCalledWith(1);
       expect(next).toHaveBeenCalled();
@@ -104,7 +111,7 @@ describe('Auth Middleware', () => {
     it('should allow super_admin users', async () => {
       mockGetUser.mockResolvedValue({
         id: 1,
-        role: 'super_admin',
+        role: UserRole.SUPER_ADMIN,
         email: 'superadmin@example.com',
       });
 
@@ -112,7 +119,7 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
 
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
@@ -121,7 +128,7 @@ describe('Auth Middleware', () => {
     it('should block non-admin users', async () => {
       mockGetUser.mockResolvedValue({
         id: 1,
-        role: 'editor',
+        role: UserRole.EDITOR,
         email: 'editor@example.com',
       });
 
@@ -129,12 +136,12 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        message: expect.stringContaining('Admin access required'),
+        message: expect.stringContaining('admin role or higher required'),
       }));
     });
 
@@ -143,7 +150,7 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
 
       expect(mockGetUser).not.toHaveBeenCalled();
       expect(next).not.toHaveBeenCalled();
@@ -157,10 +164,10 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
 
       expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('User not found'),
       }));
@@ -173,7 +180,7 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(500);
@@ -183,11 +190,11 @@ describe('Auth Middleware', () => {
     });
   });
 
-  describe('requireSuperAdmin', () => {
+  describe('requireMinimumRole(SUPER_ADMIN)', () => {
     it('should allow super_admin users', async () => {
       mockGetUser.mockResolvedValue({
         id: 1,
-        role: 'super_admin',
+        role: UserRole.SUPER_ADMIN,
         email: 'superadmin@example.com',
       });
 
@@ -195,7 +202,7 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireSuperAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.SUPER_ADMIN)(req as any, res as Response, next);
 
       expect(next).toHaveBeenCalled();
       expect(res.status).not.toHaveBeenCalled();
@@ -204,7 +211,7 @@ describe('Auth Middleware', () => {
     it('should block admin users (not super_admin)', async () => {
       mockGetUser.mockResolvedValue({
         id: 1,
-        role: 'admin',
+        role: UserRole.ADMIN,
         email: 'admin@example.com',
       });
 
@@ -212,19 +219,19 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireSuperAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.SUPER_ADMIN)(req as any, res as Response, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        message: expect.stringContaining('Super admin access required'),
+        message: expect.stringContaining('super_admin role or higher required'),
       }));
     });
 
     it('should block standard users', async () => {
       mockGetUser.mockResolvedValue({
         id: 1,
-        role: 'standard',
+        role: UserRole.STANDARD,
         email: 'user@example.com',
       });
 
@@ -232,7 +239,7 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireSuperAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.SUPER_ADMIN)(req as any, res as Response, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(403);
@@ -243,11 +250,142 @@ describe('Auth Middleware', () => {
       const res = createMockResponse();
       const next = createMockNext();
 
-      await requireSuperAdmin(req as Request, res as Response, next);
+      await requireMinimumRole(UserRole.SUPER_ADMIN)(req as any, res as Response, next);
 
       expect(mockGetUser).not.toHaveBeenCalled();
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
+    });
+  });
+
+  describe('Role Switching with X-Viewing-Role Header', () => {
+    it('should allow super_admin to switch to admin role', async () => {
+      mockGetUser.mockResolvedValue({
+        id: 1,
+        role: UserRole.SUPER_ADMIN,
+        email: 'superadmin@example.com',
+      });
+
+      const req = createMockRequest({
+        session: { userId: 1 } as any,
+        headers: { 'x-viewing-role': UserRole.ADMIN },
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('should allow super_admin to switch to editor role', async () => {
+      mockGetUser.mockResolvedValue({
+        id: 1,
+        role: UserRole.SUPER_ADMIN,
+        email: 'superadmin@example.com',
+      });
+
+      const req = createMockRequest({
+        session: { userId: 1 } as any,
+        headers: { 'x-viewing-role': UserRole.EDITOR },
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await requireMinimumRole(UserRole.EDITOR)(req as any, res as Response, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('should block super_admin viewing as editor from admin-only endpoint', async () => {
+      mockGetUser.mockResolvedValue({
+        id: 1,
+        role: UserRole.SUPER_ADMIN,
+        email: 'superadmin@example.com',
+      });
+
+      const req = createMockRequest({
+        session: { userId: 1 } as any,
+        headers: { 'x-viewing-role': UserRole.EDITOR },
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        message: expect.stringContaining('admin role or higher required'),
+      }));
+    });
+
+    it('should block non-super_admin from using X-Viewing-Role header', async () => {
+      mockGetUser.mockResolvedValue({
+        id: 1,
+        role: UserRole.ADMIN,
+        email: 'admin@example.com',
+      });
+
+      const req = createMockRequest({
+        session: { userId: 1 } as any,
+        headers: { 'x-viewing-role': UserRole.EDITOR },
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await requireMinimumRole(UserRole.EDITOR)(req as any, res as Response, next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        message: expect.stringContaining('super administrators'),
+      }));
+    });
+
+    it('should block invalid role values in X-Viewing-Role header', async () => {
+      mockGetUser.mockResolvedValue({
+        id: 1,
+        role: UserRole.SUPER_ADMIN,
+        email: 'superadmin@example.com',
+      });
+
+      const req = createMockRequest({
+        session: { userId: 1 } as any,
+        headers: { 'x-viewing-role': 'invalid_role' },
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await requireMinimumRole(UserRole.EDITOR)(req as any, res as Response, next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+        message: expect.stringContaining('Invalid viewing role'),
+      }));
+    });
+
+    it('should use actual role when no X-Viewing-Role header is present', async () => {
+      mockGetUser.mockResolvedValue({
+        id: 1,
+        role: UserRole.ADMIN,
+        email: 'admin@example.com',
+      });
+
+      const req = createMockRequest({
+        session: { userId: 1 } as any,
+        headers: {},
+      });
+      const res = createMockResponse();
+      const next = createMockNext();
+
+      await requireMinimumRole(UserRole.ADMIN)(req as any, res as Response, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
   });
 });

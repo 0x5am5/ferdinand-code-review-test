@@ -15,7 +15,12 @@ vi.mock("@/lib/queries/assets", async () => {
   return {
     ...actual,
     useCreateTagMutation: vi.fn(() => ({
-      mutateAsync: vi.fn().mockResolvedValue({ id: 99, name: "New Tag", slug: "new-tag", clientId: 1 }),
+      mutateAsync: vi.fn().mockResolvedValue({
+        id: 99,
+        name: "New Tag",
+        slug: "new-tag",
+        clientId: 1,
+      }),
       isPending: false,
     })),
   };

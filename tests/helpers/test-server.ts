@@ -141,6 +141,10 @@ export async function cleanupTestClient(clientId: number): Promise<void> {
   // Delete user-client associations
   await db.delete(userClients).where(eq(userClients.clientId, clientId));
 
+  // Delete brand assets for this client
+  const { brandAssets } = await import('@shared/schema');
+  await db.delete(brandAssets).where(eq(brandAssets.clientId, clientId));
+
   // Delete assets associated with this client
   const { assets, assetCategoryAssignments, assetTagAssignments, assetCategories, assetTags } = await import('@shared/schema');
 

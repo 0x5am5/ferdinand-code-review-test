@@ -27,12 +27,17 @@ import { defineConfig } from 'vitest/config';
           },
         },
        {
-         extends: true,
+         extends: false,
          test: {
            name: 'client',
            environment: 'jsdom',
+           globals: true,
            include: ['tests/client/**/*.test.{ts,tsx}', 'client/**/*.test.{ts,tsx}'],
            setupFiles: ['./tests/setup-env.js', './tests/setup.ts'],
+           alias: {
+             '@': path.resolve(__dirname, './client/src'),
+             '@shared': path.resolve(__dirname, './shared'),
+           },
          },
        },
      ],

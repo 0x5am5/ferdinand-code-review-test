@@ -1,3 +1,6 @@
+// Load dotenv FIRST to get real DATABASE_URL from .env
+import 'dotenv/config';
+
 // Set NODE_ENV to test FIRST to skip database connection checks
 process.env.NODE_ENV = 'test';
 

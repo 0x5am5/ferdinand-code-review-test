@@ -7,9 +7,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
-import { type BrandAsset, UserRole, DEFAULT_SECTION_DESCRIPTIONS } from "@shared/schema";
-import { useAuth } from "@/hooks/use-auth";
+import {
+  type BrandAsset,
+  DEFAULT_SECTION_DESCRIPTIONS,
+  UserRole,
+} from "@shared/schema";
 import { RoleSwitchingProvider } from "@/contexts/role-switching-context";
+import { useAuth } from "@/hooks/use-auth";
 import { LogoSection } from "../logo-section";
 
 // Mock hooks
@@ -279,10 +283,7 @@ describe("LogoSection - Description Display", () => {
 
   describe("Multiple Logos", () => {
     it("should display section title and description when multiple logos exist", () => {
-      const logos = [
-        createMockLogo(1, "main"),
-        createMockLogo(2, "main"),
-      ];
+      const logos = [createMockLogo(1, "main"), createMockLogo(2, "main")];
       renderLogoSection(logos, UserRole.EDITOR);
 
       expect(screen.getByText("Main Logo")).toBeInTheDocument();

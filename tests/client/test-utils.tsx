@@ -11,6 +11,8 @@
 import React from 'react';
 import { vi } from 'vitest';
 import { TextEncoder } from 'util';
+import { QueryClient } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 // Mock data types
 export interface MockGoogleDriveConnection {
@@ -371,7 +373,7 @@ export class TestScenarioBuilder {
 
     return {
       mockFetch,
-      mockFetch: (url: string, response: any) => this.mockFetch(url, response),
+      addMockFetch: (url: string, response: any) => this.mockFetch(url, response),
       cleanup: () => {
         this.oauthFlow.restore();
         vi.clearAllMocks();
@@ -422,7 +424,6 @@ export const mockToast = vi.fn();
 
 // Query client mock helper
 export const createMockQueryClient = () => {
-  const { QueryClient } = require('@tanstack/react-query');
   return new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -432,8 +433,7 @@ export const createMockQueryClient = () => {
 };
 
 // Component render wrapper helper
-export const createTestWrapper = (queryClient: any) => {
-  const { QueryClientProvider } = require('@tanstack/react-query');
+export const createTestWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children);
 };

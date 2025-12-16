@@ -53,7 +53,9 @@ vi.mock("@/components/ui/dialog", async () => {
   const DialogHeader = ({ children, ...props }: any) => (
     <div {...props}>{children}</div>
   );
-  const DialogTitle = ({ children, ...props }: any) => <h2 {...props}>{children}</h2>;
+  const DialogTitle = ({ children, ...props }: any) => (
+    <h2 {...props}>{children}</h2>
+  );
   const DialogDescription = ({ children, ...props }: any) => (
     <p {...props}>{children}</p>
   );
@@ -76,9 +78,13 @@ vi.mock("@/components/ui/select", async () => {
       {children}
     </button>
   );
-  const SelectValue = ({ placeholder }: any) => <span>{placeholder ?? ""}</span>;
+  const SelectValue = ({ placeholder }: any) => (
+    <span>{placeholder ?? ""}</span>
+  );
   const SelectContent = ({ children }: any) => <div>{children}</div>;
-  const SelectItem = ({ children, ...props }: any) => <div {...props}>{children}</div>;
+  const SelectItem = ({ children, ...props }: any) => (
+    <div {...props}>{children}</div>
+  );
 
   return {
     Select,
@@ -116,7 +122,9 @@ describe("AssetUpload", () => {
 
   it("renders the trigger button", () => {
     render(<AssetUpload clientId={1} />);
-    expect(screen.getByRole("button", { name: /upload assets/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /upload assets/i })
+    ).toBeInTheDocument();
   });
 
   it.skip("renders dialog contents when open=true", () => {
@@ -134,7 +142,9 @@ describe("AssetUpload", () => {
 
     // Action buttons present
     expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /upload 0 files/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /upload 0 files/i })
+    ).toBeInTheDocument();
   });
 
   it.skip("selecting a file shows it in the selected files list", () => {
@@ -147,7 +157,9 @@ describe("AssetUpload", () => {
 
     expect(screen.getByText(/selected files \(1\)/i)).toBeInTheDocument();
     expect(screen.getByText("test.txt")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /upload 1 file/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /upload 1 file/i })
+    ).toBeInTheDocument();
   });
 
   it.skip("removing a selected file removes it from the list", () => {

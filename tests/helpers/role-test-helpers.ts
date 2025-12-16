@@ -81,6 +81,7 @@ export function createMockRequestWithRole(
       touch: () => {},
       id: "test-session-id",
     } as any,
+    headers: {},
     ...overrides,
   };
 }

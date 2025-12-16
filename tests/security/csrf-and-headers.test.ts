@@ -188,7 +188,7 @@ describe('Security Headers Middleware', () => {
 
     securityHeaders(req as Request, res as Response, next);
 
-    expect(res.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
+    expect(res.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'SAMEORIGIN');
   });
 
   it('should set X-XSS-Protection header', () => {
@@ -231,6 +231,16 @@ describe('Security Headers Middleware', () => {
     expect(res.setHeader).toHaveBeenCalledWith('Permissions-Policy', expect.stringContaining('camera=()'));
   });
 
+  it('should set Cross-Origin-Opener-Policy header', () => {
+    const req = createMockRequest();
+    const res = createMockResponse();
+    const next = createMockNext();
+
+    securityHeaders(req as Request, res as Response, next);
+
+    expect(res.setHeader).toHaveBeenCalledWith('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  });
+
   it('should call next() to continue the request', () => {
     const req = createMockRequest();
     const res = createMockResponse();
@@ -249,6 +259,6 @@ describe('Security Headers Middleware', () => {
     securityHeaders(req as Request, res as Response, next);
 
     // Verify all main security headers are set
-    expect(res.setHeader).toHaveBeenCalledTimes(6); // 6 security headers
+    expect(res.setHeader).toHaveBeenCalledTimes(7); // 7 security headers
   });
 });

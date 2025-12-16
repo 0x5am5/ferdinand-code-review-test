@@ -45,6 +45,7 @@ import multer from "multer";
 import { requireAuth } from "server/middlewares/auth";
 import { requireMinimumRole } from "server/middlewares/requireMinimumRole";
 import { validateClientId } from "server/middlewares/vaildateClientId";
+import { validateClientAccess } from "server/middlewares/validateClientAccess";
 import type { RequestWithClientId } from "server/routes";
 import type { z } from "zod";
 import { db } from "../db";
@@ -1240,6 +1241,7 @@ export function registerBrandAssetRoutes(app: Express) {
     "/api/clients/:clientId/brand-assets/:assetId/description",
     validateClientId,
     requireAuth,
+    validateClientAccess,
     requireMinimumRole(UserRole.EDITOR),
     async (req: RequestWithClientId, res: Response) => {
       try {

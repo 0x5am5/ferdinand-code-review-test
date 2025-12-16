@@ -207,7 +207,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Updated by super admin',
-            variant: 'light',
           }),
         }
       );
@@ -226,7 +225,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Updated by admin',
-            variant: 'light',
           }),
         }
       );
@@ -245,7 +243,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Updated by editor',
-            variant: 'light',
           }),
         }
       );
@@ -264,7 +261,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Attempted by standard',
-            variant: 'light',
           }),
         }
       );
@@ -283,7 +279,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Attempted by guest',
-            variant: 'light',
           }),
         }
       );
@@ -301,7 +296,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Attempted without auth',
-            variant: 'light',
           }),
         }
       );
@@ -410,91 +404,18 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Wrong context',
-            variant: 'light',
           }),
         }
       );
 
-      // Should fail ownership check (asset.clientId !== clientId)
+      // Should fail client access check (user not associated with otherClient)
       expect(response.status).toBe(403);
       const data = await response.json();
-      expect(data.message).toContain('Not authorized');
+      expect(data.message).toContain('You do not have access to this client');
     });
   });
 
   describe('Validation Tests - Logo Descriptions', () => {
-    it('should accept valid light variant description', async () => {
-      const response = await authenticatedFetch(
-        `${API_BASE}/clients/${testClient.id}/brand-assets/${logoAssetId}/description`,
-        'editor',
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            description: 'Valid light description',
-            variant: 'light',
-          }),
-        }
-      );
-
-      expect(response.status).toBe(200);
-    });
-
-    it('should accept valid dark variant description', async () => {
-      const response = await authenticatedFetch(
-        `${API_BASE}/clients/${testClient.id}/brand-assets/${logoAssetId}/description`,
-        'editor',
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            description: 'Valid dark description',
-            variant: 'dark',
-          }),
-        }
-      );
-
-      expect(response.status).toBe(200);
-      const data = await response.json();
-      expect(data.data.description).toBe('Valid dark description');
-    });
-
-    it('should accept both light and dark descriptions together', async () => {
-      const response = await authenticatedFetch(
-        `${API_BASE}/clients/${testClient.id}/brand-assets/${logoAssetId}/description`,
-        'editor',
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            description: 'Both light',
-            variant: 'light',
-          }),
-        }
-      );
-
-      expect(response.status).toBe(200);
-    });
-
-    it('should reject invalid variant value', async () => {
-      const response = await authenticatedFetch(
-        `${API_BASE}/clients/${testClient.id}/brand-assets/${logoAssetId}/description`,
-        'editor',
-        {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            description: 'Test',
-            variant: 'invalid',
-          }),
-        }
-      );
-
-      expect(response.status).toBe(400);
-      const data = await response.json();
-      expect(data.message).toContain('Invalid request data');
-    });
-
     it('should handle empty description as valid', async () => {
       const response = await authenticatedFetch(
         `${API_BASE}/clients/${testClient.id}/brand-assets/${logoAssetId}/description`,
@@ -504,7 +425,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: '',
-            variant: 'light',
           }),
         }
       );
@@ -667,7 +587,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: 'Updated description only',
-            variant: 'light',
           }),
         }
       );
@@ -699,7 +618,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               description: `Updated by ${role}`,
-              variant: 'light',
             }),
           }
         );
@@ -720,7 +638,6 @@ describe('Brand Asset Description Permissions (JUP-29)', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               description: `Attempted by ${role}`,
-              variant: 'light',
             }),
           }
         );

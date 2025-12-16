@@ -11,6 +11,7 @@ import {
   encryptTokens,
   decryptTokens,
   isTokenExpired,
+  clearKeyCache,
 } from '../server/utils/encryption';
 
 describe('Token Encryption - AES-256-GCM', () => {
@@ -352,11 +353,13 @@ describe('Token Encryption - AES-256-GCM', () => {
     test('should provide clear error message when ENCRYPTION_KEY is missing', () => {
       const originalKey = process.env.ENCRYPTION_KEY;
       delete process.env.ENCRYPTION_KEY;
+      clearKeyCache(); // Clear cache to force re-derivation
 
       expect(() => encrypt('test')).toThrow('ENCRYPTION_KEY environment variable is required');
 
       // Restore
       process.env.ENCRYPTION_KEY = originalKey;
+      clearKeyCache(); // Clear cache after restoring key
     });
 
     test('should handle encryption failures gracefully', () => {
@@ -364,9 +367,11 @@ describe('Token Encryption - AES-256-GCM', () => {
 
       try {
         delete process.env.ENCRYPTION_KEY;
+        clearKeyCache(); // Clear cache to force re-derivation
         expect(() => encrypt('test')).toThrow();
       } finally {
         process.env.ENCRYPTION_KEY = originalKey;
+        clearKeyCache(); // Clear cache after restoring key
       }
     });
 

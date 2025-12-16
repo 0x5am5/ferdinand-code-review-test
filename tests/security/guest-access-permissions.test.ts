@@ -9,7 +9,7 @@ const { mockGetUser } = vi.hoisted(() => ({
   mockGetUser: vi.fn() as MockedFunction<any>,
 }));
 
-// Mock the storage module before importing middlewares (matches auth-middleware.test.ts pattern)
+// Mock the storage module before importing middlewares
 vi.mock('../../server/storage', () => ({
   storage: {
     getUser: mockGetUser,
@@ -26,6 +26,7 @@ function createMockRequest(overrides = {}): any {
     session: { userId: 1 } as any,
     params: {},
     body: {},
+    headers: {},
     ...overrides,
   };
 }
